@@ -1,0 +1,112 @@
+[tool.poetry]
+authors = [
+    "Max Wolschlager <wolschlager@iiasa.ac.at>",
+    "Fridolin Glatter <glatter@iiasa.ac.at>",
+    "Daniel Huppmann <huppmann@iiasa.ac.at>",
+    "Philip Hackstock <hackstock@iiasa.ac.at>",
+]
+name = "ixmp4"
+version = "0.1.0"
+description = "a data warehouse for scenario analysis"
+license = "MIT"
+readme = "README.md"
+packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
+homepage = "https://software.ece.iiasa.ac.at"
+repository = "https://github.com/iiasa/ixmp4"
+documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
+
+[tool.poetry.dependencies]
+PyJWT = "^2.4.0"
+SQLAlchemy = { extras = ["mypy"], version = "^2.0.5" }
+SQLAlchemy-Utils = "^0.40.0"
+alembic = "^1.10.2"
+oracledb = "^1.2.2"
+dask = "^2023.4.0"
+fastapi = "^0.94.0"
+httpx = { extras = ["http2"], version = "^0.23.3" }
+openpyxl = "^3.0.9"
+pandas = "^2.0.0"
+pandera = "^0.13.4"
+psycopg2 = "^2.9.3"
+pydantic = "^1.10.5"
+python = "^3.10"
+python-dotenv = "^0.19.0"
+requests = "^2.27.1"
+rtoml = "^0.8.0"
+typer = "^0.4.0"
+
+[tool.poetry.group.docs]
+optional = true
+
+[tool.poetry.group.docs.dependencies]
+sphinx = "5.3"
+sphinx-multiversion = "^0.2.4"
+sphinx-rtd-theme = "^1.1.1"
+sphinxcontrib-bibtex = "^2.5.0"
+sphinxcontrib-openapi = "^0.8.1"
+
+[tool.poetry.group.server]
+optional = true
+
+[tool.poetry.group.server.dependencies]
+gunicorn = "^20.1.0"
+uvicorn = { extras = ["standard"], version = "^0.15.0" }
+
+[tool.poetry.group.dev]
+optional = true
+
+[tool.poetry.group.dev.dependencies]
+black = "^23.1.0"
+flake8 = "^6.0.0"
+flake8-bugbear = "^21.9.2"
+mypy = "^1.0.1"
+flake8-pyproject = "^1.2.2"
+ptvsd = "^4.3.2"
+pytest = "^6.2.5"
+pytest-benchmark = "^3.4.1"
+pytest-cov = "^2.12.1"
+pytest-lazy-fixture = "^0.6.3"
+snakeviz = "^2.1.1"
+
+[tool.poetry.scripts]
+ixmp4 = "ixmp4.__main__:app"
+
+[build-system]
+build-backend = "poetry.core.masonry.api"
+requires = ["poetry-core>=1.2.0"]
+
+[tool.mypy]
+exclude = [
+    '^example\.py$',
+    '^import\.py$',
+    '^tests\/',
+    '^doc\/',
+    '^ixmp4\/db\/migrations\/',
+]
+disable_error_code = ['override']
+implicit_reexport = true
+
+plugins = ['sqlalchemy.ext.mypy.plugin']
+
+[[tool.mypy.overrides]]
+module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
+ignore_missing_imports = true
+
+[tool.flake8]
+max_line_length = 100
+max-complexity = 10
+select = ['C', 'E', 'F', 'W', 'B', 'B950']
+ignore = ['E203', 'E501', 'W503', 'B008']
+per-file-ignores = ['__init__.py:F401']
+count = true
+exclude = [
+    '.git',
+    '__pycache__',
+    '*.egg-info',
+    '.pytest_cache',
+    '.mypy_cache',
+    '.venv',
+    'tests/',
+    'example.py',
+    'import.py',
+]

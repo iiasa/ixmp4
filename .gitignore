@@ -1,0 +1,41 @@
+# python
+.venv/
+__pycache__/
+.pytest_cache/
+.mypy_cache/
+
+*.pyc
+
+# runtime artifacts
+docker/run/*
+run/*
+!run/.keep
+.env
+
+# vscode
+.vscode
+
+# idea/Pycharm
+.idea/
+*.iml
+# tests
+tests/test-data
+.coverage*
+.profiles
+.benchmarks
+
+# docs
+build/
+source/openapi-*.json
+source/openapi.json
+doc/run/*
+
+
+# dist
+dist
+constraints.txt
+requirements.txt
+
+# misc
+PR.md
+.DS_STORE
