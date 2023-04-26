@@ -1,0 +1,195 @@
+from typing import Iterable, Any
+
+from sqlalchemy import select
+from sqlalchemy.orm import Bundle
+
+import numpy as np
+import pandas as pd
+import pandera as pa
+from pandera.typing import DataFrame, Series
+
+from ixmp4 import db
+from ixmp4.data import abstract
+from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db.unit import Unit
+from ixmp4.data.db.region import Region
+from ixmp4.data.db.run import RunRepository, Run
+from ixmp4.data.db.model import Model
+from ixmp4.core.exceptions import InconsistentIamcType, ProgrammingError
+from ixmp4.core.decorators import check_types
+
+from ..timeseries import TimeSeriesRepository, TimeSeries
+from ..variable import Variable
+from ..measurand import Measurand
+from .. import base
+
+from .model import DataPoint
+from .filter import DataPointFilter
+from . import get_datapoint_model
+
+
+class RemoveDataPointFrameSchema(pa.SchemaModel):
+    type: Series[pa.String] | None = pa.Field(isin=[t for t in DataPoint.Type])
+    step_year: Series[pa.Int] | None = pa.Field(coerce=True, nullable=True)
+    step_datetime: Series[pa.DateTime] | None = pa.Field(coerce=True, nullable=True)
+    step_category: Series[pa.String] | None = pa.Field(nullable=True)
+
+    time_series__id: Series[pa.Int] = pa.Field(coerce=True)
+
+    @pa.dataframe_check
+    def validate_type(cls, df: pd.DataFrame) -> bool:
+        types = df.type.unique()
+
+        # mixed types are currently not supported
+        if len(types) != 1:
+            raise InconsistentIamcType
+
+        if types[0] == DataPoint.Type.ANNUAL:
+            cols = dict(step_year="valid", step_category="empty", step_datetime="empty")
+        elif types[0] == DataPoint.Type.CATEGORICAL:
+            cols = dict(step_year="valid", step_category="valid", step_datetime="empty")
+        elif types[0] == DataPoint.Type.DATETIME:
+            cols = dict(step_year="empty", step_category="empty", step_datetime="valid")
+        else:
+            raise ProgrammingError
+
+        for col, content in cols.items():
+            if infer_content(df, col) is not content:
+                raise InconsistentIamcType
+        return True
+
+
+class AddDataPointFrameSchema(RemoveDataPointFrameSchema):
+    value: Series[pa.Float] = pa.Field(coerce=True)
+
+
+class UpdateDataPointFrameSchema(AddDataPointFrameSchema):
+    id: Series[pa.Int] = pa.Field(coerce=True)
+
+
+def infer_content(df: pd.DataFrame, col: str) -> str:
+    if col not in df.columns or all(pd.isna(df[col])):
+        return "empty"
+    elif not any(pd.isna(df[col])):
+        return "valid"
+    else:
+        raise InconsistentIamcType
+
+
+class DataPointRepository(
+    base.Enumerator[DataPoint],
+    base.BulkUpserter[DataPoint],
+    base.BulkDeleter[DataPoint],
+    abstract.DataPointRepository,
+):
+    model_class = DataPoint
+    timeseries: TimeSeriesRepository
+    runs: RunRepository
+
+    def __init__(self, *args, **kwargs) -> None:
+        backend, *_ = args
+        # A different underlying database table
+        # needs to be used for oracle databases.
+        self.model_class = get_datapoint_model(backend.session)
+
+        self.timeseries = TimeSeriesRepository(*args, **kwargs)
+        self.runs = RunRepository(*args, **kwargs)
+
+        self.filter_class = DataPointFilter
+        super().__init__(*args, **kwargs)
+
+    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+        if not db.utils.is_joined(exc, TimeSeries):
+            exc = exc.join(
+                TimeSeries, onclause=self.model_class.time_series__id == TimeSeries.id
+            )
+        if not db.utils.is_joined(exc, Run):
+            exc = exc.join(Run, TimeSeries.run)
+        if not db.utils.is_joined(exc, Model):
+            exc = exc.join(Model, Run.model)
+
+        return exc
+
+    def select_joined_parameters(self):
+        return (
+            select(
+                self.bundle,
+                Bundle(
+                    "Region",
+                    Region.name.label("region"),
+                ),
+                Bundle(
+                    "Unit",
+                    Unit.name.label("unit"),
+                ),
+                Bundle(
+                    "Variable",
+                    Variable.name.label("variable"),
+                ),
+            )
+            .join(
+                TimeSeries, onclause=self.model_class.time_series__id == TimeSeries.id
+            )
+            .join(Region, onclause=TimeSeries.region__id == Region.id)
+            .join(Measurand, onclause=TimeSeries.measurand__id == Measurand.id)
+            .join(Unit, onclause=Measurand.unit__id == Unit.id)
+            .join(Variable, onclause=Measurand.variable__id == Variable.id)
+        )
+
+    def select(
+        self,
+        *,
+        join_parameters: bool | None = False,
+        _filter: DataPointFilter | None = None,
+        **kwargs: Any
+    ) -> db.sql.Select:
+        exc = (
+            self.select_joined_parameters() if join_parameters else select(self.bundle)
+        )
+
+        return super().select(_exc=exc, _filter=_filter, **kwargs)
+
+    @guard("view")
+    def list(self, *args, **kwargs) -> Iterable[DataPoint]:
+        return super().list(*args, **kwargs)
+
+    @guard("view")
+    def tabulate(
+        self, *args: Any, _raw: bool | None = False, **kwargs: Any
+    ) -> pd.DataFrame:
+        if _raw:
+            return super().tabulate(*args, **kwargs)
+        df = super().tabulate(*args, **kwargs)
+        df["value"] = df["value"].astype(np.float64)
+        df = df.sort_values(
+            by=["time_series__id", "step_year", "step_category", "step_datetime"]
+        )
+        return df.dropna(axis="columns", how="all")
+
+    def check_df_access(self, df: pd.DataFrame):
+        if self.backend.auth_context is not None:
+            ts_ids = set(df["time_series__id"].unique().tolist())
+            self.timeseries.check_access(ts_ids, access_type="edit")
+
+    @check_types
+    @guard("edit")
+    def bulk_upsert(self, df: DataFrame[AddDataPointFrameSchema]) -> None:
+        return super().bulk_upsert(df)
+
+    @check_types
+    @guard("edit")
+    def bulk_insert(self, df: DataFrame[AddDataPointFrameSchema]) -> None:
+        self.check_df_access(df)
+        return super().bulk_insert(df)
+
+    @check_types
+    @guard("edit")
+    def bulk_update(self, df: DataFrame[UpdateDataPointFrameSchema]) -> None:
+        self.check_df_access(df)
+        return super().bulk_update(df)
+
+    @check_types
+    @guard("edit")
+    def bulk_delete(self, df: DataFrame[RemoveDataPointFrameSchema]) -> None:
+        self.check_df_access(df)
+        return super().bulk_delete(df)

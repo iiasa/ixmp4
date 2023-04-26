@@ -1,0 +1,66 @@
+from typing import Iterable
+
+import pandas as pd
+
+from sqlalchemy.exc import NoResultFound
+
+from ixmp4 import db
+from ixmp4.data import abstract
+from ixmp4.data.auth.decorators import guard
+from ixmp4.core.exceptions import OperationNotSupported
+
+from .. import base
+
+from .model import Unit
+from .docs import UnitDocsRepository
+
+
+class UnitRepository(
+    base.Creator[Unit],
+    base.Deleter[Unit],
+    base.Retriever[Unit],
+    base.Enumerator[Unit],
+    abstract.UnitRepository,
+):
+    model_class = Unit
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+
+        from .filter import UnitFilter
+
+        self.filter_class = UnitFilter
+        self.docs = UnitDocsRepository(*args, **kwargs)
+
+    def add(self, name: str) -> Unit:
+        if self.dialect.name == "oracle" and name.strip() == "":
+            raise OperationNotSupported(
+                "On ORACLE databases an empty string is not allowed as a unit's name."
+            )
+        unit = Unit(name=name, **self.get_creation_info())
+        self.session.add(unit)
+        return unit
+
+    @guard("manage")
+    def create(self, *args, **kwargs) -> Unit:
+        return super().create(*args, **kwargs)
+
+    @guard("manage")
+    def delete(self, *args, **kwargs):
+        return super().delete(*args, **kwargs)
+
+    @guard("view")
+    def get(self, name: str) -> Unit:
+        exc: db.sql.Select = db.select(Unit).where(Unit.name == name)
+        try:
+            return self.session.execute(exc).scalar_one()
+        except NoResultFound:
+            raise Unit.NotFound
+
+    @guard("view")
+    def list(self, *args, **kwargs) -> Iterable[Unit]:
+        return super().list(*args, **kwargs)
+
+    @guard("view")
+    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
+        return super().tabulate(*args, **kwargs)
