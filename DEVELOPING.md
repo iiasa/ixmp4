@@ -83,6 +83,9 @@ source ~/.bashrc
 # Activate in-project virtualenvs
 poetry config virtualenvs.in-project true
 
+# Add dynamic versioning plugin
+poetry self add "poetry-dynamic-versioning[plugin]"
+
 # Install dependencies
 # (using "--with docs" if docs dependencies should be installed as well)
 poetry install --with docs,server,dev
