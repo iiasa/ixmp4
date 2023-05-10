@@ -24,7 +24,7 @@ build:
     post_install:
       # Install dependencies with 'docs' dependency group
       # https://python-poetry.org/docs/managing-dependencies/#dependency-groups
-      - poetry install --with docs
+      - poetry install --with docs,server
     pre_build:
       - ixmp4 server dump-schema -o doc/source/openapi-v1.json
 
