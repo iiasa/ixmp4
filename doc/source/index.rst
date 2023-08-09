@@ -20,7 +20,7 @@ Overview
 The **ixmp4** package is a data warehouse for high-powered scenario analysis
 in the domain of integrated assessment of climate change and energy systems modeling.
 
-Table of Contents
+Table of contents
 -----------------
 
 .. toctree::
@@ -51,11 +51,11 @@ Funding acknowledgement
 
 .. figure:: _static/ariadne-bmbf-logo.png
    :align: left
-   :height: 80px
+   :height: 90px
 
 The development of the **ixmp4** package was funded from the EU Horizon 2020 projects
 `openENTRANCE <https://openentrance.eu>`_ and `ECEMF <https://ecemf.eu>`_
-as well as the BMBF Kopernikus project `ARIADNE <https://ariadneprojekt.de>`_
+as well as the BMBF Kopernikus project `ARIADNE <https://ariadneprojekt.de>`_ |br|
 (FKZ 03SFK5A by the German Federal Ministry of Education and Research).
 
 .. figure:: _static/EU-logo-300x201.jpg

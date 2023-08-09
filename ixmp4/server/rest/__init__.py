@@ -1,10 +1,15 @@
-from fastapi import FastAPI, Request
+from datetime import datetime
+
+from fastapi import FastAPI, Request, Depends, Path
 from fastapi.responses import JSONResponse
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
 
+from ixmp4.conf import settings
+from ixmp4.core.exceptions import IxmpError
 
-from . import unit, scenario, region, meta, run, model, docs
+from . import unit, scenario, region, meta, run, model, docs, deps
+from .base import BaseModel
 from .iamc import (
     datapoint,
     timeseries,
@@ -14,9 +19,7 @@ from .iamc import (
     variable as iamc_variable,
     unit as iamc_unit,
 )
-from ixmp4.core.exceptions import IxmpError
 
-app = FastAPI()
 
 v1 = FastAPI()
 
@@ -42,6 +45,28 @@ v1.include_router(scenario.router)
 v1.include_router(model.router)
 v1.include_router(unit.router)
 v1.include_router(docs.router)
+
+
+class APIInfo(BaseModel):
+    name: str
+    version: str
+    is_managed: bool
+    manager_url: None | str
+    utcnow: datetime
+
+
+@v1.get("/", response_model=APIInfo)
+def root(
+    platform: str = Path("default"),
+    version: str = Depends(deps.get_version),
+):
+    return APIInfo(
+        name=platform,
+        version=version,
+        is_managed=settings.managed,
+        manager_url=settings.manager_url,
+        utcnow=datetime.utcnow(),
+    )
 
 
 @v1.exception_handler(IxmpError)

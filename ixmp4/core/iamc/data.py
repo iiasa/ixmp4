@@ -7,6 +7,7 @@ from pandera.typing import Series
 from ixmp4.data.abstract import DataPoint as DataPointModel
 
 from ..base import BaseFacade
+from .repository import IamcRepository
 from ..run import RunModel as Run
 from ..utils import substitute_type
 
@@ -51,6 +52,7 @@ class IamcData(BaseFacade):
     def __init__(self, *args, run: Run, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.run = run
+        self.repository = IamcRepository(_backend=self.backend)
 
     def _contract_parameters(self, df: pd.DataFrame) -> pd.DataFrame:
         ts_df = df[["region", "variable", "unit", "run__id"]].drop_duplicates()
@@ -95,12 +97,13 @@ class IamcData(BaseFacade):
         self.backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(self, **filters) -> pd.DataFrame:
-        df = self.backend.iamc.datapoints.tabulate(
-            run={"id": self.run.id}, join_parameters=True, **filters
-        ).dropna(how="all", axis="columns")
+        # these filters do not make sense when applied from a Run
+        illegal_filters = [i for i in filters if i in ["run", "model", "scenario"]]
+        if illegal_filters:
+            raise ValueError(
+                f"Illegal filter for `Run.iamc.tabulate()`: {illegal_filters}"
+            )
 
-        if not df.empty:
-            df = df.drop(columns=["time_series__id"])
-            df.unit = df.unit.replace({"dimensionless": ""})
-
-        return df
+        return self.repository.tabulate(
+            run={"id": self.run.id}, join_runs=False, **filters
+        )

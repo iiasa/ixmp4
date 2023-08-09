@@ -62,3 +62,13 @@ intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "pyam": ("https://pyam-iamc.readthedocs.io/en/stable/", None),
 }
+
+# -- Prolog for all rst files ------------------------------------------------
+
+rst_prolog = """
+
+.. |br| raw:: html
+
+    <br>
+
+"""

@@ -118,7 +118,12 @@ class RunMetaEntryRepository(
         self, run__id: int, key: str, value: Union[str, int, bool, float]
     ) -> RunMetaEntry:
         if self.backend.auth_context is not None:
-            self.backend.runs.check_access({run__id}, access_type="edit")
+            self.backend.runs.check_access(
+                {run__id},
+                access_type="edit",
+                is_default=None,
+                default_only=False,
+            )
 
         entry = RunMetaEntry(run__id=run__id, key=key, value=value)
         self.session.add(entry)
@@ -127,7 +132,12 @@ class RunMetaEntryRepository(
     def check_df_access(self, df: pd.DataFrame):
         if self.backend.auth_context is not None:
             ts_ids = set(df["run__id"].unique().tolist())
-            self.backend.runs.check_access(ts_ids, access_type="edit")
+            self.backend.runs.check_access(
+                ts_ids,
+                access_type="edit",
+                is_default=None,
+                default_only=False,
+            )
 
     @guard("edit")
     def create(self, *args, **kwargs) -> RunMetaEntry:
@@ -136,7 +146,12 @@ class RunMetaEntryRepository(
     @guard("view")
     def get(self, run__id: int, key: str) -> RunMetaEntry:
         if self.backend.auth_context is not None:
-            self.backend.runs.check_access({run__id}, access_type="view")
+            self.backend.runs.check_access(
+                {run__id},
+                access_type="view",
+                is_default=None,
+                default_only=False,
+            )
 
         exc = self.select(
             run_ids=[run__id],
@@ -161,7 +176,12 @@ class RunMetaEntryRepository(
                 raise RunMetaEntry.NotFound(
                     id=id,
                 )
-            self.backend.runs.check_access({meta.run__id}, access_type="edit")
+            self.backend.runs.check_access(
+                {meta.run__id},
+                access_type="edit",
+                is_default=None,
+                default_only=False,
+            )
 
         exc = db.delete(RunMetaEntry).where(RunMetaEntry.id == id)
 

@@ -1,4 +1,5 @@
 # flake8: noqa
+import importlib.metadata
 
 from ixmp4.core import (
     Platform as Platform,
@@ -19,4 +20,4 @@ from ixmp4.core.exceptions import (
 
 from ixmp4.data.abstract import DataPoint as DataPoint
 
-__version__ = "0.1.0"
+__version__ = importlib.metadata.version("ixmp4")

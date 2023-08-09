@@ -1,5 +1,8 @@
 from contextlib import suppress
-from sqlalchemy import sql
+from sqlalchemy import sql, inspect
+from sqlalchemy.sql import ColumnCollection
+
+from ixmp4.core.exceptions import ProgrammingError
 
 
 def is_joined(exc: sql.Select, model):
@@ -13,3 +16,29 @@ def is_joined(exc: sql.Select, model):
                 if model == visitor.entity_namespace:  # type: ignore
                     return True
     return False
+
+
+def get_columns(model_class: type) -> ColumnCollection:
+    mapper = inspect(model_class)
+    if mapper is not None:
+        return mapper.selectable.columns
+    else:
+        raise ProgrammingError(f"Model class `{model_class.__name__}` is not mapped.")
+
+
+def get_pk_columns(model_class: type) -> ColumnCollection:
+    columns: ColumnCollection = ColumnCollection()
+    for col in get_columns(model_class):
+        if col.primary_key:
+            columns.add(col)
+
+    return columns.as_readonly()
+
+
+def get_foreign_columns(model_class: type) -> ColumnCollection:
+    columns: ColumnCollection = ColumnCollection()
+    for col in get_columns(model_class):
+        if len(col.foreign_keys) > 0:
+            columns.add(col)
+
+    return columns.as_readonly()

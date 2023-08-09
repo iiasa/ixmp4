@@ -18,13 +18,13 @@ ENV \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 
 
-RUN curl -sSL https://raw.githubusercontent.com/python-poetry/poetry/master/install-poetry.py | python
+RUN pip install poetry
 
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
 RUN poetry config virtualenvs.create false
 
-ADD . /opt/ixmp4
+COPY . /opt/ixmp4
 
 WORKDIR /opt/ixmp4
 

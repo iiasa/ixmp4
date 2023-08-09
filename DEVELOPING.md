@@ -253,6 +253,12 @@ docker run -e ORACLE_RANDOM_PASSWORD=true -e APP_USER=ixmp4_test -e APP_USER_PAS
 please note that you'll have to wait for a few seconds for the databases to be up and
 running.
 
+The `tests/docker-compose.yml` file might help you accomplish all of this with a single command for your convenience.
+
+```console
+docker-compose -f tests/docker-compose.yml up
+```
+
 ### Profiling
 
 Some tests will output profiler information to the `.profiles/` directory (using the `profiled` fixture). You can analyze these using `snakeviz`. For example:

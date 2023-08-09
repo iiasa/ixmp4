@@ -6,6 +6,7 @@ import typer
 
 from fastapi.openapi.utils import get_openapi
 from ixmp4.server import v1
+from ixmp4.conf import settings
 
 from . import utils
 
@@ -24,8 +25,14 @@ def start(
     ),
 ) -> None:
     """Starts the ixmp4 web api."""
-
-    uvicorn.run("ixmp4.server:app", host=host, port=port, reload=True)
+    reload = settings.mode != "production"
+    uvicorn.run(
+        "ixmp4.server:app",
+        host=host,
+        port=port,
+        reload=reload,
+        log_config="ixmp4/conf/logging/server.conf",
+    )
 
 
 @app.command()
