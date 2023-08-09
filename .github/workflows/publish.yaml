@@ -12,14 +12,14 @@ jobs:
       # publish to pypi
       - if: github.event_name == 'release'
         name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v1.16
+        uses: JRubics/poetry-publish@v1
         with:
           pypi_token: ${{ secrets.PYPI_TOKEN }}
           plugins: "poetry-dynamic-versioning-plugin"
       # publish to testpypi
       - if: github.event_name != 'release'
         name: Build and publish to testpypi
-        uses: JRubics/poetry-publish@v1.16
+        uses: JRubics/poetry-publish@v1
         with:
           repository_name: "testpypi"
           repository_url: "https://test.pypi.org/legacy/"
