@@ -12,7 +12,7 @@ jobs:
       # publish to pypi
       - if: github.event_name == 'release'
         name: Build and publish to pypi
-        uses: JRubics/poetry-publish@v1
+        uses: JRubics/poetry-publish@v1.16
         with:
           pypi_token: ${{ secrets.PYPI_TOKEN }}
           plugins: "poetry-dynamic-versioning-plugin"
