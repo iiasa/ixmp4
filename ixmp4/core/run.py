@@ -37,6 +37,7 @@ class Run(BaseModelFacade):
                 raise ValueError(
                     "Invalid value for `version`, must be 'new' or integer."
                 )
+            self.version = self._model.version
 
         self.iamc = IamcData(_backend=self.backend, run=self._model)
         self._meta = RunMetaFacade(_backend=self.backend, run=self._model)

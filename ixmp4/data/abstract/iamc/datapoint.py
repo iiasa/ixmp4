@@ -68,6 +68,7 @@ class DataPointRepository(
         self,
         *,
         join_parameters: bool | None = False,
+        join_runs: bool = False,
         **kwargs,
     ) -> pd.DataFrame:
         """Tabulates data points by specified criteria.
@@ -77,6 +78,9 @@ class DataPointRepository(
         join_parameters : bool | None
             If set to `True` the resulting data frame will include parameter columns
             from the associated :class:`ixmp4.data.abstract.TimeSeries`.
+        join_runs : bool
+            If set to `True` the resulting data frame will include model & scenario name
+            and version id of the associated Run.
         kwargs : Any
             Additional key word arguments. Any left over kwargs will be used as filters.
 

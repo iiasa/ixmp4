@@ -2,16 +2,13 @@ from typing import Iterable
 
 import pandas as pd
 
-from sqlalchemy.orm.exc import NoResultFound
+from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
 from ixmp4.db import utils
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
-from ixmp4.core.exceptions import (
-    IxmpError,
-    NoDefaultRunVersion,
-)
+from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion, Forbidden
 
 from ..model import Model, ModelRepository
 from ..scenario import Scenario, ScenarioRepository
@@ -78,8 +75,11 @@ class RunRepository(
         return run
 
     @guard("edit")
-    def create(self, *args, **kwargs) -> Run:
-        return super().create(*args, **kwargs)
+    def create(self, model_name: str, *args, **kwargs) -> Run:
+        if self.backend.auth_context is not None:
+            if not self.backend.auth_context.check_access("edit", model_name):
+                raise Forbidden(f"Access to model '{model_name}' denied.")
+        return super().create(model_name, *args, **kwargs)
 
     @guard("view")
     def get(
@@ -122,7 +122,7 @@ class RunRepository(
         exc = self.select(
             model={"name": model_name},
             scenario={"name": scenario_name},
-        ).where(Run.is_default)
+        )
 
         try:
             return self.session.execute(exc).scalar_one()

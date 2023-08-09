@@ -28,6 +28,7 @@ In development mode additional commands are available:
 from functools import partial
 
 from ixmp4.conf import settings
+from ixmp4.conf.auth import BaseAuth
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.data.backend import SqlAlchemyBackend, RestBackend, Backend
 
@@ -59,27 +60,30 @@ class Platform(object):
     Using it directly is not recommended."""
 
     def __init__(
-        self, name: str | None = None, _backend: Backend | None = None
+        self,
+        name: str | None = None,
+        _backend: Backend | None = None,
+        _auth: BaseAuth | None = None,
     ) -> None:
         if name is not None:
-            try:
+            if name in settings.toml.platforms:
                 config = settings.toml.get_platform(name)
-                auth = settings.default_auth
-            except PlatformNotFound:
+            else:
+                settings.check_credentials()
                 if settings.manager is not None:
                     config = settings.manager.get_platform(name)
-                    auth = settings.default_auth
                 else:
                     raise PlatformNotFound(f"Platform '{name}' was not found.")
 
             if config.dsn.startswith("http"):
-                self.backend = RestBackend(config, auth=auth)
+                self.backend = RestBackend(config, auth=_auth)
             else:
                 self.backend = SqlAlchemyBackend(config)  # type: ignore
         elif _backend is not None:
             self.backend = _backend
         else:
             raise TypeError("__init__() is missing required argument 'name'")
+
         self.Run = partial(RunModel, _backend=self.backend)
 
         self.runs = RunRepository(_backend=self.backend)

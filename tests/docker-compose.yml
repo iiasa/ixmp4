@@ -1,0 +1,19 @@
+version: '3.1'
+
+services:
+  oracle:
+    image: gvenzl/oracle-xe:latest
+    environment:
+      ORACLE_RANDOM_PASSWORD: 'true'
+      APP_USER: ixmp4_test
+      APP_USER_PASSWORD: ixmp4_test
+    ports:
+      - 1521:1521
+
+  postgres:
+    image: postgres
+    environment:
+      POSTGRES_PASSWORD: postgres
+      POSTGRES_DB: test
+    ports:
+      - 5432:5432

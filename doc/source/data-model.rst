@@ -1,4 +1,4 @@
-The **ixmp4** Data Model
+The **ixmp4** data model
 ========================
 
 The **ixmp4** package is a data warehouse for scenario data related to numerical modeling
@@ -6,7 +6,7 @@ of climate policy, energy systems transition and sustainable development.
 
 This page is based on the section "The pyam data model" :cite:p:`Huppmann:2021:pyam-v1.0`.
 
-A Scenario Run
+A scenario run
 --------------
 
 An ixmp4 database contains data for "scenario runs", which can be one of the following:
@@ -28,7 +28,7 @@ A scenario run is identified by the following *index* attributes:
 
 A scenario run can have the data types shown below.
 
-The IAMC Timeseries Data Format
+The IAMC timeseries data format
 -------------------------------
 
 .. figure:: _static/iamc-logo.png
@@ -59,7 +59,7 @@ following the IAMC format from the Horizon 2020 `CD-LINKS`_ project.
 
 .. _`CD-LINKS`: https://www.cd-links.org
 
-Supported Time Domains
+Supported time domains
 ^^^^^^^^^^^^^^^^^^^^^^
 
 The implementation of the IAMC-format timeseries data format in **ixmp4** supports
@@ -80,7 +80,7 @@ A **run** can simultaneously have timeseries data for all temporal domains.
      of a :class:`pyam.IamDataFrame`.
    | Read the docs for the `pyam 'data' data model <https://pyam-iamc.readthedocs.io/en/stable/data.html#scenario-timeseries-data-data>`_.
 
-Meta Indicators
+Meta indicators
 ---------------
 
 Meta indicators are intended for categorisation and quantitative indicators

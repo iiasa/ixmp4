@@ -1,3 +1,4 @@
+import logging
 from uuid import uuid4
 from datetime import datetime, timedelta
 
@@ -6,7 +7,9 @@ import jwt
 
 from ixmp4.core.exceptions import InvalidCredentials, IxmpError
 
-from .user import User
+from .user import User, anonymous_user
+
+logger = logging.getLogger(__name__)
 
 
 class BaseAuth(object):
@@ -23,11 +26,11 @@ class BaseAuth(object):
 class SelfSignedAuth(BaseAuth, httpx.Auth):
     """Generates its own JWT with the supplied secret."""
 
-    def __init__(self, secret: str):
+    def __init__(self, secret: str, username: str = "ixmp4"):
         self.secret = secret
         self.user = User(
             id=-1,
-            username="ixmp4",
+            username=username,
             email="ixmp4@iiasa.ac.at",
             is_staff=True,
             is_superuser=True,
@@ -68,6 +71,18 @@ class SelfSignedAuth(BaseAuth, httpx.Auth):
         return self.user
 
 
+class AnonymousAuth(BaseAuth, httpx.Auth):
+    def __init__(self):
+        self.user = anonymous_user
+        logger.info("Connecting to service anonymously and without credentials.")
+
+    def __call__(self, r):
+        return r
+
+    def get_user(self) -> User:
+        return self.user
+
+
 class ManagerAuth(BaseAuth, httpx.Auth):
     """Uses the SceSe AAC/Management Service to obtain and refresh a token."""
 
@@ -104,7 +119,12 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         )
         if res.status_code >= 400:
             if res.status_code == 401:
-                raise InvalidCredentials()
+                raise InvalidCredentials(
+                    "Your credentials were rejected by the "
+                    "Scenario Services Management System. "
+                    "Check if they are correct and your account is active "
+                    "or log out with `ixmp4 logout` to use ixmp4 anonymously."
+                )
             else:
                 raise IxmpError("Unknown API error: " + res.text)
 

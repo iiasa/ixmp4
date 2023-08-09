@@ -73,6 +73,11 @@ class InconsistentIamcType(IxmpError):
     http_error_name = "inconsistent_iamc_type"
 
 
+class BadRequest(IxmpError):
+    http_status_code = 400
+    http_error_name = "bad_request"
+
+
 class ImproperlyConfigured(IxmpError):
     http_error_name = "improperly_configured"
 

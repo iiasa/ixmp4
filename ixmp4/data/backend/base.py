@@ -1,4 +1,4 @@
-from ixmp4.conf import PlatformInfo
+from ixmp4.conf.base import PlatformInfo
 from ixmp4.data.abstract import (
     DataPointRepository,
     RunRepository,

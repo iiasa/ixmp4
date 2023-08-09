@@ -43,7 +43,8 @@ class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
             return exc
 
     def join(self, exc, **kwargs):
-        exc = exc.join(Run, TimeSeries.run)
+        if not utils.is_joined(exc, Run):
+            exc = exc.join(Run, TimeSeries.run)
         return exc
 
 

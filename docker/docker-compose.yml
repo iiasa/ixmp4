@@ -3,7 +3,7 @@ version: "3"
 services:
   ixmp4_server:
     restart: always
-    image: ene-docker.iiasa.ac.at/ixmp4-server:latest
+    image: ene-docker.iiasa.ac.at/ixmp4-server:dev
     volumes:
       - ./run:/opt/ixmp4/run
     env_file:

@@ -2,6 +2,7 @@ import enum
 import httpx
 import re
 import os
+import logging
 from functools import lru_cache
 
 import pandas as pd
@@ -12,6 +13,8 @@ from ixmp4.core.exceptions import PlatformNotFound, ManagerApiError
 from .auth import BaseAuth
 from .user import User
 from .base import Config, PlatformInfo
+
+logger = logging.getLogger(__name__)
 
 
 class hashabledict(dict):
@@ -27,6 +30,7 @@ class ManagerPlatformInfo(PlatformInfo):
     access_group: int
     url: str
     name: str = Field(alias="slug")
+    notice: str | None
 
     class Accessibilty(str, enum.Enum):
         PUBLIC = "PUBLIC"
@@ -43,7 +47,11 @@ class ManagerConfig(Config):
         self.url = url
         self.auth = auth
         self.client = httpx.Client(
-            base_url=self.url, timeout=10.0, http2=True, auth=auth
+            base_url=self.url,
+            timeout=10.0,
+            http2=True,
+            auth=auth,
+            follow_redirects=True,
         )
         self.remote = remote
 
@@ -64,24 +72,26 @@ class ManagerConfig(Config):
     # -> a trade-off between memory usage
     # and load on the management service
     @lru_cache(maxsize=128)
-    def _cached_request(self, *args, jti: str | None = None, **kwargs):
+    def _cached_request(
+        self, method: str, path: str, *args, jti: str | None = None, **kwargs
+    ):
         del jti
         # `jti` is only used to affect `@lru_cache`
-        # set to `None` to ignore for now
         # if the token id changes a new cache entry will be created
         # TODO: MU improvement:
         # the old cache entry could be completely invalidated/deleted/collected
         # NOTE: since this cache is not shared amongst processes, it's efficacy
         # declines with the scale of the whole infrastructure unless counteracted
         # with increased cache size / memory usage
-
-        res = self.client.request(*args, **kwargs)
+        res = self.client.request(method, path, *args, **kwargs)
         if res.status_code != 200:
             raise ManagerApiError(f"[{str(res.status_code)}] {res.text}")
         return res.json()
 
     def _request(
         self,
+        method: str,
+        path: str,
         *args,
         params: dict | None = None,
         json: dict | list | tuple | None = None,
@@ -96,7 +106,10 @@ class ManagerConfig(Config):
             else:
                 json = tuple(json)
 
-        return self._cached_request(*args, params=params, json=json, **kwargs)
+        logger.debug(f"Trying cache: {method} {path} {params} {json}")
+        return self._cached_request(
+            method, path, *args, params=params, json=json, **kwargs
+        )
 
     def fetch_platforms(self, **kwargs) -> list[ManagerPlatformInfo]:
         json = self._request("GET", "/ixmp4", params={"page_size": -1}, **kwargs)
@@ -118,11 +131,18 @@ class ManagerConfig(Config):
             if p.name == key:
                 return p
         else:
-            raise PlatformNotFound
+            raise PlatformNotFound(
+                f"Platform '{key}' does not exist at {self.url} or "
+                "you do not have permission to access this platform."
+            )
 
     def fetch_user_permissions(
         self, user: User, platform: ManagerPlatformInfo, **kwargs
     ) -> pd.DataFrame:
+        if not user.is_authenticated:
+            return pd.DataFrame(
+                [], columns=["id", "instance", "group", "access_type", "model"]
+            )
         json = self._request(
             "GET",
             "/modelpermissions",

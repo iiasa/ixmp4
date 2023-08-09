@@ -30,6 +30,7 @@ class BaseMeta(_ProtocolMeta):
 class BaseModel(Protocol, metaclass=BaseMeta):
     NotUnique: ClassVar[type[IxmpError]]
     NotFound: ClassVar[type[IxmpError]]
+    DeletionPrevented: ClassVar[type[IxmpError]]
 
     id: types.Integer
     "Unique integer id."
