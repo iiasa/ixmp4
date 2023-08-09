@@ -19,7 +19,7 @@ jobs:
       # publish to testpypi
       - if: github.event_name != 'release'
         name: Build and publish to testpypi
-        uses: JRubics/poetry-publish@v1
+        uses: JRubics/poetry-publish@v1.16
         with:
           repository_name: "testpypi"
           repository_url: "https://test.pypi.org/legacy/"
