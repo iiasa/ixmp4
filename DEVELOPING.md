@@ -83,6 +83,9 @@ source ~/.bashrc
 # Activate in-project virtualenvs
 poetry config virtualenvs.in-project true
 
+# Add dynamic versioning plugin
+poetry self add "poetry-dynamic-versioning[plugin]"
+
 # Install dependencies
 # (using "--with docs" if docs dependencies should be installed as well)
 poetry install --with docs,server,dev
@@ -287,3 +290,37 @@ Optionally, supply POETRY_OPTS:
 ```bash
 docker build --build-arg POETRY_OPTS="--with docs,dev" -t ixmp4-docs:latest .
 ```
+
+## Version number
+
+This package uses the poetry-dynamic-versioning plugin to generate a version number
+either out of a tag or a current revision.
+
+For this reason the version number is *intentionally* set to 0.0.0 in `pyproject.toml`.
+
+It is overwritten on the fly by the poetry-dynamic-versioning plugin.
+
+## Release procedure
+
+1. Before releasing, check that the "pytest" GitHub action on the current "main" branch
+   passes. Address any failures before releasing.
+1. Test on your local machine if the build runs by running `python -m build --sdist
+  --wheel --outdir dist/`. Fix any packaging issues or errors by creating a PR.
+
+1. Tag the release candidate (RC) version on the main branch as v<release version>rc<N>
+  and push to upstream:
+
+  ```console
+  git tag v<release version>rc<N>>
+  git push upstream v<release version>rc<N>
+  ```
+
+1. Check that the GitHub action "Publish ixmp4" was executed correctly and that the
+   release candidate was successfully uploaded to TestPyPI. The address will be
+   https://test.pypi.org/project/imxp4/<release version>rc<N>. E.g.:
+   <https://test.pypi.org/project/imxp4/0.2.0rc1/>
+1. Visit https://github.com/iiasa/ixmp4/releases and mark the new release by creating
+   the tag and release simultaneously. The name of the tag is v<release version>
+   (without the rc<N>).
+1. Check that the "Publish to PyPI and TestPyPI" GitHub action passed and that the
+  distributions are published on https://pypi.org/project/ixmp4/ .
