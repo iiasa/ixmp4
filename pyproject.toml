@@ -6,7 +6,7 @@ authors = [
     "Philip Hackstock <hackstock@iiasa.ac.at>",
 ]
 name = "ixmp4"
-version = "0.1.0"
+version = "0.0.0"
 description = "a data warehouse for scenario analysis"
 license = "MIT"
 readme = "README.md"
@@ -72,8 +72,8 @@ snakeviz = "^2.1.1"
 ixmp4 = "ixmp4.__main__:app"
 
 [build-system]
-build-backend = "poetry.core.masonry.api"
-requires = ["poetry-core>=1.2.0"]
+build-backend = "poetry_dynamic_versioning.backend"
+requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
 exclude = [
@@ -110,3 +110,9 @@ exclude = [
     'example.py',
     'import.py',
 ]
+
+[tool.poetry-dynamic-versioning]
+bump = true
+enable = true
+style = "pep440"
+vcs = "git"

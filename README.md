@@ -15,11 +15,23 @@ in the domain of integrated assessment of climate change and energy systems mode
 
 The **ixmp4** package is released under the [MIT license](https://github.com/iiasa/ixmp4/blob/main/LICENSE).
 
-## Requirements
+## Install from pypi
+
+You can install ixmp4 using pip:
+
+```console
+pip install ixmp4
+```
+
+## Install from GitHub
+
+For installing the latest version directly from GitHub do the following.
+
+### Requirements
 
 This project requires Python 3.10 and poetry (>= 1.2).
 
-## Setup
+### Setup
 
 ```bash
 # Install Poetry, minimum version >=1.2 required
@@ -30,6 +42,9 @@ source ~/.bashrc
 
 # Activate in-project virtualenvs
 poetry config virtualenvs.in-project true
+
+# Add dynamic versioning plugin
+poetry self add "poetry-dynamic-versioning[plugin]"
 
 # Install dependencies
 # (using "--with dev,docs,server" if dev and docs dependencies should be installed as well)
