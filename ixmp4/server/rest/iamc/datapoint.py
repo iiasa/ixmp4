@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Depends, Query, Body
 
+from ixmp4.core.exceptions import BadRequest
 from ixmp4.data.backend import Backend
 from ixmp4.data import api
 from ixmp4.data.db.iamc.datapoint.filter import DataPointFilter
@@ -23,11 +24,20 @@ class EnumerationOutput(BaseModel):
 def enumerate(
     filter: DataPointFilter = Depends(),
     join_parameters: bool | None = Query(False),
+    join_runs: bool = Query(False),
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
+    if (join_parameters or join_runs) and not table:
+        raise BadRequest(
+            "`join_parameters` or `join_run` can only be used with `table=true`."
+        )
+
     return backend.iamc.datapoints.enumerate(
-        table=bool(table), _filter=filter, join_parameters=join_parameters
+        table=bool(table),
+        _filter=filter,
+        join_parameters=join_parameters,
+        join_runs=join_runs,
     )
 
 
@@ -36,6 +46,7 @@ def enumerate(
 def query(
     filter: DataPointFilter = Body(DataPointFilter()),
     join_parameters: bool | None = Query(False),
+    join_runs: bool = Query(False),
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
@@ -69,8 +80,16 @@ def query(
 
 
     """
+    if (join_parameters or join_runs) and not table:
+        raise BadRequest(
+            "`join_parameters` or `join_run` can only be used with `table=true`."
+        )
+
     return backend.iamc.datapoints.enumerate(
-        table=bool(table), _filter=filter, join_parameters=join_parameters
+        table=bool(table),
+        _filter=filter,
+        join_parameters=join_parameters,
+        join_runs=join_runs,
     )
 
 

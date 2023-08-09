@@ -128,7 +128,12 @@ class TimeSeriesRepository(
     def bulk_upsert(self, df: pd.DataFrame, create_related: bool = False) -> None:
         if self.backend.auth_context is not None:
             run_ids = set(df["run__id"].unique().tolist())
-            self.runs.check_access(run_ids, access_type="edit")
+            self.runs.check_access(
+                run_ids,
+                access_type="edit",
+                is_default=None,
+                default_only=False,
+            )
 
         if create_related:
             df = self.map_relationships(df)

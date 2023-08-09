@@ -13,7 +13,7 @@ from .model import Scenario
 class BaseIamcFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     def join_datapoints(self, exc: db.sql.Select, session=None):
         if not utils.is_joined(exc, Run):
-            exc = exc.join(Run, onclause=Run.model__id == Scenario.id)
+            exc = exc.join(Run, onclause=Run.scenario__id == Scenario.id)
 
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=TimeSeries.run__id == Run.id)
@@ -35,7 +35,7 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
 
 
 class IamcScenarioFilter(
-    base.ModelFilter, BaseIamcFilter, metaclass=filters.FilterMeta
+    base.ScenarioFilter, BaseIamcFilter, metaclass=filters.FilterMeta
 ):
     region: base.RegionFilter | None
     variable: base.VariableFilter | None
@@ -46,7 +46,7 @@ class IamcScenarioFilter(
         return super().join_datapoints(exc, session)
 
 
-class ScenarioFilter(base.ModelFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
+class ScenarioFilter(base.ScenarioFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
     iamc: Optional[Union[IamcScenarioFilter, filters.Boolean]]
 
     def filter_iamc(self, exc, c, v, session=None):

@@ -30,14 +30,16 @@ all_platforms = pytest.mark.parametrize(
         pytest.lazy_fixture("test_sqlite_mp"),
         pytest.lazy_fixture("test_pgsql_mp"),
         pytest.lazy_fixture("test_oracle_mp"),
-        pytest.lazy_fixture("test_api_mp"),
+        pytest.lazy_fixture("test_api_sqlite_mp"),
+        pytest.lazy_fixture("test_api_pgsql_mp"),
     ],
 )
 
-api_platform = pytest.mark.parametrize(
+api_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        pytest.lazy_fixture("test_api_mp"),
+        pytest.lazy_fixture("test_api_sqlite_mp"),
+        pytest.lazy_fixture("test_api_pgsql_mp"),
     ],
 )
 

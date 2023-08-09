@@ -1,3 +1,4 @@
+from contextlib import suppress
 from pathlib import Path
 import rtoml as toml
 
@@ -25,4 +26,9 @@ class Credentials(object):
             "username": username,
             "password": password,
         }
+        self.dump()
+
+    def clear(self, key: str):
+        with suppress(KeyError):
+            del self.credentials[key]
         self.dump()

@@ -32,7 +32,7 @@ class ScenarioRepository(
         from ixmp4.data.db.run.model import Run
 
         if not db.utils.is_joined(exc, Run):
-            exc = exc.join(Run.scenario)
+            exc = exc.join(Run, onclause=Run.scenario__id == Scenario.id)
         if not db.utils.is_joined(exc, Model):
             exc = exc.join(Model, Run.model)
 

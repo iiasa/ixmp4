@@ -138,5 +138,10 @@ def test_oracle_mp():
 
 
 @pytest.fixture
-def test_api_mp():
-    return Platform(_backend=RestTestBackend())
+def test_api_sqlite_mp(test_sqlite_mp):
+    return Platform(_backend=RestTestBackend(test_sqlite_mp.backend))
+
+
+@pytest.fixture
+def test_api_pgsql_mp(test_pgsql_mp):
+    return Platform(_backend=RestTestBackend(test_pgsql_mp.backend))

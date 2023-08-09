@@ -58,6 +58,14 @@ def login(
         )
 
 
+@app.command()
+def logout():
+    if typer.confirm(
+        "Are you sure you want to log out and delete locally saved credentials?"
+    ):
+        settings.credentials.clear("default")
+
+
 try:
     import pytest
 

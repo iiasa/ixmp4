@@ -1,14 +1,21 @@
-from ..utils import api_platform, create_iamc_query_test_data
+from ixmp4.data.api import DataFrame
+from ..utils import (
+    api_platforms,
+    create_iamc_query_test_data,
+    assert_unordered_equality,
+)
 
 
-@api_platform
+@api_platforms
 def test_index_region(test_mp):
     table_endpoint = "iamc/units/?table=True"
     _, test_triple = create_iamc_query_test_data(test_mp)
 
     res = test_mp.backend.client.patch(table_endpoint)
     res2 = test_mp.backend.client.get(table_endpoint)
-    assert res.json() == res2.json()
+    df = DataFrame(**res.json()).to_pandas()
+    df2 = DataFrame(**res2.json()).to_pandas()
+    assert_unordered_equality(df, df2)
 
     ids = [r[0] for r in res.json()["data"]]
     assert len(ids) == 3

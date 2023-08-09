@@ -12,7 +12,6 @@ from datetime import datetime
 
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.engine import Engine
-from sqlalchemy.sql.expression import ColumnCollection, text
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import (
@@ -22,7 +21,7 @@ from sqlalchemy.sql.schema import (
 from sqlalchemy.ext.compiler import compiles
 
 from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
-from sqlalchemy import event
+from sqlalchemy import event, text
 
 import sqlite3
 
@@ -46,9 +45,6 @@ convention = {
     "pk": "pk_%(table_name)s",
 }
 
-DeclMeta: type = type(DeclarativeBase)
-AbstractMeta: type = type(abstract.BaseModel)
-
 
 @event.listens_for(Engine, "connect")
 def set_sqlite_pragma(dbapi_connection, connection_record):
@@ -70,28 +66,6 @@ class BaseModel(DeclarativeBase):
 
     table_prefix: str = ""
     updateable_columns: ClassVar[list[str]] = []
-
-    @declared_attr.directive
-    def columns(cls):
-        return cls.__table__.columns
-
-    @declared_attr.directive
-    def foreign_columns(cls):
-        columns = ColumnCollection()
-        for col in cls.columns:
-            if len(col.foreign_keys) > 0:
-                columns.add(col)
-
-        return columns.as_readonly()
-
-    @declared_attr.directive
-    def primary_key_columns(cls):
-        columns = ColumnCollection()
-        for col in cls.columns:
-            if col.primary_key:
-                columns.add(col)
-
-        return columns.as_readonly()
 
     @declared_attr.directive
     def __tablename__(cls: "BaseModel") -> str:
@@ -132,7 +106,7 @@ class BaseRepository(Generic[ModelType]):
             raise ProgrammingError("Database session is closed.")
 
         self.bundle: Bundle = Bundle(
-            self.model_class.__name__, *self.model_class.columns.values()
+            self.model_class.__name__, *db.utils.get_columns(self.model_class).values()
         )
         super().__init__(*args, **kwargs)
 
@@ -183,15 +157,12 @@ class Deleter(BaseRepository[ModelType]):
 class Selecter(BaseRepository[ModelType]):
     filter_class: type[filters.BaseFilter]
 
-    def check_access(
-        self,
-        ids: set[int],
-        access_type: str = "view",
-    ):
+    def check_access(self, ids: set[int], access_type: str = "view", **kwargs):
         exc = self.select(
             _exc=db.select(db.func.count()).select_from(self.model_class),
             id__in=ids,
             _access_type=access_type,
+            **kwargs,
         )
 
         if not self.session.execute(exc).scalar() == len(ids):
@@ -202,7 +173,8 @@ class Selecter(BaseRepository[ModelType]):
 
     def apply_auth(self, exc: db.sql.Select, access_type: str) -> db.sql.Select:
         if self.backend.auth_context is not None:
-            exc = self.join_auth(exc)
+            if not self.backend.auth_context.is_managed:
+                exc = self.join_auth(exc)
             exc = self.backend.auth_context.apply(access_type, exc)
         return exc
 
@@ -240,7 +212,7 @@ class Selecter(BaseRepository[ModelType]):
 
 class Lister(Selecter[ModelType]):
     def list(self, *args, **kwargs) -> Iterable[ModelType]:
-        exc = self.select(*args, **kwargs)
+        exc = self.select(*args, **kwargs).order_by(self.model_class.id.asc())
         return self.session.execute(exc).scalars().all()
 
 
@@ -254,6 +226,7 @@ class Tabulator(Selecter[ModelType]):
     ) -> pd.DataFrame:
         if _exc is None:
             _exc = self.select(*args, **kwargs)
+        _exc = _exc.order_by(self.model_class.id.asc())
 
         if self.session.bind is not None:
             with self.engine.connect() as con:
@@ -295,20 +268,21 @@ class BulkOperator(Selecter[ModelType]):
     def merge_existing(
         self, df: pd.DataFrame, existing_df: pd.DataFrame
     ) -> pd.DataFrame:
+        columns = db.utils.get_columns(self.model_class)
+        primary_key_columns = db.utils.get_pk_columns(self.model_class)
+        foreign_columns = db.utils.get_foreign_columns(self.model_class)
         on = (
             (
-                set(existing_df.columns)
-                & set(df.columns)
-                & set(self.model_class.columns.keys())
+                set(existing_df.columns) & set(df.columns) & set(columns.keys())
             )  # all cols which exist in both dfs and the db model
             - set(self.model_class.updateable_columns)  # no updateable columns
-            - set(self.model_class.primary_key_columns)  # no pk columns
+            - set(primary_key_columns)  # no pk columns
         )  # = all columns that are constant and provided during creation
 
         ddf = (
             # https://github.com/dask/dask/issues/9710
             dd.from_pandas(df, chunksize=512_000)  # type: ignore
-            .set_index(self.model_class.foreign_columns.keys()[0])
+            .set_index(foreign_columns.keys()[0])
             .merge(
                 existing_df,
                 how="left",
@@ -357,14 +331,15 @@ class BulkOperator(Selecter[ModelType]):
 
     def tabulate_existing(self, df: pd.DataFrame) -> pd.DataFrame:
         exc = self.select()
-        foreign_columns = self.model_class.foreign_columns
+        foreign_columns = db.utils.get_foreign_columns(self.model_class)
+
         for col in foreign_columns:
             foreign_pks = df[col.name].unique().tolist()
             exc = exc.where(col.in_(foreign_pks))
         return self.tabulate(_exc=exc, _raw=True)
 
     def yield_chunks(self, df: pd.DataFrame) -> Iterator[pd.DataFrame]:
-        foreign_columns = self.model_class.foreign_columns
+        foreign_columns = db.utils.get_foreign_columns(self.model_class)
         foreign_names = [c.name for c in foreign_columns]
         remaining_df = df.sort_values(foreign_names)
 
@@ -385,7 +360,8 @@ class BulkUpserter(BulkOperator[ModelType]):
                 self.bulk_upsert_chunk(pd.DataFrame(chunk_df))
 
     def bulk_upsert_chunk(self, df: pd.DataFrame) -> None:
-        df = df[list(set(self.model_class.columns.keys()) & set(df.columns))]
+        columns = db.utils.get_columns(self.model_class)
+        df = df[list(set(columns.keys()) & set(df.columns))]
         existing_df = self.tabulate_existing(df)
         if existing_df.empty:
             self.bulk_insert(df)

@@ -8,6 +8,7 @@ from typing import (
     Generic,
     Any,
 )
+from json.decoder import JSONDecodeError
 
 import httpx
 import pandas as pd
@@ -89,15 +90,19 @@ class BaseRepository(Generic[ModelType]):
     def __init__(self, client: httpx.Client, *args, **kwargs) -> None:
         self.client = client
 
-    def sanitize_params(self, params):
+    def sanitize_params(self, params: dict):
         return {k: params[k] for k in params if params[k] is not None}
 
-    def get_remote_exception(self, res):
-        json_data = res.json()
+    def get_remote_exception(self, res: httpx.Response, status_code: int):
         try:
-            error_name = json_data["error_name"]
+            json = res.json()
+        except (ValueError, JSONDecodeError):
+            raise UnknownApiError(content=res.text, response_status=res.status_code)
+
+        try:
+            error_name = json["error_name"]
         except KeyError:
-            raise UnknownApiError(res.text, status_code=res.status_code)
+            raise UnknownApiError(json_data=json, response_status=status_code)
 
         try:
             exc = registry[error_name]
@@ -106,18 +111,18 @@ class BaseRepository(Generic[ModelType]):
                 "Could not find remote exception in registry. "
                 "Are you sure client and server ixmp versions are compatible?"
             )
-        return exc.from_dict(json_data)
+        return exc.from_dict(json)
 
-    def _request(self, method: str, url: str, *args, **kwargs) -> Mapping | Sequence:
-        res = self.client.request(method, url, *args, **kwargs)
+    def _request(self, method: str, path: str, *args, **kwargs) -> Mapping | Sequence:
+        res = self.client.request(method, path, *args, **kwargs)
 
         if res.status_code >= 400:
-            raise self.get_remote_exception(res)
+            raise self.get_remote_exception(res, res.status_code)
         else:
-            if res.text != "":
+            try:
                 return res.json()
-            else:
-                return {}
+            except (ValueError, JSONDecodeError):
+                return res.text
 
     def _get_by_id(self, id: int, *args, **kwargs) -> Mapping[str, Any]:
         # we can assume this type on create endpoints
@@ -128,9 +133,12 @@ class BaseRepository(Generic[ModelType]):
         params = {}
         params["table"] = table
         join_parameters = kwargs.pop("join_parameters", None)
+        join_runs = kwargs.pop("join_runs", None)
 
         if join_parameters is not None:
             params["join_parameters"] = join_parameters
+        if join_runs is not None:
+            params["join_runs"] = join_runs
 
         if self.enumeration_method == "GET":
             params.update(kwargs)

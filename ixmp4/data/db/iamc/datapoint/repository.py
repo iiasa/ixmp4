@@ -15,6 +15,7 @@ from ixmp4.data.db.unit import Unit
 from ixmp4.data.db.region import Region
 from ixmp4.data.db.run import RunRepository, Run
 from ixmp4.data.db.model import Model
+from ixmp4.data.db.scenario import Scenario
 from ixmp4.core.exceptions import InconsistentIamcType, ProgrammingError
 from ixmp4.core.decorators import check_types
 
@@ -110,10 +111,19 @@ class DataPointRepository(
 
         return exc
 
-    def select_joined_parameters(self):
-        return (
-            select(
-                self.bundle,
+    def select_joined_parameters(self, join_runs=False):
+        _bundle = []
+        if join_runs:
+            _bundle.extend(
+                [
+                    Bundle("Model", Model.name.label("model")),
+                    Bundle("Scenario", Scenario.name.label("scenario")),
+                    Bundle("Run", Run.version),
+                ]
+            )
+
+        _bundle.extend(
+            [
                 Bundle(
                     "Region",
                     Region.name.label("region"),
@@ -126,7 +136,12 @@ class DataPointRepository(
                     "Variable",
                     Variable.name.label("variable"),
                 ),
-            )
+                self.bundle,
+            ]
+        )
+
+        _exc = (
+            select(*_bundle)
             .join(
                 TimeSeries, onclause=self.model_class.time_series__id == TimeSeries.id
             )
@@ -136,15 +151,26 @@ class DataPointRepository(
             .join(Variable, onclause=Measurand.variable__id == Variable.id)
         )
 
+        if join_runs:
+            _exc = (
+                _exc.join(Run, onclause=TimeSeries.run__id == Run.id)
+                .join(Model, onclause=Model.id == Run.model__id)
+                .join(Scenario, onclause=Scenario.id == Run.scenario__id)
+            )
+        return _exc
+
     def select(
         self,
         *,
         join_parameters: bool | None = False,
+        join_runs: bool = False,
         _filter: DataPointFilter | None = None,
         **kwargs: Any
     ) -> db.sql.Select:
         exc = (
-            self.select_joined_parameters() if join_parameters else select(self.bundle)
+            self.select_joined_parameters(join_runs)
+            if join_parameters
+            else select(self.bundle)
         )
 
         return super().select(_exc=exc, _filter=_filter, **kwargs)

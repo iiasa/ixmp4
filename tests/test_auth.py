@@ -2,9 +2,10 @@ import pytest
 import pandas as pd
 
 import ixmp4
-from ixmp4.core.exceptions import Forbidden
+from ixmp4.core.exceptions import Forbidden, InvalidCredentials
 from ixmp4.conf.user import User
 from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig
+from ixmp4.conf.auth import ManagerAuth
 
 from .utils import add_regions, add_units, database_platforms
 
@@ -142,7 +143,7 @@ def test_guards(user, truths, test_sqlite_mp):
         )
         with mp.backend.auth(user, mock_manager, info) as auth:
             assert auth.is_accessible == access
-            assert auth.is_managed == manage
+            assert (auth.is_managed or auth.user.is_superuser) == manage
             assert auth.is_editable == edit
             assert auth.is_viewable == view
 
@@ -248,6 +249,9 @@ def test_filters(model, platform, access, test_mp, test_data_annual):
 
             else:
                 with pytest.raises(Forbidden):
+                    _ = mp.Run(model, "Scenario", version="new")
+
+                with pytest.raises(Forbidden):
                     run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
 
                 with pytest.raises(Forbidden):
@@ -266,3 +270,13 @@ def test_filters(model, platform, access, test_mp, test_data_annual):
             assert mp.runs.tabulate(default_only=False).empty
             assert mp.models.tabulate().empty
             assert mp.scenarios.tabulate().empty
+
+
+def test_invalid_credentials():
+    # TODO: Use testing instance once available.
+    # Using dev for now to reduce load on production environment.
+    # @wronguser cannot exist ("@" is not allowed) and will therefore always be invalid.
+    with pytest.raises(InvalidCredentials):
+        ManagerAuth(
+            "@wronguser", "wrongpwd", "https://api.dev.manager.ece.iiasa.ac.at/v1/"
+        )

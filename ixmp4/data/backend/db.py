@@ -1,12 +1,14 @@
+import logging
 from typing import Generator
 from contextlib import contextmanager
+from functools import lru_cache
 
-from sqlalchemy.engine import create_engine
+from sqlalchemy.engine import create_engine, Engine
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
 from ixmp4.core.exceptions import ProgrammingError
-from ixmp4.conf import PlatformInfo
+from ixmp4.conf.base import PlatformInfo
 from ixmp4.conf.user import User
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
 from ixmp4.data.db import (
@@ -24,6 +26,14 @@ from ixmp4.data.db import (
 
 from ..auth.context import AuthorizationContext
 from .base import Backend
+
+logger = logging.getLogger(__name__)
+
+
+@lru_cache()
+def cached_create_engine(dsn: str) -> Engine:
+    logger.info(f"Creating database engine for {dsn}")
+    return create_engine(dsn)
 
 
 class SqlAlchemyBackend(Backend):
@@ -48,18 +58,21 @@ class SqlAlchemyBackend(Backend):
         self.units = UnitRepository(self)
 
     def make_engine(self, dsn: str):
-        self.engine = create_engine(dsn)
+        self.engine = cached_create_engine(dsn)
         self.session = self.Session(bind=self.engine)
 
     def close(self):
         self.session.close()
-        self.engine.dispose()
 
     @contextmanager
     def auth(
-        self, user: User, manager: ManagerConfig, info: ManagerPlatformInfo
+        self,
+        user: User,
+        manager: ManagerConfig,
+        info: ManagerPlatformInfo,
+        overlap_ok: bool = False,
     ) -> Generator[AuthorizationContext, None, None]:
-        if self.auth_context is not None:
+        if self.auth_context is not None and not overlap_ok:
             raise ProgrammingError("Overlapping auth context.")
 
         self.auth_context = AuthorizationContext(user, manager, info)
