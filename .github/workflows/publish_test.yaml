@@ -35,7 +35,7 @@ jobs:
         run: poetry self add "poetry-dynamic-versioning[plugin]"
       - name: Register test pypi
         run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
-      - if: github.event_name = 'release'
+      - if: github.event_name == 'release'
         name: Build & publish ixmp4 to pypi
         run: poetry publish --build
       - if: github.event_name != 'release'
