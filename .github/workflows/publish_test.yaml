@@ -33,13 +33,13 @@ jobs:
           installer-parallel: true
       - name: Install poetry dynamic versioning plugin
         run: poetry self add "poetry-dynamic-versioning[plugin]"
-      - name: Register test pypi
-        run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
+      - name: Build package
+        run: poetry build
       - if: github.event_name == 'release'
-        name: Build & publish ixmp4 to pypi
-        run: poetry publish --build
+        name: Publish distribution to PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
       - if: github.event_name != 'release'
-        name: Build & publish ixmp4 to testpypi
-        run: poetry publish --build -r test-pypi
-
-
+        name: Publish distribution to Test PyPI
+        uses: pypa/gh-action-pypi-publish@release/v1
+        with:
+          repository-url: https://test.pypi.org/legacy/
