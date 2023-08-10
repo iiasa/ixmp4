@@ -1,7 +1,12 @@
 # copied from https://github.com/marketplace/actions/install-poetry-action
 name: publish (alternative)
 
-on: pull_request
+on:
+  push:
+    tags: ["v*"]
+  release:
+    types: ["published"]
+  workflow_dispatch:
 
 jobs:
   publish:
@@ -28,6 +33,13 @@ jobs:
           installer-parallel: true
       - name: Install poetry dynamic versioning plugin
         run: poetry self add "poetry-dynamic-versioning[plugin]"
-      - name: Build & publish ixmp4
-        run: poetry publish --build --dry-run
+      - name: Register test pypi
+        run: poetry config repositories.test-pypi https://test.pypi.org/legacy/
+      - if: github.event_name = 'release'
+        name: Build & publish ixmp4 to pypi
+        run: poetry publish --build
+      - if: github.event_name != 'release'
+        name: Build & publish ixmp4 to testpypi
+        run: poetry publish --build -r test-pypi
+
 
