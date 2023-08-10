@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: sudo apt-install python-dev
+      - run: sudo apt-get install python-dev
       - uses: actions/checkout@v3
       # publish to pypi
       - if: github.event_name == 'release'
