@@ -9,7 +9,7 @@ jobs:
   build:
     runs-on: ubuntu-latest
     steps:
-      - run: sudo systemctl start postgresql.service
+      - run: sudo apt-get install libpq-dev
       - uses: actions/checkout@v3
       # publish to pypi
       - if: github.event_name == 'release'
