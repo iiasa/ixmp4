@@ -1,26 +1,26 @@
 import logging
-from typing import Generator
 from contextlib import contextmanager
 from functools import lru_cache
+from typing import Generator
 
-from sqlalchemy.engine import create_engine, Engine
+from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
-from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.conf.base import PlatformInfo
-from ixmp4.conf.user import User
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
+from ixmp4.conf.user import User
+from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.db import (
     BaseModel,
     DataPointRepository,
-    RunRepository,
+    ModelRepository,
+    RegionRepository,
     RunMetaEntryRepository,
+    RunRepository,
+    ScenarioRepository,
     TimeSeriesRepository,
     UnitRepository,
-    RegionRepository,
-    ScenarioRepository,
-    ModelRepository,
     VariableRepository,
 )
 
@@ -115,19 +115,6 @@ class PostgresTestBackend(SqlAlchemyBackend):
             PlatformInfo(
                 name="postgres-test",
                 dsn="postgresql://postgres:postgres@localhost/test",
-            ),
-            *args,
-            **kwargs,
-        )
-        self.reset()
-
-
-class OracleTestBackend(SqlAlchemyBackend):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(
-            PlatformInfo(
-                name="oracle-test",
-                dsn="oracle+oracledb://ixmp4_test:ixmp4_test@localhost:1521?service_name=XEPDB1",
             ),
             *args,
             **kwargs,

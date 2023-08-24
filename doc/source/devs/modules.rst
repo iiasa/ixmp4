@@ -38,7 +38,7 @@ Package/Folder Structure
 Architecture
 ------------
 
-ixmp4 provides a Python API, a REST API and a compatibility layer for Oracle, Postgres and SQLite Databases.
+ixmp4 provides a Python API, a REST API and a compatibility layer for Postgres and SQLite Databases.
 The Python API can interact with databases directly or use the REST API of a compatible ixmp4 server instance.
 
 ::
