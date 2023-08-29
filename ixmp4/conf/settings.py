@@ -58,6 +58,13 @@ class Settings(BaseSettings):
         return self._credentials
 
     @property
+    def default_credentials(self):
+        try:
+            return self.credentials.get("default")
+        except KeyError:
+            logger.warning("No default credentials provided.")
+
+    @property
     def toml(self):
         if self._toml is None:
             self.load_toml_config()
@@ -75,24 +82,16 @@ class Settings(BaseSettings):
             self.load_manager_config()
         return self._manager
 
-
     def load_credentials(self):
         credentials_config = self.storage_directory / "credentials.toml"
         credentials_config.touch()
         self._credentials = Credentials(credentials_config)
 
     def get_auth(self):
-
-        try:
-            default_credentials = self.credentials.get("default")
-        except KeyError:
-            logger.warning("No default credentials provided.")
-            default_credentials = None
-
+        default_credentials = self.default_credentials
         if default_credentials is not None:
-            username, password = default_credentials
             try:
-                self._default_auth = ManagerAuth(username, password, self.manager_url)
+                self._default_auth = ManagerAuth(*default_credentials, self.manager_url)
                 return
             except InvalidCredentials:
                 logger.warning(
