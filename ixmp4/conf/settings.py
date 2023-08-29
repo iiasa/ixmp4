@@ -47,16 +47,22 @@ class Settings(BaseSettings):
         self.configure_logging(self.mode)
 
         self._credentials = None
+        self._toml = None
 
         self.get_auth()
         self.load_manager_config()
-        self.load_toml_config()
 
     @property
     def credentials(self):
         if self._credentials is None:
             self.load_credentials()
         return self._credentials
+
+    @property
+    def toml(self):
+        if self._toml is None:
+            self.load_toml_config()
+        return self._toml
 
     def load_credentials(self):
         credentials_config = self.storage_directory / "credentials.toml"
@@ -99,7 +105,7 @@ class Settings(BaseSettings):
 
         toml_config = self.storage_directory / "platforms.toml"
         toml_config.touch()
-        self.toml = TomlConfig(toml_config, toml_user)
+        self._toml = TomlConfig(toml_config, toml_user)
 
     @validator("storage_directory")
     def expand_user(cls, v):
