@@ -94,9 +94,7 @@ class Settings(BaseSettings):
                 self._default_auth = ManagerAuth(*default_credentials, self.manager_url)
                 return
             except InvalidCredentials:
-                logger.warning(
-                    "Failure while requesting management service authentication: Invalid credentials."
-                )
+                logger.warning(f"Invalid credentials for {self.manager_url}.")
             except ConnectError:
                 logger.warning(f"Unable to connect to {self.manager_url}.")
 
