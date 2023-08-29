@@ -46,15 +46,24 @@ class Settings(BaseSettings):
 
         self.configure_logging(self.mode)
 
-        self.load_credentials()
+        self._credentials = None
+
+        self.get_auth()
         self.load_manager_config()
         self.load_toml_config()
+
+    @property
+    def credentials(self):
+        if self._credentials is None:
+            self.load_credentials()
+        return self._credentials
 
     def load_credentials(self):
         credentials_config = self.storage_directory / "credentials.toml"
         credentials_config.touch()
-        self.credentials = Credentials(credentials_config)
+        self._credentials = Credentials(credentials_config)
 
+    def get_auth(self):
         self.default_credentials = None
         self.default_auth = None
         try:
