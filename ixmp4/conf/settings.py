@@ -60,7 +60,7 @@ class Settings(BaseSettings):
         try:
             self.default_credentials = self.credentials.get("default")
         except KeyError:
-            logger.warn("No default credentials provided.")
+            logger.warning("No default credentials provided.")
 
         if self.default_credentials is not None:
             username, password = self.default_credentials
@@ -68,11 +68,11 @@ class Settings(BaseSettings):
                 self.default_auth = ManagerAuth(username, password, self.manager_url)
                 return
             except InvalidCredentials:
-                logger.warn(
+                logger.warning(
                     "Failure while requesting management service authentication: Invalid credentials."
                 )
             except ConnectError:
-                logger.warn(f"Unable to connect to {self.manager_url}.")
+                logger.warning(f"Unable to connect to {self.manager_url}.")
 
         self.default_auth = AnonymousAuth()
 
