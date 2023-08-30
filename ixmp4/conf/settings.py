@@ -97,6 +97,7 @@ class Settings(BaseSettings):
                 logger.warning(f"Invalid credentials for {self.manager_url}.")
             except ConnectError:
                 logger.warning(f"Unable to connect to {self.manager_url}.")
+                return
 
         self._default_auth = AnonymousAuth()
 
@@ -106,8 +107,11 @@ class Settings(BaseSettings):
         )
 
     def load_toml_config(self):
-        toml_user = self.default_auth.get_user()
-        if not toml_user.is_authenticated:
+        if self.default_auth is not None:
+            toml_user = self.default_auth.get_user()
+            if not toml_user.is_authenticated:
+                toml_user = local_user
+        else:  # if no connection to manager
             toml_user = local_user
 
         toml_config = self.storage_directory / "platforms.toml"
