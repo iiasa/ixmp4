@@ -1,25 +1,23 @@
 from datetime import datetime
 
-from fastapi import FastAPI, Request, Depends, Path
-from fastapi.responses import JSONResponse
+from fastapi import Depends, FastAPI, Path, Request
 from fastapi.encoders import jsonable_encoder
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import IxmpError
 
-from . import unit, scenario, region, meta, run, model, docs, deps
+from . import deps, docs, meta, model, region, run, scenario, unit
 from .base import BaseModel
-from .iamc import (
-    datapoint,
-    timeseries,
-    model as iamc_model,
-    scenario as iamc_scenario,
-    region as iamc_region,
-    variable as iamc_variable,
-    unit as iamc_unit,
-)
-
+from .iamc import datapoint
+from .iamc import model as iamc_model
+from .iamc import region as iamc_region
+from .iamc import scenario as iamc_scenario
+from .iamc import timeseries
+from .iamc import unit as iamc_unit
+from .iamc import variable as iamc_variable
+from .optimization import indexset
 
 v1 = FastAPI()
 
@@ -31,20 +29,22 @@ v1.add_middleware(
     allow_headers=["*"],
 )
 
-v1.include_router(run.router)
-v1.include_router(meta.router)
+
 v1.include_router(datapoint.router, prefix="/iamc")
-v1.include_router(timeseries.router, prefix="/iamc")
+v1.include_router(docs.router)
 v1.include_router(iamc_model.router, prefix="/iamc")
 v1.include_router(iamc_scenario.router, prefix="/iamc")
 v1.include_router(iamc_region.router, prefix="/iamc")
 v1.include_router(iamc_unit.router, prefix="/iamc")
 v1.include_router(iamc_variable.router, prefix="/iamc")
-v1.include_router(region.router)
-v1.include_router(scenario.router)
+v1.include_router(indexset.router, prefix="/optimization")
+v1.include_router(meta.router)
 v1.include_router(model.router)
+v1.include_router(region.router)
+v1.include_router(run.router)
+v1.include_router(scenario.router)
+v1.include_router(timeseries.router, prefix="/iamc")
 v1.include_router(unit.router)
-v1.include_router(docs.router)
 
 
 class APIInfo(BaseModel):

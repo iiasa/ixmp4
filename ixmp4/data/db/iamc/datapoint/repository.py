@@ -1,32 +1,30 @@
-from typing import Iterable, Any
-
-from sqlalchemy import select
-from sqlalchemy.orm import Bundle
+from typing import Any, Iterable
 
 import numpy as np
 import pandas as pd
 import pandera as pa
 from pandera.typing import DataFrame, Series
+from sqlalchemy import select
+from sqlalchemy.orm import Bundle
 
 from ixmp4 import db
+from ixmp4.core.decorators import check_types
+from ixmp4.core.exceptions import InconsistentIamcType, ProgrammingError
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
-from ixmp4.data.db.unit import Unit
-from ixmp4.data.db.region import Region
-from ixmp4.data.db.run import RunRepository, Run
 from ixmp4.data.db.model import Model
+from ixmp4.data.db.region import Region
+from ixmp4.data.db.run import Run, RunRepository
 from ixmp4.data.db.scenario import Scenario
-from ixmp4.core.exceptions import InconsistentIamcType, ProgrammingError
-from ixmp4.core.decorators import check_types
+from ixmp4.data.db.unit import Unit
 
-from ..timeseries import TimeSeriesRepository, TimeSeries
-from ..variable import Variable
-from ..measurand import Measurand
 from .. import base
-
-from .model import DataPoint
-from .filter import DataPointFilter
+from ..measurand import Measurand
+from ..timeseries import TimeSeries, TimeSeriesRepository
+from ..variable import Variable
 from . import get_datapoint_model
+from .filter import DataPointFilter
+from .model import DataPoint
 
 
 class RemoveDataPointFrameSchema(pa.SchemaModel):
@@ -90,7 +88,7 @@ class DataPointRepository(
     def __init__(self, *args, **kwargs) -> None:
         backend, *_ = args
         # A different underlying database table
-        # needs to be used for oracle databases.
+        # needed to be used for oracle databases.
         self.model_class = get_datapoint_model(backend.session)
 
         self.timeseries = TimeSeriesRepository(*args, **kwargs)

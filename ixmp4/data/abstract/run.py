@@ -1,8 +1,8 @@
-from typing import Protocol, Iterable, ClassVar
+from typing import ClassVar, Iterable, Protocol
 
 import pandas as pd
 
-from ixmp4.core.exceptions import NoDefaultRunVersion, IxmpError
+from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion
 from ixmp4.data import types
 
 from . import base
@@ -108,7 +108,7 @@ class RunRepository(
 
         Returns
         -------
-        :class:`ixmp4..data.abstract.Run`:
+        :class:`ixmp4.data.abstract.Run`:
             The retrieved or created run.
         """
         try:
@@ -161,7 +161,7 @@ class RunRepository(
 
         Returns
         -------
-        Iterable[:class:`ixmp4..data.abstract.Run`]:
+        Iterable[:class:`ixmp4.data.abstract.Run`]:
             List of runs.
         """
         ...

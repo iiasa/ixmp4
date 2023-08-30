@@ -1,16 +1,17 @@
-from pathlib import Path
-from datetime import datetime
 import contextlib
 import cProfile
 import pstats
+from datetime import datetime
+from pathlib import Path
+
 import pandas as pd
 import pytest
+from sqlalchemy.exc import OperationalError
 
-from sqlalchemy.exc import OperationalError, DatabaseError
 from ixmp4 import Platform
-from ixmp4.data.backend.db import OracleTestBackend, PostgresTestBackend
 from ixmp4.data.abstract import DataPoint
-from ixmp4.data.backend import SqliteTestBackend, RestTestBackend
+from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
+from ixmp4.data.backend.db import PostgresTestBackend
 
 
 def read_test_data(path):
@@ -121,17 +122,6 @@ def test_pgsql_mp():
         pytest.skip(
             f"Cannot connect to PostgreSQL database service, skipping test: {e}"
         )
-
-    yield mp
-    mp.backend.close()
-
-
-@pytest.fixture
-def test_oracle_mp():
-    try:
-        mp = Platform(_backend=OracleTestBackend())
-    except DatabaseError as e:
-        pytest.skip(f"Cannot connect to Oracle database service, skipping test: {e}")
 
     yield mp
     mp.backend.close()

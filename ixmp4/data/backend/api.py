@@ -1,25 +1,27 @@
 import logging
+
 import httpx
 import pandas as pd
 from fastapi.testclient import TestClient
 
-from ixmp4.core.exceptions import UnknownApiError, ImproperlyConfigured
-from ixmp4.conf.auth import BaseAuth, SelfSignedAuth, User
 from ixmp4.conf import settings
-from ixmp4.conf.manager import MockManagerConfig, ManagerPlatformInfo, PlatformInfo
+from ixmp4.conf.auth import BaseAuth, SelfSignedAuth, User
+from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig, PlatformInfo
+from ixmp4.core.exceptions import ImproperlyConfigured, UnknownApiError
 from ixmp4.data.api import (
     DataPointRepository,
-    RunRepository,
-    RunMetaEntryRepository,
-    TimeSeriesRepository,
-    ScenarioRepository,
+    IndexSetRepository,
     ModelRepository,
+    RunMetaEntryRepository,
+    RunRepository,
+    ScenarioRepository,
+    TimeSeriesRepository,
     VariableRepository,
 )
-from ixmp4.data.api.unit import UnitRepository
 from ixmp4.data.api.region import RegionRepository
+from ixmp4.data.api.unit import UnitRepository
 from ixmp4.server import app, v1
-from ixmp4.server.rest import deps, APIInfo
+from ixmp4.server.rest import APIInfo, deps
 
 from .base import Backend
 
@@ -62,9 +64,11 @@ class RestBackend(Backend):
         logger.debug("Server UTC Time: " + api_info.utcnow.strftime("%c"))
         logger.debug("Server Is Managed: " + str(api_info.is_managed))
         if api_info.manager_url is not None:
-            logger.debug("Server Manager URL: " + api_info.manager_url)
-
-            if api_info.manager_url != settings.manager_url and api_info.is_managed:
+            if (
+                api_info.manager_url.rstrip("/") != settings.manager_url.rstrip("/")
+                and api_info.is_managed
+            ):
+                logger.error("Server Manager URL: " + api_info.manager_url)
                 logger.error("Local Manager URL: " + settings.manager_url)
                 raise ImproperlyConfigured(
                     "Trying to connect to a managed REST Platform "
@@ -84,14 +88,15 @@ class RestBackend(Backend):
             return override_auth
 
     def create_repositories(self):
-        self.runs = RunRepository(self.client)
-        self.meta = RunMetaEntryRepository(self.client)
         self.iamc.datapoints = DataPointRepository(self.client)
         self.iamc.timeseries = TimeSeriesRepository(self.client)
         self.iamc.variables = VariableRepository(self.client)
-        self.regions = RegionRepository(self.client)
-        self.scenarios = ScenarioRepository(self.client)
+        self.meta = RunMetaEntryRepository(self.client)
         self.models = ModelRepository(self.client)
+        self.optimization.indexsets = IndexSetRepository(self.client)
+        self.regions = RegionRepository(self.client)
+        self.runs = RunRepository(self.client)
+        self.scenarios = ScenarioRepository(self.client)
         self.units = UnitRepository(self.client)
 
 

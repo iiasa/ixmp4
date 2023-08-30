@@ -31,9 +31,11 @@ pydantic = "^1.10.5"
 python = "~3.10"
 python-dotenv = "^0.19.0"
 requests = "^2.27.1"
-rtoml = "^0.8.0"
 typer = "^0.4.0"
+toml = "^0.10.2"
 psycopg2 = "^2.9.7"
+self = "^2020.12.3"
+poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.0.1"}
 
 [tool.poetry.group.docs]
 optional = true
@@ -59,7 +61,7 @@ optional = true
 black = "^23.1.0"
 flake8 = "^6.0.0"
 flake8-bugbear = "^21.9.2"
-mypy = "^1.0.1"
+mypy = "~1.0.1"
 flake8-pyproject = "^1.2.2"
 ptvsd = "^4.3.2"
 pytest = "^6.2.5"
@@ -67,6 +69,13 @@ pytest-benchmark = "^3.4.1"
 pytest-cov = "^2.12.1"
 pytest-lazy-fixture = "^0.6.3"
 snakeviz = "^2.1.1"
+types-toml = "^0.10.8.7"
+
+[tool.poetry.group.tutorial]
+optional = true
+
+[tool.poetry.group.tutorial.dependencies]
+ipykernel = "^6.23.3"
 
 [tool.poetry.scripts]
 ixmp4 = "ixmp4.__main__:app"
