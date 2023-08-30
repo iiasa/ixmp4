@@ -92,14 +92,16 @@ class Settings(BaseSettings):
         if default_credentials is not None:
             try:
                 self._default_auth = ManagerAuth(*default_credentials, self.manager_url)
-                return
+                logger.info(
+                    f"Connecting as user '{self._default_auth.get_user().username}'."
+                )
             except InvalidCredentials:
                 logger.warning(f"Invalid credentials for {self.manager_url}.")
             except ConnectError:
                 logger.warning(f"Unable to connect to {self.manager_url}.")
-                return
 
-        self._default_auth = AnonymousAuth()
+        else:
+            self._default_auth = AnonymousAuth()
 
     def load_manager_config(self):
         self._manager = ManagerConfig(
