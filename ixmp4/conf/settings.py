@@ -88,10 +88,11 @@ class Settings(BaseSettings):
         self._credentials = Credentials(credentials_config)
 
     def get_auth(self):
-        default_credentials = self.default_credentials
-        if default_credentials is not None:
+        if self.default_credentials is not None:
             try:
-                self._default_auth = ManagerAuth(*default_credentials, self.manager_url)
+                self._default_auth = ManagerAuth(
+                    *self.default_credentials, self.manager_url
+                )
                 logger.info(
                     f"Connecting as user '{self._default_auth.get_user().username}'."
                 )
