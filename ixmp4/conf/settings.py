@@ -62,7 +62,7 @@ class Settings(BaseSettings):
         try:
             return self.credentials.get("default")
         except KeyError:
-            logger.warning("No default credentials provided.")
+            pass
 
     @property
     def toml(self):
