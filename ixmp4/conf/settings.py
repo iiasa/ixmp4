@@ -46,51 +46,80 @@ class Settings(BaseSettings):
 
         self.configure_logging(self.mode)
 
-        self.load_credentials()
-        self.load_manager_config()
-        self.load_toml_config()
+        self._credentials = None
+        self._toml = None
+        self._default_auth = None
+        self._manager = None
+
+    @property
+    def credentials(self):
+        if self._credentials is None:
+            self.load_credentials()
+        return self._credentials
+
+    @property
+    def default_credentials(self):
+        try:
+            return self.credentials.get("default")
+        except KeyError:
+            pass
+
+    @property
+    def toml(self):
+        if self._toml is None:
+            self.load_toml_config()
+        return self._toml
+
+    @property
+    def default_auth(self):
+        if self._default_auth is None:
+            self.get_auth()
+        return self._default_auth
+
+    @property
+    def manager(self):
+        if self._manager is None:
+            self.load_manager_config()
+        return self._manager
 
     def load_credentials(self):
         credentials_config = self.storage_directory / "credentials.toml"
         credentials_config.touch()
-        self.credentials = Credentials(credentials_config)
+        self._credentials = Credentials(credentials_config)
 
-        self.default_credentials = None
-        self.default_auth = None
-        try:
-            self.default_credentials = self.credentials.get("default")
-        except KeyError:
-            logger.warn("No default credentials provided.")
-
+    def get_auth(self):
         if self.default_credentials is not None:
-            username, password = self.default_credentials
             try:
-                self.default_auth = ManagerAuth(username, password, self.manager_url)
-                return
-            except InvalidCredentials:
-                logger.warn(
-                    "Failure while requesting management service authentication: Invalid credentials."
+                self._default_auth = ManagerAuth(
+                    *self.default_credentials, self.manager_url
                 )
+                logger.info(
+                    f"Connecting as user '{self._default_auth.get_user().username}'."
+                )
+            except InvalidCredentials:
+                logger.warning(f"Invalid credentials for {self.manager_url}.")
             except ConnectError:
-                logger.warn(f"Unable to connect to {self.manager_url}.")
+                logger.warning(f"Unable to connect to {self.manager_url}.")
 
-        self.default_auth = AnonymousAuth()
+        else:
+            self._default_auth = AnonymousAuth()
 
     def load_manager_config(self):
-        self.manager = None
-        if self.default_auth is not None:
-            self.manager = ManagerConfig(
-                self.manager_url, self.default_auth, remote=True
-            )
+        self._manager = ManagerConfig(
+            self.manager_url, self.default_auth, remote=True
+        )
 
     def load_toml_config(self):
-        toml_user = self.default_auth.get_user()
-        if not toml_user.is_authenticated:
+        if self.default_auth is not None:
+            toml_user = self.default_auth.get_user()
+            if not toml_user.is_authenticated:
+                toml_user = local_user
+        else:  # if no connection to manager
             toml_user = local_user
 
         toml_config = self.storage_directory / "platforms.toml"
         toml_config.touch()
-        self.toml = TomlConfig(toml_config, toml_user)
+        self._toml = TomlConfig(toml_config, toml_user)
 
     @validator("storage_directory")
     def expand_user(cls, v):
