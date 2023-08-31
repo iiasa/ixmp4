@@ -9,12 +9,6 @@ on:
 
 jobs:
   publish:
-    strategy:
-      matrix:
-        python-version:
-        - "3.10"  # Earliest version supported by ixmp4
-        - "3.11"  # Latest version supported by ixmp4
-
     runs-on: ubuntu-latest
     permissions:
       id-token: write
@@ -28,7 +22,7 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: ${{ matrix.python-version }}
+          python-version: "3.11"
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
