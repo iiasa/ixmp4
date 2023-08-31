@@ -1,12 +1,12 @@
 import re
+
 import pandas as pd
 
 from ixmp4 import db
-from ixmp4.db import utils
-from ixmp4.data.db import Model
-
-from ixmp4.conf.user import User
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
+from ixmp4.conf.user import User
+from ixmp4.data.db import Model
+from ixmp4.db import utils
 
 
 class AuthorizationContext(object):

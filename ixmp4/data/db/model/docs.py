@@ -3,7 +3,7 @@ from typing import Iterable
 from ixmp4.data import abstract
 
 from .. import base
-from ..docs import docs_model, BaseDocsRepository
+from ..docs import BaseDocsRepository, docs_model
 from .model import Model
 
 ModelDocs = docs_model(Model)

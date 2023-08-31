@@ -1,7 +1,7 @@
 from functools import wraps
-from typing import Protocol, Callable, TYPE_CHECKING
+from typing import TYPE_CHECKING, Callable, Protocol
 
-from ixmp4.core.exceptions import ProgrammingError, Forbidden
+from ixmp4.core.exceptions import Forbidden, ProgrammingError
 
 if TYPE_CHECKING:
     from ..backend.db import SqlAlchemyBackend

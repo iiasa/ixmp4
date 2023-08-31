@@ -1,4 +1,4 @@
-from typing import Protocol, Iterable, Mapping, TypeVar, Generic
+from typing import Generic, Iterable, Mapping, Protocol, TypeVar
 
 import pandas as pd
 

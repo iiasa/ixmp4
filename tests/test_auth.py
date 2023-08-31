@@ -1,11 +1,11 @@
-import pytest
 import pandas as pd
+import pytest
 
 import ixmp4
-from ixmp4.core.exceptions import Forbidden, InvalidCredentials
-from ixmp4.conf.user import User
-from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig
 from ixmp4.conf.auth import ManagerAuth
+from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig
+from ixmp4.conf.user import User
+from ixmp4.core.exceptions import Forbidden, InvalidCredentials
 
 from .utils import add_regions, add_units, database_platforms
 

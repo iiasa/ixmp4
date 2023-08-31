@@ -3,8 +3,8 @@ from typing import Iterable
 import pandas as pd
 
 from ixmp4 import db
-from ixmp4.data.auth.decorators import guard
 from ixmp4.data.abstract import iamc as abstract
+from ixmp4.data.auth.decorators import guard
 
 from .. import base
 from .docs import VariableDocsRepository

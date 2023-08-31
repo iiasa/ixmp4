@@ -1,5 +1,5 @@
 # flake8: noqa
 
-from .base import Backend
 from .api import RestBackend, RestTestBackend
+from .base import Backend
 from .db import SqlAlchemyBackend, SqliteTestBackend

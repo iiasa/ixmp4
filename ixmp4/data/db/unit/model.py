@@ -1,7 +1,7 @@
 from typing import ClassVar
 
-from ixmp4.data import abstract, types
 from ixmp4 import db
+from ixmp4.data import abstract, types
 
 from .. import base
 

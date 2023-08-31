@@ -1,8 +1,9 @@
-from typing import Iterable, ClassVar
+from typing import ClassVar, Iterable
 
 import pandas as pd
 
 from ixmp4.data import abstract
+
 from . import base
 from .model import Model
 from .scenario import Scenario

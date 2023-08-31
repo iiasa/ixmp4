@@ -1,18 +1,18 @@
 import enum
-import httpx
-import re
-import os
 import logging
+import os
+import re
 from functools import lru_cache
 
+import httpx
 import pandas as pd
 from pydantic import Field
 
-from ixmp4.core.exceptions import PlatformNotFound, ManagerApiError
+from ixmp4.core.exceptions import ManagerApiError, PlatformNotFound
 
 from .auth import BaseAuth
-from .user import User
 from .base import Config, PlatformInfo
+from .user import User
 
 logger = logging.getLogger(__name__)
 

@@ -1,14 +1,13 @@
-from ixmp4.db import utils, filters
-
-from ixmp4.data.db.iamc.variable import Variable
-from ixmp4.data.db.iamc.timeseries import TimeSeries
-from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
-from ixmp4.data.db.unit import Unit
-from ixmp4.data.db.region import Region
+from ixmp4.data.db.iamc.measurand import Measurand
+from ixmp4.data.db.iamc.timeseries import TimeSeries
+from ixmp4.data.db.iamc.variable import Variable
 from ixmp4.data.db.model import Model
-from ixmp4.data.db.scenario import Scenario
+from ixmp4.data.db.region import Region
 from ixmp4.data.db.run import Run
+from ixmp4.data.db.scenario import Scenario
+from ixmp4.data.db.unit import Unit
+from ixmp4.db import filters, utils
 
 
 class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):

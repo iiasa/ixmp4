@@ -1,11 +1,11 @@
-from fastapi import APIRouter, Depends, Query, Body
+from fastapi import APIRouter, Body, Depends, Query
 
-from ixmp4.data.backend import Backend
-from ixmp4.data.db.scenario.filter import IamcScenarioFilter
 from ixmp4.data import api
+from ixmp4.data.backend.base import Backend
+from ixmp4.data.db.scenario.filter import IamcScenarioFilter
 
-from ..base import BaseModel
 from .. import deps
+from ..base import BaseModel
 
 router: APIRouter = APIRouter(
     prefix="/scenarios",

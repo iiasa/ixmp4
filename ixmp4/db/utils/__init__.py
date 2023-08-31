@@ -1,7 +1,8 @@
 from contextlib import suppress
-from sqlalchemy import sql, inspect
-from sqlalchemy.sql import ColumnCollection
+
+from sqlalchemy import inspect, sql
 from sqlalchemy.orm import Mapper
+from sqlalchemy.sql import ColumnCollection
 
 from ixmp4.core.exceptions import ProgrammingError
 

@@ -7,8 +7,8 @@ from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
-from .model import Model
 from .docs import ModelDocsRepository
+from .model import Model
 
 
 class ModelRepository(

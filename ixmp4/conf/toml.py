@@ -1,12 +1,13 @@
+import json
 from pathlib import Path
 from typing import Any
+
 import toml
-import json
 
 from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
 
-from .user import User
 from .base import Config, PlatformInfo
+from .user import User
 
 
 class TomlPlatformInfo(PlatformInfo):

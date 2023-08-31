@@ -1,8 +1,9 @@
-import pytest
 import pandas as pd
-from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
+import pytest
 
 from ixmp4.core.exceptions import BadFilterArguments
+
+from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
 
 
 @all_platforms
