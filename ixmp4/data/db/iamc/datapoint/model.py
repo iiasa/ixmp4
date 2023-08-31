@@ -4,6 +4,7 @@ from sqlalchemy.ext.declarative import declared_attr
 
 from ixmp4 import db
 from ixmp4.data import abstract
+
 from .. import base
 
 
@@ -44,20 +45,5 @@ class UniversalDataPoint(DataPoint):
     )
 
 
-class OracleDataPoint(DataPoint):
-    @declared_attr.directive
-    def __tablename__(cls) -> str:
-        return "iamc_datapoint_oracle"
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "time_series__id", "step_year", "step_category", "step_datetime"
-        ),
-    )
-
-
 def get_datapoint_model(session) -> type[DataPoint]:
-    if session.bind.dialect.name == "oracle":
-        return OracleDataPoint
-    else:
-        return UniversalDataPoint
+    return UniversalDataPoint

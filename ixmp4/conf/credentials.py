@@ -1,6 +1,6 @@
 from contextlib import suppress
 from pathlib import Path
-import rtoml as toml
+import toml
 
 
 class Credentials(object):

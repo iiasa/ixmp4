@@ -1,13 +1,9 @@
 # flaske8: noqa
-from .variable import Variable, VariableRepository
-from .timeseries import TimeSeries, TimeSeriesRepository
-from .measurand import Measurand, MeasurandRepository
-from .datapoint import (
+from .datapoint import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint,
     DataPoint,
-    UniversalDataPoint,
-    OracleDataPoint,
-    #    AnnualDataPoint,
-    #    SubAnnualDataPoint,
-    #    CategoricalDataPoint,
     DataPointRepository,
+    UniversalDataPoint,
 )
+from .measurand import Measurand, MeasurandRepository
+from .timeseries import TimeSeries, TimeSeriesRepository
+from .variable import Variable, VariableRepository

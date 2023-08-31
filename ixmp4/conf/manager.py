@@ -101,7 +101,7 @@ class ManagerConfig(Config):
             params = hashabledict(params)
 
         if json is not None:
-            if type(json) == dict:
+            if type(json) is dict:
                 json = hashabledict(json)
             else:
                 json = tuple(json)

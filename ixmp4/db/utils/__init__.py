@@ -1,6 +1,7 @@
 from contextlib import suppress
 from sqlalchemy import sql, inspect
 from sqlalchemy.sql import ColumnCollection
+from sqlalchemy.orm import Mapper
 
 from ixmp4.core.exceptions import ProgrammingError
 
@@ -19,7 +20,7 @@ def is_joined(exc: sql.Select, model):
 
 
 def get_columns(model_class: type) -> ColumnCollection:
-    mapper = inspect(model_class)
+    mapper: Mapper | None = inspect(model_class)
     if mapper is not None:
         return mapper.selectable.columns
     else:

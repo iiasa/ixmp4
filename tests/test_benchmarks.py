@@ -1,13 +1,11 @@
 """This module only contains benchmarks, no assertions are made to validate the results."""
-import pytest
 import pandas as pd
+import pytest
 
 from ixmp4 import NotFound
 
-
-from .utils import add_regions, add_units, all_platforms
 from .conftest import TEST_DATA_BIG
-
+from .utils import add_regions, add_units, all_platforms
 
 # skip tests if performance test file not found
 if TEST_DATA_BIG is None:
@@ -55,95 +53,94 @@ def tabulate_datapoints(test_mp, **kwargs):
 
 
 @all_platforms
-def test_add_datapoints_full_benchmark(test_mp, profiled, benchmark, test_data_big):
-    """Benchmarks a full insert of `test_data_big`."""
+class TestBenchmarks:
+    def test_add_datapoints_full_benchmark(
+        self, test_mp, profiled, benchmark, test_data_big
+    ):
+        """Benchmarks a full insert of `test_data_big`."""
 
-    def setup():
-        add_regions(test_mp, test_data_big["region"].unique())
-        add_units(test_mp, test_data_big["unit"].unique())
-        return (test_mp,), {}
+        def setup():
+            add_regions(test_mp, test_data_big["region"].unique())
+            add_units(test_mp, test_data_big["unit"].unique())
+            return (test_mp,), {}
 
-    def run(mp):
-        with profiled():
-            add_datapoints(mp, test_data_big)
+        def run(mp):
+            with profiled():
+                add_datapoints(mp, test_data_big)
 
-    benchmark.pedantic(run, setup=setup)
+        benchmark.pedantic(run, setup=setup)
 
+    def test_add_datapoints_half_unchanged_benchmark(
+        self, test_mp, profiled, benchmark, test_data_big
+    ):
+        """Benchmarks a full insert of `test_data_big` on a half-filled database."""
 
-@all_platforms
-def test_add_datapoints_half_unchanged_benchmark(
-    test_mp, profiled, benchmark, test_data_big
-):
-    """Benchmarks a full insert of `test_data_big` on a half-filled database."""
+        def setup():
+            add_regions(test_mp, test_data_big["region"].unique())
+            add_units(test_mp, test_data_big["unit"].unique())
+            add_datapoints(test_mp, test_data_big.head(len(test_data_big) // 2))
 
-    def setup():
-        add_regions(test_mp, test_data_big["region"].unique())
-        add_units(test_mp, test_data_big["unit"].unique())
-        add_datapoints(test_mp, test_data_big.head(len(test_data_big) // 2))
+            return (test_mp,), {}
 
-        return (test_mp,), {}
+        def run(mp):
+            with profiled():
+                add_datapoints(mp, test_data_big)
 
-    def run(mp):
-        with profiled():
-            add_datapoints(mp, test_data_big)
+        benchmark.pedantic(run, setup=setup)
 
-    benchmark.pedantic(run, setup=setup)
+    def test_add_datapoints_half_insert_half_update_benchmark(
+        self, test_mp, profiled, benchmark, test_data_big
+    ):
+        """Benchmarks a full insert of `test_data_big` with changed values on a half-filled database."""
 
+        def setup():
+            add_regions(test_mp, test_data_big["region"].unique())
+            add_units(test_mp, test_data_big["unit"].unique())
+            add_datapoints(test_mp, test_data_big.head(len(test_data_big) // 2))
+            data = test_data_big.copy()
+            data["value"] = -9999
+            return (test_mp, data), {}
 
-@all_platforms
-def test_add_datapoints_half_insert_half_update_benchmark(
-    test_mp, profiled, benchmark, test_data_big
-):
-    """Benchmarks a full insert of `test_data_big` with changed values on a half-filled database."""
+        def run(mp, data):
+            with profiled():
+                add_datapoints(mp, data)
 
-    def setup():
-        add_regions(test_mp, test_data_big["region"].unique())
-        add_units(test_mp, test_data_big["unit"].unique())
-        add_datapoints(test_mp, test_data_big.head(len(test_data_big) // 2))
-        data = test_data_big.copy()
-        data["value"] = -9999
-        return (test_mp, data), {}
+            ret = tabulate_datapoints(mp).drop(columns=["id"])
+            assert ret["value"].unique() == [-9999]
 
-    def run(mp, data):
-        with profiled():
-            add_datapoints(mp, data)
+        benchmark.pedantic(run, setup=setup)
 
-        ret = tabulate_datapoints(mp).drop(columns=["id"])
-        assert ret["value"].unique() == [-9999]
+    def test_remove_datapoints_benchmark(
+        self, test_mp, profiled, benchmark, test_data_big
+    ):
+        """Benchmarks a full removal of `test_data_big` from a filled database."""
 
-    benchmark.pedantic(run, setup=setup)
+        def setup():
+            add_regions(test_mp, test_data_big["region"].unique())
+            add_units(test_mp, test_data_big["unit"].unique())
+            add_datapoints(test_mp, test_data_big)
+            data = test_data_big.drop(columns=["value"])
+            return (test_mp, data), {}
 
+        def run(mp, data):
+            with profiled():
+                remove_datapoints(mp, data)
 
-@all_platforms
-def test_remove_datapoints_benchmark(test_mp, profiled, benchmark, test_data_big):
-    """Benchmarks a full removal of `test_data_big` from a filled database."""
+        benchmark.pedantic(run, setup=setup)
 
-    def setup():
-        add_regions(test_mp, test_data_big["region"].unique())
-        add_units(test_mp, test_data_big["unit"].unique())
-        add_datapoints(test_mp, test_data_big)
-        data = test_data_big.drop(columns=["value"])
-        return (test_mp, data), {}
+    def test_tabulate_datapoints_benchmark(
+        self, test_mp, profiled, benchmark, test_data_big
+    ):
+        """Benchmarks a full retrieval of `test_data_big` from a filled database."""
 
-    def run(mp, data):
-        with profiled():
-            remove_datapoints(mp, data)
+        def setup():
+            add_regions(test_mp, test_data_big["region"].unique())
+            add_units(test_mp, test_data_big["unit"].unique())
+            add_datapoints(test_mp, test_data_big)
+            return (test_mp,), {}
 
-    benchmark.pedantic(run, setup=setup)
+        def run(mp):
+            with profiled():
+                tabulate_datapoints(mp)
 
-
-@all_platforms
-def test_tabulate_datapoints_benchmark(test_mp, profiled, benchmark, test_data_big):
-    """Benchmarks a full retrieval of `test_data_big` from a filled database."""
-
-    def setup():
-        add_regions(test_mp, test_data_big["region"].unique())
-        add_units(test_mp, test_data_big["unit"].unique())
-        add_datapoints(test_mp, test_data_big)
-        return (test_mp,), {}
-
-    def run(mp):
-        with profiled():
-            tabulate_datapoints(mp)
-
-    benchmark.pedantic(run, setup=setup)
+        benchmark.pedantic(run, setup=setup)

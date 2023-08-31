@@ -1,9 +1,11 @@
-from typing import Protocol, Iterable
+from typing import Iterable, Protocol
 
 import pandas as pd
+
 from ixmp4.data import types
-from ..docs import DocsRepository
+
 from .. import base
+from ..docs import DocsRepository
 
 
 class Variable(base.BaseModel, Protocol):
@@ -39,7 +41,7 @@ class VariableRepository(
 
         Raises
         ------
-        :class:`ixmp4.core.exceptions.VariableNotUnique`:
+        :class:`ixmp4.data.abstract.Variable.NotUnique`:
             If the variable with `name` is not unique.
 
         Returns

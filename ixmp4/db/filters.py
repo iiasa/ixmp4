@@ -1,9 +1,9 @@
-from typing import Iterable, Optional, Any
+from typing import Any, Iterable, Optional
 
-from pydantic import BaseModel, Field, Extra, ValidationError
+from pydantic import BaseModel, Extra, Field, ValidationError
 
 from ixmp4 import db
-from ixmp4.core.exceptions import ProgrammingError, BadFilterArguments
+from ixmp4.core.exceptions import BadFilterArguments, ProgrammingError
 
 
 def exact(c, v):
@@ -181,7 +181,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         try:
             super().__init__(**data)
         except ValidationError as e:
-            raise BadFilterArguments(model=e.model, errors=e.errors)
+            raise BadFilterArguments(model=e.model.__name__, errors=e.errors())
 
     def join(self, exc: db.sql.Select, session=None) -> db.sql.Select:
         return exc

@@ -35,29 +35,33 @@ migrations before committing them!
 # flake8: noqa
 
 from sqlalchemy import (
-    sql,
-    UniqueConstraint,
     ForeignKey,
-    Sequence,
     Index,
-    select,
-    exists,
+    Sequence,
+    UniqueConstraint,
     delete,
-    update,
-    insert,
+    exists,
     func,
+    insert,
     or_,
+    select,
+    sql,
+    update,
 )
+from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.orm import (
-    relationship,
-    backref,
+    Relationship,
     Session,
     aliased,
-    Relationship,
+    backref,
     mapped_column,
+    relationship,
 )
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.types import *
+
 from . import utils
 
 Column = mapped_column
+JsonType = JSON()
+JsonType = JsonType.with_variant(JSONB(), "postgresql")

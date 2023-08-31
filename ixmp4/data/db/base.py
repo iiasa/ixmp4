@@ -1,49 +1,35 @@
+import sqlite3
+from datetime import datetime
 from typing import (
+    TYPE_CHECKING,
     Any,
+    ClassVar,
+    Generic,
     Iterable,
     Iterator,
     Tuple,
-    Generic,
     TypeVar,
-    ClassVar,
-    TYPE_CHECKING,
 )
-from datetime import datetime
 
-from sqlalchemy.engine.interfaces import Dialect
-from sqlalchemy.engine import Engine
-from sqlalchemy.exc import IntegrityError, NoResultFound
-from sqlalchemy.orm.session import Session
-from sqlalchemy.sql.schema import (
-    MetaData,
-    Identity,
-)
-from sqlalchemy.ext.compiler import compiles
-
-from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
-from sqlalchemy import event, text
-
-import sqlite3
-
-import pandas as pd
 import dask.dataframe as dd
 import numpy as np
+import pandas as pd
+from sqlalchemy import event, text
+from sqlalchemy.engine import Engine
+from sqlalchemy.engine.interfaces import Dialect
+from sqlalchemy.exc import IntegrityError, NoResultFound
+from sqlalchemy.ext.compiler import compiles
+from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
+from sqlalchemy.orm.session import Session
+from sqlalchemy.sql.schema import Identity, MetaData
 
 from ixmp4 import db
-from ixmp4.db import filters
+from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
 from ixmp4.data import abstract, types
-from ixmp4.core.exceptions import ProgrammingError, IxmpError, Forbidden
+from ixmp4.db import filters
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
-
-convention = {
-    "ix": "ix_%(column_0_label)s",
-    "uq": "uq_%(table_name)s_%(column_0_N_name)s",
-    "ck": "ck_%(table_name)s_%(constraint_name)s",
-    "fk": "fk_%(table_name)s_%(column_0_N_name)s_%(referred_table_name)s",
-    "pk": "pk_%(table_name)s",
-}
 
 
 @event.listens_for(Engine, "connect")
@@ -82,7 +68,15 @@ class BaseModel(DeclarativeBase):
         return self.__class__.__name__
 
 
-BaseModel.metadata = MetaData(naming_convention=convention)
+BaseModel.metadata = MetaData(
+    naming_convention={
+        "ix": "ix_%(column_0_label)s",
+        "uq": "uq_%(table_name)s_%(column_0_N_name)s",
+        "ck": "ck_%(table_name)s_%(constraint_name)s",
+        "fk": "fk_%(table_name)s_%(column_0_N_name)s_%(referred_table_name)s",
+        "pk": "pk_%(table_name)s",
+    }
+)
 
 
 ModelType = TypeVar("ModelType", bound=BaseModel)
@@ -252,8 +246,6 @@ class BulkOperator(Selecter[ModelType]):
 
     @property
     def max_list_length(self) -> int:
-        if self.dialect.name == "oracle":
-            return 1000
         return 50_000
 
     def tabulate(

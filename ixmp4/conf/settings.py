@@ -1,17 +1,18 @@
-import os
 import logging
 import logging.config
-from typing import Literal
+import os
 from pathlib import Path
-from httpx import ConnectError
+from typing import Literal
 
-from pydantic import BaseSettings, Field, validator, HttpUrl, Extra
+from httpx import ConnectError
+from pydantic import BaseSettings, Extra, Field, HttpUrl, validator
 
 from ixmp4.core.exceptions import InvalidCredentials
+
+from .auth import AnonymousAuth, ManagerAuth
 from .credentials import Credentials
-from .toml import TomlConfig
 from .manager import ManagerConfig
-from .auth import ManagerAuth, AnonymousAuth
+from .toml import TomlConfig
 from .user import local_user
 
 logger = logging.getLogger(__name__)
@@ -105,9 +106,7 @@ class Settings(BaseSettings):
             self._default_auth = AnonymousAuth()
 
     def load_manager_config(self):
-        self._manager = ManagerConfig(
-            self.manager_url, self.default_auth, remote=True
-        )
+        self._manager = ManagerConfig(self.manager_url, self.default_auth, remote=True)
 
     def load_toml_config(self):
         if self.default_auth is not None:
