@@ -4,7 +4,7 @@ from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
-from ..docs import docs_model, BaseDocsRepository
+from ..docs import BaseDocsRepository, docs_model
 from .model import Unit
 
 UnitDocs = docs_model(Unit)

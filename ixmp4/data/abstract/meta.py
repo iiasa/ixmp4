@@ -1,12 +1,12 @@
 from enum import Enum
-from typing import Iterable, Protocol, ClassVar
+from typing import ClassVar, Iterable, Protocol
 
 import pandas as pd
-from pydantic import StrictBool, StrictInt, StrictFloat, StrictStr
+from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
 
 from ixmp4.data import types
-from . import base
 
+from . import base
 
 # as long as all of these are `Strict` the order does not matter
 StrictMetaValue = StrictBool | StrictInt | StrictFloat | StrictStr

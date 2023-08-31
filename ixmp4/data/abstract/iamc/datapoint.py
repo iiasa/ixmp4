@@ -1,9 +1,10 @@
 import enum
-from typing import Protocol, Iterable
+from typing import Iterable, Protocol
 
 import pandas as pd
 
 from ixmp4.data import types
+
 from .. import base
 
 

@@ -1,5 +1,5 @@
-from ixmp4.data.backend import Backend
 from ixmp4.data.abstract import BaseModel
+from ixmp4.data.backend import Backend
 
 
 class BaseFacade(object):

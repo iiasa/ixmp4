@@ -1,19 +1,15 @@
 import logging
-from typing import Callable, AsyncGenerator
+from typing import AsyncGenerator, Callable
 
 import jwt
-from fastapi import Path, Header, Depends
+from fastapi import Depends, Header, Path
 
-from ixmp4.data.backend.db import SqlAlchemyBackend
 from ixmp4.conf import settings
-from ixmp4.conf.user import local_user, anonymous_user, User
-from ixmp4.conf.manager import ManagerConfig
 from ixmp4.conf.auth import SelfSignedAuth
-from ixmp4.core.exceptions import (
-    InvalidToken,
-    Forbidden,
-    PlatformNotFound,
-)
+from ixmp4.conf.manager import ManagerConfig
+from ixmp4.conf.user import User, anonymous_user, local_user
+from ixmp4.core.exceptions import Forbidden, InvalidToken, PlatformNotFound
+from ixmp4.data.backend.db import SqlAlchemyBackend
 
 logger = logging.getLogger(__name__)
 manager = ManagerConfig(settings.manager_url, SelfSignedAuth(settings.secret_hs256))

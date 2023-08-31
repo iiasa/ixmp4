@@ -1,6 +1,7 @@
-from typing import Iterable, Type, ClassVar
+from typing import ClassVar, Iterable, Type
 
 from ixmp4.data import abstract
+
 from . import base
 
 

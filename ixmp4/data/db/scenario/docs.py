@@ -1,4 +1,4 @@
-from ..docs import docs_model, BaseDocsRepository
+from ..docs import BaseDocsRepository, docs_model
 from .model import Scenario
 
 

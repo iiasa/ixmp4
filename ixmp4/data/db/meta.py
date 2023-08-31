@@ -1,19 +1,16 @@
-from typing import Optional, Iterable, Union, ClassVar, cast
+from typing import ClassVar, Iterable, Optional, Union, cast
 
-import pandera as pa
 import pandas as pd
+import pandera as pa
 from pandera.typing import DataFrame, Series
-
 from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
-from ixmp4.data import abstract, types
-from ixmp4.data.db.run import Run
-from ixmp4.data.db.model import Model
-from ixmp4.core.exceptions import (
-    InvalidRunMeta,
-)
 from ixmp4.core.decorators import check_types
+from ixmp4.core.exceptions import InvalidRunMeta
+from ixmp4.data import abstract, types
+from ixmp4.data.db.model import Model
+from ixmp4.data.db.run import Run
 
 from ..auth.decorators import guard
 from . import base

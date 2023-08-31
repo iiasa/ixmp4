@@ -12,6 +12,7 @@ This will start ixmp4’s asgi server. Check
 """
 
 from fastapi import FastAPI
+
 from .rest import v1
 
 app = FastAPI()
