@@ -34,8 +34,6 @@ requests = "^2.27.1"
 typer = "^0.4.0"
 toml = "^0.10.2"
 psycopg2 = "^2.9.7"
-self = "^2020.12.3"
-poetry-dynamic-versioning = {extras = ["plugin"], version = "^1.0.1"}
 
 [tool.poetry.group.docs]
 optional = true
