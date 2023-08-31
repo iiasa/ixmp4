@@ -14,6 +14,9 @@ Copyright © 2023 IIASA - Energy, Climate, and Environment Program (ECE)
 .. |python| image:: https://img.shields.io/badge/python-3.10-blue?logo=python&logoColor=white
    :target: https://github.com/iiasa/ixmp4
 
+.. |python| image:: https://img.shields.io/badge/python-3.11-blue?logo=python&logoColor=white
+   :target: https://github.com/iiasa/ixmp4
+
 Overview
 --------
 
