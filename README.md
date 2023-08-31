@@ -30,7 +30,7 @@ For installing the latest version directly from GitHub do the following.
 
 ### Requirements
 
-This project requires Python 3.10 and poetry (>= 1.2).
+This project requires Python 3.10 (or higher) and poetry (>= 1.2).
 
 ### Setup
 
