@@ -1,12 +1,13 @@
 import tempfile
-import pytest
-from typing import Protocol
 from pathlib import Path
+from typing import Protocol
 
-from ixmp4.conf.toml import TomlConfig
+import pytest
+
 from ixmp4.conf.credentials import Credentials
+from ixmp4.conf.toml import TomlConfig
 from ixmp4.conf.user import local_user
-from ixmp4.core.exceptions import PlatformNotUnique, PlatformNotFound
+from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
 
 
 @pytest.fixture(scope="class")

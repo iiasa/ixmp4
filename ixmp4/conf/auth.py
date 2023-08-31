@@ -1,6 +1,6 @@
 import logging
-from uuid import uuid4
 from datetime import datetime, timedelta
+from uuid import uuid4
 
 import httpx
 import jwt

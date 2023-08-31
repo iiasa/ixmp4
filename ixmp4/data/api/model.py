@@ -1,9 +1,10 @@
-from typing import Iterable, ClassVar
 from datetime import datetime
+from typing import ClassVar, Iterable
 
 import pandas as pd
 
 from ixmp4.data import abstract
+
 from . import base
 from .docs import Docs, DocsRepository
 

@@ -1,12 +1,12 @@
-from typing import Optional
 import json
+from typing import Optional
 
-import uvicorn  # type: ignore[import]
 import typer
-
+import uvicorn  # type: ignore[import]
 from fastapi.openapi.utils import get_openapi
-from ixmp4.server import v1
+
 from ixmp4.conf import settings
+from ixmp4.server import v1
 
 from . import utils
 

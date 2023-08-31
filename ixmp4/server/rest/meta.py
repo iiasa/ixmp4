@@ -1,10 +1,10 @@
 from fastapi import APIRouter, Depends, Path, Query
 
+from ixmp4.data import abstract, api
 from ixmp4.data.backend import Backend
-from ixmp4.data import api, abstract
 
-from .base import BaseModel
 from . import deps
+from .base import BaseModel
 
 router: APIRouter = APIRouter(
     prefix="/meta",

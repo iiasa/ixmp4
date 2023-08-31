@@ -1,8 +1,8 @@
-from typing import Protocol, Iterable, _ProtocolMeta, ClassVar
+from typing import ClassVar, Iterable, Protocol, _ProtocolMeta
 
 import pandas as pd
 
-from ixmp4.core.exceptions import IxmpError, NotUnique, NotFound, DeletionPrevented
+from ixmp4.core.exceptions import DeletionPrevented, IxmpError, NotFound, NotUnique
 from ixmp4.data import types
 
 

@@ -1,8 +1,9 @@
-from typing import Iterable, Mapping, ClassVar
+from typing import ClassVar, Iterable, Mapping
 
 import pandas as pd
 
 from ixmp4.data import abstract
+
 from .. import base
 
 

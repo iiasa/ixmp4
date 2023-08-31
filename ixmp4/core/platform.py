@@ -30,15 +30,16 @@ from functools import partial
 from ixmp4.conf import settings
 from ixmp4.conf.auth import BaseAuth
 from ixmp4.core.exceptions import PlatformNotFound
-from ixmp4.data.backend import SqlAlchemyBackend, RestBackend, Backend
+from ixmp4.data.backend import Backend, RestBackend, SqlAlchemyBackend
 
-from .run import Run as RunModel, RunRepository
+from .iamc import IamcRepository
+from .meta import MetaRepository
 from .model import ModelRepository
+from .region import RegionRepository
+from .run import Run as RunModel
+from .run import RunRepository
 from .scenario import ScenarioRepository
 from .unit import UnitRepository
-from .region import RegionRepository
-from .meta import MetaRepository
-from .iamc import IamcRepository
 
 
 class Platform(object):

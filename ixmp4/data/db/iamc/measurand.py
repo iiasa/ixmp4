@@ -1,16 +1,16 @@
-from typing import Iterable, ClassVar
-import pandas as pd
+from typing import ClassVar, Iterable
 
+import pandas as pd
 from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
 from ixmp4.data import types
-from ixmp4.data.auth.decorators import guard
 from ixmp4.data.abstract import iamc as abstract
+from ixmp4.data.auth.decorators import guard
 
+from ..unit import Unit
 from . import base
 from .variable import Variable
-from ..unit import Unit
 
 
 class Measurand(base.BaseModel):

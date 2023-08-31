@@ -1,7 +1,8 @@
-from typing import Protocol, Iterable
+from typing import Iterable, Protocol
+
+from ixmp4.data import types
 
 from . import base
-from ixmp4.data import types
 
 
 class Docs(base.BaseModel, Protocol):

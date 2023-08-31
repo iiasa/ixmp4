@@ -1,5 +1,6 @@
 from contextlib import suppress
 from pathlib import Path
+
 import toml
 
 

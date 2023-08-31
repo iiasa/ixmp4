@@ -1,9 +1,12 @@
-from typing import Iterable, Optional, Union
 from datetime import datetime
+from typing import Iterable, Optional, Union
+
 import pandas as pd
 
-from ixmp4.data.abstract import Region as RegionModel, Docs as DocsModel
-from .base import BaseModelFacade, BaseFacade
+from ixmp4.data.abstract import Docs as DocsModel
+from ixmp4.data.abstract import Region as RegionModel
+
+from .base import BaseFacade, BaseModelFacade
 
 
 class Region(BaseModelFacade):

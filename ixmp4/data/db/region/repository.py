@@ -1,15 +1,14 @@
 from typing import Iterable
 
 import pandas as pd
-
 from sqlalchemy.exc import NoResultFound
 
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
-from .model import Region
 from .docs import RegionDocsRepository
+from .model import Region
 
 
 class RegionRepository(

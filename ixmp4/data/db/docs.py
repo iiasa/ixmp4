@@ -1,6 +1,6 @@
 from typing import ClassVar, Iterable, TypeVar
-import pandas as pd
 
+import pandas as pd
 from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db

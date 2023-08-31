@@ -2,7 +2,7 @@ import pytest
 
 from ixmp4 import DataPoint, InconsistentIamcType
 
-from ..utils import add_regions, add_units, assert_unordered_equality, all_platforms
+from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
 
 
 @all_platforms
