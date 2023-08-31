@@ -1,11 +1,13 @@
-from typing import Iterable, ClassVar
 from collections import UserDict
+from typing import ClassVar, Iterable
 
 import pandas as pd
 
 from ixmp4.data.abstract import Run as RunModel
-from .base import BaseModelFacade, BaseFacade
+
+from .base import BaseFacade, BaseModelFacade
 from .iamc import IamcData
+from .optimization import OptimizationData
 
 
 class Run(BaseModelFacade):
@@ -41,6 +43,7 @@ class Run(BaseModelFacade):
 
         self.iamc = IamcData(_backend=self.backend, run=self._model)
         self._meta = RunMetaFacade(_backend=self.backend, run=self._model)
+        self.optimization = OptimizationData(_backend=self.backend, run=self._model)
 
     @property
     def model(self):

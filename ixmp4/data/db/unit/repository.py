@@ -1,18 +1,15 @@
 from typing import Iterable
 
 import pandas as pd
-
 from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
-from ixmp4.core.exceptions import OperationNotSupported
 
 from .. import base
-
-from .model import Unit
 from .docs import UnitDocsRepository
+from .model import Unit
 
 
 class UnitRepository(
@@ -33,10 +30,6 @@ class UnitRepository(
         self.docs = UnitDocsRepository(*args, **kwargs)
 
     def add(self, name: str) -> Unit:
-        if self.dialect.name == "oracle" and name.strip() == "":
-            raise OperationNotSupported(
-                "On ORACLE databases an empty string is not allowed as a unit's name."
-            )
         unit = Unit(name=name, **self.get_creation_info())
         self.session.add(unit)
         return unit

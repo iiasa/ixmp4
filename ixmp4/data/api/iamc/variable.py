@@ -1,12 +1,12 @@
-from typing import Iterable, ClassVar
 from datetime import datetime
+from typing import ClassVar, Iterable
 
 import pandas as pd
 
 from ixmp4.data import abstract
-from ..docs import Docs, DocsRepository
 
 from .. import base
+from ..docs import Docs, DocsRepository
 
 
 class Variable(base.BaseModel):
@@ -23,9 +23,7 @@ class Variable(base.BaseModel):
 
 class VariableDocsRepository(DocsRepository):
     model_class = Docs
-    prefix = (
-        "docs/iamc/variables/"  # TODO: what does this do that the below prefix doesn't?
-    )
+    prefix = "docs/iamc/variables/"
 
 
 class VariableRepository(

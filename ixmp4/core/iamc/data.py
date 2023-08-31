@@ -5,11 +5,11 @@ import pandera as pa
 from pandera.typing import Series
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
+from ixmp4.data.abstract import Run
 
 from ..base import BaseFacade
-from .repository import IamcRepository
-from ..run import RunModel as Run
 from ..utils import substitute_type
+from .repository import IamcRepository
 
 
 def to_dimensionless(df: pd.DataFrame) -> pd.DataFrame:

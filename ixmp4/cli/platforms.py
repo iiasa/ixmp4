@@ -1,6 +1,6 @@
 import re
-from typing import Optional
 from pathlib import Path
+from typing import Optional
 
 import typer
 
@@ -11,7 +11,6 @@ from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.db.utils import alembic, sqlite
 
 from . import utils
-
 
 app = typer.Typer()
 
@@ -27,7 +26,7 @@ def validate_name(name: str):
 def validate_dsn(dsn: str | None):
     if dsn is None:
         return None
-    match = re.match(r"^(sqlite|postgresql|oracle|https|http)(\:\/\/)", dsn)
+    match = re.match(r"^(sqlite|postgresql|https|http)(\:\/\/)", dsn)
     if match is None:
         raise typer.BadParameter(
             "Platform dsn must be a valid URl or database connection string."

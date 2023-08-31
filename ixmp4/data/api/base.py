@@ -1,24 +1,15 @@
-from typing import (
-    Mapping,
-    Sequence,
-    Iterable,
-    Type,
-    ClassVar,
-    TypeVar,
-    Generic,
-    Any,
-)
 from json.decoder import JSONDecodeError
+from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, TypeVar
 
 import httpx
 import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
 
 from ixmp4.core.exceptions import (
-    registry,
     ImproperlyConfigured,
-    UnknownApiError,
     IxmpError,
+    UnknownApiError,
+    registry,
 )
 
 
@@ -175,10 +166,10 @@ class Retriever(BaseRepository[ModelType]):
 
         try:
             [obj] = list_
-        except ValueError:
+        except ValueError as e:
             raise self.model_class.NotFound(
                 f"Expected exactly one result, got {len(list_)} instead."
-            )
+            ) from e
         return self.model_class(**obj)
 
 
