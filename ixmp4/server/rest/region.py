@@ -1,7 +1,7 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
 
 from ixmp4.data import api
-from ixmp4.data.backend import Backend
+from ixmp4.data.backend.base import Backend
 from ixmp4.data.db.region.filter import RegionFilter
 
 from . import deps

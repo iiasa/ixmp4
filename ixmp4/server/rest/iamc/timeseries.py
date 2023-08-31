@@ -3,7 +3,7 @@ from typing import Any
 from fastapi import APIRouter, Depends, Query, Request, Response
 
 from ixmp4.data import api
-from ixmp4.data.backend import Backend
+from ixmp4.data.backend.base import Backend
 
 from .. import deps
 from ..base import BaseModel

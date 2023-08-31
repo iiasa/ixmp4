@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from pydantic import StrictInt, StrictStr
 
 from ixmp4.data import api
-from ixmp4.data.backend import Backend
+from ixmp4.data.backend.base import Backend
 from ixmp4.data.db.filters.optimizationindexset import OptimizationIndexSetFilter
 
 from .. import deps
