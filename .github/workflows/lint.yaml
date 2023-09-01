@@ -1,10 +1,10 @@
 # copied from https://github.com/marketplace/actions/install-poetry-action
-name: mypy
+name: lint
 
 on: pull_request
 
 jobs:
-  mypy:
+  lint:
     runs-on: ubuntu-latest
     steps:
       #----------------------------------------------
@@ -16,7 +16,7 @@ jobs:
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: "3.11"
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -50,7 +50,19 @@ jobs:
       #----------------------------------------------
       #              run test suite
       #----------------------------------------------
+      - name: Run black
+        run: |
+          source .venv/bin/activate
+          black --check .
+      - name: Run isort
+        run: |
+          source .venv/bin/activate
+          isort --check-only .
+      - name: Run flake8
+        run: |
+          source .venv/bin/activate
+          flake8 .
       - name: Run mypy
         run: |
           source .venv/bin/activate
-          mypy .
+          mypy .      
