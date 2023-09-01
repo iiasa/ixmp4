@@ -207,7 +207,7 @@ alembic revision -m "<message>" --autogenerate
 ```
 
 You will have to run all migrations before being able to create new ones in the development database.
-Be sure to run `black` on newly created migrations!
+Be sure to run `black` and `isort` on newly created migrations!
 
 ## Tests
 
@@ -317,8 +317,8 @@ It is overwritten on the fly by the poetry-dynamic-versioning plugin.
 
 1. Check that the GitHub action "Publish ixmp4" was executed correctly and that the
    release candidate was successfully uploaded to TestPyPI. The address will be
-   https://test.pypi.org/project/imxp4/<release version>rc<N>. E.g.:
-   <https://test.pypi.org/project/imxp4/0.2.0rc1/>
+   https://test.pypi.org/project/ixmp4/<release version>rc<N>. E.g.:
+   <https://test.pypi.org/project/ixmp4/0.2.0rc1/>
 1. Visit https://github.com/iiasa/ixmp4/releases and mark the new release by creating
    the tag and release simultaneously. The name of the tag is v<release version>
    (without the rc<N>).
