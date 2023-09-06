@@ -50,7 +50,7 @@ optional = true
 
 [tool.poetry.group.server.dependencies]
 gunicorn = "^20.1.0"
-uvicorn = { extras = ["standard"], version = "^0.15.0" }
+uvicorn = { version = "^0.17.0", extras = ["standard"]}
 
 [tool.poetry.group.dev]
 optional = true
