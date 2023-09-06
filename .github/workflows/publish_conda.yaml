@@ -9,7 +9,7 @@ jobs:
       - name: Publish conda package from PyPI package
         uses: actions/conda-skeleton-publish@v1
         with:
-          pypi_package: "driptorch"
+          pypi_package: "ixmp4"
           python_version: "3.10"
           upload_channel: "conda-forge"
           access_token: ${{ secrets.ANACONDA_TOKEN }}
