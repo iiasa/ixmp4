@@ -31,12 +31,13 @@ jobs:
       #       check-out repo and set-up python
       #----------------------------------------------
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up python
         id: setup-python
         uses: actions/setup-python@v4
         with:
           python-version: ${{ matrix.python-version }}
+      - run: sudo apt-get install python-dev
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
