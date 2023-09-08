@@ -20,7 +20,6 @@ PyJWT = "^2.4.0"
 SQLAlchemy = { extras = ["mypy"], version = "^2.0.7" }
 SQLAlchemy-Utils = "^0.40.0"
 alembic = "^1.10.2"
-oracledb = "^1.2.2"
 dask = "^2023.4.0"
 fastapi = "^0.94.0"
 httpx = { extras = ["http2"], version = "^0.23.3" }
