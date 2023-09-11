@@ -87,8 +87,7 @@ class DataPointRepository(
 
     def __init__(self, *args, **kwargs) -> None:
         backend, *_ = args
-        # A different underlying database table
-        # needed to be used for oracle databases.
+        # A different table was used for ORACLE databases (deprecated since ixmp4 0.3.0)
         self.model_class = get_datapoint_model(backend.session)
 
         self.timeseries = TimeSeriesRepository(*args, **kwargs)
