@@ -1,11 +1,12 @@
 from typing import Any
-from fastapi import APIRouter, Depends, Query, Response, Request
 
-from ixmp4.data.backend import Backend
+from fastapi import APIRouter, Depends, Query, Request, Response
+
 from ixmp4.data import api
-from ..base import BaseModel
-from .. import deps
+from ixmp4.data.backend.base import Backend
 
+from .. import deps
+from ..base import BaseModel
 
 router: APIRouter = APIRouter(
     prefix="/timeseries",

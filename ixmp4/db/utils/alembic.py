@@ -1,9 +1,8 @@
-from sqlalchemy import create_engine
-from alembic.script import ScriptDirectory
+from alembic import command
 from alembic.config import Config
 from alembic.migration import MigrationContext
-from alembic import command
-
+from alembic.script import ScriptDirectory
+from sqlalchemy import create_engine
 
 alembic_config = Config("alembic.ini")
 

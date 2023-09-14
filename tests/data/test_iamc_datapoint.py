@@ -1,5 +1,8 @@
-import pytest
 import pandas as pd
+import pytest
+
+from ixmp4.core.exceptions import BadFilterArguments
+
 from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
 
 
@@ -56,3 +59,21 @@ def test_filtering(test_mp, filter, exp_filter):
     if exp_filter is not None:
         exp = exp[getattr(exp[exp_filter[0]], exp_filter[1])(exp_filter[2])]
     assert_unordered_equality(obs, exp, check_like=True)
+
+
+@all_platforms
+@pytest.mark.parametrize(
+    "filter",
+    [
+        {"unit": "test"},
+        {"dne": {"dne": "test"}},
+        {"region": {"dne": "test"}},
+        {"region": {"name__in": False}},
+        {"run": {"default_only": "test"}},
+    ],
+)
+def test_invalid_filters(test_mp, filter):
+    with pytest.raises(BadFilterArguments):
+        test_mp.backend.iamc.datapoints.tabulate(**filter)
+    with pytest.raises(BadFilterArguments):
+        test_mp.backend.iamc.datapoints.list(**filter)

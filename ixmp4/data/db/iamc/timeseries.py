@@ -1,29 +1,25 @@
-from typing import Any, Mapping, Iterable
+from typing import Any, Iterable, Mapping
 
-import pandas as pd
 import numpy as np
-
+import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Bundle
 
 from ixmp4 import db
-from ixmp4.db import utils
-from ixmp4.data import types, abstract
+from ixmp4.data import abstract, types
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.iamc.measurand import Measurand
+from ixmp4.db import utils
 
-from ..timeseries import (
-    TimeSeries as BaseTimeSeries,
-    TimeSeriesRepository as BaseTimeSeriesRepository,
-)
+from ..region import Region, RegionRepository
+from ..run import RunRepository
+from ..timeseries import TimeSeries as BaseTimeSeries
+from ..timeseries import TimeSeriesRepository as BaseTimeSeriesRepository
+from ..unit import Unit, UnitRepository
 from ..utils import map_existing
-
 from . import base
 from .measurand import MeasurandRepository
 from .variable import Variable
-from ..run import RunRepository
-from ..unit import Unit, UnitRepository
-from ..region import Region, RegionRepository
 
 
 class TimeSeries(BaseTimeSeries, base.BaseModel):

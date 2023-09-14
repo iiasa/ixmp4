@@ -1,12 +1,13 @@
+import json
 from pathlib import Path
 from typing import Any
-import rtoml as toml
-import json
+
+import toml
 
 from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
 
-from .user import User
 from .base import Config, PlatformInfo
+from .user import User
 
 
 class TomlPlatformInfo(PlatformInfo):
@@ -29,7 +30,6 @@ class TomlConfig(Config):
     def dump(self):
         obj = {}
         for c in self.platforms.values():
-            # needed for rtoml to serialize `Path` objects
             dict_ = json.loads(c.json())
             dict_.pop("user", None)
             name = dict_.pop("name")

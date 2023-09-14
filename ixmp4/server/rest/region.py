@@ -1,12 +1,12 @@
-from fastapi import APIRouter, Depends, Query, Body, Path
+from fastapi import APIRouter, Body, Depends, Path, Query
 
-from ixmp4.data.backend import Backend
 from ixmp4.data import api
+from ixmp4.data.backend.base import Backend
 from ixmp4.data.db.region.filter import RegionFilter
 
+from . import deps
 from .base import BaseModel
 from .decorators import autodoc
-from . import deps
 
 router: APIRouter = APIRouter(
     prefix="/regions",

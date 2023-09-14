@@ -5,22 +5,14 @@ on: pull_request
 
 jobs:
   test:
+    strategy:
+      matrix:
+        python-version:
+        - "3.10"  # Earliest version supported by ixmp4
+        - "3.11"  # Latest version supported by ixmp4
+
     runs-on: ubuntu-latest
     services:
-      oracle:
-        image: gvenzl/oracle-xe:latest
-        env:
-          ORACLE_RANDOM_PASSWORD: true
-          APP_USER: ixmp4_test
-          APP_USER_PASSWORD: ixmp4_test
-        ports:
-          - 1521:1521
-        options: >-
-          --health-cmd healthcheck.sh
-          --health-interval 10s
-          --health-timeout 5s
-          --health-retries 10
-
       postgres:
         image: postgres
         env:
@@ -39,12 +31,12 @@ jobs:
       #       check-out repo and set-up python
       #----------------------------------------------
       - name: Check out repository
-        uses: actions/checkout@v3
+        uses: actions/checkout@v4
       - name: Set up python
         id: setup-python
         uses: actions/setup-python@v4
         with:
-          python-version: "3.10"
+          python-version: ${{ matrix.python-version }}
       #----------------------------------------------
       #  -----  install & configure poetry  -----
       #----------------------------------------------
@@ -70,11 +62,6 @@ jobs:
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root --with dev,server
-      #----------------------------------------------
-      # install oracle client
-      #----------------------------------------------
-      - name: Setup Oracledb client
-        uses: GoodManWEN/oracle-client-action@main
       #----------------------------------------------
       # install your root project, if required
       #----------------------------------------------

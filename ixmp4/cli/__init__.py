@@ -11,15 +11,15 @@ Check the CLI help command on how to use it:
 """
 
 from typing import Optional
+
 import typer
 
-
-from ixmp4.core.exceptions import InvalidCredentials
-from ixmp4.conf.auth import ManagerAuth
-from ixmp4.conf import settings
 from ixmp4.cli import platforms
-from . import utils
+from ixmp4.conf import settings
+from ixmp4.conf.auth import ManagerAuth
+from ixmp4.core.exceptions import InvalidCredentials
 
+from . import utils
 
 app = typer.Typer()
 app.add_typer(platforms.app, name="platforms")

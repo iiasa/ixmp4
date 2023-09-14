@@ -1,11 +1,11 @@
 from typing import Optional, Union
 
 from ixmp4 import db
-from ixmp4.db import filters, utils
+from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.timeseries import TimeSeries
 from ixmp4.data.db.run.model import Run
-from ixmp4.data.db import filters as base
+from ixmp4.db import filters, utils
 
 from . import Model
 

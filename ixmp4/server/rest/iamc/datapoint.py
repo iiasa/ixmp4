@@ -1,14 +1,13 @@
-from fastapi import APIRouter, Depends, Query, Body
+from fastapi import APIRouter, Body, Depends, Query
 
 from ixmp4.core.exceptions import BadRequest
-from ixmp4.data.backend import Backend
 from ixmp4.data import api
+from ixmp4.data.backend.base import Backend
 from ixmp4.data.db.iamc.datapoint.filter import DataPointFilter
-from ..decorators import autodoc
 
 from .. import deps
 from ..base import BaseModel
-
+from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
     prefix="/datapoints",

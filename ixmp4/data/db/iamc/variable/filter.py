@@ -1,10 +1,10 @@
-from ixmp4.db import filters, utils
+from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.timeseries import TimeSeries
-from ixmp4.data.db import filters as base
+from ixmp4.db import filters, utils
 
-from . import Variable
 from ..measurand import Measurand
+from . import Variable
 
 
 class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):

@@ -1,11 +1,8 @@
 # flake8: noqa
 
-from .timeseries import TimeSeries, TimeSeriesRepository
-from .datapoint import (
+from .datapoint import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint,
     DataPoint,
-    #    AnnualDataPoint,
-    #    SubAnnualDataPoint,
-    #    CategoricalDataPoint,
     DataPointRepository,
 )
+from .timeseries import TimeSeries, TimeSeriesRepository
 from .variable import Variable, VariableRepository

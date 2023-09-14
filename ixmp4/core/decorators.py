@@ -1,4 +1,5 @@
 import functools
+
 import pandera as pa
 from pandera.errors import SchemaError as PanderaSchemaError
 

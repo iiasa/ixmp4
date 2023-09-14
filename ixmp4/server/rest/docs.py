@@ -1,8 +1,10 @@
 from fastapi import APIRouter, Depends, Path, Query
-from ixmp4.data.backend import Backend
+
 from ixmp4.data import api
-from .base import BaseModel
+from ixmp4.data.backend.base import Backend
+
 from . import deps
+from .base import BaseModel
 
 router: APIRouter = APIRouter(
     prefix="/docs",
@@ -133,3 +135,27 @@ def delete_variables(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.iamc.variables.docs.delete(dimension_id)
+
+
+@router.get("/optimization/indexsets/", response_model=list[api.Docs])
+def list_indexsets(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.indexsets.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/indexsets/", response_model=api.Docs)
+def set_indexsets(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.indexsets.docs.set(**docs.dict())
+
+
+@router.delete("/optimization/indexsets/{dimension_id}/")
+def delete_indexsets(
+    dimension_id: int = Path(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.indexsets.docs.delete(dimension_id)

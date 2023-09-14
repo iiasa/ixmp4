@@ -1,10 +1,11 @@
-from typing import Iterable, ClassVar
-
 from datetime import datetime
+from typing import ClassVar, Iterable
+
 import pandas as pd
 
-from ixmp4.data.abstract import Variable as VariableModel, Docs as DocsModel
-from ixmp4.core.base import BaseModelFacade, BaseFacade
+from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.data.abstract import Docs as DocsModel
+from ixmp4.data.abstract import Variable as VariableModel
 
 
 class Variable(BaseModelFacade):

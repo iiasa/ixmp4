@@ -1,12 +1,11 @@
-from typing import Protocol, Iterable
+from typing import Iterable, Protocol
 
 import pandas as pd
 
-
-from .docs import DocsRepository
-
 from ixmp4.data import types
+
 from . import base
+from .docs import DocsRepository
 
 
 class Scenario(base.BaseModel, Protocol):

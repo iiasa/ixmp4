@@ -1,5 +1,5 @@
-from typing import Generator
 from pathlib import Path
+from typing import Generator
 
 from ixmp4.conf import settings
 

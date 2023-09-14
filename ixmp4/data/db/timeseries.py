@@ -1,15 +1,14 @@
-from typing import Any, Iterable, Mapping, TypeVar, Generic, ClassVar
+from typing import Any, ClassVar, Generic, Iterable, Mapping, TypeVar
 
 import pandas as pd
-
+from sqlalchemy.ext.declarative import AbstractConcreteBase
 from sqlalchemy.orm.decl_api import declared_attr
 from sqlalchemy.orm.exc import NoResultFound
-from sqlalchemy.ext.declarative import AbstractConcreteBase
 
 from ixmp4 import db
 from ixmp4.data import abstract
-from ixmp4.data.db.run import Run
 from ixmp4.data.db.model import Model
+from ixmp4.data.db.run import Run
 
 from ..auth.decorators import guard
 from . import base

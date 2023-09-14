@@ -207,7 +207,7 @@ alembic revision -m "<message>" --autogenerate
 ```
 
 You will have to run all migrations before being able to create new ones in the development database.
-Be sure to run `black` on newly created migrations!
+Be sure to run `black` and `isort` on newly created migrations!
 
 ## Tests
 
@@ -223,15 +223,13 @@ Or use `pytest` directly:
 py.test
 ```
 
-### Running tests with PostgreSQL and ORACLE
+### Running tests with PostgreSQL
 
-In order to run the local tests with PostgreSQL or ORACLE you'll need to have a local
-instance of this database running.
-The easiest way to do this using a docker container.
+In order to run the local tests with PostgreSQL you'll need to have a local instance
+of this database running. The easiest way to do this using a docker container.
 
-For PostgreSQL using the official [`postgres`](https://hub.docker.com/_/postgres) image
-is recommended. Get the latest version on you local machine using (having docker
-installed):
+Using the official [`postgres`](https://hub.docker.com/_/postgres) image is recommended.
+Get the latest version on you local machine using (having docker installed):
 
 ```console
 docker pull postgres
@@ -243,17 +241,11 @@ and run the container with:
 docker run -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=test -p 5432:5432 -d postgres
 ```
 
-for ORACLE you can use the the [`gvenzl/oracle-xe`](https://hub.docker.com/r/gvenzl/oracle-xe) image:
-
-```console
-docker pull gvenzl/oracle-xe
-docker run -e ORACLE_RANDOM_PASSWORD=true -e APP_USER=ixmp4_test -e APP_USER_PASSWORD=ixmp4_test -p 1521:1521 -d gvenzl/oracle-xe
-```
-
-please note that you'll have to wait for a few seconds for the databases to be up and
+Please note that you'll have to wait for a few seconds for the databases to be up and
 running.
 
-The `tests/docker-compose.yml` file might help you accomplish all of this with a single command for your convenience.
+The `tests/docker-compose.yml` file might help you accomplish all of this with a single
+command for your convenience.
 
 ```console
 docker-compose -f tests/docker-compose.yml up
@@ -261,7 +253,8 @@ docker-compose -f tests/docker-compose.yml up
 
 ### Profiling
 
-Some tests will output profiler information to the `.profiles/` directory (using the `profiled` fixture). You can analyze these using `snakeviz`. For example:
+Some tests will output profiler information to the `.profiles/` directory (using the
+`profiled` fixture). You can analyze these using `snakeviz`. For example:
 
 ```bash
 snakeviz .profiles/test_add_datapoints_full_benchmark.prof
@@ -317,8 +310,8 @@ It is overwritten on the fly by the poetry-dynamic-versioning plugin.
 
 1. Check that the GitHub action "Publish ixmp4" was executed correctly and that the
    release candidate was successfully uploaded to TestPyPI. The address will be
-   https://test.pypi.org/project/imxp4/<release version>rc<N>. E.g.:
-   <https://test.pypi.org/project/imxp4/0.2.0rc1/>
+   https://test.pypi.org/project/ixmp4/<release version>rc<N>. E.g.:
+   <https://test.pypi.org/project/ixmp4/0.2.0rc1/>
 1. Visit https://github.com/iiasa/ixmp4/releases and mark the new release by creating
    the tag and release simultaneously. The name of the tag is v<release version>
    (without the rc<N>).

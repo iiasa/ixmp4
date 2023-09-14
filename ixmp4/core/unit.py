@@ -1,9 +1,11 @@
-from typing import Iterable
 from datetime import datetime
+from typing import Iterable
+
 import pandas as pd
 
-from ixmp4.data.abstract import Unit as UnitModel, Docs as DocsModel
-from ixmp4.core.base import BaseModelFacade, BaseFacade
+from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.data.abstract import Docs as DocsModel
+from ixmp4.data.abstract import Unit as UnitModel
 
 
 def to_dimensionless(name):

@@ -1,18 +1,17 @@
 from typing import Iterable
 
 import pandas as pd
-
 from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
-from ixmp4.db import utils
+from ixmp4.core.exceptions import Forbidden, IxmpError, NoDefaultRunVersion
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
-from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion, Forbidden
+from ixmp4.db import utils
 
+from .. import base
 from ..model import Model, ModelRepository
 from ..scenario import Scenario, ScenarioRepository
-from .. import base
 from .model import Run
 
 
