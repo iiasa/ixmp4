@@ -101,10 +101,10 @@ lookup_map: dict[type, dict] = {
     String: {
         "__root__": (str, exact),
         "in": (Iterable[str], in_),
-        "like": (Iterable[str], like),
-        "ilike": (Iterable[str], ilike),
-        "notlike": (Iterable[str], notlike),
-        "notilike": (Iterable[str], notilike),
+        "like": (str, like),
+        "ilike": (str, ilike),
+        "notlike": (str, notlike),
+        "notilike": (str, notilike),
     },
 }
 

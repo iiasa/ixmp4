@@ -59,6 +59,9 @@ class TestDataModel:
     def test_filter_model(self, test_mp):
         run1, _ = create_filter_test_data(test_mp)
 
+        res = test_mp.backend.models.tabulate(name__like="Model %")
+        assert sorted(res["name"].tolist()) == ["Model 1", "Model 2"]
+
         res = test_mp.backend.models.tabulate(
             iamc={
                 "region": {"name": "Region 1"},
