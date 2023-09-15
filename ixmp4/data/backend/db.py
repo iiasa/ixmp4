@@ -48,6 +48,11 @@ class SqlAlchemyBackend(Backend):
         self.make_repositories()
 
     def make_engine(self, dsn: str):
+        if dsn.startswith("postgresql://"):
+            logger.debug(
+                "Replacing the platform dsn prefix to use the new `psycopg` driver."
+            )
+            dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
         self.engine = cached_create_engine(dsn)
         self.session = self.Session(bind=self.engine)
 

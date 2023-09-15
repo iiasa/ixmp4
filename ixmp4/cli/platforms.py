@@ -26,7 +26,7 @@ def validate_name(name: str):
 def validate_dsn(dsn: str | None):
     if dsn is None:
         return None
-    match = re.match(r"^(sqlite|postgresql|https|http)(\:\/\/)", dsn)
+    match = re.match(r"^(sqlite|postgresql\+psycopg|https|http)(\:\/\/)", dsn)
     if match is None:
         raise typer.BadParameter(
             "Platform dsn must be a valid URl or database connection string."
