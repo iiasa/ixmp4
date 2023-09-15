@@ -44,7 +44,7 @@ By default, an SQLite database will be created. If you want to add an existing d
 
 .. code-block::
     
-    ixmp4 platforms add <database-name> --dsn postgresql://user:pw@host/db    
+    ixmp4 platforms add <database-name> --dsn postgresql+psycopg://user:pw@host/db    
 
 From a Python environment, you can then access this **ixmp4 database** using the
 following code:
