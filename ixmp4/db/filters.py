@@ -132,18 +132,21 @@ class FilterMeta(PydanticMeta):
                     pass
                 else:
                     lookups = {}
+                base_field_alias = str(field.alias) if field.alias else field_name
+            else:
+                base_field_alias = None
             cls.expand_lookups(
                 field_name,
                 lookups,
                 namespace,
-                None if field is None else field.alias,
+                base_field_alias,
             )
 
         return super().__new__(cls, name, bases, namespace, **kwargs)
 
     @classmethod
     def expand_lookups(
-        cls, name, lookups, namespace, base_field_alias: str | None = None
+        cls, name: str, lookups: dict, namespace, base_field_alias: str | None = None
     ):
         for lookup_alias, (type_, func) in lookups.items():
             if lookup_alias == "__root__":
@@ -183,7 +186,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
 
     def apply(self, exc: db.sql.Select, model, session) -> db.sql.Select:
         for name, field_info in self.model_fields.items():
-            value = getattr(self, "name", field_info.default)
+            value = getattr(self, name, field_info.get_default())
 
             if isinstance(value, BaseFilter):
                 submodel = getattr(value, "_sqla_model", None)
