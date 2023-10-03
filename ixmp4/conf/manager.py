@@ -7,6 +7,7 @@ from functools import lru_cache
 import httpx
 import pandas as pd
 from pydantic import Field
+from typing_extensions import Annotated
 
 from ixmp4.core.exceptions import ManagerApiError, PlatformNotFound
 
@@ -30,7 +31,7 @@ class ManagerPlatformInfo(PlatformInfo):
     access_group: int
     url: str
     name: str = Field(alias="slug")
-    notice: str | None
+    notice: Annotated[str | None, Field(default=None)]
 
     class Accessibilty(str, enum.Enum):
         PUBLIC = "PUBLIC"
@@ -101,7 +102,7 @@ class ManagerConfig(Config):
             params = hashabledict(params)
 
         if json is not None:
-            if type(json) is dict:
+            if isinstance(json, dict):
                 json = hashabledict(json)
             else:
                 json = tuple(json)

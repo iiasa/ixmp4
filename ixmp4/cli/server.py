@@ -4,6 +4,7 @@ from typing import Optional
 import typer
 import uvicorn  # type: ignore[import]
 from fastapi.openapi.utils import get_openapi
+from typing_extensions import Annotated
 
 from ixmp4.conf import settings
 from ixmp4.server import v1
@@ -15,14 +16,10 @@ app = typer.Typer()
 
 @app.command()
 def start(
-    host: Optional[str] = typer.Option(
-        "127.0.0.1",
-        help="The hostname to bind to.",
-    ),
-    port: Optional[int] = typer.Option(
-        9000,
-        help="Requested server port.",
-    ),
+    host: Annotated[
+        str, typer.Option(default="127.0.0.1", help="The hostname to bind to.")
+    ],
+    port: Annotated[int, typer.Option(default=9000, help="Requested server port.")],
 ) -> None:
     """Starts the ixmp4 web api."""
     reload = settings.mode != "production"

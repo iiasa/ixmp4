@@ -18,21 +18,23 @@ documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
 [tool.poetry.dependencies]
 PyJWT = "^2.4.0"
 SQLAlchemy = { extras = ["mypy"], version = "^2.0.7" }
-SQLAlchemy-Utils = "^0.40.0"
+SQLAlchemy-Utils = "^0.41.1"
 alembic = "^1.10.2"
 dask = "^2023.4.0"
-fastapi = "^0.94.0"
-httpx = { extras = ["http2"], version = "^0.23.3" }
+fastapi = "^0.103.1"
+httpx = {extras = ["http2"], version = "^0.25.0"}
 openpyxl = "^3.0.9"
 pandas = "^2.0.0"
-pandera = "^0.13.4"
-pydantic = "^1.10.5"
+pandera = "^0.17.0"
+#pydantic = "^1.10.5"
+pydantic = "^2.4.0"
 python = ">=3.10, <3.12"
-python-dotenv = "^0.19.0"
+python-dotenv = "^1.0.0"
 requests = "^2.27.1"
-typer = "^0.4.0"
+typer = "^0.9.0"
 toml = "^0.10.2"
 psycopg = {extras = ["binary"], version = "^3.1.10"}
+pydantic-settings = "^2.0.3"
 
 [tool.poetry.group.docs]
 optional = true
@@ -48,27 +50,26 @@ sphinxcontrib-openapi = "^0.8.1"
 optional = true
 
 [tool.poetry.group.server.dependencies]
-gunicorn = "^20.1.0"
-uvicorn = { version = "^0.17.0", extras = ["standard"]}
+gunicorn = "^21.2.0"
+uvicorn = {extras = ["standard"], version = "^0.23.2"}
 
 [tool.poetry.group.dev]
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-black = "^23.1.0"
-flake8 = "^6.0.0"
-flake8-bugbear = "^21.9.2"
-mypy = "~1.0.1"
-flake8-pyproject = "^1.2.2"
+black = "^23.9.1"
 ptvsd = "^4.3.2"
-pytest = "^6.2.5"
-pytest-benchmark = "^3.4.1"
-pytest-cov = "^2.12.1"
+pytest = "^7.4.2"
+pytest-benchmark = "^4.0.0"
+pytest-cov = "^4.1.0"
 pytest-lazy-fixture = "^0.6.3"
 snakeviz = "^2.1.1"
 types-toml = "^0.10.8.7"
-isort = "^5.12.0"
-build = "^0.10.0"
+build = "^1.0.3"
+ruff = "^0.0.291"
+pre-commit = "^3.4.0"
+mypy = "^1.5.1"
+pandas-stubs = "^2.0.3.230814"
 
 [tool.poetry.group.tutorial]
 optional = true
@@ -93,34 +94,32 @@ exclude = [
 ]
 disable_error_code = ['override']
 implicit_reexport = true
-
 plugins = ['sqlalchemy.ext.mypy.plugin']
 
 [[tool.mypy.overrides]]
 module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
 ignore_missing_imports = true
 
-[tool.flake8]
-max_line_length = 100
-max-complexity = 10
-select = ['C', 'E', 'F', 'W', 'B', 'B950']
-ignore = ['E203', 'E501', 'W503', 'B008']
-per-file-ignores = ['__init__.py:F401']
-count = true
+[tool.ruff]
+select = ["C9", "E", "F", "I", "W"]
+ignore = ["B008"]
+per-file-ignores = {"__init__.py"=["F401"]}
 exclude = [
-    '.git',
-    '__pycache__',
-    '*.egg-info',
-    '.pytest_cache',
-    '.mypy_cache',
-    '.venv',
-    'tests/',
-    'example.py',
-    'import.py',
+    ".git",
+    "__pycache__",
+    "*.egg-info",
+    ".pytest_cache",
+    ".mypy_cache",
+    ".venv",
+    "tests/",
+    "example.py",
+    "import.py",
 ]
+#Check if this works!
+line-length = 100
 
-[tool.isort]
-profile = "black"
+[tool.ruff.mccabe]
+max-complexity = 10
 
 [tool.poetry-dynamic-versioning]
 bump = true

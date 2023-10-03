@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Path, Query
+from pydantic import RootModel
 
 from ixmp4.data import abstract, api
 from ixmp4.data.backend.base import Backend
@@ -18,8 +21,8 @@ class RunMetaEntryInput(BaseModel):
     value: abstract.StrictMetaValue
 
 
-class EnumerationOutput(BaseModel):
-    __root__: api.DataFrame | list[api.RunMetaEntry]
+class EnumerationOutput(BaseModel, RootModel):
+    root: api.DataFrame | list[api.RunMetaEntry]
 
 
 @router.get("/", response_model=EnumerationOutput)
@@ -41,12 +44,12 @@ def create(
     runmeta: RunMetaEntryInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.meta.create(**runmeta.dict())
+    return backend.meta.create(**runmeta.model_dump())
 
 
 @router.delete("/{id}/")
 def delete(
-    id: int = Path(None),
+    id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.meta.delete(id)

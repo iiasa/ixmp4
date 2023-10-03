@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import StrictInt, StrictStr
+from pydantic import RootModel, StrictInt, StrictStr
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -20,8 +20,8 @@ class IndexSetInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.IndexSet] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.IndexSet] | api.DataFrame
 
 
 class ElementsInput(BaseModel):
@@ -41,7 +41,9 @@ def enumerate(
 @autodoc
 @router.patch("/", response_model=EnumerationOutput)
 def query(
-    filter: OptimizationIndexSetFilter = Body(OptimizationIndexSetFilter()),
+    filter: OptimizationIndexSetFilter = Body(
+        OptimizationIndexSetFilter(id=None, name=None, run__id=None)
+    ),
     table: bool = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
@@ -54,7 +56,7 @@ def create(
     indexset: IndexSetInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.optimization.indexsets.create(**indexset.dict())
+    return backend.optimization.indexsets.create(**indexset.model_dump())
 
 
 @autodoc
@@ -65,5 +67,5 @@ def add_elements(
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.optimization.indexsets.add_elements(
-        indexset_id=indexset_id, **elements.dict()
+        indexset_id=indexset_id, **elements.model_dump()
     )

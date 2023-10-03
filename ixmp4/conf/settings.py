@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Literal
 
 from httpx import ConnectError
-from pydantic import BaseSettings, Extra, Field, HttpUrl, validator
+from pydantic import Field, HttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ixmp4.core.exceptions import InvalidCredentials
 
@@ -30,9 +31,7 @@ class Settings(BaseSettings):
     manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
     managed: bool = True
 
-    class Config:
-        env_prefix = "ixmp4_"
-        extra = Extra.allow
+    model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -120,7 +119,7 @@ class Settings(BaseSettings):
         toml_config.touch()
         self._toml = TomlConfig(toml_config, toml_user)
 
-    @validator("storage_directory")
+    @field_validator("storage_directory")
     def expand_user(cls, v):
         # translate ~/asdf into /home/user/asdf
         return Path.expanduser(v)

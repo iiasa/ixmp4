@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, Path, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -18,8 +21,8 @@ class RunInput(BaseModel):
     scenario_name: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.Run] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.Run] | api.DataFrame
 
 
 @router.get("/", response_model=EnumerationOutput)
@@ -33,7 +36,7 @@ def enumerate(
 
 @router.patch("/", response_model=EnumerationOutput)
 def query(
-    filter: RunFilter = Body(RunFilter()),
+    filter: RunFilter = Body(RunFilter(id=None, version=None, is_default=False)),
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
@@ -45,12 +48,12 @@ def create(
     run: RunInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.runs.create(**run.dict())
+    return backend.runs.create(**run.model_dump())
 
 
 @router.post("/{id}/set-as-default-version/")
 def set_as_default_version(
-    id: int = Path(None),
+    id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.runs.set_as_default_version(id)
@@ -58,7 +61,7 @@ def set_as_default_version(
 
 @router.post("/{id}/unset-as-default-version/")
 def unset_as_default_version(
-    id: int = Path(None),
+    id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.runs.unset_as_default_version(id)

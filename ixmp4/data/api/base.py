@@ -4,6 +4,7 @@ from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, Ty
 import httpx
 import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict
 
 from ixmp4.core.exceptions import (
     ImproperlyConfigured,
@@ -17,8 +18,7 @@ class BaseModel(PydanticBaseModel):
     NotFound: ClassVar[type[IxmpError]]
     NotUnique: ClassVar[type[IxmpError]]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
 
 
 class DataFrame(PydanticBaseModel):
@@ -38,8 +38,7 @@ class DataFrame(PydanticBaseModel):
         else:
             return cls(**df)
 
-    class Config:
-        json_encoders = {pd.Timestamp: lambda x: x.isoformat()}
+    model_config = ConfigDict(json_encoders={pd.Timestamp: lambda x: x.isoformat()})
 
     @classmethod
     def from_pandas(cls, df: pd.DataFrame) -> "DataFrame":

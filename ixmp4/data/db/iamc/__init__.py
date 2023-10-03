@@ -1,5 +1,5 @@
-# flaske8: noqa
-from .datapoint import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint,
+# flake8: noqa
+from .datapoint import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint
     DataPoint,
     DataPointRepository,
     UniversalDataPoint,

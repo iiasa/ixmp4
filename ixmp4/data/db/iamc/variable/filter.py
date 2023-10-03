@@ -1,3 +1,5 @@
+from typing_extensions import Annotated
+
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -8,12 +10,13 @@ from . import Variable
 
 
 class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
-    region: base.RegionFilter | None
-    variable: base.VariableFilter | None
-    unit: base.UnitFilter | None
-    run: base.RunFilter | None = filters.Field(
-        default=base.RunFilter(id=None, version=None)
-    )
+    region: Annotated[base.RegionFilter | None, filters.Field(None)]
+    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
+    unit: Annotated[base.UnitFilter | None, filters.Field(None)]
+    run: Annotated[
+        base.RunFilter | None,
+        filters.Field(default=base.RunFilter(id=None, version=None, is_default=False)),
+    ]
 
     def join(self, exc, session=None):
         if not utils.is_joined(exc, Measurand):

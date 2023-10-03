@@ -74,7 +74,8 @@ class DocsRepository(
         Parameters
         ----------
         dimension_id : int
-            The unique id of the object whose documentation should be deleted in its dimension's table.
+            The unique id of the object whose documentation should be deleted in its dimension's
+            table.
 
         Raises
         ------

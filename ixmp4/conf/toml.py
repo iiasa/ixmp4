@@ -30,7 +30,7 @@ class TomlConfig(Config):
     def dump(self):
         obj = {}
         for c in self.platforms.values():
-            dict_ = json.loads(c.json())
+            dict_ = json.loads(c.model_dump_json())
             dict_.pop("user", None)
             name = dict_.pop("name")
             obj[name] = dict_

@@ -1,3 +1,5 @@
+from typing_extensions import Annotated
+
 from ixmp4.db import filters, utils
 
 from .. import Run, TimeSeries
@@ -6,15 +8,14 @@ from .scenario import ScenarioFilter
 
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id
-    version: filters.Integer
-    default_only: filters.Boolean = filters.Field(True)
-    is_default: filters.Boolean
-    model: ModelFilter | None
-    scenario: ScenarioFilter | None
+    id: Annotated[filters.Id | None, filters.Field(None)]
+    version: Annotated[filters.Integer | None, filters.Field(None)]
+    default_only: Annotated[filters.Boolean, filters.Field(True)]
+    is_default: Annotated[filters.Boolean, filters.Field(False)]
+    model: Annotated[ModelFilter, filters.Field(None)]
+    scenario: Annotated[ScenarioFilter, filters.Field(None)]
 
-    class Config:
-        sqla_model = Run
+    _sqla_model = Run
 
     def filter_default_only(self, exc, c, v, **kwargs):
         if v:

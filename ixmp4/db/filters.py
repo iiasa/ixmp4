@@ -1,6 +1,8 @@
+import inspect
 from typing import Any, Iterable, Optional
 
-from pydantic import BaseModel, Extra, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from typing_extensions import Annotated
 
 from ixmp4 import db
 from ixmp4.core.exceptions import BadFilterArguments, ProgrammingError
@@ -46,28 +48,18 @@ def lte(c, v):
     return c <= v
 
 
-class Integer(int):
-    """An explicit proxy type for `int`."""
-
-    pass
+Integer = Annotated[int, Field(description="An explicit proxy type for `int`.")]
 
 
-class Float(float):
-    """An explicit proxy type for `float`."""
-
-    pass
+Float = Annotated[float, Field(description="An explicit proxy type for `float`.")]
 
 
-class Id(int):
-    """A no-op type for a reduced set of `Integer` lookups."""
+Id = Annotated[
+    int, Field(description="A no-op type for a reduced set of `Integer` lookups.")
+]
 
-    pass
 
-
-class String(str):
-    """An explicit proxy type for `str`."""
-
-    pass
+String = Annotated[str, Field(description="An explicit proxy type for `str`.")]
 
 
 Boolean = bool
@@ -118,7 +110,7 @@ PydanticMeta: type = type(BaseModel)
 
 class FilterMeta(PydanticMeta):
     def __new__(cls, name, bases, namespace, **kwargs):
-        field_types = namespace.get("__annotations__", {}).copy()
+        field_types = inspect.get_annotations(cls)
         for field_name, field_type in field_types.items():
             try:
                 lookups = lookup_map[field_type]
@@ -128,7 +120,10 @@ class FilterMeta(PydanticMeta):
 
             field = namespace.get(field_name, None)
             if field is not None:
-                override_lookups = field.extra.get("lookups", None)
+                if isinstance(field.json_schema_extra, dict):
+                    override_lookups = field.json_schema_extra.get("lookups", None)
+                else:
+                    override_lookups = None
                 if override_lookups:
                     lookups = {
                         k: v for k, v in lookups.items() if k in override_lookups
@@ -165,34 +160,34 @@ class FilterMeta(PydanticMeta):
             namespace.setdefault(func_name, filter_func)
 
             field = namespace.get(filter_name, Field())
-            field.extra.setdefault("sqla_column", name)
+            field.json_schema_extra = {"sqla_column": name}
             if base_field_alias is not None and lookup_alias != "__root__":
                 field.alias = base_field_alias + argument_seperator + lookup_alias
             namespace[filter_name] = field
 
 
 class BaseFilter(BaseModel, metaclass=FilterMeta):
-    class Config:
-        extra = Extra.forbid
-        sqla_model: type | None = None
-        allow_population_by_field_name = True
+    model_config = ConfigDict(
+        extra="forbid", populate_by_name=True, arbitrary_types_allowed=True
+    )
+    _sqla_model: type | None = None
 
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
         except ValidationError as e:
-            raise BadFilterArguments(model=e.model.__name__, errors=e.errors())
+            raise BadFilterArguments(model=e.title, errors=e.errors())
 
     def join(self, exc: db.sql.Select, session=None) -> db.sql.Select:
         return exc
 
     def apply(self, exc: db.sql.Select, model, session) -> db.sql.Select:
-        for name, field in self.__fields__.items():
-            value = getattr(self, name, field.field_info.default)
+        for name, field_info in self.model_fields.items():
+            value = getattr(self, "name", field_info.default)
 
             if isinstance(value, BaseFilter):
-                submodel = getattr(value.Config, "sqla_model", None)
-                model_getter = getattr(value.Config, "get_sqla_model", None)
+                submodel = getattr(value, "_sqla_model", None)
+                model_getter = getattr(value, "get_sqla_model", None)
                 if submodel is None and callable(model_getter):
                     submodel = model_getter(session)
 
@@ -204,7 +199,10 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
                 if filter_func is None:
                     raise ProgrammingError
 
-                sqla_column = field.field_info.extra.get("sqla_column")
+                if isinstance(field_info.json_schema_extra, dict):
+                    sqla_column = field_info.json_schema_extra.get("sqla_column")
+                else:
+                    sqla_column = None
                 if sqla_column is None:
                     column = None
                 else:

@@ -1,4 +1,4 @@
-from typing import Optional, Union
+from typing_extensions import Annotated
 
 from ixmp4 import db
 from ixmp4.data.db import filters as base
@@ -34,18 +34,19 @@ class SimpleIamcUnitFilter(
 
 
 class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    variable: base.VariableFilter | None
-    region: base.RegionFilter | None
-    run: base.RunFilter | None = filters.Field(
-        default=base.RunFilter(id=None, version=None)
-    )
+    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
+    region: Annotated[base.RegionFilter | None, filters.Field(None)]
+    run: Annotated[
+        base.RunFilter | None,
+        filters.Field(default=base.RunFilter(id=None, version=None, is_default=False)),
+    ]
 
     def join(self, exc, session=None):
         return super().join_datapoints(exc, session)
 
 
 class UnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: Optional[Union[IamcUnitFilter, filters.Boolean]]
+    iamc: Annotated[IamcUnitFilter | filters.Boolean | None, filters.Field(None)]
 
     def filter_iamc(self, exc, c, v, session=None):
         if v is None:

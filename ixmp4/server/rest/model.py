@@ -1,6 +1,9 @@
 from fastapi import APIRouter, Body, Depends, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
+
+# from ixmp4.data.abstract.base import BaseModel as AbstractBaseModel
 from ixmp4.data.backend.base import Backend
 from ixmp4.data.db.model.filter import ModelFilter
 
@@ -18,8 +21,8 @@ class ModelInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.Model] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.Model] | api.DataFrame
 
 
 @autodoc
@@ -29,6 +32,7 @@ def enumerate(
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
+    # ) -> Iterable[AbstractBaseModel] | DataFrame:
     return backend.models.enumerate(_filter=filter, table=bool(table))
 
 
@@ -48,4 +52,4 @@ def create(
     model: ModelInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.models.create(**model.dict())
+    return backend.models.create(**model.model_dump())

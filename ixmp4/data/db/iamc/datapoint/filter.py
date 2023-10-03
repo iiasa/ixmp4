@@ -1,3 +1,5 @@
+from typing_extensions import Annotated
+
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -11,11 +13,10 @@ from ixmp4.db import filters, utils
 
 
 class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String
-    hierarchy: filters.String
+    name: Annotated[filters.String, filters.Field()]
+    hierarchy: Annotated[filters.String, filters.Field()]
 
-    class Config:
-        sqla_model = Region
+    _sqla_model = Region
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -27,10 +28,9 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String
+    name: Annotated[filters.String, filters.Field()]
 
-    class Config:
-        sqla_model = Unit
+    _sqla_model = Unit
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -45,10 +45,9 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String
+    name: Annotated[filters.String, filters.Field()]
 
-    class Config:
-        sqla_model = Variable
+    _sqla_model = Variable
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -62,10 +61,9 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String
+    name: Annotated[filters.String, filters.Field()]
 
-    class Config:
-        sqla_model = Model
+    _sqla_model = Model
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -79,10 +77,8 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String
-
-    class Config:
-        sqla_model = Scenario
+    name: Annotated[filters.String, filters.Field()]
+    _sqla_model = Scenario
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -96,11 +92,10 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id
-    default_only: filters.Boolean
+    id: Annotated[filters.Id, filters.Field()]
+    default_only: Annotated[filters.Boolean, filters.Field()]
 
-    class Config:
-        sqla_model = Run
+    _sqla_model = Run
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -165,11 +160,11 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     >>> iamc.tabulate(**filter)
     """
 
-    step_year: filters.Integer = filters.Field(alias="year")
-    time_series__id: filters.Id = filters.Field(alias="time_series_id")
-    region: RegionFilter | None
-    unit: UnitFilter | None
-    variable: VariableFilter | None
-    model: ModelFilter | None
-    scenario: ScenarioFilter | None
-    run: RunFilter | None
+    step_year: Annotated[filters.Integer, filters.Field(None, alias="year")]
+    time_series__id: Annotated[filters.Id, filters.Field(None, alias="time_series_id")]
+    region: Annotated[RegionFilter | None, filters.Field(None)]
+    unit: Annotated[UnitFilter | None, filters.Field(None)]
+    variable: Annotated[VariableFilter | None, filters.Field(None)]
+    model: Annotated[ModelFilter | None, filters.Field(None)]
+    scenario: Annotated[ScenarioFilter | None, filters.Field(None)]
+    run: Annotated[RunFilter | None, filters.Field(None)]

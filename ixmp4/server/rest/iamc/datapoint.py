@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Query
+from pydantic import RootModel
 
 from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import api
@@ -15,8 +16,8 @@ router: APIRouter = APIRouter(
 )
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.DataPoint] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.DataPoint] | api.DataFrame
 
 
 @router.get("/", response_model=EnumerationOutput)

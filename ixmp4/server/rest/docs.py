@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Depends, Path, Query
 
 from ixmp4.data import api
@@ -30,12 +32,12 @@ def set_models(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.models.docs.set(**docs.dict())
+    return backend.models.docs.set(**docs.model_dump())
 
 
 @router.delete("/models/{dimension_id}/")
 def delete_models(
-    dimension_id: int = Path(None),
+    dimension_id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.models.docs.delete(dimension_id)
@@ -54,12 +56,12 @@ def set_regions(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.regions.docs.set(**docs.dict())
+    return backend.regions.docs.set(**docs.model_dump())
 
 
 @router.delete("/regions/{dimension_id}/")
 def delete_regions(
-    dimension_id: int = Path(None),
+    dimension_id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.regions.docs.delete(dimension_id)
@@ -78,12 +80,12 @@ def set_scenarios(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.scenarios.docs.set(**docs.dict())
+    return backend.scenarios.docs.set(**docs.model_dump())
 
 
 @router.delete("/scenarios/{dimension_id}/")
 def delete_scenarios(
-    dimension_id: int = Path(None),
+    dimension_id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.scenarios.docs.delete(dimension_id)
@@ -102,12 +104,12 @@ def set_units(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.units.docs.set(**docs.dict())
+    return backend.units.docs.set(**docs.model_dump())
 
 
 @router.delete("/units/{dimension_id}/")
 def delete_units(
-    dimension_id: int = Path(None),
+    dimension_id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.units.docs.delete(dimension_id)
@@ -126,12 +128,12 @@ def set_variables(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.iamc.variables.docs.set(**docs.dict())
+    return backend.iamc.variables.docs.set(**docs.model_dump())
 
 
 @router.delete("/iamc/variables/{dimension_id}/")
 def delete_variables(
-    dimension_id: int = Path(None),
+    dimension_id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.iamc.variables.docs.delete(dimension_id)
@@ -150,12 +152,12 @@ def set_indexsets(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.optimization.indexsets.docs.set(**docs.dict())
+    return backend.optimization.indexsets.docs.set(**docs.model_dump())
 
 
 @router.delete("/optimization/indexsets/{dimension_id}/")
 def delete_indexsets(
-    dimension_id: int = Path(None),
+    dimension_id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.indexsets.docs.delete(dimension_id)

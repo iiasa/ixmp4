@@ -1,4 +1,7 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, Path, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -19,8 +22,8 @@ class RegionInput(BaseModel):
     hierarchy: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.Region] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.Region] | api.DataFrame
 
 
 @autodoc
@@ -49,12 +52,12 @@ def create(
     region: RegionInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.regions.create(**region.dict())
+    return backend.regions.create(**region.model_dump())
 
 
 @router.delete("/{id}/")
 def delete(
-    id: int = Path(None),
+    id: Annotated[int, Path()],
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.regions.delete(id)
