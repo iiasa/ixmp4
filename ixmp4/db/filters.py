@@ -1,5 +1,5 @@
-import inspect
-from typing import Any, Iterable, Optional
+# import inspect
+from typing import Any, ClassVar, Iterable, Optional, Union
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from typing_extensions import Annotated
@@ -66,20 +66,12 @@ Boolean = bool
 
 argument_seperator = "__"
 filter_func_prefix = "filter_"
-lookup_map: dict[type, dict] = {
-    Id: {
+lookup_map: dict[object, dict] = {
+    Union[Id, None]: {
         "__root__": (int, exact),
         "in": (Iterable[int], in_),
     },
-    Float: {
-        "__root__": (int, exact),
-        "in": (Iterable[int], in_),
-        "gt": (int, gt),
-        "lt": (int, lt),
-        "gte": (int, gte),
-        "lte": (int, lte),
-    },
-    Integer: {
+    Union[Float, None]: {
         "__root__": (int, exact),
         "in": (Iterable[int], in_),
         "gt": (int, gt),
@@ -87,10 +79,18 @@ lookup_map: dict[type, dict] = {
         "gte": (int, gte),
         "lte": (int, lte),
     },
-    Boolean: {
+    Union[Integer, None]: {
+        "__root__": (int, exact),
+        "in": (Iterable[int], in_),
+        "gt": (int, gt),
+        "lt": (int, lt),
+        "gte": (int, gte),
+        "lte": (int, lte),
+    },
+    Union[Boolean, None]: {
         "__root__": (bool, exact),
     },
-    String: {
+    Union[String, None]: {
         "__root__": (str, exact),
         "in": (Iterable[str], in_),
         "like": (str, like),
@@ -110,7 +110,8 @@ PydanticMeta: type = type(BaseModel)
 
 class FilterMeta(PydanticMeta):
     def __new__(cls, name, bases, namespace, **kwargs):
-        field_types = inspect.get_annotations(cls)
+        # field_types = inspect.get_annotations(cls)
+        field_types = namespace.get("__annotations__", {}).copy()
         for field_name, field_type in field_types.items():
             try:
                 lookups = lookup_map[field_type]
@@ -162,7 +163,7 @@ class FilterMeta(PydanticMeta):
 
             namespace.setdefault(func_name, filter_func)
 
-            field = namespace.get(filter_name, Field())
+            field = namespace.get(filter_name, Field(None))
             field.json_schema_extra = {"sqla_column": name}
             if base_field_alias is not None and lookup_alias != "__root__":
                 field.alias = base_field_alias + argument_seperator + lookup_alias
@@ -173,7 +174,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     model_config = ConfigDict(
         extra="forbid", populate_by_name=True, arbitrary_types_allowed=True
     )
-    _sqla_model: type | None = None
+    sqla_model: ClassVar[type | None] = None
 
     def __init__(self, **data: Any) -> None:
         try:
@@ -189,7 +190,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
             value = getattr(self, name, field_info.get_default())
 
             if isinstance(value, BaseFilter):
-                submodel = getattr(value, "_sqla_model", None)
+                submodel = getattr(value, "sqla_model", None)
                 model_getter = getattr(value, "get_sqla_model", None)
                 if submodel is None and callable(model_getter):
                     submodel = model_getter(session)

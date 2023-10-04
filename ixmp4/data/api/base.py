@@ -4,7 +4,7 @@ from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, Ty
 import httpx
 import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import ConfigDict
+from pydantic import ConfigDict, Field
 
 from ixmp4.core.exceptions import (
     ImproperlyConfigured,
@@ -22,7 +22,7 @@ class BaseModel(PydanticBaseModel):
 
 
 class DataFrame(PydanticBaseModel):
-    index: list | None
+    index: list | None = Field(None)
     columns: list[str]
     dtypes: list[str]
     data: list
@@ -215,7 +215,7 @@ class BulkUpserter(BaseRepository[ModelType]):
             "POST",
             self.prefix + "bulk/",
             params=kwargs,
-            data=sdf.json(),
+            data=sdf.model_dump_json(),
         )
 
 
@@ -226,5 +226,5 @@ class BulkDeleter(BaseRepository[ModelType]):
             "PATCH",
             self.prefix + "bulk/",
             params=kwargs,
-            data=sdf.json(),
+            data=sdf.model_dump_json(),
         )
