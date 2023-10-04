@@ -4,7 +4,8 @@ from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, Ty
 import httpx
 import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
-from pydantic import ConfigDict, Field
+from pydantic import ConfigDict, Field, GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 from ixmp4.core.exceptions import (
     ImproperlyConfigured,
@@ -23,13 +24,16 @@ class BaseModel(PydanticBaseModel):
 
 class DataFrame(PydanticBaseModel):
     index: list | None = Field(None)
-    columns: list[str]
-    dtypes: list[str]
-    data: list
+    columns: list[str] | None
+    dtypes: list[str] | None
+    data: list | None
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_after_validator_function(cls.validate, handler(cls))
+        # yield cls.validate
 
     @classmethod
     def validate(cls, df: pd.DataFrame | dict):
@@ -61,9 +65,10 @@ class DataFrame(PydanticBaseModel):
             columns=self.columns,
             data=self.data,
         )
-        for c, dt in zip(self.columns, self.dtypes):
-            # there seems to be a type incompatbility between StrDtypeArg and str
-            df[c] = df[c].astype(dt)  # type: ignore
+        if self.columns and self.dtypes:
+            for c, dt in zip(self.columns, self.dtypes):
+                # there seems to be a type incompatbility between StrDtypeArg and str
+                df[c] = df[c].astype(dt)  # type: ignore
         return df
 
 
