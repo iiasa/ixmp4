@@ -22,42 +22,42 @@ class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
+def df_to_dict(df: pd.DataFrame) -> dict:
+    columns = []
+    dtypes = []
+    for c in df.columns:
+        columns.append(c)
+        dtypes.append(df[c].dtype.name)
+
+    return {
+        "index": df.index.to_list(),
+        "columns": columns,
+        "dtypes": dtypes,
+        "data": df.values.tolist(),
+    }
+
+
 class DataFrame(PydanticBaseModel):
     index: list | None = Field(None)
     columns: list[str] | None
     dtypes: list[str] | None
     data: list | None
 
+    model_config = ConfigDict(json_encoders={pd.Timestamp: lambda x: x.isoformat()})
+
     @classmethod
     def __get_pydantic_core_schema__(
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
-        return core_schema.no_info_after_validator_function(cls.validate, handler(cls))
+        return core_schema.no_info_before_validator_function(cls.validate, handler(cls))
         # yield cls.validate
 
     @classmethod
     def validate(cls, df: pd.DataFrame | dict):
         if isinstance(df, pd.DataFrame):
-            return cls.from_pandas(df)
+            return df_to_dict(df)
         else:
-            return cls(**df)
-
-    model_config = ConfigDict(json_encoders={pd.Timestamp: lambda x: x.isoformat()})
-
-    @classmethod
-    def from_pandas(cls, df: pd.DataFrame) -> "DataFrame":
-        columns = []
-        dtypes = []
-        for c in df.columns:
-            columns.append(c)
-            dtypes.append(df[c].dtype.name)
-
-        return DataFrame(
-            index=df.index.tolist(),
-            columns=columns,
-            dtypes=dtypes,
-            data=df.values.tolist(),
-        )
+            return df
 
     def to_pandas(self) -> pd.DataFrame:
         df = pd.DataFrame(
@@ -215,21 +215,21 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
 
 class BulkUpserter(BaseRepository[ModelType]):
     def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
-        sdf = DataFrame.from_pandas(df)
+        dict_ = df_to_dict(df)
         self._request(
             "POST",
             self.prefix + "bulk/",
             params=kwargs,
-            data=sdf.model_dump_json(),
+            json=dict_,
         )
 
 
 class BulkDeleter(BaseRepository[ModelType]):
     def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
-        sdf = DataFrame.from_pandas(df)
+        dict_ = df_to_dict(df)
         self._request(
             "PATCH",
             self.prefix + "bulk/",
             params=kwargs,
-            data=sdf.model_dump_json(),
+            json=dict_,
         )

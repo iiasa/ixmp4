@@ -91,7 +91,7 @@ class Settings(BaseSettings):
         if self.default_credentials is not None:
             try:
                 self._default_auth = ManagerAuth(
-                    *self.default_credentials, self.manager_url
+                    *self.default_credentials, str(self.manager_url)
                 )
                 logger.info(
                     f"Connecting as user '{self._default_auth.get_user().username}'."
@@ -105,7 +105,9 @@ class Settings(BaseSettings):
             self._default_auth = AnonymousAuth()
 
     def load_manager_config(self):
-        self._manager = ManagerConfig(self.manager_url, self.default_auth, remote=True)
+        self._manager = ManagerConfig(
+            str(self.manager_url), self.default_auth, remote=True
+        )
 
     def load_toml_config(self):
         if self.default_auth is not None:
@@ -138,4 +140,4 @@ class Settings(BaseSettings):
     def check_credentials(self):
         if self.default_credentials is not None:
             username, password = self.default_credentials
-            ManagerAuth(username, password, self.manager_url)
+            ManagerAuth(username, password, str(self.manager_url))
