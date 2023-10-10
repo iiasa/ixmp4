@@ -1,7 +1,7 @@
 from typing import Annotated
 
 from fastapi import APIRouter, Body, Depends, Path, Query
-from pydantic import RootModel
+from pydantic import Field, RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -17,7 +17,7 @@ router: APIRouter = APIRouter(
 
 
 class RunInput(BaseModel):
-    model_name: str
+    name_of_model: str = Field(..., alias="model_name")
     scenario_name: str
 
 
@@ -48,7 +48,7 @@ def create(
     run: RunInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.runs.create(**run.model_dump())
+    return backend.runs.create(**run.model_dump(by_alias=True))
 
 
 @router.post("/{id}/set-as-default-version/")
