@@ -32,7 +32,6 @@ def enumerate(
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
-    # ) -> Iterable[AbstractBaseModel] | DataFrame:
     return backend.models.enumerate(_filter=filter, table=bool(table))
 
 
