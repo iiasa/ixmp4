@@ -10,12 +10,12 @@ from .scenario import ScenarioFilter
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     id: filters.Id | None = filters.Field(None)
     version: filters.Integer | None = filters.Field(None)
-    default_only: filters.Boolean = filters.Field(True)
-    is_default: filters.Boolean = filters.Field(False)
+    default_only: filters.Boolean | None = filters.Field(True)
+    is_default: filters.Boolean | None = filters.Field(None)
     model: ModelFilter = filters.Field(None)
     scenario: ScenarioFilter = filters.Field(None)
 
-    sqla_model: ClassVar = Run
+    sqla_model: ClassVar[type] = Run
 
     def filter_default_only(self, exc, c, v, **kwargs):
         if v:

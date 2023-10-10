@@ -9,7 +9,7 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     id: filters.Id | None = filters.Field(None)
     name: filters.String | None = filters.Field(None)
 
-    sqla_model: ClassVar = Model
+    sqla_model: ClassVar[type] = Model
 
     def join(self, exc, **kwargs):
         return exc.join(Model, Run.model)

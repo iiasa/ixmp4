@@ -38,7 +38,7 @@ class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMe
     region: Annotated[base.RegionFilter | None, filters.Field(None)]
     run: Annotated[
         base.RunFilter | None,
-        filters.Field(default=base.RunFilter(id=None, version=None, is_default=False)),
+        filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),
     ]
 
     def join(self, exc, session=None):

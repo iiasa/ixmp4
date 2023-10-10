@@ -10,7 +10,7 @@ class OptimizationIndexSetFilter(filters.BaseFilter, metaclass=filters.FilterMet
     name: filters.String | None = filters.Field(None)
     run__id: filters.Integer | None = filters.Field(None, alias="run_id")
 
-    sqla_model: ClassVar = IndexSet
+    sqla_model: ClassVar[type] = IndexSet
 
     def join(self, exc, **kwargs):
         exc = exc.join(Run, onclause=IndexSet.run__id == Run.id)

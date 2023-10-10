@@ -15,7 +15,7 @@ class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
     unit: Annotated[base.UnitFilter | None, filters.Field(None)]
     run: Annotated[
         base.RunFilter | None,
-        filters.Field(default=base.RunFilter(id=None, version=None, is_default=False)),
+        filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),
     ]
 
     def join(self, exc, session=None):

@@ -10,7 +10,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String | None = filters.Field(None)
     hierarchy: filters.String | None = filters.Field(None)
 
-    sqla_model: ClassVar = Region
+    sqla_model: ClassVar[type] = Region
 
     def join(self, exc, **kwargs):
         exc = exc.join(Region, TimeSeries.region)

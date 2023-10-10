@@ -41,7 +41,7 @@ class IamcScenarioFilter(
     unit: Annotated[base.UnitFilter | None, filters.Field(None)]
     run: Annotated[
         RunFilter | None,
-        filters.Field(default=RunFilter(id=None, version=None, is_default=False)),
+        filters.Field(default=RunFilter(id=None, version=None, is_default=True)),
     ]
 
     def join(self, exc, session=None):

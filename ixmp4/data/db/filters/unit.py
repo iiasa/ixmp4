@@ -9,7 +9,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     id: filters.Id | None = filters.Field(None)
     name: filters.String | None = filters.Field(None)
 
-    sqla_model: ClassVar = Unit
+    sqla_model: ClassVar[type] = Unit
 
     def join(self, exc, **kwargs):
         if not utils.is_joined(exc, Measurand):
