@@ -15,8 +15,8 @@ class Unit(base.BaseModel):
     NotUnique: ClassVar = abstract.Unit.NotUnique
     DeletionPrevented: ClassVar = abstract.Unit.DeletionPrevented
 
-    id: int | None
-    name: str | None
+    id: int
+    name: str
     created_at: datetime | None = Field(None)
     created_by: str | None = Field(None)
 

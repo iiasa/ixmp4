@@ -216,20 +216,22 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
 class BulkUpserter(BaseRepository[ModelType]):
     def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
         dict_ = df_to_dict(df)
+        json_ = DataFrame(**dict_).model_dump_json()
         self._request(
             "POST",
             self.prefix + "bulk/",
             params=kwargs,
-            json=dict_,
+            data=json_,
         )
 
 
 class BulkDeleter(BaseRepository[ModelType]):
     def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
         dict_ = df_to_dict(df)
+        json_ = DataFrame(**dict_).model_dump_json()
         self._request(
             "PATCH",
             self.prefix + "bulk/",
             params=kwargs,
-            json=dict_,
+            data=json_,
         )
