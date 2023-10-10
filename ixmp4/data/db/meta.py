@@ -16,7 +16,7 @@ from ..auth.decorators import guard
 from . import base
 
 
-class RemoveRunMetaEntryFrameSchema(pa.SchemaModel):
+class RemoveRunMetaEntryFrameSchema(pa.DataFrameModel):
     key: Series[pa.String] = pa.Field(coerce=True)
     run__id: Series[pa.Int] = pa.Field(coerce=True)
 
