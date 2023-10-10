@@ -165,14 +165,18 @@ class FilterMeta(PydanticMeta):
 
             field = namespace.get(filter_name, Field(None))
             field.json_schema_extra = {"sqla_column": name}
-            if base_field_alias is not None and lookup_alias != "__root__":
+            if (
+                base_field_alias is not None
+                and base_field_alias != name
+                and lookup_alias != "__root__"
+            ):
                 field.alias = base_field_alias + argument_seperator + lookup_alias
             namespace[filter_name] = field
 
 
 class BaseFilter(BaseModel, metaclass=FilterMeta):
     model_config = ConfigDict(
-        extra="forbid", populate_by_name=True, arbitrary_types_allowed=True
+        arbitrary_types_allowed=True, extra="forbid", populate_by_name=True
     )
     sqla_model: ClassVar[type | None] = None
 
