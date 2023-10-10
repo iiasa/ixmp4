@@ -221,7 +221,7 @@ class BulkUpserter(BaseRepository[ModelType]):
             "POST",
             self.prefix + "bulk/",
             params=kwargs,
-            data=json_,
+            content=json_,
         )
 
 
@@ -233,5 +233,5 @@ class BulkDeleter(BaseRepository[ModelType]):
             "PATCH",
             self.prefix + "bulk/",
             params=kwargs,
-            data=json_,
+            content=json_,
         )
