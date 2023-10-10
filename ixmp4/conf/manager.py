@@ -44,6 +44,11 @@ class ManagerConfig(Config):
     template_pattern = re.compile(r"(\{env\:(\w+)\})")
 
     def __init__(self, url: str, auth: BaseAuth, remote: bool = False) -> None:
+        # TODO: Find the sweet-spot for `maxsize`
+        # -> a trade-off between memory usage
+        # and load on the management service
+
+        self._cached_request = lru_cache(maxsize=128)(self._uncached_request)
         self.url = url
         self.auth = auth
         self.client = httpx.Client(
@@ -68,11 +73,7 @@ class ManagerConfig(Config):
             dsn = dsn.replace(template, val)
         return dsn
 
-    # TODO: Find the sweet-spot for `maxsize`
-    # -> a trade-off between memory usage
-    # and load on the management service
-    @lru_cache(maxsize=128)
-    def _cached_request(
+    def _uncached_request(
         self, method: str, path: str, *args, jti: str | None = None, **kwargs
     ):
         del jti
