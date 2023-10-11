@@ -4,7 +4,6 @@ from typing import Optional
 import typer
 import uvicorn  # type: ignore[import]
 from fastapi.openapi.utils import get_openapi
-from typing_extensions import Annotated
 
 from ixmp4.conf import settings
 from ixmp4.server import v1
