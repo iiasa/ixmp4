@@ -26,7 +26,6 @@ httpx = {extras = ["http2"], version = "^0.25.0"}
 openpyxl = "^3.0.9"
 pandas = "^2.0.0"
 pandera = "^0.17.0"
-#pydantic = "^1.10.5"
 pydantic = "^2.4.0"
 python = ">=3.10, <3.12"
 python-dotenv = "^1.0.0"
@@ -68,7 +67,7 @@ types-toml = "^0.10.8.7"
 build = "^1.0.3"
 ruff = "^0.0.292"
 pre-commit = "^3.4.0"
-mypy = "^1.5.1"
+mypy = "^1.6.0"
 pandas-stubs = "^2.0.3.230814"
 
 [tool.poetry.group.tutorial]
