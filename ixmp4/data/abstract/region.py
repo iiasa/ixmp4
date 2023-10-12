@@ -120,7 +120,7 @@ class RegionRepository(
         hierarchy: str | None = None,
         **kwargs,
     ) -> Iterable[Region]:
-        """Lists regions by specified criteria.
+        r"""Lists regions by specified criteria.
 
         Parameters
         ----------
@@ -128,7 +128,7 @@ class RegionRepository(
             The name of a region. If supplied only one result will be returned.
         hierarchy : str
             The hierarchy of a region.
-        **kwargs: any
+        \*\*kwargs: any
             More filter parameters as specified in `ixmp4.data.db.region.filters.RegionFilter`.
 
         Returns
@@ -145,7 +145,7 @@ class RegionRepository(
         hierarchy: str | None = None,
         **kwargs,
     ) -> pd.DataFrame:
-        """Tabulate regions by specified criteria.
+        r"""Tabulate regions by specified criteria.
 
         Parameters
         ----------
@@ -153,7 +153,7 @@ class RegionRepository(
             The name of a region. If supplied only one result will be returned.
         hierarchy : str
             The hierarchy of a region.
-        **kwargs: any
+        \*\*kwargs: any
             More filter parameters as specified in `ixmp4.data.db.region.filters.RegionFilter`.
 
         Returns

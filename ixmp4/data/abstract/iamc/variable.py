@@ -72,13 +72,13 @@ class VariableRepository(
         ...
 
     def list(self, *, name: str | None = None, **kwargs) -> Iterable[Variable]:
-        """Lists variables by specified criteria.
+        r"""Lists variables by specified criteria.
 
         Parameters
         ----------
         name : str
             The name of a variable. If supplied only one result will be returned.
-        **kwargs: any
+        \*\*kwargs: any
             More filter parameters as specified in
             `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
 
@@ -90,13 +90,13 @@ class VariableRepository(
         ...
 
     def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
-        """Tabulate variables by specified criteria.
+        r"""Tabulate variables by specified criteria.
 
         Parameters
         ----------
         name : str
             The name of a variable. If supplied only one result will be returned.
-        **kwargs: any
+        \*\*kwargs: any
             More filter parameters as specified in
             `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
 
