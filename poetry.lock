@@ -2933,10 +2933,8 @@ version = "0.8.1"
 description = "OpenAPI (fka Swagger) spec renderer for Sphinx"
 optional = false
 python-versions = ">=3.7"
-files = [
-    {file = "sphinxcontrib-openapi-0.8.1.tar.gz", hash = "sha256:04fcf87c259345162a504ce3dfee0f71389f507c3797798dc531c7748995b4eb"},
-    {file = "sphinxcontrib_openapi-0.8.1-py3-none-any.whl", hash = "sha256:45ecad2a98e304d3665c133ea08a7083a2b5d86e75c6b64c60389240b3927ad5"},
-]
+files = []
+develop = false
 
 [package.dependencies]
 deepmerge = ">=0.1"
@@ -2946,6 +2944,12 @@ PyYAML = ">=3.12"
 sphinx = ">=2.0"
 sphinx-mdinclude = ">=0.5.2"
 sphinxcontrib-httpdomain = ">=1.5.0"
+
+[package.source]
+type = "git"
+url = "https://github.com/glatterf42/openapi.git"
+reference = "HEAD"
+resolved_reference = "ee9e232e19be1e01cc682926e77790a0df300108"
 
 [[package]]
 name = "sphinxcontrib-qthelp"
@@ -3633,4 +3637,4 @@ testing = ["big-O", "jaraco.functools", "jaraco.itertools", "more-itertools", "p
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.12"
-content-hash = "b499db96f5150e86e2f22c80965af735b0cc408c78f91b6ae3631196e74e4fa9"
+content-hash = "6f3f6b1ecedee9573e8b7f240d1bf1361510e69681ea21d78b5b663f51cf2084"

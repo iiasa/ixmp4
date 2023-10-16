@@ -43,7 +43,7 @@ sphinx = "^7.2.6"
 sphinx-multiversion = "^0.2.4"
 sphinx-rtd-theme = "^1.1.1"
 sphinxcontrib-bibtex = "^2.5.0"
-sphinxcontrib-openapi = "^0.8.1"
+sphinxcontrib-openapi = {git = "https://github.com/glatterf42/openapi.git", branch = "enh/openapi31-anyOf"}
 
 [tool.poetry.group.server]
 optional = true
