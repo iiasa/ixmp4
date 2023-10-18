@@ -8,12 +8,12 @@ from .scenario import ScenarioFilter
 
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id | None = filters.Field(None)
-    version: filters.Integer | None = filters.Field(None)
-    default_only: filters.Boolean | None = filters.Field(True)
-    is_default: filters.Boolean | None = filters.Field(None)
-    model: ModelFilter = filters.Field(None)
-    scenario: ScenarioFilter = filters.Field(None)
+    id: filters.Id
+    version: filters.Integer
+    default_only: filters.Boolean = filters.Field(True)
+    is_default: filters.Boolean
+    model: ModelFilter
+    scenario: ScenarioFilter
 
     sqla_model: ClassVar[type] = Run
 

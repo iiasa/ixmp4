@@ -13,8 +13,8 @@ from ixmp4.db import filters, utils
 
 
 class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String | None = filters.Field(None)
-    hierarchy: filters.String | None = filters.Field(None)
+    name: filters.String
+    hierarchy: filters.String
 
     sqla_model: ClassVar[type] = Region
 
@@ -28,7 +28,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String | None = filters.Field(None)
+    name: filters.String
 
     sqla_model: ClassVar[type] = Unit
 
@@ -45,7 +45,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String | None = filters.Field(None)
+    name: filters.String
 
     sqla_model: ClassVar[type] = Variable
 
@@ -61,7 +61,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String | None = filters.Field(None)
+    name: filters.String
 
     sqla_model: ClassVar[type] = Model
 
@@ -77,7 +77,7 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    name: filters.String | None = filters.Field(None)
+    name: filters.String
 
     sqla_model: ClassVar[type] = Scenario
 
@@ -93,7 +93,7 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id | None = filters.Field(None)
+    id: filters.Id
     default_only: filters.Boolean = filters.Field(False)
 
     sqla_model: ClassVar[type] = Run
@@ -161,11 +161,11 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     >>> iamc.tabulate(**filter)
     """
 
-    step_year: filters.Integer | None = filters.Field(None, alias="year")
-    time_series__id: filters.Id | None = filters.Field(None, alias="time_series_id")
-    region: RegionFilter | None = filters.Field(None)
-    unit: UnitFilter | None = filters.Field(None)
-    variable: VariableFilter | None = filters.Field(None)
-    model: ModelFilter | None = filters.Field(None)
-    scenario: ScenarioFilter | None = filters.Field(None)
-    run: RunFilter | None = filters.Field(None)
+    step_year: filters.Integer = filters.Field(None, alias="year")
+    time_series__id: filters.Id = filters.Field(None, alias="time_series_id")
+    region: RegionFilter
+    unit: UnitFilter
+    variable: VariableFilter
+    model: ModelFilter
+    scenario: ScenarioFilter
+    run: RunFilter

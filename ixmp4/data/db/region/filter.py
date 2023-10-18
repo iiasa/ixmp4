@@ -28,8 +28,8 @@ class SimpleIamcRegionFilter(
 
 
 class IamcRegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
-    unit: Annotated[base.UnitFilter | None, filters.Field(None)]
+    variable: base.VariableFilter | None
+    unit: base.UnitFilter | None
     run: Annotated[
         base.RunFilter | None,
         filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),
@@ -40,7 +40,7 @@ class IamcRegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.Filt
 
 
 class RegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: Annotated[IamcRegionFilter | filters.Boolean | None, filters.Field(None)]
+    iamc: IamcRegionFilter | filters.Boolean | None
 
     def filter_iamc(self, exc, c, v, session=None):
         if v is None:

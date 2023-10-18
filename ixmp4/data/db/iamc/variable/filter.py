@@ -10,9 +10,9 @@ from . import Variable
 
 
 class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
-    region: Annotated[base.RegionFilter | None, filters.Field(None)]
-    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
-    unit: Annotated[base.UnitFilter | None, filters.Field(None)]
+    region: base.RegionFilter | None
+    variable: base.VariableFilter | None
+    unit: base.UnitFilter | None
     run: Annotated[
         base.RunFilter | None,
         filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),

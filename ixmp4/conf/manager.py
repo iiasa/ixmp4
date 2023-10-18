@@ -31,7 +31,7 @@ class ManagerPlatformInfo(PlatformInfo):
     access_group: int
     url: str
     name: str = Field(alias="slug")
-    notice: Annotated[str | None, Field(default=None)]
+    notice: str | None = Field(default=None)
 
     class Accessibilty(str, enum.Enum):
         PUBLIC = "PUBLIC"

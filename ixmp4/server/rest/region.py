@@ -57,7 +57,7 @@ def create(
 
 @router.delete("/{id}/")
 def delete(
-    id: Annotated[int, Path()],
+    id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.regions.delete(id)

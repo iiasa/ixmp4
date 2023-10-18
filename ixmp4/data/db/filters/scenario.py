@@ -6,8 +6,8 @@ from .. import Run, Scenario
 
 
 class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id | None = filters.Field(None)
-    name: filters.String | None = filters.Field(None)
+    id: filters.Id
+    name: filters.String
 
     sqla_model: ClassVar[type] = Scenario
 

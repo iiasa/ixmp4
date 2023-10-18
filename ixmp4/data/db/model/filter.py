@@ -1,5 +1,3 @@
-from typing_extensions import Annotated
-
 from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
@@ -30,24 +28,23 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
             exc = exc.join(Run, Run.model)
         return exc
 
-    model: Annotated[base.ModelFilter, filters.Field(default=None, exclude=True)]
+    model: base.ModelFilter = filters.Field(default=None, exclude=True)
 
 
 class IamcModelFilter(base.ModelFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    region: Annotated[base.RegionFilter | None, filters.Field(None)]
-    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
-    unit: Annotated[base.UnitFilter | None, filters.Field(None)]
-    run: Annotated[
-        RunFilter | None,
-        filters.Field(default=RunFilter(id=None, version=None, is_default=True)),
-    ]
+    region: base.RegionFilter
+    variable: base.VariableFilter
+    unit: base.UnitFilter
+    run: RunFilter = filters.Field(
+        default=RunFilter(id=None, version=None, is_default=True)
+    )
 
     def join(self, exc, session=None):
         return super().join_datapoints(exc, session)
 
 
 class ModelFilter(base.ModelFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: Annotated[IamcModelFilter | filters.Boolean | None, filters.Field(None)]
+    iamc: IamcModelFilter | filters.Boolean
 
     def filter_iamc(self, exc, c, v, session=None):
         if v is None:

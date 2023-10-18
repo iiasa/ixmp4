@@ -53,7 +53,7 @@ def create(
 
 @router.post("/{id}/set-as-default-version/")
 def set_as_default_version(
-    id: Annotated[int, Path()],
+    id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.runs.set_as_default_version(id)
@@ -61,7 +61,7 @@ def set_as_default_version(
 
 @router.post("/{id}/unset-as-default-version/")
 def unset_as_default_version(
-    id: Annotated[int, Path()],
+    id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.runs.unset_as_default_version(id)

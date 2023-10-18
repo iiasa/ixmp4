@@ -30,26 +30,25 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
             exc = exc.join(Run, Run.model)
         return exc
 
-    scenario: Annotated[base.ScenarioFilter, filters.Field(default=None, exclude=True)]
+    scenario: base.ScenarioFilter = filters.Field(default=None, exclude=True)
 
 
 class IamcScenarioFilter(
     base.ScenarioFilter, BaseIamcFilter, metaclass=filters.FilterMeta
 ):
-    region: Annotated[base.RegionFilter | None, filters.Field(None)]
-    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
-    unit: Annotated[base.UnitFilter | None, filters.Field(None)]
-    run: Annotated[
-        RunFilter | None,
-        filters.Field(default=RunFilter(id=None, version=None, is_default=True)),
-    ]
+    region: base.RegionFilter
+    variable: base.VariableFilter
+    unit: base.UnitFilter
+    run: RunFilter = filters.Field(
+        default=RunFilter(id=None, version=None, is_default=True)
+    )
 
     def join(self, exc, session=None):
         return super().join_datapoints(exc, session)
 
 
 class ScenarioFilter(base.ScenarioFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: Annotated[IamcScenarioFilter | filters.Boolean | None, filters.Field(None)]
+    iamc: IamcScenarioFilter | filters.Boolean
 
     def filter_iamc(self, exc, c, v, session=None):
         if v is None:

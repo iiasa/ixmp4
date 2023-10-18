@@ -34,8 +34,8 @@ class SimpleIamcUnitFilter(
 
 
 class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    variable: Annotated[base.VariableFilter | None, filters.Field(None)]
-    region: Annotated[base.RegionFilter | None, filters.Field(None)]
+    variable: base.VariableFilter | None
+    region: base.RegionFilter | None
     run: Annotated[
         base.RunFilter | None,
         filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),
@@ -46,7 +46,7 @@ class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMe
 
 
 class UnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: Annotated[IamcUnitFilter | filters.Boolean | None, filters.Field(None)]
+    iamc: IamcUnitFilter | filters.Boolean
 
     def filter_iamc(self, exc, c, v, session=None):
         if v is None:

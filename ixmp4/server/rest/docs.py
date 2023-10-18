@@ -37,7 +37,7 @@ def set_models(
 
 @router.delete("/models/{dimension_id}/")
 def delete_models(
-    dimension_id: Annotated[int, Path()],
+    dimension_id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.models.docs.delete(dimension_id)
@@ -61,7 +61,7 @@ def set_regions(
 
 @router.delete("/regions/{dimension_id}/")
 def delete_regions(
-    dimension_id: Annotated[int, Path()],
+    dimension_id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.regions.docs.delete(dimension_id)
@@ -85,7 +85,7 @@ def set_scenarios(
 
 @router.delete("/scenarios/{dimension_id}/")
 def delete_scenarios(
-    dimension_id: Annotated[int, Path()],
+    dimension_id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.scenarios.docs.delete(dimension_id)
@@ -109,7 +109,7 @@ def set_units(
 
 @router.delete("/units/{dimension_id}/")
 def delete_units(
-    dimension_id: Annotated[int, Path()],
+    dimension_id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.units.docs.delete(dimension_id)
@@ -133,7 +133,7 @@ def set_variables(
 
 @router.delete("/iamc/variables/{dimension_id}/")
 def delete_variables(
-    dimension_id: Annotated[int, Path()],
+    dimension_id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.iamc.variables.docs.delete(dimension_id)
@@ -157,7 +157,7 @@ def set_indexsets(
 
 @router.delete("/optimization/indexsets/{dimension_id}/")
 def delete_indexsets(
-    dimension_id: Annotated[int, Path()],
+    dimension_id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.indexsets.docs.delete(dimension_id)
