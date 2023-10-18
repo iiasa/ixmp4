@@ -28,8 +28,8 @@ class SimpleIamcRegionFilter(
 class IamcRegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
     variable: base.VariableFilter
     unit: base.UnitFilter
-    run: base.RunFilter = (
-        filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),
+    run: base.RunFilter = filters.Field(
+        default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
     def join(self, exc, session=None):
