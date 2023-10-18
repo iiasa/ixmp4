@@ -1,4 +1,3 @@
-# import inspect
 from types import UnionType
 from typing import Any, ClassVar, Iterable, Optional, Union, get_args, get_origin
 
@@ -121,7 +120,6 @@ PydanticMeta: type = type(BaseModel)
 
 class FilterMeta(PydanticMeta):
     def __new__(cls, name: str, bases: tuple, namespace: dict, **kwargs):
-        # field_types = inspect.get_annotations(cls)
         annots = namespace.get("__annotations__", {}).copy()
         for name, annot in annots.items():
             if get_origin(annot) == ClassVar:
@@ -235,12 +233,6 @@ class FilterMeta(PydanticMeta):
             else:
                 field = namespace.get(filter_name, Field(None))
             field.json_schema_extra = {"sqla_column": name}
-            # if (
-            #     base_field_alias is not None
-            #     and base_field_alias != name
-            #     and lookup_alias != "__root__"
-            # ):
-            #     field.alias = base_field_alias + argument_seperator + lookup_alias
             namespace[filter_name] = field
 
 
