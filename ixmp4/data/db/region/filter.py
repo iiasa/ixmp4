@@ -1,5 +1,3 @@
-from typing_extensions import Annotated
-
 from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
@@ -28,12 +26,11 @@ class SimpleIamcRegionFilter(
 
 
 class IamcRegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    variable: base.VariableFilter | None
-    unit: base.UnitFilter | None
-    run: Annotated[
-        base.RunFilter | None,
+    variable: base.VariableFilter
+    unit: base.UnitFilter
+    run: base.RunFilter = (
         filters.Field(default=base.RunFilter(id=None, version=None, is_default=True)),
-    ]
+    )
 
     def join(self, exc, session=None):
         return super().join_datapoints(exc, session)

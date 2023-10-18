@@ -7,7 +7,6 @@ from functools import lru_cache
 import httpx
 import pandas as pd
 from pydantic import Field
-from typing_extensions import Annotated
 
 from ixmp4.core.exceptions import ManagerApiError, PlatformNotFound
 

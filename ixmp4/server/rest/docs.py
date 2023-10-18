@@ -1,5 +1,3 @@
-from typing import Annotated
-
 from fastapi import APIRouter, Depends, Path, Query
 
 from ixmp4.data import api
