@@ -166,7 +166,7 @@ class FilterMeta(PydanticMeta):
                     )
                 return lookups
             else:
-                return {}
+                return {"__root__": (field_type, exact)}
         else:
             return lookup_map[field_type]
 

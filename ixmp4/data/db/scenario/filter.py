@@ -1,5 +1,3 @@
-from typing_extensions import Annotated
-
 from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
