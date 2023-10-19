@@ -44,7 +44,7 @@ def login(
     ),
 ):
     try:
-        auth = ManagerAuth(username, password, settings.manager_url)
+        auth = ManagerAuth(username, password, str(settings.manager_url))
         user = auth.get_user()
         utils.good(f"Successfully authenticated as user '{user.username}'.")
         if typer.confirm(

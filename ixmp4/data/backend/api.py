@@ -65,11 +65,12 @@ class RestBackend(Backend):
         logger.debug("Server Is Managed: " + str(api_info.is_managed))
         if api_info.manager_url is not None:
             if (
-                api_info.manager_url.rstrip("/") != settings.manager_url.rstrip("/")
+                api_info.manager_url.rstrip("/")
+                != str(settings.manager_url).rstrip("/")
                 and api_info.is_managed
             ):
-                logger.error("Server Manager URL: " + api_info.manager_url)
-                logger.error("Local Manager URL: " + settings.manager_url)
+                logger.error(f"Server Manager URL: {api_info.manager_url}")
+                logger.error(f"Local Manager URL: {settings.manager_url}")
                 raise ImproperlyConfigured(
                     "Trying to connect to a managed REST Platform "
                     "with a mismatching Manager URL."

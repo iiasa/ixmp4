@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -18,8 +19,8 @@ class ScenarioInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.Scenario] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.Scenario] | api.DataFrame
 
 
 @autodoc
@@ -48,4 +49,4 @@ def create(
     scenario: ScenarioInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.scenarios.create(**scenario.dict())
+    return backend.scenarios.create(**scenario.model_dump())

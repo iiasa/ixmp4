@@ -6,9 +6,10 @@ Core API (ixmp4.core)
    
    platform
    run
+   model
+   scenario
    iamc
    meta
    region
    unit
    exceptions
-

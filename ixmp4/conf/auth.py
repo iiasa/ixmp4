@@ -57,7 +57,7 @@ class SelfSignedAuth(BaseAuth, httpx.Auth):
                 "jti": self.jti,
                 "sub": "ixmp4",
                 "iss": "ixmp4",
-                "user": self.user.dict(),
+                "user": self.user.model_dump(),
             },
             self.secret,
             algorithm="HS256",

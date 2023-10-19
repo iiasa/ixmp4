@@ -1,6 +1,7 @@
 import pytest
 
-from ixmp4 import DataPoint, InconsistentIamcType
+from ixmp4 import DataPoint
+from ixmp4.core.exceptions import SchemaError
 
 from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
 
@@ -20,7 +21,7 @@ def test_run_annual_datapoints_from_pyam(test_mp, test_data_annual):
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.CATEGORICAL, DataPoint.Type.DATETIME))
 def test_run_inconsistent_annual_raises(test_mp, test_data_annual, _type):
-    with pytest.raises(InconsistentIamcType):
+    with pytest.raises(SchemaError):
         do_run_datapoints(test_mp, test_data_annual, _type)
 
 
@@ -32,7 +33,7 @@ def test_run_categorical_datapoints(test_mp, test_data_categorical):
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.ANNUAL, DataPoint.Type.DATETIME))
 def test_run_inconsistent_categorical_raises(test_mp, test_data_categorical, _type):
-    with pytest.raises(InconsistentIamcType):
+    with pytest.raises(SchemaError):
         do_run_datapoints(test_mp, test_data_categorical, _type)
 
 
@@ -44,7 +45,7 @@ def test_run_datetime_datapoints(test_mp, test_data_datetime):
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.ANNUAL, DataPoint.Type.CATEGORICAL))
 def test_run_inconsistent_datetime_type_raises(test_mp, test_data_datetime, _type):
-    with pytest.raises(InconsistentIamcType):
+    with pytest.raises(SchemaError):
         do_run_datapoints(test_mp, test_data_datetime, _type)
 
 

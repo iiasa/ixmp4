@@ -53,7 +53,7 @@ class TimeSeriesRepository(
 ):
     def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
         if not db.utils.is_joined(exc, Run):
-            exc = exc.join(Run, onclause=Run.id == TimeSeries.run__id)
+            exc = exc.join(Run, onclause=Run.id == self.model_class.run__id)
         if not db.utils.is_joined(exc, Model):
             exc = exc.join(Model, Run.model)
 

@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from ixmp4.db import filters, utils
 
 from .. import Run, TimeSeries
@@ -10,11 +12,10 @@ class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     version: filters.Integer
     default_only: filters.Boolean = filters.Field(True)
     is_default: filters.Boolean
-    model: ModelFilter | None
-    scenario: ScenarioFilter | None
+    model: ModelFilter
+    scenario: ScenarioFilter
 
-    class Config:
-        sqla_model = Run
+    sqla_model: ClassVar[type] = Run
 
     def filter_default_only(self, exc, c, v, **kwargs):
         if v:

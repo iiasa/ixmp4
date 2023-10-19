@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from ixmp4.db import filters, utils
 
 from .. import Measurand, TimeSeries, Variable
@@ -7,8 +9,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     id: filters.Id
     name: filters.String
 
-    class Config:
-        sqla_model = Variable
+    sqla_model: ClassVar[type] = Variable
 
     def join(self, exc, **kwargs):
         if not utils.is_joined(exc, Measurand):

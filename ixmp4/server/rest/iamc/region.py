@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -13,8 +14,8 @@ router: APIRouter = APIRouter(
 )
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.Region] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.Region] | api.DataFrame
 
 
 @router.get("/", response_model=EnumerationOutput)
@@ -28,7 +29,9 @@ def enumerate(
 
 @router.patch("/", response_model=EnumerationOutput)
 def query(
-    filter: IamcRegionFilter = Body(IamcRegionFilter()),
+    filter: IamcRegionFilter = Body(
+        IamcRegionFilter(id=None, name=None, hierarchy=None)
+    ),
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):

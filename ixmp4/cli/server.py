@@ -15,14 +15,8 @@ app = typer.Typer()
 
 @app.command()
 def start(
-    host: Optional[str] = typer.Option(
-        "127.0.0.1",
-        help="The hostname to bind to.",
-    ),
-    port: Optional[int] = typer.Option(
-        9000,
-        help="Requested server port.",
-    ),
+    host: str = typer.Option(default="127.0.0.1", help="The hostname to bind to."),
+    port: int = typer.Option(default=9000, help="Requested server port."),
 ) -> None:
     """Starts the ixmp4 web api."""
     reload = settings.mode != "production"

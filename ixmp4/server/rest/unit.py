@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -18,8 +19,8 @@ class UnitInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: api.DataFrame | list[api.Unit]
+class EnumerationOutput(BaseModel, RootModel):
+    root: api.DataFrame | list[api.Unit]
 
 
 @autodoc
@@ -47,12 +48,12 @@ def create(
     unit: UnitInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.units.create(**unit.dict())
+    return backend.units.create(**unit.model_dump())
 
 
 @router.delete("/{id}/")
 def delete(
-    id: int = Path(None),
+    id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.units.delete(id)

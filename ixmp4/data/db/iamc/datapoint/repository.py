@@ -27,7 +27,7 @@ from .filter import DataPointFilter
 from .model import DataPoint
 
 
-class RemoveDataPointFrameSchema(pa.SchemaModel):
+class RemoveDataPointFrameSchema(pa.DataFrameModel):
     type: Series[pa.String] | None = pa.Field(isin=[t for t in DataPoint.Type])
     step_year: Series[pa.Int] | None = pa.Field(coerce=True, nullable=True)
     step_datetime: Series[pa.DateTime] | None = pa.Field(coerce=True, nullable=True)

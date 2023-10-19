@@ -1,5 +1,3 @@
-from typing import Optional, Union
-
 from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
@@ -34,10 +32,10 @@ class SimpleIamcUnitFilter(
 
 
 class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    variable: base.VariableFilter | None
-    region: base.RegionFilter | None
-    run: base.RunFilter | None = filters.Field(
-        default=base.RunFilter(id=None, version=None)
+    variable: base.VariableFilter
+    region: base.RegionFilter
+    run: base.RunFilter = filters.Field(
+        default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
     def join(self, exc, session=None):
@@ -45,7 +43,7 @@ class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMe
 
 
 class UnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: Optional[Union[IamcUnitFilter, filters.Boolean]]
+    iamc: IamcUnitFilter | filters.Boolean
 
     def filter_iamc(self, exc, c, v, session=None):
         if v is None:

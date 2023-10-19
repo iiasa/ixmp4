@@ -10,6 +10,7 @@ IAMC Data
    :members:
    :undoc-members:
    :show-inheritance:
+   :noindex:
 
 
 .. automodule:: ixmp4.core.iamc.repository

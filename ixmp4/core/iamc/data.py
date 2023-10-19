@@ -21,7 +21,7 @@ def to_dimensionless(df: pd.DataFrame) -> pd.DataFrame:
     return df
 
 
-class RemoveDataPointFrameSchema(pa.SchemaModel):
+class RemoveDataPointFrameSchema(pa.DataFrameModel):
     type: Optional[Series[pa.String]] = pa.Field(isin=[t for t in DataPointModel.Type])
     step_year: Optional[Series[pa.Int]] = pa.Field(coerce=True, nullable=True)
     step_datetime: Optional[Series[pa.DateTime]] = pa.Field(coerce=True, nullable=True)

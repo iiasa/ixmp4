@@ -12,7 +12,9 @@ from ixmp4.core.exceptions import Forbidden, InvalidToken, PlatformNotFound
 from ixmp4.data.backend.db import SqlAlchemyBackend
 
 logger = logging.getLogger(__name__)
-manager = ManagerConfig(settings.manager_url, SelfSignedAuth(settings.secret_hs256))
+manager = ManagerConfig(
+    str(settings.manager_url), SelfSignedAuth(settings.secret_hs256)
+)
 
 
 async def validate_token(authorization: str = Header(None)) -> dict | None:
@@ -33,7 +35,7 @@ async def validate_token(authorization: str = Header(None)) -> dict | None:
 
 async def do_not_validate_token(authorization: str = Header(None)) -> dict | None:
     """Override dependency used for skipping authentication while testing."""
-    return {"user": local_user.dict()}
+    return {"user": local_user.model_dump()}
 
 
 async def get_user(token: dict | None = Depends(validate_token)) -> User:
@@ -57,7 +59,7 @@ async def get_version():
 
 
 async def get_managed_backend(
-    platform: str = Path("default"), user: User = Depends(get_user)
+    platform: str = Path(), user: User = Depends(get_user)
 ) -> AsyncGenerator[SqlAlchemyBackend, None]:
     """Returns a platform backend for a platform name as a path parameter.
     Also checks user access permissions if in managed mode."""
@@ -79,7 +81,7 @@ async def get_managed_backend(
 
 
 async def get_toml_backend(
-    platform: str = Path("default"), user: User = Depends(get_user)
+    platform: str = Path(), user: User = Depends(get_user)
 ) -> AsyncGenerator[SqlAlchemyBackend, None]:
     logger.debug("Looking for platform in `platforms.toml`.")
     info = settings.toml.get_platform(platform)
@@ -99,7 +101,7 @@ else:
 
 def get_test_backend_dependency(backend, auth_params) -> Callable:
     async def get_memory_backend(
-        platform: str = Path("default"), user: User = Depends(get_user)
+        platform: str = Path(), user: User = Depends(get_user)
     ) -> AsyncGenerator[SqlAlchemyBackend, None]:
         """Override dependency which always yields a test backend."""
         with backend.auth(*auth_params, overlap_ok=True):

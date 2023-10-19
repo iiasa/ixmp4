@@ -2,6 +2,7 @@ from datetime import datetime
 from typing import ClassVar, Iterable
 
 import pandas as pd
+from pydantic import Field
 
 from ixmp4.data import abstract
 
@@ -16,8 +17,8 @@ class Unit(base.BaseModel):
 
     id: int
     name: str
-    created_at: datetime | None
-    created_by: str | None
+    created_at: datetime | None = Field(None)
+    created_by: str | None = Field(None)
 
 
 class UnitDocsRepository(DocsRepository):

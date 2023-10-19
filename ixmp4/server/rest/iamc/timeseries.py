@@ -1,6 +1,7 @@
 from typing import Any
 
 from fastapi import APIRouter, Depends, Query, Request, Response
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -19,8 +20,8 @@ class TimeSeriesInput(BaseModel):
     parameters: dict[str, Any]
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.TimeSeries] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.TimeSeries] | api.DataFrame
 
 
 @router.get("/", response_model=EnumerationOutput)
@@ -46,7 +47,7 @@ def create(
     timeseries: TimeSeriesInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.iamc.timeseries.create(**timeseries.dict())
+    return backend.iamc.timeseries.create(**timeseries.model_dump())
 
 
 @router.get("/{id}/", response_model=api.TimeSeries)
