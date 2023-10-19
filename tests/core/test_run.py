@@ -2,7 +2,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4 import DataPoint, InconsistentIamcType, IxmpError, Run
+from ixmp4 import DataPoint, IxmpError, Run
+from ixmp4.core.exceptions import SchemaError
 
 from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
 
@@ -95,7 +96,7 @@ class TestCoreRun:
         "_type", (DataPoint.Type.CATEGORICAL, DataPoint.Type.DATETIME)
     )
     def test_run_inconsistent_annual_raises(self, test_mp, test_data_annual, _type):
-        with pytest.raises(InconsistentIamcType):
+        with pytest.raises(SchemaError):
             do_run_datapoints(test_mp, test_data_annual, _type)
 
     def test_run_categorical_datapoints(self, test_mp, test_data_categorical):
@@ -105,7 +106,7 @@ class TestCoreRun:
     def test_run_inconsistent_categorical_raises(
         self, test_mp, test_data_categorical, _type
     ):
-        with pytest.raises(InconsistentIamcType):
+        with pytest.raises(SchemaError):
             do_run_datapoints(test_mp, test_data_categorical, _type)
 
     def test_run_datetime_datapoints(self, test_mp, test_data_datetime):
@@ -117,7 +118,7 @@ class TestCoreRun:
     def test_run_inconsistent_datetime_type_raises(
         self, test_mp, test_data_datetime, _type
     ):
-        with pytest.raises(InconsistentIamcType):
+        with pytest.raises(SchemaError):
             do_run_datapoints(test_mp, test_data_datetime, _type)
 
     def test_unit_dimensionless(self, test_mp, test_data_annual):

@@ -5,7 +5,8 @@ from pathlib import Path
 from typing import Literal
 
 from httpx import ConnectError
-from pydantic import BaseSettings, Extra, Field, HttpUrl, validator
+from pydantic import Field, HttpUrl, field_validator
+from pydantic_settings import BaseSettings, SettingsConfigDict
 
 from ixmp4.core.exceptions import InvalidCredentials
 
@@ -24,15 +25,15 @@ class Settings(BaseSettings):
     mode: Literal["production"] | Literal["development"] | Literal[
         "debug"
     ] = "production"
-    storage_directory: Path = Field("~/.local/share/ixmp4/", env="ixmp4_dir")
+    storage_directory: Path = Field(
+        "~/.local/share/ixmp4/", json_schema_extra={"env": "ixmp4_dir"}
+    )
     secret_hs256: str = "default_secret_hs256"
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
     manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
     managed: bool = True
 
-    class Config:
-        env_prefix = "ixmp4_"
-        extra = Extra.allow
+    model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -92,7 +93,7 @@ class Settings(BaseSettings):
         if self.default_credentials is not None:
             try:
                 self._default_auth = ManagerAuth(
-                    *self.default_credentials, self.manager_url
+                    *self.default_credentials, str(self.manager_url)
                 )
                 logger.info(
                     f"Connecting as user '{self._default_auth.get_user().username}'."
@@ -106,7 +107,9 @@ class Settings(BaseSettings):
             self._default_auth = AnonymousAuth()
 
     def load_manager_config(self):
-        self._manager = ManagerConfig(self.manager_url, self.default_auth, remote=True)
+        self._manager = ManagerConfig(
+            str(self.manager_url), self.default_auth, remote=True
+        )
 
     def load_toml_config(self):
         if self.default_auth is not None:
@@ -120,7 +123,7 @@ class Settings(BaseSettings):
         toml_config.touch()
         self._toml = TomlConfig(toml_config, toml_user)
 
-    @validator("storage_directory")
+    @field_validator("storage_directory")
     def expand_user(cls, v):
         # translate ~/asdf into /home/user/asdf
         return Path.expanduser(v)
@@ -139,4 +142,4 @@ class Settings(BaseSettings):
     def check_credentials(self):
         if self.default_credentials is not None:
             username, password = self.default_credentials
-            ManagerAuth(username, password, self.manager_url)
+            ManagerAuth(username, password, str(self.manager_url))

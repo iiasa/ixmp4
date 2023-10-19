@@ -1,3 +1,5 @@
+from typing import ClassVar
+
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -14,8 +16,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
     hierarchy: filters.String
 
-    class Config:
-        sqla_model = Region
+    sqla_model: ClassVar[type] = Region
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -29,8 +30,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
 
-    class Config:
-        sqla_model = Unit
+    sqla_model: ClassVar[type] = Unit
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -47,8 +47,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
 
-    class Config:
-        sqla_model = Variable
+    sqla_model: ClassVar[type] = Variable
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -64,8 +63,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
 
-    class Config:
-        sqla_model = Model
+    sqla_model: ClassVar[type] = Model
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -81,8 +79,7 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
 
-    class Config:
-        sqla_model = Scenario
+    sqla_model: ClassVar[type] = Scenario
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -97,10 +94,9 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     id: filters.Id
-    default_only: filters.Boolean
+    default_only: filters.Boolean = filters.Field(False)
 
-    class Config:
-        sqla_model = Run
+    sqla_model: ClassVar[type] = Run
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -165,11 +161,11 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     >>> iamc.tabulate(**filter)
     """
 
-    step_year: filters.Integer = filters.Field(alias="year")
-    time_series__id: filters.Id = filters.Field(alias="time_series_id")
-    region: RegionFilter | None
-    unit: UnitFilter | None
-    variable: VariableFilter | None
-    model: ModelFilter | None
-    scenario: ScenarioFilter | None
-    run: RunFilter | None
+    step_year: filters.Integer = filters.Field(None, alias="year")
+    time_series__id: filters.Id = filters.Field(None, alias="time_series_id")
+    region: RegionFilter
+    unit: UnitFilter
+    variable: VariableFilter
+    model: ModelFilter
+    scenario: ScenarioFilter
+    run: RunFilter

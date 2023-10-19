@@ -1,4 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Query
+from pydantic import RootModel
 
 from ixmp4.data import api
 from ixmp4.data.backend.base import Backend
@@ -18,8 +19,8 @@ class VariableInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel):
-    __root__: list[api.Variable] | api.DataFrame
+class EnumerationOutput(BaseModel, RootModel):
+    root: list[api.Variable] | api.DataFrame
 
 
 @autodoc
@@ -35,7 +36,7 @@ def enumerate(
 @autodoc
 @router.patch("/", response_model=EnumerationOutput)
 def query(
-    filter: VariableFilter = Body(VariableFilter()),
+    filter: VariableFilter = Body(VariableFilter(id=None, name=None)),
     table: bool = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
@@ -48,4 +49,4 @@ def create(
     variable: VariableInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.iamc.variables.create(**variable.dict())
+    return backend.iamc.variables.create(**variable.model_dump())

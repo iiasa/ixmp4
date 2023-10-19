@@ -11,8 +11,8 @@ class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
     region: base.RegionFilter | None
     variable: base.VariableFilter | None
     unit: base.UnitFilter | None
-    run: base.RunFilter | None = filters.Field(
-        default=base.RunFilter(id=None, version=None)
+    run: base.RunFilter = filters.Field(
+        default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
     def join(self, exc, session=None):

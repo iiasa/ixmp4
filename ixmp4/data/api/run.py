@@ -1,6 +1,7 @@
 from typing import ClassVar, Iterable
 
 import pandas as pd
+from pydantic import Field
 
 from ixmp4.data import abstract
 
@@ -19,7 +20,7 @@ class Run(base.BaseModel):
     id: int
 
     model: Model
-    model__id: int
+    id_of_model: int = Field(..., alias="model__id")
 
     scenario: Scenario
     scenario__id: int

@@ -87,7 +87,8 @@ class IndexSetRepository(
             The name of an IndexSet. If supplied only one result will be returned.
         # TODO: Update kwargs
         **kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
 
         Returns
         -------
@@ -105,7 +106,8 @@ class IndexSetRepository(
             The name of an IndexSet. If supplied only one result will be returned.
         # TODO: Update kwargs
         **kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
 
         Returns
         -------

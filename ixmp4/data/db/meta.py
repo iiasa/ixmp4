@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable, Optional, Union, cast
+from typing import ClassVar, Iterable, Optional, Union
 
 import pandas as pd
 import pandera as pa
@@ -16,7 +16,7 @@ from ..auth.decorators import guard
 from . import base
 
 
-class RemoveRunMetaEntryFrameSchema(pa.SchemaModel):
+class RemoveRunMetaEntryFrameSchema(pa.DataFrameModel):
     key: Series[pa.String] = pa.Field(coerce=True)
     run__id: Series[pa.Int] = pa.Field(coerce=True)
 
@@ -249,8 +249,8 @@ class RunMetaEntryRepository(
         self.check_df_access(df)
         df["type"] = df["value"].map(type).map(RunMetaEntry.Type.from_pytype)
 
+        type_: RunMetaEntry.Type
         for type_, type_df in df.groupby("type"):
-            type_ = cast(RunMetaEntry.Type, type_)
             col = RunMetaEntry._column_map[type_]
             null_cols = set(RunMetaEntry._column_map.values()) - set([col])
             type_df["type"] = type_df["type"].map(lambda x: x.value)

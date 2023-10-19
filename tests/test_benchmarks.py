@@ -9,7 +9,7 @@ from .utils import add_regions, add_units, all_platforms
 
 # skip tests if performance test file not found
 if TEST_DATA_BIG is None:
-    pytestmark = pytest.mark.skip(msg="Performance test file not found")  # type: ignore
+    pytestmark = pytest.mark.skip(reason="Performance test file not found")  # type: ignore
 
 
 def add_datapoints(test_mp, df, type=None):

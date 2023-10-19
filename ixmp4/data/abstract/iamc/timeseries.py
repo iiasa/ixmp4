@@ -162,7 +162,7 @@ class TimeSeriesRepository(
                 - id
                 - run__id
                 - ... parameter id columns
-                or:
+                  Or:
                 - ... parameter value columns
         """
         ...
@@ -178,11 +178,14 @@ class TimeSeriesRepository(
             A data frame with the columns:
                 - id
                 - run__id
+
                 if `create_related` = False:
                     - ... parameter id columns
+
                 else:
-                    - ... parameter value columns
-                    (i.e `region` column with value "World" instead of `region__id` column with value "1".)
+                    - ... parameter value columns (i.e `region` column with value "World" instead
+                      of `region__id` column with value "1".)
+
         create_related : bool
             Creates related database entries with value data supplied in `df`.
         """

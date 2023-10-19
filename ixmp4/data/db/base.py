@@ -241,21 +241,12 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
             return self.list(*args, **kwargs)
 
 
-class BulkOperator(Selecter[ModelType]):
+class BulkOperator(Tabulator[ModelType]):
     merge_suffix: str = "_y"
 
     @property
     def max_list_length(self) -> int:
         return 50_000
-
-    def tabulate(
-        self,
-        *args,
-        _exc: db.sql.Select | None = None,
-        _raw: bool | None = False,
-        **kwargs,
-    ) -> pd.DataFrame:
-        ...
 
     def merge_existing(
         self, df: pd.DataFrame, existing_df: pd.DataFrame
@@ -301,7 +292,7 @@ class BulkOperator(Selecter[ModelType]):
 
     def split_by_max_unique_values(
         self, df: pd.DataFrame, columns: Iterable[str], mu: int
-    ) -> Tuple[pd.DataFrame | pd.Series, pd.DataFrame | pd.Series]:
+    ) -> Tuple[pd.DataFrame, pd.DataFrame]:
         df_len = len(df.index)
         chunk_size = df_len
         remaining_df = pd.DataFrame()

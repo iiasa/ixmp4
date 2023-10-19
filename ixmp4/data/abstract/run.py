@@ -148,7 +148,7 @@ class RunRepository(
         version: int | None = None,
         **kwargs,
     ) -> Iterable[Run]:
-        """Lists runs by specified criteria.
+        r"""Lists runs by specified criteria.
 
         Parameters
         ----------
@@ -156,8 +156,8 @@ class RunRepository(
             The run's version.
         default_only : bool
             True by default. This function will return default runs only if true.
-        **kwargs: any
-            More filter parameters as specified in `ixmp4...data.db.run.filters.RunFilter`.
+        \*\*kwargs: any
+            More filter parameters as specified in `ixmp4.data.db.run.filters.RunFilter`.
 
         Returns
         -------
@@ -172,7 +172,7 @@ class RunRepository(
         version: int | None = None,
         **kwargs,
     ) -> pd.DataFrame:
-        """Tabulate runs by specified criteria.
+        r"""Tabulate runs by specified criteria.
 
         Parameters
         ----------
@@ -180,8 +180,8 @@ class RunRepository(
             The run's version.
         default_only : bool
             True by default. This function will return default runs only if true.
-        **kwargs: any
-            More filter parameters as specified in `ixmp4....data.db.run.filters.RunFilter`.
+        \*\*kwargs: any
+            More filter parameters as specified in `ixmp4.data.db.run.filters.RunFilter`.
 
         Returns
         -------

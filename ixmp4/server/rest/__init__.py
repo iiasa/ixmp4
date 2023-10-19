@@ -10,11 +10,10 @@ from ixmp4.core.exceptions import IxmpError
 
 from . import deps, docs, meta, model, region, run, scenario, unit
 from .base import BaseModel
-from .iamc import datapoint
+from .iamc import datapoint, timeseries
 from .iamc import model as iamc_model
 from .iamc import region as iamc_region
 from .iamc import scenario as iamc_scenario
-from .iamc import timeseries
 from .iamc import unit as iamc_unit
 from .iamc import variable as iamc_variable
 from .optimization import indexset
@@ -57,14 +56,14 @@ class APIInfo(BaseModel):
 
 @v1.get("/", response_model=APIInfo)
 def root(
-    platform: str = Path("default"),
+    platform: str = Path(),
     version: str = Depends(deps.get_version),
 ):
     return APIInfo(
         name=platform,
         version=version,
         is_managed=settings.managed,
-        manager_url=settings.manager_url,
+        manager_url=str(settings.manager_url),
         utcnow=datetime.utcnow(),
     )
 

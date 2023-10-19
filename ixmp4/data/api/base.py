@@ -4,6 +4,8 @@ from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, Ty
 import httpx
 import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
+from pydantic import ConfigDict, Field, GetCoreSchemaHandler
+from pydantic_core import CoreSchema, core_schema
 
 from ixmp4.core.exceptions import (
     ImproperlyConfigured,
@@ -17,44 +19,45 @@ class BaseModel(PydanticBaseModel):
     NotFound: ClassVar[type[IxmpError]]
     NotUnique: ClassVar[type[IxmpError]]
 
-    class Config:
-        orm_mode = True
+    model_config = ConfigDict(from_attributes=True)
+
+
+def df_to_dict(df: pd.DataFrame) -> dict:
+    columns = []
+    dtypes = []
+    for c in df.columns:
+        columns.append(c)
+        dtypes.append(df[c].dtype.name)
+
+    return {
+        "index": df.index.to_list(),
+        "columns": columns,
+        "dtypes": dtypes,
+        "data": df.values.tolist(),
+    }
 
 
 class DataFrame(PydanticBaseModel):
-    index: list | None
-    columns: list[str]
-    dtypes: list[str]
-    data: list
+    index: list | None = Field(None)
+    columns: list[str] | None
+    dtypes: list[str] | None
+    data: list | None
+
+    model_config = ConfigDict(json_encoders={pd.Timestamp: lambda x: x.isoformat()})
 
     @classmethod
-    def __get_validators__(cls):
-        yield cls.validate
+    def __get_pydantic_core_schema__(
+        cls, source_type: Any, handler: GetCoreSchemaHandler
+    ) -> CoreSchema:
+        return core_schema.no_info_before_validator_function(cls.validate, handler(cls))
+        # yield cls.validate
 
     @classmethod
     def validate(cls, df: pd.DataFrame | dict):
         if isinstance(df, pd.DataFrame):
-            return cls.from_pandas(df)
+            return df_to_dict(df)
         else:
-            return cls(**df)
-
-    class Config:
-        json_encoders = {pd.Timestamp: lambda x: x.isoformat()}
-
-    @classmethod
-    def from_pandas(cls, df: pd.DataFrame) -> "DataFrame":
-        columns = []
-        dtypes = []
-        for c in df.columns:
-            columns.append(c)
-            dtypes.append(df[c].dtype.name)
-
-        return DataFrame(
-            index=df.index.tolist(),
-            columns=columns,
-            dtypes=dtypes,
-            data=df.values.tolist(),
-        )
+            return df
 
     def to_pandas(self) -> pd.DataFrame:
         df = pd.DataFrame(
@@ -62,9 +65,10 @@ class DataFrame(PydanticBaseModel):
             columns=self.columns,
             data=self.data,
         )
-        for c, dt in zip(self.columns, self.dtypes):
-            # there seems to be a type incompatbility between StrDtypeArg and str
-            df[c] = df[c].astype(dt)  # type: ignore
+        if self.columns and self.dtypes:
+            for c, dt in zip(self.columns, self.dtypes):
+                # there seems to be a type incompatbility between StrDtypeArg and str
+                df[c] = df[c].astype(dt)  # type: ignore
         return df
 
 
@@ -211,21 +215,23 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
 
 class BulkUpserter(BaseRepository[ModelType]):
     def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
-        sdf = DataFrame.from_pandas(df)
+        dict_ = df_to_dict(df)
+        json_ = DataFrame(**dict_).model_dump_json()
         self._request(
             "POST",
             self.prefix + "bulk/",
             params=kwargs,
-            data=sdf.json(),
+            content=json_,
         )
 
 
 class BulkDeleter(BaseRepository[ModelType]):
     def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
-        sdf = DataFrame.from_pandas(df)
+        dict_ = df_to_dict(df)
+        json_ = DataFrame(**dict_).model_dump_json()
         self._request(
             "PATCH",
             self.prefix + "bulk/",
             params=kwargs,
-            data=sdf.json(),
+            content=json_,
         )
