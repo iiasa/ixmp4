@@ -30,6 +30,7 @@ class RunMetaEntryRepository(
 ):
     model_class = RunMetaEntry
     prefix = "meta/"
+    enumeration_method = "PATCH"
 
     def create(
         self,

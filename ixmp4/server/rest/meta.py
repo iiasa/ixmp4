@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Depends, Path, Query
+from fastapi import APIRouter, Body, Depends, Path, Query
 from pydantic import RootModel
 
 from ixmp4.data import abstract, api
@@ -27,13 +27,22 @@ class EnumerationOutput(BaseModel, RootModel):
 @router.get("/", response_model=EnumerationOutput)
 def enumerate(
     filter: RunMetaEntryFilter = Depends(),
-    table: bool | None = Query(False),
+    table: bool = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.meta.enumerate(
         _filter=filter,
         table=bool(table),
     )
+
+
+@router.patch("/", response_model=EnumerationOutput)
+def query(
+    filter: RunMetaEntryFilter = Body(None),
+    table: bool = Query(False),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.meta.enumerate(_filter=filter, table=bool(table))
 
 
 @router.post("/", response_model=api.RunMetaEntry)
