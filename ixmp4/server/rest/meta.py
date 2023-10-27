@@ -3,6 +3,7 @@ from pydantic import RootModel
 
 from ixmp4.data import abstract, api
 from ixmp4.data.backend.base import Backend
+from ixmp4.data.db.meta.filter import RunMetaEntryFilter
 
 from . import deps
 from .base import BaseModel
@@ -25,15 +26,13 @@ class EnumerationOutput(BaseModel, RootModel):
 
 @router.get("/", response_model=EnumerationOutput)
 def enumerate(
-    run_ids: list[int] | None = Query(None),
-    keys: list[str] | None = Query(None),
+    filter: RunMetaEntryFilter = Depends(),
     table: bool | None = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.meta.enumerate(
+        _filter=filter,
         table=bool(table),
-        run_ids=run_ids,
-        keys=keys,
     )
 
 
