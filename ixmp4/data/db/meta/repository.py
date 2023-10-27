@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable, Optional, Union
+from typing import Iterable, Union
 
 import pandas as pd
 import pandera as pa
@@ -7,13 +7,13 @@ from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
 from ixmp4.core.decorators import check_types
-from ixmp4.core.exceptions import InvalidRunMeta
-from ixmp4.data import abstract, types
+from ixmp4.data import abstract
+from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
 
-from ..auth.decorators import guard
-from . import base
+from .. import base
+from .model import RunMetaEntry
 
 
 class RemoveRunMetaEntryFrameSchema(pa.DataFrameModel):
@@ -33,75 +33,6 @@ class UpdateRunMetaEntryFrameSchema(AddRunMetaEntryFrameSchema):
     id: Series[pa.Int] = pa.Field(coerce=True)
 
 
-class RunMetaEntry(base.BaseModel):
-    NotFound: ClassVar = abstract.RunMetaEntry.NotFound
-    NotUnique: ClassVar = abstract.RunMetaEntry.NotUnique
-    DeletionPrevented: ClassVar = abstract.RunMetaEntry.DeletionPrevented
-
-    Type: ClassVar = abstract.RunMetaEntry.Type
-
-    _column_map = {
-        abstract.RunMetaEntry.Type.INT: "value_int",
-        abstract.RunMetaEntry.Type.STR: "value_str",
-        abstract.RunMetaEntry.Type.FLOAT: "value_float",
-        abstract.RunMetaEntry.Type.BOOL: "value_bool",
-    }
-
-    __table_args__ = (
-        db.UniqueConstraint(
-            "run__id",
-            "key",
-        ),
-    )
-    updateable_columns = [
-        "type",
-        "value_int",
-        "value_str",
-        "value_float",
-        "value_bool",
-    ]
-
-    run__id: types.Integer = db.Column(
-        db.Integer,
-        db.ForeignKey("run.id"),
-        nullable=False,
-        index=True,
-    )
-    run = db.relationship(
-        "Run",
-        backref="meta",
-        foreign_keys=[run__id],
-    )
-
-    key: types.String = db.Column(db.String(1023), nullable=False)
-    type: types.String = db.Column(db.String(20), nullable=False)
-
-    value_int: types.Integer = db.Column(db.Integer, nullable=True)
-    value_str: types.String = db.Column(db.String(1023), nullable=True)
-    value_float: types.Float = db.Column(db.Float, nullable=True)
-    value_bool: types.Boolean = db.Column(db.Boolean, nullable=True)
-
-    @property
-    def value(self) -> abstract.MetaValue:
-        type_ = RunMetaEntry.Type(self.type)
-        col = self._column_map[type_]
-        return getattr(self, col)
-
-    def __init__(self, *args, **kwargs) -> None:
-        value = kwargs.pop("value")
-        value_type = type(value)
-        try:
-            type_ = RunMetaEntry.Type.from_pytype(value_type)
-            col = self._column_map[type_]
-        except KeyError:
-            raise InvalidRunMeta(
-                f"Invalid type `{value_type}` for value of `RunMetaEntry`."
-            )
-        kwargs["type"] = type_
-        kwargs[col] = value
-        super().__init__(*args, **kwargs)
-
-
 class RunMetaEntryRepository(
     base.Creator[RunMetaEntry],
     base.Enumerator[RunMetaEntry],
@@ -110,6 +41,12 @@ class RunMetaEntryRepository(
     abstract.RunMetaEntryRepository,
 ):
     model_class = RunMetaEntry
+
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        from .filter import RunMetaEntryFilter
+
+        self.filter_class = RunMetaEntryFilter
 
     def add(
         self, run__id: int, key: str, value: Union[str, int, bool, float]
@@ -151,8 +88,8 @@ class RunMetaEntryRepository(
             )
 
         exc = self.select(
-            run_ids=[run__id],
-            keys=[key],
+            run_id=run__id,
+            key=key,
         )
 
         try:
@@ -197,24 +134,6 @@ class RunMetaEntryRepository(
             exc = exc.join(Model, Run.model)
 
         return super().join_auth(exc)
-
-    def select(
-        self,
-        *,
-        run_ids: Optional[Iterable[int]] = None,
-        keys: Optional[Iterable[str]] = None,
-        _access_type: str = "view",
-    ) -> db.sql.Select:
-        exc: db.sql.Select = db.select(RunMetaEntry)
-        exc = self.apply_auth(exc, _access_type)
-
-        if run_ids is not None:
-            exc = exc.where(RunMetaEntry.run__id.in_(run_ids))
-
-        if keys is not None:
-            exc = exc.where(RunMetaEntry.key.in_(keys))
-
-        return exc
 
     @guard("view")
     def list(self, *args, **kwargs) -> Iterable[RunMetaEntry]:
