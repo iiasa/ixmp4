@@ -105,7 +105,7 @@ class RunMetaFacade(BaseFacade, UserDict):
         self.df, self.data = self._get()
 
     def _get(self) -> tuple[pd.DataFrame, dict]:
-        df = self.backend.meta.tabulate(run_id=self.run.id)
+        df = self.backend.meta.tabulate(run_id=self.run.id, run={"default_only": False})
         if df.empty:
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
