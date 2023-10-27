@@ -23,6 +23,7 @@ TEST_ENTRIES_DF = pd.DataFrame(
 class TestDataMeta:
     def test_create_get_entry(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
 
         for key, value, type in TEST_ENTRIES:
             entry = test_mp.backend.meta.create(run.id, key, value)
@@ -65,11 +66,12 @@ class TestDataMeta:
 
     def test_list_entry(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
             entry = test_mp.backend.meta.create(run.id, key, value)
 
-        entries = test_mp.backend.regions.list()
+        entries = test_mp.backend.meta.list()
 
         for (key, value, type), entry in zip(TEST_ENTRIES, entries):
             assert entry.key == key
@@ -78,6 +80,7 @@ class TestDataMeta:
 
     def test_tabulate_entry(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
             test_mp.backend.meta.create(run.id, key, value)
@@ -90,6 +93,8 @@ class TestDataMeta:
 
     def test_entry_bulk_operations(self, test_mp):
         run = test_mp.Run("Model", "Scenario", version="new")
+        run.set_as_default()
+
         entries = TEST_ENTRIES_DF.copy()
         entries["run__id"] = run.id
 
