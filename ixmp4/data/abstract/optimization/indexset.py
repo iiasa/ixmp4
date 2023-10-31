@@ -79,14 +79,14 @@ class IndexSetRepository(
         ...
 
     def list(self, *, name: str | None = None, **kwargs) -> Iterable[IndexSet]:
-        """Lists IndexSets by specified criteria.
+        r"""Lists IndexSets by specified criteria.
 
         Parameters
         ----------
         name : str
             The name of an IndexSet. If supplied only one result will be returned.
         # TODO: Update kwargs
-        **kwargs: any
+        \*\*kwargs: any
             More filter parameters as specified in
             `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
 
@@ -98,14 +98,14 @@ class IndexSetRepository(
         ...
 
     def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
-        """Tabulate IndexSets by specified criteria.
+        r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
         name : str
             The name of an IndexSet. If supplied only one result will be returned.
         # TODO: Update kwargs
-        **kwargs: any
+        \*\*kwargs: any
             More filter parameters as specified in
             `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
 

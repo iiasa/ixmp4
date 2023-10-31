@@ -128,7 +128,7 @@ class RunMetaEntryRepository(
         self,
         **kwargs,
     ) -> Iterable[RunMetaEntry]:
-        """Lists run's meta indicator entries by specified criteria.
+        r"""Lists run's meta indicator entries by specified criteria.
 
         Parameters
         ----------
@@ -139,16 +139,14 @@ class RunMetaEntryRepository(
         -------
         Iterable[:class:`ixmp4.data.abstract.RunMetaEntry`]:
             List of run meta indicator entries.
-        """  # noqa: W605
+        """
         ...
 
     def tabulate(
         self,
         **kwargs,
     ) -> pd.DataFrame:
-        """Tabulates run's meta indicator entries by specified criteria.
-
-
+        r"""Tabulates run's meta indicator entries by specified criteria.
 
         Parameters
         ----------
@@ -164,7 +162,7 @@ class RunMetaEntryRepository(
                 - key
                 - type
                 - value
-        """  # noqa: W605
+        """
         ...
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
