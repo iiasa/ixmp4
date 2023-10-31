@@ -91,6 +91,41 @@ class TestDataMeta:
         entries = test_mp.backend.meta.tabulate()
         assert_unordered_equality(entries, true_entries)
 
+    def test_tabulate_entries_with_run_filters(self, test_mp):
+        run1 = test_mp.Run("Model", "Scenario", "new")
+        run1.set_as_default()
+        run2 = test_mp.Run("Model 2", "Scenario 2", "new")
+
+        # Splitting the loop to more easily correct the id column below
+        for key, value, _ in TEST_ENTRIES:
+            test_mp.backend.meta.create(run1.id, key, value)
+        for key, value, _ in TEST_ENTRIES:
+            test_mp.backend.meta.create(run2.id, key, value)
+
+        true_entries1 = TEST_ENTRIES_DF.copy()
+        true_entries1["run__id"] = run1.id
+        true_entries2 = TEST_ENTRIES_DF.copy()
+        true_entries2["run__id"] = run2.id
+        # Each entry enters the DB this much after those from run1
+        true_entries2["id"] += len(TEST_ENTRIES)
+
+        expected = pd.concat([true_entries1, true_entries2], ignore_index=True)
+
+        assert_unordered_equality(
+            test_mp.backend.meta.tabulate(run={"default_only": False}), expected
+        )
+
+        assert_unordered_equality(
+            test_mp.backend.meta.tabulate(run={"is_default": True}), true_entries1
+        )
+
+        assert_unordered_equality(
+            test_mp.backend.meta.tabulate(
+                run={"is_default": False, "default_only": False}
+            ),
+            true_entries2,
+        )
+
     def test_entry_bulk_operations(self, test_mp):
         run = test_mp.Run("Model", "Scenario", version="new")
         run.set_as_default()
