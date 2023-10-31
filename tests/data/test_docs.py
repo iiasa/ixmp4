@@ -197,3 +197,61 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             test_mp.backend.iamc.variables.docs.get(variable.id)
+
+    def test_get_and_set_indexsetdocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet"
+        )
+        docs_indexset = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Description of test IndexSet"
+        )
+        docs_indexset1 = test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+
+        assert docs_indexset == docs_indexset1
+
+    def test_change_empty_indexsetdocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet"
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+
+        docs_indexset1 = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Description of test IndexSet"
+        )
+
+        assert (
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+            == docs_indexset1
+        )
+
+        docs_indexset2 = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Different description of test IndexSet"
+        )
+
+        assert (
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+            == docs_indexset2
+        )
+
+    def test_delete_indexsetdocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet"
+        )
+        docs_indexset = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Description of test IndexSet"
+        )
+
+        assert (
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+            == docs_indexset
+        )
+
+        test_mp.backend.optimization.indexsets.docs.delete(indexset.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
