@@ -79,3 +79,8 @@ def test_run_meta(test_mp):
     pdt.assert_frame_equal(
         test_mp.meta.tabulate(run={"default_only": False, "is_default": False}), exp
     )
+
+    # test filter by key
+    run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
+    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    pdt.assert_frame_equal(test_mp.meta.tabulate(key="mstr"), exp)

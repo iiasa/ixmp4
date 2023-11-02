@@ -126,6 +126,23 @@ class TestDataMeta:
             true_entries2,
         )
 
+    def test_tabulate_entries_with_key_filters(self, test_mp):
+        run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
+
+        for key, value, _ in TEST_ENTRIES:
+            test_mp.backend.meta.create(run.id, key, value)
+
+        # Select just some key from TEST_ENTRIES
+        key = TEST_ENTRIES[1][0]
+
+        true_entry = TEST_ENTRIES_DF.loc[TEST_ENTRIES_DF["key"] == key].copy()
+        true_entry["run__id"] = run.id
+
+        entry = test_mp.backend.meta.tabulate(key=key)
+
+        assert_unordered_equality(entry, true_entry, check_dtype=False)
+
     def test_entry_bulk_operations(self, test_mp):
         run = test_mp.Run("Model", "Scenario", version="new")
         run.set_as_default()
