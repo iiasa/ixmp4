@@ -51,6 +51,15 @@ class UnitRepository(
             raise Unit.NotFound
 
     @guard("view")
+    def get_by_id(self, id: int) -> Unit:
+        obj = self.session.get(self.model_class, id)
+
+        if obj is None:
+            raise Unit.NotFound(id=id)
+
+        return obj
+
+    @guard("view")
     def list(self, *args, **kwargs) -> Iterable[Unit]:
         return super().list(*args, **kwargs)
 

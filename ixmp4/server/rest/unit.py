@@ -33,6 +33,14 @@ def enumerate(
     return backend.units.enumerate(_filter=filter, table=bool(table))
 
 
+@router.get("/{id}/", response_model=api.Unit)
+def get_by_id(
+    id: int,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.units.get_by_id(id)
+
+
 @autodoc
 @router.patch("/", response_model=EnumerationOutput)
 def query(
