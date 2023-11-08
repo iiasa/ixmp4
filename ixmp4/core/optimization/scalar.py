@@ -19,27 +19,29 @@ class Scalar(BaseModelFacade):
     def __init__(
         self,
         name: str,
+        value: float,
+        unit: Unit,
         _run: Run,
-        value: float | None = None,
-        unit_name: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self._run = _run
+        self._value = value
+        self._unit = unit
         if getattr(self, "_model", None) is None:
-            if (value is None) or (unit_name is None):
-                raise TypeError("`Scalar` requires `value` and `unit_name`!")
             try:
+                # Since unit is required, get() will return at most one result
                 self._model = self.backend.optimization.scalars.get(
                     run_id=self._run.id,
                     name=name,
-                )
+                    unit_id=self._unit.id,
+                )  # type: ignore
                 # TODO: provide logging information if Scalar already exists
             except ScalarModel.NotFound:
                 self._model = self.backend.optimization.scalars.create(
                     name=name,
                     value=value,
-                    unit_name=unit_name,
+                    unit_id=self._unit.id,
                     run_id=self._run.id,
                 )
 
@@ -54,36 +56,20 @@ class Scalar(BaseModelFacade):
     @property
     def value(self) -> float:
         """Associated value."""
-        return self._model.value
-
-    @value.setter
-    def value(self, value: float):
-        self._model.value = value
-        self.backend.optimization.scalars.update(
-            name=self._model.name,
-            value=value,
-            unit_name=self._model.unit.name,
-            run_id=self._run.id,
-        )
+        return self._value
 
     @property
     def unit(self):
         """Associated unit."""
-        return self._model.unit
-
-    @unit.setter
-    def unit(self, unit_name: str):
-        self._model.unit = self.backend.units.get(unit_name)
-        self.backend.optimization.scalars.update(
-            name=self._model.name,
-            value=self._model.value,
-            unit_name=unit_name,
-            run_id=self._run.id,
-        )
+        return self._unit
 
     @property
-    def run(self):
-        return self._run
+    def unit_id(self) -> int:
+        return self._unit.id
+
+    @property
+    def run_id(self) -> int:
+        return self._run.id
 
     @property
     def created_at(self) -> datetime | None:
@@ -126,34 +112,6 @@ class ScalarRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
-    def create(self, name: str, value: float, unit_name: str) -> Scalar:
-        try:
-            model = self.backend.optimization.scalars.create(
-                name=name, value=value, unit_name=unit_name, run_id=self._run.id
-            )
-        except Scalar.NotUnique as e:
-            raise Scalar.NotUnique(
-                message=f"Scalar '{name}' already exists! Did you mean to call "
-                "run.optimization.scalars.update()?"
-            ) from e
-        return Scalar(
-            _backend=self.backend, _model=model, _run=self._run, name=model.name
-        )
-
-    def update(self, name: str, value: float, unit_name: str) -> Scalar:
-        model = self.backend.optimization.scalars.update(
-            name=name, value=value, unit_name=unit_name, run_id=self._run.id
-        )
-        return Scalar(
-            _backend=self.backend, _model=model, _run=self._run, name=model.name
-        )
-
-    def get(self, name: str) -> Scalar:
-        model = self.backend.optimization.scalars.get(run_id=self._run.id, name=name)
-        return Scalar(
-            _backend=self.backend, _model=model, _run=self._run, name=model.name
-        )
-
     def list(self, name: str | None = None) -> Iterable[Scalar]:
         scalars = self.backend.optimization.scalars.list(run_id=self._run.id, name=name)
         return [
@@ -161,7 +119,7 @@ class ScalarRepository(BaseFacade):
                 _backend=self.backend,
                 _model=i,
                 _run=self._run,
-                unit_name=i.unit.name,
+                unit=self.backend.units.get_by_id(i.unit__id),
                 name=i.name,
                 value=i.value,
             )

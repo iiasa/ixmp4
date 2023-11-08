@@ -20,17 +20,13 @@ class Scalar(base.BaseModel):
     value: types.Float = db.Column(db.Float, nullable=True, unique=False)
 
     unit: types.Mapped[Unit | None] = db.relationship()
-    unit__id: types.Mapped[int | None] = db.Column(
-        db.Integer, db.ForeignKey("unit.id"), index=True
-    )
+    unit__id: types.Mapped[int | None] = db.Column(db.Integer, db.ForeignKey("unit.id"), index=True)
 
     @declared_attr
     def run__id(cls):
-        return db.Column(
-            db.Integer, db.ForeignKey("run.id"), nullable=False, index=True
-        )
+        return db.Column(db.Integer, db.ForeignKey("run.id"), nullable=False, index=True)
 
-    __table_args__ = (UniqueConstraint(name, "run__id"),)
+    __table_args__ = (UniqueConstraint(name, "run__id", unit__id),)
 
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
     created_by: types.String = db.Column(db.String(255), nullable=True)

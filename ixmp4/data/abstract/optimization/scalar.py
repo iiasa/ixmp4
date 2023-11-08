@@ -13,7 +13,7 @@ class Scalar(base.BaseModel, Protocol):
 
     name: types.String
     """Unique name of the Scalar."""
-    value: types.Float
+    value: types.Float | types.Integer
     """Value of the Scalar."""
     unit__id: types.Integer
     "Foreign unique integer id of a unit."
@@ -39,7 +39,7 @@ class ScalarRepository(
 ):
     docs: DocsRepository
 
-    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
+    def create(self, name: str, value: float, unit_id: int, run_id: int) -> Scalar:
         """Creates a Scalar.
 
         Parameters
@@ -48,15 +48,15 @@ class ScalarRepository(
             The name of the Scalar.
         value : float
             The value of the Scalar.
-        unit_name : str
-            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
+        unit_id : int
+            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
         run_id : int
             The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
 
         Raises
         ------
         :class:`ixmp4.data.abstract.optimization.Scalar.NotUnique`:
-            If the Scalar with `name` already exists for the Run with `run_id`.
+            If the Scalar with `name` already exists.
 
         Returns
         -------
@@ -65,28 +65,7 @@ class ScalarRepository(
         """
         ...
 
-    def update(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
-        """Updates a Scalar.
-
-        Parameters
-        ----------
-        name : str
-            The name of the Scalar.
-        value : float
-            The value of the Scalar.
-        unit_name : str
-            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
-
-        Returns
-        -------
-        :class:`ixmp4.data.abstract.optimization.Scalar`:
-            The updated Scalar.
-        """
-        ...
-
-    def get(self, run_id: int, name: str) -> Scalar:
+    def get(self, run_id: int, name: str, unit_id: int | None = None) -> Scalar | Iterable[Scalar]:
         """Retrieves a Scalar.
 
         Parameters
@@ -95,6 +74,9 @@ class ScalarRepository(
             The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
         name : str
             The name of the Scalar.
+        unit_id : int | None
+            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
+            If None and multiple Scalars with `name` are defined, list all of them.
 
         Raises
         ------
@@ -104,7 +86,7 @@ class ScalarRepository(
         Returns
         -------
         :class:`ixmp4.data.abstract.optimization.Scalar`:
-            The retrieved Scalar.
+            The retrieved Scalar(s).
         """
         ...
 

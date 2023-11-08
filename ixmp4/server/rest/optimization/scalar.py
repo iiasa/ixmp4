@@ -18,7 +18,7 @@ router: APIRouter = APIRouter(
 class ScalarInput(BaseModel):
     name: str
     value: float
-    unit_name: str
+    unit_id: int
     run_id: int
 
 
@@ -36,7 +36,6 @@ def enumerate(
     return backend.optimization.scalars.enumerate(_filter=filter, table=bool(table))
 
 
-@autodoc
 @router.get("/{id}/", response_model=api.Scalar)
 def get_by_id(
     id: int,
@@ -55,15 +54,6 @@ def query(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.scalars.enumerate(_filter=filter, table=bool(table))
-
-
-@autodoc
-@router.patch("/{id}/", response_model=api.Scalar)
-def update(
-    scalar: ScalarInput,
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.optimization.scalars.update(**scalar.model_dump())
 
 
 @autodoc
