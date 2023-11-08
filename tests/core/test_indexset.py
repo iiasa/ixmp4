@@ -15,7 +15,7 @@ def df_from_list(indexsets: list):
                 indexset.elements,
                 indexset.created_at,
                 indexset.created_by,
-                indexset.run.id,
+                indexset.run_id,
                 indexset.id,
             ]
             for indexset in indexsets
@@ -34,7 +34,7 @@ def df_from_list(indexsets: list):
 @all_platforms
 class TestCoreIndexSet:
     def test_create_indexset(self, test_mp):
-        run = test_mp.runs.create("Model", "Scenario", "new")
+        run = test_mp.Run("Model", "Scenario", "new")
         indexset_1 = run.optimization.IndexSet("IndexSet 1")
         assert indexset_1.id == 1
         assert indexset_1.name == "IndexSet 1"
