@@ -1,5 +1,7 @@
 import pytest
 
+from ixmp4 import IndexSet
+
 from ..utils import all_platforms
 
 
@@ -7,35 +9,58 @@ from ..utils import all_platforms
 class TestDataOptimizationIndexSet:
     def test_create_indexset(self, test_mp):
         run = test_mp.backend.runs.create("Model", "Scenario")
-        index_set_1 = test_mp.backend.optimization.indexsets.create(
+        indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        assert index_set_1 == test_mp.backend.optimization.indexsets.get(
+        assert indexset_1.id == 1
+        assert indexset_1.run__id == 1
+        assert indexset_1.name == "Indexset"
+
+    def test_get_indexset(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
+
+        with pytest.raises(IndexSet.NotUnique):
+            _ = test_mp.backend.optimization.indexsets.create(
+                run_id=run.id, name="Indexset"
+            )
+
+    def test_list_indexsets(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        # Per default, list() lists scalars for `default` version runs:
+        test_mp.backend.runs.set_as_default_version(run.id)
+        indexset_1 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 1"
+        )
+        indexset_2 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        assert [indexset_1, indexset_2] == test_mp.backend.optimization.indexsets.list()
 
     def test_add_elements(self, test_mp):
         test_elements = ["foo", "bar"]
         run = test_mp.backend.runs.create("Model", "Scenario")
-        index_set_1 = test_mp.backend.optimization.indexsets.create(
+        indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet 1"
         )
         test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=index_set_1.id, elements=test_elements
+            indexset_id=indexset_1.id, elements=test_elements
         )
-        index_set_1 = test_mp.backend.optimization.indexsets.get(
+        indexset_1 = test_mp.backend.optimization.indexsets.get(
             run_id=run.id, name="IndexSet 1"
         )
 
-        index_set_2 = test_mp.backend.optimization.indexsets.create(
+        indexset_2 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet 2"
         )
         test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=index_set_2.id, elements=test_elements
+            indexset_id=indexset_2.id, elements=test_elements
         )
 
         assert (
-            index_set_1.elements
+            indexset_1.elements
             == test_mp.backend.optimization.indexsets.get(
                 run_id=run.id, name="IndexSet 2"
             ).elements
@@ -43,25 +68,25 @@ class TestDataOptimizationIndexSet:
 
         with pytest.raises(ValueError):
             test_mp.backend.optimization.indexsets.add_elements(
-                indexset_id=index_set_1.id, elements=["baz", "foo"]
+                indexset_id=indexset_1.id, elements=["baz", "foo"]
             )
 
         with pytest.raises(ValueError):
             test_mp.backend.optimization.indexsets.add_elements(
-                indexset_id=index_set_2.id, elements=["baz", "baz"]
+                indexset_id=indexset_2.id, elements=["baz", "baz"]
             )
 
         test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=index_set_1.id, elements=1
+            indexset_id=indexset_1.id, elements=1
         )
-        index_set_3 = test_mp.backend.optimization.indexsets.get(
+        indexset_3 = test_mp.backend.optimization.indexsets.get(
             run_id=run.id, name="IndexSet 1"
         )
         test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=index_set_2.id, elements="1"
+            indexset_id=indexset_2.id, elements="1"
         )
-        index_set_4 = test_mp.backend.optimization.indexsets.get(
+        indexset_4 = test_mp.backend.optimization.indexsets.get(
             run_id=run.id, name="IndexSet 2"
         )
-        assert index_set_3.elements != index_set_4.elements
-        assert len(index_set_3.elements) == len(index_set_4.elements)
+        assert indexset_3.elements != indexset_4.elements
+        assert len(indexset_3.elements) == len(indexset_4.elements)
