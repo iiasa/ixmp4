@@ -44,9 +44,10 @@ class TestCoreScalar:
         assert scalar_1.unit == unit
         assert scalar_1.unit.id == unit.id
 
-        scalar_2 = run.optimization.scalars.create(
-            "Scalar 1", value=20, unit_id=unit.id
-        )
+        with pytest.raises(Scalar.NotUnique):
+            scalar_2 = run.optimization.scalars.create(
+                "Scalar 1", value=20, unit_id=unit.id
+            )
 
         scalar_2 = run.optimization.scalars.create(
             "Scalar 2", value=20, unit_id=unit.id
