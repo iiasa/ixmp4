@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import Any, ClassVar, Iterable, Mapping
 
 import pandas as pd
 
@@ -52,13 +52,18 @@ class ScalarRepository(
     ) -> Scalar:
         return super().create(name=name, value=value, unit_id=unit_id, run_id=run_id)
 
-    def get(
-        self, run_id: int, name: str, unit_id: int | None = None
-    ) -> Scalar | Iterable[Scalar]:
-        if unit_id:
-            return super().get(run_id=run_id, name=name, unit_id=unit_id)
-        else:
-            return super().list(run_id=run_id, name=name)
+    def update(self, name: str, value: float, unit_id: int, run_id: int) -> Scalar:
+        scalar = super().get(run_id=run_id, name=name)
+        # we can assume this type on update endpoints
+        res: Mapping[str, Any] = self._request(
+            "PATCH",
+            self.prefix + str(scalar.id) + "/",
+            json={"name": name, "value": value, "unit_id": unit_id, "run_id": run_id},
+        )  # type: ignore
+        return self.model_class(**res)
+
+    def get(self, run_id: int, name: str) -> Scalar:
+        return super().get(run_id=run_id, name=name)
 
     def get_by_id(self, id: int) -> Scalar:
         res = self._get_by_id(id)
