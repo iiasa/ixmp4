@@ -1,4 +1,7 @@
 import pandas as pd
+import pytest
+
+from ixmp4 import Scalar
 
 from ..utils import all_platforms, assert_unordered_equality
 
@@ -10,8 +13,8 @@ def df_from_list(scalars: list):
                 scalar.id,
                 scalar.name,
                 scalar.value,
-                scalar.unit_id,
-                scalar.run_id,
+                scalar.unit.id,
+                scalar.run.id,
                 scalar.created_at,
                 scalar.created_by,
             ]
@@ -39,9 +42,31 @@ class TestCoreScalar:
         assert scalar_1.name == "Scalar 1"
         assert scalar_1.value == 10
         assert scalar_1.unit == unit
+        assert scalar_1.unit.id == unit.id
 
-        scalar_2 = run.optimization.Scalar("Scalar 2", value=20, unit=unit)
+        scalar_2 = run.optimization.scalars.create(
+            "Scalar 1", value=20, unit_id=unit.id
+        )
+
+        scalar_2 = run.optimization.scalars.create(
+            "Scalar 2", value=20, unit_id=unit.id
+        )
         assert scalar_1.id != scalar_2.id
+
+    def test_update_scalar(self, test_mp):
+        run = test_mp.Run("Model", "Scenario", "new")
+        unit = test_mp.units.create("Test Unit")
+        unit2 = test_mp.units.create("Test Unit 2")
+        scalar = run.optimization.scalars.create("Scalar", value=10, unit_id=unit.id)
+        assert scalar.value == 10
+        assert scalar.unit__id == unit.id
+
+        with pytest.raises(Scalar.NotUnique):
+            _ = run.optimization.scalars.create("Scalar", value=20, unit_id=unit2.id)
+
+        scalar = run.optimization.scalars.update("Scalar", value=20, unit_id=unit2.id)
+        assert scalar.value == 20
+        assert scalar.unit__id == unit2.id
 
     def test_list_scalars(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")

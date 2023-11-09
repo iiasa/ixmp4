@@ -35,16 +35,12 @@ class ScalarRepository(
         return scalar
 
     @guard("view")
-    def get(self, run_id: int, name: str, unit_id: int | None = None) -> Scalar | Iterable[Scalar]:
+    def get(self, run_id: int, name: str) -> Scalar:
         exc = db.select(Scalar).where((Scalar.name == name) & (Scalar.run__id == run_id))
-        if unit_id is not None:
-            exc = exc.where(Scalar.unit__id == unit_id)
         try:
             return self.session.execute(exc).scalar_one()
         except db.NoResultFound:
             raise Scalar.NotFound
-        except db.MultipleResultsFound:
-            return self.session.execute(exc).scalars().all()
 
     @guard("view")
     def get_by_id(self, id: int) -> Scalar:
@@ -58,6 +54,22 @@ class ScalarRepository(
     @guard("edit")
     def create(self, name: str, value: float, unit_id: int, run_id: int, **kwargs) -> Scalar:
         return super().create(name=name, value=value, unit_id=unit_id, run_id=run_id, **kwargs)
+
+    @guard("edit")
+    def update(self, name: str, value: float, unit_id: int, run_id: int, **kwargs) -> Scalar:
+        exc = (
+            db.update(Scalar)
+            .where(
+                Scalar.run__id == run_id,
+                Scalar.name == name,
+            )
+            .values(value=value, unit__id=unit_id)
+            .returning(Scalar)
+        )
+
+        scalar: Scalar = self.session.execute(exc).scalar_one()
+        self.session.commit()
+        return scalar
 
     @guard("view")
     def list(self, *args, **kwargs) -> Iterable[Scalar]:

@@ -30,12 +30,10 @@ class Scalar(BaseModelFacade):
         self._unit = unit
         if getattr(self, "_model", None) is None:
             try:
-                # Since unit is required, get() will return at most one result
                 self._model = self.backend.optimization.scalars.get(
                     run_id=self._run.id,
                     name=name,
-                    unit_id=self._unit.id,
-                )  # type: ignore
+                )
                 # TODO: provide logging information if Scalar already exists
             except ScalarModel.NotFound:
                 self._model = self.backend.optimization.scalars.create(
@@ -64,12 +62,8 @@ class Scalar(BaseModelFacade):
         return self._unit
 
     @property
-    def unit_id(self) -> int:
-        return self._unit.id
-
-    @property
-    def run_id(self) -> int:
-        return self._run.id
+    def run(self):
+        return self._run
 
     @property
     def created_at(self) -> datetime | None:
@@ -111,6 +105,22 @@ class ScalarRepository(BaseFacade):
     def __init__(self, _run: Run, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self._run = _run
+
+    def create(self, name: str, value: float, unit_id: int) -> ScalarModel:
+        try:
+            return self.backend.optimization.scalars.create(
+                name=name, value=value, unit_id=unit_id, run_id=self._run.id
+            )
+        except Scalar.NotUnique as e:
+            raise Scalar.NotUnique(
+                message=f"Scalar '{name}' already exists! Did you mean to call "
+                "run.optimization.scalars.update()?"
+            ) from e
+
+    def update(self, name: str, value: float, unit_id: int) -> ScalarModel:
+        return self.backend.optimization.scalars.update(
+            name=name, value=value, unit_id=unit_id, run_id=self._run.id
+        )
 
     def list(self, name: str | None = None) -> Iterable[Scalar]:
         scalars = self.backend.optimization.scalars.list(run_id=self._run.id, name=name)
