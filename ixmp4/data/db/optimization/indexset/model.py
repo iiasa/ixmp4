@@ -1,5 +1,6 @@
 from typing import ClassVar
 
+from sqlalchemy import UniqueConstraint
 from sqlalchemy.ext.declarative import declared_attr
 from sqlalchemy.orm import validates
 
@@ -15,7 +16,7 @@ class IndexSet(base.BaseModel):
     NotUnique: ClassVar = abstract.IndexSet.NotUnique
     DeletionPrevented: ClassVar = abstract.IndexSet.DeletionPrevented
 
-    name: types.String = db.Column(db.String(255), nullable=False, unique=True)
+    name: types.String = db.Column(db.String(255), nullable=False, unique=False)
     elements: types.JsonList = db.Column(db.JsonType, nullable=False, default=[])
 
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
@@ -26,6 +27,8 @@ class IndexSet(base.BaseModel):
         return db.Column(
             db.Integer, db.ForeignKey("run.id"), nullable=False, index=True
         )
+
+    __table_args__ = (UniqueConstraint(name, "run__id"),)
 
     @validates("elements")
     def validate_elements(self, key, value):

@@ -57,8 +57,8 @@ class IndexSet(BaseModelFacade):
         ).elements
 
     @property
-    def run_id(self) -> int:
-        return self._run.id
+    def run(self):
+        return self._run
 
     @property
     def created_at(self) -> datetime | None:
