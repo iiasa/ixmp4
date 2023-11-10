@@ -93,9 +93,8 @@ class TestCoreScalar:
 
         scalar.value = 30
         scalar.unit = "Test Unit"
-        # NOTE: somehow,
+        # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
-        # does not work (they are referencing different memory addresses, can that be it?)
         result = run.optimization.scalars.get("Scalar")
         assert scalar.id == result.id
         assert scalar.name == result.name

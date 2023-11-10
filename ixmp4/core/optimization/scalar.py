@@ -69,7 +69,6 @@ class Scalar(BaseModelFacade):
     def unit(self):
         """Associated unit."""
         return self._model.unit
-        # return self.backend.units.get(self._unit_name)
 
     @unit.setter
     def unit(self, unit_name: str):
