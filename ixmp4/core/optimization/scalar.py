@@ -19,16 +19,16 @@ class Scalar(BaseModelFacade):
     def __init__(
         self,
         name: str,
-        value: float,
-        unit: Unit,
         _run: Run,
+        value: float | None = None,
+        unit_name: str | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self._run = _run
-        self._value = value
-        self._unit = unit
         if getattr(self, "_model", None) is None:
+            if (value is None) or (unit_name is None):
+                raise TypeError("`Scalar` requires `value` and `unit_name`!")
             try:
                 self._model = self.backend.optimization.scalars.get(
                     run_id=self._run.id,
@@ -39,7 +39,7 @@ class Scalar(BaseModelFacade):
                 self._model = self.backend.optimization.scalars.create(
                     name=name,
                     value=value,
-                    unit_id=self._unit.id,
+                    unit_name=unit_name,
                     run_id=self._run.id,
                 )
 
@@ -54,12 +54,32 @@ class Scalar(BaseModelFacade):
     @property
     def value(self) -> float:
         """Associated value."""
-        return self._value
+        return self._model.value
+
+    @value.setter
+    def value(self, value: float):
+        self.backend.optimization.scalars.update(
+            name=self._model.name,
+            value=value,
+            unit_name=self._model.unit.name,
+            run_id=self._run.id,
+        )
 
     @property
     def unit(self):
         """Associated unit."""
-        return self._unit
+        return self._model.unit
+        # return self.backend.units.get(self._unit_name)
+
+    @unit.setter
+    def unit(self, unit_name: str):
+        self._model.unit = self.backend.units.get(unit_name)
+        self.backend.optimization.scalars.update(
+            name=self._model.name,
+            value=self._model.value,
+            unit_name=unit_name,
+            run_id=self._run.id,
+        )
 
     @property
     def run(self):
@@ -106,20 +126,32 @@ class ScalarRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
-    def create(self, name: str, value: float, unit_id: int) -> ScalarModel:
+    def create(self, name: str, value: float, unit_name: str) -> Scalar:
         try:
-            return self.backend.optimization.scalars.create(
-                name=name, value=value, unit_id=unit_id, run_id=self._run.id
+            model = self.backend.optimization.scalars.create(
+                name=name, value=value, unit_name=unit_name, run_id=self._run.id
             )
         except Scalar.NotUnique as e:
             raise Scalar.NotUnique(
                 message=f"Scalar '{name}' already exists! Did you mean to call "
                 "run.optimization.scalars.update()?"
             ) from e
+        return Scalar(
+            _backend=self.backend, _model=model, _run=self._run, name=model.name
+        )
 
-    def update(self, name: str, value: float, unit_id: int) -> ScalarModel:
-        return self.backend.optimization.scalars.update(
-            name=name, value=value, unit_id=unit_id, run_id=self._run.id
+    def update(self, name: str, value: float, unit_name: str) -> Scalar:
+        model = self.backend.optimization.scalars.update(
+            name=name, value=value, unit_name=unit_name, run_id=self._run.id
+        )
+        return Scalar(
+            _backend=self.backend, _model=model, _run=self._run, name=model.name
+        )
+
+    def get(self, name: str) -> Scalar:
+        model = self.backend.optimization.scalars.get(run_id=self._run.id, name=name)
+        return Scalar(
+            _backend=self.backend, _model=model, _run=self._run, name=model.name
         )
 
     def list(self, name: str | None = None) -> Iterable[Scalar]:
@@ -129,7 +161,7 @@ class ScalarRepository(BaseFacade):
                 _backend=self.backend,
                 _model=i,
                 _run=self._run,
-                unit=self.backend.units.get_by_id(i.unit__id),
+                unit_name=i.unit.name,
                 name=i.name,
                 value=i.value,
             )

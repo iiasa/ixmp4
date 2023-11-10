@@ -27,7 +27,8 @@ class ScalarRepository(
 
         self.filter_class = OptimizationScalarFilter
 
-    def add(self, name: str, value: float | int, unit_id: int, run_id: int) -> Scalar:
+    def add(self, name: str, value: float | int, unit_name: str, run_id: int) -> Scalar:
+        unit_id = self.backend.units.get(unit_name).id
         scalar = Scalar(
             name=name, value=value, unit__id=unit_id, run__id=run_id, **self.get_creation_info()
         )
@@ -52,11 +53,12 @@ class ScalarRepository(
         return obj
 
     @guard("edit")
-    def create(self, name: str, value: float, unit_id: int, run_id: int, **kwargs) -> Scalar:
-        return super().create(name=name, value=value, unit_id=unit_id, run_id=run_id, **kwargs)
+    def create(self, name: str, value: float, unit_name: str, run_id: int, **kwargs) -> Scalar:
+        return super().create(name=name, value=value, unit_name=unit_name, run_id=run_id, **kwargs)
 
     @guard("edit")
-    def update(self, name: str, value: float, unit_id: int, run_id: int, **kwargs) -> Scalar:
+    def update(self, name: str, value: float, unit_name: str, run_id: int, **kwargs) -> Scalar:
+        unit_id = self.backend.units.get(unit_name).id
         exc = (
             db.update(Scalar)
             .where(

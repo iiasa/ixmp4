@@ -260,7 +260,7 @@ class TestDataDocs:
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
         docs_scalar = test_mp.backend.optimization.scalars.docs.set(
             scalar.id, "Description of test Scalar"
@@ -273,7 +273,7 @@ class TestDataDocs:
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=2, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=2, unit_name=unit.name
         )
 
         with pytest.raises(Docs.NotFound):
@@ -295,7 +295,7 @@ class TestDataDocs:
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=3, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=3, unit_name=unit.name
         )
         docs_scalar = test_mp.backend.optimization.scalars.docs.set(
             scalar.id, "Description of test Scalar"

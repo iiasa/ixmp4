@@ -12,7 +12,7 @@ class TestDataOptimizationScalar:
         unit = test_mp.backend.units.create("Unit")
         unit2 = test_mp.backend.units.create("Unit 2")
         scalar = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=1, unit_name="Unit"
         )
         assert scalar.run__id == run.id
         assert scalar.name == "Scalar"
@@ -21,14 +21,14 @@ class TestDataOptimizationScalar:
 
         with pytest.raises(Scalar.NotUnique):
             _ = test_mp.backend.optimization.scalars.create(
-                run_id=run.id, name="Scalar", value=2, unit_id=unit2.id
+                run_id=run.id, name="Scalar", value=2, unit_name=unit2.name
             )
 
     def test_get_scalar(self, test_mp):
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
 
         assert scalar == test_mp.backend.optimization.scalars.get(
@@ -40,13 +40,13 @@ class TestDataOptimizationScalar:
         unit = test_mp.backend.units.create("Unit")
         unit2 = test_mp.backend.units.create("Unit 2")
         scalar = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
         assert scalar.id == 1
         assert scalar.unit__id == unit.id
 
         scalar = test_mp.backend.optimization.scalars.update(
-            "Scalar", value=20, unit_id=unit2.id, run_id=run.id
+            "Scalar", value=20, unit_name="Unit 2", run_id=run.id
         )
         assert scalar.value == 20
         assert scalar.unit__id == unit2.id
@@ -58,9 +58,9 @@ class TestDataOptimizationScalar:
         unit = test_mp.backend.units.create("Unit")
         unit2 = test_mp.backend.units.create("Unit 2")
         scalar_1 = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_id=unit.id
+            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
         scalar_2 = test_mp.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar 2", value=2, unit_id=unit2.id
+            run_id=run.id, name="Scalar 2", value=2, unit_name=unit2.name
         )
         assert [scalar_1, scalar_2] == test_mp.backend.optimization.scalars.list()

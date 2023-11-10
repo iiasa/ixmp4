@@ -39,7 +39,7 @@ class ScalarRepository(
 ):
     docs: DocsRepository
 
-    def create(self, name: str, value: float, unit_id: int, run_id: int) -> Scalar:
+    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
         """Creates a Scalar.
 
         Parameters
@@ -48,8 +48,8 @@ class ScalarRepository(
             The name of the Scalar.
         value : float
             The value of the Scalar.
-        unit_id : int
-            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
+        unit_name : str
+            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
         run_id : int
             The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
 
@@ -65,7 +65,7 @@ class ScalarRepository(
         """
         ...
 
-    def update(self, name: str, value: float, unit_id: int, run_id: int) -> Scalar:
+    def update(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
         """Updates a Scalar.
 
         Parameters
@@ -74,8 +74,8 @@ class ScalarRepository(
             The name of the Scalar.
         value : float
             The value of the Scalar.
-        unit_id : int
-            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
+        unit_name : str
+            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
         run_id : int
             The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
 
