@@ -13,7 +13,7 @@ class Scalar(base.BaseModel, Protocol):
 
     name: types.String
     """Unique name of the Scalar."""
-    value: types.Float | types.Integer
+    value: types.Float
     """Value of the Scalar."""
     unit__id: types.Integer
     "Foreign unique integer id of a unit."

@@ -96,10 +96,12 @@ class TestCoreScalar:
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
         result = run.optimization.scalars.get("Scalar")
+        print(scalar.value, scalar.unit)
+        print(result.value, result.unit)
         assert scalar.id == result.id
         assert scalar.name == result.name
-        assert scalar.value == result.value
-        assert scalar.unit.id == result.unit.id
+        assert scalar.value == result.value == 30
+        assert scalar.unit.id == result.unit.id == 1
 
     def test_list_scalars(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")

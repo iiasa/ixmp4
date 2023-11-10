@@ -58,6 +58,7 @@ class Scalar(BaseModelFacade):
 
     @value.setter
     def value(self, value: float):
+        self._model.value = value
         self.backend.optimization.scalars.update(
             name=self._model.name,
             value=value,
