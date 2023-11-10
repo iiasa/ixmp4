@@ -7,6 +7,7 @@ from ixmp4.data import abstract
 
 from .. import base
 from ..docs import Docs, DocsRepository
+from ..unit import Unit
 
 
 class Scalar(base.BaseModel):
@@ -17,6 +18,7 @@ class Scalar(base.BaseModel):
     id: int
     name: str
     value: float
+    unit: Unit
     unit__id: int
     run__id: int
 
@@ -47,18 +49,25 @@ class ScalarRepository(
         self,
         name: str,
         value: float,
-        unit_id: int,
+        unit_name: str,
         run_id: int,
     ) -> Scalar:
-        return super().create(name=name, value=value, unit_id=unit_id, run_id=run_id)
+        return super().create(
+            name=name, value=value, unit_name=unit_name, run_id=run_id
+        )
 
-    def update(self, name: str, value: float, unit_id: int, run_id: int) -> Scalar:
+    def update(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
         scalar = super().get(run_id=run_id, name=name)
         # we can assume this type on update endpoints
         res: Mapping[str, Any] = self._request(
             "PATCH",
             self.prefix + str(scalar.id) + "/",
-            json={"name": name, "value": value, "unit_id": unit_id, "run_id": run_id},
+            json={
+                "name": name,
+                "value": value,
+                "unit_name": unit_name,
+                "run_id": run_id,
+            },
         )  # type: ignore
         return self.model_class(**res)
 

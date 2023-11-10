@@ -18,7 +18,7 @@ router: APIRouter = APIRouter(
 class ScalarInput(BaseModel):
     name: str
     value: float
-    unit_id: int
+    unit_name: str
     run_id: int
 
 
