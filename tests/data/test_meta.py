@@ -23,6 +23,7 @@ TEST_ENTRIES_DF = pd.DataFrame(
 class TestDataMeta:
     def test_create_get_entry(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
 
         for key, value, type in TEST_ENTRIES:
             entry = test_mp.backend.meta.create(run.id, key, value)
@@ -65,11 +66,12 @@ class TestDataMeta:
 
     def test_list_entry(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
             entry = test_mp.backend.meta.create(run.id, key, value)
 
-        entries = test_mp.backend.regions.list()
+        entries = test_mp.backend.meta.list()
 
         for (key, value, type), entry in zip(TEST_ENTRIES, entries):
             assert entry.key == key
@@ -78,6 +80,7 @@ class TestDataMeta:
 
     def test_tabulate_entry(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
             test_mp.backend.meta.create(run.id, key, value)
@@ -88,8 +91,62 @@ class TestDataMeta:
         entries = test_mp.backend.meta.tabulate()
         assert_unordered_equality(entries, true_entries)
 
+    def test_tabulate_entries_with_run_filters(self, test_mp):
+        run1 = test_mp.Run("Model", "Scenario", "new")
+        run1.set_as_default()
+        run2 = test_mp.Run("Model 2", "Scenario 2", "new")
+
+        # Splitting the loop to more easily correct the id column below
+        for key, value, _ in TEST_ENTRIES:
+            test_mp.backend.meta.create(run1.id, key, value)
+        for key, value, _ in TEST_ENTRIES:
+            test_mp.backend.meta.create(run2.id, key, value)
+
+        true_entries1 = TEST_ENTRIES_DF.copy()
+        true_entries1["run__id"] = run1.id
+        true_entries2 = TEST_ENTRIES_DF.copy()
+        true_entries2["run__id"] = run2.id
+        # Each entry enters the DB this much after those from run1
+        true_entries2["id"] += len(TEST_ENTRIES)
+
+        expected = pd.concat([true_entries1, true_entries2], ignore_index=True)
+
+        assert_unordered_equality(
+            test_mp.backend.meta.tabulate(run={"default_only": False}), expected
+        )
+
+        assert_unordered_equality(
+            test_mp.backend.meta.tabulate(run={"is_default": True}), true_entries1
+        )
+
+        assert_unordered_equality(
+            test_mp.backend.meta.tabulate(
+                run={"is_default": False, "default_only": False}
+            ),
+            true_entries2,
+        )
+
+    def test_tabulate_entries_with_key_filters(self, test_mp):
+        run = test_mp.Run("Model", "Scenario", "new")
+        run.set_as_default()
+
+        for key, value, _ in TEST_ENTRIES:
+            test_mp.backend.meta.create(run.id, key, value)
+
+        # Select just some key from TEST_ENTRIES
+        key = TEST_ENTRIES[1][0]
+
+        true_entry = TEST_ENTRIES_DF.loc[TEST_ENTRIES_DF["key"] == key].copy()
+        true_entry["run__id"] = run.id
+
+        entry = test_mp.backend.meta.tabulate(key=key)
+
+        assert_unordered_equality(entry, true_entry, check_dtype=False)
+
     def test_entry_bulk_operations(self, test_mp):
         run = test_mp.Run("Model", "Scenario", version="new")
+        run.set_as_default()
+
         entries = TEST_ENTRIES_DF.copy()
         entries["run__id"] = run.id
 
