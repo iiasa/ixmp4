@@ -126,18 +126,14 @@ class RunMetaEntryRepository(
 
     def list(
         self,
-        *,
-        run_ids: Iterable[int] | None = None,
-        keys: Iterable[str] | None = None,
+        **kwargs,
     ) -> Iterable[RunMetaEntry]:
-        """Lists run's meta indicator entries by specified criteria.
+        r"""Lists run's meta indicator entries by specified criteria.
 
         Parameters
         ----------
-        run_ids : list of int
-            A list of run ids.
-        keys : list of str
-            A list of string keys.
+        \*\*kwargs: any
+            Filter parameters as specified in `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
 
         Returns
         -------
@@ -148,19 +144,14 @@ class RunMetaEntryRepository(
 
     def tabulate(
         self,
-        *,
-        run_ids: Iterable[int] | None = None,
-        keys: Iterable[str] | None = None,
+        **kwargs,
     ) -> pd.DataFrame:
-        """Tabulates run's meta indicator entries by specified criteria.
-
+        r"""Tabulates run's meta indicator entries by specified criteria.
 
         Parameters
         ----------
-        run_ids : list of int
-            A list of run ids.
-        keys : list of str
-            A list of string keys.
+        \*\*kwargs: any
+            Filter parameters as specified in `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
 
         Returns
         -------

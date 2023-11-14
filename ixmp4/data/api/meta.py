@@ -30,6 +30,7 @@ class RunMetaEntryRepository(
 ):
     model_class = RunMetaEntry
     prefix = "meta/"
+    enumeration_method = "PATCH"
 
     def create(
         self,
@@ -40,7 +41,7 @@ class RunMetaEntryRepository(
         return super().create(run__id=run__id, key=key, value=value)
 
     def get(self, run__id: int, key: str) -> RunMetaEntry:
-        return super().get(run__ids=[run__id], keys=[key])
+        return super().get(run_id=run__id, key=key)
 
     def delete(self, id: int) -> None:
         super().delete(id)
