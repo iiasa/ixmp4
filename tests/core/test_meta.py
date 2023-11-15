@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 
@@ -84,3 +85,25 @@ def test_run_meta(test_mp):
     run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
     exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
     pdt.assert_frame_equal(test_mp.meta.tabulate(key="mstr"), exp)
+
+
+@all_platforms
+def test_run_meta_numpy_int(test_mp):
+    run1 = test_mp.Run(
+        "Model",
+        "Scenario",
+        version="new",
+    )
+    run1.set_as_default()
+
+    # set and update different types of meta indicators
+    run1.meta = {"npint": np.int64(1)}
+    assert run1.meta["npint"] == 1
+
+    run1.meta["npint"] = np.int64(13)
+    assert run1.meta["npint"] == 13
+
+    run2 = test_mp.Run("Model", "Scenario")
+
+    # assert meta by run
+    assert dict(run2.meta) == {"npint": 13}

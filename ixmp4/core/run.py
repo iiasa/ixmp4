@@ -1,6 +1,7 @@
 from collections import UserDict
 from typing import ClassVar, Iterable
 
+import numpy as np
 import pandas as pd
 
 from ixmp4.data.abstract import Run as RunModel
@@ -124,6 +125,9 @@ class RunMetaFacade(BaseFacade, UserDict):
             del self[key]
         except KeyError:
             pass
+
+        if isinstance(value, np.int64):
+            value = int(value)
 
         self.backend.meta.create(self.run.id, key, value)
         self.df, self.data = self._get()
