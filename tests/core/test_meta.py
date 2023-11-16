@@ -1,6 +1,7 @@
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
+import pytest
 
 from ..utils import all_platforms
 
@@ -88,7 +89,14 @@ def test_run_meta(test_mp):
 
 
 @all_platforms
-def test_run_meta_numpy_int(test_mp):
+@pytest.mark.parametrize(
+    "npvalue1, pyvalue1, npvalue2, pyvalue2",
+    [
+        (np.int64(1), 1, np.int64(13), 13),
+        (np.float64(1.9), 1.9, np.float(13.9), 13.9),
+    ],
+)
+def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     run1 = test_mp.Run(
         "Model",
         "Scenario",
@@ -97,13 +105,13 @@ def test_run_meta_numpy_int(test_mp):
     run1.set_as_default()
 
     # set and update different types of meta indicators
-    run1.meta = {"npint": np.int64(1)}
-    assert run1.meta["npint"] == 1
+    run1.meta = {"key": npvalue1}
+    assert run1.meta["key"] == pyvalue1
 
-    run1.meta["npint"] = np.int64(13)
-    assert run1.meta["npint"] == 13
+    run1.meta["key"] = npvalue2
+    assert run1.meta["key"] == pyvalue2
 
     run2 = test_mp.Run("Model", "Scenario")
 
     # assert meta by run
-    assert dict(run2.meta) == {"npint": 13}
+    assert dict(run2.meta) == {"key": pyvalue2}
