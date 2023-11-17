@@ -8,11 +8,7 @@ from ..utils import all_platforms
 
 @all_platforms
 def test_run_meta(test_mp):
-    run1 = test_mp.Run(
-        "Model",
-        "Scenario",
-        version="new",
-    )
+    run1 = test_mp.Run("Model", "Scenario", version="new")
     run1.set_as_default()
 
     # set and update different types of meta indicators
@@ -98,11 +94,7 @@ def test_run_meta(test_mp):
 )
 def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     """Test that numpy types are cast to simple types"""
-    run1 = test_mp.Run(
-        "Model",
-        "Scenario",
-        version="new",
-    )
+    run1 = test_mp.Run("Model", "Scenario", version="new")
     run1.set_as_default()
 
     # set multiple meta indicators of same type ("value"-column of numpy-type)
@@ -120,3 +112,26 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     # assert that meta values were saved and updated correctly
     run2 = test_mp.Run("Model", "Scenario")
     assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
+
+
+@all_platforms
+@pytest.mark.parametrize("nonevalue", (None, np.nan))
+def test_run_meta_none(test_mp, nonevalue):
+    """Test that None-values are handled correctly"""
+    run1 = test_mp.Run("Model", "Scenario", version="new")
+    run1.set_as_default()
+
+    # set multiple indicators where one value is None
+    run1.meta = {"mint": 13, "mnone": nonevalue}
+    assert run1.meta["mint"] == 13
+    with pytest.raises(KeyError, match="'mnone'"):
+        run1.meta["mnone"]
+
+    assert dict(test_mp.Run("Model", "Scenario").meta) == {"mint": 13}
+
+    # delete indicator via setter
+    run1.meta["mint"] = nonevalue
+    with pytest.raises(KeyError, match="'mint'"):
+        run1.meta["mint"]
+
+    assert not dict(test_mp.Run("Model", "Scenario").meta)

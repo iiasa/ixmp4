@@ -131,7 +131,9 @@ class RunMetaFacade(BaseFacade, UserDict):
         except KeyError:
             pass
 
-        self.backend.meta.create(self.run.id, key, numpy_to_pytype(value))
+        value = numpy_to_pytype(value)
+        if value is not None:
+            self.backend.meta.create(self.run.id, key, value)
         self.df, self.data = self._get()
 
     def __delitem__(self, key):
@@ -142,4 +144,9 @@ class RunMetaFacade(BaseFacade, UserDict):
 
 def numpy_to_pytype(value):
     """Cast numpy-types to basic Python types"""
-    return value.item() if isinstance(value, np.generic) else value
+    if value is np.nan:  # np.nan is cast to 'float', not None
+        return None
+    elif isinstance(value, np.generic):
+        return value.item()
+    else:
+        return value
