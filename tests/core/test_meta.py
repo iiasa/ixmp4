@@ -113,10 +113,10 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     run1.meta = {"key": npvalue1, "other key": "some value"}
     assert run1.meta["key"] == pyvalue1
 
+    # set meta via setter
     run1.meta["key"] = npvalue2
     assert run1.meta["key"] == pyvalue2
 
+    # assert that meta values were saved and updated correctly
     run2 = test_mp.Run("Model", "Scenario")
-
-    # assert meta by run
     assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
