@@ -97,6 +97,7 @@ def test_run_meta(test_mp):
     ],
 )
 def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
+    """Test that numpy types are cast to simple types"""
     run1 = test_mp.Run(
         "Model",
         "Scenario",
@@ -104,8 +105,12 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     )
     run1.set_as_default()
 
-    # set and update different types of meta indicators
-    run1.meta = {"key": npvalue1}
+    # set multiple meta indicators of same type ("value"-column of numpy-type)
+    run1.meta = {"key": npvalue1, "other key": npvalue1}
+    assert run1.meta["key"] == pyvalue1
+
+    # set meta indicators of different types ("value"-column of type `object`)
+    run1.meta = {"key": npvalue1, "other key": "some value"}
     assert run1.meta["key"] == pyvalue1
 
     run1.meta["key"] = npvalue2
@@ -114,4 +119,4 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     run2 = test_mp.Run("Model", "Scenario")
 
     # assert meta by run
-    assert dict(run2.meta) == {"key": pyvalue2}
+    assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}

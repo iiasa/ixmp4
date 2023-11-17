@@ -112,27 +112,34 @@ class RunMetaFacade(BaseFacade, UserDict):
         return df, dict(zip(df["key"], df["value"]))
 
     def _set(self, meta: dict):
+        print("You are here")
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
-        df = pd.DataFrame({"key": meta.keys(), "value": meta.values()})
+        df = pd.DataFrame(
+            {"key": meta.keys(), "value": [numpy_to_pytype(v) for v in meta.values()]}
+        )
+        df.dropna(axis=0, inplace=True)
         df["run__id"] = self.run.id
         self.backend.meta.bulk_upsert(df)
         self.df, self.data = self._get()
 
     def __setitem__(self, key, value: int | float | str | bool):
+        print("You are there")
         try:
             del self[key]
         except KeyError:
             pass
 
-        if isinstance(value, np.int64):
-            value = int(value)
-
-        self.backend.meta.create(self.run.id, key, value)
+        self.backend.meta.create(self.run.id, key, numpy_to_pytype(value))
         self.df, self.data = self._get()
 
     def __delitem__(self, key):
         id = dict(zip(self.df["key"], self.df["id"]))[key]
         self.backend.meta.delete(id)
         self.df, self.data = self._get()
+
+
+def numpy_to_pytype(value):
+    """Cast numpy-types to basic Python types"""
+    return value.item() if isinstance(value, np.generic) else value
