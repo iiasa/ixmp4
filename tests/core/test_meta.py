@@ -89,7 +89,7 @@ def test_run_meta(test_mp):
     "npvalue1, pyvalue1, npvalue2, pyvalue2",
     [
         (np.int64(1), 1, np.int64(13), 13),
-        (np.float64(1.9), 1.9, np.float128(13.9), 13.9),
+        (np.float64(1.9), 1.9, np.float64(13.9), 13.9),
     ],
 )
 def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
