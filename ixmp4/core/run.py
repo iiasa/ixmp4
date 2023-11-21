@@ -112,7 +112,6 @@ class RunMetaFacade(BaseFacade, UserDict):
         return df, dict(zip(df["key"], df["value"]))
 
     def _set(self, meta: dict):
-        print("You are here")
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
@@ -125,7 +124,6 @@ class RunMetaFacade(BaseFacade, UserDict):
         self.df, self.data = self._get()
 
     def __setitem__(self, key, value: int | float | str | bool):
-        print("You are there")
         try:
             del self[key]
         except KeyError:
