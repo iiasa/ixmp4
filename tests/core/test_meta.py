@@ -1,16 +1,14 @@
+import numpy as np
 import pandas as pd
 import pandas.testing as pdt
+import pytest
 
 from ..utils import all_platforms
 
 
 @all_platforms
 def test_run_meta(test_mp):
-    run1 = test_mp.Run(
-        "Model",
-        "Scenario",
-        version="new",
-    )
+    run1 = test_mp.Run("Model", "Scenario", version="new")
     run1.set_as_default()
 
     # set and update different types of meta indicators
@@ -84,3 +82,56 @@ def test_run_meta(test_mp):
     run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
     exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
     pdt.assert_frame_equal(test_mp.meta.tabulate(key="mstr"), exp)
+
+
+@all_platforms
+@pytest.mark.parametrize(
+    "npvalue1, pyvalue1, npvalue2, pyvalue2",
+    [
+        (np.int64(1), 1, np.int64(13), 13),
+        (np.float64(1.9), 1.9, np.float64(13.9), 13.9),
+    ],
+)
+def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
+    """Test that numpy types are cast to simple types"""
+    run1 = test_mp.Run("Model", "Scenario", version="new")
+    run1.set_as_default()
+
+    # set multiple meta indicators of same type ("value"-column of numpy-type)
+    run1.meta = {"key": npvalue1, "other key": npvalue1}
+    assert run1.meta["key"] == pyvalue1
+
+    # set meta indicators of different types ("value"-column of type `object`)
+    run1.meta = {"key": npvalue1, "other key": "some value"}
+    assert run1.meta["key"] == pyvalue1
+
+    # set meta via setter
+    run1.meta["key"] = npvalue2
+    assert run1.meta["key"] == pyvalue2
+
+    # assert that meta values were saved and updated correctly
+    run2 = test_mp.Run("Model", "Scenario")
+    assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
+
+
+@all_platforms
+@pytest.mark.parametrize("nonevalue", (None, np.nan))
+def test_run_meta_none(test_mp, nonevalue):
+    """Test that None-values are handled correctly"""
+    run1 = test_mp.Run("Model", "Scenario", version="new")
+    run1.set_as_default()
+
+    # set multiple indicators where one value is None
+    run1.meta = {"mint": 13, "mnone": nonevalue}
+    assert run1.meta["mint"] == 13
+    with pytest.raises(KeyError, match="'mnone'"):
+        run1.meta["mnone"]
+
+    assert dict(test_mp.Run("Model", "Scenario").meta) == {"mint": 13}
+
+    # delete indicator via setter
+    run1.meta["mint"] = nonevalue
+    with pytest.raises(KeyError, match="'mint'"):
+        run1.meta["mint"]
+
+    assert not dict(test_mp.Run("Model", "Scenario").meta)

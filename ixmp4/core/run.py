@@ -1,6 +1,7 @@
 from collections import UserDict
 from typing import ClassVar, Iterable
 
+import numpy as np
 import pandas as pd
 
 from ixmp4.data.abstract import Run as RunModel
@@ -114,7 +115,10 @@ class RunMetaFacade(BaseFacade, UserDict):
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
-        df = pd.DataFrame({"key": meta.keys(), "value": meta.values()})
+        df = pd.DataFrame(
+            {"key": meta.keys(), "value": [numpy_to_pytype(v) for v in meta.values()]}
+        )
+        df.dropna(axis=0, inplace=True)
         df["run__id"] = self.run.id
         self.backend.meta.bulk_upsert(df)
         self.df, self.data = self._get()
@@ -125,10 +129,22 @@ class RunMetaFacade(BaseFacade, UserDict):
         except KeyError:
             pass
 
-        self.backend.meta.create(self.run.id, key, value)
+        value = numpy_to_pytype(value)
+        if value is not None:
+            self.backend.meta.create(self.run.id, key, value)
         self.df, self.data = self._get()
 
     def __delitem__(self, key):
         id = dict(zip(self.df["key"], self.df["id"]))[key]
         self.backend.meta.delete(id)
         self.df, self.data = self._get()
+
+
+def numpy_to_pytype(value):
+    """Cast numpy-types to basic Python types"""
+    if value is np.nan:  # np.nan is cast to 'float', not None
+        return None
+    elif isinstance(value, np.generic):
+        return value.item()
+    else:
+        return value
