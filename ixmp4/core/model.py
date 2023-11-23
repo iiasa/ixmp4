@@ -74,6 +74,9 @@ class ModelRepository(BaseFacade):
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
         return self.backend.models.tabulate(name=name)
 
+    def map(self) -> dict:
+        return self.backend.scenarios.map()
+
     def _get_model_id(self, model: str) -> int | None:
         if model is None:
             return None

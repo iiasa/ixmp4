@@ -74,6 +74,9 @@ class ScenarioRepository(BaseFacade):
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
         return self.backend.scenarios.tabulate(name=name)
 
+    def map(self) -> dict:
+        return self.backend.scenarios.map()
+
     def _get_scenario_id(self, scenario: str) -> int | None:
         if scenario is None:
             return None
