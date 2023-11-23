@@ -17,19 +17,19 @@ def in_(c, v):
 
 
 def like(c, v):
-    return c.like(v)
+    return c.like(escape_wildcard(v), escape="\\")
 
 
 def ilike(c, v):
-    return c.ilike(v)
+    return c.ilike(escape_wildcard(v), escape="\\")
 
 
 def notlike(c, v):
-    return c.notlike(v)
+    return c.notlike(escape_wildcard(v), escape="\\")
 
 
 def notilike(c, v):
-    return c.notilike(v)
+    return c.notilike(escape_wildcard(v), escape="\\")
 
 
 def gt(c, v):
@@ -46,6 +46,10 @@ def gte(c, v):
 
 def lte(c, v):
     return c <= v
+
+
+def escape_wildcard(v):
+    return v.replace("%", "\\%").replace("*", "%")
 
 
 class Integer(int):

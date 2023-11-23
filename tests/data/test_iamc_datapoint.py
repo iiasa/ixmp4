@@ -15,6 +15,9 @@ from ..utils import add_regions, add_units, all_platforms, assert_unordered_equa
         ({"region": {"name__in": ["World"]}}, ("region", "__eq__", "World")),
         ({"region": {"hierarchy": "default"}}, ("region", "isin", ["World", "Europe"])),
         ({"unit": {"name": "EJ/yr"}}, ("unit", "__eq__", "EJ/yr")),
+        ({"unit": {"name": "%"}}, ("unit", "__eq__", "%")),
+        ({"unit": {"name__like": "*"}}, ("unit", "isin", ["EJ/yr", "%"])),
+        ({"unit": {"name__like": "%"}}, ("unit", "__eq__", "%")),
         (
             {"variable": {"name__in": ["Primary Energy"]}},
             ("variable", "isin", ["Primary Energy"]),
@@ -47,7 +50,7 @@ def test_filtering(test_mp, filter, exp_filter):
         add_regions(test_mp, data.region.unique())
         add_units(test_mp, data.unit.unique())
         # add the data for two different models to test filtering
-        test_mp.Run(f"model_{i+1}", f"scen_{i+1}", version="new").iamc.add(data)
+        test_mp.Run(f"model_{i + 1}", f"scen_{i + 1}", version="new").iamc.add(data)
 
     obs = (
         test_mp.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
