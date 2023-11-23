@@ -57,3 +57,6 @@ class ScenarioRepository(
 
     def enumerate(self, *args, **kwargs) -> Iterable[Scenario] | pd.DataFrame:
         return super().enumerate(*args, **kwargs)
+
+    def map(self, *args, **kwargs):
+        return dict([(s.id, s.name) for s in self.list(*args, **kwargs)])

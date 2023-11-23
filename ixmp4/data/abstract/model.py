@@ -113,3 +113,13 @@ class ModelRepository(
 
         """
         ...
+
+    def map(self):
+        """A dictionary of id to name
+
+        Returns
+        -------
+        :class:`dict`:
+            A dictionary `id` -> `name`
+        """
+        ...

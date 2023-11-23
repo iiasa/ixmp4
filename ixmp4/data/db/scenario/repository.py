@@ -62,3 +62,6 @@ class ScenarioRepository(
     @guard("view")
     def tabulate(self, *args, **kwargs) -> pd.DataFrame:
         return super().tabulate(*args, **kwargs)
+
+    def map(self):
+        return dict([(s.id, s.name) for s in self.list()])

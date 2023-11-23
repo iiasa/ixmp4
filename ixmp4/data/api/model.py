@@ -54,6 +54,9 @@ class ModelRepository(
     def enumerate(self, *args, **kwargs) -> Iterable[Model] | pd.DataFrame:
         return super().enumerate(*args, **kwargs)
 
+    def map(self, *args, **kwargs):
+        return dict([(m.id, m.name) for m in self.list(*args, **kwargs)])
+
 
 class ModelDocsRepository(DocsRepository):
     model_class = Docs

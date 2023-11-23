@@ -88,12 +88,8 @@ class RunRepository(BaseFacade):
 
     def tabulate(self, default_only: bool = True) -> pd.DataFrame:
         runs = self.backend.runs.tabulate(default_only=default_only)
-        runs["model"] = runs["model__id"].map(
-            dict([(m.id, m.name) for m in self.backend.models.list()])
-        )
-        runs["scenario"] = runs["scenario__id"].map(
-            dict([(s.id, s.name) for s in self.backend.scenarios.list()])
-        )
+        runs["model"] = runs["model__id"].map(self.backend.models.map())
+        runs["scenario"] = runs["scenario__id"].map(self.backend.scenarios.map())
         return runs[["id", "model", "scenario", "version", "is_default"]]
 
 

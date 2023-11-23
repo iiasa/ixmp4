@@ -52,3 +52,13 @@ class ModelRepository(
     @guard("view")
     def tabulate(self, *args, **kwargs) -> pd.DataFrame:
         return super().tabulate(*args, **kwargs)
+
+    def map(self, *args, **kwargs):
+        """A dictionary of id to name
+
+        Returns
+        -------
+        :class:`dict`:
+            A dictionary `id` -> `name`
+        """
+        return dict([(m.id, m.name) for m in self.list(*args, **kwargs)])
