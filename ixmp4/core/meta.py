@@ -1,7 +1,7 @@
 import pandas as pd
 
-from .run import RunRepository
 from .base import BaseFacade
+from .run import RunRepository
 
 
 class MetaRepository(BaseFacade):

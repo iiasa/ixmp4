@@ -105,3 +105,12 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
                 - name
         """
         ...
+
+    def map(self) -> dict:
+        """Return a mapping of scenario-id to scenario-name
+
+        Returns
+        -------
+        :class:`dict`
+        """
+        ...
