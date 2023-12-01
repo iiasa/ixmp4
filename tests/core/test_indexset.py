@@ -42,6 +42,13 @@ class TestCoreIndexSet:
         indexset_2 = run.optimization.IndexSet("IndexSet 2")
         assert indexset_1.id != indexset_2.id
 
+    def test_get_indexset(self, test_mp):
+        run = test_mp.Run("Model", "Scenario", "new")
+        _ = run.optimization.IndexSet("IndexSet 1")
+        indexset = run.optimization.IndexSet("IndexSet 1")
+        assert indexset.id == 1
+        assert indexset.name == "IndexSet 1"
+
     def test_add_elements(self, test_mp):
         run = test_mp.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
@@ -88,11 +95,15 @@ class TestCoreIndexSet:
         run.set_as_default()
         indexset_1 = run.optimization.IndexSet("Indexset 1")
         indexset_2 = run.optimization.IndexSet("Indexset 2")
-        exp = df_from_list(indexsets=[indexset_1, indexset_2])
-        res = run.optimization.indexsets.tabulate()
+        expected = df_from_list(indexsets=[indexset_1, indexset_2])
+        result = run.optimization.indexsets.tabulate()
         # utils.assert_unordered_equality doesn't like lists, so make sure the order in
         # df_from_list() is correct!
-        pdt.assert_frame_equal(exp, res, check_dtype=False)
+        pdt.assert_frame_equal(expected, result)
+
+        expected = df_from_list(indexsets=[indexset_2])
+        result = run.optimization.indexsets.tabulate(name="Indexset 2")
+        pdt.assert_frame_equal(expected, result)
 
     def test_indexset_docs(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")

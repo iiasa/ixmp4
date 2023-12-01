@@ -128,9 +128,13 @@ class TestCoreScalar:
         unit = test_mp.units.create("Test Unit")
         scalar_1 = run.optimization.Scalar("Scalar 1", value=1, unit_name=unit.name)
         scalar_2 = run.optimization.Scalar("Scalar 2", value=2, unit_name=unit.name)
-        exp = df_from_list(scalars=[scalar_1, scalar_2])
-        res = run.optimization.scalars.tabulate()
-        assert_unordered_equality(exp, res, check_dtype=False)
+        expected = df_from_list(scalars=[scalar_1, scalar_2])
+        result = run.optimization.scalars.tabulate()
+        assert_unordered_equality(expected, result, check_dtype=False)
+
+        expected = df_from_list(scalars=[scalar_2])
+        result = run.optimization.scalars.tabulate(name="Scalar 2")
+        assert_unordered_equality(expected, result, check_dtype=False)
 
     def test_scalar_docs(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
