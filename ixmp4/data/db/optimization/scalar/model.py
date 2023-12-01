@@ -1,7 +1,6 @@
 from typing import ClassVar
 
 from sqlalchemy import UniqueConstraint
-from sqlalchemy.ext.declarative import declared_attr
 
 from ixmp4 import db
 from ixmp4.data import types
@@ -22,11 +21,11 @@ class Scalar(base.BaseModel):
     unit: types.Mapped[Unit | None] = db.relationship()
     unit__id: types.Mapped[int | None] = db.Column(db.Integer, db.ForeignKey("unit.id"), index=True)
 
-    @declared_attr
-    def run__id(cls):
-        return db.Column(db.Integer, db.ForeignKey("run.id"), nullable=False, index=True)
+    run__id: types.Integer = db.Column(
+        db.Integer, db.ForeignKey("run.id"), nullable=False, index=True
+    )
 
-    __table_args__ = (UniqueConstraint(name, "run__id"),)
+    __table_args__ = (UniqueConstraint(name, run__id),)
 
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
     created_by: types.String = db.Column(db.String(255), nullable=True)

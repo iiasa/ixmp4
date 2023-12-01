@@ -49,7 +49,6 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import (
     Relationship,
     Session,
