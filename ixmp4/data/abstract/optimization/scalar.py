@@ -65,19 +65,19 @@ class ScalarRepository(
         """
         ...
 
-    def update(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
+    def update(
+        self, id: int, value: float | None = None, unit_id: int | None = None
+    ) -> Scalar:
         """Updates a Scalar.
 
         Parameters
         ----------
-        name : str
-            The name of the Scalar.
-        value : float
+        id : int
+            The integer id of the Scalar.
+        value : float, optional
             The value of the Scalar.
-        unit_name : str
-            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
+        unit_id : int, optional
+            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
 
         Returns
         -------

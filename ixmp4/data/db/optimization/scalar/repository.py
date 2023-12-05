@@ -57,21 +57,19 @@ class ScalarRepository(
         return super().create(name=name, value=value, unit_name=unit_name, run_id=run_id, **kwargs)
 
     @guard("edit")
-    def update(self, name: str, value: float, unit_name: str, run_id: int, **kwargs) -> Scalar:
-        unit_id = self.backend.units.get(unit_name).id
-        exc = (
-            db.update(Scalar)
-            .where(
-                Scalar.run__id == run_id,
-                Scalar.name == name,
-            )
-            .values(value=value, unit__id=unit_id)
-            .returning(Scalar)
+    def update(self, id: int, value: float | None = None, unit_id: int | None = None) -> Scalar:
+        exc = db.update(Scalar).where(
+            Scalar.id == id,
         )
 
-        scalar: Scalar = self.session.execute(exc).scalar_one()
+        if value is not None:
+            exc = exc.values(value=value)
+        if unit_id is not None:
+            exc = exc.values(unit__id=unit_id)
+
+        self.session.execute(exc)
         self.session.commit()
-        return scalar
+        return self.get_by_id(id)
 
     @guard("view")
     def list(self, *args, **kwargs) -> Iterable[Scalar]:

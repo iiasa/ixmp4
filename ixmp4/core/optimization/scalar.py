@@ -4,15 +4,15 @@ from typing import ClassVar, Iterable
 import pandas as pd
 
 from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Run, Unit
+from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
 
 
 class Scalar(BaseModelFacade):
     _model: ScalarModel
     _run: Run
-    _unit: Unit
     NotFound: ClassVar = ScalarModel.NotFound
     NotUnique: ClassVar = ScalarModel.NotUnique
 
@@ -60,10 +60,9 @@ class Scalar(BaseModelFacade):
     def value(self, value: float):
         self._model.value = value
         self.backend.optimization.scalars.update(
-            name=self._model.name,
-            value=value,
-            unit_name=self._model.unit.name,
-            run_id=self._run.id,
+            id=self._model.id,
+            value=self._model.value,
+            unit_id=self._model.unit.id,
         )
 
     @property
@@ -72,13 +71,17 @@ class Scalar(BaseModelFacade):
         return self._model.unit
 
     @unit.setter
-    def unit(self, unit_name: str):
-        self._model.unit = self.backend.units.get(unit_name)
-        self.backend.optimization.scalars.update(
-            name=self._model.name,
+    def unit(self, unit_or_name: str | Unit):
+        unit = None
+        if isinstance(unit_or_name, Unit):
+            unit = unit_or_name
+        else:
+            unit_model = self.backend.units.get(unit_or_name)
+            unit = Unit(_backend=self.backend, _model=unit_model)
+        self._model = self.backend.optimization.scalars.update(
+            id=self._model.id,
             value=self._model.value,
-            unit_name=unit_name,
-            run_id=self._run.id,
+            unit_id=unit.id,
         )
 
     @property
@@ -136,14 +139,6 @@ class ScalarRepository(BaseFacade):
                 message=f"Scalar '{name}' already exists! Did you mean to call "
                 "run.optimization.scalars.update()?"
             ) from e
-        return Scalar(
-            _backend=self.backend, _model=model, _run=self._run, name=model.name
-        )
-
-    def update(self, name: str, value: float, unit_name: str) -> Scalar:
-        model = self.backend.optimization.scalars.update(
-            name=name, value=value, unit_name=unit_name, run_id=self._run.id
-        )
         return Scalar(
             _backend=self.backend, _model=model, _run=self._run, name=model.name
         )

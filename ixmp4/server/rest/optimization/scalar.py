@@ -15,11 +15,16 @@ router: APIRouter = APIRouter(
 )
 
 
-class ScalarInput(BaseModel):
+class ScalarCreateInput(BaseModel):
     name: str
     value: float
     unit_name: str
     run_id: int
+
+
+class ScalarUpdateInput(BaseModel):
+    value: float | None
+    unit_id: int | None
 
 
 class EnumerationOutput(BaseModel, RootModel):
@@ -60,16 +65,17 @@ def query(
 @autodoc
 @router.patch("/{id}/", response_model=api.Scalar)
 def update(
-    scalar: ScalarInput,
+    id: int,
+    scalar: ScalarUpdateInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.optimization.scalars.update(**scalar.model_dump())
+    return backend.optimization.scalars.update(id, **scalar.model_dump())
 
 
 @autodoc
 @router.post("/", response_model=api.Scalar)
 def create(
-    scalar: ScalarInput,
+    scalar: ScalarCreateInput,
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.scalars.create(**scalar.model_dump())

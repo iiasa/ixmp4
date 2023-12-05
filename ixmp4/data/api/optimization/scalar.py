@@ -56,17 +56,16 @@ class ScalarRepository(
             name=name, value=value, unit_name=unit_name, run_id=run_id
         )
 
-    def update(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
-        scalar = super().get(run_id=run_id, name=name)
+    def update(
+        self, id: int, value: float | None = None, unit_id: int | None = None
+    ) -> Scalar:
         # we can assume this type on update endpoints
         res: Mapping[str, Any] = self._request(
             "PATCH",
-            self.prefix + str(scalar.id) + "/",
+            self.prefix + str(id) + "/",
             json={
-                "name": name,
                 "value": value,
-                "unit_name": unit_name,
-                "run_id": run_id,
+                "unit_id": unit_id,
             },
         )  # type: ignore
         return self.model_class(**res)
