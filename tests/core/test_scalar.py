@@ -85,19 +85,12 @@ class TestCoreScalar:
                 "Scalar", value=20, unit_name=unit2.name
             )
 
-        scalar = run.optimization.scalars.update(
-            "Scalar", value=20, unit_name=unit2.name
-        )
-        assert scalar.value == 20
-        assert scalar.unit.id == unit2.id
-
         scalar.value = 30
         scalar.unit = "Test Unit"
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
         result = run.optimization.scalars.get("Scalar")
-        print(scalar.value, scalar.unit)
-        print(result.value, result.unit)
+
         assert scalar.id == result.id
         assert scalar.name == result.name
         assert scalar.value == result.value == 30

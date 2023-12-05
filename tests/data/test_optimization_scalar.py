@@ -73,11 +73,13 @@ class TestDataOptimizationScalar:
         assert scalar.id == 1
         assert scalar.unit__id == unit.id
 
-        scalar = test_mp.backend.optimization.scalars.update(
-            "Scalar", value=20, unit_name="Unit 2", run_id=run.id
+        ret = test_mp.backend.optimization.scalars.update(
+            scalar.id, unit_id=unit2.id, value=20
         )
-        assert scalar.value == 20
-        assert scalar.unit__id == unit2.id
+
+        assert ret.id == scalar.id == 1
+        assert ret.unit__id == unit2.id
+        assert ret.value == 20
 
     def test_list_scalars(self, test_mp):
         run = test_mp.backend.runs.create("Model", "Scenario")
