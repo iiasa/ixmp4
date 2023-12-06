@@ -21,14 +21,22 @@ class Scalar(BaseModelFacade):
         name: str,
         _run: Run,
         value: float | None = None,
-        unit_name: str | None = None,
+        unit_or_name: str | Unit | None = None,
         **kwargs,
     ) -> None:
         super().__init__(**kwargs)
         self._run = _run
+        if isinstance(unit_or_name, Unit):
+            unit_name = unit_or_name.name
+        elif isinstance(unit_or_name, str):
+            unit_name = unit_or_name
+        else:
+            # TODO: provide logging information about None-unit_or_names being converted to
+            # dimensionless
+            unit_name = ""
         if getattr(self, "_model", None) is None:
-            if (value is None) or (unit_name is None):
-                raise TypeError("`Scalar` requires `value` and `unit_name`!")
+            if value is None:
+                raise TypeError("`Scalar` requires `value`!")
             try:
                 self._model = self.backend.optimization.scalars.get(
                     run_id=self._run.id,
