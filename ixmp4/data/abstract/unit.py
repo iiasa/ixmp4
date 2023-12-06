@@ -127,7 +127,8 @@ class UnitRepository(
         name : str
             The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.unit.filters.UnitFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.unit.filters.UnitFilter`.
 
         Returns
         -------
@@ -149,7 +150,8 @@ class UnitRepository(
         name : str
             The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.unit.filters.UnitFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.unit.filters.UnitFilter`.
 
         Returns
         -------

@@ -104,7 +104,8 @@ class RegionRepository(
         except Region.NotFound:
             if hierarchy is None:
                 raise TypeError(
-                    "Argument `hierarchy` is required if `Region` with `name` does not exist."
+                    """Argument `hierarchy` is required if `Region` with `name` does not
+                     exist."""
                 )
             return self.create(name, hierarchy)
 
@@ -129,7 +130,8 @@ class RegionRepository(
         hierarchy : str
             The hierarchy of a region.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.region.filters.RegionFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.region.filters.RegionFilter`.
 
         Returns
         -------
@@ -154,7 +156,8 @@ class RegionRepository(
         hierarchy : str
             The hierarchy of a region.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.region.filters.RegionFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.region.filters.RegionFilter`.
 
         Returns
         -------

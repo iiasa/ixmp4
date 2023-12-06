@@ -15,7 +15,7 @@ class Docs(base.BaseModel, Protocol):
     dimension: types.Mapped
     "The documented object."
 
-    # This doesn't work since each dimension has a different self.dimension object as of now
+    # This doesn't work since each dimension has a different self.dimension object atm
     # def __str__(self) -> str:
     #    return (
     #        f"<Documentation for {self.dimension} {self.dimension.name}>"
@@ -74,8 +74,8 @@ class DocsRepository(
         Parameters
         ----------
         dimension_id : int
-            The unique id of the object whose documentation should be deleted in its dimension's
-            table.
+            The unique id of the object whose documentation should be deleted in its
+            dimension's table.
 
         Raises
         ------
@@ -94,7 +94,8 @@ class DocsRepository(
         Parameters
         ----------
         dimension_id : int
-            The id of an object in any dimension. If supplied only one result will be returned.
+            The id of an object in any dimension. If supplied only one result will be
+            returned.
 
         Returns
         -------

@@ -170,7 +170,8 @@ class TimeSeriesRepository(
     def bulk_upsert(
         self, df: pd.DataFrame, create_related: bool | None = False
     ) -> None:
-        """Looks which time series in the supplied data frame already exist, and inserts new ones.
+        """Looks which time series in the supplied data frame already exist, and
+        inserts new ones.
 
         Parameters
         ----------
@@ -183,8 +184,8 @@ class TimeSeriesRepository(
                     - ... parameter id columns
 
                 else:
-                    - ... parameter value columns (i.e `region` column with value "World" instead
-                      of `region__id` column with value "1".)
+                    - ... parameter value columns (i.e `region` column with value
+                      "World" instead of `region__id` column with value "1".)
 
         create_related : bool
             Creates related database entries with value data supplied in `df`.
