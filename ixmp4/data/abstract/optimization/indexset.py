@@ -13,6 +13,9 @@ class IndexSet(base.BaseModel, Protocol):
 
     name: types.String
     """Unique name of the IndexSet."""
+    run__id: types.Integer
+    """The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
+    defined. """
 
     elements: types.JsonList
     """Unique list of str or int."""
@@ -40,7 +43,8 @@ class IndexSetRepository(
         Parameters
         ----------
         run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is defined.
+            The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
+            defined.
         name : str
             The name of the IndexSet.
 
@@ -62,7 +66,8 @@ class IndexSetRepository(
         Parameters
         ----------
         run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is defined.
+            The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
+            defined.
         name : str
             The unique name of the IndexSet.
 

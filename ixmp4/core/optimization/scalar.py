@@ -12,44 +12,8 @@ from ixmp4.data.abstract import Scalar as ScalarModel
 
 class Scalar(BaseModelFacade):
     _model: ScalarModel
-    _run: Run
     NotFound: ClassVar = ScalarModel.NotFound
     NotUnique: ClassVar = ScalarModel.NotUnique
-
-    def __init__(
-        self,
-        name: str,
-        _run: Run,
-        value: float | None = None,
-        unit_or_name: str | Unit | None = None,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._run = _run
-        if isinstance(unit_or_name, Unit):
-            unit_name = unit_or_name.name
-        elif isinstance(unit_or_name, str):
-            unit_name = unit_or_name
-        else:
-            # TODO: provide logging information about None-unit_or_names being converted to
-            # dimensionless
-            unit_name = ""
-        if getattr(self, "_model", None) is None:
-            if value is None:
-                raise TypeError("`Scalar` requires `value`!")
-            try:
-                self._model = self.backend.optimization.scalars.get(
-                    run_id=self._run.id,
-                    name=name,
-                )
-                # TODO: provide logging information if Scalar already exists
-            except ScalarModel.NotFound:
-                self._model = self.backend.optimization.scalars.create(
-                    name=name,
-                    value=value,
-                    unit_name=unit_name,
-                    run_id=self._run.id,
-                )
 
     @property
     def id(self) -> int:
@@ -93,8 +57,8 @@ class Scalar(BaseModelFacade):
         )
 
     @property
-    def run(self):
-        return self._run
+    def run_id(self) -> int:
+        return self._model.run__id
 
     @property
     def created_at(self) -> datetime | None:
@@ -137,7 +101,19 @@ class ScalarRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
-    def create(self, name: str, value: float, unit_name: str) -> Scalar:
+    def create(
+        self, name: str, value: float, unit_or_name: str | Unit | None = None
+    ) -> Scalar:
+        if isinstance(unit_or_name, Unit):
+            unit_name = unit_or_name.name
+        elif isinstance(unit_or_name, str):
+            unit_name = unit_or_name
+        else:
+            # TODO: provide logging information about None-unit_or_names being converted
+            # to dimensionless
+            unit = self.backend.units.create(name="dimensionless")
+            unit_name = unit.name
+
         try:
             model = self.backend.optimization.scalars.create(
                 name=name, value=value, unit_name=unit_name, run_id=self._run.id
@@ -147,15 +123,11 @@ class ScalarRepository(BaseFacade):
                 message=f"Scalar '{name}' already exists! Did you mean to call "
                 "run.optimization.scalars.update()?"
             ) from e
-        return Scalar(
-            _backend=self.backend, _model=model, _run=self._run, name=model.name
-        )
+        return Scalar(_backend=self.backend, _model=model)
 
     def get(self, name: str) -> Scalar:
         model = self.backend.optimization.scalars.get(run_id=self._run.id, name=name)
-        return Scalar(
-            _backend=self.backend, _model=model, _run=self._run, name=model.name
-        )
+        return Scalar(_backend=self.backend, _model=model)
 
     def list(self, name: str | None = None) -> Iterable[Scalar]:
         scalars = self.backend.optimization.scalars.list(run_id=self._run.id, name=name)
@@ -163,10 +135,6 @@ class ScalarRepository(BaseFacade):
             Scalar(
                 _backend=self.backend,
                 _model=i,
-                _run=self._run,
-                unit_name=i.unit.name,
-                name=i.name,
-                value=i.value,
             )
             for i in scalars
         ]

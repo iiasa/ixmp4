@@ -2,6 +2,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4 import IndexSet
+
 from ..utils import all_platforms
 
 
@@ -15,7 +17,7 @@ def df_from_list(indexsets: list):
                 indexset.elements,
                 indexset.created_at,
                 indexset.created_by,
-                indexset.run.id,
+                indexset.run_id,
                 indexset.id,
             ]
             for indexset in indexsets
@@ -35,27 +37,33 @@ def df_from_list(indexsets: list):
 class TestCoreIndexSet:
     def test_create_indexset(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
-        indexset_1 = run.optimization.IndexSet("IndexSet 1")
+        indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         assert indexset_1.id == 1
         assert indexset_1.name == "IndexSet 1"
 
-        indexset_2 = run.optimization.IndexSet("IndexSet 2")
+        indexset_2 = run.optimization.indexsets.create("IndexSet 2")
         assert indexset_1.id != indexset_2.id
+
+        with pytest.raises(IndexSet.NotUnique):
+            _ = run.optimization.indexsets.create("IndexSet 1")
 
     def test_get_indexset(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
-        _ = run.optimization.IndexSet("IndexSet 1")
-        indexset = run.optimization.IndexSet("IndexSet 1")
+        _ = run.optimization.indexsets.create("IndexSet 1")
+        indexset = run.optimization.indexsets.get("IndexSet 1")
         assert indexset.id == 1
         assert indexset.name == "IndexSet 1"
+
+        with pytest.raises(IndexSet.NotFound):
+            _ = run.optimization.indexsets.get("Foo")
 
     def test_add_elements(self, test_mp):
         run = test_mp.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
-        indexset_1 = run.optimization.IndexSet("IndexSet 1")
+        indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         indexset_1.add(test_elements)
-        run.optimization.IndexSet("IndexSet 2").add(test_elements)
-        indexset_2 = run.optimization.IndexSet("IndexSet 2")
+        run.optimization.indexsets.create("IndexSet 2").add(test_elements)
+        indexset_2 = run.optimization.indexsets.get("IndexSet 2")
         assert indexset_1.elements == indexset_2.elements
 
         with pytest.raises(ValueError):
@@ -65,9 +73,9 @@ class TestCoreIndexSet:
             indexset_2.add(["baz", "baz"])
 
         indexset_1.add(1)
-        indexset_3 = run.optimization.IndexSet("IndexSet 1")
+        indexset_3 = run.optimization.indexsets.get("IndexSet 1")
         indexset_2.add("1")
-        indexset_4 = run.optimization.IndexSet("IndexSet 2")
+        indexset_4 = run.optimization.indexsets.get("IndexSet 2")
         assert indexset_3.elements != indexset_4.elements
         assert len(indexset_3.elements) == len(indexset_4.elements)
 
@@ -75,8 +83,8 @@ class TestCoreIndexSet:
         run = test_mp.Run("Model", "Scenario", "new")
         # Per default, list() lists only `default` version runs:
         run.set_as_default()
-        indexset_1 = run.optimization.IndexSet("Indexset 1")
-        indexset_2 = run.optimization.IndexSet("Indexset 2")
+        indexset_1 = run.optimization.indexsets.create("Indexset 1")
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
         expected_ids = [indexset_1.id, indexset_2.id]
         list_ids = [indexset.id for indexset in run.optimization.indexsets.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -93,8 +101,8 @@ class TestCoreIndexSet:
         run = test_mp.Run("Model", "Scenario", "new")
         # Per default, tabulate() lists only `default` version runs:
         run.set_as_default()
-        indexset_1 = run.optimization.IndexSet("Indexset 1")
-        indexset_2 = run.optimization.IndexSet("Indexset 2")
+        indexset_1 = run.optimization.indexsets.create("Indexset 1")
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
         expected = df_from_list(indexsets=[indexset_1, indexset_2])
         result = run.optimization.indexsets.tabulate()
         # utils.assert_unordered_equality doesn't like lists, so make sure the order in
@@ -107,7 +115,7 @@ class TestCoreIndexSet:
 
     def test_indexset_docs(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
-        indexset_1 = run.optimization.IndexSet("IndexSet 1")
+        indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         docs = "Documentation of IndexSet 1"
         indexset_1.docs = docs
         assert indexset_1.docs == docs

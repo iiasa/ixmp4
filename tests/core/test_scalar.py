@@ -14,7 +14,7 @@ def df_from_list(scalars: list):
                 scalar.name,
                 scalar.value,
                 scalar.unit.id,
-                scalar.run.id,
+                scalar.run_id,
                 scalar.created_at,
                 scalar.created_by,
             ]
@@ -37,7 +37,9 @@ class TestCoreScalar:
     def test_create_scalar(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
-        scalar_1 = run.optimization.Scalar("Scalar 1", value=10, unit_name="Test Unit")
+        scalar_1 = run.optimization.scalars.create(
+            "Scalar 1", value=10, unit_or_name="Test Unit"
+        )
         assert scalar_1.id == 1
         assert scalar_1.name == "Scalar 1"
         assert scalar_1.value == 10
@@ -47,22 +49,25 @@ class TestCoreScalar:
 
         with pytest.raises(Scalar.NotUnique):
             scalar_2 = run.optimization.scalars.create(
-                "Scalar 1", value=20, unit_name=unit.name
+                "Scalar 1", value=20, unit_or_name=unit.name
             )
 
         with pytest.raises(TypeError):
-            _ = run.optimization.Scalar("Scalar 2")
+            _ = run.optimization.scalars.create("Scalar 2")
 
         scalar_2 = run.optimization.scalars.create(
-            "Scalar 2", value=20, unit_name=unit.name
+            "Scalar 2", value=20, unit_or_name=unit
         )
         assert scalar_1.id != scalar_2.id
+
+        scalar_3 = run.optimization.scalars.create("Scalar 3", value=1)
+        assert scalar_3.unit.name == "dimensionless"
 
     def test_get_scalar(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
         scalar = run.optimization.scalars.create(
-            "Scalar", value=10, unit_name=unit.name
+            "Scalar", value=10, unit_or_name=unit.name
         )
         result = run.optimization.scalars.get(scalar.name)
         assert scalar.id == result.id
@@ -70,19 +75,22 @@ class TestCoreScalar:
         assert scalar.value == result.value
         assert scalar.unit.id == result.unit.id
 
+        with pytest.raises(Scalar.NotFound):
+            _ = run.optimization.scalars.get("Foo")
+
     def test_update_scalar(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
         unit2 = test_mp.units.create("Test Unit 2")
         scalar = run.optimization.scalars.create(
-            "Scalar", value=10, unit_name=unit.name
+            "Scalar", value=10, unit_or_name=unit.name
         )
         assert scalar.value == 10
         assert scalar.unit.id == unit.id
 
         with pytest.raises(Scalar.NotUnique):
             _ = run.optimization.scalars.create(
-                "Scalar", value=20, unit_name=unit2.name
+                "Scalar", value=20, unit_or_name=unit2.name
             )
 
         scalar.value = 30
@@ -101,8 +109,12 @@ class TestCoreScalar:
         # Per default, list() lists only `default` version runs:
         run.set_as_default()
         unit = test_mp.units.create("Test Unit")
-        scalar_1 = run.optimization.Scalar("Scalar 1", value=1, unit_name="Test Unit")
-        scalar_2 = run.optimization.Scalar("Scalar 2", value=2, unit_name=unit.name)
+        scalar_1 = run.optimization.scalars.create(
+            "Scalar 1", value=1, unit_or_name="Test Unit"
+        )
+        scalar_2 = run.optimization.scalars.create(
+            "Scalar 2", value=2, unit_or_name=unit.name
+        )
         expected_ids = [scalar_1.id, scalar_2.id]
         list_ids = [scalar.id for scalar in run.optimization.scalars.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -119,8 +131,12 @@ class TestCoreScalar:
         # Per default, tabulate() lists only `default` version runs:
         run.set_as_default()
         unit = test_mp.units.create("Test Unit")
-        scalar_1 = run.optimization.Scalar("Scalar 1", value=1, unit_name=unit.name)
-        scalar_2 = run.optimization.Scalar("Scalar 2", value=2, unit_name=unit.name)
+        scalar_1 = run.optimization.scalars.create(
+            "Scalar 1", value=1, unit_or_name=unit.name
+        )
+        scalar_2 = run.optimization.scalars.create(
+            "Scalar 2", value=2, unit_or_name=unit.name
+        )
         expected = df_from_list(scalars=[scalar_1, scalar_2])
         result = run.optimization.scalars.tabulate()
         assert_unordered_equality(expected, result, check_dtype=False)
@@ -132,7 +148,9 @@ class TestCoreScalar:
     def test_scalar_docs(self, test_mp):
         run = test_mp.Run("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
-        scalar = run.optimization.Scalar("Scalar 1", value=4, unit_name=unit.name)
+        scalar = run.optimization.scalars.create(
+            "Scalar 1", value=4, unit_or_name=unit.name
+        )
         docs = "Documentation of Scalar 1"
         scalar.docs = docs
         assert scalar.docs == docs

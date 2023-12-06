@@ -11,29 +11,8 @@ from ixmp4.data.abstract import Run
 
 class IndexSet(BaseModelFacade):
     _model: IndexSetModel
-    _run: Run
     NotFound: ClassVar = IndexSetModel.NotFound
     NotUnique: ClassVar = IndexSetModel.NotUnique
-
-    def __init__(
-        self,
-        name: str,
-        _run: Run,
-        **kwargs,
-    ) -> None:
-        super().__init__(**kwargs)
-        self._run = _run
-        if getattr(self, "_model", None) is None:
-            try:
-                self._model = self.backend.optimization.indexsets.get(
-                    run_id=self._run.id, name=name
-                )
-                # TODO: provide logging information if IndexSet already exists
-            except IndexSetModel.NotFound:
-                self._model = self.backend.optimization.indexsets.create(
-                    run_id=self._run.id,
-                    name=name,
-                )
 
     @property
     def id(self) -> int:
@@ -53,12 +32,12 @@ class IndexSet(BaseModelFacade):
             indexset_id=self._model.id, elements=elements
         )
         self._model.elements = self.backend.optimization.indexsets.get(
-            run_id=self._run.id, name=self._model.name
+            run_id=self._model.run__id, name=self._model.name
         ).elements
 
     @property
-    def run(self):
-        return self._run
+    def run_id(self) -> int:
+        return self._model.run__id
 
     @property
     def created_at(self) -> datetime | None:
@@ -101,14 +80,25 @@ class IndexSetRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
+    def create(self, name: str) -> IndexSet:
+        indexset = self.backend.optimization.indexsets.create(
+            run_id=self._run.id,
+            name=name,
+        )
+        return IndexSet(_backend=self.backend, _model=indexset)
+
+    def get(self, name: str) -> IndexSet:
+        indexset = self.backend.optimization.indexsets.get(
+            run_id=self._run.id, name=name
+        )
+        return IndexSet(_backend=self.backend, _model=indexset)
+
     def list(self, name: str | None = None) -> Iterable[IndexSet]:
         indexsets = self.backend.optimization.indexsets.list(name=name)
         return [
             IndexSet(
                 _backend=self.backend,
                 _model=i,
-                _run=self._run,
-                name=i.name,
             )
             for i in indexsets
         ]

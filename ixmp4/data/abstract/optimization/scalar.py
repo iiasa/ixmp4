@@ -49,9 +49,11 @@ class ScalarRepository(
         value : float
             The value of the Scalar.
         unit_name : str
-            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
+            The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is
+            defined.
         run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
+            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is
+            defined.
 
         Raises
         ------
@@ -77,7 +79,8 @@ class ScalarRepository(
         value : float, optional
             The value of the Scalar.
         unit_id : int, optional
-            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is defined.
+            The id of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is
+            defined.
 
         Returns
         -------
@@ -92,7 +95,8 @@ class ScalarRepository(
         Parameters
         ----------
         run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is defined.
+            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is
+            defined.
         name : str
             The name of the Scalar.
 
