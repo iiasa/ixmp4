@@ -25,8 +25,6 @@ In development mode additional commands are available:
 
 """
 
-from functools import partial
-
 from ixmp4.conf import settings
 from ixmp4.conf.auth import BaseAuth
 from ixmp4.core.exceptions import PlatformNotFound
@@ -36,7 +34,6 @@ from .iamc import IamcRepository
 from .meta import MetaRepository
 from .model import ModelRepository
 from .region import RegionRepository
-from .run import Run as RunModel
 from .run import RunRepository
 from .scenario import ScenarioRepository
 from .unit import UnitRepository
