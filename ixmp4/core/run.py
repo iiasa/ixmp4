@@ -71,7 +71,7 @@ class Run(BaseModelFacade):
         self._meta._set(meta)
 
     def set_as_default(self):
-        """Sets this run as the default version for its `model` + `scenario` combination."""
+        """Sets this run as default version for this `model - scenario` combination."""
         self.backend.runs.set_as_default_version(self._model.id)
 
     def unset_as_default(self):
@@ -80,20 +80,16 @@ class Run(BaseModelFacade):
 
 
 class RunRepository(BaseFacade):
-    def list(self, default_only: bool = True) -> Iterable[Run]:
+    def list(self, default_only: bool = True, **kwargs) -> Iterable[Run]:
         return [
             Run(_backend=self.backend, _model=r)
-            for r in self.backend.runs.list(default_only=default_only)
+            for r in self.backend.runs.list(default_only=default_only, **kwargs)
         ]
 
-    def tabulate(self, default_only: bool = True) -> pd.DataFrame:
-        runs = self.backend.runs.tabulate(default_only=default_only)
-        runs["model"] = runs["model__id"].map(
-            dict([(m.id, m.name) for m in self.backend.models.list()])
-        )
-        runs["scenario"] = runs["scenario__id"].map(
-            dict([(s.id, s.name) for s in self.backend.scenarios.list()])
-        )
+    def tabulate(self, default_only: bool = True, **kwargs) -> pd.DataFrame:
+        runs = self.backend.runs.tabulate(default_only=default_only, **kwargs)
+        runs["model"] = runs["model__id"].map(self.backend.models.map())
+        runs["scenario"] = runs["scenario__id"].map(self.backend.scenarios.map())
         return runs[["id", "model", "scenario", "version", "is_default"]]
 
 

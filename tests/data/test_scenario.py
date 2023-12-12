@@ -57,6 +57,12 @@ class TestDataScenario:
             scenarios.drop(columns=["created_at", "created_by"]), true_scenarios
         )
 
+    def test_map_scenario(self, test_mp):
+        test_mp.Run("Model", "Scenario 1", version="new")
+        test_mp.Run("Model", "Scenario 2", version="new")
+
+        assert test_mp.backend.scenarios.map() == {1: "Scenario 1", 2: "Scenario 2"}
+
     def test_filter_scenario(self, test_mp):
         run1, _ = create_filter_test_data(test_mp)
 

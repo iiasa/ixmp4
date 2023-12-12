@@ -56,6 +56,11 @@ class TestDataModel:
             models.drop(columns=["created_at", "created_by"]), true_models
         )
 
+    def test_map_model(self, test_mp):
+        test_mp.Run("Model 1", "Scenario", version="new")
+        test_mp.Run("Model 2", "Scenario", version="new")
+        assert test_mp.backend.models.map() == {1: "Model 1", 2: "Model 2"}
+
     def test_filter_model(self, test_mp):
         run1, _ = create_filter_test_data(test_mp)
 
