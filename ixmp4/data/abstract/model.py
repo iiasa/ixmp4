@@ -114,8 +114,8 @@ class ModelRepository(
         """
         ...
 
-    def map(self, *args, **kwargs):
-        """A dictionary of model-id to model-name
+    def map(self, *args, **kwargs) -> dict:
+        """Return a mapping of model-id to model-name.
 
         Returns
         -------
