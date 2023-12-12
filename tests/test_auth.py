@@ -129,7 +129,7 @@ def test_guards(user, truths, test_sqlite_mp):
     mp.regions.create("Test Region", hierarchy="default")
     mp.units.create("Test Unit")
 
-    run = mp.Run("Model", "Scenario", version="new")
+    run = mp.runs.create("Model", "Scenario")
     run.iamc.add(TEST_DF, type=ixmp4.DataPoint.Type.ANNUAL)
     run.set_as_default()
 
@@ -188,9 +188,9 @@ def test_guards(user, truths, test_sqlite_mp):
                     del u.docs
 
                 with pytest.raises(Forbidden):
-                    run = mp.Run("Model", "Scenario", version="new")
+                    mp.runs.create("Model", "Scenario")
 
-                run = mp.Run("Model", "Scenario")
+                run = mp.runs.get("Model", "Scenario")
 
                 with pytest.raises(Forbidden):
                     run.iamc.add(TEST_DF, type=ixmp4.DataPoint.Type.ANNUAL)
@@ -227,14 +227,14 @@ def test_filters(model, platform, access, test_mp, test_data_annual):
     add_regions(mp, test_data_annual["region"].unique())
     add_units(mp, test_data_annual["unit"].unique())
 
-    run = mp.Run(model, "Scenario", version="new")
+    run = mp.runs.create(model, "Scenario")
     run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
     run.meta = {"meta": "test"}
     run.set_as_default()
 
     with mp.backend.auth(user, mock_manager, platform):
         if access in ["view", "edit"]:
-            run = mp.Run(model, "Scenario")
+            run = mp.runs.get(model, "Scenario")
             assert not run.iamc.tabulate().empty
             assert run.meta == {"meta": "test"}
             assert mp.models.list()[0].name == model
@@ -249,7 +249,7 @@ def test_filters(model, platform, access, test_mp, test_data_annual):
 
             else:
                 with pytest.raises(Forbidden):
-                    _ = mp.Run(model, "Scenario", version="new")
+                    _ = mp.runs.create(model, "Scenario")
 
                 with pytest.raises(Forbidden):
                     run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
@@ -264,7 +264,7 @@ def test_filters(model, platform, access, test_mp, test_data_annual):
                     run.meta = {"meta": "test"}
         else:
             with pytest.raises((ixmp4.Run.NotFound, ixmp4.Run.NoDefaultVersion)):
-                mp.Run(model, "Scenario")
+                mp.runs.get(model, "Scenario")
 
             assert mp.runs.tabulate().empty
             assert mp.runs.tabulate(default_only=False).empty

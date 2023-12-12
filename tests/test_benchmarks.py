@@ -18,9 +18,9 @@ def add_datapoints(test_mp, df, type=None):
         model_name, scenario_name = ms
 
         try:
-            run = test_mp.Run(model=model_name, scenario=scenario_name, version=1)
+            run = test_mp.runs.get(model=model_name, scenario=scenario_name, version=1)
         except NotFound:
-            run = test_mp.Run(model=model_name, scenario=scenario_name, version="new")
+            run = test_mp.runs.create(model=model_name, scenario=scenario_name)
 
         run.iamc.add(run_df.drop(columns=["model", "scenario"]), type=type)
 
@@ -31,9 +31,9 @@ def remove_datapoints(test_mp, df, type=None):
         model_name, scenario_name = ms
 
         try:
-            run = test_mp.Run(model=model_name, scenario=scenario_name, version=1)
+            run = test_mp.runs.get(model=model_name, scenario=scenario_name, version=1)
         except NotFound:
-            run = test_mp.Run(model=model_name, scenario=scenario_name, version="new")
+            run = test_mp.runs.create(model=model_name, scenario=scenario_name)
 
         run.iamc.remove(run_df.drop(columns=["model", "scenario"]), type=type)
 
@@ -43,7 +43,7 @@ def tabulate_datapoints(test_mp, **kwargs):
 
     dfs = []
     for run_model in runs:
-        run = test_mp.Run(_model=run_model)
+        run = test_mp.runs.get(_model=run_model)
         df = run.iamc.tabulate(**kwargs)
         df["model"] = run.model.name
         df["scenario"] = run.scenario.name

@@ -59,7 +59,7 @@ def create_filter_test_data(test_mp):
         test_mp.backend.units.create(f"Unit {str(i)}")
     test_mp.backend.units.create("Unit 5")
 
-    run1 = test_mp.Run("Model 1", "Scenario 1", "new")
+    run1 = test_mp.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
     run1_data = pd.DataFrame(
         [
@@ -72,7 +72,7 @@ def create_filter_test_data(test_mp):
     )
     run1.iamc.add(run1_data, type=DataPoint.Type.ANNUAL)
 
-    run2 = test_mp.Run("Model 1", "Scenario 1", "new")
+    run2 = test_mp.runs.create("Model 1", "Scenario 1")
     run2_data = pd.DataFrame(
         [
             ["Region 3", "Variable 1", "Unit 3", 2020, 1],
@@ -84,7 +84,7 @@ def create_filter_test_data(test_mp):
     )
     run2.iamc.add(run2_data, type=DataPoint.Type.ANNUAL)
 
-    run3 = test_mp.Run("Model 2", "Scenario 2", "new")
+    run3 = test_mp.runs.create("Model 2", "Scenario 2")
     run3.iamc.add(run2_data, type=DataPoint.Type.ANNUAL)
     run3.set_as_default()
 
@@ -92,9 +92,9 @@ def create_filter_test_data(test_mp):
 
 
 def create_iamc_query_test_data(test_mp):
-    run1 = test_mp.Run("Model 1", "Scenario 1", version="new")
+    run1 = test_mp.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
-    run2 = test_mp.Run("Model 2", "Scenario 2", version="new")
+    run2 = test_mp.runs.create("Model 2", "Scenario 2")
     run2.set_as_default()
     r1 = test_mp.backend.regions.create("Region 1", "Hierarchy")
     r2 = test_mp.backend.regions.create("Region 2", "Hierarchy")
