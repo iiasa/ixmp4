@@ -18,29 +18,10 @@ class Run(BaseModelFacade):
     NotFound: ClassVar = RunModel.NotFound
     NotUnique: ClassVar = RunModel.NotUnique
 
-    def __init__(
-        self,
-        model: str | None = None,
-        scenario: str | None = None,
-        version: int | str | None = None,
-        **kwargs,
-    ) -> None:
+    def __init__(self, **kwargs) -> None:
         super().__init__(**kwargs)
-        if getattr(self, "_model", None) is None:
-            if (model is None) or (scenario is None):
-                raise TypeError("`Run` requires `model` and `scenario`")
 
-            if version is None:
-                self._model = self.backend.runs.get_default_version(model, scenario)
-            elif version == "new":
-                self._model = self.backend.runs.create(model, scenario)
-            elif isinstance(version, int):
-                self._model = self.backend.runs.get(model, scenario, version)
-            else:
-                raise ValueError(
-                    "Invalid value for `version`, must be 'new' or integer."
-                )
-            self.version = self._model.version
+        self.version = self._model.version
 
         self.iamc = IamcData(_backend=self.backend, run=self._model)
         self._meta = RunMetaFacade(_backend=self.backend, run=self._model)
@@ -80,6 +61,27 @@ class Run(BaseModelFacade):
 
 
 class RunRepository(BaseFacade):
+    def create(
+        self,
+        model: str,
+        scenario: str,
+    ):
+        return Run(
+            _backend=self.backend, _model=self.backend.runs.create(model, scenario)
+        )
+
+    def get(
+        self,
+        model: str,
+        scenario: str,
+        version: int | None = None,
+    ):
+        if version is None:
+            _model = self.backend.runs.get_default_version(model, scenario)
+        else:
+            _model = self.backend.runs.get(model, scenario, version)
+        return Run(_backend=self.backend, _model=_model)
+
     def list(self, default_only: bool = True) -> Iterable[Run]:
         return [
             Run(_backend=self.backend, _model=r)
