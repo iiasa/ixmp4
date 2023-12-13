@@ -6,7 +6,7 @@ from ..utils import all_platforms
 @all_platforms
 class TestCoreIndexSet:
     def test_create_indexset(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         index_set_1 = run.optimization.IndexSet("IndexSet 1")
         returned_index_set_1 = run.optimization.IndexSet("IndexSet 1")
         assert index_set_1.id == returned_index_set_1.id
@@ -15,7 +15,7 @@ class TestCoreIndexSet:
         assert index_set_1.id != index_set_2.id
 
     def test_add_elements(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
         index_set_1 = run.optimization.IndexSet("IndexSet 1")
         index_set_1.add(test_elements)
@@ -37,7 +37,7 @@ class TestCoreIndexSet:
         assert len(index_set_3.elements) == len(index_set_4.elements)
 
     def test_indexset_docs(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         index_set_1 = run.optimization.IndexSet("IndexSet 1")
         docs = "Documentation of IndexSet 1"
         index_set_1.docs = docs

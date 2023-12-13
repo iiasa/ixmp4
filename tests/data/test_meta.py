@@ -22,7 +22,7 @@ TEST_ENTRIES_DF = pd.DataFrame(
 @all_platforms
 class TestDataMeta:
     def test_create_get_entry(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
         for key, value, type in TEST_ENTRIES:
@@ -38,7 +38,7 @@ class TestDataMeta:
             assert entry.type == type
 
     def test_entry_unique(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         test_mp.backend.meta.create(run.id, "Key", "Value")
 
         with pytest.raises(RunMetaEntry.NotUnique):
@@ -51,13 +51,13 @@ class TestDataMeta:
         with pytest.raises(RunMetaEntry.NotFound):
             test_mp.backend.meta.get(-1, "Key")
 
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
 
         with pytest.raises(RunMetaEntry.NotFound):
             test_mp.backend.meta.get(run.id, "Key")
 
     def test_delete_entry(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         entry = test_mp.backend.meta.create(run.id, "Key", "Value")
         test_mp.backend.meta.delete(entry.id)
 
@@ -65,7 +65,7 @@ class TestDataMeta:
             test_mp.backend.meta.get(run.id, "Key")
 
     def test_list_entry(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
@@ -79,7 +79,7 @@ class TestDataMeta:
             assert entry.type == type
 
     def test_tabulate_entry(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
@@ -92,9 +92,9 @@ class TestDataMeta:
         assert_unordered_equality(entries, true_entries)
 
     def test_tabulate_entries_with_run_filters(self, test_mp):
-        run1 = test_mp.Run("Model", "Scenario", "new")
+        run1 = test_mp.runs.create("Model", "Scenario")
         run1.set_as_default()
-        run2 = test_mp.Run("Model 2", "Scenario 2", "new")
+        run2 = test_mp.runs.create("Model 2", "Scenario 2")
 
         # Splitting the loop to more easily correct the id column below
         for key, value, _ in TEST_ENTRIES:
@@ -127,7 +127,7 @@ class TestDataMeta:
         )
 
     def test_tabulate_entries_with_key_filters(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
         for key, value, _ in TEST_ENTRIES:
@@ -144,7 +144,7 @@ class TestDataMeta:
         assert_unordered_equality(entry, true_entry, check_dtype=False)
 
     def test_entry_bulk_operations(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", version="new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
         entries = TEST_ENTRIES_DF.copy()
@@ -204,7 +204,7 @@ class TestDataMeta:
             ],
             columns=["key", "value"],
         )
-        run = test_mp.Run("Model", "Scenario", version="new")
+        run = test_mp.runs.create("Model", "Scenario")
         entries["run__id"] = run.id
 
         duplicated_entries = pd.concat([entries] * 2, ignore_index=True)

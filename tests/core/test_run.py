@@ -21,18 +21,27 @@ def _expected_runs_table(*row_default):
 
 @all_platforms
 class TestCoreRun:
+    def test_run_notfound(self, test_mp):
+        # no Run with that model and scenario name exists
+        with pytest.raises(Run.NotFound):
+            _ = test_mp.runs.get("Unknown Model", "Unknown Scenario", version=1)
+
     def test_run_versions(self, test_mp):
-        run1 = test_mp.Run("Model", "Scenario", version="new")
-        run2 = test_mp.Run("Model", "Scenario", version="new")
+        run1 = test_mp.runs.create("Model", "Scenario")
+        run2 = test_mp.runs.create("Model", "Scenario")
 
         assert run1.id != run2.id
 
         # no default version is assigned, so list & tabulate are empty
         with pytest.raises(Run.NoDefaultVersion):
-            run = test_mp.Run("Model", "Scenario")
+            _ = test_mp.runs.get("Model", "Scenario")
         assert test_mp.runs.list() == []
         assert test_mp.runs.tabulate().empty
 
+        # getting a specific version works even if no default version is assigned
+        assert run1.id == test_mp.runs.get("Model", "Scenario", version=1).id
+
+        # getting the table and list for all runs works
         run_list = test_mp.runs.list(default_only=False)
         assert len(run_list) == 2
         assert run_list[0].id == run1.id
@@ -58,12 +67,12 @@ class TestCoreRun:
         )
 
         # default version can be retrieved directly
-        run = test_mp.Run("Model", "Scenario")
+        run = test_mp.runs.get("Model", "Scenario")
         assert run1.id == run.id
 
         # default version can be changed
         run2.set_as_default()
-        run = test_mp.Run("Model", "Scenario")
+        run = test_mp.runs.get("Model", "Scenario")
         assert run2.id == run.id
 
         # list shows changed default version only
@@ -78,7 +87,7 @@ class TestCoreRun:
         # unsetting default means run cannot be retrieved directly
         run2.unset_as_default()
         with pytest.raises(Run.NoDefaultVersion):
-            test_mp.Run("Model", "Scenario")
+            test_mp.runs.get("Model", "Scenario")
 
         # non-default version cannot be again set as un-default
         with pytest.raises(IxmpError):
@@ -135,7 +144,7 @@ class TestCoreRun:
         add_regions(test_mp, test_data_annual["region"].unique())
         add_units(test_mp, test_data_annual["unit"].unique())
 
-        run = test_mp.Run("Model", "Scenario", version="new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
         obs = run.iamc.tabulate(
             variable={"name": "Primary Energy"}, unit={"name": "EJ/yr"}
@@ -156,7 +165,7 @@ def do_run_datapoints(test_mp, ixmp_data, type=None, arg_data=None):
     add_regions(test_mp, ixmp_data["region"].unique())
     add_units(test_mp, ixmp_data["unit"].unique())
 
-    run = test_mp.Run("Model", "Scenario", version="new")
+    run = test_mp.runs.create("Model", "Scenario")
 
     # == Full Addition ==
     # Save to database
