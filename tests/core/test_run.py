@@ -38,6 +38,10 @@ class TestCoreRun:
         assert test_mp.runs.list() == []
         assert test_mp.runs.tabulate().empty
 
+        # getting a specific version works even if no default version is assigned
+        assert run1.id == test_mp.runs.get("Model", "Scenario", version=1).id
+
+        # getting the table and list for all runs works
         run_list = test_mp.runs.list(default_only=False)
         assert len(run_list) == 2
         assert run_list[0].id == run1.id
