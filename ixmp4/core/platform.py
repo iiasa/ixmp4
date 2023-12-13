@@ -25,8 +25,6 @@ In development mode additional commands are available:
 
 """
 
-from functools import partial
-
 from ixmp4.conf import settings
 from ixmp4.conf.auth import BaseAuth
 from ixmp4.core.exceptions import PlatformNotFound
@@ -36,7 +34,6 @@ from .iamc import IamcRepository
 from .meta import MetaRepository
 from .model import ModelRepository
 from .region import RegionRepository
-from .run import Run as RunModel
 from .run import RunRepository
 from .scenario import ScenarioRepository
 from .unit import UnitRepository
@@ -45,8 +42,6 @@ from .unit import UnitRepository
 class Platform(object):
     """A modeling platform instance as a connection to a data backend.
     Enables the manipulation of data via the `Run` class and `Repository` instances."""
-
-    Run: partial[RunModel]
 
     runs: RunRepository
     iamc: IamcRepository
@@ -84,8 +79,6 @@ class Platform(object):
             self.backend = _backend
         else:
             raise TypeError("__init__() is missing required argument 'name'")
-
-        self.Run = partial(RunModel, _backend=self.backend)
 
         self.runs = RunRepository(_backend=self.backend)
         self.iamc = IamcRepository(_backend=self.backend)

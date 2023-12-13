@@ -39,7 +39,7 @@ class TestCoreUnit:
         add_regions(test_mp, test_data_annual["region"].unique())
         add_units(test_mp, test_data_annual["unit"].unique())
 
-        run = test_mp.Run("Model", "Scenario", version="new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
 
         with pytest.raises(Unit.DeletionPrevented):
@@ -78,7 +78,7 @@ class TestCoreUnit:
 
         test_data_annual["unit"] = "foo"
 
-        run = test_mp.Run("Model", "Scenario", version="new")
+        run = test_mp.runs.create("Model", "Scenario")
         with pytest.raises(Unit.NotFound):
             run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
 

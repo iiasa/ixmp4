@@ -68,7 +68,7 @@ def test_run_tabulate_with_filter(test_mp, test_data_annual):
     add_regions(test_mp, test_data_annual["region"].unique())
     add_units(test_mp, test_data_annual["unit"].unique())
 
-    run = test_mp.Run("Model", "Scenario", version="new")
+    run = test_mp.runs.create("Model", "Scenario")
     run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
     obs = run.iamc.tabulate(
         variable={"name": "Primary Energy"}, unit={"name": "EJ/yr"}
@@ -89,7 +89,7 @@ def do_run_datapoints(test_mp, ixmp_data, type=None, arg_data=None):
     add_regions(test_mp, ixmp_data["region"].unique())
     add_units(test_mp, ixmp_data["unit"].unique())
 
-    run = test_mp.Run("Model", "Scenario", version="new")
+    run = test_mp.runs.create("Model", "Scenario")
 
     # == Full Addition ==
     # Save to database

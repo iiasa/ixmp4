@@ -8,14 +8,14 @@ from ..utils import all_platforms
 
 @all_platforms
 def test_run_meta(test_mp):
-    run1 = test_mp.Run("Model", "Scenario", version="new")
+    run1 = test_mp.runs.create("Model", "Scenario")
     run1.set_as_default()
 
     # set and update different types of meta indicators
     run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
     run1.meta["mfloat"] = -1.9
 
-    run2 = test_mp.Run("Model", "Scenario")
+    run2 = test_mp.runs.get("Model", "Scenario")
 
     # assert meta by run
     assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
@@ -31,7 +31,7 @@ def test_run_meta(test_mp):
     # remove all meta indicators and set a new indicator
     run1.meta = {"mnew": "bar"}
 
-    run2 = test_mp.Run("Model", "Scenario")
+    run2 = test_mp.runs.get("Model", "Scenario")
 
     # assert meta by run
     assert dict(run2.meta) == {"mnew": "bar"}
@@ -42,7 +42,7 @@ def test_run_meta(test_mp):
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
     del run1.meta["mnew"]
-    run2 = test_mp.Run("Model", "Scenario")
+    run2 = test_mp.runs.get("Model", "Scenario")
 
     # assert meta by run
     assert dict(run2.meta) == {}
@@ -52,7 +52,7 @@ def test_run_meta(test_mp):
     exp = pd.DataFrame([], columns=["run_id", "key", "value"])
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
-    run2 = test_mp.Run("Model 2", "Scenario 2", version="new")
+    run2 = test_mp.runs.create("Model 2", "Scenario 2")
     run1.meta = {"mstr": "baz"}
     run2.meta = {"mfloat": 3.1415926535897}
 
@@ -94,7 +94,7 @@ def test_run_meta(test_mp):
 )
 def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     """Test that numpy types are cast to simple types"""
-    run1 = test_mp.Run("Model", "Scenario", version="new")
+    run1 = test_mp.runs.create("Model", "Scenario")
     run1.set_as_default()
 
     # set multiple meta indicators of same type ("value"-column of numpy-type)
@@ -110,7 +110,7 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
     assert run1.meta["key"] == pyvalue2
 
     # assert that meta values were saved and updated correctly
-    run2 = test_mp.Run("Model", "Scenario")
+    run2 = test_mp.runs.get("Model", "Scenario")
     assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
 
 
@@ -118,7 +118,7 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
 @pytest.mark.parametrize("nonevalue", (None, np.nan))
 def test_run_meta_none(test_mp, nonevalue):
     """Test that None-values are handled correctly"""
-    run1 = test_mp.Run("Model", "Scenario", version="new")
+    run1 = test_mp.runs.create("Model", "Scenario")
     run1.set_as_default()
 
     # set multiple indicators where one value is None
@@ -127,11 +127,11 @@ def test_run_meta_none(test_mp, nonevalue):
     with pytest.raises(KeyError, match="'mnone'"):
         run1.meta["mnone"]
 
-    assert dict(test_mp.Run("Model", "Scenario").meta) == {"mint": 13}
+    assert dict(test_mp.runs.get("Model", "Scenario").meta) == {"mint": 13}
 
     # delete indicator via setter
     run1.meta["mint"] = nonevalue
     with pytest.raises(KeyError, match="'mint'"):
         run1.meta["mint"]
 
-    assert not dict(test_mp.Run("Model", "Scenario").meta)
+    assert not dict(test_mp.runs.get("Model", "Scenario").meta)

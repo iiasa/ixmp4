@@ -23,7 +23,7 @@ def create_testcase_iamc_variables(test_mp):
         ],
         columns=["region", "variable", "unit", "step_year", "value"],
     )
-    run = test_mp.Run("Model", "Scenario", "new")
+    run = test_mp.runs.create("Model", "Scenario")
     run.iamc.add(variable_data, type=ixmp4.DataPoint.Type.ANNUAL)
     run.set_as_default()
 
@@ -50,7 +50,7 @@ class TestCoreVariable:
             ],
             columns=["region", "variable", "unit", "step_year", "value"],
         )
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         run.iamc.add(variable_data, type=ixmp4.DataPoint.Type.ANNUAL)
         run.set_as_default()
 

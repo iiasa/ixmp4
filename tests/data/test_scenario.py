@@ -30,8 +30,8 @@ class TestDataScenario:
             test_mp.scenarios.get("Scenario")
 
     def test_list_scenario(self, test_mp):
-        test_mp.Run("Model", "Scenario 1", version="new")
-        test_mp.Run("Model", "Scenario 2", version="new")
+        test_mp.runs.create("Model", "Scenario 1")
+        test_mp.runs.create("Model", "Scenario 2")
 
         scenarios = sorted(test_mp.backend.scenarios.list(), key=lambda x: x.id)
 
@@ -41,8 +41,8 @@ class TestDataScenario:
         assert scenarios[1].name == "Scenario 2"
 
     def test_tabulate_scenario(self, test_mp):
-        test_mp.Run("Model", "Scenario 1", version="new")
-        test_mp.Run("Model", "Scenario 2", version="new")
+        test_mp.runs.create("Model", "Scenario 1")
+        test_mp.runs.create("Model", "Scenario 2")
 
         true_scenarios = pd.DataFrame(
             [
@@ -58,8 +58,8 @@ class TestDataScenario:
         )
 
     def test_map_scenario(self, test_mp):
-        test_mp.Run("Model", "Scenario 1", version="new")
-        test_mp.Run("Model", "Scenario 2", version="new")
+        test_mp.runs.create("Model", "Scenario 1")
+        test_mp.runs.create("Model", "Scenario 2")
 
         assert test_mp.backend.scenarios.map() == {1: "Scenario 1", 2: "Scenario 2"}
 
