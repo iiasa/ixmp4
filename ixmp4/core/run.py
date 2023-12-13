@@ -65,7 +65,7 @@ class RunRepository(BaseFacade):
         self,
         model: str,
         scenario: str,
-    ):
+    ) -> Run:
         return Run(
             _backend=self.backend, _model=self.backend.runs.create(model, scenario)
         )
@@ -75,7 +75,7 @@ class RunRepository(BaseFacade):
         model: str,
         scenario: str,
         version: int | None = None,
-    ):
+    ) -> Run:
         if version is None:
             _model = self.backend.runs.get_default_version(model, scenario)
         else:
