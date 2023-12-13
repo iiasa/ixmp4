@@ -113,3 +113,13 @@ class ModelRepository(
 
         """
         ...
+
+    def map(self, *args, **kwargs) -> dict:
+        """Return a mapping of model-id to model-name.
+
+        Returns
+        -------
+        :class:`dict`:
+            A dictionary `id` -> `name`
+        """
+        return dict([(m.id, m.name) for m in self.list(*args, **kwargs)])
