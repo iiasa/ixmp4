@@ -58,8 +58,8 @@ class TestDataScenario:
         )
 
     def test_map_scenario(self, test_mp):
-        test_mp.Run("Model", "Scenario 1", version="new")
-        test_mp.Run("Model", "Scenario 2", version="new")
+        test_mp.runs.create("Model", "Scenario 1")
+        test_mp.runs.create("Model", "Scenario 2")
 
         assert test_mp.backend.scenarios.map() == {1: "Scenario 1", 2: "Scenario 2"}
 

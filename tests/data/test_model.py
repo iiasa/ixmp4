@@ -57,8 +57,8 @@ class TestDataModel:
         )
 
     def test_map_model(self, test_mp):
-        test_mp.Run("Model 1", "Scenario", version="new")
-        test_mp.Run("Model 2", "Scenario", version="new")
+        test_mp.runs.create("Model 1", "Scenario")
+        test_mp.runs.create("Model 2", "Scenario")
         assert test_mp.backend.models.map() == {1: "Model 1", 2: "Model 2"}
 
     def test_filter_model(self, test_mp):
