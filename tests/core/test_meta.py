@@ -8,14 +8,14 @@ from ..utils import all_platforms
 
 @all_platforms
 def test_run_meta(test_mp):
-    run1 = test_mp.runs.create("Model", "Scenario")
+    run1 = test_mp.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
 
     # set and update different types of meta indicators
     run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
     run1.meta["mfloat"] = -1.9
 
-    run2 = test_mp.runs.get("Model", "Scenario")
+    run2 = test_mp.runs.get("Model 1", "Scenario 1")
 
     # assert meta by run
     assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
@@ -31,7 +31,7 @@ def test_run_meta(test_mp):
     # remove all meta indicators and set a new indicator
     run1.meta = {"mnew": "bar"}
 
-    run2 = test_mp.runs.get("Model", "Scenario")
+    run2 = test_mp.runs.get("Model 1", "Scenario 1")
 
     # assert meta by run
     assert dict(run2.meta) == {"mnew": "bar"}
@@ -42,7 +42,7 @@ def test_run_meta(test_mp):
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
     del run1.meta["mnew"]
-    run2 = test_mp.runs.get("Model", "Scenario")
+    run2 = test_mp.runs.get("Model 1", "Scenario 1")
 
     # assert meta by run
     assert dict(run2.meta) == {}
