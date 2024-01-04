@@ -153,10 +153,9 @@ class RunMetaEntryRepository(
 
         if join_run_index:
             index_columns = ["model", "scenario", "version"]
-            _exc = select_joined_run_index(self)
+            _exc = select_joined_run_index(self, **kwargs)
             df = super().tabulate(*args, _exc=_exc, **kwargs)
-            if not df.empty:
-                df.drop(columns="run__id", inplace=True)
+            df.drop(columns="run__id", inplace=True)
         else:
             index_columns = ["run__id"]
             df = super().tabulate(*args, **kwargs)
