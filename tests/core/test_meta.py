@@ -154,3 +154,10 @@ def test_run_meta_none(test_mp, nonevalue):
         run1.meta["mint"]
 
     assert not dict(test_mp.runs.get("Model", "Scenario").meta)
+
+
+@all_platforms
+def test_platform_meta_empty(test_mp):
+    """Test that an empty dataframe is returned if there are no scenarios"""
+    exp = pd.DataFrame([], columns=["model", "scenario", "version", "key", "value"])
+    pdt.assert_frame_equal(test_mp.meta.tabulate(), exp)
