@@ -144,7 +144,7 @@ class RunMetaEntryRepository(
 
     def tabulate(
         self,
-        join_run_index,
+        join_run_index: bool = False,
         **kwargs,
     ) -> pd.DataFrame:
         r"""Tabulates run's meta indicator entries by specified criteria.
