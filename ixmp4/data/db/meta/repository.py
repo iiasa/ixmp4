@@ -143,6 +143,7 @@ class RunMetaEntryRepository(
     def tabulate(
         self,
         *args,
+        join_run_index: bool = False,
         _raw: bool | None = False,
         **kwargs,
     ) -> pd.DataFrame:

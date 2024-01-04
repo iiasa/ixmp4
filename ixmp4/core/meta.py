@@ -8,7 +8,7 @@ class MetaRepository(BaseFacade):
         # TODO: accept list of `Run` instances as arg
         # TODO: expand run-id to model-scenario-version-id columns
         return (
-            self.backend.meta.tabulate(**kwargs)
+            self.backend.meta.tabulate(join_run_index=True, **kwargs)
             .drop(columns=["id", "type"])
             .rename(columns={"run__id": "run_id"})
         )
