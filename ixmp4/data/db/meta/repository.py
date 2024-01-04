@@ -11,6 +11,7 @@ from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
+from ixmp4.data.db.run.repository import select_joined_run_index
 
 from .. import base
 from .model import RunMetaEntry
@@ -149,10 +150,20 @@ class RunMetaEntryRepository(
     ) -> pd.DataFrame:
         if _raw:
             return super().tabulate(*args, **kwargs)
-        df = super().tabulate(*args, **kwargs)
+
+        if join_run_index:
+            index_columns = ["model", "scenario", "version"]
+            _exc = select_joined_run_index(self)
+            df = super().tabulate(*args, _exc=_exc, **kwargs)
+            df.drop(columns="run__id", inplace=True)
+        else:
+            index_columns = ["run__id", "type", "key", "value"]
+            df = super().tabulate(*args, **kwargs)
 
         if df.empty:
-            return pd.DataFrame([], columns=["id", "run__id", "type", "key", "value"])
+            return pd.DataFrame(
+                [], columns=index_columns + ["id", "type", "key", "value"]
+            )
 
         def map_value_column(df: pd.DataFrame):
             type_str = df.name

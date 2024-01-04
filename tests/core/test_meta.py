@@ -6,6 +6,9 @@ import pytest
 from ..utils import all_platforms
 
 
+EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
+
+
 @all_platforms
 def test_run_meta(test_mp):
     run1 = test_mp.runs.create("Model 1", "Scenario 1")
@@ -23,8 +26,12 @@ def test_run_meta(test_mp):
 
     # assert meta via platform
     exp = pd.DataFrame(
-        [[1, "mint", 13], [1, "mstr", "foo"], [1, "mfloat", -1.9]],
-        columns=["run_id", "key", "value"],
+        [
+            ["Model 1", "Scenario 1", 1, "mint", 13],
+            ["Model 1", "Scenario 1", 1, "mstr", "foo"],
+            ["Model 1", "Scenario 1", 1, "mfloat", -1.9],
+        ],
+        columns=EXP_META_COLS,
     )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
@@ -38,7 +45,9 @@ def test_run_meta(test_mp):
     assert dict(run1.meta) == {"mnew": "bar"}
 
     # assert meta via platform
-    exp = pd.DataFrame([[1, "mnew", "bar"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mnew", "bar"]], columns=EXP_META_COLS
+    )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
     del run1.meta["mnew"]
@@ -49,30 +58,38 @@ def test_run_meta(test_mp):
     assert dict(run1.meta) == {}
 
     # assert meta via platform
-    exp = pd.DataFrame([], columns=["run_id", "key", "value"])
-    pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
+    exp = pd.DataFrame([], columns=EXP_META_COLS)
+    pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp, check_dtype=False)
 
     run2 = test_mp.runs.create("Model 2", "Scenario 2")
     run1.meta = {"mstr": "baz"}
     run2.meta = {"mfloat": 3.1415926535897}
 
     # test default_only run filter
-    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
+    )
     # run={"default_only": True} is default
     pdt.assert_frame_equal(test_mp.meta.tabulate(), exp)
 
     exp = pd.DataFrame(
-        [[1, "mstr", "baz"], [2, "mfloat", 3.1415926535897]],
-        columns=["run_id", "key", "value"],
+        [
+            ["Model 1", "Scenario 1", 1, "mstr", "baz"],
+            ["Model 2", "Scenario 2", 1, "mfloat", 3.1415926535897],
+        ],
+        columns=EXP_META_COLS,
     )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run={"default_only": False}), exp)
 
     # test is_default run filter
-    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
+    )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run={"is_default": True}), exp)
 
     exp = pd.DataFrame(
-        [[2, "mfloat", 3.1415926535897]], columns=["run_id", "key", "value"]
+        [["Model 2", "Scenario 2", 1, "mfloat", 3.1415926535897]],
+        columns=EXP_META_COLS,
     )
     pdt.assert_frame_equal(
         test_mp.meta.tabulate(run={"default_only": False, "is_default": False}), exp
@@ -80,7 +97,9 @@ def test_run_meta(test_mp):
 
     # test filter by key
     run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
-    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
+    )
     pdt.assert_frame_equal(test_mp.meta.tabulate(key="mstr"), exp)
 
 
