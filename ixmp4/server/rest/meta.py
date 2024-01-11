@@ -39,10 +39,13 @@ def enumerate(
 @router.patch("/", response_model=EnumerationOutput)
 def query(
     filter: RunMetaEntryFilter = Body(None),
+    join_run_index: bool = Query(False),
     table: bool = Query(False),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.meta.enumerate(_filter=filter, table=bool(table))
+    return backend.meta.enumerate(
+        table=bool(table), _filter=filter, join_run_index=join_run_index
+    )
 
 
 @router.post("/", response_model=api.RunMetaEntry)

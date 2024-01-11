@@ -6,16 +6,19 @@ import pytest
 from ..utils import all_platforms
 
 
+EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
+
+
 @all_platforms
 def test_run_meta(test_mp):
-    run1 = test_mp.runs.create("Model", "Scenario")
+    run1 = test_mp.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
 
     # set and update different types of meta indicators
     run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
     run1.meta["mfloat"] = -1.9
 
-    run2 = test_mp.runs.get("Model", "Scenario")
+    run2 = test_mp.runs.get("Model 1", "Scenario 1")
 
     # assert meta by run
     assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
@@ -23,56 +26,70 @@ def test_run_meta(test_mp):
 
     # assert meta via platform
     exp = pd.DataFrame(
-        [[1, "mint", 13], [1, "mstr", "foo"], [1, "mfloat", -1.9]],
-        columns=["run_id", "key", "value"],
+        [
+            ["Model 1", "Scenario 1", 1, "mint", 13],
+            ["Model 1", "Scenario 1", 1, "mstr", "foo"],
+            ["Model 1", "Scenario 1", 1, "mfloat", -1.9],
+        ],
+        columns=EXP_META_COLS,
     )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
     # remove all meta indicators and set a new indicator
     run1.meta = {"mnew": "bar"}
 
-    run2 = test_mp.runs.get("Model", "Scenario")
+    run2 = test_mp.runs.get("Model 1", "Scenario 1")
 
     # assert meta by run
     assert dict(run2.meta) == {"mnew": "bar"}
     assert dict(run1.meta) == {"mnew": "bar"}
 
     # assert meta via platform
-    exp = pd.DataFrame([[1, "mnew", "bar"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mnew", "bar"]], columns=EXP_META_COLS
+    )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
 
     del run1.meta["mnew"]
-    run2 = test_mp.runs.get("Model", "Scenario")
+    run2 = test_mp.runs.get("Model 1", "Scenario 1")
 
     # assert meta by run
     assert dict(run2.meta) == {}
     assert dict(run1.meta) == {}
 
     # assert meta via platform
-    exp = pd.DataFrame([], columns=["run_id", "key", "value"])
-    pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp)
+    exp = pd.DataFrame([], columns=EXP_META_COLS)
+    pdt.assert_frame_equal(test_mp.meta.tabulate(run_id=1), exp, check_dtype=False)
 
     run2 = test_mp.runs.create("Model 2", "Scenario 2")
     run1.meta = {"mstr": "baz"}
     run2.meta = {"mfloat": 3.1415926535897}
 
     # test default_only run filter
-    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
+    )
     # run={"default_only": True} is default
     pdt.assert_frame_equal(test_mp.meta.tabulate(), exp)
 
     exp = pd.DataFrame(
-        [[1, "mstr", "baz"], [2, "mfloat", 3.1415926535897]],
-        columns=["run_id", "key", "value"],
+        [
+            ["Model 1", "Scenario 1", 1, "mstr", "baz"],
+            ["Model 2", "Scenario 2", 1, "mfloat", 3.1415926535897],
+        ],
+        columns=EXP_META_COLS,
     )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run={"default_only": False}), exp)
 
     # test is_default run filter
-    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
+    )
     pdt.assert_frame_equal(test_mp.meta.tabulate(run={"is_default": True}), exp)
 
     exp = pd.DataFrame(
-        [[2, "mfloat", 3.1415926535897]], columns=["run_id", "key", "value"]
+        [["Model 2", "Scenario 2", 1, "mfloat", 3.1415926535897]],
+        columns=EXP_META_COLS,
     )
     pdt.assert_frame_equal(
         test_mp.meta.tabulate(run={"default_only": False, "is_default": False}), exp
@@ -80,7 +97,9 @@ def test_run_meta(test_mp):
 
     # test filter by key
     run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
-    exp = pd.DataFrame([[1, "mstr", "baz"]], columns=["run_id", "key", "value"])
+    exp = pd.DataFrame(
+        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
+    )
     pdt.assert_frame_equal(test_mp.meta.tabulate(key="mstr"), exp)
 
 
@@ -135,3 +154,10 @@ def test_run_meta_none(test_mp, nonevalue):
         run1.meta["mint"]
 
     assert not dict(test_mp.runs.get("Model", "Scenario").meta)
+
+
+@all_platforms
+def test_platform_meta_empty(test_mp):
+    """Test that an empty dataframe is returned if there are no scenarios"""
+    exp = pd.DataFrame([], columns=["model", "scenario", "version", "key", "value"])
+    pdt.assert_frame_equal(test_mp.meta.tabulate(), exp)
