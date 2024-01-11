@@ -3,7 +3,6 @@ import pandas as pd
 from ..base import BaseFacade
 from .variable import VariableRepository
 
-
 # column for the year or datetime value by datapoint type
 MAP_STEP_COLUMN = {
     "ANNUAL": "step_year",
@@ -17,9 +16,7 @@ class IamcRepository(BaseFacade):
         super().__init__(**kwargs)
         self.variables = VariableRepository(_backend=self.backend)
 
-    def tabulate(
-        self, join_runs: bool = True, raw: bool = False, **filters
-    ) -> pd.DataFrame:
+    def tabulate(self, join_runs: bool = True, raw: bool = False, **filters) -> pd.DataFrame:
         # return only default runs unless a run-filter is provided
         if "run" not in filters:
             filters["run"] = {"default_only": True}
