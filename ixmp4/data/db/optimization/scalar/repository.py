@@ -30,14 +30,20 @@ class ScalarRepository(
     def add(self, name: str, value: float | int, unit_name: str, run_id: int) -> Scalar:
         unit_id = self.backend.units.get(unit_name).id
         scalar = Scalar(
-            name=name, value=value, unit__id=unit_id, run__id=run_id, **self.get_creation_info()
+            name=name,
+            value=value,
+            unit__id=unit_id,
+            run__id=run_id,
+            **self.get_creation_info(),
         )
         self.session.add(scalar)
         return scalar
 
     @guard("view")
     def get(self, run_id: int, name: str) -> Scalar:
-        exc = db.select(Scalar).where((Scalar.name == name) & (Scalar.run__id == run_id))
+        exc = db.select(Scalar).where(
+            (Scalar.name == name) & (Scalar.run__id == run_id)
+        )
         try:
             return self.session.execute(exc).scalar_one()
         except db.NoResultFound:
@@ -53,11 +59,17 @@ class ScalarRepository(
         return obj
 
     @guard("edit")
-    def create(self, name: str, value: float, unit_name: str, run_id: int, **kwargs) -> Scalar:
-        return super().create(name=name, value=value, unit_name=unit_name, run_id=run_id, **kwargs)
+    def create(
+        self, name: str, value: float, unit_name: str, run_id: int, **kwargs
+    ) -> Scalar:
+        return super().create(
+            name=name, value=value, unit_name=unit_name, run_id=run_id, **kwargs
+        )
 
     @guard("edit")
-    def update(self, id: int, value: float | None = None, unit_id: int | None = None) -> Scalar:
+    def update(
+        self, id: int, value: float | None = None, unit_id: int | None = None
+    ) -> Scalar:
         exc = db.update(Scalar).where(
             Scalar.id == id,
         )
