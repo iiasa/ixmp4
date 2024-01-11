@@ -129,11 +129,14 @@ class BaseRepository(Generic[ModelType]):
         params["table"] = table
         join_parameters = kwargs.pop("join_parameters", None)
         join_runs = kwargs.pop("join_runs", None)
+        join_run_index = kwargs.pop("join_run_index", None)
 
         if join_parameters is not None:
             params["join_parameters"] = join_parameters
         if join_runs is not None:
             params["join_runs"] = join_runs
+        if join_run_index is not None:
+            params["join_run_index"] = join_run_index
 
         if self.enumeration_method == "GET":
             params.update(kwargs)
