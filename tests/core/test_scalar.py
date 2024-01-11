@@ -35,7 +35,7 @@ def df_from_list(scalars: list):
 @all_platforms
 class TestCoreScalar:
     def test_create_scalar(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create(
             "Scalar 1", value=10, unit_or_name="Test Unit"
@@ -64,7 +64,7 @@ class TestCoreScalar:
         assert scalar_3.unit.name == "dimensionless"
 
     def test_get_scalar(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
         scalar = run.optimization.scalars.create(
             "Scalar", value=10, unit_or_name=unit.name
@@ -79,7 +79,7 @@ class TestCoreScalar:
             _ = run.optimization.scalars.get("Foo")
 
     def test_update_scalar(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
         unit2 = test_mp.units.create("Test Unit 2")
         scalar = run.optimization.scalars.create(
@@ -105,7 +105,7 @@ class TestCoreScalar:
         assert scalar.unit.id == result.unit.id == 1
 
     def test_list_scalars(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario", "new")
         # Per default, list() lists only `default` version runs:
         run.set_as_default()
         unit = test_mp.units.create("Test Unit")
@@ -127,7 +127,7 @@ class TestCoreScalar:
         assert not (set(expected_id) ^ set(list_id))
 
     def test_tabulate_scalars(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario", "new")
         # Per default, tabulate() lists only `default` version runs:
         run.set_as_default()
         unit = test_mp.units.create("Test Unit")
@@ -146,7 +146,7 @@ class TestCoreScalar:
         assert_unordered_equality(expected, result, check_dtype=False)
 
     def test_scalar_docs(self, test_mp):
-        run = test_mp.Run("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario", "new")
         unit = test_mp.units.create("Test Unit")
         scalar = run.optimization.scalars.create(
             "Scalar 1", value=4, unit_or_name=unit.name
