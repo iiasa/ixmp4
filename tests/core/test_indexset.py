@@ -36,7 +36,7 @@ def df_from_list(indexsets: list):
 @all_platforms
 class TestCoreIndexSet:
     def test_create_indexset(self, test_mp):
-        run = test_mp.runs.create("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         assert indexset_1.id == 1
         assert indexset_1.name == "IndexSet 1"
@@ -48,7 +48,7 @@ class TestCoreIndexSet:
             _ = run.optimization.indexsets.create("IndexSet 1")
 
     def test_get_indexset(self, test_mp):
-        run = test_mp.runs.create("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         _ = run.optimization.indexsets.create("IndexSet 1")
         indexset = run.optimization.indexsets.get("IndexSet 1")
         assert indexset.id == 1
@@ -80,7 +80,7 @@ class TestCoreIndexSet:
         assert len(indexset_3.elements) == len(indexset_4.elements)
 
     def test_list_indexsets(self, test_mp):
-        run = test_mp.runs.create("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         # Per default, list() lists only `default` version runs:
         run.set_as_default()
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
@@ -98,7 +98,7 @@ class TestCoreIndexSet:
         assert not (set(expected_id) ^ set(list_id))
 
     def test_tabulate_indexsets(self, test_mp):
-        run = test_mp.runs.create("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         # Per default, tabulate() lists only `default` version runs:
         run.set_as_default()
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
@@ -114,7 +114,7 @@ class TestCoreIndexSet:
         pdt.assert_frame_equal(expected, result)
 
     def test_indexset_docs(self, test_mp):
-        run = test_mp.runs.create("Model", "Scenario", "new")
+        run = test_mp.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         docs = "Documentation of IndexSet 1"
         indexset_1.docs = docs
