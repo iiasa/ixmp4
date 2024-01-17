@@ -43,12 +43,11 @@ class Scalar(BaseModelFacade):
         return self._model.unit
 
     @unit.setter
-    def unit(self, unit_or_name: str | Unit):
-        unit = None
-        if isinstance(unit_or_name, Unit):
-            unit = unit_or_name
+    def unit(self, unit: str | Unit):
+        if isinstance(unit, Unit):
+            unit = unit
         else:
-            unit_model = self.backend.units.get(unit_or_name)
+            unit_model = self.backend.units.get(unit)
             unit = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
             id=self._model.id,
@@ -101,18 +100,16 @@ class ScalarRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
-    def create(
-        self, name: str, value: float, unit_or_name: str | Unit | None = None
-    ) -> Scalar:
-        if isinstance(unit_or_name, Unit):
-            unit_name = unit_or_name.name
-        elif isinstance(unit_or_name, str):
-            unit_name = unit_or_name
-        else:
-            # TODO: provide logging information about None-unit_or_names being converted
-            # to dimensionless
-            unit = self.backend.units.create(name="dimensionless")
+    def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
+        if isinstance(unit, Unit):
             unit_name = unit.name
+        elif isinstance(unit, str):
+            unit_name = unit
+        else:
+            # TODO: provide logging information about None-units being converted
+            # to dimensionless
+            dimensionless_unit = self.backend.units.create(name="dimensionless")
+            unit_name = dimensionless_unit.name
 
         try:
             model = self.backend.optimization.scalars.create(
