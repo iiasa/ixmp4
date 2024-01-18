@@ -113,7 +113,7 @@ class ScalarRepository(
         ...
 
     def get_by_id(self, id: int) -> Scalar:
-        """Retrieves a Scalar by it's id.
+        """Retrieves a Scalar by its id.
 
         Parameters
         ----------

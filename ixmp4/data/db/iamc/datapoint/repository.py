@@ -162,7 +162,7 @@ class DataPointRepository(
         join_parameters: bool | None = False,
         join_runs: bool = False,
         _filter: DataPointFilter | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> db.sql.Select:
         exc = (
             self.select_joined_parameters(join_runs)
