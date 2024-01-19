@@ -10,6 +10,7 @@ from ixmp4.core import Unit as Unit
 from ixmp4.core import Variable as Variable
 from ixmp4.core import IndexSet as IndexSet
 from ixmp4.core import Scalar as Scalar
+from ixmp4.core import Table as Table
 from ixmp4.core.exceptions import InconsistentIamcType as InconsistentIamcType
 from ixmp4.core.exceptions import IxmpError as IxmpError
 from ixmp4.core.exceptions import NotFound as NotFound
