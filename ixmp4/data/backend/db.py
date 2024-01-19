@@ -21,6 +21,7 @@ from ixmp4.data.db import (
     RunRepository,
     ScalarRepository,
     ScenarioRepository,
+    TableRepository,
     TimeSeriesRepository,
     UnitRepository,
     VariableRepository,
@@ -65,6 +66,7 @@ class SqlAlchemyBackend(Backend):
         self.models = ModelRepository(self)
         self.optimization.indexsets = IndexSetRepository(self)
         self.optimization.scalars = ScalarRepository(self)
+        self.optimization.tables = TableRepository(self)
         self.regions = RegionRepository(self)
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)
