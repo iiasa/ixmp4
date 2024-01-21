@@ -26,7 +26,15 @@ from ixmp4.data.db import (
 )
 
 from ..auth.context import AuthorizationContext
-from .base import Backend
+from .base import (
+    Backend,
+)
+from .base import (
+    IamcSubobject as BaseIamcSubobject,
+)
+from .base import (
+    OptimizationSubobject as BaseOptimizationSubobject,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -37,8 +45,26 @@ def cached_create_engine(dsn: str) -> Engine:
     return create_engine(dsn)
 
 
+class IamcSubobject(BaseIamcSubobject):
+    datapoints: DataPointRepository
+    timeseries: TimeSeriesRepository
+    variables: VariableRepository
+
+
+class OptimizationSubobject(BaseOptimizationSubobject):
+    indexsets: IndexSetRepository
+
+
 class SqlAlchemyBackend(Backend):
+    iamc: IamcSubobject
+    info: PlatformInfo
+    meta: RunMetaEntryRepository
+    models: ModelRepository
+    optimization: OptimizationSubobject
+    regions: RegionRepository
     runs: RunRepository
+    scenarios: ScenarioRepository
+    units: UnitRepository
     Session = sessionmaker(autocommit=False, autoflush=False, future=True)
     auth_context: AuthorizationContext | None = None
 
