@@ -6,10 +6,11 @@ from pandera.typing import Series
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
 from ixmp4.data.abstract import Run
+from ixmp4.data.backend import Backend
 
 from ..base import BaseFacade
 from ..utils import substitute_type
-from .repository import IamcRepository
+from .variable import VariableRepository
 
 
 def to_dimensionless(df: pd.DataFrame) -> pd.DataFrame:
@@ -36,7 +37,7 @@ class AddDataPointFrameSchema(RemoveDataPointFrameSchema):
     value: Series[pa.Float] = pa.Field(coerce=True)
 
 
-class IamcData(BaseFacade):
+class RunIamcData(BaseFacade):
     """IAMC data.
 
     Parameters
@@ -52,14 +53,14 @@ class IamcData(BaseFacade):
     def __init__(self, *args, run: Run, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.run = run
-        self.repository = IamcRepository(_backend=self.backend)
 
     def _contract_parameters(self, df: pd.DataFrame) -> pd.DataFrame:
         ts_df = df[["region", "variable", "unit", "run__id"]].drop_duplicates()
         self.backend.iamc.timeseries.bulk_upsert(ts_df, create_related=True)
 
         ts_df = self.backend.iamc.timeseries.tabulate(
-            run_ids=[self.run.id], join_parameters=True
+            join_parameters=True,
+            run={"id": self.run.id, "default_only": False},
         )
         ts_df = ts_df.rename(columns={"id": "time_series__id"})
 
@@ -96,14 +97,43 @@ class IamcData(BaseFacade):
         df = df.drop(columns=["unit", "variable", "region"])
         self.backend.iamc.datapoints.bulk_delete(df)
 
-    def tabulate(self, **filters) -> pd.DataFrame:
-        # these filters do not make sense when applied from a Run
-        illegal_filters = [i for i in filters if i in ["run", "model", "scenario"]]
-        if illegal_filters:
-            raise ValueError(
-                f"Illegal filter for `Run.iamc.tabulate()`: {illegal_filters}"
-            )
+    def tabulate(
+        self,
+        *,
+        variable: dict | None = None,
+        region: dict | None = None,
+        unit: dict | None = None,
+    ) -> pd.DataFrame:
+        df = self.backend.iamc.datapoints.tabulate(
+            join_parameters=True,
+            join_runs=False,
+            run={"id": self.run.id, "default_only": False},
+            variable=variable,
+            region=region,
+            unit=unit,
+        ).dropna(how="all", axis="columns")
 
-        return self.repository.tabulate(
-            run={"id": self.run.id}, join_runs=False, **filters
-        )
+        if not df.empty:
+            df = df.drop(columns=["time_series__id"])
+            df.unit = df.unit.replace({"dimensionless": ""})
+
+        return df
+
+
+class PlatformIamcData(BaseFacade):
+    variables: VariableRepository
+
+    def __init__(self, _backend: Backend | None = None) -> None:
+        self.variables = VariableRepository(_backend=_backend)
+        super().__init__(_backend=_backend)
+
+    def tabulate(self, *, join_runs: bool = True, **kwargs):
+        df = self.backend.iamc.datapoints.tabulate(
+            join_parameters=True, join_runs=join_runs, **kwargs
+        ).dropna(how="all", axis="columns")
+
+        if not df.empty:
+            df = df.drop(columns=["time_series__id"])
+            df.unit = df.unit.replace({"dimensionless": ""})
+
+        return df

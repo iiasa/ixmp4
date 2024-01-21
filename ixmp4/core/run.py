@@ -1,5 +1,5 @@
 from collections import UserDict
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import numpy as np
 import pandas as pd
@@ -7,7 +7,7 @@ import pandas as pd
 from ixmp4.data.abstract import Run as RunModel
 
 from .base import BaseFacade, BaseModelFacade
-from .iamc import IamcData
+from .iamc import RunIamcData
 from .optimization import OptimizationData
 
 
@@ -23,7 +23,7 @@ class Run(BaseModelFacade):
 
         self.version = self._model.version
 
-        self.iamc = IamcData(_backend=self.backend, run=self._model)
+        self.iamc = RunIamcData(_backend=self.backend, run=self._model)
         self._meta = RunMetaFacade(_backend=self.backend, run=self._model)
         self.optimization = OptimizationData(_backend=self.backend, run=self._model)
 
@@ -82,7 +82,7 @@ class RunRepository(BaseFacade):
             _model = self.backend.runs.get(model, scenario, version)
         return Run(_backend=self.backend, _model=_model)
 
-    def list(self, default_only: bool = True, **kwargs) -> Iterable[Run]:
+    def list(self, default_only: bool = True, **kwargs) -> list[Run]:
         return [
             Run(_backend=self.backend, _model=r)
             for r in self.backend.runs.list(default_only=default_only, **kwargs)
