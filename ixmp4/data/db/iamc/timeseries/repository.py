@@ -1,51 +1,24 @@
-from typing import Any, Iterable, Mapping
+from typing import Any
 
 import numpy as np
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.orm import Bundle
 
-from ixmp4 import db
-from ixmp4.data import abstract, types
+from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.iamc.measurand import Measurand
-from ixmp4.db import utils
+from ixmp4.data.db.region import Region, RegionRepository
+from ixmp4.data.db.run import RunRepository
+from ixmp4.data.db.timeseries import (
+    TimeSeriesRepository as BaseTimeSeriesRepository,
+)
+from ixmp4.data.db.unit import Unit, UnitRepository
+from ixmp4.data.db.utils import map_existing
 
-from ..region import Region, RegionRepository
-from ..run import RunRepository
-from ..timeseries import TimeSeries as BaseTimeSeries
-from ..timeseries import TimeSeriesRepository as BaseTimeSeriesRepository
-from ..unit import Unit, UnitRepository
-from ..utils import map_existing
-from . import base
-from .measurand import MeasurandRepository
-from .variable import Variable
-
-
-class TimeSeries(BaseTimeSeries, base.BaseModel):
-    __table_args__ = (db.UniqueConstraint("run__id", "region__id", "measurand__id"),)
-
-    region__id: types.Integer = db.Column(
-        db.Integer, db.ForeignKey("region.id"), nullable=False, index=True
-    )
-    region: types.Mapped[Region] = db.relationship(
-        "Region", backref="metadata", foreign_keys=[region__id], lazy="select"
-    )
-
-    measurand__id: types.Integer = db.Column(
-        db.Integer, db.ForeignKey("iamc_measurand.id"), nullable=False, index=True
-    )
-    measurand: types.Mapped[Measurand] = db.relationship(
-        "Measurand", backref="metadata", foreign_keys=[measurand__id], lazy="select"
-    )
-
-    @property
-    def parameters(self) -> Mapping:
-        return {
-            "region": self.region.name,
-            "unit": self.measurand.unit.name,
-            "variable": self.measurand.variable.name,
-        }
+from ..measurand import MeasurandRepository
+from ..variable import Variable
+from .model import TimeSeries
 
 
 class TimeSeriesRepository(
@@ -58,6 +31,10 @@ class TimeSeriesRepository(
     units: UnitRepository
 
     def __init__(self, *args, **kwargs) -> None:
+        from .filter import TimeSeriesFilter
+
+        self.filter_class = TimeSeriesFilter
+
         self.runs = RunRepository(*args, **kwargs)
         self.regions = RegionRepository(*args, **kwargs)
         self.measurands = MeasurandRepository(*args, **kwargs)
@@ -67,27 +44,6 @@ class TimeSeriesRepository(
     @guard("view")
     def get(self, run_id: int, **kwargs: Any) -> TimeSeries:
         return super().get(run_id, **kwargs)
-
-    def filter_by_parameters(
-        self, exc: db.sql.Select, parameters: Any
-    ) -> db.sql.Select:
-        if not utils.is_joined(exc, Measurand):
-            exc = exc.join(TimeSeries.measurand)
-
-        for key, col in [
-            ("region", TimeSeries.region__id),
-            ("variable", Measurand.variable__id),
-            ("unit", Measurand.unit__id),
-        ]:
-            value = parameters.pop(key, None)
-            if value is not None:
-                exc = exc.where(col == value)
-
-        if len(parameters) > 0:
-            raise ValueError(
-                "Invalid `parameters` supplied: " + ", ".join(parameters.keys())
-            )
-        return exc
 
     def select_joined_parameters(self):
         return (
@@ -113,12 +69,12 @@ class TimeSeriesRepository(
         )
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[TimeSeries]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs) -> list[TimeSeries]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs) -> pd.DataFrame:
+        return super().tabulate(**kwargs)
 
     @guard("edit")
     def bulk_upsert(self, df: pd.DataFrame, create_related: bool = False) -> None:
