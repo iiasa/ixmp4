@@ -1,13 +1,17 @@
 import re
+from itertools import cycle
 from pathlib import Path
-from typing import Optional
+from typing import Generator, Optional
 
 import typer
+from rich.progress import Progress, track
 
 from ixmp4.conf import settings
 from ixmp4.conf.manager import ManagerPlatformInfo
 from ixmp4.conf.toml import TomlPlatformInfo
 from ixmp4.core.exceptions import PlatformNotFound
+from ixmp4.core.platform import Platform
+from ixmp4.data.generator import MockDataGenerator
 from ixmp4.db.utils import alembic, sqlite
 
 from . import utils
@@ -178,3 +182,94 @@ def stamp(revision: str) -> None:
                 f"Stamping platform '{c.name}' with dsn '{c.dsn}' to '{revision}'..."
             )
             alembic.stamp_database(c.dsn, revision)
+
+
+@app.command(
+    help="Generates mock test data and loads it into a platform. "
+    "Experimental and meant as a development tool. Use at your own risk. "
+)
+def generate(
+    platform_name: str,
+    num_models: int = typer.Option(
+        10, "--models", help="Number of mock models to generate."
+    ),
+    num_runs: int = typer.Option(40, "--runs", help="Number of mock runs to generate."),
+    num_regions: int = typer.Option(
+        200, "--regions", help="Number of mock regions to generate."
+    ),
+    num_variables: int = typer.Option(
+        1000, "--variables", help="Number of mock variables to generate."
+    ),
+    num_units: int = typer.Option(
+        40, "--units", help="Number of mock units to generate."
+    ),
+    num_datapoints: int = typer.Option(
+        30_000, "--datapoints", help="Number of mock datapoints to generate."
+    ),
+):
+    try:
+        platform = Platform(platform_name)
+    except PlatformNotFound:
+        raise typer.BadParameter(f"Platform '{platform_name}' does not exist.")
+
+    typer.echo("This command will generate:\n")
+    lines = []
+    for name, value in [
+        ("Model(s)", num_models),
+        ("Run(s)", num_runs),
+        ("Region(s)", num_regions),
+        ("Variable(s)", num_variables),
+        ("Units(s)", num_units),
+        ("Datapoint(s)", num_datapoints),
+    ]:
+        value_str = typer.style(str(value), fg=typer.colors.CYAN)
+        lines.append(f" - {value_str} {name} ")
+    typer.echo("\n".join(lines))
+    typer.echo(
+        f"...and load them into the platform '{platform_name}' "
+        f"(DSN: {platform.backend.info.dsn}).\n"
+    )
+
+    if typer.confirm("Are you sure?"):
+        generator = MockDataGenerator(
+            platform,
+            num_models,
+            num_runs,
+            num_regions,
+            num_variables,
+            num_units,
+            num_datapoints,
+        )
+        generate_data(generator)
+        utils.good("Done!")
+
+
+def create_cycle(generator: Generator, name: str, total: int):
+    return cycle(
+        [
+            m
+            for m in track(
+                generator,
+                description=f"Generating {name}(s)...",
+                total=total,
+            )
+        ]
+    )
+
+
+def generate_data(generator: MockDataGenerator):
+    model_names = create_cycle(
+        generator.yield_model_names(), "Model", generator.num_models
+    )
+    runs = create_cycle(generator.yield_runs(model_names), "Run", generator.num_runs)
+    regions = create_cycle(generator.yield_regions(), "Region", generator.num_regions)
+    units = create_cycle(generator.yield_units(), "Unit", generator.num_units)
+    variable_names = create_cycle(
+        generator.yield_variable_names(), "Variable", generator.num_variables
+    )
+    with Progress() as progress:
+        task = progress.add_task(
+            description="Generating Datapoint(s)...", total=generator.num_datapoints
+        )
+        for df in generator.yield_datapoints(runs, variable_names, units, regions):
+            progress.advance(task, len(df))
