@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable, Mapping
+from typing import ClassVar, Mapping
 
 import pandas as pd
 
@@ -33,14 +33,16 @@ class TimeSeriesRepository(
     def get(self, run_id: int, parameters: Mapping) -> TimeSeries:
         return super().get(run_ids=[run_id], parameters=parameters)
 
-    def list(self, *args, **kwargs) -> Iterable[TimeSeries]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[TimeSeries] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, **kwargs) -> list[TimeSeries]:
+        return super()._list(json=kwargs)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[TimeSeries] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, join_parameters: bool | None = None, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(
+            json=kwargs, params={"join_parameters": join_parameters}
+        )
 
     def get_by_id(self, id: int) -> TimeSeries:
         res = self._get_by_id(id)
