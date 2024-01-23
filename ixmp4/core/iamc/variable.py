@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 
@@ -67,7 +67,7 @@ class VariableRepository(BaseFacade):
         model = self.backend.iamc.variables.get(name)
         return Variable(_backend=self.backend, _model=model)
 
-    def list(self, name: str | None = None) -> Iterable[Variable]:
+    def list(self, name: str | None = None) -> list[Variable]:
         variables = self.backend.iamc.variables.list(name=name)
         return [Variable(_backend=self.backend, _model=v) for v in variables]
 
