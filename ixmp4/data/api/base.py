@@ -1,3 +1,4 @@
+import logging
 from json.decoder import JSONDecodeError
 from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, TypeVar
 
@@ -13,6 +14,8 @@ from ixmp4.core.exceptions import (
     UnknownApiError,
     registry,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BaseModel(PydanticBaseModel):
@@ -78,7 +81,7 @@ ModelType = TypeVar("ModelType", bound=BaseModel)
 class BaseRepository(Generic[ModelType]):
     model_class: Type[ModelType]
     prefix: ClassVar[str]
-    enumeration_method: str = "GET"
+    enumeration_method: str = "PATCH"
 
     client: httpx.Client
 
@@ -108,7 +111,7 @@ class BaseRepository(Generic[ModelType]):
             )
         return exc.from_dict(json)
 
-    def _request(self, method: str, path: str, *args, **kwargs) -> Mapping | Sequence:
+    def _request(self, method: str, path: str, *args, **kwargs) -> dict | list | None:
         res = self.client.request(method, path, *args, **kwargs)
 
         if res.status_code >= 400:
@@ -116,47 +119,90 @@ class BaseRepository(Generic[ModelType]):
         else:
             try:
                 return res.json()
-            except (ValueError, JSONDecodeError):
-                return res.text
+            except JSONDecodeError:
+                if res.status_code < 300 and res.text == "":
+                    return None
+            except ValueError:
+                pass
+            raise UnknownApiError(res.text)
 
-    def _get_by_id(self, id: int, *args, **kwargs) -> Mapping[str, Any]:
+    def _get_by_id(self, id: int, *args, **kwargs) -> dict[str, Any]:
         # we can assume this type on create endpoints
         return self._request("GET", self.prefix + str(id) + "/", **kwargs)  # type: ignore
 
-    def _enumerate(self, *args, table: bool = False, **kwargs) -> Mapping | Sequence:
-        json = None
-        params = {}
-        params["table"] = table
-        join_parameters = kwargs.pop("join_parameters", None)
-        join_runs = kwargs.pop("join_runs", None)
-
-        if join_parameters is not None:
-            params["join_parameters"] = join_parameters
-        if join_runs is not None:
-            params["join_runs"] = join_runs
-
-        if self.enumeration_method == "GET":
-            params.update(kwargs)
+    def _enumeration_request(
+        self, table: bool = False, params: dict | None = None, json: dict | None = None
+    ):
+        if params is None:
+            extra_params = {}
         else:
-            json = kwargs
-        # we can assume this type on list endpoints
+            extra_params = self.sanitize_params(params)
+
         return self._request(
             self.enumeration_method,
             self.prefix,
-            params=self.sanitize_params(params),
+            params={**extra_params, "table": table},
             json=json,
         )
 
-    def _list(self, **kwargs) -> Sequence[Mapping[str, Any]]:
-        # we can assume this type on list endpoints
-        return self._enumerate(table=False, **kwargs)  # type: ignore
+    def handle_paginated_response(
+        self,
+        data: dict,
+        table: bool = False,
+        params: dict | None = None,
+        json: dict | None = None,
+    ) -> list[list] | list[dict]:
+        total = data.pop("total")
+        pagination = data.pop("pagination")
+        offset = pagination.pop("offset")
+        limit = pagination.pop("limit")
+        if total <= offset + limit:
+            return [data.pop("results")]
+        else:
+            new_params = {"limit": limit, "offset": offset + limit}
+            if params is not None:
+                params.update(new_params)
+            else:
+                params = new_params
+            next_data = self._enumeration_request(table=table, params=params, json=json)
+            pages = self.handle_paginated_response(
+                next_data, table=table, params=params, json=json
+            )
+            return [data.pop("results")] + pages
 
-    def _tabulate(self, **kwargs) -> pd.DataFrame:
-        # we can assume this type on table endpoints
-        jdf: Mapping[str, Any] = self._enumerate(table=True, **kwargs)  # type: ignore
-        return DataFrame(**jdf).to_pandas()
+    def _list(
+        self, params: dict | None = None, json: dict | None = None, **kwargs
+    ) -> list[ModelType]:
+        data = self._enumeration_request(params=params, table=False, json=json)
+        if isinstance(data, dict):
+            # we can assume this type on list endpoints
+            pages: list[list] = self.handle_paginated_response(
+                data, table=False, params=params, json=json
+            )  # type: ignore
+            results = [i for page in pages for i in page]
+        else:
+            results = data
+        return [self.model_class(**i) for i in results]
 
-    def _create(self, *args, **kwargs) -> Mapping[str, Any]:
+    def _tabulate(
+        self, params: dict | None = {}, json: dict | None = None, **kwargs
+    ) -> pd.DataFrame:
+        data = self._enumeration_request(table=True, params=params, json=json)
+        pagination = data.get("pagination", None)
+        if pagination is not None:
+            # we can assume this type on table endpoints
+            pages: list[dict] = self.handle_paginated_response(
+                data,
+                table=True,
+                params=params,
+                json=json,
+            )  # type: ignore
+            dfs = [DataFrame(**page).to_pandas() for page in pages]
+            return pd.concat(dfs)
+        else:
+            return DataFrame(**data).to_pandas()
+
+    def _create(self, *args, **kwargs) -> dict[str, Any]:
         # we can assume this type on create endpoints
         return self._request("POST", *args, **kwargs)  # type: ignore
 
@@ -165,8 +211,11 @@ class BaseRepository(Generic[ModelType]):
 
 
 class Retriever(BaseRepository[ModelType]):
-    def get(self, *args, **kwargs) -> ModelType:
-        list_ = self._list(*args, **kwargs)
+    def get(self, **kwargs) -> ModelType:
+        if self.enumeration_method == "GET":
+            list_ = self._list(params=kwargs)
+        else:
+            list_ = self._list(json=kwargs)
 
         try:
             [obj] = list_
@@ -174,7 +223,7 @@ class Retriever(BaseRepository[ModelType]):
             raise self.model_class.NotFound(
                 f"Expected exactly one result, got {len(list_)} instead."
             ) from e
-        return self.model_class(**obj)
+        return obj
 
 
 class Creator(BaseRepository[ModelType]):
@@ -192,25 +241,23 @@ class Deleter(BaseRepository[ModelType]):
 
 
 class Lister(BaseRepository[ModelType]):
-    def list(self, *args, **kwargs) -> Iterable[ModelType]:
-        return [
-            self.model_class(**obj)
-            for obj in self._list(
-                **kwargs,
-            )
-        ]
+    def list(self, *args, **kwargs) -> list[ModelType]:
+        return self._list(json=kwargs)
 
 
 class Tabulator(BaseRepository[ModelType]):
     def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return self._tabulate(*args, **kwargs)
+        return self._tabulate(json=kwargs)
 
 
 class Enumerator(Lister[ModelType], Tabulator[ModelType]):
     def enumerate(
         self, *args, table: bool = False, **kwargs
-    ) -> Iterable[ModelType] | pd.DataFrame:
-        return self._enumerate(*args, table=table, **kwargs)
+    ) -> list[ModelType] | pd.DataFrame:
+        if table:
+            return self.tabulate(*args, **kwargs)
+        else:
+            return self.list(*args, **kwargs)
 
 
 class BulkUpserter(BaseRepository[ModelType]):
