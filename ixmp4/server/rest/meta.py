@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
-from pydantic import RootModel
 
 from ixmp4.data import abstract, api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.meta.filter import RunMetaEntryFilter
 
 from . import deps
-from .base import BaseModel
+from .base import BaseModel, EnumerationOutput, Pagination
 
 router: APIRouter = APIRouter(
     prefix="/meta",
@@ -20,29 +19,23 @@ class RunMetaEntryInput(BaseModel):
     value: abstract.StrictMetaValue
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: api.DataFrame | list[api.RunMetaEntry]
-
-
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: RunMetaEntryFilter = Depends(),
-    table: bool = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.meta.enumerate(
-        _filter=filter,
-        table=bool(table),
-    )
-
-
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.RunMetaEntry])
 def query(
     filter: RunMetaEntryFilter = Body(None),
     table: bool = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.meta.enumerate(_filter=filter, table=bool(table))
+    return EnumerationOutput(
+        results=backend.meta.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.meta.count(_filter=filter),
+        pagination=pagination,
+    )
 
 
 @router.post("/", response_model=api.RunMetaEntry)

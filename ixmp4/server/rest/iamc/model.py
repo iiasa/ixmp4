@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import RootModel
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.model.filter import IamcModelFilter
 
 from .. import deps
-from ..base import BaseModel
+from ..base import EnumerationOutput, Pagination
 
 router: APIRouter = APIRouter(
     prefix="/models",
@@ -14,23 +13,20 @@ router: APIRouter = APIRouter(
 )
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.Model] | api.DataFrame
-
-
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: IamcModelFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.models.enumerate(table=bool(table), _filter=filter)
-
-
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.Model])
 def query(
-    filter: IamcModelFilter = Body(IamcModelFilter(id=None, name=None)),
+    filter: IamcModelFilter = Body(IamcModelFilter()),
     table: bool | None = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.models.enumerate(table=bool(table), _filter=filter)
+    return EnumerationOutput(
+        results=backend.models.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.models.count(_filter=filter),
+        pagination=pagination,
+    )
