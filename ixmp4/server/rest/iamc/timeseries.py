@@ -1,13 +1,14 @@
 from typing import Any
 
-from fastapi import APIRouter, Depends, Query, Request, Response
-from pydantic import RootModel
+from fastapi import APIRouter, Body, Depends, Query, Request, Response
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
+from ixmp4.data.db.iamc.timeseries.filter import TimeSeriesFilter
 
 from .. import deps
-from ..base import BaseModel
+from ..base import BaseModel, EnumerationOutput, Pagination
+from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
     prefix="/timeseries",
@@ -20,26 +21,27 @@ class TimeSeriesInput(BaseModel):
     parameters: dict[str, Any]
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.TimeSeries] | api.DataFrame
-
-
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    request: Request,
+@autodoc
+@router.patch("/", response_model=EnumerationOutput[api.TimeSeries])
+def query(
     join_parameters: bool | None = Query(False),
-    run_ids: list[int] = Query(None),
+    filter: TimeSeriesFilter = Body(TimeSeriesFilter()),
     table: bool | None = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    q = request.query_params
-    parameters = {
-        k: q[k] for k in q if k not in ["table", "run_ids", "join_parameters"]
-    }
-    kwargs = dict(
-        run_ids=run_ids, join_parameters=join_parameters, parameters=parameters
+    print(filter)
+    return EnumerationOutput(
+        results=backend.iamc.timeseries.paginate(
+            _filter=filter,
+            join_parameters=join_parameters,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.iamc.timeseries.count(_filter=filter),
+        pagination=pagination,
     )
-    return backend.iamc.timeseries.enumerate(table=bool(table), **kwargs)
 
 
 @router.post("/", response_model=api.Run)

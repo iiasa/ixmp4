@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import RootModel
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.scenario.filter import IamcScenarioFilter
 
 from .. import deps
-from ..base import BaseModel
+from ..base import EnumerationOutput, Pagination
 
 router: APIRouter = APIRouter(
     prefix="/scenarios",
@@ -14,23 +13,20 @@ router: APIRouter = APIRouter(
 )
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.Scenario] | api.DataFrame
-
-
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: IamcScenarioFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.scenarios.enumerate(table=bool(table), _filter=filter)
-
-
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.Scenario])
 def query(
-    filter: IamcScenarioFilter = Body(IamcScenarioFilter(id=None, name=None)),
+    filter: IamcScenarioFilter = Body(IamcScenarioFilter()),
     table: bool | None = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.scenarios.enumerate(table=bool(table), _filter=filter)
+    return EnumerationOutput(
+        results=backend.scenarios.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.scenarios.count(_filter=filter),
+        pagination=pagination,
+    )

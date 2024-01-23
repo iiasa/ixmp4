@@ -1,13 +1,12 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import RootModel
 
 from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.iamc.datapoint.filter import DataPointFilter
 
 from .. import deps
-from ..base import BaseModel
+from ..base import EnumerationOutput, Pagination
 from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -16,38 +15,14 @@ router: APIRouter = APIRouter(
 )
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.DataPoint] | api.DataFrame
-
-
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: DataPointFilter = Depends(),
-    join_parameters: bool | None = Query(False),
-    join_runs: bool = Query(False),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    if (join_parameters or join_runs) and not table:
-        raise BadRequest(
-            "`join_parameters` or `join_run` can only be used with `table=true`."
-        )
-
-    return backend.iamc.datapoints.enumerate(
-        table=bool(table),
-        _filter=filter,
-        join_parameters=join_parameters,
-        join_runs=join_runs,
-    )
-
-
 @autodoc
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.DataPoint])
 def query(
     filter: DataPointFilter = Body(DataPointFilter()),
     join_parameters: bool | None = Query(False),
     join_runs: bool = Query(False),
     table: bool | None = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
     """This endpoint is used to retrieve and optionally filter data.add()
@@ -85,11 +60,21 @@ def query(
             "`join_parameters` or `join_run` can only be used with `table=true`."
         )
 
-    return backend.iamc.datapoints.enumerate(
-        table=bool(table),
-        _filter=filter,
-        join_parameters=join_parameters,
-        join_runs=join_runs,
+    return EnumerationOutput(
+        results=backend.iamc.datapoints.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+            join_parameters=join_parameters,
+            join_runs=join_runs,
+        ),
+        total=backend.iamc.datapoints.count(
+            _filter=filter,
+            join_parameters=join_parameters,
+            join_runs=join_runs,
+        ),
+        pagination=pagination,
     )
 
 
