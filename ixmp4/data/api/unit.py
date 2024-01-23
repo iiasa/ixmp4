@@ -35,7 +35,6 @@ class UnitRepository(
 ):
     model_class = Unit
     prefix = "units/"
-    enumeration_method = "PATCH"
 
     def __init__(self, client, *args, **kwargs) -> None:
         super().__init__(client, *args, **kwargs)
@@ -53,11 +52,11 @@ class UnitRepository(
     def get(self, name: str) -> Unit:
         return super().get(name=name)
 
-    def list(self, *args, **kwargs) -> Iterable[Unit]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[Unit] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, **kwargs) -> list[Unit]:
+        return super()._list(json=kwargs)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[Unit] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs)

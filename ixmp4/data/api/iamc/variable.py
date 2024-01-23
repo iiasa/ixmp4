@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 from pydantic import Field
@@ -35,7 +35,6 @@ class VariableRepository(
 ):
     model_class = Variable
     prefix = "iamc/variables/"
-    enumeration_method = "PATCH"
 
     def __init__(self, client, *args, **kwargs) -> None:
         super().__init__(client, *args, **kwargs)
@@ -50,11 +49,11 @@ class VariableRepository(
     def get(self, name: str) -> Variable:
         return super().get(name=name)
 
-    def list(self, *args, **kwargs) -> Iterable[Variable]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[Variable] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, **kwargs) -> list[Variable]:
+        return super()._list(json=kwargs)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[Variable] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs)
