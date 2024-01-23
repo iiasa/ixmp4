@@ -83,7 +83,7 @@ class IndexSetRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[IndexSet]:
+    def list(self, *, name: str | None = None, **kwargs) -> list[IndexSet]:
         r"""Lists IndexSets by specified criteria.
 
         Parameters

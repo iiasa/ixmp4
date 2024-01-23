@@ -57,7 +57,7 @@ class Deleter(BaseRepository, Protocol):
 
 
 class Lister(BaseRepository, Protocol):
-    def list(self, *args, **kwargs) -> Iterable[BaseModel]:
+    def list(self, *args, **kwargs) -> list:
         ...
 
 
@@ -67,9 +67,7 @@ class Tabulator(BaseRepository, Protocol):
 
 
 class Enumerator(Lister, Tabulator, Protocol):
-    def enumerate(
-        self, *args, table: bool = False, **kwargs
-    ) -> Iterable[BaseModel] | pd.DataFrame:
+    def enumerate(self, *args, table: bool = False, **kwargs) -> list | pd.DataFrame:
         ...
 
 

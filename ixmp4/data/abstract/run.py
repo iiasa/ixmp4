@@ -148,7 +148,7 @@ class RunRepository(
         *,
         version: int | None = None,
         **kwargs,
-    ) -> Iterable[Run]:
+    ) -> list[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters

@@ -127,7 +127,7 @@ class RunMetaEntryRepository(
     def list(
         self,
         **kwargs,
-    ) -> Iterable[RunMetaEntry]:
+    ) -> list[RunMetaEntry]:
         r"""Lists run's meta indicator entries by specified criteria.
 
         Parameters

@@ -70,7 +70,7 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         self,
         *,
         name: str | None = None,
-    ) -> Iterable[Scenario]:
+    ) -> list[Scenario]:
         """Lists scenarios by specified criteria.
 
         Parameters
