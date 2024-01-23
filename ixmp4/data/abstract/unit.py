@@ -99,7 +99,7 @@ class UnitRepository(
         *,
         name: str | None = None,
         **kwargs,
-    ) -> Iterable[Unit]:
+    ) -> list[Unit]:
         r"""Lists units by specified criteria.
 
         Parameters

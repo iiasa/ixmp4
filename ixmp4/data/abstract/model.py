@@ -77,7 +77,7 @@ class ModelRepository(
         self,
         *,
         name: str | None = None,
-    ) -> Iterable[Model]:
+    ) -> list[Model]:
         """Lists models by specified criteria.
 
         Parameters

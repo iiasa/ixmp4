@@ -1,5 +1,5 @@
 import enum
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -46,7 +46,7 @@ class DataPointRepository(
         *,
         join_parameters: bool | None = False,
         **kwargs,
-    ) -> Iterable[DataPoint]:
+    ) -> list[DataPoint]:
         """Lists data points by specified criteria.
         This method incurrs mentionable overhead compared to :meth:`tabulate`.
 

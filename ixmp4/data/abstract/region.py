@@ -119,7 +119,7 @@ class RegionRepository(
         name: str | None = None,
         hierarchy: str | None = None,
         **kwargs,
-    ) -> Iterable[Region]:
+    ) -> list[Region]:
         r"""Lists regions by specified criteria.
 
         Parameters
