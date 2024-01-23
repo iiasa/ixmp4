@@ -23,6 +23,7 @@ class DocsRepository(
     abstract.DocsRepository,
 ):
     model_class: Type[Docs]
+    enumeration_method = "GET"
 
     def get(self, dimension_id: int) -> Docs:
         return super().get(dimension_id=dimension_id)
@@ -37,8 +38,8 @@ class DocsRepository(
         )
         return Docs(**res)
 
-    def list(self, *, dimension_id: int | None = None, **kwargs) -> Iterable[Docs]:
-        return super().list(dimension_id=dimension_id)
+    def list(self, *, dimension_id: int | None = None) -> list[Docs]:
+        return super()._list(params={"dimension_id": dimension_id})
 
     def delete(self, dimension_id: int) -> None:
         super().delete(dimension_id)
