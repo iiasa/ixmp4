@@ -1,4 +1,4 @@
-from typing import Iterable, List
+from typing import List
 
 import pandas as pd
 
@@ -56,7 +56,7 @@ class IndexSetRepository(
         return super().create(run_id=run_id, name=name, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[IndexSet]:
+    def list(self, *args, **kwargs) -> list[IndexSet]:
         return super().list(*args, **kwargs)
 
     @guard("view")

@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
 
@@ -50,7 +48,7 @@ class RegionRepository(
             raise Region.NotFound
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Region]:
+    def list(self, *args, **kwargs) -> list[Region]:
         return super().list(*args, **kwargs)
 
     @guard("view")

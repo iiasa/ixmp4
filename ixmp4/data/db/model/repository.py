@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import pandas as pd
 
 from ixmp4 import db
@@ -46,7 +44,7 @@ class ModelRepository(
         return super().create(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Model]:
+    def list(self, *args, **kwargs) -> list[Model]:
         return super().list(*args, **kwargs)
 
     @guard("view")

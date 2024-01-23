@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
@@ -89,7 +89,7 @@ class MeasurandRepository(
         return db.select(Measurand)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Measurand]:
+    def list(self, *args, **kwargs) -> list[Measurand]:
         return super().list(*args, **kwargs)
 
     @guard("view")
