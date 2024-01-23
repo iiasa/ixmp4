@@ -111,7 +111,7 @@ class RegionRepository(BaseFacade):
         self,
         name: str | None = None,
         hierarchy: str | None = None,
-    ) -> Iterable[Region]:
+    ) -> list[Region]:
         regions = self.backend.regions.list(name=name, hierarchy=hierarchy)
         return [Region(_backend=self.backend, _model=r) for r in regions]
 

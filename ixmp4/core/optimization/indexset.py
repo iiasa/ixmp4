@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 
@@ -101,7 +101,7 @@ class IndexSetRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
-    def list(self, name: str | None = None) -> Iterable[IndexSet]:
+    def list(self, name: str | None = None) -> list[IndexSet]:
         indexsets = self.backend.optimization.indexsets.list(name=name)
         return [
             IndexSet(
