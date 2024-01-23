@@ -1,8 +1,10 @@
+import logging
 import sqlite3
 from datetime import datetime
 from typing import (
     TYPE_CHECKING,
     Any,
+    Callable,
     ClassVar,
     Generic,
     Iterable,
@@ -30,6 +32,8 @@ from ixmp4.db import filters
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
+
+logger = logging.getLogger(__name__)
 
 
 @event.listens_for(Engine, "connect")
@@ -158,9 +162,13 @@ class Selecter(BaseRepository[ModelType]):
             _access_type=access_type,
             **kwargs,
         )
-
-        if not self.session.execute(exc).scalar() == len(ids):
-            raise Forbidden
+        num_permitted_ids = self.session.execute(exc).scalar()
+        num_ids = len(ids)
+        if not num_permitted_ids == num_ids:
+            logger.debug(
+                f"Permission check failed {num_permitted_ids}/{num_ids} objects permitted."
+            )
+            raise Forbidden(f"Permission check failed for access type '{access_type}'.")
 
     def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
         return exc
@@ -177,6 +185,8 @@ class Selecter(BaseRepository[ModelType]):
         _filter: filters.BaseFilter | None = None,
         _exc: db.sql.Select | None = None,
         _access_type: str = "view",
+        _post_filter: Callable[[db.sql.Select], db.sql.Select] | None = None,
+        _skip_filter: bool = False,
         **kwargs,
     ) -> db.sql.Select:
         if self.filter_class is None:
@@ -190,35 +200,37 @@ class Selecter(BaseRepository[ModelType]):
 
         _exc = self.apply_auth(_exc, _access_type)
 
-        if _filter is not None:
+        if _filter is not None and not _skip_filter:
             # for some reason checkers resolve the type of `_filter` to `Unknown`
             filter_instance: filters.BaseFilter = _filter
             _exc = filter_instance.join(_exc, session=self.session)
             _exc = filter_instance.apply(_exc, self.model_class, self.session)
-        else:
+        elif not _skip_filter:
             kwarg_filter = self.filter_class(**kwargs)
             _exc = kwarg_filter.join(_exc, session=self.session)
             _exc = kwarg_filter.apply(_exc, self.model_class, self.session)
 
+        if _post_filter is not None:
+            _exc = _post_filter(_exc)
         return _exc
 
 
 class Lister(Selecter[ModelType]):
-    def list(self, *args, **kwargs) -> Iterable[ModelType]:
-        exc = self.select(*args, **kwargs).order_by(self.model_class.id.asc())
-        return self.session.execute(exc).scalars().all()
+    def list(self, *args, **kwargs) -> list[ModelType]:
+        _exc = self.select(*args, **kwargs)
+        _exc = _exc.order_by(self.model_class.id.asc())
+        result = self.session.execute(_exc).scalars().all()
+        return list(result)
 
 
 class Tabulator(Selecter[ModelType]):
     def tabulate(
         self,
         *args,
-        _exc: db.sql.Select | None = None,
-        _raw: bool | None = False,
+        _raw: bool = False,
         **kwargs,
     ) -> pd.DataFrame:
-        if _exc is None:
-            _exc = self.select(*args, **kwargs)
+        _exc = self.select(*args, **kwargs)
         _exc = _exc.order_by(self.model_class.id.asc())
 
         if self.session.bind is not None:
@@ -233,11 +245,33 @@ class Tabulator(Selecter[ModelType]):
 class Enumerator(Lister[ModelType], Tabulator[ModelType]):
     def enumerate(
         self, *args, table: bool = False, **kwargs
-    ) -> Iterable[ModelType] | pd.DataFrame:
+    ) -> list[ModelType] | pd.DataFrame:
         if table:
             return self.tabulate(*args, **kwargs)
         else:
             return self.list(*args, **kwargs)
+
+    def paginate(
+        self,
+        *args,
+        limit: int = 1000,
+        offset: int = 0,
+        **kwargs,
+    ) -> list[ModelType] | pd.DataFrame:
+        return self.enumerate(
+            *args, **kwargs, _post_filter=lambda e: e.offset(offset).limit(limit)
+        )
+
+    def count(
+        self,
+        _exc: db.sql.Select | None = None,
+        *args,
+        **kwargs,
+    ) -> int:
+        if _exc is None:
+            _exc = self.select(*args, **kwargs)
+        _exc = db.select(db.func.count()).select_from(_exc.subquery())
+        return self.session.execute(_exc).scalar_one()
 
 
 class BulkOperator(Tabulator[ModelType]):
@@ -312,13 +346,13 @@ class BulkOperator(Tabulator[ModelType]):
         return chunk_df, remaining_df
 
     def tabulate_existing(self, df: pd.DataFrame) -> pd.DataFrame:
-        exc = self.select()
+        exc = db.select(self.model_class)
         foreign_columns = db.utils.get_foreign_columns(self.model_class)
 
         for col in foreign_columns:
             foreign_pks = df[col.name].unique().tolist()
             exc = exc.where(col.in_(foreign_pks))
-        return self.tabulate(_exc=exc, _raw=True)
+        return self.tabulate(_exc=exc, _raw=True, _skip_filter=True)
 
     def yield_chunks(self, df: pd.DataFrame) -> Iterator[pd.DataFrame]:
         foreign_columns = db.utils.get_foreign_columns(self.model_class)
