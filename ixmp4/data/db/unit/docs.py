@@ -1,5 +1,3 @@
-from typing import Iterable
-
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 
@@ -18,5 +16,5 @@ class UnitDocsRepository(
     dimension_model_class = Unit
 
     @guard("view")
-    def list(self, *, dimension_id: int | None = None) -> Iterable[abstract.Docs]:
+    def list(self, *, dimension_id: int | None = None) -> list[abstract.Docs]:
         return super().list(dimension_id=dimension_id)

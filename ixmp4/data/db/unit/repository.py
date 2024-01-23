@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
 
@@ -51,7 +49,7 @@ class UnitRepository(
             raise Unit.NotFound
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Unit]:
+    def list(self, *args, **kwargs) -> list[Unit]:
         return super().list(*args, **kwargs)
 
     @guard("view")

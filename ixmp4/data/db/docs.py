@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable, TypeVar
+from typing import ClassVar, TypeVar
 
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
@@ -105,5 +105,5 @@ class BaseDocsRepository(
         return super().tabulate(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[DocsType]:
+    def list(self, *args, **kwargs) -> list[DocsType]:
         return super().list(*args, **kwargs)
