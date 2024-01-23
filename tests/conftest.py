@@ -9,27 +9,14 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
-from ixmp4.data.abstract import DataPoint
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
-
-def read_test_data(path):
-    df = pd.read_excel(path)
-    df = df.melt(
-        id_vars=["model", "scenario", "region", "variable", "unit"],
-        var_name="step_year",
-        value_name="value",
-    ).dropna(subset=["value"])
-    df["step_year"] = df["step_year"].astype(int)
-    df["type"] = DataPoint.Type.ANNUAL
-    return df
-
-
+TEST_DATA_BIG = None
 try:
-    TEST_DATA_BIG = read_test_data("./tests/test-data/big-test-data.xlsx").reset_index(
-        drop=True
-    )
+    TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual_big.csv")
+    if TEST_DATA_BIG.empty:
+        TEST_DATA_BIG = None
     # TEST_DATA_BIG = read_test_data(
     #     "./tests/test-data/very-big-test-data.xlsx"
     # ).reset_index(drop=True)

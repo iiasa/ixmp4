@@ -50,7 +50,9 @@ def test_filtering(test_mp, filter, exp_filter):
         add_regions(test_mp, data.region.unique())
         add_units(test_mp, data.unit.unique())
         # add the data for two different models to test filtering
-        test_mp.runs.create(f"model_{i + 1}", f"scen_{i + 1}").iamc.add(data)
+        run = test_mp.runs.create(f"model_{i + 1}", f"scen_{i + 1}")
+        run.iamc.add(data)
+        run.set_as_default()
 
     obs = (
         test_mp.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
