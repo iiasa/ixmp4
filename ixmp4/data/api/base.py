@@ -111,8 +111,21 @@ class BaseRepository(Generic[ModelType]):
             )
         return exc.from_dict(json)
 
-    def _request(self, method: str, path: str, *args, **kwargs) -> dict | list | None:
-        res = self.client.request(method, path, *args, **kwargs)
+    def _request(
+        self,
+        method: str,
+        path: str,
+        params: dict | None = None,
+        json: dict | None = None,
+        **kwargs,
+    ) -> dict | list | None:
+        """Sends a request and reraises remote exception if thrown."""
+        if params is None:
+            params = {}
+        else:
+            params = self.sanitize_params(params)
+
+        res = self.client.request(method, path, params=params, json=json, **kwargs)
 
         if res.status_code >= 400:
             raise self.get_remote_exception(res, res.status_code)
@@ -130,28 +143,33 @@ class BaseRepository(Generic[ModelType]):
         # we can assume this type on create endpoints
         return self._request("GET", self.prefix + str(id) + "/", **kwargs)  # type: ignore
 
-    def _enumeration_request(
-        self, table: bool = False, params: dict | None = None, json: dict | None = None
+    def _request_enumeration(
+        self,
+        table: bool = False,
+        params: dict | None = None,
+        json: dict | None = None,
     ):
+        """Convenience method for requests to the enumeration endpoint."""
         if params is None:
-            extra_params = {}
-        else:
-            extra_params = self.sanitize_params(params)
+            params = {}
 
         return self._request(
             self.enumeration_method,
             self.prefix,
-            params={**extra_params, "table": table},
+            params={**params, "table": table},
             json=json,
         )
 
-    def handle_paginated_response(
+    def _handle_pagination(
         self,
         data: dict,
         table: bool = False,
         params: dict | None = None,
         json: dict | None = None,
     ) -> list[list] | list[dict]:
+        """Handles paginated response and sends subsequent requests if necessary.
+        Returns aggregated pages as a list."""
+
         total = data.pop("total")
         pagination = data.pop("pagination")
         offset = pagination.pop("offset")
@@ -164,8 +182,8 @@ class BaseRepository(Generic[ModelType]):
                 params.update(new_params)
             else:
                 params = new_params
-            next_data = self._enumeration_request(table=table, params=params, json=json)
-            pages = self.handle_paginated_response(
+            next_data = self._request_enumeration(table=table, params=params, json=json)
+            pages = self._handle_pagination(
                 next_data, table=table, params=params, json=json
             )
             return [data.pop("results")] + pages
@@ -173,10 +191,10 @@ class BaseRepository(Generic[ModelType]):
     def _list(
         self, params: dict | None = None, json: dict | None = None, **kwargs
     ) -> list[ModelType]:
-        data = self._enumeration_request(params=params, table=False, json=json)
+        data = self._request_enumeration(params=params, table=False, json=json)
         if isinstance(data, dict):
             # we can assume this type on list endpoints
-            pages: list[list] = self.handle_paginated_response(
+            pages: list[list] = self._handle_pagination(
                 data, table=False, params=params, json=json
             )  # type: ignore
             results = [i for page in pages for i in page]
@@ -187,11 +205,11 @@ class BaseRepository(Generic[ModelType]):
     def _tabulate(
         self, params: dict | None = {}, json: dict | None = None, **kwargs
     ) -> pd.DataFrame:
-        data = self._enumeration_request(table=True, params=params, json=json)
+        data = self._request_enumeration(table=True, params=params, json=json)
         pagination = data.get("pagination", None)
         if pagination is not None:
             # we can assume this type on table endpoints
-            pages: list[dict] = self.handle_paginated_response(
+            pages: list[dict] = self._handle_pagination(
                 data,
                 table=True,
                 params=params,
