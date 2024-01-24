@@ -44,7 +44,7 @@ def tabulate_datapoints(test_mp, **kwargs):
     dfs = []
     for run_model in runs:
         run = Run(_backend=test_mp.backend, _model=run_model)
-        df = run.iamc.tabulate(**kwargs)
+        df = run.iamc.tabulate(**kwargs, raw=True)
         df["model"] = run.model.name
         df["scenario"] = run.scenario.name
         dfs.append(df)
