@@ -40,7 +40,7 @@ class AddDataPointFrameSchema(RemoveDataPointFrameSchema):
 MAP_STEP_COLUMN = {
     "ANNUAL": "step_year",
     "CATEGORICAL": "step_year",
-    "DATETIME": "step_time",
+    "DATETIME": "step_datetime",
 }
 
 
