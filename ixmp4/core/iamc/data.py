@@ -44,7 +44,7 @@ MAP_STEP_COLUMN = {
 }
 
 
-def convert_to_std_format(df: pd.DataFrame, join_runs: bool):
+def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
     df.rename(columns={"step_category": "subannual"}, inplace=True)
 
     if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
@@ -66,7 +66,7 @@ def convert_to_std_format(df: pd.DataFrame, join_runs: bool):
     return df[columns + ["value"]]
 
 
-def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool):
+def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool) -> pd.DataFrame:
     if not df.empty:
         df = df.drop(columns=["time_series__id"])
         df.unit = df.unit.replace({"dimensionless": ""})
