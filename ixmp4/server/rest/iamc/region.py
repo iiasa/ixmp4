@@ -2,7 +2,7 @@ from fastapi import APIRouter, Body, Depends, Query
 
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
-from ixmp4.data.db.region.filter import IamcRegionFilter, SimpleIamcRegionFilter
+from ixmp4.data.db.region.filter import IamcRegionFilter
 
 from .. import deps
 from ..base import EnumerationOutput, Pagination

@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Generic, Iterable, Mapping, TypeVar
+from typing import Any, ClassVar, Generic, Mapping, TypeVar
 
 import pandas as pd
 from sqlalchemy.ext.declarative import AbstractConcreteBase

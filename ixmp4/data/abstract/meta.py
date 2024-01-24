@@ -1,5 +1,5 @@
 from enum import Enum
-from typing import ClassVar, Iterable, Protocol
+from typing import ClassVar, Protocol
 
 import pandas as pd
 from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr

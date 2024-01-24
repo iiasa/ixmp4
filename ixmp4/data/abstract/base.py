@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable, Protocol, _ProtocolMeta
+from typing import ClassVar, Protocol, _ProtocolMeta
 
 import pandas as pd
 

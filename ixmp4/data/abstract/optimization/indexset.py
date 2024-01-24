@@ -1,4 +1,4 @@
-from typing import Iterable, List, Protocol
+from typing import List, Protocol
 
 import pandas as pd
 
