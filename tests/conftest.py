@@ -9,6 +9,7 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
+from ixmp4.data.generator import MockDataGenerator
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
@@ -122,3 +123,47 @@ def test_api_sqlite_mp(test_sqlite_mp):
 @pytest.fixture
 def test_api_pgsql_mp(test_pgsql_mp):
     return Platform(_backend=RestTestBackend(test_pgsql_mp.backend))
+
+
+@pytest.fixture(scope="module")
+def test_sqlite_mp_generated():
+    mp = Platform(_backend=SqliteTestBackend())
+    generate_mock_data(mp)
+    return mp
+
+
+@pytest.fixture(scope="module")
+def test_pgsql_mp_generated():
+    try:
+        mp = Platform(_backend=PostgresTestBackend())
+    except OperationalError as e:
+        pytest.skip(
+            f"Cannot connect to PostgreSQL database service, skipping test: {e}"
+        )
+
+    generate_mock_data(mp)
+    yield mp
+    mp.backend.close()
+
+
+@pytest.fixture(scope="module")
+def test_api_sqlite_mp_generated(test_sqlite_mp_generated):
+    return Platform(_backend=RestTestBackend(test_sqlite_mp_generated.backend))
+
+
+@pytest.fixture(scope="module")
+def test_api_pgsql_mp_generated(test_pgsql_mp_generated):
+    return Platform(_backend=RestTestBackend(test_pgsql_mp_generated.backend))
+
+
+def generate_mock_data(mp):
+    gen = MockDataGenerator(
+        mp,
+        num_models=10,
+        num_runs=30,
+        num_regions=100,
+        num_variables=200,
+        num_units=50,
+        num_datapoints=10_000,
+    )
+    gen.generate()

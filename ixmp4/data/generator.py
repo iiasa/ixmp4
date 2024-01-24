@@ -152,3 +152,12 @@ class MockDataGenerator(object):
         values = np.sin([(i / denom) for i in range(amount)]) * random.random() * 10
         df["value"] = values
         return df
+
+    def generate(self):
+        model_names = cycle(self.yield_model_names())
+        runs = cycle(self.yield_runs(model_names=model_names))
+        regions = cycle(self.yield_regions())
+        units = cycle(self.yield_units())
+        variable_names = cycle(self.yield_variable_names())
+        for df in self.yield_datapoints(runs, variable_names, units, regions):
+            pass
