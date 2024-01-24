@@ -1,4 +1,4 @@
-from typing import Generic, Iterable, Mapping, Protocol, TypeVar
+from typing import Generic, Mapping, Protocol, TypeVar
 
 import pandas as pd
 
@@ -117,7 +117,7 @@ class TimeSeriesRepository(
         self,
         **kwargs,
     ) -> list[ModelType]:
-        """Lists time series by specified criteria.
+        r"""Lists time series by specified criteria.
 
         Parameters
         ----------
@@ -135,7 +135,7 @@ class TimeSeriesRepository(
     def tabulate(
         self, *, join_parameters: bool | None = False, **kwargs
     ) -> pd.DataFrame:
-        """Tabulate time series by specified criteria.
+        r"""Tabulate time series by specified criteria.
 
         Parameters
         ----------
