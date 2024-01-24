@@ -37,6 +37,44 @@ class AddDataPointFrameSchema(RemoveDataPointFrameSchema):
     value: Series[pa.Float] = pa.Field(coerce=True)
 
 
+MAP_STEP_COLUMN = {
+    "ANNUAL": "step_year",
+    "CATEGORICAL": "step_year",
+    "DATETIME": "step_time",
+}
+
+
+def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
+    df.rename(columns={"step_category": "subannual"}, inplace=True)
+
+    if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
+        df.rename(columns={"step_year": "year"}, inplace=True)
+        time_col = "year"
+    else:
+
+        def map_step_column(df: pd.Series):
+            df["time"] = df[MAP_STEP_COLUMN[df.type]]
+            return df
+
+        df = df.apply(map_step_column, axis=1)
+        time_col = "time"
+
+    columns = ["model", "scenario", "version"] if join_runs else []
+    columns += ["region", "variable", "unit"] + [time_col]
+    if "subannual" in df.columns:
+        columns += ["subannual"]
+    return df[columns + ["value"]]
+
+
+def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool) -> pd.DataFrame:
+    if not df.empty:
+        df = df.drop(columns=["time_series__id"])
+        df.unit = df.unit.replace({"dimensionless": ""})
+        if raw is False:
+            return convert_to_std_format(df, join_runs)
+    return df
+
+
 class RunIamcData(BaseFacade):
     """IAMC data.
 
