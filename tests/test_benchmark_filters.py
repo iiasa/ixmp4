@@ -1,8 +1,5 @@
 import pytest
-import logging
 from .utils import generated_platforms
-
-logger = logging.getLogger(__name__)
 
 
 @generated_platforms
@@ -40,5 +37,4 @@ def test_filter_datapoints_benchmark(generated_mp, profiled, benchmark, filters)
             return generated_mp.iamc.tabulate(**filters)
 
     df = benchmark.pedantic(run, warmup_rounds=5, rounds=10)
-    logger.info(f"Filters {str(filters)} returned {len(df)} rows.")
     assert not df.empty
