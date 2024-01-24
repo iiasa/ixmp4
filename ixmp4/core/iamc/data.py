@@ -37,6 +37,44 @@ class AddDataPointFrameSchema(RemoveDataPointFrameSchema):
     value: Series[pa.Float] = pa.Field(coerce=True)
 
 
+MAP_STEP_COLUMN = {
+    "ANNUAL": "step_year",
+    "CATEGORICAL": "step_year",
+    "DATETIME": "step_time",
+}
+
+
+def convert_to_std_format(df: pd.DataFrame, join_runs: bool):
+    df.rename(columns={"step_category": "subannual"}, inplace=True)
+
+    if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
+        df.rename(columns={"step_year": "year"}, inplace=True)
+        time_col = "year"
+    else:
+
+        def map_step_column(df: pd.Series):
+            df["time"] = df[MAP_STEP_COLUMN[df.type]]
+            return df
+
+        df = df.apply(map_step_column, axis=1)
+        time_col = "time"
+
+    columns = ["model", "scenario", "version"] if join_runs else []
+    columns += ["region", "variable", "unit"] + [time_col]
+    if "subannual" in df.columns:
+        columns += ["subannual"]
+    return df[columns + ["value"]]
+
+
+def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool):
+    if not df.empty:
+        df = df.drop(columns=["time_series__id"])
+        df.unit = df.unit.replace({"dimensionless": ""})
+        if raw is False:
+            return convert_to_std_format(df, join_runs)
+    return df
+
+
 class RunIamcData(BaseFacade):
     """IAMC data.
 
@@ -103,6 +141,7 @@ class RunIamcData(BaseFacade):
         variable: dict | None = None,
         region: dict | None = None,
         unit: dict | None = None,
+        raw: bool = False,
     ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(
             join_parameters=True,
@@ -113,11 +152,7 @@ class RunIamcData(BaseFacade):
             unit=unit,
         ).dropna(how="all", axis="columns")
 
-        if not df.empty:
-            df = df.drop(columns=["time_series__id"])
-            df.unit = df.unit.replace({"dimensionless": ""})
-
-        return df
+        return normalize_df(df, raw, False)
 
 
 class PlatformIamcData(BaseFacade):
@@ -127,13 +162,9 @@ class PlatformIamcData(BaseFacade):
         self.variables = VariableRepository(_backend=_backend)
         super().__init__(_backend=_backend)
 
-    def tabulate(self, *, join_runs: bool = True, **kwargs):
+    def tabulate(self, *, join_runs: bool = True, raw: bool = False, **kwargs):
         df = self.backend.iamc.datapoints.tabulate(
             join_parameters=True, join_runs=join_runs, **kwargs
         ).dropna(how="all", axis="columns")
 
-        if not df.empty:
-            df = df.drop(columns=["time_series__id"])
-            df.unit = df.unit.replace({"dimensionless": ""})
-
-        return df
+        return normalize_df(df, raw, join_runs)

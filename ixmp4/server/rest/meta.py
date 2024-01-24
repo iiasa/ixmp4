@@ -22,6 +22,7 @@ class RunMetaEntryInput(BaseModel):
 @router.patch("/", response_model=EnumerationOutput[api.RunMetaEntry])
 def query(
     filter: RunMetaEntryFilter = Body(None),
+    join_run_index: bool = Query(False),
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
@@ -32,6 +33,7 @@ def query(
             limit=pagination.limit,
             offset=pagination.offset,
             table=bool(table),
+            join_run_index=join_run_index,
         ),
         total=backend.meta.count(_filter=filter),
         pagination=pagination,

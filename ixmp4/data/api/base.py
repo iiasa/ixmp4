@@ -1,6 +1,6 @@
 import logging
 from json.decoder import JSONDecodeError
-from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, TypeVar
+from typing import Any, ClassVar, Generic, Type, TypeVar
 
 import httpx
 import pandas as pd

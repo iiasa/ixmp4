@@ -182,7 +182,6 @@ class Selecter(BaseRepository[ModelType]):
 
     def select(
         self,
-        *args,
         _filter: filters.BaseFilter | None = None,
         _exc: db.sql.Select | None = None,
         _access_type: str = "view",
