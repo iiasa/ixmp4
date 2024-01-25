@@ -1,6 +1,6 @@
+import pandas as pd
 import pytest
 
-# import pandas as pd
 from ixmp4 import Table
 
 from ..utils import database_platforms
@@ -10,18 +10,53 @@ from ..utils import database_platforms
 class TestDataOptimizationTable:
     def test_create_table(self, test_mp):
         run = test_mp.backend.runs.create("Model", "Scenario")
-        table = test_mp.backend.optimization.tables.create(run_id=run.id, name="Table")
+        indexset_1 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+        # At the moment, this fails b/c table_id is None (move add_column calls to
+        # create()?)
+        # Also check why dtype is 'object'
 
         assert table.run__id == run.id
         assert table.name == "Table"
         assert table.data == {}  # JsonDict type currently requires a dict, not None
-        assert table.constrained_to_indexsets is None
+
+        assert table.columns[0].name == "Indexset"
+        # TODO: confirm that we are okay with having colum.constrained_to_indexset, but
+        # tables.create(constrained_to_indexsets=...) (extra s)
+        assert table.columns[0].constrained_to_indexset == indexset_1.id
 
         with pytest.raises(Table.NotUnique):
-            _ = test_mp.backend.optimization.scalars.create(
-                run_id=run.id,
-                name="Table",
+            _ = test_mp.backend.optimization.tables.create(
+                run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
             )
+
+        with pytest.raises(ValueError, match="not equal in length"):
+            _ = test_mp.backend.optimization.tables.create(
+                run_id=run.id,
+                name="Table 2",
+                constrained_to_indexsets=["Indexset"],
+                dimension_names=["Dimension 1", "Dimension 2"],
+            )
+
+        # TODO: do we want this to raise an error?
+        # with pytest.raises(ValueError):
+        #     _ = test_mp.backend.optimization.tables.create(
+        #         run_id=run.id,
+        #         name="Table 2",
+        #         constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+        #     )
+
+        table_2 = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 2",
+            constrained_to_indexsets=[indexset_1.name],
+            dimension_names=["Column 1"],
+        )
+        assert table_2.columns[0].name == "Column 1"
 
     def test_table_add_data(self, test_mp):
         run = test_mp.backend.runs.create("Model", "Scenario")
@@ -38,36 +73,52 @@ class TestDataOptimizationTable:
             indexset_id=indexset_2.id, elements=[1, 2, 3]
         )
         test_data_1 = {"Indexset": "foo", "Indexset 2": 1}
-        test_data_2 = {"First Indexset": ["foo", "bar"], "Second Indexset": [1, 3]}
-        # IDEA: if constrained_to_indexsets is given, use that to constrain data.
-        # Otherwise, use data.keys().
-        table = test_mp.backend.optimization.tables.create(run_id=run.id, name="Table")
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+        )
         test_mp.backend.optimization.tables.add_data(
             table_id=table.id, data=test_data_1
         )
         assert table.data == test_data_1
-        assert table.constrained_to_indexsets is None
 
         table_2 = test_mp.backend.optimization.tables.create(
-            run_id=run.id, name="Table 2"
+            run_id=run.id,
+            name="Table 2",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
-        test_mp.backend.optimization.tables.add_data(
-            table_id=table_2.id,
-            data=test_data_2,
-            constrained_to_indexsets=["Indexset", "Indexset 2"],
-        )
-        assert table_2.data == test_data_2
-        assert table_2.constrained_to_indexsets == ["Indexset", "Indexset 2"]
-        # Should this be part of create() (to allow specifying constraining indexsets
-        # already)?
 
-        # TODO: catch errors:
-        # when neither data.keys() nor constrained_to_indexsets are valid indexsets
-        # when data is added that's not valid given the indexset constraints
-        # when there are not exactly the same number of data.keys() and constraints
-        # when the same indexset is used twice?
-        # when the same column name is used twice?
-        # assert that column data can consist of different types
+        with pytest.raises(ValueError, match="missing values"):
+            _ = test_mp.backend.optimization.tables.add_data(
+                table_id=table_2.id,
+                data=pd.DataFrame({"Indexset": "", "Indexset 2": 2}),
+            )
+
+        with pytest.raises(ValueError, match="contains duplicate rows"):
+            _ = test_mp.backend.optimization.tables.add_data(
+                table_id=table_2.id,
+                data=pd.DataFrame({"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]}),
+            )
+
+        with pytest.raises(ValueError, match="contains values that are not allowed"):
+            _ = test_mp.backend.optimization.tables.add_data(
+                table_id=table_2.id,
+                data=pd.DataFrame({"Indexset": ["foo"], "Indexset 2": [0]}),
+            )
+
+    # Should this be part of create() (to allow specifying constraining indexsets
+    # already)?
+
+    # TODO Allow appending to existing data if it exists!
+
+    # TODO: catch errors:
+    # when neither data.keys() nor constrained_to_indexsets are valid indexsets
+    # when data is added that's not valid given the indexset constraints
+    # when there are not exactly the same number of data.keys() and constraints
+    # when the same indexset is used twice?
+    # when the same column name is used twice?
+    # assert that column data can consist of different types
 
     #     # Really, though?
     #     with pytest.raises(Table.NotUnique):

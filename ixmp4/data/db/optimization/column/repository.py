@@ -23,12 +23,14 @@ class ColumnRepository(
 
     def add(
         self,
+        table_id: int,
         name: str,
         dtype: str,
         constrained_to_indexset: str,
         unique: bool,
     ) -> Column:
         column = Column(
+            table__id=table_id,
             name=name,
             dtype=dtype,
             constrained_to_indexset=constrained_to_indexset,
@@ -41,6 +43,7 @@ class ColumnRepository(
     @guard("edit")
     def create(
         self,
+        table_id: int,
         name: str,
         dtype: str,
         constrained_to_indexset: int,
@@ -48,6 +51,7 @@ class ColumnRepository(
         **kwargs,
     ) -> Column:
         return super().create(
+            table_id=table_id,
             name=name,
             dtype=dtype,
             constrained_to_indexset=constrained_to_indexset,

@@ -1,4 +1,4 @@
-from typing import Iterable
+from typing import Any, Iterable
 
 import pandas as pd
 
@@ -28,22 +28,23 @@ class TableRepository(
 
         self.filter_class = OptimizationTableFilter
 
-    def create_column(
+    def add_column(
         self,
         run_id: int,
+        table_id: int,
         column_name: str,
-        column_dtype: str,
         indexset_name: str,
         **kwargs,
     ) -> Column:
-        indexset_id = self.backend.optimization.indexsets.get(
+        indexset = self.backend.optimization.indexsets.get(
             run_id=run_id, name=indexset_name
-        ).id
+        )
 
         return self.columns.create(
+            table_id=table_id,
             name=column_name,
-            dtype=column_dtype,
-            constrained_to_indexset=indexset_id,
+            dtype=pd.Series(indexset.elements).dtype.name,
+            constrained_to_indexset=indexset.id,
             unique=True,
             **kwargs,
         )
@@ -55,32 +56,8 @@ class TableRepository(
     ) -> Table:
         table = Table(name=name, run__id=run_id, **self.get_creation_info())
         self.session.add(table)
-        return table
 
-        #     if constrained_to_indexsets:
-        #     for column_name, column_data, indexset_name in zip(
-        #         data.keys(), data.values(), constrained_to_indexsets
-        #     ):
-        #         # Note: pd.api.types.infer_dtype might also work, but not on single
-        #         # ints
-        #         # TODO Make sure "object" is the correct dtype, maybe otherwise use
-        #         # infer_dtype
-        #         column = self.create_column(
-        #             run_id=run_id,
-        #             column_name=column_name,
-        #             column_dtype=pd.Series(column_data).dtype.name,
-        #             indexset_name=indexset_name,
-        #         )
-        #         columns.append(column)
-        # else:
-        #     for column_name, column_data in data.items():
-        #         column = self.create_column(
-        #             run_id=run_id,
-        #             column_name=column_name,
-        #             column_dtype=pd.Series(column_data).dtype.name,
-        #             indexset_name=column_name,
-        #         )
-        #         columns.append(column)
+        return table
 
     @guard("view")
     def get(self, run_id: int, name: str) -> Table:
@@ -99,39 +76,37 @@ class TableRepository(
 
         return obj
 
-        # data: dict[str, Any],
-        # constrained_to_indexsets: list[str] | None = None,
-
     @guard("edit")
     def create(
         self,
         run_id: int,
         name: str,
+        constrained_to_indexsets: list[str],  # TODO: try passing a str to this
+        dimension_names: list[str] | None = None,  # TODO: ensure the right number
         **kwargs,
     ) -> Table:
-        return super().create(
+        if dimension_names and len(dimension_names) != len(constrained_to_indexsets):
+            raise ValueError(
+                "`constrained_to_indexsets` and `dimension_names` not equal in length! "
+                "Please provide the same number of entries for both!"
+            )
+        # TODO: activate something like this if each column must be indexed by a unique
+        # indexset
+        # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
+        #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
+        table = super().create(
             run_id=run_id,
             name=name,
             **kwargs,
         )
-
-    @guard("edit")
-    def update(
-        self, name: str, value: float, unit_name: str, run_id: int, **kwargs
-    ) -> Table:
-        unit_id = self.backend.units.get(unit_name).id
-        exc = (
-            db.update(Table)
-            .where(
-                Table.run__id == run_id,
-                Table.name == name,
+        for i, name in enumerate(constrained_to_indexsets):
+            _ = self.add_column(
+                run_id=run_id,
+                table_id=table.id,
+                column_name=dimension_names[i] if dimension_names else name,
+                indexset_name=name,
             )
-            .values(value=value, unit__id=unit_id)
-            .returning(Table)
-        )
 
-        table: Table = self.session.execute(exc).scalar_one()
-        self.session.commit()
         return table
 
     @guard("view")
@@ -141,3 +116,11 @@ class TableRepository(
     @guard("view")
     def tabulate(self, *args, **kwargs) -> pd.DataFrame:
         return super().tabulate(*args, **kwargs)
+
+    @guard("edit")
+    def add_data(self, table_id: int, data: pd.DataFrame | dict[str, Any]):
+        exc = db.update(Table).where(Table.id == table_id).values(data=data)
+
+        self.session.execute(exc)
+        self.session.commit()
+        return self.get_by_id(table_id)
