@@ -166,7 +166,8 @@ class Selecter(BaseRepository[ModelType]):
         num_ids = len(ids)
         if not num_permitted_ids == num_ids:
             logger.debug(
-                f"Permission check failed {num_permitted_ids}/{num_ids} objects permitted."
+                f"Permission check failed {num_permitted_ids}/{num_ids} objects "
+                "permitted."
             )
             raise Forbidden(f"Permission check failed for access type '{access_type}'.")
 

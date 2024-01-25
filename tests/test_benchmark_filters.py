@@ -1,4 +1,5 @@
 import pytest
+
 from .utils import generated_platforms
 
 
