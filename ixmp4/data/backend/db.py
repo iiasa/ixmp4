@@ -19,6 +19,7 @@ from ixmp4.data.db import (
     RegionRepository,
     RunMetaEntryRepository,
     RunRepository,
+    ScalarRepository,
     ScenarioRepository,
     TimeSeriesRepository,
     UnitRepository,
@@ -63,6 +64,7 @@ class SqlAlchemyBackend(Backend):
         self.meta = RunMetaEntryRepository(self)
         self.models = ModelRepository(self)
         self.optimization.indexsets = IndexSetRepository(self)
+        self.optimization.scalars = ScalarRepository(self)
         self.regions = RegionRepository(self)
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)

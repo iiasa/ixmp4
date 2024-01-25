@@ -110,11 +110,10 @@ exclude = [
     ".pytest_cache",
     ".mypy_cache",
     ".venv",
-    "tests/",
     "example.py",
     "import.py",
 ]
-line-length = 100
+line-length = 88
 
 [tool.ruff.mccabe]
 max-complexity = 10

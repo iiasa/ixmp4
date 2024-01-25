@@ -48,7 +48,10 @@ def login(
         user = auth.get_user()
         utils.good(f"Successfully authenticated as user '{user.username}'.")
         if typer.confirm(
-            "Are you sure you want to save your credentials in plain-text for future use?"
+            text=(
+                "Are you sure you want to save your credentials in plain-text for "
+                "future use?"
+            )
         ):
             settings.credentials.set("default", username, password)
 

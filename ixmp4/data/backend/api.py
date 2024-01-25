@@ -14,6 +14,7 @@ from ixmp4.data.api import (
     ModelRepository,
     RunMetaEntryRepository,
     RunRepository,
+    ScalarRepository,
     ScenarioRepository,
     TimeSeriesRepository,
     VariableRepository,
@@ -95,6 +96,7 @@ class RestBackend(Backend):
         self.meta = RunMetaEntryRepository(self.client)
         self.models = ModelRepository(self.client)
         self.optimization.indexsets = IndexSetRepository(self.client)
+        self.optimization.scalars = ScalarRepository(self.client)
         self.regions = RegionRepository(self.client)
         self.runs = RunRepository(self.client)
         self.scenarios = ScenarioRepository(self.client)
