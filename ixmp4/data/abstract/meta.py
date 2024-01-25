@@ -133,7 +133,8 @@ class RunMetaEntryRepository(
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
+            Filter parameters as specified in
+            `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
 
         Returns
         -------
@@ -152,7 +153,8 @@ class RunMetaEntryRepository(
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
+            Filter parameters as specified in
+            `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
 
         Returns
         -------

@@ -1,8 +1,5 @@
-from ixmp4.data.api import DataFrame
-
 from ..utils import (
     api_platforms,
-    assert_unordered_equality,
     create_iamc_query_test_data,
 )
 

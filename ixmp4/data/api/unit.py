@@ -52,6 +52,10 @@ class UnitRepository(
     def get(self, name: str) -> Unit:
         return super().get(name=name)
 
+    def get_by_id(self, id: int) -> Unit:
+        res = self._get_by_id(id)
+        return Unit(**res)
+
     def enumerate(self, **kwargs) -> list[Unit] | pd.DataFrame:
         return super().enumerate(**kwargs)
 

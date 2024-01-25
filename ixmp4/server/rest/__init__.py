@@ -16,7 +16,7 @@ from .iamc import region as iamc_region
 from .iamc import scenario as iamc_scenario
 from .iamc import unit as iamc_unit
 from .iamc import variable as iamc_variable
-from .optimization import indexset
+from .optimization import indexset, scalar
 
 v1 = FastAPI()
 
@@ -41,6 +41,7 @@ v1.include_router(meta.router)
 v1.include_router(model.router)
 v1.include_router(region.router)
 v1.include_router(run.router)
+v1.include_router(scalar.router, prefix="/optimization")
 v1.include_router(scenario.router)
 v1.include_router(timeseries.router, prefix="/iamc")
 v1.include_router(unit.router)

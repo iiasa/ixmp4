@@ -12,7 +12,7 @@ from .iamc import (  # Measurand,; MeasurandRepository,; AnnualDataPoint,; SubAn
 )
 from .meta import RunMetaEntry, RunMetaEntryRepository
 from .model import Model, ModelRepository
-from .optimization import IndexSet, IndexSetRepository
+from .optimization import IndexSet, IndexSetRepository, Scalar, ScalarRepository
 from .region import Region, RegionParent, RegionRepository
 from .run import Run, RunRepository
 from .scenario import Scenario, ScenarioRepository

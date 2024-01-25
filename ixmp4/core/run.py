@@ -52,7 +52,8 @@ class Run(BaseModelFacade):
         self._meta._set(meta)
 
     def set_as_default(self):
-        """Sets this run as default version for this `model - scenario` combination."""
+        """Sets this run as the default version for its `model` + `scenario`
+        combination."""
         self.backend.runs.set_as_default_version(self._model.id)
 
     def unset_as_default(self):

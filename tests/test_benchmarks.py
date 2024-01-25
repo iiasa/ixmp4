@@ -1,4 +1,4 @@
-"""This module only contains benchmarks, no assertions are made to validate the results."""
+"""This module only contains benchmarks, no assertions are made to validate results."""
 import pandas as pd
 import pytest
 
@@ -91,7 +91,8 @@ class TestBenchmarks:
     def test_add_datapoints_half_insert_half_update_benchmark(
         self, test_mp, profiled, benchmark, test_data_big
     ):
-        """Benchmarks a full insert of `test_data_big` with changed values on a half-filled database."""
+        """Benchmarks a full insert of `test_data_big` with changed values on a
+        half-filled database."""
 
         def setup():
             add_regions(test_mp, test_data_big["region"].unique())

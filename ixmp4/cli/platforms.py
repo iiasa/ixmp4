@@ -44,8 +44,8 @@ def prompt_sqlite_dsn(name: str):
     dsn = sqlite.get_dsn(path)
     if path.exists():
         if typer.confirm(
-            f"A file at the standard filesystem location for name '{name}' already exists. "
-            "Do you want to add the existing file to the platform registry?"
+            f"A file at the standard filesystem location for name '{name}' already "
+            "exists. Do you want to add the existing file to the platform registry?"
         ):
             return dsn
         else:
@@ -70,7 +70,7 @@ def add(
     ),
     dsn: Optional[str] = typer.Option(
         None,
-        help="A data source name. Can be a http(s) URl or a database connection string.",
+        help="Data source name. Can be a http(s) URL or a database connection string.",
         callback=validate_dsn,
     ),
 ):
@@ -118,7 +118,8 @@ def remove(
         raise typer.BadParameter(f"Platform '{name}' does not exist.")
 
     if typer.confirm(
-        f"Are you sure you want to remove the platform '{platform.name}' with dsn '{platform.dsn}'?"
+        f"Are you sure you want to remove the platform '{platform.name}' with dsn "
+        f"'{platform.dsn}'?"
     ):
         if platform.dsn.startswith("sqlite://"):
             prompt_sqlite_removal(platform.dsn)
@@ -159,7 +160,10 @@ def list_():
 
 
 @app.command(
-    help="Migrates all database platforms from your local toml file to the newest revision."
+    help=(
+        "Migrates all database platforms from your local toml file to the newest "
+        "revision."
+    )
 )
 def upgrade():
     for c in settings.toml.list_platforms():
@@ -171,7 +175,10 @@ def upgrade():
 
 
 @app.command(
-    help="Stamps all database platforms from your local toml file with the given revision."
+    help=(
+        "Stamps all database platforms from your local toml file with the given "
+        "revision."
+    )
 )
 def stamp(revision: str) -> None:
     for c in settings.toml.list_platforms():

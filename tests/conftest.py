@@ -9,9 +9,9 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
-from ixmp4.data.generator import MockDataGenerator
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
+from ixmp4.data.generator import MockDataGenerator
 
 TEST_DATA_BIG = None
 try:

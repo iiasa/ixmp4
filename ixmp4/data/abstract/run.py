@@ -45,8 +45,9 @@ class RunRepository(
         model_name: str,
         scenario_name: str,
     ) -> Run:
-        """Creates a run with an incremented version number or version=1 if no versions exist.
-        Will automatically create the models and scenarios if they don't exist yet.
+        """Creates a run with an incremented version number or version=1 if no versions
+        exist. Will automatically create the models and scenarios if they don't exist
+        yet.
 
         Parameters
         ----------
@@ -157,7 +158,8 @@ class RunRepository(
         default_only : bool
             True by default. This function will return default runs only if true.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.run.filters.RunFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.run.filters.RunFilter`.
 
         Returns
         -------
@@ -181,7 +183,8 @@ class RunRepository(
         default_only : bool
             True by default. This function will return default runs only if true.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.run.filters.RunFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.run.filters.RunFilter`.
 
         Returns
         -------

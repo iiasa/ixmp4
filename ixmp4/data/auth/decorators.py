@@ -29,8 +29,8 @@ def guard(access: str) -> Callable:
                     return func(self, *args, **kwargs)
 
                 raise Forbidden(
-                    f"Function '{func.__name__}': '{access}' access denied due to insufficient "
-                    "permissions."
+                    f"Function '{func.__name__}': '{access}' access denied due to "
+                    "insufficient permissions."
                 )
             else:
                 # ignoring authorization since no auth context is set
