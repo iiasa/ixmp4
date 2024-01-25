@@ -2,10 +2,9 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4 import DataPoint, IxmpError, Run
-from ixmp4.core.exceptions import SchemaError
+from ixmp4 import IxmpError, Run
 
-from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
+from ..utils import all_platforms
 
 
 def _expected_runs_table(*row_default):

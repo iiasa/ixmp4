@@ -197,3 +197,113 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             test_mp.backend.iamc.variables.docs.get(variable.id)
+
+    def test_get_and_set_indexsetdocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet"
+        )
+        docs_indexset = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Description of test IndexSet"
+        )
+        docs_indexset1 = test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+
+        assert docs_indexset == docs_indexset1
+
+    def test_change_empty_indexsetdocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet"
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+
+        docs_indexset1 = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Description of test IndexSet"
+        )
+
+        assert (
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+            == docs_indexset1
+        )
+
+        docs_indexset2 = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Different description of test IndexSet"
+        )
+
+        assert (
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+            == docs_indexset2
+        )
+
+    def test_delete_indexsetdocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet"
+        )
+        docs_indexset = test_mp.backend.optimization.indexsets.docs.set(
+            indexset.id, "Description of test IndexSet"
+        )
+
+        assert (
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+            == docs_indexset
+        )
+
+        test_mp.backend.optimization.indexsets.docs.delete(indexset.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.indexsets.docs.get(indexset.id)
+
+    def test_get_and_set_scalardocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        unit = test_mp.backend.units.create("Unit")
+        scalar = test_mp.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
+        )
+        docs_scalar = test_mp.backend.optimization.scalars.docs.set(
+            scalar.id, "Description of test Scalar"
+        )
+        docs_scalar1 = test_mp.backend.optimization.scalars.docs.get(scalar.id)
+
+        assert docs_scalar == docs_scalar1
+
+    def test_change_empty_scalardocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        unit = test_mp.backend.units.create("Unit")
+        scalar = test_mp.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar", value=2, unit_name=unit.name
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.scalars.docs.get(scalar.id)
+
+        docs_scalar1 = test_mp.backend.optimization.scalars.docs.set(
+            scalar.id, "Description of test Scalar"
+        )
+
+        assert test_mp.backend.optimization.scalars.docs.get(scalar.id) == docs_scalar1
+
+        docs_scalar2 = test_mp.backend.optimization.scalars.docs.set(
+            scalar.id, "Different description of test Scalar"
+        )
+
+        assert test_mp.backend.optimization.scalars.docs.get(scalar.id) == docs_scalar2
+
+    def test_delete_scalardocs(self, test_mp):
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        unit = test_mp.backend.units.create("Unit")
+        scalar = test_mp.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar", value=3, unit_name=unit.name
+        )
+        docs_scalar = test_mp.backend.optimization.scalars.docs.set(
+            scalar.id, "Description of test Scalar"
+        )
+
+        assert test_mp.backend.optimization.scalars.docs.get(scalar.id) == docs_scalar
+
+        test_mp.backend.optimization.scalars.docs.delete(scalar.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.scalars.docs.get(scalar.id)

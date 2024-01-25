@@ -159,3 +159,27 @@ def delete_indexsets(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.indexsets.docs.delete(dimension_id)
+
+
+@router.get("/optimization/scalars/", response_model=list[api.Docs])
+def list_scalars(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.scalars.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/scalars/", response_model=api.Docs)
+def set_scalars(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.scalars.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/scalars/{dimension_id}/")
+def delete_scalars(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.scalars.docs.delete(dimension_id)

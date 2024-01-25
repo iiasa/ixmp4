@@ -1,1 +1,1 @@
-from . import indexset
+from . import indexset, scalar

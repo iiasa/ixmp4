@@ -4,6 +4,7 @@ from ixmp4 import db
 from ixmp4.data import abstract, types
 from ixmp4.data.db.model.model import Model
 from ixmp4.data.db.optimization.indexset import IndexSet
+from ixmp4.data.db.optimization.scalar import Scalar
 from ixmp4.data.db.scenario.model import Scenario
 
 from .. import base
@@ -38,7 +39,8 @@ class Run(base.BaseModel):
         foreign_keys=[scenario__id],
     )
 
-    indexset: types.Mapped[list["IndexSet"]] = db.relationship()
+    indexsets: types.Mapped[list["IndexSet"]] = db.relationship()
+    scalars: types.Mapped[list["Scalar"]] = db.relationship()
 
     version: types.Integer = db.Column(db.Integer, nullable=False)
     is_default: types.Boolean = db.Column(db.Boolean, default=False, nullable=False)

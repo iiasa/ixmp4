@@ -71,6 +71,26 @@ class UnitRepository(
         """
         ...
 
+    def get_by_id(self, id: int) -> Unit:
+        """Retrieves a Unit by it's id.
+
+        Parameters
+        ----------
+        id : int
+            Unique integer id.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Unit.NotFound`.
+            If the Unit with `id` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.data.abstract.Unit`:
+            The retrieved Unit.
+        """
+        ...
+
     def get_or_create(self, name: str) -> Unit:
         try:
             return self.get(name)
@@ -107,7 +127,8 @@ class UnitRepository(
         name : str
             The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.unit.filters.UnitFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.unit.filters.UnitFilter`.
 
         Returns
         -------
@@ -129,7 +150,8 @@ class UnitRepository(
         name : str
             The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in `ixmp4.data.db.unit.filters.UnitFilter`.
+            More filter parameters as specified in
+            `ixmp4.data.db.unit.filters.UnitFilter`.
 
         Returns
         -------

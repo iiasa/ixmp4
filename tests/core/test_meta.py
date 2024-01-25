@@ -5,7 +5,6 @@ import pytest
 
 from ..utils import all_platforms
 
-
 EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
 
 

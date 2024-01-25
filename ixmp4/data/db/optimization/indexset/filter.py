@@ -9,6 +9,3 @@ class OptimizationIndexSetFilter(
     run: base.RunFilter | None = filters.Field(
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
-
-    def join(self, exc, session=None):
-        return exc
