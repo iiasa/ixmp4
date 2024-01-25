@@ -141,6 +141,7 @@ class RunIamcData(BaseFacade):
         variable: dict | None = None,
         region: dict | None = None,
         unit: dict | None = None,
+        raw: bool = False,
     ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(
             join_parameters=True,
@@ -151,11 +152,7 @@ class RunIamcData(BaseFacade):
             unit=unit,
         ).dropna(how="all", axis="columns")
 
-        if not df.empty:
-            df = df.drop(columns=["time_series__id"])
-            df.unit = df.unit.replace({"dimensionless": ""})
-
-        return df
+        return normalize_df(df, raw, False)
 
 
 class PlatformIamcData(BaseFacade):
@@ -165,13 +162,9 @@ class PlatformIamcData(BaseFacade):
         self.variables = VariableRepository(_backend=_backend)
         super().__init__(_backend=_backend)
 
-    def tabulate(self, *, join_runs: bool = True, **kwargs):
+    def tabulate(self, *, join_runs: bool = True, raw: bool = False, **kwargs):
         df = self.backend.iamc.datapoints.tabulate(
             join_parameters=True, join_runs=join_runs, **kwargs
         ).dropna(how="all", axis="columns")
 
-        if not df.empty:
-            df = df.drop(columns=["time_series__id"])
-            df.unit = df.unit.replace({"dimensionless": ""})
-
-        return df
+        return normalize_df(df, raw, join_runs)

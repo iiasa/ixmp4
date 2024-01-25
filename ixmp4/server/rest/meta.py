@@ -33,6 +33,7 @@ def query(
             limit=pagination.limit,
             offset=pagination.offset,
             table=bool(table),
+            join_run_index=join_run_index,
         ),
         total=backend.meta.count(_filter=filter),
         pagination=pagination,

@@ -48,11 +48,11 @@ class RunMetaEntryRepository(
     def enumerate(self, **kwargs) -> list[RunMetaEntry] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(self, **kwargs) -> list[RunMetaEntry]:
-        return super()._list(json=kwargs)
+    def list(self, join_run_index: bool | None = None, **kwargs) -> list[RunMetaEntry]:
+        return super()._list(json=kwargs, params={"join_run_index": join_run_index})
 
-    def tabulate(self, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs)
+    def tabulate(self, join_run_index: bool | None = None, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs, params={"join_run_index": join_run_index})
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         super().bulk_upsert(df)
