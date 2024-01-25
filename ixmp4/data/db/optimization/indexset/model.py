@@ -28,7 +28,7 @@ class IndexSet(base.BaseModel):
     __table_args__ = (UniqueConstraint(name, run__id),)
 
     @validates("elements")
-    def validate_elements(self, key, value):
+    def validate_elements(self, key, value: list[int | str]):
         unique = set()
         for element in value:
             if element in unique:
