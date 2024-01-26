@@ -16,9 +16,8 @@ class TestDataOptimizationTable:
         table = test_mp.backend.optimization.tables.create(
             run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
         )
-        # At the moment, this fails b/c table_id is None (move add_column calls to
-        # create()?)
-        # Also check why dtype is 'object'
+
+        # check why column.dtype is 'object'
 
         assert table.run__id == run.id
         assert table.name == "Table"
@@ -39,7 +38,7 @@ class TestDataOptimizationTable:
                 run_id=run.id,
                 name="Table 2",
                 constrained_to_indexsets=["Indexset"],
-                dimension_names=["Dimension 1", "Dimension 2"],
+                column_names=["Dimension 1", "Dimension 2"],
             )
 
         # TODO: do we want this to raise an error?
@@ -48,15 +47,24 @@ class TestDataOptimizationTable:
         #         run_id=run.id,
         #         name="Table 2",
         #         constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+        #         column_names=["Column 1", "Column 2"]
         #     )
 
         table_2 = test_mp.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 2",
             constrained_to_indexsets=[indexset_1.name],
-            dimension_names=["Column 1"],
+            column_names=["Column 1"],
         )
         assert table_2.columns[0].name == "Column 1"
+
+        with pytest.raises(ValueError, match="`column_names` are not unique"):
+            _ = test_mp.backend.optimization.tables.create(
+                run_id=run.id,
+                name="Table 3",
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+                column_names=["Column 1", "Column 1"],
+            )
 
     def test_table_add_data(self, test_mp):
         run = test_mp.backend.runs.create("Model", "Scenario")
@@ -72,7 +80,12 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_2.id, elements=[1, 2, 3]
         )
-        test_data_1 = {"Indexset": "foo", "Indexset 2": 1}
+        # pandas can only convert dicts to dataframes if the values are lists
+        # or if index is given. But maybe using read_json instead of from_dict
+        # can remedy this. Or maybe we want to catch the resulting
+        # "ValueError: If using all scalar values, you must pass an index" and
+        # reraise a custom informative error?
+        test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
         table = test_mp.backend.optimization.tables.create(
             run_id=run.id,
             name="Table",
@@ -92,39 +105,107 @@ class TestDataOptimizationTable:
         with pytest.raises(ValueError, match="missing values"):
             _ = test_mp.backend.optimization.tables.add_data(
                 table_id=table_2.id,
-                data=pd.DataFrame({"Indexset": "", "Indexset 2": 2}),
+                data=pd.DataFrame({"Indexset": [None], "Indexset 2": [2]}),
+                # empty string is allowed for now, but None or NaN raise
             )
 
         with pytest.raises(ValueError, match="contains duplicate rows"):
             _ = test_mp.backend.optimization.tables.add_data(
                 table_id=table_2.id,
-                data=pd.DataFrame({"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]}),
+                data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
             )
 
-        with pytest.raises(ValueError, match="contains values that are not allowed"):
+        with pytest.raises(
+            ValueError, match="contains keys and/or values that are not allowed"
+        ):
             _ = test_mp.backend.optimization.tables.add_data(
                 table_id=table_2.id,
-                data=pd.DataFrame({"Indexset": ["foo"], "Indexset 2": [0]}),
+                data={"Indexset": ["foo"], "Indexset 2": [0]},
             )
 
-    # Should this be part of create() (to allow specifying constraining indexsets
-    # already)?
+        table_3 = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 3",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_3.id, data={"Column 1": ["bar"]}
+        )
+        assert table_3.data == {"Column 1": ["bar"]}
+
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_3.id,
+            data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
+        )
+        assert table_3.data == {"Column 1": ["foo"], "Column 2": [3]}
+
+        with pytest.raises(
+            ValueError, match="contains keys and/or values that are not allowed"
+        ):
+            test_mp.backend.optimization.tables.add_data(
+                table_id=table_3.id, data={"Column 3": [1]}
+            )
+
+        table_4 = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 4",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_4.id, data={"Column 2": [2], "Column 1": ["bar"]}
+        )
+        assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
+
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_4.id, data={"Column 1": ["foo"], "Column 2": [1]}
+        )
+        assert table_4.data == {"Column 2": [1], "Column 1": ["foo"]}
+
+        with pytest.raises(
+            ValueError, match="contains keys and/or values that are not allowed"
+        ):
+            test_mp.backend.optimization.tables.add_data(
+                table_id=table_4.id,
+                data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
+            )
+
+        test_data_2 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
+        indexset_3 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 3"
+        )
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset_3.id, elements=[1, "2", 3.14]
+        )
+        table_5 = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 5",
+            constrained_to_indexsets=[indexset_1.name, indexset_3.name],
+        )
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_5.id, data=test_data_2
+        )
+        assert table_5.data == test_data_2
+
+        test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
+        assert table_5.data == test_data_2
 
     # TODO Allow appending to existing data if it exists!
 
     # TODO: catch errors:
-    # when neither data.keys() nor constrained_to_indexsets are valid indexsets
-    # when data is added that's not valid given the indexset constraints
-    # when there are not exactly the same number of data.keys() and constraints
+    # when there are not exactly the same number of data.keys() and constraints?
+    # data.keys() <= constraints: fine; otherwise: duplicate keys in dict or
+    # keys/values not allowed
     # when the same indexset is used twice?
+    # I think that should be allowed, e.g. year_act and year_vintage
     # when the same column name is used twice?
+    # In create(), duplicate column_names will raise; in add_data, the second
+    # data.keys replaces the first (but e.g. ruff catches this before it happens)
     # assert that column data can consist of different types
-
-    #     # Really, though?
-    #     with pytest.raises(Table.NotUnique):
-    #         _ = test_mp.backend.optimization.scalars.create(
-    #             run_id=run.id, name="Indexset", data=test_data_2
-    #         )
+    # what happens when a column is missing?
+    # Nothing, can be added later (but there should be some check that all columns are
+    # present before the table is used elsewhere)
 
     # def test_get_scalar(self, test_mp):
     #     run = test_mp.backend.runs.create("Model", "Scenario")

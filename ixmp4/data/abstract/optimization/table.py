@@ -6,76 +6,7 @@ from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
-
-
-# TODO: standardize docstrings (run/Run/`Run`)
-class Column(base.BaseModel, Protocol):
-    """Column data model."""
-
-    name: types.String
-    """Unique name of the Table."""
-    dtype: types.String
-    """Type of the Column's data."""
-
-    table: types.Mapped
-    """Associated Table."""
-    table__id: types.Integer
-    """Foreign unique integer id of a Table."""
-    indexset: types.Mapped
-    """Associated IndexSet."""
-    constrained_to_set: types.Integer
-    """Foreign unique integer if of an IndexSet."""
-
-    unique: types.Boolean
-    """Boolean to determine whether data in this Column must contribute to Uniqueness
-    of Keys."""
-
-    created_at: types.DateTime
-    "Creation date/time. TODO"
-    created_by: types.String
-    "Creator. TODO"
-
-    def __str__(self) -> str:
-        return f"<Column {self.id} name={self.name}>"
-
-
-class ColumnRepository(base.Creator, base.Retriever, Protocol):
-    docs: DocsRepository
-
-    def create(
-        self,
-        name: str,
-        dtype: str,
-        constrained_to_indexset: int,
-        unique: bool,
-    ) -> Column:
-        """Creates a Column.
-
-        Parameters
-        ----------
-        name : str
-            The unique name of the Column.
-        dtype : str
-            The pandas-inferred type of the Column's data.
-        constrained_to_indexset : int
-            The id of an :class:`ixmp4.data.abstract.optimization.IndexSet`, which must
-            contain all values used as entries in this Column.
-        unique : bool
-            A bool to determine whether entries in this Column should be considered for
-            evaluating uniqueness of keys. Defaults to True.
-
-        Raises
-        ------
-        :class:`ixmp4.data.abstract.optimization.Column.NotUnique`:
-            If the Column with `name` already exists for the related
-            :class:`ixmp4.data.abstract.optimization.Table`.
-
-        Returns
-        -------
-        :class:`ixmp4.data.abstract.optimization.Column`:
-            The created Column.
-        """
-        ...
+from .column import Column
 
 
 class Table(base.BaseModel, Protocol):
@@ -87,6 +18,9 @@ class Table(base.BaseModel, Protocol):
     """Data stored in the Table."""
     columns: types.Mapped[list[Column]]
     """Data specifying this Table's Columns."""
+
+    run__id: types.Integer
+    "Foreign unique integer id of a run."
 
     created_at: types.DateTime
     "Creation date/time. TODO"
@@ -109,16 +43,15 @@ class TableRepository(
         self,
         run_id: int,
         name: str,
-        data: dict[str, Any],
-        indexsets: list[str | None] | None = None,
+        constrained_to_indexsets: list[str],
+        column_names: list[str] | None = None,
     ) -> Table:
         """Creates a Table.
 
-        If `data.keys()` correspond to :class:ixmp4.data.abstract.optimization.IndexSet
-        names, these names will be used to link these IndexSets to the Columns.
-        Otherwise, `indexsets` is checked analogously, so the order of entries of
-        `indexsets` is important. If neither condition is met, the Table might contain
-        values that the remaining code does not know how to handle.
+        Each column of the Table needs to be constrained to an existing
+        :class:ixmp4.data.abstract.optimization.IndexSet. These are specified by name
+        and per default, these will be the column names. They can be overwritten by
+        specifying `column_names`, which needs to specify a unique name for each column.
 
         Parameters
         ----------
@@ -127,16 +60,19 @@ class TableRepository(
             defined.
         name : str
             The unique name of the Table.
-        data : dict[str, Any]
-            The data stored in the Table.
-        indexsets : list[str | None] | None
-            Optional list of IndexSet names that define the allowed contents of
-            `data.values()`.
+        constrained_to_indexsets : list[str]
+            List of :class:`ixmp4.data.abstract.optimization.IndexSet` names that define
+            the allowed contents of the Table's columns.
+        column_names: list[str] | None = None
+            Optional list of names to use as column names. If given, overwrites the
+            names inferred from `constrained_to_indexsets`.
 
         Raises
         ------
         :class:`ixmp4.data.abstract.optimization.Table.NotUnique`:
             If the Table with `name` already exists for the Run with `run_id`.
+        ValueError
+            If `column_names` are not unique or not enough names are given.
 
         Returns
         -------
@@ -231,30 +167,70 @@ class TableRepository(
         """
         ...
 
+    # TODO Why does this take **kwargs?
+    # TODO We might only need this in the DB layer, so might not want to expose this
+    # docstring
     def add_column(
-        self, name: str, dtype: str, indexset: str, data: dict[str, Any] | None = None
-    ) -> Table:
-        """Adds a Column to a Table.
+        self, run_id: int, table_id: int, column_name: str, indexset_name: str, **kwargs
+    ) -> None:
+        r"""Adds a Column to a Table.
 
         Parameters
         ----------
-        name : str
-            The name of the Table to which the Column shall be added.
-        dtype : str
-            The data type of the Column.
-        indexset : str
-            The name of the IndexSet the Column will be linked to.
-        data : dict[str, Any] | None
-            The data the Column will hold.
+        run_id : int
+            The id of the :class:`ixmp4.data.abstract.Run` for which the
+            :class:`ixmp4.data.abstract.optimization.Table` is defined.
+        table_id : int
+            The id of the :class:`ixmp4.data.abstract.optimization.Table`.
+        column_name : str
+            The name of the Column, which must be unique in connection with the names of
+            :class:`ixmp4.data.abstract.Run` and
+            :class:`ixmp4.data.abstract.optimization.Table`.
+        indexset_name : str
+            The name of the :class:`ixmp4.data.abstract.optimization.IndexSet` the
+            Column will be linked to.
+        \*\*kwargs: any
 
         Raises
         ------
         :class:`ixmp4.data.abstract.optimization.Table.NotFound`.
-            If the Table with `id` does not exist.
+            If the Table with `table_id` does not exist.
 
         Returns
         -------
-        :class:`ixmp4.data.abstract.optimization.Table`:
-            The Table with the added Column.
+        None
+        """
+        ...
+
+    # Once present, state how to check which IndexSets are linked and which values they
+    # permit
+    def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+        r"""Adds data to a Table.
+
+        The data will be validated with the linked constrained
+        :class:`ixmp4.data.abstract.optimization.IndexSet`s. For that, `data.keys()`
+        must correspond to the names of the Table's columns. Each column can only
+        contain values that are in the linked `IndexSet.elements`. Each row of entries
+        must be unique. No values can be missing, None, or NaN. If `data.keys()`
+        contains names already present in Table.data, existing values will be
+        overwritten.
+
+        Parameters
+        ----------
+        table_id : int
+            The id of the :class:`ixmp4.data.abstract.optimization.Table`.
+        data : dict[str, Any] | pandas.DataFrame
+            The data to be added.
+
+        Raises
+        ------
+        ValueError:
+            - If values are missing, None, or NaN
+            - If values are not allowed based on constraints to `Indexset`s
+            - If rows are not unique
+
+        Returns
+        -------
+        None
         """
         ...

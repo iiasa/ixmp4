@@ -1,3 +1,4 @@
+from .column import Column, ColumnRepository
 from .indexset import IndexSet, IndexSetRepository
 from .scalar import Scalar, ScalarRepository
-from .table import Column, ColumnRepository, Table, TableRepository
+from .table import Table, TableRepository

@@ -6,7 +6,7 @@ from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 
-from .. import Column, ColumnRepository, base
+from .. import ColumnRepository, base
 from .docs import TableDocsRepository
 from .model import Table
 
@@ -35,12 +35,11 @@ class TableRepository(
         column_name: str,
         indexset_name: str,
         **kwargs,
-    ) -> Column:
+    ) -> None:
         indexset = self.backend.optimization.indexsets.get(
             run_id=run_id, name=indexset_name
         )
-
-        return self.columns.create(
+        self.columns.create(
             table_id=table_id,
             name=column_name,
             dtype=pd.Series(indexset.elements).dtype.name,
@@ -82,28 +81,31 @@ class TableRepository(
         run_id: int,
         name: str,
         constrained_to_indexsets: list[str],  # TODO: try passing a str to this
-        dimension_names: list[str] | None = None,  # TODO: ensure the right number
+        column_names: list[str] | None = None,
         **kwargs,
     ) -> Table:
-        if dimension_names and len(dimension_names) != len(constrained_to_indexsets):
+        if column_names and len(column_names) != len(constrained_to_indexsets):
             raise ValueError(
-                "`constrained_to_indexsets` and `dimension_names` not equal in length! "
+                "`constrained_to_indexsets` and `column_names` not equal in length! "
                 "Please provide the same number of entries for both!"
             )
         # TODO: activate something like this if each column must be indexed by a unique
         # indexset
         # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
         #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
+        if column_names and len(column_names) != len(set(column_names)):
+            raise ValueError("The given `column_names` are not unique!")
+
         table = super().create(
             run_id=run_id,
             name=name,
             **kwargs,
         )
         for i, name in enumerate(constrained_to_indexsets):
-            _ = self.add_column(
+            self.add_column(
                 run_id=run_id,
                 table_id=table.id,
-                column_name=dimension_names[i] if dimension_names else name,
+                column_name=column_names[i] if column_names else name,
                 indexset_name=name,
             )
 
@@ -118,9 +120,15 @@ class TableRepository(
         return super().tabulate(*args, **kwargs)
 
     @guard("edit")
-    def add_data(self, table_id: int, data: pd.DataFrame | dict[str, Any]):
-        exc = db.update(Table).where(Table.id == table_id).values(data=data)
+    def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+        if isinstance(data, pd.DataFrame):
+            # data will always contains str, not only Hashable
+            data: dict[str, Any] = data.to_dict(orient="list")  # type: ignore
+        table = self.get_by_id(id=table_id)
 
-        self.session.execute(exc)
+        # This union operator overwrites existing keys if they have the same name
+        # as new ones
+        table.data = table.data | data
+
+        self.session.add(table)
         self.session.commit()
-        return self.get_by_id(table_id)

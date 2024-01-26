@@ -16,6 +16,7 @@ class Column(base.BaseModel):
     DeletionPrevented: ClassVar = abstract.Column.DeletionPrevented
 
     name: types.String = db.Column(db.String(255), nullable=False, unique=False)
+    # Currently not in use:
     dtype: types.String = db.Column(
         db.String(255), nullable=False, unique=False
     )  # pandas dtype
@@ -28,6 +29,7 @@ class Column(base.BaseModel):
         db.Integer, db.ForeignKey("optimization_indexset.id"), index=True
     )
 
+    # Currently not in use:
     unique: types.Boolean = db.Column(db.Boolean, default=True)
 
     __table_args__ = (
