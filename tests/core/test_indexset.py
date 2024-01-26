@@ -17,7 +17,7 @@ def df_from_list(indexsets: list):
                 indexset.elements,
                 indexset.created_at,
                 indexset.created_by,
-                indexset.run.id,
+                indexset.run_id,
                 indexset.id,
             ]
             for indexset in indexsets
