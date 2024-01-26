@@ -191,22 +191,6 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
         assert table_5.data == test_data_2
 
-    # TODO Allow appending to existing data if it exists!
-
-    # TODO: catch errors:
-    # when there are not exactly the same number of data.keys() and constraints?
-    # data.keys() <= constraints: fine; otherwise: duplicate keys in dict or
-    # keys/values not allowed
-    # when the same indexset is used twice?
-    # I think that should be allowed, e.g. year_act and year_vintage
-    # when the same column name is used twice?
-    # In create(), duplicate column_names will raise; in add_data, the second
-    # data.keys replaces the first (but e.g. ruff catches this before it happens)
-    # assert that column data can consist of different types
-    # what happens when a column is missing?
-    # Nothing, can be added later (but there should be some check that all columns are
-    # present before the table is used elsewhere)
-
     # def test_get_scalar(self, test_mp):
     #     run = test_mp.backend.runs.create("Model", "Scenario")
     #     unit = test_mp.backend.units.create("Unit")
