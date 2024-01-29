@@ -9,7 +9,8 @@ EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
 
 
 @all_platforms
-def test_run_meta(test_mp):
+def test_run_meta(test_mp, request):
+    test_mp = request.getfixturevalue(test_mp)
     run1 = test_mp.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
 
@@ -110,8 +111,9 @@ def test_run_meta(test_mp):
         (np.float64(1.9), 1.9, np.float64(13.9), 13.9),
     ],
 )
-def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
+def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2, request):
     """Test that numpy types are cast to simple types"""
+    test_mp = request.getfixturevalue(test_mp)
     run1 = test_mp.runs.create("Model", "Scenario")
     run1.set_as_default()
 
@@ -134,8 +136,9 @@ def test_run_meta_numpy(test_mp, npvalue1, pyvalue1, npvalue2, pyvalue2):
 
 @all_platforms
 @pytest.mark.parametrize("nonevalue", (None, np.nan))
-def test_run_meta_none(test_mp, nonevalue):
+def test_run_meta_none(test_mp, nonevalue, request):
     """Test that None-values are handled correctly"""
+    test_mp = request.getfixturevalue(test_mp)
     run1 = test_mp.runs.create("Model", "Scenario")
     run1.set_as_default()
 
@@ -156,7 +159,8 @@ def test_run_meta_none(test_mp, nonevalue):
 
 
 @all_platforms
-def test_platform_meta_empty(test_mp):
+def test_platform_meta_empty(test_mp, request):
     """Test that an empty dataframe is returned if there are no scenarios"""
+    test_mp = request.getfixturevalue(test_mp)
     exp = pd.DataFrame([], columns=["model", "scenario", "version", "key", "value"])
     pdt.assert_frame_equal(test_mp.meta.tabulate(), exp)

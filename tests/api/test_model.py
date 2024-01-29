@@ -5,7 +5,8 @@ from ..utils import (
 
 
 @api_platforms
-def test_index_model(test_mp):
+def test_index_model(test_mp, request):
+    test_mp = request.getfixturevalue(test_mp)
     table_endpoint = "iamc/models/?table=True"
     _, _ = create_iamc_query_test_data(test_mp)
 

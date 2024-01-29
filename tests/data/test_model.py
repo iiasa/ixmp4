@@ -8,28 +8,33 @@ from ..utils import all_platforms, assert_unordered_equality, create_filter_test
 
 @all_platforms
 class TestDataModel:
-    def test_create_model(self, test_mp):
+    def test_create_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         model = test_mp.backend.models.create("Model")
         assert model.name == "Model"
         assert model.created_at is not None
         assert model.created_by == "@unknown"
 
-    def test_model_unique(self, test_mp):
+    def test_model_unique(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.models.create("Model")
 
         with pytest.raises(Model.NotUnique):
             test_mp.models.create("Model")
 
-    def test_get_model(self, test_mp):
+    def test_get_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         model1 = test_mp.backend.models.create("Model")
         model2 = test_mp.backend.models.get("Model")
         assert model1 == model2
 
-    def test_model_not_found(self, test_mp):
+    def test_model_not_found(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(Model.NotFound):
             test_mp.models.get("Model")
 
-    def test_list_model(self, test_mp):
+    def test_list_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.runs.create("Model 1", "Scenario")
         test_mp.runs.create("Model 2", "Scenario")
 
@@ -39,7 +44,8 @@ class TestDataModel:
         assert models[1].id == 2
         assert models[1].name == "Model 2"
 
-    def test_tabulate_model(self, test_mp):
+    def test_tabulate_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.runs.create("Model 1", "Scenario")
         test_mp.runs.create("Model 2", "Scenario")
 
@@ -56,12 +62,14 @@ class TestDataModel:
             models.drop(columns=["created_at", "created_by"]), true_models
         )
 
-    def test_map_model(self, test_mp):
+    def test_map_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.runs.create("Model 1", "Scenario")
         test_mp.runs.create("Model 2", "Scenario")
         assert test_mp.backend.models.map() == {1: "Model 1", 2: "Model 2"}
 
-    def test_filter_model(self, test_mp):
+    def test_filter_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1, _ = create_filter_test_data(test_mp)
 
         res = test_mp.backend.models.tabulate(name__like="Model *")

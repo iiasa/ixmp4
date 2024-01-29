@@ -27,10 +27,10 @@ def assert_unordered_equality(df1, df2, **kwargs):
 all_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        lazy_fixture("test_sqlite_mp"),
-        lazy_fixture("test_pgsql_mp"),
-        lazy_fixture("test_api_sqlite_mp"),
-        lazy_fixture("test_api_pgsql_mp"),
+        "test_sqlite_mp",
+        "test_pgsql_mp",
+        "test_api_sqlite_mp",
+        "test_api_pgsql_mp",
     ],
 )
 
@@ -55,16 +55,16 @@ generated_api_platforms = pytest.mark.parametrize(
 api_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        lazy_fixture("test_api_sqlite_mp"),
-        lazy_fixture("test_api_pgsql_mp"),
+        "test_api_sqlite_mp",
+        "test_api_pgsql_mp",
     ],
 )
 
 database_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        lazy_fixture("test_sqlite_mp"),
-        lazy_fixture("test_pgsql_mp"),
+        "test_sqlite_mp",
+        "test_pgsql_mp",
     ],
 )
 

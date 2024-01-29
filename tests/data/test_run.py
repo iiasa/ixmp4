@@ -8,14 +8,16 @@ from ..utils import all_platforms, assert_unordered_equality
 
 @all_platforms
 class TestDataRun:
-    def test_create_run(self, test_mp):
+    def test_create_run(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1 = test_mp.backend.runs.create("Model", "Scenario")
         assert run1.model.name == "Model"
         assert run1.scenario.name == "Scenario"
         assert run1.version == 1
         assert not run1.is_default
 
-    def test_create_run_increment_version(self, test_mp):
+    def test_create_run_increment_version(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.runs.create("Model", "Scenario")
         run2 = test_mp.backend.runs.create("Model", "Scenario")
         assert run2.model.name == "Model"
@@ -23,7 +25,8 @@ class TestDataRun:
         assert run2.version == 2
         assert not run2.is_default
 
-    def test_get_run_versions(self, test_mp):
+    def test_get_run_versions(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1a = test_mp.backend.runs.create("Model", "Scenario")
         run2a = test_mp.backend.runs.create("Model", "Scenario")
         test_mp.backend.runs.set_as_default_version(run2a.id)
@@ -40,11 +43,13 @@ class TestDataRun:
         run3b = test_mp.backend.runs.get("Model", "Scenario", 3)
         assert run3a.id == run3b.id
 
-    def test_get_run_no_default_version(self, test_mp):
+    def test_get_run_no_default_version(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(NoDefaultRunVersion):
             test_mp.backend.runs.get_default_version("Model", "Scenario")
 
-    def test_get_or_create_run(self, test_mp):
+    def test_get_or_create_run(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1 = test_mp.backend.runs.create("Model", "Scenario")
         run2 = test_mp.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id != run2.id
@@ -55,7 +60,8 @@ class TestDataRun:
         run3 = test_mp.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id == run3.id
 
-    def test_list_run(self, test_mp):
+    def test_list_run(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1 = test_mp.backend.runs.create("Model", "Scenario")
         test_mp.backend.runs.create("Model", "Scenario")
 
@@ -72,7 +78,8 @@ class TestDataRun:
 
         assert run1.id == run.id
 
-    def test_tabulate_run(self, test_mp):
+    def test_tabulate_run(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         test_mp.backend.runs.set_as_default_version(run.id)
         test_mp.backend.runs.create("Model", "Scenario")
