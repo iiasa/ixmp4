@@ -1,4 +1,4 @@
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -44,7 +44,7 @@ class MeasurandRepository(
 
     def list(
         self,
-    ) -> Iterable[Measurand]:
+    ) -> list[Measurand]:
         ...
 
     def tabulate(

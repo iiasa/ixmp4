@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import pandas as pd
 
 from ixmp4 import db
@@ -45,7 +43,7 @@ class VariableRepository(
         return super().create(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Variable]:
+    def list(self, *args, **kwargs) -> list[Variable]:
         return super().list(*args, **kwargs)
 
     @guard("view")

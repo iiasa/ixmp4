@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import pandas as pd
 from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
@@ -135,7 +133,7 @@ class RunRepository(
         return super().tabulate(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Run]:
+    def list(self, *args, **kwargs) -> list[Run]:
         return super().list(*args, **kwargs)
 
     @guard("edit")

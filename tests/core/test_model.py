@@ -65,7 +65,6 @@ class TestCoreModel:
         assert docs_model1 == docs_model2
 
         model2 = test_mp.models.create("Model2")
-
         assert model2.docs is None
 
         model2.docs = "Description of test Model2"

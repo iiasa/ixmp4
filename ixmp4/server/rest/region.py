@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
-from pydantic import RootModel
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.region.filter import RegionFilter
 
 from . import deps
-from .base import BaseModel
+from .base import BaseModel, EnumerationOutput, Pagination
 from .decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -20,28 +19,24 @@ class RegionInput(BaseModel):
     hierarchy: str
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.Region] | api.DataFrame
-
-
 @autodoc
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: RegionFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.regions.enumerate(_filter=filter, table=bool(table))
-
-
-@autodoc
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.Region])
 def query(
     filter: RegionFilter = Body(None),
     table: bool = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.regions.enumerate(_filter=filter, table=bool(table))
+    return EnumerationOutput(
+        results=backend.regions.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.regions.count(_filter=filter),
+        pagination=pagination,
+    )
 
 
 @autodoc

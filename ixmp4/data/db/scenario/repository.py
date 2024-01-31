@@ -1,5 +1,3 @@
-from typing import Iterable
-
 import pandas as pd
 
 from ixmp4 import db
@@ -56,7 +54,7 @@ class ScenarioRepository(
         return super().create(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Scenario]:
+    def list(self, *args, **kwargs) -> list[Scenario]:
         return super().list(*args, **kwargs)
 
     @guard("view")

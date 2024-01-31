@@ -1,4 +1,4 @@
-from typing import Iterable, Union
+from typing import Union
 
 import pandas as pd
 import pandera as pa
@@ -137,7 +137,7 @@ class RunMetaEntryRepository(
         return super().join_auth(exc)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[RunMetaEntry]:
+    def list(self, *args, **kwargs) -> list[RunMetaEntry]:
         return super().list(*args, **kwargs)
 
     @guard("view")

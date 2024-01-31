@@ -22,7 +22,7 @@ class TomlConfig(Config):
         self.user = user
         self.load()
 
-    def load(self):
+    def load(self) -> None:
         dict_ = toml.load(self.path)
         list_: list[dict[str, Any]] = [{"name": k, **v} for k, v in dict_.items()]
         self.platforms = {x["name"]: TomlPlatformInfo(**x) for x in list_}

@@ -2,7 +2,8 @@ from typing import ClassVar
 
 from ixmp4.db import filters, utils
 
-from .. import Run, TimeSeries
+from .. import Run
+from ..iamc import TimeSeries
 from .model import ModelFilter
 from .scenario import ScenarioFilter
 

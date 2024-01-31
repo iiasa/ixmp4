@@ -1,4 +1,4 @@
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -71,7 +71,7 @@ class VariableRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Variable]:
+    def list(self, *, name: str | None = None, **kwargs) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
         Parameters

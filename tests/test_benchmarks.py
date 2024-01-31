@@ -2,7 +2,7 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import NotFound
+from ixmp4 import NotFound, Run
 
 from .conftest import TEST_DATA_BIG
 from .utils import add_regions, add_units, all_platforms
@@ -43,8 +43,8 @@ def tabulate_datapoints(test_mp, **kwargs):
 
     dfs = []
     for run_model in runs:
-        run = test_mp.runs.get(_model=run_model)
-        df = run.iamc.tabulate(**kwargs)
+        run = Run(_backend=test_mp.backend, _model=run_model)
+        df = run.iamc.tabulate(**kwargs, raw=True)
         df["model"] = run.model.name
         df["scenario"] = run.scenario.name
         dfs.append(df)

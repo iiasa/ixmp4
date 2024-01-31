@@ -1,4 +1,4 @@
-from typing import Any, Iterable
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -162,18 +162,20 @@ class DataPointRepository(
         join_parameters: bool | None = False,
         join_runs: bool = False,
         _filter: DataPointFilter | None = None,
+        _exc: db.sql.Select | None = None,
         **kwargs: Any
     ) -> db.sql.Select:
-        exc = (
-            self.select_joined_parameters(join_runs)
-            if join_parameters
-            else select(self.bundle)
-        )
+        if _exc is not None:
+            exc = _exc
+        elif join_parameters:
+            exc = self.select_joined_parameters(join_runs)
+        else:
+            exc = db.select(self.bundle)
 
         return super().select(_exc=exc, _filter=_filter, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[DataPoint]:
+    def list(self, *args, **kwargs) -> list[DataPoint]:
         return super().list(*args, **kwargs)
 
     @guard("view")
@@ -192,7 +194,11 @@ class DataPointRepository(
     def check_df_access(self, df: pd.DataFrame):
         if self.backend.auth_context is not None:
             ts_ids = set(df["time_series__id"].unique().tolist())
-            self.timeseries.check_access(ts_ids, access_type="edit")
+            self.timeseries.check_access(
+                ts_ids,
+                access_type="edit",
+                run={"default_only": False, "is_default": None},
+            )
 
     @check_types
     @guard("edit")

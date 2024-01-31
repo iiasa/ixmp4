@@ -30,7 +30,7 @@ from ixmp4.conf.auth import BaseAuth
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.data.backend import Backend, RestBackend, SqlAlchemyBackend
 
-from .iamc import IamcRepository
+from .iamc import PlatformIamcData
 from .meta import MetaRepository
 from .model import ModelRepository
 from .region import RegionRepository
@@ -44,7 +44,7 @@ class Platform(object):
     Enables the manipulation of data via the `Run` class and `Repository` instances."""
 
     runs: RunRepository
-    iamc: IamcRepository
+    iamc: PlatformIamcData
     models: ModelRepository
     regions: RegionRepository
     scenarios: ScenarioRepository
@@ -81,7 +81,7 @@ class Platform(object):
             raise TypeError("__init__() is missing required argument 'name'")
 
         self.runs = RunRepository(_backend=self.backend)
-        self.iamc = IamcRepository(_backend=self.backend)
+        self.iamc = PlatformIamcData(_backend=self.backend)
         self.models = ModelRepository(_backend=self.backend)
         self.regions = RegionRepository(_backend=self.backend)
         self.scenarios = ScenarioRepository(_backend=self.backend)

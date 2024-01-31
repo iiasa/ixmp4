@@ -21,7 +21,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     def join(self, exc, session):
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
-            exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
+            exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
         if not utils.is_joined(exc, Region):
             exc = exc.join(Region, TimeSeries.region)
         return exc
@@ -35,7 +35,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     def join(self, exc, session):
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
-            exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
+            exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
         if not utils.is_joined(exc, Measurand):
             exc = exc.join(Measurand, TimeSeries.measurand)
         if not utils.is_joined(exc, Unit):
@@ -52,7 +52,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     def join(self, exc, session):
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
-            exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
+            exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
         if not utils.is_joined(exc, Measurand):
             exc = exc.join(Measurand, TimeSeries.measurand)
         if not utils.is_joined(exc, Variable):
@@ -94,7 +94,7 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     id: filters.Id
-    default_only: filters.Boolean = filters.Field(False)
+    default_only: filters.Boolean = filters.Field(True)
 
     sqla_model: ClassVar[type] = Run
 
@@ -168,4 +168,4 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     variable: VariableFilter
     model: ModelFilter
     scenario: ScenarioFilter
-    run: RunFilter
+    run: RunFilter = filters.Field(RunFilter())
