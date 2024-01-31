@@ -4,6 +4,7 @@ import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field
 
+from ixmp4.conf import settings
 from ixmp4.data import api
 
 
@@ -15,7 +16,11 @@ EnumeratedT = TypeVar("EnumeratedT")
 
 
 class Pagination(BaseModel):
-    limit: int = Field(default=1000, ge=0, le=2000)
+    limit: int = Field(
+        default=settings.default_page_size,
+        ge=0,
+        le=settings.max_page_size,
+    )
     offset: int = Field(default=0, ge=0)
 
 

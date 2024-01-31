@@ -32,6 +32,8 @@ class Settings(BaseSettings):
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
     manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
     managed: bool = True
+    max_page_size: int = 10000
+    default_page_size: int = 1000
 
     model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
