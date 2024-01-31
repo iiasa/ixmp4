@@ -181,8 +181,15 @@ class FilterMeta(PydanticMeta):
             return
 
         namespace.setdefault(field_name, field)
+        override_lookups: list | None = None
         if isinstance(field.json_schema_extra, dict):
-            override_lookups = field.json_schema_extra.get("lookups", None)
+            jschema_lookups = field.json_schema_extra.get("lookups", None)
+            if isinstance(jschema_lookups, list):
+                override_lookups = jschema_lookups
+            else:
+                raise ProgrammingError(
+                    "Field argument `lookups` must be `list` of `str`."
+                )
         else:
             override_lookups = None
         if override_lookups:
@@ -275,8 +282,14 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
                 if filter_func is None:
                     raise ProgrammingError
 
+                sqla_column: str | None = None
                 if isinstance(field_info.json_schema_extra, dict):
-                    sqla_column = field_info.json_schema_extra.get("sqla_column")
+                    jschema_col = field_info.json_schema_extra.get("sqla_column")
+                    if not isinstance(jschema_col, str):
+                        raise ProgrammingError(
+                            "Field argument `sqla_column` must be of type `str`."
+                        )
+                    sqla_column = jschema_col
                 else:
                     sqla_column = None
                 if sqla_column is None:

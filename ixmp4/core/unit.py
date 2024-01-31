@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Iterable
 
 import pandas as pd
 
@@ -96,7 +95,7 @@ class UnitRepository(BaseFacade):
         model = self.backend.units.get(to_dimensionless(name))
         return Unit(_backend=self.backend, _model=model)
 
-    def list(self, name: str | None = None) -> Iterable[Unit]:
+    def list(self, name: str | None = None) -> list[Unit]:
         units = self.backend.units.list(name=name)
         return [Unit(_backend=self.backend, _model=u) for u in units]
 

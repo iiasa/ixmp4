@@ -1,4 +1,4 @@
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -77,7 +77,7 @@ class ModelRepository(
         self,
         *,
         name: str | None = None,
-    ) -> Iterable[Model]:
+    ) -> list[Model]:
         """Lists models by specified criteria.
 
         Parameters

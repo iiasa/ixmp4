@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 
@@ -30,7 +30,6 @@ class RunMetaEntryRepository(
 ):
     model_class = RunMetaEntry
     prefix = "meta/"
-    enumeration_method = "PATCH"
 
     def create(
         self,
@@ -46,14 +45,14 @@ class RunMetaEntryRepository(
     def delete(self, id: int) -> None:
         super().delete(id)
 
-    def list(self, *args, **kwargs) -> Iterable[RunMetaEntry]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[RunMetaEntry] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, join_run_index: bool | None = None, **kwargs) -> list[RunMetaEntry]:
+        return super()._list(json=kwargs, params={"join_run_index": join_run_index})
 
-    def enumerate(self, *args, **kwargs) -> Iterable[RunMetaEntry] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, join_run_index: bool | None = None, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs, params={"join_run_index": join_run_index})
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         super().bulk_upsert(df)

@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
-from pydantic import RootModel
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.unit.filter import UnitFilter
 
 from . import deps
-from .base import BaseModel
+from .base import BaseModel, EnumerationOutput, Pagination
 from .decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -19,36 +18,24 @@ class UnitInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: api.DataFrame | list[api.Unit]
-
-
 @autodoc
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: UnitFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.units.enumerate(_filter=filter, table=bool(table))
-
-
-@router.get("/{id}/", response_model=api.Unit)
-def get_by_id(
-    id: int,
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.units.get_by_id(id)
-
-
-@autodoc
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.Unit])
 def query(
     filter: UnitFilter = Body(None),
     table: bool = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.units.enumerate(_filter=filter, table=bool(table))
+    return EnumerationOutput(
+        results=backend.units.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.units.count(_filter=filter),
+        pagination=pagination,
+    )
 
 
 @router.post("/", response_model=api.Unit)

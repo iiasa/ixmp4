@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable, Protocol
+from typing import ClassVar, Protocol
 
 import pandas as pd
 
@@ -148,7 +148,7 @@ class RunRepository(
         *,
         version: int | None = None,
         **kwargs,
-    ) -> Iterable[Run]:
+    ) -> list[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters

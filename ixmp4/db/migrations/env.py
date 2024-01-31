@@ -10,6 +10,7 @@ from ixmp4.data.db import BaseModel
 # access to the values within the .ini file in use.
 config = context.config
 dsn = config.get_main_option("sqlalchemy.url", settings.migration_db_uri)
+dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
 
 # Interpret the config file for Python logging.
 # This line sets up loggers basically.

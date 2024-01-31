@@ -1,4 +1,4 @@
-from typing import Generic, Iterable, Mapping, Protocol, TypeVar
+from typing import Generic, Mapping, Protocol, TypeVar
 
 import pandas as pd
 
@@ -19,7 +19,7 @@ class TimeSeries(base.BaseModel, Protocol):
         return f"<TimeSeries {self.id} parameters={self.parameters}>"
 
 
-ModelType = TypeVar("ModelType", bound=TimeSeries, covariant=True)
+ModelType = TypeVar("ModelType", bound=TimeSeries)
 
 
 class TimeSeriesRepository(
@@ -115,19 +115,15 @@ class TimeSeriesRepository(
 
     def list(
         self,
-        *,
-        run_ids: Iterable[int] | None = None,
-        parameters: Mapping | None = None,
-        join_parameters: bool | None = False,
-    ) -> Iterable[ModelType]:
-        """Lists time series by specified criteria.
+        **kwargs,
+    ) -> list[ModelType]:
+        r"""Lists time series by specified criteria.
 
         Parameters
         ----------
-        run_id : int
-            Unique run id.
-        parameters : Mapping
-            A set of parameter values for the time series.
+            \*\*kwargs: any
+            Filter parameters as specified in
+            :class:`ixmp4.data.db.iamc.timeseries.filter.TimeSeriesFilter`.
 
         Returns
         -------
@@ -137,23 +133,18 @@ class TimeSeriesRepository(
         ...
 
     def tabulate(
-        self,
-        *,
-        run_ids: Iterable[int] | None = None,
-        parameters: Mapping | None = None,
-        join_parameters: bool | None = False,
+        self, *, join_parameters: bool | None = False, **kwargs
     ) -> pd.DataFrame:
-        """Tabulate time series by specified criteria.
+        r"""Tabulate time series by specified criteria.
 
         Parameters
         ----------
-        run_id : int
-            Unique run id.
-        parameters : Mapping
-            A set of parameter values for the time series.
         join_parameters : bool | None
             If set to `True` the resulting data frame will include
             parameter columns as values instead of foreign key id's.
+         \*\*kwargs: any
+            Filter parameters as specified in
+            :class:`ixmp4.data.db.iamc.timeseries.filter.TimeSeriesFilter`.
 
         Returns
         -------

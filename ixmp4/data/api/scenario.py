@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 from pydantic import Field
@@ -34,7 +34,6 @@ class ScenarioRepository(
 ):
     model_class = Scenario
     prefix = "scenarios/"
-    enumeration_method = "PATCH"
 
     def __init__(self, client, *args, **kwargs) -> None:
         super().__init__(client, *args, **kwargs)
@@ -49,11 +48,11 @@ class ScenarioRepository(
     def get(self, name: str) -> Scenario:
         return super().get(name=name)
 
-    def list(self, *args, **kwargs) -> Iterable[Scenario]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[Scenario] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, **kwargs) -> list[Scenario]:
+        return super()._list(json=kwargs)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[Scenario] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs)

@@ -1,12 +1,12 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import RootModel, StrictInt, StrictStr
+from pydantic import StrictInt, StrictStr
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
-from ixmp4.data.db.filters.optimizationindexset import OptimizationIndexSetFilter
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
+from ixmp4.data.db.optimization.indexset.filter import OptimizationIndexSetFilter
 
 from .. import deps
-from ..base import BaseModel
+from ..base import BaseModel, EnumerationOutput, Pagination
 from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -20,34 +20,29 @@ class IndexSetInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.IndexSet] | api.DataFrame
-
-
 class ElementsInput(BaseModel):
     elements: StrictInt | list[StrictInt | StrictStr] | StrictStr
 
 
 @autodoc
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: OptimizationIndexSetFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.optimization.indexsets.enumerate(_filter=filter, table=bool(table))
-
-
-@autodoc
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.IndexSet])
 def query(
-    filter: OptimizationIndexSetFilter = Body(
-        OptimizationIndexSetFilter(id=None, name=None, run__id=None)
-    ),
+    filter: OptimizationIndexSetFilter = Body(OptimizationIndexSetFilter()),
     table: bool = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.optimization.indexsets.enumerate(_filter=filter, table=bool(table))
+    print(filter)
+    return EnumerationOutput(
+        results=backend.optimization.indexsets.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.optimization.indexsets.count(_filter=filter),
+        pagination=pagination,
+    )
 
 
 @autodoc

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable, List
+from typing import ClassVar, List
 
 import pandas as pd
 from pydantic import StrictInt, StrictStr
@@ -37,7 +37,6 @@ class IndexSetRepository(
 ):
     model_class = IndexSet
     prefix = "optimization/indexsets/"
-    enumeration_method = "PATCH"
 
     def __init__(self, client, *args, **kwargs) -> None:
         super().__init__(client, *args, **kwargs)
@@ -53,14 +52,14 @@ class IndexSetRepository(
     def get(self, run_id: int, name: str) -> IndexSet:
         return super().get(name=name, run_id=run_id)
 
-    def list(self, *args, **kwargs) -> Iterable[IndexSet]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[IndexSet] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, **kwargs) -> list[IndexSet]:
+        return super()._list(json=kwargs)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[IndexSet] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs)
 
     def add_elements(
         self,
