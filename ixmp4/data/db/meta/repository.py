@@ -176,20 +176,20 @@ class RunMetaEntryRepository(
         # # .get_group() can only ever get ONE group (suggested solutions don't work)
         # return df.groupby("type", group_keys=False).apply(map_value_column)
 
-        # New solution, does work, but is apparently quite slow
-        def map_value_column(row: pd.Series) -> bool | float | int | str:
-            if row["value_bool"] is not None:
-                return row["value_bool"]
-            elif row["value_float"] is not None:
-                return row["value_float"]
-            elif row["value_int"] is not None:
-                return row["value_int"]
-            elif row["value_str"] is not None:
-                return row["value_str"]
-            else:
-                raise ValueError("Row is missing values!")
+        # # New solution, does work, but is apparently quite slow
+        # def map_value_column(row: pd.Series) -> bool | float | int | str:
+        #     if row["value_bool"] is not None:
+        #         return row["value_bool"]
+        #     elif row["value_float"] is not None:
+        #         return row["value_float"]
+        #     elif row["value_int"] is not None:
+        #         return row["value_int"]
+        #     elif row["value_str"] is not None:
+        #         return row["value_str"]
+        #     else:
+        #         raise ValueError("Row is missing values!")
 
-        df["value"] = df.apply(map_value_column, axis=1)
+        # df["value"] = df.apply(map_value_column, axis=1)
 
         # # This new solution does not quite work
         # conditions = [
@@ -225,6 +225,14 @@ class RunMetaEntryRepository(
         # columns = [c for c in df.columns if c.startswith("value_")]
         # res = np.empty(len(df), dtype=np.object_)
         # df["value"] = map_value_column(df[columns].values, res)
+
+        def map_value_column(df: pd.DataFrame):
+            df.loc[df["value_bool"] is not None, "value"] = df["value_bool"]
+            df.loc[df["value_float"] is not None, "value"] = df["value_float"]
+            df.loc[df["value_int"] is not None, "value"] = df["value_int"]
+            df.loc[df["value_str"] is not None, "value"] = df["value_str"]
+
+        map_value_column(df)
 
         return df.drop(columns=RunMetaEntry._column_map.values())
 
