@@ -34,7 +34,7 @@ class Settings(BaseSettings):
     managed: bool = True
     max_page_size: int = 10_000
     default_page_size: int = 5_000
-
+    default_upload_chunk_size: int = 10_000
     model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
     def __init__(self, *args, **kwargs) -> None:
