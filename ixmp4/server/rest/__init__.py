@@ -16,9 +16,14 @@ from .iamc import region as iamc_region
 from .iamc import scenario as iamc_scenario
 from .iamc import unit as iamc_unit
 from .iamc import variable as iamc_variable
+from .middleware import RequestSizeLoggerMiddleware, RequestTimeLoggerMiddleware
 from .optimization import indexset, scalar
 
 v1 = FastAPI()
+
+if settings.mode == "debug":
+    v1.add_middleware(RequestSizeLoggerMiddleware)
+    v1.add_middleware(RequestTimeLoggerMiddleware)
 
 v1.add_middleware(
     CORSMiddleware,
@@ -27,7 +32,6 @@ v1.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
-
 
 v1.include_router(datapoint.router, prefix="/iamc")
 v1.include_router(docs.router)

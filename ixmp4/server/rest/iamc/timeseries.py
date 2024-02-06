@@ -30,7 +30,6 @@ def query(
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    print(filter)
     return EnumerationOutput(
         results=backend.iamc.timeseries.paginate(
             _filter=filter,

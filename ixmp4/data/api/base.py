@@ -8,6 +8,7 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
+from ixmp4.conf import settings
 from ixmp4.core.exceptions import (
     ImproperlyConfigured,
     IxmpError,
@@ -128,6 +129,12 @@ class BaseRepository(Generic[ModelType]):
         res = self.client.request(method, path, params=params, json=json, **kwargs)
 
         if res.status_code >= 400:
+            if res.status_code == 413:
+                raise ImproperlyConfigured(
+                    "Received status code 413 (Payload Too Large). "
+                    "Consider decreasing `IXMP4_DEFAULT_UPLOAD_CHUNK_SIZE` "
+                    f"(current: {settings.default_upload_chunk_size})."
+                )
             raise self.get_remote_exception(res, res.status_code)
         else:
             try:
@@ -278,8 +285,23 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
             return self.list(*args, **kwargs)
 
 
-class BulkUpserter(BaseRepository[ModelType]):
-    def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
+class BulkOperator(BaseRepository[ModelType]):
+    def yield_chunks(self, df: pd.DataFrame, chunk_size: int):
+        for _, chunk in df.groupby(df.index // chunk_size):
+            yield chunk
+
+
+class BulkUpserter(BulkOperator[ModelType]):
+    def bulk_upsert(
+        self,
+        df: pd.DataFrame,
+        chunk_size: int = settings.default_upload_chunk_size,
+        **kwargs,
+    ):
+        for chunk in self.yield_chunks(df, chunk_size):
+            self.bulk_upsert_chunk(chunk, **kwargs)
+
+    def bulk_upsert_chunk(self, df: pd.DataFrame, **kwargs) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
         self._request(
@@ -290,8 +312,17 @@ class BulkUpserter(BaseRepository[ModelType]):
         )
 
 
-class BulkDeleter(BaseRepository[ModelType]):
-    def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
+class BulkDeleter(BulkOperator[ModelType]):
+    def bulk_delete(
+        self,
+        df: pd.DataFrame,
+        chunk_size: int = settings.default_upload_chunk_size,
+        **kwargs,
+    ):
+        for chunk in self.yield_chunks(df, chunk_size):
+            self.bulk_delete_chunk(chunk, **kwargs)
+
+    def bulk_delete_chunk(self, df: pd.DataFrame, **kwargs) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
         self._request(
