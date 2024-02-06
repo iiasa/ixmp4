@@ -120,7 +120,6 @@ line-length = 88
 max-complexity = 10
 
 [tool.poetry-dynamic-versioning]
-bump = true
 enable = true
 style = "pep440"
 vcs = "git"
