@@ -258,7 +258,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
-            self._dumped_model = self.model_dump(mode="json")
+            self._dumped_model = dict(self)
         except ValidationError as e:
             raise BadFilterArguments(model=e.title, errors=e.errors())
 
