@@ -1,5 +1,5 @@
 from types import UnionType
-from typing import Any, ClassVar, Iterable, Optional, Union, get_args, get_origin
+from typing import Any, ClassVar, Optional, Union, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.fields import FieldInfo
@@ -83,11 +83,11 @@ filter_func_prefix = "filter_"
 lookup_map: dict[object, dict] = {
     Id: {
         "__root__": (int, exact),
-        "in": (Iterable[int], in_),
+        "in": (list[int], in_),
     },
     Float: {
         "__root__": (int, exact),
-        "in": (Iterable[int], in_),
+        "in": (list[int], in_),
         "gt": (int, gt),
         "lt": (int, lt),
         "gte": (int, gte),
@@ -95,7 +95,7 @@ lookup_map: dict[object, dict] = {
     },
     Integer: {
         "__root__": (int, exact),
-        "in": (Iterable[int], in_),
+        "in": (list[int], in_),
         "gt": (int, gt),
         "lt": (int, lt),
         "gte": (int, gte),
@@ -106,7 +106,7 @@ lookup_map: dict[object, dict] = {
     },
     String: {
         "__root__": (str, exact),
-        "in": (Iterable[str], in_),
+        "in": (list[str], in_),
         "like": (str, like),
         "ilike": (str, ilike),
         "notlike": (str, notlike),
@@ -258,7 +258,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
-            self._dumped_model = dict(self)
+
         except ValidationError as e:
             raise BadFilterArguments(model=e.title, errors=e.errors())
 
@@ -266,8 +266,9 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         return exc
 
     def apply(self, exc: db.sql.Select, model, session) -> db.sql.Select:
+        dict_model = dict(self)
         for name, field_info in self.model_fields.items():
-            value = self._dumped_model.get(name, field_info.get_default())
+            value = dict_model.get(name, field_info.get_default())
             if isinstance(value, BaseFilter):
                 submodel = getattr(value, "sqla_model", None)
                 model_getter = getattr(value, "get_sqla_model", None)
