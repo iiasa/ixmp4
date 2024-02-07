@@ -8,7 +8,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "ixmp4"
-copyright = "2023 IIASA - Energy, Climate, and Environment Program (ECE)"
+copyright = "2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)"
 author = "Scenario Services team"
 
 
