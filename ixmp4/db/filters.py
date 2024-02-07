@@ -258,6 +258,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
+            self._dumped_model = self.model_dump(mode="json")
         except ValidationError as e:
             raise BadFilterArguments(model=e.title, errors=e.errors())
 
@@ -266,8 +267,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
 
     def apply(self, exc: db.sql.Select, model, session) -> db.sql.Select:
         for name, field_info in self.model_fields.items():
-            value = getattr(self, name, field_info.get_default())
-
+            value = self._dumped_model.get(name, field_info.get_default())
             if isinstance(value, BaseFilter):
                 submodel = getattr(value, "sqla_model", None)
                 model_getter = getattr(value, "get_sqla_model", None)
