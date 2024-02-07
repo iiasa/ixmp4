@@ -1,7 +1,7 @@
 The ixmp4 package for scenario data management
 ==============================================
 
-Copyright © 2023 IIASA - Energy, Climate, and Environment Program (ECE)
+Copyright © 2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)
 
 |license| |black| |python|
 
