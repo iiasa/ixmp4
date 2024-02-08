@@ -1,6 +1,6 @@
 import logging
 import sqlite3
-from datetime import datetime
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -116,7 +116,10 @@ class Retriever(BaseRepository[ModelType], abstract.Retriever):
 
 class Creator(BaseRepository[ModelType], abstract.Creator):
     def get_creation_info(self) -> dict:
-        info = {"created_at": datetime.utcnow(), "created_by": "@unknown"}
+        info = {
+            "created_at": datetime.now(tz=timezone.utc),
+            "created_by": "@unknown",
+        }
         if self.backend.auth_context is not None:
             info["created_by"] = self.backend.auth_context.user.username
         return info
