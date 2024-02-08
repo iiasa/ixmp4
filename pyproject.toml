@@ -99,9 +99,6 @@ module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
 ignore_missing_imports = true
 
 [tool.ruff]
-select = ["C9", "E", "F", "I", "W"]
-ignore = ["B008"]
-per-file-ignores = { "__init__.py" = ["F401"] }
 exclude = [
     ".git",
     "__pycache__",
@@ -114,7 +111,14 @@ exclude = [
 ]
 line-length = 88
 
-[tool.ruff.mccabe]
+[tool.ruff.lint]
+select = ["C9", "E", "F", "I", "W"]
+ignore = ["B008"]
+
+[tool.ruff.lint.per-file-ignores]
+"__init__.py" = ["F401"]
+
+[tool.ruff.lint.mccabe]
 max-complexity = 10
 
 [tool.poetry-dynamic-versioning]

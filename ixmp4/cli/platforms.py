@@ -97,8 +97,7 @@ def prompt_sqlite_removal(dsn: str):
     path = Path(dsn.replace("sqlite://", ""))
     path_str = typer.style(path, fg=typer.colors.CYAN)
     if typer.confirm(
-        "Do you want to remove the associated database file at "
-        f"{path_str} aswell?"  # type: ignore
+        "Do you want to remove the associated database file at " f"{path_str} aswell?"  # type: ignore
     ):
         path.unlink()
         utils.echo("\nDatabase file deleted.")
@@ -110,7 +109,7 @@ def prompt_sqlite_removal(dsn: str):
 def remove(
     name: str = typer.Argument(
         ..., help="The string identifier of the platform to remove."
-    )
+    ),
 ):
     try:
         platform = settings.toml.get_platform(name)
