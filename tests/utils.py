@@ -1,7 +1,6 @@
 import pandas as pd
 import pandas.testing as pdt
 import pytest
-from pytest_lazyfixture import lazy_fixture
 
 from ixmp4 import DataPoint
 
@@ -37,18 +36,10 @@ all_platforms = pytest.mark.parametrize(
 generated_platforms = pytest.mark.parametrize(
     "generated_mp",
     [
-        lazy_fixture("test_sqlite_mp_generated"),
-        lazy_fixture("test_pgsql_mp_generated"),
-        lazy_fixture("test_api_sqlite_mp_generated"),
-        lazy_fixture("test_api_pgsql_mp_generated"),
-    ],
-)
-
-generated_api_platforms = pytest.mark.parametrize(
-    "generated_mp",
-    [
-        lazy_fixture("test_api_sqlite_mp_generated"),
-        lazy_fixture("test_api_pgsql_mp_generated"),
+        pytest.fixture("test_sqlite_mp_generated"),
+        pytest.fixture("test_pgsql_mp_generated"),
+        pytest.fixture("test_api_sqlite_mp_generated"),
+        pytest.fixture("test_api_pgsql_mp_generated"),
     ],
 )
 
