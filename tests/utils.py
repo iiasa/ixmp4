@@ -36,10 +36,10 @@ all_platforms = pytest.mark.parametrize(
 generated_platforms = pytest.mark.parametrize(
     "generated_mp",
     [
-        pytest.fixture("test_sqlite_mp_generated"),
-        pytest.fixture("test_pgsql_mp_generated"),
-        pytest.fixture("test_api_sqlite_mp_generated"),
-        pytest.fixture("test_api_pgsql_mp_generated"),
+        "test_sqlite_mp_generated",
+        "test_pgsql_mp_generated",
+        "test_api_sqlite_mp_generated",
+        "test_api_pgsql_mp_generated",
     ],
 )
 
