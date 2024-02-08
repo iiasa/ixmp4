@@ -165,76 +165,14 @@ class RunMetaEntryRepository(
                 [], columns=index_columns + ["id", "type", "key", "value"]
             )
 
-        # # Old solution, raises DeprecationWarning now:
-        # def map_value_column(df: pd.DataFrame):
-        #     type_str = df.name
-        #     type_ = RunMetaEntry.Type(type_str)
-        #     col = RunMetaEntry._column_map[type_]
-        #     df["value"] = df[col]
-        #     return df.drop(columns=RunMetaEntry._column_map.values())
-
-        # # .get_group() can only ever get ONE group (suggested solutions don't work)
-        # return df.groupby("type", group_keys=False).apply(map_value_column)
-
-        # # New solution, does work, but is apparently quite slow
-        # def map_value_column(row: pd.Series) -> bool | float | int | str:
-        #     if row["value_bool"] is not None:
-        #         return row["value_bool"]
-        #     elif row["value_float"] is not None:
-        #         return row["value_float"]
-        #     elif row["value_int"] is not None:
-        #         return row["value_int"]
-        #     elif row["value_str"] is not None:
-        #         return row["value_str"]
-        #     else:
-        #         raise ValueError("Row is missing values!")
-
-        # df["value"] = df.apply(map_value_column, axis=1)
-
-        # # This new solution does not quite work
-        # conditions = [
-        #     df["value_bool"] is not None,
-        #     df["value_float"] is not None,
-        #     df["value_int"] is not None,
-        #     df["value_str"] is not None,
-        # ]
-        # outputs = [
-        #     df["value_bool"],
-        #     df["value_float"],
-        #     df["value_int"],
-        #     df["value_str"],
-        # ]
-        # df["value"] = np.select(condlist=conditions, choicelist=outputs)
-
-        # # This is supposed to be the fastest solution, but numba.jit doesn't allow
-        # # generic types like np.object_, so it doesn't work like this
-        # @nb.jit(nopython=True)
-        # def map_value_column(arr: np.ndarray, res: np.ndarray):
-        #     for i in range(len(arr)):
-        #         if arr[i][3] is not None:
-        #             res[i] = arr[i][3]
-        #         elif arr[i][0] is not None:
-        #             res[i] = arr[i][0]
-        #         elif arr[i][2] is not None:
-        #             res[i] = arr[i][2]
-        #         elif arr[i][1] is not None:
-        #             res[i] = arr[i][1]
-        #         else:
-        #             raise ValueError("Row is missing values!")
-
-        # columns = [c for c in df.columns if c.startswith("value_")]
-        # res = np.empty(len(df), dtype=np.object_)
-        # df["value"] = map_value_column(df[columns].values, res)
-
         def map_value_column(df: pd.DataFrame):
-            df.loc[df["value_bool"] is not None, "value"] = df["value_bool"]
-            df.loc[df["value_float"] is not None, "value"] = df["value_float"]
-            df.loc[df["value_int"] is not None, "value"] = df["value_int"]
-            df.loc[df["value_str"] is not None, "value"] = df["value_str"]
+            type_str = df.name
+            type_ = RunMetaEntry.Type(type_str)
+            col = RunMetaEntry._column_map[type_]
+            df["value"] = df[col]
+            return df.drop(columns=RunMetaEntry._column_map.values())
 
-        map_value_column(df)
-
-        return df.drop(columns=RunMetaEntry._column_map.values())
+        return df.groupby("type", group_keys=False).apply(map_value_column)
 
     @check_types
     @guard("edit")
