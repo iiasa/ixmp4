@@ -30,8 +30,11 @@ from .utils import generated_platforms
         },
     ],
 )
-def test_filter_datapoints_benchmark(generated_mp, profiled, benchmark, filters):
+def test_filter_datapoints_benchmark(
+    generated_mp, profiled, benchmark, filters, request
+):
     """Benchmarks a the filtration of `test_data_big`."""
+    generated_mp = request.getfixturevalue(generated_mp)
 
     def run():
         with profiled():
