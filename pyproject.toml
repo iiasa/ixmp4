@@ -57,7 +57,6 @@ uvicorn = {extras = ["standard"], version = "^0.27.0.post1"}
 optional = true
 
 [tool.poetry.group.dev.dependencies]
-black = "^24.1.1"
 ptvsd = "^4.3.2"
 pytest = "^8.0.0"
 pytest-benchmark = "^4.0.0"
@@ -65,7 +64,7 @@ pytest-cov = "^4.1.0"
 snakeviz = "^2.1.1"
 types-toml = "^0.10.8.7"
 build = "^1.0.3"
-ruff = "^0.1.14"
+ruff = "^0.2.1"
 pre-commit = "^3.6.0"
 mypy = "^1.8.0"
 pandas-stubs = "^2.1.4.231227"
