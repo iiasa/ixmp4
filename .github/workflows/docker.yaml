@@ -24,7 +24,7 @@ jobs:
         with:
           push: true
           build-args:
-            POETRY_OPTS: "--with server"
+            - POETRY_OPTS="--with server"
           tags: ene-docker.iiasa.ac.at/ixmp4-server:latest
       - if: github.event_name != 'release'
         name: Build and push dev
