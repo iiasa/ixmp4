@@ -1,4 +1,4 @@
-FROM python:3.10
+FROM python:3.11
 
 ARG POETRY_OPTS
 
@@ -32,9 +32,11 @@ WORKDIR /opt/ixmp4
 RUN mkdir -p run/logs && \
     touch .env
 
+RUN poetry self add "poetry-dynamic-versioning[plugin]"  && \
+    poetry dynamic-versioning
 RUN poetry build --format wheel && \
-    poetry export ${POETRY_OPTS} --format requirements.txt --output constraints.txt --without-hashes  && \
-    pip install ./dist/*.whl  && \
+    poetry export ${POETRY_OPTS} --format requirements.txt --output constraints.txt --without-hashes
+RUN pip install ./dist/*.whl  && \
     pip install -r constraints.txt 
 
 
