@@ -23,8 +23,8 @@ jobs:
       - name: Write release version
         run: |
           VERSION_TAG=${GITHUB_REF_NAME#v}
-          echo Docker Image Version: $VERSION
-          echo "VERSION=$VERSION" >> $GITHUB_ENV
+          echo Docker Image Version: $VERSION_TAG
+          echo "VERSION_TAG=$VERSION_TAG" >> $GITHUB_ENV
       - if: github.event_name == 'release'
         name: Build and push latest
         uses: docker/build-push-action@v5
@@ -33,7 +33,7 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS="--with server"
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:$VERSION
+          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:${{env.VERSION_TAG}}
       - if: github.event_name != 'release'
         name: Build and push dev
         uses: docker/build-push-action@v5
@@ -42,4 +42,4 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS="--with server"
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:$VERSION
+          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:${{env.VERSION_TAG}}
