@@ -33,7 +33,7 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS="--with server"
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:${VERSION}
+          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:$VERSION
       - if: github.event_name != 'release'
         name: Build and push dev
         uses: docker/build-push-action@v5
@@ -42,4 +42,4 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS="--with server"
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:${VERSION}
+          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:$VERSION
