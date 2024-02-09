@@ -18,10 +18,13 @@ jobs:
           registry: ene-docker.iiasa.ac.at
           username: ixmp-server-workflow-build-user
           password: ${{ secrets.NEXUS_PASSWORD }}
+      - name: Check out repository
+        uses: actions/checkout@v3
       - if: github.event_name == 'release'
         name: Build and push latest
         uses: docker/build-push-action@v5
         with:
+          context: .
           push: true
           build-args: |
             POETRY_OPTS="--with server"
@@ -30,6 +33,7 @@ jobs:
         name: Build and push dev
         uses: docker/build-push-action@v5
         with:
+          context: .
           push: true
           build-args: |
             POETRY_OPTS="--with server"
