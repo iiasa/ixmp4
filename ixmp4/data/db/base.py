@@ -265,13 +265,14 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
 
     def count(
         self,
-        _exc: db.sql.Select | None = None,
-        *args,
         **kwargs,
     ) -> int:
-        if _exc is None:
-            _exc = self.select(*args, **kwargs)
-        _exc = db.select(db.func.count()).select_from(_exc.subquery())
+        _exc = self.select(
+            _exc=db.select(db.func.count(self.model_class.id.distinct())).select_from(
+                self.model_class
+            ),
+            **kwargs,
+        )
         return self.session.execute(_exc).scalar_one()
 
 

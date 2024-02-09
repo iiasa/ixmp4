@@ -49,13 +49,16 @@ class BaseDocsRepository(
 ):
     dimension_model_class: ClassVar[type[base.BaseModel]]
 
-    def select(self, *, dimension_id: int | None = None) -> db.sql.Select:
-        exc: db.sql.Select = db.select(self.model_class)
+    def select(
+        self, *, _exc: db.sql.Select | None = None, dimension_id: int | None = None
+    ) -> db.sql.Select:
+        if _exc is None:
+            _exc = db.select(self.model_class)
 
         if dimension_id is not None:
-            exc = exc.where(self.model_class.dimension__id == dimension_id)
+            _exc = _exc.where(self.model_class.dimension__id == dimension_id)
 
-        return exc
+        return _exc
 
     def add(self, dimension_id: int, description: str) -> DocsType:
         docs = self.model_class(description=description, dimension__id=dimension_id)

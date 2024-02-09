@@ -22,7 +22,7 @@ class RegionInput(BaseModel):
 @autodoc
 @router.patch("/", response_model=EnumerationOutput[api.Region])
 def query(
-    filter: RegionFilter = Body(None),
+    filter: RegionFilter = Body(RegionFilter()),
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
