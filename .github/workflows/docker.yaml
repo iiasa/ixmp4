@@ -20,6 +20,11 @@ jobs:
           password: ${{ secrets.NEXUS_PASSWORD }}
       - name: Check out repository
         uses: actions/checkout@v3
+      - name: Write release version
+        run: |
+          VERSION_TAG=${GITHUB_REF_NAME#v}
+          echo Docker Image Version: $VERSION
+          echo "VERSION=$VERSION" >> $GITHUB_ENV
       - if: github.event_name == 'release'
         name: Build and push latest
         uses: docker/build-push-action@v5
@@ -28,7 +33,7 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS="--with server"
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest
+          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:${VERSION}
       - if: github.event_name != 'release'
         name: Build and push dev
         uses: docker/build-push-action@v5
@@ -37,4 +42,4 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS="--with server"
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev
+          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:${VERSION}
