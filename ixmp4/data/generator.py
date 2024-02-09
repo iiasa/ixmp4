@@ -120,12 +120,12 @@ class MockDataGenerator(object):
             ],
         )
         if type == DataPoint.Type.ANNUAL:
-            amount = min(40, max)
+            amount = min(20, max)
             start_year = random.randint(1950, 2000)
             steps_annual = [start_year + i for i in range(amount)]
             df["step_year"] = steps_annual
         if type == DataPoint.Type.CATEGORICAL:
-            amount = min(100, max)
+            amount = min(50, max)
             num_categories = random.randint(2, 10)
             start_year = random.randint(1950, 2000)
             categories = cycle([f"Category {i}" for i in range(num_categories)])
@@ -138,7 +138,7 @@ class MockDataGenerator(object):
             df["step_year"] = steps_year
             df["step_category"] = steps_category
         if type == DataPoint.Type.DATETIME:
-            amount = min(200, max)
+            amount = min(100, max)
             dt = timedelta(minutes=random.randint(1, 360) * 10)
             start_dt = datetime(
                 year=random.randint(1950, 2000),
@@ -154,10 +154,10 @@ class MockDataGenerator(object):
         return df
 
     def generate(self):
-        model_names = cycle(self.yield_model_names())
-        runs = cycle(self.yield_runs(model_names=model_names))
-        regions = cycle(self.yield_regions())
-        units = cycle(self.yield_units())
-        variable_names = cycle(self.yield_variable_names())
+        model_names = cycle([n for n in self.yield_model_names()])
+        runs = cycle([r for r in self.yield_runs(model_names=model_names)])
+        regions = cycle([r for r in self.yield_regions()])
+        units = cycle([u for u in self.yield_units()])
+        variable_names = cycle([v for v in self.yield_variable_names()])
         for df in self.yield_datapoints(runs, variable_names, units, regions):
             pass
