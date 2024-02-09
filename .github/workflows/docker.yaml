@@ -19,7 +19,7 @@ jobs:
           username: ixmp-server-workflow-build-user
           password: ${{ secrets.NEXUS_PASSWORD }}
       - if: github.event_name == 'release'
-      - name: Build and push latest
+        name: Build and push latest
         uses: docker/build-push-action@v5
         with:
           push: true
@@ -27,7 +27,7 @@ jobs:
             POETRY_OPTS: "--with server"
           tags: ene-docker.iiasa.ac.at/ixmp4-server:latest
       - if: github.event_name != 'release'
-      - name: Build and push dev
+        name: Build and push dev
         uses: docker/build-push-action@v5
         with:
           push: true
