@@ -31,6 +31,6 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           push: true
-          build-args:
-            POETRY_OPTS: "--with server"
+          build-args: |
+            POETRY_OPTS="--with server"
           tags: ene-docker.iiasa.ac.at/ixmp4-server:dev
