@@ -26,6 +26,14 @@ try:
 except FileNotFoundError:
     TEST_DATA_BIG = None  # skip benchmark tests
 
+SKIP_PGSQL_TESTS = False
+try:
+    mp = Platform(_backend=PostgresTestBackend())
+    # TODO: Do we need the following?
+    # mp.backend.close()
+except OperationalError:
+    SKIP_PGSQL_TESTS = True
+
 
 @pytest.fixture(scope="function")
 def test_data_big():
@@ -106,13 +114,7 @@ def test_sqlite_mp():
 
 @pytest.fixture
 def test_pgsql_mp():
-    try:
-        mp = Platform(_backend=PostgresTestBackend())
-    except OperationalError as e:
-        pytest.skip(
-            f"Cannot connect to PostgreSQL database service, skipping test: {e}"
-        )
-
+    mp = Platform(_backend=PostgresTestBackend())
     yield mp
     mp.backend.close()
 
@@ -135,14 +137,8 @@ def test_sqlite_mp_generated():
 
 
 @pytest.fixture(scope="module")
-def test_pgsql_mp_generated():
-    try:
-        mp = Platform(_backend=PostgresTestBackend())
-    except OperationalError as e:
-        pytest.skip(
-            f"Cannot connect to PostgreSQL database service, skipping test: {e}"
-        )
-
+def test_pgsql_mp_generated(request):
+    mp = Platform(_backend=PostgresTestBackend())
     generate_mock_data(mp)
     yield mp
     mp.backend.close()

@@ -4,6 +4,8 @@ import pytest
 
 from ixmp4 import DataPoint
 
+from .conftest import SKIP_PGSQL_TESTS
+
 
 def add_regions(mp, regions):
     for region in regions:
@@ -27,9 +29,21 @@ all_platforms = pytest.mark.parametrize(
     "test_mp",
     [
         "test_sqlite_mp",
-        "test_pgsql_mp",
+        pytest.param(
+            "test_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
         "test_api_sqlite_mp",
-        "test_api_pgsql_mp",
+        pytest.param(
+            "test_api_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
@@ -37,9 +51,21 @@ generated_platforms = pytest.mark.parametrize(
     "generated_mp",
     [
         "test_sqlite_mp_generated",
-        "test_pgsql_mp_generated",
+        pytest.param(
+            "test_pgsql_mp_generated",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
         "test_api_sqlite_mp_generated",
-        "test_api_pgsql_mp_generated",
+        pytest.param(
+            "test_api_pgsql_mp_generated",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
@@ -47,7 +73,13 @@ api_platforms = pytest.mark.parametrize(
     "test_mp",
     [
         "test_api_sqlite_mp",
-        "test_api_pgsql_mp",
+        pytest.param(
+            "test_api_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
@@ -55,7 +87,13 @@ database_platforms = pytest.mark.parametrize(
     "test_mp",
     [
         "test_sqlite_mp",
-        "test_pgsql_mp",
+        pytest.param(
+            "test_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
