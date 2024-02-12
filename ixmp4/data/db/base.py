@@ -239,10 +239,7 @@ class Tabulator(Selecter[ModelType]):
 
         if self.session.bind is not None:
             with self.engine.connect() as con:
-                return (
-                    pd.read_sql(_exc, con=con).replace([np.nan], [None])
-                    # pd.read_sql(_exc, con=con).fillna(np.nan).replace([np.nan], [None]) # noqa
-                )
+                return pd.read_sql(_exc, con=con).replace([np.nan], [None])
         else:
             raise ProgrammingError("Database session is closed.")
 
