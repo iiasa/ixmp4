@@ -13,8 +13,6 @@ from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 from ixmp4.data.generator import MockDataGenerator
 
-from .utils import gen_obj_nums
-
 TEST_DATA_BIG = None
 try:
     TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual_big.csv")
@@ -151,6 +149,16 @@ def test_api_sqlite_mp_generated(test_sqlite_mp_generated):
 @pytest.fixture(scope="module")
 def test_api_pgsql_mp_generated(test_pgsql_mp_generated):
     return Platform(_backend=RestTestBackend(test_pgsql_mp_generated.backend))
+
+
+gen_obj_nums = dict(
+    num_models=10,
+    num_runs=30,
+    num_regions=100,
+    num_variables=200,
+    num_units=50,
+    num_datapoints=10_000,
+)
 
 
 def generate_mock_data(mp):

@@ -1,6 +1,7 @@
 import pytest
 
-from ..utils import gen_obj_nums, generated_api_platforms
+from ..conftest import gen_obj_nums
+from ..utils import generated_api_platforms
 
 
 @generated_api_platforms

@@ -69,6 +69,21 @@ generated_platforms = pytest.mark.parametrize(
     ],
 )
 
+
+generated_api_platforms = pytest.mark.parametrize(
+    "generated_mp",
+    [
+        "test_api_sqlite_mp_generated",
+        pytest.param(
+            "test_api_pgsql_mp_generated",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
+    ],
+)
+
 api_platforms = pytest.mark.parametrize(
     "test_mp",
     [
@@ -95,15 +110,6 @@ database_platforms = pytest.mark.parametrize(
             ),
         ),
     ],
-)
-
-gen_obj_nums = dict(
-    num_models=10,
-    num_runs=30,
-    num_regions=100,
-    num_variables=200,
-    num_units=50,
-    num_datapoints=10_000,
 )
 
 
