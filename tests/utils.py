@@ -1,9 +1,10 @@
 import pandas as pd
 import pandas.testing as pdt
 import pytest
-from pytest_lazyfixture import lazy_fixture
 
 from ixmp4 import DataPoint
+
+from .conftest import SKIP_PGSQL_TESTS
 
 
 def add_regions(mp, regions):
@@ -27,54 +28,88 @@ def assert_unordered_equality(df1, df2, **kwargs):
 all_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        lazy_fixture("test_sqlite_mp"),
-        lazy_fixture("test_pgsql_mp"),
-        lazy_fixture("test_api_sqlite_mp"),
-        lazy_fixture("test_api_pgsql_mp"),
+        "test_sqlite_mp",
+        pytest.param(
+            "test_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
+        "test_api_sqlite_mp",
+        pytest.param(
+            "test_api_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
 generated_platforms = pytest.mark.parametrize(
     "generated_mp",
     [
-        lazy_fixture("test_sqlite_mp_generated"),
-        lazy_fixture("test_pgsql_mp_generated"),
-        lazy_fixture("test_api_sqlite_mp_generated"),
-        lazy_fixture("test_api_pgsql_mp_generated"),
+        "test_sqlite_mp_generated",
+        pytest.param(
+            "test_pgsql_mp_generated",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
+        "test_api_sqlite_mp_generated",
+        pytest.param(
+            "test_api_pgsql_mp_generated",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
+
 
 generated_api_platforms = pytest.mark.parametrize(
     "generated_mp",
     [
-        lazy_fixture("test_api_sqlite_mp_generated"),
-        lazy_fixture("test_api_pgsql_mp_generated"),
+        "test_api_sqlite_mp_generated",
+        pytest.param(
+            "test_api_pgsql_mp_generated",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
 api_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        lazy_fixture("test_api_sqlite_mp"),
-        lazy_fixture("test_api_pgsql_mp"),
+        "test_api_sqlite_mp",
+        pytest.param(
+            "test_api_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
 )
 
 database_platforms = pytest.mark.parametrize(
     "test_mp",
     [
-        lazy_fixture("test_sqlite_mp"),
-        lazy_fixture("test_pgsql_mp"),
+        "test_sqlite_mp",
+        pytest.param(
+            "test_pgsql_mp",
+            marks=pytest.mark.skipif(
+                SKIP_PGSQL_TESTS,
+                reason="Cannot connect to PostgreSQL database service, skipping test",
+            ),
+        ),
     ],
-)
-
-gen_obj_nums = dict(
-    num_models=10,
-    num_runs=30,
-    num_regions=100,
-    num_variables=200,
-    num_units=50,
-    num_datapoints=10_000,
 )
 
 

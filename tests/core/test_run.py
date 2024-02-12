@@ -20,12 +20,14 @@ def _expected_runs_table(*row_default):
 
 @all_platforms
 class TestCoreRun:
-    def test_run_notfound(self, test_mp):
+    def test_run_notfound(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         # no Run with that model and scenario name exists
         with pytest.raises(Run.NotFound):
             _ = test_mp.runs.get("Unknown Model", "Unknown Scenario", version=1)
 
-    def test_run_versions(self, test_mp):
+    def test_run_versions(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1 = test_mp.runs.create("Model", "Scenario")
         run2 = test_mp.runs.create("Model", "Scenario")
 

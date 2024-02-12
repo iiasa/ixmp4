@@ -8,19 +8,22 @@ from ..utils import all_platforms, assert_unordered_equality, create_filter_test
 
 @all_platforms
 class TestDataRegion:
-    def test_create_region(self, test_mp):
+    def test_create_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         region1 = test_mp.backend.regions.create("Region", "Hierarchy")
         assert region1.name == "Region"
         assert region1.hierarchy == "Hierarchy"
         assert region1.created_at is not None
         assert region1.created_by == "@unknown"
 
-    def test_delete_region(self, test_mp):
+    def test_delete_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         region1 = test_mp.backend.regions.create("Region", "Hierarchy")
         test_mp.backend.regions.delete(region1.id)
         assert test_mp.backend.regions.tabulate().empty
 
-    def test_region_unique(self, test_mp):
+    def test_region_unique(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.regions.create("Region", "Hierarchy")
 
         with pytest.raises(Region.NotUnique):
@@ -29,16 +32,19 @@ class TestDataRegion:
         with pytest.raises(Region.NotUnique):
             test_mp.regions.create("Region", "Another Hierarchy")
 
-    def test_get_region(self, test_mp):
+    def test_get_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         region1 = test_mp.backend.regions.create("Region", "Hierarchy")
         region2 = test_mp.backend.regions.get("Region")
         assert region1 == region2
 
-    def test_region_not_found(self, test_mp):
+    def test_region_not_found(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(Region.NotFound):
             test_mp.regions.get("Region")
 
-    def test_get_or_create_region(self, test_mp):
+    def test_get_or_create_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         region1 = test_mp.backend.regions.create("Region", "Hierarchy")
         region2 = test_mp.backend.regions.get_or_create("Region")
         assert region1.id == region2.id
@@ -48,7 +54,8 @@ class TestDataRegion:
         with pytest.raises(Region.NotUnique):
             test_mp.backend.regions.get_or_create("Other", hierarchy="Other Hierarchy")
 
-    def test_list_region(self, test_mp):
+    def test_list_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.regions.create("Region 1", "Hierarchy")
         test_mp.backend.regions.create("Region 2", "Hierarchy")
 
@@ -60,7 +67,8 @@ class TestDataRegion:
         assert regions[1].id == 2
         assert regions[1].name == "Region 2"
 
-    def test_tabulate_region(self, test_mp):
+    def test_tabulate_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.regions.create("Region 1", "Hierarchy")
         test_mp.backend.regions.create("Region 2", "Hierarchy")
 
@@ -77,7 +85,8 @@ class TestDataRegion:
             regions.drop(columns=["created_at", "created_by"]), true_regions
         )
 
-    def test_filter_region(self, test_mp):
+    def test_filter_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1, run2 = create_filter_test_data(test_mp)
 
         res = test_mp.backend.regions.tabulate(

@@ -55,9 +55,11 @@ def tabulate_datapoints(test_mp, **kwargs):
 @all_platforms
 class TestBenchmarks:
     def test_add_datapoints_full_benchmark(
-        self, test_mp, profiled, benchmark, test_data_big
+        self, test_mp, profiled, benchmark, test_data_big, request
     ):
         """Benchmarks a full insert of `test_data_big`."""
+
+        test_mp = request.getfixturevalue(test_mp)
 
         def setup():
             add_regions(test_mp, test_data_big["region"].unique())
@@ -71,9 +73,11 @@ class TestBenchmarks:
         benchmark.pedantic(run, setup=setup)
 
     def test_add_datapoints_half_unchanged_benchmark(
-        self, test_mp, profiled, benchmark, test_data_big
+        self, test_mp, profiled, benchmark, test_data_big, request
     ):
         """Benchmarks a full insert of `test_data_big` on a half-filled database."""
+
+        test_mp = request.getfixturevalue(test_mp)
 
         def setup():
             add_regions(test_mp, test_data_big["region"].unique())
@@ -89,10 +93,12 @@ class TestBenchmarks:
         benchmark.pedantic(run, setup=setup)
 
     def test_add_datapoints_half_insert_half_update_benchmark(
-        self, test_mp, profiled, benchmark, test_data_big
+        self, test_mp, profiled, benchmark, test_data_big, request
     ):
         """Benchmarks a full insert of `test_data_big` with changed values on a
         half-filled database."""
+
+        test_mp = request.getfixturevalue(test_mp)
 
         def setup():
             add_regions(test_mp, test_data_big["region"].unique())
@@ -112,9 +118,11 @@ class TestBenchmarks:
         benchmark.pedantic(run, setup=setup)
 
     def test_remove_datapoints_benchmark(
-        self, test_mp, profiled, benchmark, test_data_big
+        self, test_mp, profiled, benchmark, test_data_big, request
     ):
         """Benchmarks a full removal of `test_data_big` from a filled database."""
+
+        test_mp = request.getfixturevalue(test_mp)
 
         def setup():
             add_regions(test_mp, test_data_big["region"].unique())
@@ -130,9 +138,11 @@ class TestBenchmarks:
         benchmark.pedantic(run, setup=setup)
 
     def test_tabulate_datapoints_benchmark(
-        self, test_mp, profiled, benchmark, test_data_big
+        self, test_mp, profiled, benchmark, test_data_big, request
     ):
         """Benchmarks a full retrieval of `test_data_big` from a filled database."""
+
+        test_mp = request.getfixturevalue(test_mp)
 
         def setup():
             add_regions(test_mp, test_data_big["region"].unique())

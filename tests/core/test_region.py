@@ -21,7 +21,8 @@ def df_from_list(regions):
 
 @all_platforms
 class TestCoreRegion:
-    def test_delete_region(self, test_mp, test_data_annual):
+    def test_delete_region(self, test_mp, test_data_annual, request):
+        test_mp = request.getfixturevalue(test_mp)
         reg1 = test_mp.regions.create("Test 1", hierarchy="default")
         reg2 = test_mp.regions.create("Test 2", hierarchy="default")
         reg3 = test_mp.regions.create("Test 3", hierarchy="default")
@@ -44,7 +45,8 @@ class TestCoreRegion:
         with pytest.raises(Region.DeletionPrevented):
             test_mp.regions.delete("World")
 
-    def test_region_has_hierarchy(self, test_mp):
+    def test_region_has_hierarchy(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(TypeError):
             test_mp.regions.create("Test")
 
@@ -53,7 +55,8 @@ class TestCoreRegion:
 
         assert reg1.id == reg2.id
 
-    def test_get_region(self, test_mp):
+    def test_get_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         reg1 = test_mp.regions.create("Test", hierarchy="default")
         reg2 = test_mp.regions.get("Test")
 
@@ -62,13 +65,15 @@ class TestCoreRegion:
         with pytest.raises(Region.NotFound):
             test_mp.regions.get("Does not exist")
 
-    def test_region_unique(self, test_mp):
+    def test_region_unique(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.regions.create("Test", hierarchy="default")
 
         with pytest.raises(Region.NotUnique):
             test_mp.regions.create("Test", hierarchy="other")
 
-    def test_region_unknown(self, test_mp, test_data_annual):
+    def test_region_unknown(self, test_mp, test_data_annual, request):
+        test_mp = request.getfixturevalue(test_mp)
         add_regions(test_mp, test_data_annual["region"].unique())
         add_units(test_mp, test_data_annual["unit"].unique())
 
@@ -78,7 +83,8 @@ class TestCoreRegion:
         with pytest.raises(Region.NotFound):
             run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
 
-    def test_list_region(self, test_mp):
+    def test_list_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         regions = create_testcase_regions(test_mp)
         reg, other = regions
 
@@ -90,7 +96,8 @@ class TestCoreRegion:
         b = [r.id for r in test_mp.regions.list(hierarchy="other")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_region(self, test_mp):
+    def test_tabulate_region(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         regions = create_testcase_regions(test_mp)
         _, other = regions
 
@@ -102,7 +109,8 @@ class TestCoreRegion:
         b = test_mp.regions.tabulate(hierarchy="other")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp):
+    def test_retrieve_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.regions.create("Region", "Hierarchy")
         docs_region1 = test_mp.regions.set_docs("Region", "Description of test Region")
         docs_region2 = test_mp.regions.get_docs("Region")
@@ -117,7 +125,8 @@ class TestCoreRegion:
 
         assert test_mp.regions.get_docs("Region2") == region2.docs
 
-    def test_delete_docs(self, test_mp):
+    def test_delete_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         region = test_mp.regions.create("Region", "Hierarchy")
         region.docs = "Description of test region"
         region.docs = None

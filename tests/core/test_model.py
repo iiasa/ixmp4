@@ -21,19 +21,22 @@ def df_from_list(models):
 
 @all_platforms
 class TestCoreModel:
-    def test_retrieve_model(self, test_mp):
+    def test_retrieve_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         model1 = test_mp.models.create("Model")
         model2 = test_mp.models.get("Model")
 
         assert model1.id == model2.id
 
-    def test_model_unqiue(self, test_mp):
+    def test_model_unqiue(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.models.create("Model")
 
         with pytest.raises(Model.NotUnique):
             test_mp.models.create("Model")
 
-    def test_list_model(self, test_mp):
+    def test_list_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         models = create_testcase_models(test_mp)
         model, _ = models
 
@@ -45,7 +48,8 @@ class TestCoreModel:
         b = [m.id for m in test_mp.models.list(name="Model")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_model(self, test_mp):
+    def test_tabulate_model(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         models = create_testcase_models(test_mp)
         model, _ = models
 
@@ -57,7 +61,8 @@ class TestCoreModel:
         b = test_mp.models.tabulate(name="Model")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp):
+    def test_retrieve_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.models.create("Model")
         docs_model1 = test_mp.models.set_docs("Model", "Description of test Model")
         docs_model2 = test_mp.models.get_docs("Model")
@@ -71,7 +76,8 @@ class TestCoreModel:
 
         assert test_mp.models.get_docs("Model2") == model2.docs
 
-    def test_delete_docs(self, test_mp):
+    def test_delete_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         model = test_mp.models.create("Model")
         model.docs = "Description of test Model"
         model.docs = None

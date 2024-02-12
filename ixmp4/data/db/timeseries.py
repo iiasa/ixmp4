@@ -94,7 +94,7 @@ class TimeSeriesRepository(
         *,
         _exc: db.sql.Select | None = None,
         join_parameters: bool | None = False,
-        **kwargs
+        **kwargs,
     ) -> db.sql.Select:
         if _exc is not None:
             exc = _exc
