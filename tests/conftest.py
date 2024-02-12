@@ -29,8 +29,7 @@ except FileNotFoundError:
 SKIP_PGSQL_TESTS = False
 try:
     mp = Platform(_backend=PostgresTestBackend())
-    # TODO: Do we need the following?
-    # mp.backend.close()
+    mp.backend.close()
 except OperationalError:
     SKIP_PGSQL_TESTS = True
 
