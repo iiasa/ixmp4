@@ -35,7 +35,8 @@ def df_from_list(indexsets: list):
 
 @all_platforms
 class TestCoreIndexSet:
-    def test_create_indexset(self, test_mp):
+    def test_create_indexset(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         assert indexset_1.id == 1
@@ -47,7 +48,8 @@ class TestCoreIndexSet:
         with pytest.raises(IndexSet.NotUnique):
             _ = run.optimization.indexsets.create("IndexSet 1")
 
-    def test_get_indexset(self, test_mp):
+    def test_get_indexset(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         _ = run.optimization.indexsets.create("IndexSet 1")
         indexset = run.optimization.indexsets.get("IndexSet 1")
@@ -57,7 +59,8 @@ class TestCoreIndexSet:
         with pytest.raises(IndexSet.NotFound):
             _ = run.optimization.indexsets.get("Foo")
 
-    def test_add_elements(self, test_mp):
+    def test_add_elements(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
@@ -79,7 +82,8 @@ class TestCoreIndexSet:
         assert indexset_3.elements != indexset_4.elements
         assert len(indexset_3.elements) == len(indexset_4.elements)
 
-    def test_list_indexsets(self, test_mp):
+    def test_list_indexsets(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         # Per default, list() lists only `default` version runs:
         run.set_as_default()
@@ -97,7 +101,8 @@ class TestCoreIndexSet:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_indexsets(self, test_mp):
+    def test_tabulate_indexsets(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         # Per default, tabulate() lists only `default` version runs:
         run.set_as_default()
@@ -113,7 +118,8 @@ class TestCoreIndexSet:
         result = run.optimization.indexsets.tabulate(name="Indexset 2")
         pdt.assert_frame_equal(expected, result)
 
-    def test_indexset_docs(self, test_mp):
+    def test_indexset_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         docs = "Documentation of IndexSet 1"

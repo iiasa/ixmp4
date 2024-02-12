@@ -21,19 +21,22 @@ def df_from_list(scenarios):
 
 @all_platforms
 class TestCoreScenario:
-    def test_retrieve_scenario(self, test_mp):
+    def test_retrieve_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         scenario1 = test_mp.scenarios.create("Scenario")
         scenario2 = test_mp.scenarios.get("Scenario")
 
         assert scenario1.id == scenario2.id
 
-    def test_scenario_unqiue(self, test_mp):
+    def test_scenario_unqiue(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.scenarios.create("Scenario")
 
         with pytest.raises(Scenario.NotUnique):
             test_mp.scenarios.create("Scenario")
 
-    def test_list_scenario(self, test_mp):
+    def test_list_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         scenarios = create_testcase_scenarios(test_mp)
         scenario, _ = scenarios
 
@@ -45,7 +48,8 @@ class TestCoreScenario:
         b = [s.id for s in test_mp.scenarios.list(name="Scenario")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_scenario(self, test_mp):
+    def test_tabulate_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         scenarios = create_testcase_scenarios(test_mp)
         scenario, _ = scenarios
 
@@ -57,7 +61,8 @@ class TestCoreScenario:
         b = test_mp.scenarios.tabulate(name="Scenario")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp):
+    def test_retrieve_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.scenarios.create("Scenario")
         docs_scenario1 = test_mp.scenarios.set_docs(
             "Scenario", "Description of test Scenario"
@@ -74,7 +79,8 @@ class TestCoreScenario:
 
         assert test_mp.scenarios.get_docs("Scenario2") == scenario2.docs
 
-    def test_delete_docs(self, test_mp):
+    def test_delete_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         scenario = test_mp.scenarios.create("Scenario")
         scenario.docs = "Description of test Scenario"
         scenario.docs = None

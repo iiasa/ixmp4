@@ -5,7 +5,8 @@ from ..utils import (
 
 
 @api_platforms
-def test_index_region(test_mp):
+def test_index_region(test_mp, request):
+    test_mp = request.getfixturevalue(test_mp)
     table_endpoint = "iamc/regions/?table=True"
     test_triple, _ = create_iamc_query_test_data(test_mp)
 

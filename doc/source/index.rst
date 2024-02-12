@@ -3,15 +3,15 @@ The ixmp4 package for scenario data management
 
 Copyright © 2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)
 
-|license| |black| |python|
+|license| |ruff| |python|
 
 .. |license| image:: https://img.shields.io/badge/license-MIT-brightgreen
    :target: https://github.com/iiasa/ixmp4/blob/main/LICENSE
 
-.. |black| image:: https://img.shields.io/badge/code%20style-black-000000.svg
-   :target: https://github.com/psf/black
+.. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json
+   :target: https://github.com/astral-sh/ruff
 
-.. |python| image:: https://img.shields.io/badge/python-3.10_|_3.11-blue?logo=python&logoColor=white
+.. |python| image:: https://img.shields.io/badge/python-3.10_|_3.11_|_3.12-blue?logo=python&logoColor=white
    :target: https://github.com/iiasa/ixmp4
 
 Overview

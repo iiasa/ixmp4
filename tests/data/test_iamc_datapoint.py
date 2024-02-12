@@ -27,7 +27,8 @@ from ..utils import add_regions, add_units, all_platforms, assert_unordered_equa
         ({"scenario": {"name__in": ["scen_1", "scen_2"]}}, None),
     ],
 )
-def test_filtering(test_mp, filter, exp_filter):
+def test_filtering(test_mp, filter, exp_filter, request):
+    test_mp = request.getfixturevalue(test_mp)
     # preparing the data
     test_data_columns = ["region", "variable", "unit", "step_year", "value"]
     test_data = [
@@ -77,7 +78,8 @@ def test_filtering(test_mp, filter, exp_filter):
         {"run": {"default_only": "test"}},
     ],
 )
-def test_invalid_filters(test_mp, filter):
+def test_invalid_filters(test_mp, filter, request):
+    test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(BadFilterArguments):
         test_mp.backend.iamc.datapoints.tabulate(**filter)
     with pytest.raises(BadFilterArguments):
