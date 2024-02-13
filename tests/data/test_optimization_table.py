@@ -8,7 +8,8 @@ from ..utils import database_platforms
 
 @database_platforms
 class TestDataOptimizationTable:
-    def test_create_table(self, test_mp):
+    def test_create_table(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -66,7 +67,8 @@ class TestDataOptimizationTable:
                 column_names=["Column 1", "Column 1"],
             )
 
-    def test_table_add_data(self, test_mp):
+    def test_table_add_data(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
