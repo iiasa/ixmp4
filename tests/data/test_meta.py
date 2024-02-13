@@ -21,7 +21,8 @@ TEST_ENTRIES_DF = pd.DataFrame(
 
 @all_platforms
 class TestDataMeta:
-    def test_create_get_entry(self, test_mp):
+    def test_create_get_entry(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
@@ -37,7 +38,8 @@ class TestDataMeta:
             assert entry.value == value
             assert entry.type == type
 
-    def test_entry_unique(self, test_mp):
+    def test_entry_unique(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         test_mp.backend.meta.create(run.id, "Key", "Value")
 
@@ -47,7 +49,8 @@ class TestDataMeta:
         with pytest.raises(RunMetaEntry.NotUnique):
             test_mp.backend.meta.create(run.id, "Key", 1)
 
-    def test_entry_not_found(self, test_mp):
+    def test_entry_not_found(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(RunMetaEntry.NotFound):
             test_mp.backend.meta.get(-1, "Key")
 
@@ -56,7 +59,8 @@ class TestDataMeta:
         with pytest.raises(RunMetaEntry.NotFound):
             test_mp.backend.meta.get(run.id, "Key")
 
-    def test_delete_entry(self, test_mp):
+    def test_delete_entry(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         entry = test_mp.backend.meta.create(run.id, "Key", "Value")
         test_mp.backend.meta.delete(entry.id)
@@ -64,7 +68,8 @@ class TestDataMeta:
         with pytest.raises(RunMetaEntry.NotFound):
             test_mp.backend.meta.get(run.id, "Key")
 
-    def test_list_entry(self, test_mp):
+    def test_list_entry(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
@@ -78,7 +83,8 @@ class TestDataMeta:
             assert entry.value == value
             assert entry.type == type
 
-    def test_tabulate_entry(self, test_mp):
+    def test_tabulate_entry(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
@@ -91,7 +97,8 @@ class TestDataMeta:
         entries = test_mp.backend.meta.tabulate()
         assert_unordered_equality(entries, true_entries)
 
-    def test_tabulate_entries_with_run_filters(self, test_mp):
+    def test_tabulate_entries_with_run_filters(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1 = test_mp.runs.create("Model", "Scenario")
         run1.set_as_default()
         run2 = test_mp.runs.create("Model 2", "Scenario 2")
@@ -126,7 +133,8 @@ class TestDataMeta:
             true_entries2,
         )
 
-    def test_tabulate_entries_with_key_filters(self, test_mp):
+    def test_tabulate_entries_with_key_filters(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
@@ -143,7 +151,8 @@ class TestDataMeta:
 
         assert_unordered_equality(entry, true_entry, check_dtype=False)
 
-    def test_entry_bulk_operations(self, test_mp):
+    def test_entry_bulk_operations(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.runs.create("Model", "Scenario")
         run.set_as_default()
 
@@ -194,7 +203,8 @@ class TestDataMeta:
         ret = test_mp.backend.meta.tabulate()
         assert ret.empty
 
-    def test_meta_bulk_exceptions(self, test_mp):
+    def test_meta_bulk_exceptions(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         entries = pd.DataFrame(
             [
                 ["Boolean", -9.9],

@@ -1,6 +1,7 @@
 import pytest
 
-from ..utils import gen_obj_nums, generated_api_platforms
+from ..conftest import gen_obj_nums
+from ..utils import generated_api_platforms
 
 
 @generated_api_platforms
@@ -30,7 +31,8 @@ from ..utils import gen_obj_nums, generated_api_platforms
         ),
     ],
 )
-def test_pagination(generated_mp, endpoint, filters, total):
+def test_pagination(generated_mp, endpoint, filters, total, request):
+    generated_mp = request.getfixturevalue(generated_mp)
     client = generated_mp.backend.client
     offset, limit = None, None
     while offset is None or offset + limit < total:

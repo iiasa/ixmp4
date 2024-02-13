@@ -33,7 +33,7 @@ class EnumerationOutput(BaseModel, Generic[EnumeratedT]):
         __pydantic_self__,
         *args,
         results: pd.DataFrame | api.DataFrame | list[EnumeratedT],
-        **kwargs
+        **kwargs,
     ):
         if isinstance(results, pd.DataFrame):
             kwargs["results"] = api.DataFrame.model_validate(results)

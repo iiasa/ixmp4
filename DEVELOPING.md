@@ -207,7 +207,7 @@ alembic revision -m "<message>" --autogenerate
 ```
 
 You will have to run all migrations before being able to create new ones in the development database.
-Be sure to run `black` and `isort` on newly created migrations!
+Be sure to run `ruff` on newly created migrations!
 
 ## Tests
 
@@ -322,7 +322,7 @@ It is overwritten on the fly by the poetry-dynamic-versioning plugin.
 
 Contributions to the code are always welcome! Please make sure your code follows our 
 code style so that the style is consistent. Each PR will be checked by a Code Quality 
-test that examines compliance with black, ruff, and mypy. 
+test that examines compliance with ruff and mypy. 
 
 ### Running pre-commit locally
 
@@ -340,7 +340,7 @@ on changed files, but if you want to run it on all files, you can run
 pre-commit run --all-files
 ```
 
-If you only want certain hooks to run, choose from `ruff`, `black`, and `mypy` as 
+If you only want certain hooks to run, choose from `ruff` and `mypy` as 
 `hook-ids` and run
 
 ```bash
@@ -354,16 +354,15 @@ are the same. You can, of course, run the code style tools manually. From within
 ixmp4 directory, this would look similar to this:
 
 ```bash
-black .
 mypy .
 ruff check .
+ruff format .
 
 # Or to enable ruff's automic fixes
 ruff check --fix .
 ```
 
 However, it is easy to forget running these commands manually. Therefore, we recommend 
-setting your editor up to run at least 
-[black](https://black.readthedocs.io/en/stable/integrations/editors.html) and 
-[ruff](https://docs.astral.sh/ruff/usage/#vs-code) automatically whenever you hit 
-`save`. A few minutes of configuration will save you time and nerves later on.
+setting your editor up to run at least [ruff](https://docs.astral.sh/ruff/usage/#vs-code) 
+automatically whenever you hit `save`. A few minutes of configuration will save you time 
+and nerves later on.

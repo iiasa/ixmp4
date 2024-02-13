@@ -8,19 +8,22 @@ from ..utils import all_platforms, assert_unordered_equality, create_filter_test
 
 @all_platforms
 class TestDataUnit:
-    def test_create_get_unit(self, test_mp):
+    def test_create_get_unit(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         unit1 = test_mp.backend.units.create("Unit")
         assert unit1.name == "Unit"
 
         unit2 = test_mp.backend.units.get("Unit")
         assert unit1.id == unit2.id
 
-    def test_delete_unit(self, test_mp):
+    def test_delete_unit(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         unit1 = test_mp.backend.units.create("Unit")
         test_mp.backend.units.delete(unit1.id)
         assert test_mp.backend.units.tabulate().empty
 
-    def test_get_or_create_unit(self, test_mp):
+    def test_get_or_create_unit(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         unit1 = test_mp.backend.units.create("Unit")
         unit2 = test_mp.backend.units.get_or_create("Unit")
         assert unit1.id == unit2.id
@@ -29,17 +32,20 @@ class TestDataUnit:
         assert unit3.name == "Another Unit"
         assert unit1.id != unit3.id
 
-    def test_unit_unique(self, test_mp):
+    def test_unit_unique(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.units.create("Unit")
 
         with pytest.raises(Unit.NotUnique):
             test_mp.backend.units.create("Unit")
 
-    def test_unit_not_found(self, test_mp):
+    def test_unit_not_found(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(Unit.NotFound):
             test_mp.backend.units.get("Unit")
 
-    def test_list_unit(self, test_mp):
+    def test_list_unit(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.units.create("Unit 1")
         test_mp.backend.units.create("Unit 2")
 
@@ -51,7 +57,8 @@ class TestDataUnit:
         assert units[1].id == 2
         assert units[1].name == "Unit 2"
 
-    def test_tabulate_unit(self, test_mp):
+    def test_tabulate_unit(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.units.create("Unit 1")
         test_mp.backend.units.create("Unit 2")
 
@@ -68,7 +75,8 @@ class TestDataUnit:
             units.drop(columns=["created_at", "created_by"]), true_units
         )
 
-    def test_filter_unit(self, test_mp):
+    def test_filter_unit(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1, run2 = create_filter_test_data(test_mp)
         res = test_mp.backend.units.tabulate(
             iamc={

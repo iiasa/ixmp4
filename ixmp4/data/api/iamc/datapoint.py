@@ -39,7 +39,7 @@ class DataPointRepository(
         self,
         join_parameters: bool | None = None,
         join_runs: bool | None = None,
-        **kwargs
+        **kwargs,
     ) -> list[DataPoint]:
         return super()._list(
             json=kwargs,
@@ -53,7 +53,7 @@ class DataPointRepository(
         self,
         join_parameters: bool | None = None,
         join_runs: bool | None = None,
-        **kwargs
+        **kwargs,
     ) -> pd.DataFrame:
         return super()._tabulate(
             json=kwargs,

@@ -1,4 +1,4 @@
-from datetime import datetime
+from datetime import datetime, timezone
 
 from fastapi import Depends, FastAPI, Path, Request
 from fastapi.encoders import jsonable_encoder
@@ -69,7 +69,7 @@ def root(
         version=version,
         is_managed=settings.managed,
         manager_url=str(settings.manager_url),
-        utcnow=datetime.utcnow(),
+        utcnow=datetime.now(tz=timezone.utc),
     )
 
 

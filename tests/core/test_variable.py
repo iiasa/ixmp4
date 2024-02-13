@@ -39,7 +39,8 @@ def df_from_list(iamc_variables):
 
 @all_platforms
 class TestCoreVariable:
-    def test_retrieve_iamc_variable(self, test_mp):
+    def test_retrieve_iamc_variable(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         iamc_variable1 = test_mp.iamc.variables.create("IAMC Variable")
         test_mp.regions.create("Region", "default")
         test_mp.units.create("Unit")
@@ -58,13 +59,15 @@ class TestCoreVariable:
 
         assert iamc_variable1.id == iamc_variable2.id
 
-    def test_iamc_variable_unqiue(self, test_mp):
+    def test_iamc_variable_unqiue(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.iamc.variables.create("IAMC Variable")
 
         with pytest.raises(Variable.NotUnique):
             test_mp.iamc.variables.create("IAMC Variable")
 
-    def test_list_iamc_variable(self, test_mp):
+    def test_list_iamc_variable(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         iamc_variables = create_testcase_iamc_variables(test_mp)
         iamc_variable, _ = iamc_variables
 
@@ -76,7 +79,8 @@ class TestCoreVariable:
         b = [v.id for v in test_mp.iamc.variables.list(name="IAMC Variable")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_iamc_variable(self, test_mp):
+    def test_tabulate_iamc_variable(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         iamc_variables = create_testcase_iamc_variables(test_mp)
         iamc_variable, _ = iamc_variables
 
@@ -88,7 +92,8 @@ class TestCoreVariable:
         b = test_mp.iamc.variables.tabulate(name="IAMC Variable")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp):
+    def test_retrieve_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         _, iamc_variable2 = create_testcase_iamc_variables(test_mp)
         docs_iamc_variable1 = test_mp.iamc.variables.set_docs(
             "IAMC Variable", "Description of test IAMC Variable"
@@ -103,7 +108,8 @@ class TestCoreVariable:
 
         assert test_mp.iamc.variables.get_docs("IAMC Variable 2") == iamc_variable2.docs
 
-    def test_delete_docs(self, test_mp):
+    def test_delete_docs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         iamc_variable, _ = create_testcase_iamc_variables(test_mp)
         iamc_variable.docs = "Description of test IAMC Variable"
         iamc_variable.docs = None

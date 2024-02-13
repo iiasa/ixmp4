@@ -7,12 +7,14 @@ from ..utils import add_regions, add_units, all_platforms, assert_unordered_equa
 
 
 @all_platforms
-def test_run_annual_datapoints_raw(test_mp, test_data_annual):
+def test_run_annual_datapoints_raw(test_mp, test_data_annual, request):
+    test_mp = request.getfixturevalue(test_mp)
     do_run_datapoints(test_mp, test_data_annual, True, DataPoint.Type.ANNUAL)
 
 
 @all_platforms
-def test_run_annual_datapoints_iamc(test_mp, test_data_annual):
+def test_run_annual_datapoints_iamc(test_mp, test_data_annual, request):
+    test_mp = request.getfixturevalue(test_mp)
     # convert to test data to standard IAMC format
     df = test_data_annual.rename(columns={"step_year": "year"})
     do_run_datapoints(test_mp, df, False)
@@ -20,50 +22,62 @@ def test_run_annual_datapoints_iamc(test_mp, test_data_annual):
 
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.CATEGORICAL, DataPoint.Type.DATETIME))
-def test_run_inconsistent_annual_raises(test_mp, test_data_annual, _type):
+def test_run_inconsistent_annual_raises(test_mp, test_data_annual, _type, request):
+    test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(SchemaError):
         do_run_datapoints(test_mp, test_data_annual, True, _type)
 
 
 @all_platforms
-def test_run_categorical_datapoints_raw(test_mp, test_data_categorical):
+def test_run_categorical_datapoints_raw(test_mp, test_data_categorical, request):
+    test_mp = request.getfixturevalue(test_mp)
     do_run_datapoints(test_mp, test_data_categorical, True, DataPoint.Type.CATEGORICAL)
 
 
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.ANNUAL, DataPoint.Type.DATETIME))
-def test_run_inconsistent_categorical_raises(test_mp, test_data_categorical, _type):
+def test_run_inconsistent_categorical_raises(
+    test_mp, test_data_categorical, _type, request
+):
+    test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(SchemaError):
         do_run_datapoints(test_mp, test_data_categorical, True, _type)
 
 
 @all_platforms
-def test_run_datetime_datapoints_raw(test_mp, test_data_datetime):
+def test_run_datetime_datapoints_raw(test_mp, test_data_datetime, request):
+    test_mp = request.getfixturevalue(test_mp)
     do_run_datapoints(test_mp, test_data_datetime, True, DataPoint.Type.DATETIME)
 
 
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.ANNUAL, DataPoint.Type.CATEGORICAL))
-def test_run_inconsistent_datetime_type_raises(test_mp, test_data_datetime, _type):
+def test_run_inconsistent_datetime_type_raises(
+    test_mp, test_data_datetime, _type, request
+):
+    test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(SchemaError):
         do_run_datapoints(test_mp, test_data_datetime, True, _type)
 
 
 @all_platforms
-def test_unit_dimensionless_raw(test_mp, test_data_annual):
+def test_unit_dimensionless_raw(test_mp, test_data_annual, request):
+    test_mp = request.getfixturevalue(test_mp)
     test_data_annual.loc[0, "unit"] = ""
     do_run_datapoints(test_mp, test_data_annual, True, DataPoint.Type.ANNUAL)
 
 
 @all_platforms
-def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual):
+def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual, request):
+    test_mp = request.getfixturevalue(test_mp)
     test_data_annual.loc[0, "unit"] = "dimensionless"
     with pytest.raises(ValueError, match="Unit name 'dimensionless' is reserved,"):
         do_run_datapoints(test_mp, test_data_annual, DataPoint.Type.ANNUAL)
 
 
 @all_platforms
-def test_run_tabulate_with_filter_raw(test_mp, test_data_annual):
+def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request):
+    test_mp = request.getfixturevalue(test_mp)
     # Filter run directly
     add_regions(test_mp, test_data_annual["region"].unique())
     add_units(test_mp, test_data_annual["unit"].unique())

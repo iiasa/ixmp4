@@ -163,7 +163,7 @@ class DataPointRepository(
         join_runs: bool = False,
         _filter: DataPointFilter | None = None,
         _exc: db.sql.Select | None = None,
-        **kwargs: Any
+        **kwargs: Any,
     ) -> db.sql.Select:
         if _exc is not None:
             exc = _exc

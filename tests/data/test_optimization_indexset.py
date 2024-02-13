@@ -35,7 +35,8 @@ def df_from_list(indexsets: list):
 
 @all_platforms
 class TestDataOptimizationIndexSet:
-    def test_create_indexset(self, test_mp):
+    def test_create_indexset(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -49,7 +50,8 @@ class TestDataOptimizationIndexSet:
                 run_id=run.id, name="Indexset"
             )
 
-    def test_get_indexset(self, test_mp):
+    def test_get_indexset(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -62,7 +64,8 @@ class TestDataOptimizationIndexSet:
         assert indexset.run__id == 1
         assert indexset.name == "Indexset"
 
-    def test_list_indexsets(self, test_mp):
+    def test_list_indexsets(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
         test_mp.backend.runs.set_as_default_version(run.id)
@@ -77,7 +80,8 @@ class TestDataOptimizationIndexSet:
         )
         assert [indexset_1, indexset_2] == test_mp.backend.optimization.indexsets.list()
 
-    def test_tabulate_indexsets(self, test_mp):
+    def test_tabulate_indexsets(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         # Per default, tabulate() lists scalars for `default` version runs:
         test_mp.backend.runs.set_as_default_version(run.id)
@@ -110,7 +114,8 @@ class TestDataOptimizationIndexSet:
             expected, test_mp.backend.optimization.indexsets.tabulate(name="Indexset 1")
         )
 
-    def test_add_elements(self, test_mp):
+    def test_add_elements(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_elements = ["foo", "bar"]
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
