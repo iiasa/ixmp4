@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import RootModel
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.scenario.filter import ScenarioFilter
 
 from . import deps
-from .base import BaseModel
+from .base import BaseModel, EnumerationOutput, Pagination
 from .decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -19,28 +18,24 @@ class ScenarioInput(BaseModel):
     name: str
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.Scenario] | api.DataFrame
-
-
 @autodoc
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: ScenarioFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.scenarios.enumerate(_filter=filter, table=bool(table))
-
-
-@autodoc
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.Scenario])
 def query(
     filter: ScenarioFilter = Body(None),
     table: bool | None = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.scenarios.enumerate(_filter=filter, table=bool(table))
+    return EnumerationOutput(
+        results=backend.scenarios.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.scenarios.count(_filter=filter),
+        pagination=pagination,
+    )
 
 
 @autodoc

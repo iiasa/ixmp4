@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, Generic, Iterable, Mapping, TypeVar
+from typing import Any, ClassVar, Generic, Mapping, TypeVar
 
 import pandas as pd
 from sqlalchemy.ext.declarative import AbstractConcreteBase
@@ -70,7 +70,7 @@ class TimeSeriesRepository(
 
     @guard("view")
     def get(self, run_id: int, **kwargs: Any) -> ModelType:
-        exc = self.select(run_ids=[run_id], **kwargs)
+        exc = self.select(run={"id": run_id}, **kwargs)
 
         try:
             return self.session.execute(exc).scalar_one()
@@ -86,23 +86,15 @@ class TimeSeriesRepository(
 
         return obj
 
-    def filter_by_parameters(
-        self, exc: db.sql.Select, parameters: Mapping
-    ) -> db.sql.Select:
-        raise NotImplementedError
-
     def select_joined_parameters(self) -> db.sql.Select:
         raise NotImplementedError
 
     def select(
         self,
         *,
-        id__in: Iterable[int] | None = None,
-        run_ids: Iterable[int] | None = None,
-        parameters: Mapping | None = None,
-        join_parameters: bool | None = False,
         _exc: db.sql.Select | None = None,
-        _access_type: str = "view",
+        join_parameters: bool | None = False,
+        **kwargs,
     ) -> db.sql.Select:
         if _exc is not None:
             exc = _exc
@@ -111,20 +103,10 @@ class TimeSeriesRepository(
         else:
             exc = db.select(self.model_class)
 
-        exc = self.apply_auth(exc, _access_type)
-
-        if id__in is not None:
-            exc = exc.where(self.model_class.id.in_(id__in))
-
-        if run_ids is not None:
-            exc = exc.where(self.model_class.run__id.in_(run_ids))
-        if parameters:
-            exc = self.filter_by_parameters(exc, parameters)
-
-        return exc
+        return super().select(_exc=exc, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[ModelType]:
+    def list(self, *args, **kwargs) -> list[ModelType]:
         return super().list(*args, **kwargs)
 
     @guard("view")

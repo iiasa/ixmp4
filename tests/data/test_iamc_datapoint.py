@@ -27,7 +27,8 @@ from ..utils import add_regions, add_units, all_platforms, assert_unordered_equa
         ({"scenario": {"name__in": ["scen_1", "scen_2"]}}, None),
     ],
 )
-def test_filtering(test_mp, filter, exp_filter):
+def test_filtering(test_mp, filter, exp_filter, request):
+    test_mp = request.getfixturevalue(test_mp)
     # preparing the data
     test_data_columns = ["region", "variable", "unit", "step_year", "value"]
     test_data = [
@@ -50,7 +51,9 @@ def test_filtering(test_mp, filter, exp_filter):
         add_regions(test_mp, data.region.unique())
         add_units(test_mp, data.unit.unique())
         # add the data for two different models to test filtering
-        test_mp.runs.create(f"model_{i + 1}", f"scen_{i + 1}").iamc.add(data)
+        run = test_mp.runs.create(f"model_{i + 1}", f"scen_{i + 1}")
+        run.iamc.add(data)
+        run.set_as_default()
 
     obs = (
         test_mp.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
@@ -75,7 +78,8 @@ def test_filtering(test_mp, filter, exp_filter):
         {"run": {"default_only": "test"}},
     ],
 )
-def test_invalid_filters(test_mp, filter):
+def test_invalid_filters(test_mp, filter, request):
+    test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(BadFilterArguments):
         test_mp.backend.iamc.datapoints.tabulate(**filter)
     with pytest.raises(BadFilterArguments):

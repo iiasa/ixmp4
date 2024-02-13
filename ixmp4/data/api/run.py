@@ -1,4 +1,4 @@
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 from pydantic import Field
@@ -37,7 +37,6 @@ class RunRepository(
 ):
     model_class = Run
     prefix = "runs/"
-    enumeration_method = "PATCH"
 
     def create(self, model_name: str, scenario_name: str) -> Run:
         return super().create(model_name=model_name, scenario_name=scenario_name)
@@ -48,16 +47,17 @@ class RunRepository(
             scenario={"name": scenario_name},
             version=version,
             default_only=False,
+            is_default=None,
         )
 
-    def list(self, *args, **kwargs) -> Iterable[Run]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[Run] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(self, **kwargs) -> list[Run]:
+        return super()._list(json=kwargs)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[Run] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(self, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs)
 
     def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         try:

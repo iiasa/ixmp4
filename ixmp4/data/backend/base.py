@@ -42,3 +42,7 @@ class Backend(object):
         self.info = info
         self.iamc = IamcSubobject()
         self.optimization = OptimizationSubobject()
+
+    def close(self) -> None:
+        """Closes the connection to the database."""
+        ...

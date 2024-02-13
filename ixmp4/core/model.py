@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 
@@ -67,7 +67,7 @@ class ModelRepository(BaseFacade):
         model = self.backend.models.get(name)
         return Model(_backend=self.backend, _model=model)
 
-    def list(self, name: str | None = None) -> Iterable[Model]:
+    def list(self, name: str | None = None) -> list[Model]:
         models = self.backend.models.list(name=name)
         return [Model(_backend=self.backend, _model=m) for m in models]
 

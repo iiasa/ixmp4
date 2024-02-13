@@ -1,4 +1,4 @@
-from typing import Iterable, Protocol
+from typing import Protocol
 
 from ixmp4.data import types
 
@@ -27,7 +27,7 @@ class Docs(base.BaseModel, Protocol):
 class DocsRepository(
     base.Retriever,
     base.Deleter,
-    base.Lister,
+    base.Enumerator,
     Protocol,
 ):
     def get(self, dimension_id: int) -> Docs:
@@ -89,7 +89,7 @@ class DocsRepository(
         self,
         *,
         dimension_id: int | None = None,
-    ) -> Iterable[Docs]:
+    ) -> list[Docs]:
         """Lists documentations.
 
         Parameters

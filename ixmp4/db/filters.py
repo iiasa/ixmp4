@@ -1,5 +1,5 @@
 from types import UnionType
-from typing import Any, ClassVar, Iterable, Optional, Union, get_args, get_origin
+from typing import Any, ClassVar, Optional, Union, get_args, get_origin
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError
 from pydantic.fields import FieldInfo
@@ -83,11 +83,11 @@ filter_func_prefix = "filter_"
 lookup_map: dict[object, dict] = {
     Id: {
         "__root__": (int, exact),
-        "in": (Iterable[int], in_),
+        "in": (list[int], in_),
     },
     Float: {
         "__root__": (int, exact),
-        "in": (Iterable[int], in_),
+        "in": (list[int], in_),
         "gt": (int, gt),
         "lt": (int, lt),
         "gte": (int, gte),
@@ -95,7 +95,7 @@ lookup_map: dict[object, dict] = {
     },
     Integer: {
         "__root__": (int, exact),
-        "in": (Iterable[int], in_),
+        "in": (list[int], in_),
         "gt": (int, gt),
         "lt": (int, lt),
         "gte": (int, gte),
@@ -106,7 +106,7 @@ lookup_map: dict[object, dict] = {
     },
     String: {
         "__root__": (str, exact),
-        "in": (Iterable[str], in_),
+        "in": (list[str], in_),
         "like": (str, like),
         "ilike": (str, ilike),
         "notlike": (str, notlike),
@@ -181,15 +181,22 @@ class FilterMeta(PydanticMeta):
             return
 
         namespace.setdefault(field_name, field)
+        override_lookups: list | None = None
         if isinstance(field.json_schema_extra, dict):
-            override_lookups = field.json_schema_extra.get("lookups", None)
+            jschema_lookups = field.json_schema_extra.get("lookups", None)
+            if isinstance(jschema_lookups, list):
+                override_lookups = jschema_lookups
+            else:
+                raise ProgrammingError(
+                    "Field argument `lookups` must be `list` of `str`."
+                )
         else:
             override_lookups = None
-        if override_lookups:
+        if isinstance(override_lookups, list):
             lookups = {k: v for k, v in lookups.items() if k in override_lookups}
         elif override_lookups is None:
             pass
-        else:
+        else:  # TODO (How) do we ensure the type of override_lookups?
             lookups = {}
         base_field_alias = str(field.alias) if field.alias else field_name
 
@@ -251,6 +258,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
+
         except ValidationError as e:
             raise BadFilterArguments(model=e.title, errors=e.errors())
 
@@ -258,9 +266,9 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         return exc
 
     def apply(self, exc: db.sql.Select, model, session) -> db.sql.Select:
+        dict_model = dict(self)
         for name, field_info in self.model_fields.items():
-            value = getattr(self, name, field_info.get_default())
-
+            value = dict_model.get(name, field_info.get_default())
             if isinstance(value, BaseFilter):
                 submodel = getattr(value, "sqla_model", None)
                 model_getter = getattr(value, "get_sqla_model", None)
@@ -275,8 +283,14 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
                 if filter_func is None:
                     raise ProgrammingError
 
+                sqla_column: str | None = None
                 if isinstance(field_info.json_schema_extra, dict):
-                    sqla_column = field_info.json_schema_extra.get("sqla_column")
+                    jschema_col = field_info.json_schema_extra.get("sqla_column")
+                    if not isinstance(jschema_col, str):
+                        raise ProgrammingError(
+                            "Field argument `sqla_column` must be of type `str`."
+                        )
+                    sqla_column = jschema_col
                 else:
                     sqla_column = None
                 if sqla_column is None:

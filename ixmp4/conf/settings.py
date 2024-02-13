@@ -32,7 +32,9 @@ class Settings(BaseSettings):
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
     manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
     managed: bool = True
-
+    max_page_size: int = 10_000
+    default_page_size: int = 5_000
+    default_upload_chunk_size: int = 10_000
     model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
     def __init__(self, *args, **kwargs) -> None:

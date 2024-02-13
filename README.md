@@ -1,10 +1,10 @@
 # The ixmp4 package for scenario data management
 
-Copyright (c) 2023 IIASA - Energy, Climate, and Environment Program (ECE)
+Copyright (c) 2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/iiasa/ixmp4/blob/main/LICENSE)
-[![python](https://img.shields.io/badge/python-3.10_|_3.11-blue?logo=python&logoColor=white)](https://github.com/iiasa/ixmp4)
-[![Ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/charliermarsh/ruff)
+[![python](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12-blue?logo=python&logoColor=white)](https://github.com/iiasa/ixmp4)
+[![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 ## Overview
 
@@ -13,7 +13,8 @@ in the domain of integrated assessment of climate change and energy systems mode
 
 ## License
 
-The **ixmp4** package is released under the [MIT license](https://github.com/iiasa/ixmp4/blob/main/LICENSE).
+The **ixmp4** package is released under
+the [MIT license](https://github.com/iiasa/ixmp4/blob/main/LICENSE).
 
 ## Install from pypi
 
@@ -71,11 +72,11 @@ ixmp4 --help
 
 ## Docs
 
-Check [doc/README.md](doc/README.md) on how to build and serve dev documentation locally.
+Read [doc/README.md](doc/README.md) to build and serve the documentation locally.
 
 ## Docker Image
 
-Check [docker/README.md](docker/README.md) on how to build and publish docker images.
+Check [docker/README.md](docker/README.md) to build and publish docker images.
 
 ## Developing
 

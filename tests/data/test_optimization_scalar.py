@@ -35,7 +35,8 @@ def df_from_list(scalars: list):
 
 @all_platforms
 class TestDataOptimizationScalar:
-    def test_create_scalar(self, test_mp):
+    def test_create_scalar(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         unit2 = test_mp.backend.units.create("Unit 2")
@@ -52,7 +53,8 @@ class TestDataOptimizationScalar:
                 run_id=run.id, name="Scalar", value=2, unit_name=unit2.name
             )
 
-    def test_get_scalar(self, test_mp):
+    def test_get_scalar(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
@@ -63,7 +65,8 @@ class TestDataOptimizationScalar:
             run_id=run.id, name="Scalar"
         )
 
-    def test_update_scalar(self, test_mp):
+    def test_update_scalar(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         unit2 = test_mp.backend.units.create("Unit 2")
@@ -81,7 +84,8 @@ class TestDataOptimizationScalar:
         assert ret.unit__id == unit2.id
         assert ret.value == 20
 
-    def test_list_scalars(self, test_mp):
+    def test_list_scalars(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
         test_mp.backend.runs.set_as_default_version(run.id)
@@ -96,7 +100,8 @@ class TestDataOptimizationScalar:
         assert [scalar_1] == test_mp.backend.optimization.scalars.list(name="Scalar")
         assert [scalar_1, scalar_2] == test_mp.backend.optimization.scalars.list()
 
-    def test_tabulate_scalars(self, test_mp):
+    def test_tabulate_scalars(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
         # Per default, tabulate() lists scalars for `default` version runs:
         test_mp.backend.runs.set_as_default_version(run.id)

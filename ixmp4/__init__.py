@@ -17,4 +17,5 @@ from ixmp4.core.exceptions import NotFound as NotFound
 from ixmp4.core.exceptions import NotUnique as NotUnique
 from ixmp4.data.abstract import DataPoint as DataPoint
 
-__version__ = importlib.metadata.version("ixmp4")
+__version__ = "0.0.0"
+__version_tuple__ = (0, 0, 0)

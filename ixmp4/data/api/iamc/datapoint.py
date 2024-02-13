@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 
@@ -31,16 +31,37 @@ class DataPointRepository(
 ):
     model_class = DataPoint
     prefix = "iamc/datapoints/"
-    enumeration_method = "PATCH"
 
-    def list(self, *args, **kwargs) -> Iterable[DataPoint]:
-        return super().list(*args, **kwargs)
+    def enumerate(self, **kwargs) -> list[DataPoint] | pd.DataFrame:
+        return super().enumerate(**kwargs)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def list(
+        self,
+        join_parameters: bool | None = None,
+        join_runs: bool | None = None,
+        **kwargs,
+    ) -> list[DataPoint]:
+        return super()._list(
+            json=kwargs,
+            params={
+                "join_parameters": join_parameters,
+                "join_runs": join_runs,
+            },
+        )
 
-    def enumerate(self, *args, **kwargs) -> Iterable[DataPoint] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def tabulate(
+        self,
+        join_parameters: bool | None = None,
+        join_runs: bool | None = None,
+        **kwargs,
+    ) -> pd.DataFrame:
+        return super()._tabulate(
+            json=kwargs,
+            params={
+                "join_parameters": join_parameters,
+                "join_runs": join_runs,
+            },
+        )
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         super().bulk_upsert(df)

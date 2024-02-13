@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
 import pandas as pd
 
@@ -67,7 +67,7 @@ class ScenarioRepository(BaseFacade):
         model = self.backend.scenarios.get(name)
         return Scenario(_backend=self.backend, _model=model)
 
-    def list(self, name: str | None = None) -> Iterable[Scenario]:
+    def list(self, name: str | None = None) -> list[Scenario]:
         scenarios = self.backend.scenarios.list(name=name)
         return [Scenario(_backend=self.backend, _model=s) for s in scenarios]
 

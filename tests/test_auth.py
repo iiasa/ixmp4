@@ -220,10 +220,10 @@ def test_guards(user, truths, test_sqlite_mp):
         ["Other Model", private, None],
     ],
 )
-def test_filters(model, platform, access, test_mp, test_data_annual):
+def test_filters(model, platform, access, test_mp, test_data_annual, request):
     user = User(username="User Carina", is_verified=True, groups=[6, 7])
 
-    mp = test_mp
+    mp = request.getfixturevalue(test_mp)
     add_regions(mp, test_data_annual["region"].unique())
     add_units(mp, test_data_annual["unit"].unique())
 

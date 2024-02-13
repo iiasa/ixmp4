@@ -1,4 +1,4 @@
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -70,7 +70,7 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         self,
         *,
         name: str | None = None,
-    ) -> Iterable[Scenario]:
+    ) -> list[Scenario]:
         """Lists scenarios by specified criteria.
 
         Parameters

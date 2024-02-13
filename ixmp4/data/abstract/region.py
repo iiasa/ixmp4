@@ -1,4 +1,4 @@
-from typing import Iterable, Protocol
+from typing import Protocol
 
 import pandas as pd
 
@@ -120,7 +120,7 @@ class RegionRepository(
         name: str | None = None,
         hierarchy: str | None = None,
         **kwargs,
-    ) -> Iterable[Region]:
+    ) -> list[Region]:
         r"""Lists regions by specified criteria.
 
         Parameters

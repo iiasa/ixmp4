@@ -9,32 +9,27 @@ import pytest
 from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
-from ixmp4.data.abstract import DataPoint
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
+from ixmp4.data.generator import MockDataGenerator
 
-
-def read_test_data(path):
-    df = pd.read_excel(path)
-    df = df.melt(
-        id_vars=["model", "scenario", "region", "variable", "unit"],
-        var_name="step_year",
-        value_name="value",
-    ).dropna(subset=["value"])
-    df["step_year"] = df["step_year"].astype(int)
-    df["type"] = DataPoint.Type.ANNUAL
-    return df
-
-
+TEST_DATA_BIG = None
 try:
-    TEST_DATA_BIG = read_test_data("./tests/test-data/big-test-data.xlsx").reset_index(
-        drop=True
-    )
+    TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual_big.csv")
+    if TEST_DATA_BIG.empty:
+        TEST_DATA_BIG = None
     # TEST_DATA_BIG = read_test_data(
     #     "./tests/test-data/very-big-test-data.xlsx"
     # ).reset_index(drop=True)
 except FileNotFoundError:
     TEST_DATA_BIG = None  # skip benchmark tests
+
+SKIP_PGSQL_TESTS = False
+try:
+    mp = Platform(_backend=PostgresTestBackend())
+    mp.backend.close()
+except OperationalError:
+    SKIP_PGSQL_TESTS = True
 
 
 @pytest.fixture(scope="function")
@@ -116,13 +111,7 @@ def test_sqlite_mp():
 
 @pytest.fixture
 def test_pgsql_mp():
-    try:
-        mp = Platform(_backend=PostgresTestBackend())
-    except OperationalError as e:
-        pytest.skip(
-            f"Cannot connect to PostgreSQL database service, skipping test: {e}"
-        )
-
+    mp = Platform(_backend=PostgresTestBackend())
     yield mp
     mp.backend.close()
 
@@ -135,3 +124,43 @@ def test_api_sqlite_mp(test_sqlite_mp):
 @pytest.fixture
 def test_api_pgsql_mp(test_pgsql_mp):
     return Platform(_backend=RestTestBackend(test_pgsql_mp.backend))
+
+
+@pytest.fixture(scope="module")
+def test_sqlite_mp_generated():
+    mp = Platform(_backend=SqliteTestBackend())
+    generate_mock_data(mp)
+    return mp
+
+
+@pytest.fixture(scope="module")
+def test_pgsql_mp_generated(request):
+    mp = Platform(_backend=PostgresTestBackend())
+    generate_mock_data(mp)
+    yield mp
+    mp.backend.close()
+
+
+@pytest.fixture(scope="module")
+def test_api_sqlite_mp_generated(test_sqlite_mp_generated):
+    return Platform(_backend=RestTestBackend(test_sqlite_mp_generated.backend))
+
+
+@pytest.fixture(scope="module")
+def test_api_pgsql_mp_generated(test_pgsql_mp_generated):
+    return Platform(_backend=RestTestBackend(test_pgsql_mp_generated.backend))
+
+
+gen_obj_nums = dict(
+    num_models=10,
+    num_runs=30,
+    num_regions=100,
+    num_variables=200,
+    num_units=50,
+    num_datapoints=10_000,
+)
+
+
+def generate_mock_data(mp):
+    gen = MockDataGenerator(mp, **gen_obj_nums)
+    gen.generate()

@@ -7,5 +7,6 @@ from .optimizationtable import OptimizationTableFilter
 from .region import RegionFilter
 from .run import RunFilter
 from .scenario import ScenarioFilter
+from .timeseries import TimeSeriesFilter
 from .unit import UnitFilter
 from .variable import VariableFilter

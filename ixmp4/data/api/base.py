@@ -1,5 +1,6 @@
+import logging
 from json.decoder import JSONDecodeError
-from typing import Any, ClassVar, Generic, Iterable, Mapping, Sequence, Type, TypeVar
+from typing import Any, ClassVar, Generic, Type, TypeVar
 
 import httpx
 import pandas as pd
@@ -7,12 +8,15 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
+from ixmp4.conf import settings
 from ixmp4.core.exceptions import (
     ImproperlyConfigured,
     IxmpError,
     UnknownApiError,
     registry,
 )
+
+logger = logging.getLogger(__name__)
 
 
 class BaseModel(PydanticBaseModel):
@@ -78,7 +82,7 @@ ModelType = TypeVar("ModelType", bound=BaseModel)
 class BaseRepository(Generic[ModelType]):
     model_class: Type[ModelType]
     prefix: ClassVar[str]
-    enumeration_method: str = "GET"
+    enumeration_method: str = "PATCH"
 
     client: httpx.Client
 
@@ -108,58 +112,122 @@ class BaseRepository(Generic[ModelType]):
             )
         return exc.from_dict(json)
 
-    def _request(self, method: str, path: str, *args, **kwargs) -> Mapping | Sequence:
-        res = self.client.request(method, path, *args, **kwargs)
+    def _request(
+        self,
+        method: str,
+        path: str,
+        params: dict | None = None,
+        json: dict | None = None,
+        **kwargs,
+    ) -> dict | list | None:
+        """Sends a request and reraises remote exception if thrown."""
+        if params is None:
+            params = {}
+        else:
+            params = self.sanitize_params(params)
+
+        res = self.client.request(method, path, params=params, json=json, **kwargs)
 
         if res.status_code >= 400:
+            if res.status_code == 413:
+                raise ImproperlyConfigured(
+                    "Received status code 413 (Payload Too Large). "
+                    "Consider decreasing `IXMP4_DEFAULT_UPLOAD_CHUNK_SIZE` "
+                    f"(current: {settings.default_upload_chunk_size})."
+                )
             raise self.get_remote_exception(res, res.status_code)
         else:
             try:
                 return res.json()
-            except (ValueError, JSONDecodeError):
-                return res.text
+            except JSONDecodeError:
+                if res.status_code < 300 and res.text == "":
+                    return None
+            except ValueError:
+                pass
+            raise UnknownApiError(res.text)
 
-    def _get_by_id(self, id: int, *args, **kwargs) -> Mapping[str, Any]:
+    def _get_by_id(self, id: int, *args, **kwargs) -> dict[str, Any]:
         # we can assume this type on create endpoints
         return self._request("GET", self.prefix + str(id) + "/", **kwargs)  # type: ignore
 
-    def _enumerate(self, *args, table: bool = False, **kwargs) -> Mapping | Sequence:
-        json = None
-        params = {}
-        params["table"] = table
-        join_parameters = kwargs.pop("join_parameters", None)
-        join_runs = kwargs.pop("join_runs", None)
-        join_run_index = kwargs.pop("join_run_index", None)
+    def _request_enumeration(
+        self,
+        table: bool = False,
+        params: dict | None = None,
+        json: dict | None = None,
+    ):
+        """Convenience method for requests to the enumeration endpoint."""
+        if params is None:
+            params = {}
 
-        if join_parameters is not None:
-            params["join_parameters"] = join_parameters
-        if join_runs is not None:
-            params["join_runs"] = join_runs
-        if join_run_index is not None:
-            params["join_run_index"] = join_run_index
-
-        if self.enumeration_method == "GET":
-            params.update(kwargs)
-        else:
-            json = kwargs
-        # we can assume this type on list endpoints
         return self._request(
             self.enumeration_method,
             self.prefix,
-            params=self.sanitize_params(params),
+            params={**params, "table": table},
             json=json,
         )
 
-    def _list(self, **kwargs) -> Sequence[Mapping[str, Any]]:
-        # we can assume this type on list endpoints
-        return self._enumerate(table=False, **kwargs)  # type: ignore
+    def _handle_pagination(
+        self,
+        data: dict,
+        table: bool = False,
+        params: dict | None = None,
+        json: dict | None = None,
+    ) -> list[list] | list[dict]:
+        """Handles paginated response and sends subsequent requests if necessary.
+        Returns aggregated pages as a list."""
 
-    def _tabulate(self, **kwargs) -> pd.DataFrame:
-        # we can assume this type on table endpoints
-        jdf: Mapping[str, Any] = self._enumerate(table=True, **kwargs)  # type: ignore
-        return DataFrame(**jdf).to_pandas()
+        total = data.pop("total")
+        pagination = data.pop("pagination")
+        offset = pagination.pop("offset")
+        limit = pagination.pop("limit")
+        if total <= offset + limit:
+            return [data.pop("results")]
+        else:
+            new_params = {"limit": limit, "offset": offset + limit}
+            if params is not None:
+                params.update(new_params)
+            else:
+                params = new_params
+            next_data = self._request_enumeration(table=table, params=params, json=json)
+            pages = self._handle_pagination(
+                next_data, table=table, params=params, json=json
+            )
+            return [data.pop("results")] + pages
 
-    def _create(self, *args, **kwargs) -> Mapping[str, Any]:
+    def _list(
+        self, params: dict | None = None, json: dict | None = None, **kwargs
+    ) -> list[ModelType]:
+        data = self._request_enumeration(params=params, table=False, json=json)
+        if isinstance(data, dict):
+            # we can assume this type on list endpoints
+            pages: list[list] = self._handle_pagination(
+                data, table=False, params=params, json=json
+            )  # type: ignore
+            results = [i for page in pages for i in page]
+        else:
+            results = data
+        return [self.model_class(**i) for i in results]
+
+    def _tabulate(
+        self, params: dict | None = {}, json: dict | None = None, **kwargs
+    ) -> pd.DataFrame:
+        data = self._request_enumeration(table=True, params=params, json=json)
+        pagination = data.get("pagination", None)
+        if pagination is not None:
+            # we can assume this type on table endpoints
+            pages: list[dict] = self._handle_pagination(
+                data,
+                table=True,
+                params=params,
+                json=json,
+            )  # type: ignore
+            dfs = [DataFrame(**page).to_pandas() for page in pages]
+            return pd.concat(dfs)
+        else:
+            return DataFrame(**data).to_pandas()
+
+    def _create(self, *args, **kwargs) -> dict[str, Any]:
         # we can assume this type on create endpoints
         return self._request("POST", *args, **kwargs)  # type: ignore
 
@@ -168,8 +236,11 @@ class BaseRepository(Generic[ModelType]):
 
 
 class Retriever(BaseRepository[ModelType]):
-    def get(self, *args, **kwargs) -> ModelType:
-        list_ = self._list(*args, **kwargs)
+    def get(self, **kwargs) -> ModelType:
+        if self.enumeration_method == "GET":
+            list_ = self._list(params=kwargs)
+        else:
+            list_ = self._list(json=kwargs)
 
         try:
             [obj] = list_
@@ -177,7 +248,7 @@ class Retriever(BaseRepository[ModelType]):
             raise self.model_class.NotFound(
                 f"Expected exactly one result, got {len(list_)} instead."
             ) from e
-        return self.model_class(**obj)
+        return obj
 
 
 class Creator(BaseRepository[ModelType]):
@@ -195,29 +266,42 @@ class Deleter(BaseRepository[ModelType]):
 
 
 class Lister(BaseRepository[ModelType]):
-    def list(self, *args, **kwargs) -> Iterable[ModelType]:
-        return [
-            self.model_class(**obj)
-            for obj in self._list(
-                **kwargs,
-            )
-        ]
+    def list(self, *args, **kwargs) -> list[ModelType]:
+        return self._list(json=kwargs)
 
 
 class Tabulator(BaseRepository[ModelType]):
     def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return self._tabulate(*args, **kwargs)
+        return self._tabulate(json=kwargs)
 
 
 class Enumerator(Lister[ModelType], Tabulator[ModelType]):
     def enumerate(
         self, *args, table: bool = False, **kwargs
-    ) -> Iterable[ModelType] | pd.DataFrame:
-        return self._enumerate(*args, table=table, **kwargs)
+    ) -> list[ModelType] | pd.DataFrame:
+        if table:
+            return self.tabulate(*args, **kwargs)
+        else:
+            return self.list(*args, **kwargs)
 
 
-class BulkUpserter(BaseRepository[ModelType]):
-    def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
+class BulkOperator(BaseRepository[ModelType]):
+    def yield_chunks(self, df: pd.DataFrame, chunk_size: int):
+        for _, chunk in df.groupby(df.index // chunk_size):
+            yield chunk
+
+
+class BulkUpserter(BulkOperator[ModelType]):
+    def bulk_upsert(
+        self,
+        df: pd.DataFrame,
+        chunk_size: int = settings.default_upload_chunk_size,
+        **kwargs,
+    ):
+        for chunk in self.yield_chunks(df, chunk_size):
+            self.bulk_upsert_chunk(chunk, **kwargs)
+
+    def bulk_upsert_chunk(self, df: pd.DataFrame, **kwargs) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
         self._request(
@@ -228,8 +312,17 @@ class BulkUpserter(BaseRepository[ModelType]):
         )
 
 
-class BulkDeleter(BaseRepository[ModelType]):
-    def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
+class BulkDeleter(BulkOperator[ModelType]):
+    def bulk_delete(
+        self,
+        df: pd.DataFrame,
+        chunk_size: int = settings.default_upload_chunk_size,
+        **kwargs,
+    ):
+        for chunk in self.yield_chunks(df, chunk_size):
+            self.bulk_delete_chunk(chunk, **kwargs)
+
+    def bulk_delete_chunk(self, df: pd.DataFrame, **kwargs) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
         self._request(

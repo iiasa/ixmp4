@@ -8,28 +8,33 @@ from ..utils import all_platforms, assert_unordered_equality, create_filter_test
 
 @all_platforms
 class TestDataScenario:
-    def test_create_scenario(self, test_mp):
+    def test_create_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         scenario = test_mp.backend.scenarios.create("Scenario")
         assert scenario.name == "Scenario"
         assert scenario.created_at is not None
         assert scenario.created_by == "@unknown"
 
-    def test_scenario_unique(self, test_mp):
+    def test_scenario_unique(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.backend.scenarios.create("Scenario")
 
         with pytest.raises(Scenario.NotUnique):
             test_mp.scenarios.create("Scenario")
 
-    def test_get_scenario(self, test_mp):
+    def test_get_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         scenario1 = test_mp.backend.scenarios.create("Scenario")
         scenario2 = test_mp.backend.scenarios.get("Scenario")
         assert scenario1 == scenario2
 
-    def test_scenario_not_found(self, test_mp):
+    def test_scenario_not_found(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(Scenario.NotFound):
             test_mp.scenarios.get("Scenario")
 
-    def test_list_scenario(self, test_mp):
+    def test_list_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.runs.create("Model", "Scenario 1")
         test_mp.runs.create("Model", "Scenario 2")
 
@@ -40,7 +45,8 @@ class TestDataScenario:
         assert scenarios[1].id == 2
         assert scenarios[1].name == "Scenario 2"
 
-    def test_tabulate_scenario(self, test_mp):
+    def test_tabulate_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.runs.create("Model", "Scenario 1")
         test_mp.runs.create("Model", "Scenario 2")
 
@@ -57,13 +63,15 @@ class TestDataScenario:
             scenarios.drop(columns=["created_at", "created_by"]), true_scenarios
         )
 
-    def test_map_scenario(self, test_mp):
+    def test_map_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         test_mp.runs.create("Model", "Scenario 1")
         test_mp.runs.create("Model", "Scenario 2")
 
         assert test_mp.backend.scenarios.map() == {1: "Scenario 1", 2: "Scenario 2"}
 
-    def test_filter_scenario(self, test_mp):
+    def test_filter_scenario(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
         run1, _ = create_filter_test_data(test_mp)
 
         res = test_mp.backend.scenarios.tabulate(
