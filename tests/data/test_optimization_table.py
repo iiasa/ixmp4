@@ -1,9 +1,33 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Table
+from ixmp4 import Platform, Table
 
 from ..utils import database_platforms
+
+
+def df_from_list(tables: list):
+    return pd.DataFrame(
+        [
+            [
+                table.name,
+                table.data,
+                table.run__id,
+                table.created_at,
+                table.created_by,
+                table.id,
+            ]
+            for table in tables
+        ],
+        columns=[
+            "name",
+            "data",
+            "run__id",
+            "created_at",
+            "created_by",
+            "id",
+        ],
+    )
 
 
 @database_platforms
@@ -25,7 +49,7 @@ class TestDataOptimizationTable:
         assert table.data == {}  # JsonDict type currently requires a dict, not None
 
         assert table.columns[0].name == "Indexset"
-        # TODO: confirm that we are okay with having colum.constrained_to_indexset, but
+        # TODO: confirm that we are okay with having column.constrained_to_indexset, but
         # tables.create(constrained_to_indexsets=...) (extra s)
         assert table.columns[0].constrained_to_indexset == indexset_1.id
 
@@ -193,43 +217,84 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
         assert table_5.data == test_data_2
 
-    # def test_get_scalar(self, test_mp):
-    #     run = test_mp.backend.runs.create("Model", "Scenario")
-    #     unit = test_mp.backend.units.create("Unit")
-    #     scalar = test_mp.backend.optimization.scalars.create(
-    #         run_id=run.id, name="Scalar", value=1, unit_name=unit.name
-    #     )
+    def test_get_table(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+        assert table == test_mp.backend.optimization.tables.get(
+            run_id=run.id, name="Table"
+        )
 
-    #     assert scalar == test_mp.backend.optimization.scalars.get(
-    #         run_id=run.id, name="Scalar"
-    #     )
+        with pytest.raises(Table.NotFound):
+            _ = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
 
-    # def test_update_scalar(self, test_mp):
-    #     run = test_mp.backend.runs.create("Model", "Scenario")
-    #     unit = test_mp.backend.units.create("Unit")
-    #     unit2 = test_mp.backend.units.create("Unit 2")
-    #     scalar = test_mp.backend.optimization.scalars.create(
-    #         run_id=run.id, name="Scalar", value=1, unit_name=unit.name
-    #     )
-    #     assert scalar.id == 1
-    #     assert scalar.unit__id == unit.id
+    def test_list_table(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        # Per default, list() lists scalars for `default` version runs:
+        test_mp.backend.runs.set_as_default_version(run.id)
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+        table_2 = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table 2", constrained_to_indexsets=["Indexset 2"]
+        )
+        assert [table, table_2] == test_mp.backend.optimization.tables.list()
 
-    #     scalar = test_mp.backend.optimization.scalars.update(
-    #         "Scalar", value=20, unit_name="Unit 2", run_id=run.id
-    #     )
-    #     assert scalar.value == 20
-    #     assert scalar.unit__id == unit2.id
+        assert [table] == test_mp.backend.optimization.tables.list(name="Table")
 
-    # def test_list_scalars(self, test_mp):
-    #     run = test_mp.backend.runs.create("Model", "Scenario")
-    #     # Per default, list() lists scalars for `default` version runs:
-    #     test_mp.backend.runs.set_as_default_version(run.id)
-    #     unit = test_mp.backend.units.create("Unit")
-    #     unit2 = test_mp.backend.units.create("Unit 2")
-    #     scalar_1 = test_mp.backend.optimization.scalars.create(
-    #         run_id=run.id, name="Scalar", value=1, unit_name=unit.name
-    #     )
-    #     scalar_2 = test_mp.backend.optimization.scalars.create(
-    #         run_id=run.id, name="Scalar 2", value=2, unit_name=unit2.name
-    #     )
-    #     assert [scalar_1, scalar_2] == test_mp.backend.optimization.scalars.list()
+    def test_tabulate_table(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        # Per default, tabulate() lists scalars for `default` version runs:
+        test_mp.backend.runs.set_as_default_version(run.id)
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        indexset_2 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table",
+            constrained_to_indexsets=["Indexset", "Indexset 2"],
+        )
+        table_2 = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 2",
+            constrained_to_indexsets=["Indexset", "Indexset 2"],
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([table_2]),
+            test_mp.backend.optimization.tables.tabulate(name="Table 2"),
+        )
+
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar"]
+        )
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset_2.id, elements=[1, 2, 3]
+        )
+        test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table.id, data=test_data_1
+        )
+        test_data_2 = {"Indexset 2": [2, 3], "Indexset": ["foo", "bar"]}
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_2.id, data=test_data_2
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([table, table_2]),
+            test_mp.backend.optimization.tables.tabulate(),
+        )

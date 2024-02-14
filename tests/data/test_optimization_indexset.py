@@ -59,10 +59,14 @@ class TestDataOptimizationIndexSet:
         indexset = test_mp.backend.optimization.indexsets.get(
             run_id=run.id, name="Indexset"
         )
-
         assert indexset.id == 1
         assert indexset.run__id == 1
         assert indexset.name == "Indexset"
+
+        with pytest.raises(IndexSet.NotFound):
+            _ = test_mp.backend.optimization.indexsets.get(
+                run_id=run.id, name="Indexset 2"
+            )
 
     def test_list_indexsets(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
