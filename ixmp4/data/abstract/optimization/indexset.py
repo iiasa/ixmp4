@@ -121,6 +121,9 @@ class IndexSetRepository(
                 - id
                 - name
                 - elements
+                - run__id
+                - created_at
+                - created_by
         """
         ...
 

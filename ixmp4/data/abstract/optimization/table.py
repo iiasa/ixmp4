@@ -161,9 +161,10 @@ class TableRepository(
             A data frame with the columns:
                 - id
                 - name
-                - value
-                - `ixmp4.data.abstract.Unit`
-                - `ixmp4.data.abstract.Unit`.id
+                - data
+                - run__id
+                - created_at
+                - created_by
         """
         ...
 
@@ -211,8 +212,8 @@ class TableRepository(
         :class:`ixmp4.data.abstract.optimization.IndexSet`s. For that, `data.keys()`
         must correspond to the names of the Table's columns. Each column can only
         contain values that are in the linked `IndexSet.elements`. Each row of entries
-        must be unique. No values can be missing, None, or NaN. If `data.keys()`
-        contains names already present in Table.data, existing values will be
+        must be unique. No values can be missing, `None`, or `NaN`. If `data.keys()`
+        contains names already present in `Table.data`, existing values will be
         overwritten.
 
         Parameters
@@ -225,7 +226,7 @@ class TableRepository(
         Raises
         ------
         ValueError:
-            - If values are missing, None, or NaN
+            - If values are missing, `None`, or `NaN`
             - If values are not allowed based on constraints to `Indexset`s
             - If rows are not unique
 

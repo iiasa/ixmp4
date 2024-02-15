@@ -170,7 +170,9 @@ class ScalarRepository(
                 - id
                 - name
                 - value
-                - `ixmp4.data.abstract.Unit`
-                - `ixmp4.data.abstract.Unit`.id
+                - unit__id
+                - run__id
+                - created_at
+                - created_by
         """
         ...
