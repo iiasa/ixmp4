@@ -3,7 +3,7 @@ import pytest
 
 from ixmp4 import Platform, Table
 
-from ..utils import database_platforms
+from ..utils import all_platforms
 
 
 def df_from_list(tables: list):
@@ -30,7 +30,7 @@ def df_from_list(tables: list):
     )
 
 
-@database_platforms
+@all_platforms
 class TestDataOptimizationTable:
     def test_create_table(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
@@ -91,6 +91,22 @@ class TestDataOptimizationTable:
                 column_names=["Column 1", "Column 1"],
             )
 
+    def test_get_table(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+        assert table == test_mp.backend.optimization.tables.get(
+            run_id=run.id, name="Table"
+        )
+
+        with pytest.raises(Table.NotFound):
+            _ = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
+
     def test_table_add_data(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
@@ -120,6 +136,9 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(
             table_id=table.id, data=test_data_1
         )
+        # TODO: this is the same for IndexSets, but I don't know if we want to always
+        # get a Table again after adding data to have the data in the local object, too
+        table = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table")
         assert table.data == test_data_1
 
         table_2 = test_mp.backend.optimization.tables.create(
@@ -158,12 +177,14 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(
             table_id=table_3.id, data={"Column 1": ["bar"]}
         )
+        table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
         assert table_3.data == {"Column 1": ["bar"]}
 
         test_mp.backend.optimization.tables.add_data(
             table_id=table_3.id,
             data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
         )
+        table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
         assert table_3.data == {"Column 1": ["foo"], "Column 2": [3]}
 
         with pytest.raises(
@@ -182,11 +203,13 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(
             table_id=table_4.id, data={"Column 2": [2], "Column 1": ["bar"]}
         )
+        table_4 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 4")
         assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
 
         test_mp.backend.optimization.tables.add_data(
             table_id=table_4.id, data={"Column 1": ["foo"], "Column 2": [1]}
         )
+        table_4 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 4")
         assert table_4.data == {"Column 2": [1], "Column 1": ["foo"]}
 
         with pytest.raises(
@@ -212,26 +235,12 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(
             table_id=table_5.id, data=test_data_2
         )
+        table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
         assert table_5.data == test_data_2
 
         test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
+        table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
         assert table_5.data == test_data_2
-
-    def test_get_table(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        _ = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
-        )
-        table = test_mp.backend.optimization.tables.create(
-            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
-        )
-        assert table == test_mp.backend.optimization.tables.get(
-            run_id=run.id, name="Table"
-        )
-
-        with pytest.raises(Table.NotFound):
-            _ = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
 
     def test_list_table(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
@@ -290,10 +299,13 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(
             table_id=table.id, data=test_data_1
         )
+        table = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table")
+
         test_data_2 = {"Indexset 2": [2, 3], "Indexset": ["foo", "bar"]}
         test_mp.backend.optimization.tables.add_data(
             table_id=table_2.id, data=test_data_2
         )
+        table_2 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
         pd.testing.assert_frame_equal(
             df_from_list([table, table_2]),
             test_mp.backend.optimization.tables.tabulate(),
