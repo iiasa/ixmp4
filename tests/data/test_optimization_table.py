@@ -108,7 +108,7 @@ class TestDataOptimizationTable:
             _ = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
 
     def test_table_add_data(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -138,6 +138,7 @@ class TestDataOptimizationTable:
         )
         # TODO: this is the same for IndexSets, but I don't know if we want to always
         # get a Table again after adding data to have the data in the local object, too
+        # This is only necessary in the data layers, though.
         table = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table")
         assert table.data == test_data_1
 
@@ -179,6 +180,12 @@ class TestDataOptimizationTable:
         )
         table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
         assert table_3.data == {"Column 1": ["bar"]}
+
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_3.id, data={"Column 2": [2]}
+        )
+        table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
+        assert table_3.data == {"Column 1": ["bar"], "Column 2": [2]}
 
         test_mp.backend.optimization.tables.add_data(
             table_id=table_3.id,

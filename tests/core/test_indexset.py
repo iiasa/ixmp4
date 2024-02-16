@@ -7,7 +7,7 @@ from ixmp4 import IndexSet
 from ..utils import all_platforms
 
 
-def df_from_list(indexsets: list):
+def df_from_list(indexsets: list[IndexSet]):
     return pd.DataFrame(
         # Order is important here to avoid utils.assert_unordered_equality,
         # which doesn't like lists
