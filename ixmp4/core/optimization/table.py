@@ -1,15 +1,17 @@
 from datetime import datetime
-from typing import ClassVar
+from typing import Any, ClassVar, Iterable
 
-from ixmp4.core.base import BaseModelFacade
+import pandas as pd
+
+from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Table as TableModel
+from ixmp4.data.abstract.optimization import Column
 
 
 class Table(BaseModelFacade):
     _model: TableModel
-    _run: Run
     NotFound: ClassVar = TableModel.NotFound
     NotUnique: ClassVar = TableModel.NotUnique
 
@@ -22,8 +24,27 @@ class Table(BaseModelFacade):
         return self._model.name
 
     @property
-    def run(self):
-        return self._run
+    def run_id(self) -> int:
+        return self._model.run__id
+
+    @property
+    def data(self) -> dict[str, Any]:
+        return self._model.data
+
+    def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
+        """Adds data to an existing Table."""
+        self.backend.optimization.tables.add_data(table_id=self._model.id, data=data)
+        self._model.data = self.backend.optimization.tables.get(
+            run_id=self._model.run__id, name=self._model.name
+        ).data
+
+    @property
+    def constrained_to_indexsets(self) -> list[int]:
+        return [column.constrained_to_indexset for column in self._model.columns]
+
+    @property
+    def columns(self) -> list[Column]:
+        return self._model.columns
 
     @property
     def created_at(self) -> datetime | None:
@@ -57,3 +78,44 @@ class Table(BaseModelFacade):
 
     def __str__(self) -> str:
         return f"<Table {self.id} name={self.name}>"
+
+
+class TableRepository(BaseFacade):
+    _run: Run
+
+    def __init__(self, _run: Run, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self._run = _run
+
+    # TODO Here, constrained_to_indexsets is a list[str], while above it's list[int]
+    # We should make this consistent
+    def create(
+        self,
+        name: str,
+        constrained_to_indexsets: list[str],
+        column_names: list[str] | None = None,
+    ) -> Table:
+        model = self.backend.optimization.tables.create(
+            name=name,
+            run_id=self._run.id,
+            constrained_to_indexsets=constrained_to_indexsets,
+            column_names=column_names,
+        )
+        return Table(_backend=self.backend, _model=model)
+
+    def get(self, name: str) -> Table:
+        model = self.backend.optimization.tables.get(run_id=self._run.id, name=name)
+        return Table(_backend=self.backend, _model=model)
+
+    def list(self, name: str | None = None) -> Iterable[Table]:
+        tables = self.backend.optimization.tables.list(run_id=self._run.id, name=name)
+        return [
+            Table(
+                _backend=self.backend,
+                _model=i,
+            )
+            for i in tables
+        ]
+
+    def tabulate(self, name: str | None = None) -> pd.DataFrame:
+        return self.backend.optimization.tables.tabulate(name=name)

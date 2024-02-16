@@ -62,7 +62,6 @@ class TableRepository(
         if isinstance(data, pd.DataFrame):
             # data will always contains str, not only Hashable
             data: dict[str, Any] = data.to_dict(orient="list")  # type: ignore
-        # kwargs = {"table_id": table_id, "data": data}
         kwargs = {"data": data}
         self._request(
             method="PATCH", path=self.prefix + str(table_id) + "/", json=kwargs
