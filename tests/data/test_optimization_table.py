@@ -33,8 +33,10 @@ def df_from_list(tables: list):
 @all_platforms
 class TestDataOptimizationTable:
     def test_create_table(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
+
+        # Test normal creation
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -42,22 +44,19 @@ class TestDataOptimizationTable:
             run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
         )
 
-        # check why column.dtype is 'object'
-
         assert table.run__id == run.id
         assert table.name == "Table"
         assert table.data == {}  # JsonDict type currently requires a dict, not None
-
         assert table.columns[0].name == "Indexset"
-        # TODO: confirm that we are okay with having column.constrained_to_indexset, but
-        # tables.create(constrained_to_indexsets=...) (extra s)
         assert table.columns[0].constrained_to_indexset == indexset_1.id
 
+        # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
             _ = test_mp.backend.optimization.tables.create(
                 run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
             )
 
+        # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
             _ = test_mp.backend.optimization.tables.create(
                 run_id=run.id,
@@ -66,15 +65,7 @@ class TestDataOptimizationTable:
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
-        # TODO: do we want this to raise an error?
-        # with pytest.raises(ValueError):
-        #     _ = test_mp.backend.optimization.tables.create(
-        #         run_id=run.id,
-        #         name="Table 2",
-        #         constrained_to_indexsets=[indexset_1.name, indexset_1.name],
-        #         column_names=["Column 1", "Column 2"]
-        #     )
-
+        # Test columns_names are used for names if given
         table_2 = test_mp.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 2",
@@ -83,6 +74,7 @@ class TestDataOptimizationTable:
         )
         assert table_2.columns[0].name == "Column 1"
 
+        # Test duplicate column_names raise
         with pytest.raises(ValueError, match="`column_names` are not unique"):
             _ = test_mp.backend.optimization.tables.create(
                 run_id=run.id,
@@ -90,6 +82,23 @@ class TestDataOptimizationTable:
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test column.dtype is registered correctly
+        indexset_2 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_2.id, elements=2024
+        )
+        indexset_2 = test_mp.backend.optimization.indexsets.get(run.id, indexset_2.name)
+        table_3 = test_mp.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 5",
+            constrained_to_indexsets=["Indexset", indexset_2.name],
+        )
+        # If indexset doesn't have elements, a generic dtype is registered
+        assert table_3.columns[0].dtype == "object"
+        assert table_3.columns[1].dtype == "int64"
 
     def test_get_table(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
@@ -136,9 +145,7 @@ class TestDataOptimizationTable:
         test_mp.backend.optimization.tables.add_data(
             table_id=table.id, data=test_data_1
         )
-        # TODO: this is the same for IndexSets, but I don't know if we want to always
-        # get a Table again after adding data to have the data in the local object, too
-        # This is only necessary in the data layers, though.
+
         table = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table")
         assert table.data == test_data_1
 
@@ -161,6 +168,7 @@ class TestDataOptimizationTable:
                 data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
             )
 
+        # Test raising on unrecognised data.values()
         with pytest.raises(
             ValueError, match="contains keys and/or values that are not allowed"
         ):
@@ -175,18 +183,18 @@ class TestDataOptimizationTable:
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
-        test_mp.backend.optimization.tables.add_data(
-            table_id=table_3.id, data={"Column 1": ["bar"]}
-        )
-        table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
-        assert table_3.data == {"Column 1": ["bar"]}
+        with pytest.raises(ValueError, match="Data is missing for some Columns!"):
+            test_mp.backend.optimization.tables.add_data(
+                table_id=table_3.id, data={"Column 1": ["bar"]}
+            )
 
         test_mp.backend.optimization.tables.add_data(
-            table_id=table_3.id, data={"Column 2": [2]}
+            table_id=table_3.id, data={"Column 1": ["bar"], "Column 2": [2]}
         )
         table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
         assert table_3.data == {"Column 1": ["bar"], "Column 2": [2]}
 
+        # Test data is overwritten when Column.name is already present
         test_mp.backend.optimization.tables.add_data(
             table_id=table_3.id,
             data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
@@ -194,6 +202,7 @@ class TestDataOptimizationTable:
         table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
         assert table_3.data == {"Column 1": ["foo"], "Column 2": [3]}
 
+        # Test raising on non-existing Column.name
         with pytest.raises(
             ValueError, match="contains keys and/or values that are not allowed"
         ):
@@ -201,6 +210,7 @@ class TestDataOptimizationTable:
                 table_id=table_3.id, data={"Column 3": [1]}
             )
 
+        # Test that order is not important...
         table_4 = test_mp.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 4",
@@ -213,6 +223,7 @@ class TestDataOptimizationTable:
         table_4 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 4")
         assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
 
+        # ...even for overwriting
         test_mp.backend.optimization.tables.add_data(
             table_id=table_4.id, data={"Column 1": ["foo"], "Column 2": [1]}
         )
@@ -227,6 +238,7 @@ class TestDataOptimizationTable:
                 data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
             )
 
+        # Test various data types
         test_data_2 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
         indexset_3 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 3"
@@ -245,6 +257,7 @@ class TestDataOptimizationTable:
         table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
         assert table_5.data == test_data_2
 
+        # This doesn't raise since the union of existing and new data is validated
         test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
         table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
         assert table_5.data == test_data_2

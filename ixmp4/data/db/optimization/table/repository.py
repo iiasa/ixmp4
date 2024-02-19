@@ -28,7 +28,7 @@ class TableRepository(
 
         self.filter_class = OptimizationTableFilter
 
-    def add_column(
+    def _add_column(
         self,
         run_id: int,
         table_id: int,
@@ -36,6 +36,26 @@ class TableRepository(
         indexset_name: str,
         **kwargs,
     ) -> None:
+        r"""Adds a Column to a Table.
+
+        Parameters
+        ----------
+        run_id : int
+            The id of the :class:`ixmp4.data.abstract.Run` for which the
+            :class:`ixmp4.data.abstract.optimization.Table` is defined.
+        table_id : int
+            The id of the :class:`ixmp4.data.abstract.optimization.Table`.
+        column_name : str
+            The name of the Column, which must be unique in connection with the names of
+            :class:`ixmp4.data.abstract.Run` and
+            :class:`ixmp4.data.abstract.optimization.Table`.
+        indexset_name : str
+            The name of the :class:`ixmp4.data.abstract.optimization.IndexSet` the
+            Column will be linked to.
+        \*\*kwargs: any
+            Keyword arguments to be passed to
+            :func:`ixmp4.data.abstract.optimization.Column.create`.
+        """
         indexset = self.backend.optimization.indexsets.get(
             run_id=run_id, name=indexset_name
         )
@@ -80,10 +100,13 @@ class TableRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],  # TODO: try passing a str to this
+        constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
         **kwargs,
     ) -> Table:
+        # Convert to list to avoid enumerate() splitting strings to letters
+        if isinstance(constrained_to_indexsets, str):
+            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
             raise ValueError(
                 "`constrained_to_indexsets` and `column_names` not equal in length! "
@@ -102,7 +125,7 @@ class TableRepository(
             **kwargs,
         )
         for i, name in enumerate(constrained_to_indexsets):
-            self.add_column(
+            self._add_column(
                 run_id=run_id,
                 table_id=table.id,
                 column_name=column_names[i] if column_names else name,

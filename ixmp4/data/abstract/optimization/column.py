@@ -4,6 +4,7 @@ from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from .indexset import IndexSet
 
 
 # TODO: standardize docstrings (run/Run/`Run`)
@@ -16,7 +17,7 @@ class Column(base.BaseModel, Protocol):
     """Type of the Column's data."""
     table__id: types.Integer
     """Foreign unique integer id of a Table."""
-    indexset: types.Mapped
+    indexset: types.Mapped[IndexSet]
     """Associated IndexSet."""
     constrained_to_indexset: types.Integer
     """Foreign unique integer id of an IndexSet."""

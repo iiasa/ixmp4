@@ -39,8 +39,8 @@ class Table(BaseModelFacade):
         ).data
 
     @property
-    def constrained_to_indexsets(self) -> list[int]:
-        return [column.constrained_to_indexset for column in self._model.columns]
+    def constrained_to_indexsets(self) -> list[str]:
+        return [column.indexset.name for column in self._model.columns]
 
     @property
     def columns(self) -> list[Column]:

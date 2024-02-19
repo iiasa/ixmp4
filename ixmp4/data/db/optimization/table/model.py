@@ -46,22 +46,28 @@ class Table(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key, data: dict[str, Any]):
-        # if isinstance(data, dict):
+        # TODO for all of the following, we might want to create unique exceptions
+        #
+        if len(data) < len(self.columns):
+            raise ValueError(
+                f"Data is missing for some Columns! \n Data: {data} \n "
+                f"Columns: {[column.name for column in self.columns]}"
+            )
+
         data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
 
-        # TODO for all of the following, we might want to create unique exceptions
-        # TODO: we could make this more specific maybe by pointing to the missing values
+        # We could make this more specific maybe by pointing to the missing values
         if data_frame.isna().any(axis=None):
             raise ValueError(
                 "Table.data is missing values, please make sure it does "
                 "not contain None or NaN, either!"
             )
-        # TODO we can make this more specific e.g. highlighting all duplicate rows via
+        # We can make this more specific e.g. highlighting all duplicate rows via
         # pd.DataFrame.duplicated(keep="False")
         if data_frame.value_counts().max() > 1:
             raise ValueError("Table.data contains duplicate rows!")
 
-        # TODO can we make this more specific? Iterating over columns; if any is False,
+        # Can we make this more specific? Iterating over columns; if any is False,
         # return its name or something?
         limited_to_indexsets = self.collect_indexsets_to_check()
         if not data_frame.isin(limited_to_indexsets).all(axis=None):

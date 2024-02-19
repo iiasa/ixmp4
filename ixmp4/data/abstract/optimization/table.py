@@ -168,43 +168,8 @@ class TableRepository(
         """
         ...
 
-    # TODO Why does this take **kwargs?
-    # TODO We might only need this in the DB layer, so might not want to expose this
-    # docstring
-    def add_column(
-        self, run_id: int, table_id: int, column_name: str, indexset_name: str, **kwargs
-    ) -> None:
-        r"""Adds a Column to a Table.
-
-        Parameters
-        ----------
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which the
-            :class:`ixmp4.data.abstract.optimization.Table` is defined.
-        table_id : int
-            The id of the :class:`ixmp4.data.abstract.optimization.Table`.
-        column_name : str
-            The name of the Column, which must be unique in connection with the names of
-            :class:`ixmp4.data.abstract.Run` and
-            :class:`ixmp4.data.abstract.optimization.Table`.
-        indexset_name : str
-            The name of the :class:`ixmp4.data.abstract.optimization.IndexSet` the
-            Column will be linked to.
-        \*\*kwargs: any
-
-        Raises
-        ------
-        :class:`ixmp4.data.abstract.optimization.Table.NotFound`.
-            If the Table with `table_id` does not exist.
-
-        Returns
-        -------
-        None
-        """
-        ...
-
-    # Once present, state how to check which IndexSets are linked and which values they
-    # permit
+    # TODO Once present, state how to check which IndexSets are linked and which values
+    # they permit
     def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         r"""Adds data to a Table.
 

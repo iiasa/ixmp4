@@ -37,6 +37,8 @@ class TestCoreTable:
     def test_create_table(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
+
+        # Test normal creation
         indexset = run.optimization.indexsets.create("Indexset")
         table = run.optimization.tables.create(
             "Table 1",
@@ -47,13 +49,15 @@ class TestCoreTable:
         assert table.name == "Table 1"
         assert table.data == {}
         assert table.columns[0].name == "Indexset"
-        assert table.constrained_to_indexsets == [indexset.id]
+        assert table.constrained_to_indexsets == [indexset.name]
 
+        # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
             _ = run.optimization.tables.create(
                 "Table 1", constrained_to_indexsets=["Indexset"]
             )
 
+        # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
             _ = run.optimization.tables.create(
                 name="Table 2",
@@ -61,14 +65,7 @@ class TestCoreTable:
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
-        # TODO: do we want this to raise an error?
-        # with pytest.raises(ValueError):
-        #     _ = run.optimization.tables.create(
-        #         name="Table 2",
-        #         constrained_to_indexsets=[indexset_1.name, indexset_1.name],
-        #         column_names=["Column 1", "Column 2"]
-        #     )
-
+        # Test columns_names are used for names if given
         table_2 = run.optimization.tables.create(
             name="Table 2",
             constrained_to_indexsets=[indexset.name],
@@ -76,12 +73,24 @@ class TestCoreTable:
         )
         assert table_2.columns[0].name == "Column 1"
 
+        # Test duplicate column_names raise
         with pytest.raises(ValueError, match="`column_names` are not unique"):
             _ = run.optimization.tables.create(
                 name="Table 3",
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test column.dtype is registered correctly
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset_2.add(elements=2024)
+        table_3 = run.optimization.tables.create(
+            "Table 5",
+            constrained_to_indexsets=["Indexset", indexset_2.name],
+        )
+        # If indexset doesn't have elements, a generic dtype is registered
+        assert table_3.columns[0].dtype == "object"
+        assert table_3.columns[1].dtype == "int64"
 
     def test_get_table(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
@@ -96,7 +105,7 @@ class TestCoreTable:
         assert table.name == "Table"
         assert table.data == {}
         assert table.columns[0].name == indexset.name
-        assert table.constrained_to_indexsets == [indexset.id]
+        assert table.constrained_to_indexsets == [indexset.name]
 
         with pytest.raises(Table.NotFound):
             _ = run.optimization.tables.get(name="Table 2")
@@ -137,6 +146,7 @@ class TestCoreTable:
                 data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
             )
 
+        # Test raising on unrecognised data.values()
         with pytest.raises(
             ValueError, match="contains keys and/or values that are not allowed"
         ):
@@ -149,25 +159,25 @@ class TestCoreTable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
-        table_3.add(data={"Column 1": ["bar"]})
-        assert table_3.data == {"Column 1": ["bar"]}
+        with pytest.raises(ValueError, match="Data is missing for some Columns!"):
+            table_3.add(data={"Column 1": ["bar"]})
 
-        # TODO we should add a way of seeing which columns already have data if we want
-        # to keep this kind of one-by-one filling; otherwise add check that all data
-        # must be present at once
-        table_3.add(data={"Column 2": [2]})
+        table_3.add(data={"Column 1": ["bar"], "Column 2": [2]})
         assert table_3.data == {"Column 1": ["bar"], "Column 2": [2]}
 
+        # Test data is overwritten when Column.name is already present
         table_3.add(
             data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
         )
         assert table_3.data == {"Column 1": ["foo"], "Column 2": [3]}
 
+        # Test raising on non-existing Column.name
         with pytest.raises(
             ValueError, match="contains keys and/or values that are not allowed"
         ):
             table_3.add({"Column 3": [1]})
 
+        # Test that order is not important...
         table_4 = run.optimization.tables.create(
             name="Table 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
@@ -176,6 +186,7 @@ class TestCoreTable:
         table_4.add(data={"Column 2": [2], "Column 1": ["bar"]})
         assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
 
+        # ...even for overwriting
         table_4.add(data={"Column 1": ["foo"], "Column 2": [1]})
         assert table_4.data == {"Column 2": [1], "Column 1": ["foo"]}
 
@@ -186,6 +197,7 @@ class TestCoreTable:
                 data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
             )
 
+        # Test various data types
         test_data_2 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
         indexset_3 = run.optimization.indexsets.create(name="Indexset 3")
         indexset_3.add(elements=[1, "2", 3.14])
@@ -196,6 +208,7 @@ class TestCoreTable:
         table_5.add(test_data_2)
         assert table_5.data == test_data_2
 
+        # This doesn't raise since the union of existing and new data is validated
         table_5.add(data={})
         assert table_5.data == test_data_2
 
