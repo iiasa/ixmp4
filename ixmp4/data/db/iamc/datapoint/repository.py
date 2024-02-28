@@ -4,8 +4,6 @@ import numpy as np
 import pandas as pd
 import pandera as pa
 from pandera.typing import DataFrame, Series
-from sqlalchemy import select
-from sqlalchemy.orm import Bundle
 
 from ixmp4 import db
 from ixmp4.core.decorators import check_types
@@ -109,36 +107,27 @@ class DataPointRepository(
         return exc
 
     def select_joined_parameters(self, join_runs=False):
-        _bundle = []
+        bundle = []
         if join_runs:
-            _bundle.extend(
+            bundle.extend(
                 [
-                    Bundle("Model", Model.name.label("model")),
-                    Bundle("Scenario", Scenario.name.label("scenario")),
-                    Bundle("Run", Run.version),
+                    Model.name.label("model"),
+                    Scenario.name.label("scenario"),
+                    Run.version.label("version"),
                 ]
             )
 
-        _bundle.extend(
+        bundle.extend(
             [
-                Bundle(
-                    "Region",
-                    Region.name.label("region"),
-                ),
-                Bundle(
-                    "Unit",
-                    Unit.name.label("unit"),
-                ),
-                Bundle(
-                    "Variable",
-                    Variable.name.label("variable"),
-                ),
+                Region.name.label("region"),
+                Unit.name.label("unit"),
+                Variable.name.label("variable"),
                 self.bundle,
             ]
         )
 
         _exc = (
-            select(*_bundle)
+            db.select(*bundle)
             .join(
                 TimeSeries, onclause=self.model_class.time_series__id == TimeSeries.id
             )
