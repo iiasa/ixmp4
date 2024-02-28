@@ -269,7 +269,7 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
         **kwargs,
     ) -> int:
         _exc = self.select(
-            _exc=db.select(db.func.count(self.model_class.id)),
+            _exc=db.select(db.func.count(self.model_class.id.distinct())),
             **kwargs,
         )
         return self.session.execute(_exc).scalar_one()
