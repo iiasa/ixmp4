@@ -14,6 +14,9 @@ jobs:
         with-pyarrow:
           - true
           - false
+        include:
+          - python-version: "3.12"
+            with-pyarrow: true
     runs-on: ubuntu-latest
     services:
       postgres:
