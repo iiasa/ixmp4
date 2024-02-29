@@ -122,6 +122,6 @@ ignore = ["B008"]
 max-complexity = 10
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 style = "pep440"
 vcs = "git"
