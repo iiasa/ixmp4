@@ -391,7 +391,10 @@ class BulkUpserter(BulkOperator[ModelType]):
             for col in self.model_class.updateable_columns:
                 updated_col = col + self.merge_suffix
                 if updated_col in df.columns:
-                    cond.append(df[col] != df[updated_col])
+                    df[updated_col] = df[updated_col].astype(df[col].dtype)
+                    are_not_equal = df[col] != df[updated_col]
+                    both_are_na = pd.isna(df[col]) & pd.isna(df[updated_col])
+                    cond.append(~both_are_na | are_not_equal)
 
             df["differs"] = np.where(np.logical_or.reduce(cond), True, False)
 
