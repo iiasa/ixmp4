@@ -17,12 +17,12 @@ documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
 
 [tool.poetry.dependencies]
 PyJWT = "^2.4.0"
-SQLAlchemy = {extras = ["mypy"], version = "^2.0.25"}
+SQLAlchemy = { extras = ["mypy"], version = "^2.0.25" }
 SQLAlchemy-Utils = "^0.41.1"
 alembic = "^1.13.1"
 dask = "^2024.1.1"
 fastapi = "^0.109.0"
-httpx = {extras = ["http2"], version = "^0.26.0"}
+httpx = { extras = ["http2"], version = "^0.26.0" }
 openpyxl = "^3.0.9"
 pandas = "~2.1.2"
 pandera = "^0.18.0"
@@ -32,7 +32,7 @@ python-dotenv = "^1.0.1"
 requests = "^2.27.1"
 typer = "^0.9.0"
 toml = "^0.10.2"
-psycopg = {extras = ["binary"], version = "^3.1.17"}
+psycopg = { extras = ["binary"], version = "^3.1.17" }
 pydantic-settings = "^2.1.0"
 rich = "^13.7.0"
 
@@ -51,7 +51,7 @@ optional = true
 
 [tool.poetry.group.server.dependencies]
 gunicorn = "^21.2.0"
-uvicorn = {extras = ["standard"], version = "^0.27.0.post1"}
+uvicorn = { extras = ["standard"], version = "^0.27.0.post1" }
 
 [tool.poetry.group.dev]
 optional = true

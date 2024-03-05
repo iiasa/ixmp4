@@ -88,7 +88,7 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
         if not utils.is_joined(exc, Run):
             exc = exc.join(Run, TimeSeries.run)
         if not utils.is_joined(exc, Scenario):
-            exc = exc.join(Scenario, onclause=Run.model__id == Scenario.id)
+            exc = exc.join(Scenario, onclause=Run.scenario__id == Scenario.id)
         return exc
 
 
