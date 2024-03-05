@@ -251,6 +251,8 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
         if table:
             return self.tabulate(*args, **kwargs)
         else:
+            # join_run_index is only allowed to tabulate
+            kwargs.pop("join_run_index", None)
             return self.list(*args, **kwargs)
 
     def paginate(

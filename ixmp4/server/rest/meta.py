@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
 
+from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import abstract, api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.meta.filter import RunMetaEntryFilter
@@ -27,6 +28,11 @@ def query(
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
+    if join_run_index and not table:
+        raise BadRequest(
+            "`join_parameters` or `join_run_index` can only be used with `table=true`."
+        )
+
     return EnumerationOutput(
         results=backend.meta.paginate(
             _filter=filter,
