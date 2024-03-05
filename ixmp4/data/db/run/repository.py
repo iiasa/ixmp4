@@ -185,8 +185,9 @@ def select_joined_run_index(repository, **kwargs) -> db.sql.Select:
         Bundle("Run", Run.version),
         repository.bundle,
     )
-    return (
-        repository.select(_exc=_exc, **kwargs)
-        .join(Model, onclause=Model.id == Run.model__id)
-        .join(Scenario, onclause=Scenario.id == Run.scenario__id)
-    )
+    if not utils.is_joined(_exc, Scenario):
+        _exc = _exc.join(Scenario, onclause=Scenario.id == Run.scenario__id)
+    if not utils.is_joined(_exc, Model):
+        _exc = _exc.join(Model, onclause=Model.id == Run.model__id)
+
+    return repository.select(_exc=_exc, **kwargs)
