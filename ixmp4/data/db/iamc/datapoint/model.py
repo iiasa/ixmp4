@@ -22,7 +22,10 @@ class DataPoint(base.BaseModel):
     @declared_attr
     def time_series__id(cls):
         return db.Column(
-            db.Integer, db.ForeignKey("iamc_timeseries.id"), nullable=False, index=True
+            db.Integer,
+            db.ForeignKey("iamc_timeseries.id", ondelete="CASCADE"),
+            nullable=False,
+            index=True,
         )
 
     value = db.Column(db.Float)
