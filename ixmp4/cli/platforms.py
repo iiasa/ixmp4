@@ -127,33 +127,29 @@ def remove(
 
 def tabulate_toml_platforms(platforms: list[TomlPlatformInfo]):
     toml_path_str = typer.style(settings.toml.path, fg=typer.colors.CYAN)
-    utils.echo(f"\nPlatforms in '{toml_path_str}':\n")
+    utils.echo(f"\nPlatforms registered in '{toml_path_str}'")
 
     if len(platforms):
-        utils.echo("Name".ljust(20) + "DSN\n")
+        utils.echo("\nName".ljust(21) + "DSN")
         for p in platforms:
             utils.important(_shorten(p.name, 20), nl=False)
             utils.echo(_shorten(p.dsn, 60))
-    utils.echo("\nLocal platforms: ", nl=False)
-    utils.info(str(len(platforms)))
-
+    utils.echo("Total: " + typer.style(str(len(platforms)), fg=typer.colors.GREEN))
 
 def tabulate_manager_platforms(
     platforms: list[TomlPlatformInfo] | list[ManagerPlatformInfo],
 ):
     manager_url_str = typer.style(settings.manager.url, fg=typer.colors.CYAN)
-    utils.echo(f"\nPlatforms accessible via '{manager_url_str}':\n")
+    utils.echo(f"\nPlatforms accessible via '{manager_url_str}'")
 
-    utils.echo("Name".ljust(20) + "Access".ljust(10) + "Notice\n")
+    utils.echo("\nName".ljust(21) + "Access".ljust(10) + "Notice")
     for p in platforms:
         utils.important(_shorten(p.name, 20), nl=False)
         utils.echo(str(p.accessibility.value.lower()).ljust(10), nl=False)
         if p.notice is not None:
             utils.echo(_shorten(p.notice, 58), nl=False)
         utils.echo()
-
-    utils.echo("\nPlatforms accessible via manager: ", nl=False)
-    utils.info(str(len(platforms)))
+    utils.echo("Total: " + typer.style(str(len(platforms)), fg=typer.colors.GREEN))
 
 
 @app.command("list", help="Lists all registered platforms.")
