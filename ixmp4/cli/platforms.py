@@ -125,37 +125,42 @@ def remove(
         settings.toml.remove_platform(name)
 
 
-def tabulate_platforms(
+def tabulate_toml_platforms(platforms: list[TomlPlatformInfo]):
+    toml_path_str = typer.style(settings.toml.path, fg=typer.colors.CYAN)
+    utils.echo(f"\nPlatforms in '{toml_path_str}':\n")
+
+    if len(platforms):
+        utils.echo("Name".ljust(20) + "DSN\n")
+        for p in platforms:
+            utils.important(_shorten(p.name, 20), nl=False)
+            utils.echo(_shorten(p.dsn, 60))
+    utils.echo("\nLocal platforms: ", nl=False)
+    utils.info(str(len(platforms)))
+
+
+def tabulate_manager_platforms(
     platforms: list[TomlPlatformInfo] | list[ManagerPlatformInfo],
 ):
-    utils.echo("Platform".ljust(15) + "DSN\n".ljust(15))
-    total = 0
+    manager_url_str = typer.style(settings.manager.url, fg=typer.colors.CYAN)
+    utils.echo(f"\nPlatforms accessible via '{manager_url_str}':\n")
+
+    utils.echo("Name".ljust(20) + "Access".ljust(10) + "Notice\n")
     for p in platforms:
-        name = p.name
-        if len(name) > 12:
-            name = name[:9] + "..."
-        name = name.ljust(15)
+        utils.important(_shorten(p.name, 20), nl=False)
+        utils.echo(str(p.accessibility.value.lower()).ljust(10), nl=False)
+        if p.notice is not None:
+            utils.echo(_shorten(p.notice, 58), nl=False)
+        utils.echo()
 
-        utils.important(name, nl=False)
-        utils.echo(p.dsn.ljust(10))
-        total += 1
-
-    utils.info("\n" + str(total), nl=False)
-    utils.echo(" total \n")
+    utils.echo("\nPlatforms accessible via manager: ", nl=False)
+    utils.info(str(len(platforms)))
 
 
 @app.command("list", help="Lists all registered platforms.")
 def list_():
-    toml_path_str = typer.style(settings.toml.path, fg=typer.colors.CYAN)
-    toml_platforms = settings.toml.list_platforms()
-    utils.echo(f"Platforms in '{toml_path_str}':")
-    tabulate_platforms(toml_platforms)
-
+    tabulate_toml_platforms(settings.toml.list_platforms())
     if settings.manager is not None:
-        manager_url_str = typer.style(settings.manager.url, fg=typer.colors.CYAN)
-        manager_platforms = settings.manager.list_platforms()
-        utils.echo(f"Platforms accessible via '{manager_url_str}':")
-        tabulate_platforms(manager_platforms)
+        tabulate_manager_platforms(settings.manager.list_platforms())
 
 
 @app.command(
@@ -279,3 +284,9 @@ def generate_data(generator: MockDataGenerator):
         )
         for df in generator.yield_datapoints(runs, variable_names, units, regions):
             progress.advance(task, len(df))
+
+def _shorten(value: str, length: int):
+    """Shorten and adjust a string to a given length adding `...` if necessary"""
+    if len(value) > length - 4:
+        value = value[: length - 4] + "..."
+    return value.ljust(length)
