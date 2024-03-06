@@ -13,4 +13,5 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     def join(self, exc, **kwargs):
         if not utils.is_joined(exc, Scenario):
-            return exc.join(Scenario, Run.scenario)
+            exc = exc.join(Scenario, Run.scenario)
+        return exc

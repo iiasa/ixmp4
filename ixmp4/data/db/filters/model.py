@@ -13,4 +13,5 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     def join(self, exc, **kwargs):
         if not utils.is_joined(exc, Model):
-            return exc.join(Model, Run.model)
+            exc = exc.join(Model, Run.model)
+        return exc
