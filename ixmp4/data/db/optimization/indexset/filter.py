@@ -8,9 +8,8 @@ from .model import IndexSet
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
     def join(self, exc, **kwargs):
         if not utils.is_joined(exc, Run):
-            return exc.join(Run, onclause=IndexSet.run__id == Run.id)
-        else:
-            return exc
+            exc = exc.join(Run, onclause=IndexSet.run__id == Run.id)
+        return exc
 
 
 class OptimizationIndexSetFilter(

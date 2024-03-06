@@ -8,9 +8,8 @@ from .model import RunMetaEntry
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
     def join(self, exc, **kwargs):
         if not utils.is_joined(exc, Run):
-            return exc.join(Run, onclause=RunMetaEntry.run__id == Run.id)
-        else:
-            return exc
+            exc = exc.join(Run, onclause=RunMetaEntry.run__id == Run.id)
+        return exc
 
 
 class RunMetaEntryFilter(base.RunMetaEntryFilter, metaclass=filters.FilterMeta):
