@@ -16,9 +16,6 @@ class BaseIamcFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=TimeSeries.run__id == Run.id)
 
-        model = get_datapoint_model(session)
-        if not utils.is_joined(exc, model):
-            exc = exc.join(model, onclause=model.time_series__id == TimeSeries.id)
         return exc
 
 
