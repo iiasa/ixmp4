@@ -1,5 +1,4 @@
 from ixmp4.data.db import filters as base
-from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.timeseries import TimeSeries
 from ixmp4.db import filters, utils
 
@@ -22,8 +21,4 @@ class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
             exc = exc.join(
                 TimeSeries, onclause=TimeSeries.measurand__id == Measurand.id
             )
-
-        model = get_datapoint_model(session)
-        if not utils.is_joined(exc, model):
-            exc = exc.join(model, onclause=model.time_series__id == TimeSeries.id)
         return exc

@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from ixmp4.db import filters
+from ixmp4.db import filters, utils
 
 from .. import Run, Scenario
 
@@ -12,4 +12,6 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     sqla_model: ClassVar[type] = Scenario
 
     def join(self, exc, **kwargs):
-        return exc.join(Scenario, Run.scenario)
+        if not utils.is_joined(exc, Scenario):
+            exc = exc.join(Scenario, Run.scenario)
+        return exc
