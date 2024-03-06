@@ -280,6 +280,7 @@ def generate_data(generator: MockDataGenerator):
         for df in generator.yield_datapoints(runs, variable_names, units, regions):
             progress.advance(task, len(df))
 
+
 def _shorten(value: str, length: int):
     """Shorten and adjust a string to a given length adding `...` if necessary"""
     if len(value) > length - 4:
