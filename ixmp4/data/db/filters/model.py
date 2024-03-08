@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from ixmp4.db import filters
+from ixmp4.db import filters, utils
 
 from .. import Model, Run
 
@@ -12,4 +12,6 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     sqla_model: ClassVar[type] = Model
 
     def join(self, exc, **kwargs):
-        return exc.join(Model, Run.model)
+        if not utils.is_joined(exc, Model):
+            exc = exc.join(Model, Run.model)
+        return exc

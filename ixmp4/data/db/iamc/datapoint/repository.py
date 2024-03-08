@@ -210,4 +210,17 @@ class DataPointRepository(
     @guard("edit")
     def bulk_delete(self, df: DataFrame[RemoveDataPointFrameSchema]) -> None:
         self.check_df_access(df)
-        return super().bulk_delete(df)
+        res = super().bulk_delete(df)
+        self.delete_orphans()
+        return res
+
+    def delete_orphans(self):
+        exc = db.delete(TimeSeries).where(
+            ~db.exists(
+                db.select(self.model_class.id).where(
+                    TimeSeries.id == self.model_class.time_series__id
+                )
+            )
+        )
+        self.session.execute(exc, execution_options={"synchronize_session": False})
+        self.session.commit()

@@ -147,6 +147,12 @@ def do_run_datapoints(test_mp, data, raw=True, _type=None):
         ret = ret.drop(columns=["id", "type"])
     assert_unordered_equality(remaining_data, ret, check_like=True)
 
+    ts_after_delete = test_mp.backend.iamc.timeseries.tabulate(join_parameters=True)
+    all_dp_after_delete = test_mp.backend.iamc.datapoints.tabulate()
+    assert set(ts_after_delete["id"].unique()) == set(
+        all_dp_after_delete["time_series__id"].unique()
+    )
+
     # == Partial Update / Partial Addition ==
     # Update all data values
     data["value"] = -9.9
