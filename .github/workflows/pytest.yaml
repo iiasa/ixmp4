@@ -93,6 +93,8 @@ jobs:
       #       check-out repo and set-up python
       #----------------------------------------------
       - uses: actions/checkout@v4
+        with:
+          fetch-tags: true
       - uses: actions/setup-python@v5
       #----------------------------------------------
       #  -----  install & configure poetry  -----
@@ -103,6 +105,11 @@ jobs:
           virtualenvs-create: true
           virtualenvs-in-project: true
           installer-parallel: true
+      #----------------------------------
+      #  install dynamic version plugin  
+      #----------------------------------
+      - name: Install poetry-dynamic-versioning
+        run: poetry self add "poetry-dynamic-versioning[plugin]"
       #----------------------------------------------
       #       load cached venv if cache exists
       #----------------------------------------------
