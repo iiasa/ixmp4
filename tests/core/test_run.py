@@ -4,7 +4,7 @@ import pytest
 
 from ixmp4 import IxmpError, Run
 
-from ..utils import all_platforms
+from ..utils import all_platforms, create_filter_test_data
 
 
 def _expected_runs_table(*row_default):
@@ -93,3 +93,63 @@ class TestCoreRun:
         # non-default version cannot be again set as un-default
         with pytest.raises(IxmpError):
             run2.unset_as_default()
+
+    def test_filter_run(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run1, run2 = create_filter_test_data(test_mp)
+
+        res = test_mp.runs.tabulate(
+            default_only=False,
+            iamc={
+                "region": {"name": "Region 1"},
+            },
+        )
+        assert sorted(res["model"].tolist()) == ["Model 1"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 1"]
+
+        res = test_mp.runs.tabulate(
+            default_only=False,
+            iamc={
+                "region": {"name": "Region 3"},
+            },
+        )
+        assert sorted(res["model"].tolist()) == ["Model 1", "Model 1", "Model 2"]
+        assert sorted(res["scenario"].tolist()) == [
+            "Scenario 1",
+            "Scenario 1",
+            "Scenario 2",
+        ]
+
+        run1.set_as_default()
+        res = test_mp.runs.tabulate(
+            iamc={
+                "variable": {"name": "Variable 1"},
+                "unit": {"name__in": ["Unit 3", "Unit 4"]},
+            }
+        )
+        assert sorted(res["model"].tolist()) == ["Model 2"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
+
+        res = test_mp.runs.tabulate(
+            default_only=False,
+            scenario={"name": "Scenario 2"},
+        )
+        assert sorted(res["model"].tolist()) == ["Model 2"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
+
+        remove_data = test_mp.iamc.tabulate(
+            model={"name": "Model 1"},
+            scenario={"name": "Scenario 1"},
+            run={"default_only": False},
+            region={"name": "Region 3"},
+        )
+        run1.iamc.remove(remove_data)
+        run2.iamc.remove(remove_data)
+        res = test_mp.runs.tabulate(
+            default_only=False,
+            iamc={
+                "region": {"name": "Region 3"},
+            },
+        )
+        assert sorted(res["model"].tolist()) == ["Model 2"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
