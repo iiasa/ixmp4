@@ -96,7 +96,7 @@ class TestCoreRun:
 
     def test_filter_run(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
-        run1, _ = create_filter_test_data(test_mp)
+        run1, run2 = create_filter_test_data(test_mp)
 
         res = test_mp.runs.tabulate(
             default_only=False,
@@ -134,6 +134,22 @@ class TestCoreRun:
             default_only=False,
             scenario={"name": "Scenario 2"},
         )
+        assert sorted(res["model"].tolist()) == ["Model 2"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
 
+        remove_data = test_mp.iamc.tabulate(
+            model={"name": "Model 1"},
+            scenario={"name": "Scenario 1"},
+            run={"default_only": False},
+            region={"name": "Region 3"},
+        )
+        run1.iamc.remove(remove_data)
+        run2.iamc.remove(remove_data)
+        res = test_mp.runs.tabulate(
+            default_only=False,
+            iamc={
+                "region": {"name": "Region 3"},
+            },
+        )
         assert sorted(res["model"].tolist()) == ["Model 2"]
         assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
