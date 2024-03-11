@@ -46,15 +46,19 @@ class Table(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key, data: dict[str, Any]):
+        data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
         # TODO for all of the following, we might want to create unique exceptions
-        #
-        if len(data) < len(self.columns):
+        # Could me make both more specific by specifiying missing/extra columns?
+        if len(data_frame.columns) < len(self.columns):
             raise ValueError(
                 f"Data is missing for some Columns! \n Data: {data} \n "
                 f"Columns: {[column.name for column in self.columns]}"
             )
-
-        data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
+        elif len(data_frame.columns) > len(self.columns):
+            raise ValueError(
+                f"Trying to add data to unknown Columns! \n Data: {data} \n "
+                f"Columns: {[column.name for column in self.columns]}"
+            )
 
         # We could make this more specific maybe by pointing to the missing values
         if data_frame.isna().any(axis=None):
@@ -72,8 +76,8 @@ class Table(base.BaseModel):
         limited_to_indexsets = self.collect_indexsets_to_check()
         if not data_frame.isin(limited_to_indexsets).all(axis=None):
             raise ValueError(
-                "Table.data contains keys and/or values that are not allowed as per "
-                "the IndexSets and Columns it is constrained to!"
+                "Table.data contains values that are not allowed as per the IndexSets "
+                "and Columns it is constrained to!"
             )
 
         return data_frame.to_dict(orient="list")

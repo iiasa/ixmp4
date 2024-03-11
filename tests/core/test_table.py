@@ -147,9 +147,7 @@ class TestCoreTable:
             )
 
         # Test raising on unrecognised data.values()
-        with pytest.raises(
-            ValueError, match="contains keys and/or values that are not allowed"
-        ):
+        with pytest.raises(ValueError, match="contains values that are not allowed"):
             _ = table_2.add(
                 data={"Indexset": ["foo"], "Indexset 2": [0]},
             )
@@ -165,16 +163,14 @@ class TestCoreTable:
         table_3.add(data={"Column 1": ["bar"], "Column 2": [2]})
         assert table_3.data == {"Column 1": ["bar"], "Column 2": [2]}
 
-        # Test data is overwritten when Column.name is already present
+        # Test data is expanded when Column.name is already present
         table_3.add(
             data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
         )
-        assert table_3.data == {"Column 1": ["foo"], "Column 2": [3]}
+        assert table_3.data == {"Column 1": ["bar", "foo"], "Column 2": [2, 3]}
 
         # Test raising on non-existing Column.name
-        with pytest.raises(
-            ValueError, match="contains keys and/or values that are not allowed"
-        ):
+        with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
             table_3.add({"Column 3": [1]})
 
         # Test that order is not important...
@@ -186,13 +182,12 @@ class TestCoreTable:
         table_4.add(data={"Column 2": [2], "Column 1": ["bar"]})
         assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
 
-        # ...even for overwriting
+        # ...even for expanding
         table_4.add(data={"Column 1": ["foo"], "Column 2": [1]})
-        assert table_4.data == {"Column 2": [1], "Column 1": ["foo"]}
+        assert table_4.data == {"Column 2": [2, 1], "Column 1": ["bar", "foo"]}
 
-        with pytest.raises(
-            ValueError, match="contains keys and/or values that are not allowed"
-        ):
+        # This doesn't seem to test a distinct case compared to the above
+        with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
             table_4.add(
                 data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
             )

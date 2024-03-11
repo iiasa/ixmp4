@@ -144,14 +144,13 @@ class TableRepository(
 
     @guard("edit")
     def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
-        if isinstance(data, pd.DataFrame):
-            # data will always contains str, not only Hashable
-            data: dict[str, Any] = data.to_dict(orient="list")  # type: ignore
+        if isinstance(data, dict):
+            data = pd.DataFrame.from_dict(data=data)
         table = self.get_by_id(id=table_id)
 
-        # This union operator overwrites existing keys if they have the same name
-        # as new ones
-        table.data = table.data | data
+        table.data = pd.concat([pd.DataFrame.from_dict(table.data), data]).to_dict(
+            orient="list"
+        )
 
         self.session.add(table)
         self.session.commit()
