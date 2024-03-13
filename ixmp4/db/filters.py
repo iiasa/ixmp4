@@ -255,6 +255,18 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     )
     sqla_model: ClassVar[type | None] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        for key, value in v.items():
+            if key in ["model", "scenario", "region", "variable", "unit"]:
+                if isinstance(value, str):
+                    if "*" in value:
+                        v[key] = dict(name__in=value)
+                    else:
+                        v[key] = dict(name=value)
+        return v
+
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
