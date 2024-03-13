@@ -20,7 +20,7 @@ PyJWT = "^2.4.0"
 SQLAlchemy = { extras = ["mypy"], version = "^2.0.25" }
 SQLAlchemy-Utils = "^0.41.1"
 alembic = "^1.13.1"
-dask = "^2024.1.1"
+dask = { extras = ["dataframe"], version = "^2024.1.1" }
 fastapi = "^0.109.0"
 httpx = { extras = ["http2"], version = "^0.26.0" }
 openpyxl = "^3.0.9"
