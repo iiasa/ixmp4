@@ -80,9 +80,12 @@ def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual, request)
         dict(variable={"name": "Primary Energy"}),
         dict(variable={"name": "Primary Energy"}, unit={"name": "EJ/yr"}),
         dict(variable={"name__like": "* Energy"}, unit={"name": "EJ/yr"}),
+        dict(variable={"name__in": ["Primary Energy", "Some Other Variable"]}),
         dict(variable="Primary Energy"),
         dict(variable="Primary Energy", unit="EJ/yr"),
         dict(variable="* Energy", unit="EJ/yr"),
+        dict(variable=["Primary Energy", "Some Other Variable"]),
+
 ))
 def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request, filters):
     test_mp = request.getfixturevalue(test_mp)

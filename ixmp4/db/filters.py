@@ -307,5 +307,9 @@ def expand_simple_filter(value):
             return dict(name__like=value)
         else:
             return dict(name=value)
+    elif isinstance(value, list):
+        if any(["*" in v for v in value]):
+            raise NotImplementedError("Filter by list with wildcard is not implemented")
+        return dict(name__in=value)
 
     return value
