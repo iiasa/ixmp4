@@ -18,7 +18,7 @@ def to_dimensionless(df: pd.DataFrame) -> pd.DataFrame:
         raise ValueError(
             "Unit name 'dimensionless' is reserved, use an empty string '' instead."
         )
-    df.unit.replace({"": "dimensionless"}, inplace=True)
+    df.replace(to_replace={"unit": ""}, value="dimensionless", inplace=True)
     return df
 
 
