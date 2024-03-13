@@ -260,11 +260,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     def expand_simple_filters(cls, v):
         for key, value in v.items():
             if key in ["model", "scenario", "region", "variable", "unit"]:
-                if isinstance(value, str):
-                    if "*" in value:
-                        v[key] = dict(name__in=value)
-                    else:
-                        v[key] = dict(name=value)
+                v[key] = expand_simple_filter(value)
         return v
 
     def __init__(self, **data: Any) -> None:
@@ -311,3 +307,13 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
                     column = getattr(model, sqla_column, None)
                 exc = filter_func(exc, column, value, session=session)
         return exc.distinct()
+
+
+def expand_simple_filter(value):
+    if isinstance(value, str):
+        if "*" in value:
+            return dict(name__like=value)
+        else:
+            return dict(name=value)
+
+    return value
