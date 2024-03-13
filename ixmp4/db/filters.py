@@ -255,14 +255,6 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     )
     sqla_model: ClassVar[type | None] = None
 
-    @model_validator(mode="before")
-    @classmethod
-    def expand_simple_filters(cls, v):
-        for key, value in v.items():
-            if key in ["model", "scenario", "region", "variable", "unit"]:
-                v[key] = expand_simple_filter(value)
-        return v
-
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)

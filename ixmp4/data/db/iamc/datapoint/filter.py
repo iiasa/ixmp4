@@ -1,5 +1,7 @@
 from typing import ClassVar
 
+from pydantic import model_validator
+
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -18,6 +20,11 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Region
 
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return filters.expand_simple_filter(v)
+
     def join(self, exc, session):
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
@@ -31,6 +38,11 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
 
     sqla_model: ClassVar[type] = Unit
+
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return filters.expand_simple_filter(v)
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
@@ -49,6 +61,11 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Variable
 
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return filters.expand_simple_filter(v)
+
     def join(self, exc, session):
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
@@ -65,6 +82,11 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Model
 
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return filters.expand_simple_filter(v)
+
     def join(self, exc, session):
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
@@ -80,6 +102,11 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     name: filters.String
 
     sqla_model: ClassVar[type] = Scenario
+
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return filters.expand_simple_filter(v)
 
     def join(self, exc, session):
         model = get_datapoint_model(session)
