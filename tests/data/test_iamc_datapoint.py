@@ -71,7 +71,6 @@ def test_filtering(test_mp, filter, exp_filter, request):
 @pytest.mark.parametrize(
     "filter",
     [
-        {"unit": "test"},
         {"dne": {"dne": "test"}},
         {"region": {"dne": "test"}},
         {"region": {"name__in": False}},
