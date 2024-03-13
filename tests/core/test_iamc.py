@@ -37,7 +37,7 @@ def test_run_categorical_datapoints_raw(test_mp, test_data_categorical, request)
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.ANNUAL, DataPoint.Type.DATETIME))
 def test_run_inconsistent_categorical_raises(
-        test_mp, test_data_categorical, _type, request
+    test_mp, test_data_categorical, _type, request
 ):
     test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(SchemaError):
@@ -53,7 +53,7 @@ def test_run_datetime_datapoints_raw(test_mp, test_data_datetime, request):
 @all_platforms
 @pytest.mark.parametrize("_type", (DataPoint.Type.ANNUAL, DataPoint.Type.CATEGORICAL))
 def test_run_inconsistent_datetime_type_raises(
-        test_mp, test_data_datetime, _type, request
+    test_mp, test_data_datetime, _type, request
 ):
     test_mp = request.getfixturevalue(test_mp)
     with pytest.raises(SchemaError):
@@ -76,7 +76,9 @@ def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual, request)
 
 
 @all_platforms
-@pytest.mark.parametrize("filters", (
+@pytest.mark.parametrize(
+    "filters",
+    (
         dict(variable={"name": "Primary Energy"}),
         dict(variable={"name": "Primary Energy"}, unit={"name": "EJ/yr"}),
         dict(variable={"name__like": "* Energy"}, unit={"name": "EJ/yr"}),
@@ -85,7 +87,8 @@ def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual, request)
         dict(variable="Primary Energy", unit="EJ/yr"),
         dict(variable="* Energy", unit="EJ/yr"),
         dict(variable=["Primary Energy", "Some Other Variable"]),
-))
+    ),
+)
 def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request, filters):
     test_mp = request.getfixturevalue(test_mp)
     # Filter run directly
