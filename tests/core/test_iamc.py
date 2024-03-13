@@ -85,7 +85,6 @@ def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual, request)
         dict(variable="Primary Energy", unit="EJ/yr"),
         dict(variable="* Energy", unit="EJ/yr"),
         dict(variable=["Primary Energy", "Some Other Variable"]),
-
 ))
 def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request, filters):
     test_mp = request.getfixturevalue(test_mp)
