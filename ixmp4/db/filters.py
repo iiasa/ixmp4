@@ -1,7 +1,7 @@
 from types import UnionType
 from typing import Any, ClassVar, Optional, Union, get_args, get_origin
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from pydantic.fields import FieldInfo
 
 from ixmp4 import db
@@ -254,6 +254,11 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         populate_by_name=True,
     )
     sqla_model: ClassVar[type | None] = None
+
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return expand_simple_filter(v)
 
     def __init__(self, **data: Any) -> None:
         try:
