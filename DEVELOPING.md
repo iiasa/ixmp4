@@ -251,13 +251,28 @@ command for your convenience.
 docker-compose -f tests/docker-compose.yml up
 ```
 
+### Benchmarks
+
+The tests contain two types of benchmarks:
+
+- `test_benchmarks.py`
+  Simple throughput benchmarks for a
+  few operations and pre-conditions.
+  Check the test docstrings for more information.
+  These tests require a long-format iamc file
+  at `./tests/test-data/iamc-test-data_annual_big.csv`
+
+- `test_benchmark_filters.py`
+  Benchmarks the retrieval of iamc data with different filters.
+  Primarily used for testing query speed.
+
 ### Profiling
 
 Some tests will output profiler information to the `.profiles/` directory (using the
 `profiled` fixture). You can analyze these using `snakeviz`. For example:
 
 ```bash
-snakeviz .profiles/test_add_datapoints_full_benchmark.prof
+snakeviz .profiles/test_add_datapoints_full_benchmark\[test_api_pgsql_mp\].prof
 ```
 
 ## Web API
@@ -289,7 +304,7 @@ docker build --build-arg POETRY_OPTS="--with docs,dev" -t ixmp4-docs:latest .
 This package uses the poetry-dynamic-versioning plugin to generate a version number
 either out of a tag or a current revision.
 
-For this reason the version number is *intentionally* set to 0.0.0 in `pyproject.toml`.
+For this reason the version number is _intentionally_ set to 0.0.0 in `pyproject.toml`.
 
 It is overwritten on the fly by the poetry-dynamic-versioning plugin.
 
@@ -298,15 +313,15 @@ It is overwritten on the fly by the poetry-dynamic-versioning plugin.
 1. Before releasing, check that the "pytest" GitHub action on the current "main" branch
    passes. Address any failures before releasing.
 1. Test on your local machine if the build runs by running `python -m build --sdist
-  --wheel --outdir dist/`. Fix any packaging issues or errors by creating a PR.
+--wheel --outdir dist/`. Fix any packaging issues or errors by creating a PR.
 
 1. Tag the release candidate (RC) version on the main branch as v<release version>rc<N>
-  and push to upstream:
+   and push to upstream:
 
-  ```console
-  git tag v<release version>rc<N>>
-  git push upstream v<release version>rc<N>
-  ```
+```console
+git tag v<release version>rc<N>>
+git push upstream v<release version>rc<N>
+```
 
 1. Check that the GitHub action "Publish ixmp4" was executed correctly and that the
    release candidate was successfully uploaded to TestPyPI. The address will be
@@ -316,31 +331,31 @@ It is overwritten on the fly by the poetry-dynamic-versioning plugin.
    the tag and release simultaneously. The name of the tag is v<release version>
    (without the rc<N>).
 1. Check that the "Publish to PyPI and TestPyPI" GitHub action passed and that the
-  distributions are published on https://pypi.org/project/ixmp4/ .
+   distributions are published on https://pypi.org/project/ixmp4/ .
 
 ## Contributing
 
-Contributions to the code are always welcome! Please make sure your code follows our 
-code style so that the style is consistent. Each PR will be checked by a Code Quality 
-test that examines compliance with ruff and mypy. 
+Contributions to the code are always welcome! Please make sure your code follows our
+code style so that the style is consistent. Each PR will be checked by a Code Quality
+test that examines compliance with ruff and mypy.
 
 ### Running pre-commit locally
 
-We use [pre-commit](https://pre-commit.com/) to check the code style. You can install 
+We use [pre-commit](https://pre-commit.com/) to check the code style. You can install
 pre-commit locally by installing ixmp4 with the optional `dev` group. Running
 
 ```bash
 pre-commit install
 ```
 
-will set pre-commit up to run on every `git commit`. Per default, pre-commit will run 
+will set pre-commit up to run on every `git commit`. Per default, pre-commit will run
 on changed files, but if you want to run it on all files, you can run
 
 ```bash
 pre-commit run --all-files
 ```
 
-If you only want certain hooks to run, choose from `ruff` and `mypy` as 
+If you only want certain hooks to run, choose from `ruff` and `mypy` as
 `hook-ids` and run
 
 ```bash
@@ -349,8 +364,8 @@ pre-commit run <hook-ids> --all-files
 
 ### Ensuring compliance
 
-Whether you run pre-commit locally or see it on your PR for the first time, the checks 
-are the same. You can, of course, run the code style tools manually. From within the 
+Whether you run pre-commit locally or see it on your PR for the first time, the checks
+are the same. You can, of course, run the code style tools manually. From within the
 ixmp4 directory, this would look similar to this:
 
 ```bash
@@ -362,7 +377,7 @@ ruff format .
 ruff check --fix .
 ```
 
-However, it is easy to forget running these commands manually. Therefore, we recommend 
-setting your editor up to run at least [ruff](https://docs.astral.sh/ruff/usage/#vs-code) 
-automatically whenever you hit `save`. A few minutes of configuration will save you time 
+However, it is easy to forget running these commands manually. Therefore, we recommend
+setting your editor up to run at least [ruff](https://docs.astral.sh/ruff/usage/#vs-code)
+automatically whenever you hit `save`. A few minutes of configuration will save you time
 and nerves later on.
