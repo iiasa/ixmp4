@@ -76,7 +76,20 @@ def test_unit_as_string_dimensionless_raises(test_mp, test_data_annual, request)
 
 
 @all_platforms
-def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request):
+@pytest.mark.parametrize(
+    "filters",
+    (
+        dict(variable={"name": "Primary Energy"}),
+        dict(variable={"name": "Primary Energy"}, unit={"name": "EJ/yr"}),
+        dict(variable={"name__like": "* Energy"}, unit={"name": "EJ/yr"}),
+        dict(variable={"name__in": ["Primary Energy", "Some Other Variable"]}),
+        dict(variable="Primary Energy"),
+        dict(variable="Primary Energy", unit="EJ/yr"),
+        dict(variable="* Energy", unit="EJ/yr"),
+        dict(variable=["Primary Energy", "Some Other Variable"]),
+    ),
+)
+def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request, filters):
     test_mp = request.getfixturevalue(test_mp)
     # Filter run directly
     add_regions(test_mp, test_data_annual["region"].unique())
@@ -84,9 +97,7 @@ def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request):
 
     run = test_mp.runs.create("Model", "Scenario")
     run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
-    obs = run.iamc.tabulate(
-        raw=True, variable={"name": "Primary Energy"}, unit={"name": "EJ/yr"}
-    ).drop(["id", "type"], axis=1)
+    obs = run.iamc.tabulate(raw=True, **filters).drop(["id", "type"], axis=1)
     exp = test_data_annual[test_data_annual.variable == "Primary Energy"]
     assert_unordered_equality(obs, exp, check_like=True)
 
