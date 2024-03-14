@@ -1,7 +1,7 @@
 from types import UnionType
 from typing import Any, ClassVar, Optional, Union, get_args, get_origin
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from pydantic.fields import FieldInfo
 
 from ixmp4 import db
@@ -255,6 +255,11 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     )
     sqla_model: ClassVar[type | None] = None
 
+    @model_validator(mode="before")
+    @classmethod
+    def expand_simple_filters(cls, v):
+        return expand_simple_filter(v)
+
     def __init__(self, **data: Any) -> None:
         try:
             super().__init__(**data)
@@ -299,3 +304,17 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
                     column = getattr(model, sqla_column, None)
                 exc = filter_func(exc, column, value, session=session)
         return exc.distinct()
+
+
+def expand_simple_filter(value):
+    if isinstance(value, str):
+        if "*" in value:
+            return dict(name__like=value)
+        else:
+            return dict(name=value)
+    elif isinstance(value, list):
+        if any(["*" in v for v in value]):
+            raise NotImplementedError("Filter by list with wildcard is not implemented")
+        return dict(name__in=value)
+
+    return value
