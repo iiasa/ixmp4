@@ -64,7 +64,7 @@ class TableRepository(
             data: dict[str, Any] = data.to_dict(orient="list")  # type: ignore
         kwargs = {"data": data}
         self._request(
-            method="PATCH", path=self.prefix + str(table_id) + "/", json=kwargs
+            method="PATCH", path=self.prefix + str(table_id) + "/data/", json=kwargs
         )
 
     def get(self, run_id: int, name: str) -> Table:

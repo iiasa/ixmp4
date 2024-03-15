@@ -62,7 +62,7 @@ def query(
 
 
 @autodoc
-@router.patch("/{table_id}/")
+@router.patch("/{table_id}/data/")
 def add_data(
     table_id: int,
     data: DataInput,
