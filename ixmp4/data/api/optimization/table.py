@@ -38,7 +38,6 @@ class TableRepository(
 ):
     model_class = Table
     prefix = "optimization/tables/"
-    enumeration_method = "PATCH"
 
     def __init__(self, client, *args, **kwargs) -> None:
         super().__init__(client, *args, **kwargs)

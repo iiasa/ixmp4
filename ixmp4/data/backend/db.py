@@ -55,6 +55,8 @@ class IamcSubobject(BaseIamcSubobject):
 
 class OptimizationSubobject(BaseOptimizationSubobject):
     indexsets: IndexSetRepository
+    scalars: ScalarRepository
+    tables: TableRepository
 
 
 class SqlAlchemyBackend(Backend):

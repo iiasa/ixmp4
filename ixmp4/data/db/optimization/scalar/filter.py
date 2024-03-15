@@ -10,7 +10,6 @@ class OptimizationUnitFilter(base.UnitFilter, metaclass=filters.FilterMeta):
 class OptimizationScalarFilter(
     base.OptimizationScalarFilter, metaclass=filters.FilterMeta
 ):
-    scalar: base.OptimizationScalarFilter | None
     run: base.RunFilter | None = filters.Field(
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
