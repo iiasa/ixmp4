@@ -32,7 +32,7 @@ class Column(base.BaseModel):
     # Currently not in use:
     unique: types.Boolean = db.Column(db.Boolean, default=True)
 
-    __table_args__ = (UniqueConstraint(name, table__id, constrained_to_indexset),)
+    __table_args__ = (UniqueConstraint(name, table__id),)
 
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
     created_by: types.String = db.Column(db.String(255), nullable=True)
