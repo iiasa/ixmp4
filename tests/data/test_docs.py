@@ -2,7 +2,7 @@ import pytest
 
 from ixmp4.data.abstract import Docs
 
-from ..utils import all_platforms, database_platforms
+from ..utils import all_platforms
 
 
 @all_platforms
@@ -329,9 +329,6 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             test_mp.backend.optimization.scalars.docs.get(scalar.id)
 
-
-@database_platforms
-class TestDatabaseDocs:
     def test_get_and_set_tabledocs(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
         run = test_mp.backend.runs.create("Model", "Scenario")
