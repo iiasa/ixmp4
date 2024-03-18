@@ -1,7 +1,5 @@
 import pandas as pd
-from sqlalchemy import select
 from sqlalchemy.exc import NoResultFound
-from sqlalchemy.orm import Bundle
 
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, NoDefaultRunVersion
