@@ -19,7 +19,12 @@ from .iamc import variable as iamc_variable
 from .middleware import RequestSizeLoggerMiddleware, RequestTimeLoggerMiddleware
 from .optimization import indexset, scalar
 
-v1 = FastAPI(servers=[{"url": "/v1", "description": "v1"}], redirect_slashes=False)
+v1 = FastAPI(
+    servers=[{"url": "/v1", "description": "v1"}],
+    redirect_slashes=False,
+    docs_url="/docs/",
+    redoc_url="/redoc/",
+)
 
 if settings.mode == "debug":
     v1.add_middleware(RequestSizeLoggerMiddleware)
