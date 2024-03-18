@@ -232,7 +232,7 @@ class BaseRepository(Generic[ModelType]):
         return self._request("POST", *args, **kwargs)  # type: ignore
 
     def _delete(self, id: int):
-        self._request("DELETE", self.prefix + str(id))
+        self._request("DELETE", f"{self.prefix}{str(id)}/")
 
 
 class Retriever(BaseRepository[ModelType]):
