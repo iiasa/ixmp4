@@ -1,24 +1,10 @@
-from typing import ClassVar
-
 from ixmp4.data.db import filters as base
-from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
-from ixmp4.data.db.scenario import Scenario
+from ixmp4.data.db.model.filter import ModelFilter
+from ixmp4.data.db.scenario.filter import ScenarioFilter
 from ixmp4.db import filters, utils
 
 from .model import RunMetaEntry
-
-
-class ModelFilter(base.RunFilter, metaclass=filters.FilterMeta):
-    name: filters.String
-
-    sqla_model: ClassVar[type] = Model
-
-
-class ScenarioFilter(base.RunFilter, metaclass=filters.FilterMeta):
-    name: filters.String
-
-    sqla_model: ClassVar[type] = Scenario
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
