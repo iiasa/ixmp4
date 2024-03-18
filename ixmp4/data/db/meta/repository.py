@@ -138,11 +138,12 @@ class RunMetaEntryRepository(
 
     def select_with_run_index(self) -> db.sql.Select:
         _exc = db.select(
-            self.bundle,
             Model.name.label("model_name"),
             Scenario.name.label("scenario_name"),
             Run.version.label("version"),
-        )
+            self.bundle,
+        ).select_from(self.model_class)
+
         return (
             _exc.join(Run, Run.id == RunMetaEntry.run__id)
             .join(Model, onclause=Model.id == Run.model__id)
