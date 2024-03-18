@@ -176,17 +176,3 @@ class RunRepository(
 
         run.is_default = False
         self.session.commit()
-
-
-def select_joined_run_index(repository, **kwargs) -> db.sql.Select:
-    _exc = select(
-        Bundle("Model", Model.name.label("model")),
-        Bundle("Scenario", Scenario.name.label("scenario")),
-        Bundle("Run", Run.version),
-        repository.bundle,
-    )
-    return (
-        repository.select(_exc=_exc, **kwargs)
-        .join(Model, onclause=Model.id == Run.model__id)
-        .join(Scenario, onclause=Scenario.id == Run.scenario__id)
-    )
