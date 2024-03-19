@@ -1,7 +1,7 @@
 from ixmp4.data.db import filters as base
-from ixmp4.data.db.run import Run
 from ixmp4.data.db.filters.model import ModelFilter
 from ixmp4.data.db.filters.scenario import ScenarioFilter
+from ixmp4.data.db.run import Run
 from ixmp4.db import filters, utils
 
 from .model import RunMetaEntry
