@@ -1,5 +1,7 @@
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.run import Run
+from ixmp4.data.db.filters.model import ModelFilter
+from ixmp4.data.db.filters.scenario import ScenarioFilter
 from ixmp4.db import filters, utils
 
 from .model import RunMetaEntry
@@ -13,6 +15,8 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
 
 
 class RunMetaEntryFilter(base.RunMetaEntryFilter, metaclass=filters.FilterMeta):
+    model: ModelFilter
+    scenario: ScenarioFilter
     run: RunFilter = filters.Field(
         default=RunFilter(id=None, version=None, is_default=True)
     )
