@@ -190,6 +190,9 @@ def create_iamc_query_test_data(test_mp):
     )
 
     run1.iamc.add(dps, type=DataPoint.Type.ANNUAL)
+    run1.meta = {"run": 1, "test": 0.1293, "bool": True}
     dps["variable"] = "Variable 4"
     run2.iamc.add(dps, type=DataPoint.Type.ANNUAL)
+    run2.meta = {"run": 2, "test": "string", "bool": False}
+
     return [r1, r2, r3], units

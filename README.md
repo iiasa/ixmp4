@@ -83,6 +83,17 @@ Check [docker/README.md](docker/README.md) to build and publish docker images.
 See [DEVELOPING.md](DEVELOPING.md) for guidance. When contributing to this project via
 a Pull Request, add your name to the "authors" section in the `pyproject.toml` file.
 
+## Compatibility
+
+This project mainly targets postgres version 15 but we test version 16 continously also. Tests with pyarrow installed alongside are also run due to its effect on pandas etc.
+| python | postgres | with pyarrow |
+|--------|----------|--------------|
+| 3.10 | 15 | false |
+| 3.11 | 15 | false |
+| 3.12 | 15 | false |
+| 3.12 | 15 | true |
+| 3.12 | 16 | false |
+
 ## Funding ackownledgement
 
 <img src="./doc/source/_static/ECEMF-logo.png" width="264" height="100"
