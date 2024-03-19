@@ -11,7 +11,7 @@ from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
-from ixmp4.data.db.run.repository import select_joined_run_index
+from ixmp4.data.db.scenario import Scenario
 
 from .. import base
 from .model import RunMetaEntry
@@ -136,6 +136,20 @@ class RunMetaEntryRepository(
 
         return super().join_auth(exc)
 
+    def select_with_run_index(self) -> db.sql.Select:
+        _exc = db.select(
+            Model.name.label("model_name"),
+            Scenario.name.label("scenario_name"),
+            Run.version.label("version"),
+            self.bundle,
+        ).select_from(self.model_class)
+
+        return (
+            _exc.join(Run, Run.id == RunMetaEntry.run__id)
+            .join(Model, onclause=Model.id == Run.model__id)
+            .join(Scenario, onclause=Scenario.id == Run.scenario__id)
+        )
+
     @guard("view")
     def list(self, *args, **kwargs) -> list[RunMetaEntry]:
         return super().list(*args, **kwargs)
@@ -152,13 +166,17 @@ class RunMetaEntryRepository(
             return super().tabulate(*args, **kwargs)
 
         if join_run_index:
-            index_columns = ["model", "scenario", "version"]
-            _exc = select_joined_run_index(self, **kwargs)
+            _exc = self.select_with_run_index()
             df = super().tabulate(*args, _exc=_exc, **kwargs)
             df.drop(columns="run__id", inplace=True)
+            df.rename(
+                columns={"model_name": "model", "scenario_name": "scenario"},
+                inplace=True,
+            )
+            index_columns = ["model", "scenario", "version"]
         else:
-            index_columns = ["run__id"]
             df = super().tabulate(*args, **kwargs)
+            index_columns = ["run__id"]
 
         if df.empty:
             return pd.DataFrame(

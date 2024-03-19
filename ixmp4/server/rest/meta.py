@@ -1,5 +1,6 @@
 from fastapi import APIRouter, Body, Depends, Path, Query
 
+from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import abstract, api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.meta.filter import RunMetaEntryFilter
@@ -22,11 +23,14 @@ class RunMetaEntryInput(BaseModel):
 @router.patch("/", response_model=EnumerationOutput[api.RunMetaEntry])
 def query(
     filter: RunMetaEntryFilter = Body(None),
-    join_run_index: bool = Query(False),
-    table: bool = Query(False),
+    join_run_index: bool | None = Query(False),
+    table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
+    if join_run_index and not table:
+        raise BadRequest("`join_run_index` can only be used with `table=true`.")
+
     return EnumerationOutput(
         results=backend.meta.paginate(
             _filter=filter,

@@ -13,13 +13,19 @@ jobs:
           - "3.12" # Latest version supported by ixmp4
         with-pyarrow:
           - false
+        postgres-version:
+          - "15"
         include:
           - python-version: "3.12"
             with-pyarrow: true
+            postgres-version: "15"
+          - python-version: "3.12"
+            with-pyarrow: false
+            postgres-version: "16"
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres
+        image: postgres:${{ matrix.postgres-version }}
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test
