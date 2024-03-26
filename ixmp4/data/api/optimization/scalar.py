@@ -41,9 +41,9 @@ class ScalarRepository(
     prefix = "optimization/scalars/"
     enumeration_method = "PATCH"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = ScalarDocsRepository(self.client)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.docs = ScalarDocsRepository(self.backend)
 
     def create(
         self,
