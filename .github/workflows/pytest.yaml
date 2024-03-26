@@ -22,7 +22,7 @@ jobs:
           - python-version: "3.12"
             with-pyarrow: false
             postgres-version: "16"
-    name: py${{ matrix.python-version }}-with_pyarrow=${{ matrix.with-pyarrow }}-pgsql${{ matrix.postgres-version }}
+    name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql${{ matrix.postgres-version }}
     runs-on: ubuntu-latest
     services:
       postgres:
