@@ -171,14 +171,14 @@ class BaseRepository(Generic[ModelType]):
         else:
             params = self.sanitize_params(params)
 
-            try:
-                async with self.backend.semaphore:
-                    res = await self.backend.async_client.request(
-                        method, path, params=params, json=json, **kwargs
-                    )
-            except httpx.ReadTimeout:
-                logger.warn("Read timeout, retrying request...")
-                return await retry()
+        try:
+            async with self.backend.semaphore:
+                res = await self.backend.async_client.request(
+                    method, path, params=params, json=json, **kwargs
+                )
+        except httpx.ReadTimeout:
+            logger.warn("Read timeout, retrying request...")
+            return await retry()
 
         if res.status_code in [
             429,  # Too Many Requests
