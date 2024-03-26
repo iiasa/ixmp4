@@ -22,9 +22,9 @@ here = Path(__file__).parent
 
 
 class Settings(BaseSettings):
-    mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
-        "production"
-    )
+    mode: Literal["production"] | Literal["development"] | Literal[
+        "debug"
+    ] = "production"
     storage_directory: Path = Field(
         "~/.local/share/ixmp4/", json_schema_extra={"env": "ixmp4_dir"}
     )

@@ -152,9 +152,8 @@ class BaseRepository(Generic[ModelType]):
                 )
             # increase backoff by `settings.client_backoff_factor`
             # for each retry
-            backoff_s = (
-                settings.client_backoff_factor *
-                (settings.client_max_request_retries - max_retries)
+            backoff_s = settings.client_backoff_factor * (
+                settings.client_max_request_retries - max_retries
             )
             logger.debug(f"Retrying request in {backoff_s} seconds.")
             await asyncio.sleep(backoff_s)
@@ -251,7 +250,6 @@ class BaseRepository(Generic[ModelType]):
         return requests
 
     def _collect_pagination_results(self, requests: list[Coroutine]) -> list:
-
         async def gather():
             return await asyncio.gather(*requests)
 
