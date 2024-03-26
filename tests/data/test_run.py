@@ -100,3 +100,12 @@ class TestDataRun:
 
         runs = test_mp.backend.runs.tabulate(default_only=False)
         assert_unordered_equality(runs, true_runs)
+
+        runs = test_mp.backend.runs.tabulate(default_only=False, iamc=False)
+        assert_unordered_equality(runs, true_runs)
+
+        runs = test_mp.backend.runs.tabulate(default_only=False, iamc={})
+        assert runs.empty
+
+        runs = test_mp.backend.runs.tabulate(default_only=False, iamc=True)
+        assert runs.empty
