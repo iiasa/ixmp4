@@ -39,7 +39,6 @@ class ScalarRepository(
 ):
     model_class = Scalar
     prefix = "optimization/scalars/"
-    enumeration_method = "PATCH"
 
     def __init__(self, client, *args, **kwargs) -> None:
         super().__init__(client, *args, **kwargs)

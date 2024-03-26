@@ -104,8 +104,8 @@ class RegionRepository(
         except Region.NotFound:
             if hierarchy is None:
                 raise TypeError(
-                    """Argument `hierarchy` is required if `Region` with `name` does not
-                     exist."""
+                    "Argument `hierarchy` is required if `Region` with `name` does not "
+                    "exist."
                 )
             return self.create(name, hierarchy)
 

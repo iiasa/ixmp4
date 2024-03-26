@@ -12,7 +12,6 @@ def create_testcase_units(test_mp):
     return unit, unit2
 
 
-# TODO: tabulate does not include docs -> should it?
 def df_from_list(units):
     return pd.DataFrame(
         [[u.id, u.name, u.created_at, u.created_by] for u in units],

@@ -2,7 +2,7 @@ from datetime import datetime
 from typing import ClassVar, List
 
 import pandas as pd
-from pydantic import StrictInt, StrictStr
+from pydantic import StrictFloat, StrictInt, StrictStr
 
 from ixmp4.data import abstract
 
@@ -17,7 +17,9 @@ class IndexSet(base.BaseModel):
 
     id: int
     name: str
-    elements: StrictInt | list[StrictInt | StrictStr] | StrictStr | None
+    elements: StrictFloat | StrictInt | list[
+        StrictFloat | StrictInt | StrictStr
+    ] | StrictStr | None
     run__id: int
 
     created_at: datetime | None
@@ -64,7 +66,10 @@ class IndexSetRepository(
     def add_elements(
         self,
         indexset_id: int,
-        elements: StrictInt | List[StrictInt | StrictStr] | StrictStr,
+        elements: StrictFloat
+        | StrictInt
+        | List[StrictFloat | StrictInt | StrictStr]
+        | StrictStr,
     ) -> None:
         kwargs = {"indexset_id": indexset_id, "elements": elements}
         self._request("PATCH", self.prefix + str(indexset_id) + "/", json=kwargs)

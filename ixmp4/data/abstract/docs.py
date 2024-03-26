@@ -15,7 +15,8 @@ class Docs(base.BaseModel, Protocol):
     dimension: types.Mapped
     "The documented object."
 
-    # This doesn't work since each dimension has a different self.dimension object atm
+    # This doesn't work since each dimension has a different self.dimension object as
+    # of now
     # def __str__(self) -> str:
     #    return (
     #        f"<Documentation for {self.dimension} {self.dimension.name}>"

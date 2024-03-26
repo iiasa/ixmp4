@@ -111,6 +111,10 @@ exclude = [
 ]
 line-length = 88
 
+[tool.ruff.format]
+# Enable reformatting of code snippets in docstrings.
+docstring-code-format = true
+
 [tool.ruff.lint]
 select = ["C9", "E", "F", "I", "W"]
 ignore = ["B008"]

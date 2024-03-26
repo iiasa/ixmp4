@@ -23,10 +23,10 @@ class IndexSet(BaseModelFacade):
         return self._model.name
 
     @property
-    def elements(self) -> list[int | str]:
+    def elements(self) -> list[float | int | str]:
         return self._model.elements
 
-    def add(self, elements: int | list[int | str] | str) -> None:
+    def add(self, elements: float | int | list[float | int | str] | str) -> None:
         """Adds elements to an existing IndexSet."""
         self.backend.optimization.indexsets.add_elements(
             indexset_id=self._model.id, elements=elements

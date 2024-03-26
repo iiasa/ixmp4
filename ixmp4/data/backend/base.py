@@ -8,6 +8,7 @@ from ixmp4.data.abstract import (
     RunRepository,
     ScalarRepository,
     ScenarioRepository,
+    TableRepository,
     TimeSeriesRepository,
     UnitRepository,
     VariableRepository,
@@ -23,6 +24,7 @@ class IamcSubobject(object):
 class OptimizationSubobject(object):
     indexsets: IndexSetRepository
     scalars: ScalarRepository
+    tables: TableRepository
 
 
 class Backend(object):
