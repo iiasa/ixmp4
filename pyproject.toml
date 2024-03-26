@@ -29,7 +29,6 @@ pandera = "^0.18.0"
 pydantic = "^2.5.3"
 python = ">=3.10, <3.13"
 python-dotenv = "^1.0.1"
-requests = "^2.27.1"
 typer = "^0.9.0"
 toml = "^0.10.2"
 psycopg = { extras = ["binary"], version = "^3.1.17" }
@@ -117,6 +116,9 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
+# C901: warning for "too much branching logic"
+# in a function ...
+"ixmp4/data/api/base.py" = ["C901"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10

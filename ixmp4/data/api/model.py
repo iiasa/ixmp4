@@ -31,9 +31,9 @@ class ModelRepository(
     model_class = Model
     prefix = "models/"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = ModelDocsRepository(self.client)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.docs = ModelDocsRepository(self.backend)
 
     def create(
         self,

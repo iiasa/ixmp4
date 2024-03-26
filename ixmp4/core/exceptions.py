@@ -90,6 +90,10 @@ class UnknownApiError(IxmpError):
     http_error_name = "unknown_api_error"
 
 
+class ApiEncumbered(IxmpError):
+    http_error_name = "api_encumbered"
+
+
 class PlatformNotFound(IxmpError):
     http_status_code = 404
     http_error_name = "platform_not_found"

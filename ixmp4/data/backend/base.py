@@ -44,3 +44,6 @@ class Backend(object):
     def close(self) -> None:
         """Closes the connection to the database."""
         ...
+
+    def __str__(self):
+        return f"<Backend {self.info}>"

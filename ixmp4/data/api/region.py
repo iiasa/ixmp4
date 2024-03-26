@@ -44,9 +44,9 @@ class RegionRepository(
     model_class = Region
     prefix = "regions/"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = RegionDocsRepository(self.client)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.docs = RegionDocsRepository(self.backend)
 
     def create(
         self,
