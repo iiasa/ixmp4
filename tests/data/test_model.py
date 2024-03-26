@@ -73,7 +73,7 @@ class TestDataModel:
         run1, _ = create_filter_test_data(test_mp)
 
         res = test_mp.backend.models.tabulate(name__like="Model *")
-        assert sorted(res["name"].tolist()) == ["Model 1", "Model 2"]
+        assert sorted(res["name"].tolist()) == ["Model 1", "Model 2", "Model 3"]
 
         res = test_mp.backend.models.tabulate(
             iamc={
