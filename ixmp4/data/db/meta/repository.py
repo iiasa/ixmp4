@@ -188,6 +188,7 @@ class RunMetaEntryRepository(
             type_ = RunMetaEntry.Type(type_str)
             col = RunMetaEntry._column_map[type_]
             df["value"] = df[col]
+            df["type"] = type_str
             return df.drop(columns=RunMetaEntry._column_map.values())
 
         return df.groupby("type", group_keys=False).apply(
