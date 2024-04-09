@@ -5,6 +5,7 @@ on: pull_request
 
 jobs:
   test:
+    timeout-minutes: 15
     strategy:
       matrix:
         python-version:
