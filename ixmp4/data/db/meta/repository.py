@@ -190,8 +190,7 @@ class RunMetaEntryRepository(
             df["value"] = df[col]
             return df.drop(columns=RunMetaEntry._column_map.values())
 
-        df["type_copy"] = df["type"]
-        return df.groupby("type_copy", group_keys=False).apply(
+        return df.groupby("type", group_keys=False).apply(
             map_value_column, include_groups=False
         )
 
