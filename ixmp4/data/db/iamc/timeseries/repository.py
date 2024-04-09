@@ -123,6 +123,8 @@ class TimeSeriesRepository(
                 variable_name=variable_name, unit__id=int(unit__id)
             )
             df["measurand__id"] = measurand.id
+            df["variable"] = variable_name
+            df["unit__id"] = unit__id
             return df
 
         return pd.DataFrame(
