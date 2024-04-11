@@ -63,8 +63,8 @@ class DataPointRepository(
             },
         )
 
-    def bulk_upsert(self, df: pd.DataFrame) -> None:
+    def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
         super().bulk_upsert(df)
 
-    def bulk_delete(self, df: pd.DataFrame) -> None:
+    def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
         super().bulk_delete(df)

@@ -124,7 +124,7 @@ class RunIamcData(BaseFacade):
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
-        self.backend.iamc.datapoints.bulk_upsert(df, skip_validation=True)
+        self.backend.iamc.datapoints.bulk_upsert(df)
 
     def remove(
         self,
@@ -137,7 +137,7 @@ class RunIamcData(BaseFacade):
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
         df = df.drop(columns=["unit", "variable", "region"])
-        self.backend.iamc.datapoints.bulk_delete(df, skip_validation=True)
+        self.backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(
         self,
