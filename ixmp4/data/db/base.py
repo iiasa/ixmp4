@@ -13,7 +13,6 @@ from typing import (
     TypeVar,
 )
 
-import dask.dataframe as dd
 import numpy as np
 import pandas as pd
 from sqlalchemy import event, text
@@ -287,7 +286,6 @@ class BulkOperator(Tabulator[ModelType]):
     ) -> pd.DataFrame:
         columns = db.utils.get_columns(self.model_class)
         primary_key_columns = db.utils.get_pk_columns(self.model_class)
-        foreign_columns = db.utils.get_foreign_columns(self.model_class)
         on = (
             (
                 set(existing_df.columns) & set(df.columns) & set(columns.keys())
@@ -296,18 +294,12 @@ class BulkOperator(Tabulator[ModelType]):
             - set(primary_key_columns)  # no pk columns
         )  # = all columns that are constant and provided during creation
 
-        ddf = (
-            # https://github.com/dask/dask/issues/9710
-            dd.from_pandas(df, chunksize=512_000)  # type: ignore
-            .set_index(foreign_columns.keys()[0])
-            .merge(
-                existing_df,
-                how="left",
-                on=list(on),
-                suffixes=(None, self.merge_suffix),
-            )
+        return df.merge(
+            existing_df,
+            how="left",
+            on=list(on),
+            suffixes=(None, self.merge_suffix),
         )
-        return ddf.compute()
 
     def drop_merge_artifacts(
         self, df: pd.DataFrame, extra_columns: list[str] | None = None
@@ -368,6 +360,7 @@ class BulkOperator(Tabulator[ModelType]):
 
 
 class BulkUpserter(BulkOperator[ModelType]):
+
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         # slight performance improvement on small operations
         if len(df.index) < self.max_list_length:
@@ -381,7 +374,7 @@ class BulkUpserter(BulkOperator[ModelType]):
         df = df[list(set(columns.keys()) & set(df.columns))]
         existing_df = self.tabulate_existing(df)
         if existing_df.empty:
-            self.bulk_insert(df)
+            self.bulk_insert(df, skip_validation=True)
         else:
             df = self.merge_existing(df, existing_df)
             df["exists"] = np.where(pd.notnull(df["id"]), True, False)
@@ -409,13 +402,13 @@ class BulkUpserter(BulkOperator[ModelType]):
             )
 
             if not insert_df.empty:
-                self.bulk_insert(insert_df)
+                self.bulk_insert(insert_df, skip_validation=True)
             if not update_df.empty:
-                self.bulk_update(update_df)
+                self.bulk_update(update_df, skip_validation=True)
 
         self.session.commit()
 
-    def bulk_insert(self, df: pd.DataFrame) -> None:
+    def bulk_insert(self, df: pd.DataFrame, **kwargs) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
         m: list[dict[str, Any]] = df.to_dict("records")  # type: ignore
 
@@ -424,7 +417,7 @@ class BulkUpserter(BulkOperator[ModelType]):
         except IntegrityError as e:
             raise self.model_class.NotUnique(*e.args)
 
-    def bulk_update(self, df: pd.DataFrame) -> None:
+    def bulk_update(self, df: pd.DataFrame, **kwargs) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
         m: list[dict[str, Any]] = df.to_dict("records")  # type: ignore
         self.session.bulk_update_mappings(self.model_class, m)  # type: ignore
