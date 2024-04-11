@@ -165,6 +165,8 @@ def create_filter_test_data(test_mp):
     run3.iamc.add(run2_data, type=DataPoint.Type.ANNUAL)
     run3.set_as_default()
 
+    test_mp.runs.create("Model 3", "Scenario 3")
+
     return run1, run2
 
 

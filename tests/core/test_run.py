@@ -132,10 +132,18 @@ class TestCoreRun:
 
         res = test_mp.runs.tabulate(
             default_only=False,
-            scenario={"name": "Scenario 2"},
+            scenario={"name__in": ["Scenario 2", "Scenario 3"]},
+            iamc=None,
         )
-        assert sorted(res["model"].tolist()) == ["Model 2"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
+        assert sorted(res["model"].tolist()) == ["Model 2", "Model 3"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 2", "Scenario 3"]
+
+        res = test_mp.runs.tabulate(
+            default_only=False,
+            iamc=False,
+        )
+        assert sorted(res["model"].tolist()) == ["Model 3"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 3"]
 
         remove_data = test_mp.iamc.tabulate(
             model={"name": "Model 1"},
