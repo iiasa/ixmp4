@@ -360,7 +360,6 @@ class BulkOperator(Tabulator[ModelType]):
 
 
 class BulkUpserter(BulkOperator[ModelType]):
-
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         # slight performance improvement on small operations
         if len(df.index) < self.max_list_length:
