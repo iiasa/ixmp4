@@ -8,6 +8,7 @@ on:
 
 jobs:
   build-docs:
+    timeout-minutes: 5
     runs-on: ubuntu-latest
 
     steps:
@@ -26,7 +27,7 @@ jobs:
           python-version: "3.12"
 
       #------------------------------
-      #  install & configure poetry  
+      #  install & configure poetry
       #------------------------------
       - name: Install Poetry
         uses: snok/install-poetry@v1
@@ -36,7 +37,7 @@ jobs:
           installer-parallel: true
 
       #----------------------------------
-      #  install dynamic version plugin  
+      #  install dynamic version plugin
       #----------------------------------
       - name: Install poetry-dynamic-versioning
         run: poetry self add "poetry-dynamic-versioning[plugin]"
