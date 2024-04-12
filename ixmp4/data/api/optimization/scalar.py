@@ -40,9 +40,9 @@ class ScalarRepository(
     model_class = Scalar
     prefix = "optimization/scalars/"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = ScalarDocsRepository(self.client)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.docs = ScalarDocsRepository(self.backend)
 
     def create(
         self,

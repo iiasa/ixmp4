@@ -36,9 +36,9 @@ class VariableRepository(
     model_class = Variable
     prefix = "iamc/variables/"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = VariableDocsRepository(self.client)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.docs = VariableDocsRepository(self.backend)
 
     def create(
         self,

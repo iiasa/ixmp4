@@ -40,9 +40,9 @@ class IndexSetRepository(
     model_class = IndexSet
     prefix = "optimization/indexsets/"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = IndexSetDocsRepository(self.client)
+    def __init__(self, *args, **kwargs) -> None:
+        super().__init__(*args, **kwargs)
+        self.docs = IndexSetDocsRepository(self.backend)
 
     def create(
         self,
