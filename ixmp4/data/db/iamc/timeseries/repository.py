@@ -123,10 +123,14 @@ class TimeSeriesRepository(
                 variable_name=variable_name, unit__id=int(unit__id)
             )
             df["measurand__id"] = measurand.id
+            df["variable"] = variable_name
+            df["unit__id"] = unit__id
             return df
 
         return pd.DataFrame(
-            df.groupby(["variable", "unit__id"], group_keys=False).apply(map_measurand)
+            df.groupby(["variable", "unit__id"], group_keys=False).apply(
+                map_measurand, include_groups=False
+            )
         )
 
     def map_relationships(self, df: pd.DataFrame) -> pd.DataFrame:
