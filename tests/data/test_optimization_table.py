@@ -123,7 +123,7 @@ class TestDataOptimizationTable:
             run_id=run.id, name="Indexset"
         )
         test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_1.id, elements=["foo", "bar"]
+            indexset_id=indexset_1.id, elements=["foo", "bar", ""]
         )
         indexset_2 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 2"
@@ -156,24 +156,31 @@ class TestDataOptimizationTable:
         )
 
         with pytest.raises(ValueError, match="missing values"):
-            _ = test_mp.backend.optimization.tables.add_data(
+            test_mp.backend.optimization.tables.add_data(
                 table_id=table_2.id,
                 data=pd.DataFrame({"Indexset": [None], "Indexset 2": [2]}),
-                # empty string is allowed for now, but None or NaN raise
+                # empty string is allowed for now (see below), but None or NaN raise
             )
 
         with pytest.raises(ValueError, match="contains duplicate rows"):
-            _ = test_mp.backend.optimization.tables.add_data(
+            test_mp.backend.optimization.tables.add_data(
                 table_id=table_2.id,
                 data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
             )
 
         # Test raising on unrecognised data.values()
         with pytest.raises(ValueError, match="contains values that are not allowed"):
-            _ = test_mp.backend.optimization.tables.add_data(
+            test_mp.backend.optimization.tables.add_data(
                 table_id=table_2.id,
                 data={"Indexset": ["foo"], "Indexset 2": [0]},
             )
+
+        test_data_2 = {"Indexset": [""], "Indexset 2": [3]}
+        test_mp.backend.optimization.tables.add_data(
+            table_id=table_2.id, data=test_data_2
+        )
+        table_2 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
+        assert table_2.data == test_data_2
 
         table_3 = test_mp.backend.optimization.tables.create(
             run_id=run.id,
@@ -186,11 +193,12 @@ class TestDataOptimizationTable:
                 table_id=table_3.id, data={"Column 1": ["bar"]}
             )
 
+        test_data_3 = {"Column 1": ["bar"], "Column 2": [2]}
         test_mp.backend.optimization.tables.add_data(
-            table_id=table_3.id, data={"Column 1": ["bar"], "Column 2": [2]}
+            table_id=table_3.id, data=test_data_3
         )
         table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
-        assert table_3.data == {"Column 1": ["bar"], "Column 2": [2]}
+        assert table_3.data == test_data_3
 
         # Test data is expanded when Column.name is already present
         test_mp.backend.optimization.tables.add_data(
@@ -213,11 +221,12 @@ class TestDataOptimizationTable:
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
+        test_data_4 = {"Column 2": [2], "Column 1": ["bar"]}
         test_mp.backend.optimization.tables.add_data(
-            table_id=table_4.id, data={"Column 2": [2], "Column 1": ["bar"]}
+            table_id=table_4.id, data=test_data_4
         )
         table_4 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 4")
-        assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
+        assert table_4.data == test_data_4
 
         # ...even for expanding
         test_mp.backend.optimization.tables.add_data(
@@ -234,7 +243,7 @@ class TestDataOptimizationTable:
             )
 
         # Test various data types
-        test_data_2 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
+        test_data_5 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
         indexset_3 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 3"
         )
@@ -247,15 +256,15 @@ class TestDataOptimizationTable:
             constrained_to_indexsets=[indexset_1.name, indexset_3.name],
         )
         test_mp.backend.optimization.tables.add_data(
-            table_id=table_5.id, data=test_data_2
+            table_id=table_5.id, data=test_data_5
         )
         table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
-        assert table_5.data == test_data_2
+        assert table_5.data == test_data_5
 
         # This doesn't raise since the union of existing and new data is validated
         test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
         table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
-        assert table_5.data == test_data_2
+        assert table_5.data == test_data_5
 
     def test_list_table(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)

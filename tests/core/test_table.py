@@ -114,7 +114,7 @@ class TestCoreTable:
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
-        indexset.add(elements=["foo", "bar"])
+        indexset.add(elements=["foo", "bar", ""])
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
         indexset_2.add([1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
@@ -136,21 +136,25 @@ class TestCoreTable:
         )
 
         with pytest.raises(ValueError, match="missing values"):
-            _ = table_2.add(
+            table_2.add(
                 pd.DataFrame({"Indexset": [None], "Indexset 2": [2]}),
                 # empty string is allowed for now, but None or NaN raise
             )
 
         with pytest.raises(ValueError, match="contains duplicate rows"):
-            _ = table_2.add(
+            table_2.add(
                 data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
             )
 
         # Test raising on unrecognised data.values()
         with pytest.raises(ValueError, match="contains values that are not allowed"):
-            _ = table_2.add(
+            table_2.add(
                 data={"Indexset": ["foo"], "Indexset 2": [0]},
             )
+
+        test_data_2 = {"Indexset": [""], "Indexset 2": [3]}
+        table_2.add(data=test_data_2)
+        assert table_2.data == test_data_2
 
         table_3 = run.optimization.tables.create(
             name="Table 3",
@@ -160,8 +164,9 @@ class TestCoreTable:
         with pytest.raises(ValueError, match="Data is missing for some Columns!"):
             table_3.add(data={"Column 1": ["bar"]})
 
-        table_3.add(data={"Column 1": ["bar"], "Column 2": [2]})
-        assert table_3.data == {"Column 1": ["bar"], "Column 2": [2]}
+        test_data_3 = {"Column 1": ["bar"], "Column 2": [2]}
+        table_3.add(data=test_data_3)
+        assert table_3.data == test_data_3
 
         # Test data is expanded when Column.name is already present
         table_3.add(
@@ -179,8 +184,9 @@ class TestCoreTable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
-        table_4.add(data={"Column 2": [2], "Column 1": ["bar"]})
-        assert table_4.data == {"Column 2": [2], "Column 1": ["bar"]}
+        test_data_4 = {"Column 2": [2], "Column 1": ["bar"]}
+        table_4.add(data=test_data_4)
+        assert table_4.data == test_data_4
 
         # ...even for expanding
         table_4.add(data={"Column 1": ["foo"], "Column 2": [1]})
@@ -193,19 +199,19 @@ class TestCoreTable:
             )
 
         # Test various data types
-        test_data_2 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
+        test_data_5 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
         indexset_3 = run.optimization.indexsets.create(name="Indexset 3")
         indexset_3.add(elements=[1, "2", 3.14])
         table_5 = run.optimization.tables.create(
             name="Table 5",
             constrained_to_indexsets=[indexset.name, indexset_3.name],
         )
-        table_5.add(test_data_2)
-        assert table_5.data == test_data_2
+        table_5.add(test_data_5)
+        assert table_5.data == test_data_5
 
         # This doesn't raise since the union of existing and new data is validated
         table_5.add(data={})
-        assert table_5.data == test_data_2
+        assert table_5.data == test_data_5
 
     def test_list_tables(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
