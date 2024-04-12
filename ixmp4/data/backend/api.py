@@ -1,3 +1,4 @@
+import asyncio
 import logging
 
 import httpx
@@ -32,10 +33,20 @@ logger = logging.getLogger(__name__)
 
 class RestBackend(Backend):
     client: httpx.Client
+    async_client: httpx.AsyncClient
+    semaphore: asyncio.Semaphore
+    timeout: httpx.Timeout
 
-    def __init__(self, info: PlatformInfo, auth: BaseAuth | None = None) -> None:
+    def __init__(
+        self,
+        info: PlatformInfo,
+        auth: BaseAuth | None = None,
+        max_concurrent_requests: int = settings.client_max_concurrent_requests,
+    ) -> None:
         super().__init__(info)
-        logger.info(f"Connecting to IXMP4 REST API at {info.dsn}")
+        logger.info(f"Connecting to IXMP4 REST API at {info.dsn}.")
+        self.semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self.timeout = httpx.Timeout(settings.client_timeout, connect=60.0)
         if isinstance(info, ManagerPlatformInfo):
             if info.notice is not None:
                 logger.info("Platform notice: " + info.notice)
@@ -47,10 +58,19 @@ class RestBackend(Backend):
 
         self.client = httpx.Client(
             base_url=rest_url,
-            timeout=30.0,
+            timeout=self.timeout,
             http2=True,
             auth=auth,
-            follow_redirects=True,
+        )
+        self.async_client = httpx.AsyncClient(
+            base_url=rest_url,
+            timeout=self.timeout,
+            http2=True,
+            auth=auth,
+            # when requesting concurrently,
+            # we send need to send this header
+            # to
+            headers=[("Connection", "close")],
         )
 
     def get_auth(self, rest_url: str, override_auth: BaseAuth | None) -> BaseAuth:
@@ -91,18 +111,18 @@ class RestBackend(Backend):
             return override_auth
 
     def create_repositories(self):
-        self.iamc.datapoints = DataPointRepository(self.client)
-        self.iamc.timeseries = TimeSeriesRepository(self.client)
-        self.iamc.variables = VariableRepository(self.client)
-        self.meta = RunMetaEntryRepository(self.client)
-        self.models = ModelRepository(self.client)
-        self.optimization.indexsets = IndexSetRepository(self.client)
-        self.optimization.scalars = ScalarRepository(self.client)
-        self.optimization.tables = TableRepository(self.client)
-        self.regions = RegionRepository(self.client)
-        self.runs = RunRepository(self.client)
-        self.scenarios = ScenarioRepository(self.client)
-        self.units = UnitRepository(self.client)
+        self.iamc.datapoints = DataPointRepository(self)
+        self.iamc.timeseries = TimeSeriesRepository(self)
+        self.iamc.variables = VariableRepository(self)
+        self.meta = RunMetaEntryRepository(self)
+        self.models = ModelRepository(self)
+        self.optimization.indexsets = IndexSetRepository(self)
+        self.optimization.scalars = ScalarRepository(self)
+        self.optimization.tables = TableRepository(self)
+        self.regions = RegionRepository(self)
+        self.runs = RunRepository(self)
+        self.scenarios = ScenarioRepository(self)
+        self.units = UnitRepository(self)
 
 
 test_platform = ManagerPlatformInfo(
@@ -134,7 +154,13 @@ class RestTestBackend(RestBackend):
         )
 
     def make_client(self, rest_url: str, auth: BaseAuth):
-        self.client = TestClient(app=app, base_url=rest_url)
+        self.client = TestClient(
+            app=app,
+            base_url=rest_url,
+        )
+        self.async_client = httpx.AsyncClient(
+            app=app, base_url=rest_url, headers=[("Connection", "close")]
+        )
 
         app.dependency_overrides[deps.validate_token] = deps.do_not_validate_token
         v1.dependency_overrides[deps.validate_token] = deps.do_not_validate_token

@@ -34,7 +34,11 @@ class Settings(BaseSettings):
     managed: bool = True
     max_page_size: int = 10_000
     default_page_size: int = 5_000
-    default_upload_chunk_size: int = 10_000
+    client_default_upload_chunk_size: int = 10_000
+    client_max_concurrent_requests: int = Field(2, lt=4)
+    client_max_request_retries: int = Field(3)
+    client_backoff_factor: int = Field(5)
+    client_timeout: int = Field(30)
     model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
     def __init__(self, *args, **kwargs) -> None:
@@ -54,6 +58,8 @@ class Settings(BaseSettings):
         self._toml = None
         self._default_auth = None
         self._manager = None
+
+        logger.debug(f"Settings loaded: {self}")
 
     @property
     def credentials(self):
