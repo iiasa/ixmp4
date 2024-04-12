@@ -113,7 +113,7 @@ class ScalarRepository(
         ...
 
     def get_by_id(self, id: int) -> Scalar:
-        """Retrieves a Scalar by it's id.
+        """Retrieves a Scalar by its id.
 
         Parameters
         ----------
@@ -170,7 +170,9 @@ class ScalarRepository(
                 - id
                 - name
                 - value
-                - `ixmp4.data.abstract.Unit`
-                - `ixmp4.data.abstract.Unit`.id
+                - unit__id
+                - run__id
+                - created_at
+                - created_by
         """
         ...

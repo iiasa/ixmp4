@@ -1,12 +1,11 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import RootModel
 
 from ixmp4.data import api
-from ixmp4.data.backend.base import Backend
-from ixmp4.data.db.filters.optimizationscalar import OptimizationScalarFilter
+from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
+from ixmp4.data.db.optimization.scalar.filter import OptimizationScalarFilter
 
 from .. import deps
-from ..base import BaseModel
+from ..base import BaseModel, EnumerationOutput, Pagination
 from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -27,20 +26,6 @@ class ScalarUpdateInput(BaseModel):
     unit_id: int | None
 
 
-class EnumerationOutput(BaseModel, RootModel):
-    root: list[api.Scalar] | api.DataFrame
-
-
-@autodoc
-@router.get("/", response_model=EnumerationOutput)
-def enumerate(
-    filter: OptimizationScalarFilter = Depends(),
-    table: bool | None = Query(False),
-    backend: Backend = Depends(deps.get_backend),
-):
-    return backend.optimization.scalars.enumerate(_filter=filter, table=bool(table))
-
-
 @autodoc
 @router.get("/{id}/", response_model=api.Scalar)
 def get_by_id(
@@ -51,15 +36,25 @@ def get_by_id(
 
 
 @autodoc
-@router.patch("/", response_model=EnumerationOutput)
+@router.patch("/", response_model=EnumerationOutput[api.Scalar])
 def query(
     filter: OptimizationScalarFilter = Body(
         OptimizationScalarFilter(id=None, name=None, unit__id=None)
     ),
     table: bool = Query(False),
+    pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
-    return backend.optimization.scalars.enumerate(_filter=filter, table=bool(table))
+    return EnumerationOutput(
+        results=backend.optimization.scalars.paginate(
+            _filter=filter,
+            limit=pagination.limit,
+            offset=pagination.offset,
+            table=bool(table),
+        ),
+        total=backend.optimization.scalars.count(_filter=filter),
+        pagination=pagination,
+    )
 
 
 @autodoc

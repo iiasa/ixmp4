@@ -6,7 +6,7 @@ from ixmp4 import Scalar
 from ..utils import all_platforms, assert_unordered_equality
 
 
-def df_from_list(scalars: list):
+def df_from_list(scalars: list[Scalar]):
     return pd.DataFrame(
         [
             [
