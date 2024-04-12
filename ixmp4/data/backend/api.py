@@ -111,18 +111,18 @@ class RestBackend(Backend):
             return override_auth
 
     def create_repositories(self):
-        self.iamc.datapoints = DataPointRepository(self.client)
-        self.iamc.timeseries = TimeSeriesRepository(self.client)
-        self.iamc.variables = VariableRepository(self.client)
-        self.meta = RunMetaEntryRepository(self.client)
-        self.models = ModelRepository(self.client)
-        self.optimization.indexsets = IndexSetRepository(self.client)
-        self.optimization.scalars = ScalarRepository(self.client)
-        self.optimization.tables = TableRepository(self.client)
-        self.regions = RegionRepository(self.client)
-        self.runs = RunRepository(self.client)
-        self.scenarios = ScenarioRepository(self.client)
-        self.units = UnitRepository(self.client)
+        self.iamc.datapoints = DataPointRepository(self)
+        self.iamc.timeseries = TimeSeriesRepository(self)
+        self.iamc.variables = VariableRepository(self)
+        self.meta = RunMetaEntryRepository(self)
+        self.models = ModelRepository(self)
+        self.optimization.indexsets = IndexSetRepository(self)
+        self.optimization.scalars = ScalarRepository(self)
+        self.optimization.tables = TableRepository(self)
+        self.regions = RegionRepository(self)
+        self.runs = RunRepository(self)
+        self.scenarios = ScenarioRepository(self)
+        self.units = UnitRepository(self)
 
 
 test_platform = ManagerPlatformInfo(
