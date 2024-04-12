@@ -1,6 +1,16 @@
+import asyncio
 import logging
 from json.decoder import JSONDecodeError
-from typing import Any, ClassVar, Generic, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Coroutine,
+    Generic,
+    Type,
+    TypeVar,
+)
 
 import httpx
 import pandas as pd
@@ -10,11 +20,15 @@ from pydantic_core import CoreSchema, core_schema
 
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import (
+    ApiEncumbered,
     ImproperlyConfigured,
     IxmpError,
     UnknownApiError,
     registry,
 )
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 logger = logging.getLogger(__name__)
 
@@ -84,10 +98,10 @@ class BaseRepository(Generic[ModelType]):
     prefix: ClassVar[str]
     enumeration_method: str = "PATCH"
 
-    client: httpx.Client
+    backend: "RestBackend"
 
-    def __init__(self, client: httpx.Client, *args, **kwargs) -> None:
-        self.client = client
+    def __init__(self, backend: "RestBackend", *args, **kwargs) -> None:
+        self.backend = backend
 
     def sanitize_params(self, params: dict):
         return {k: params[k] for k in params if params[k] is not None}
@@ -112,28 +126,87 @@ class BaseRepository(Generic[ModelType]):
             )
         return exc.from_dict(json)
 
-    def _request(
+    def _request(self, *args, **kwargs) -> dict | list | None:
+        res = asyncio.run(self._async_request(*args, **kwargs))
+        return res
+
+    async def _async_request(
         self,
         method: str,
         path: str,
         params: dict | None = None,
         json: dict | None = None,
+        max_retries: int = settings.client_max_request_retries,
         **kwargs,
     ) -> dict | list | None:
-        """Sends a request and reraises remote exception if thrown."""
+        """Sends an asyncronous request and handles potential error responses.
+        Uses the backend's semaphore to limit how many
+        requests are sent concurrently per backend.
+        Re-raises a remote `IxmpError` if thrown and transferred from the backend.
+        Handles read timeouts and rate limiting responses
+        via retries with exponential backoffs.
+        Returns `None` if the response body is empty
+        but has a status code less than 300.
+        """
+
+        async def retry(max_retries=max_retries) -> dict | list | None:
+            if max_retries == 0:
+                self.backend.semaphore
+                logger.error(f"API Encumbered: '{self.backend.info.dsn}'")
+                raise ApiEncumbered(
+                    f"The service connected to the backend '{self.backend.info.name}' "
+                    "is currently overencumbered with requests. "
+                    "Try again at a later time or re-configure your client "
+                    "to behave more leniently."
+                )
+            # increase backoff by `settings.client_backoff_factor`
+            # for each retry
+            backoff_s = settings.client_backoff_factor * (
+                settings.client_max_request_retries - max_retries
+            )
+            logger.debug(f"Retrying request in {backoff_s} seconds.")
+            await asyncio.sleep(backoff_s)
+            return await self._async_request(
+                method,
+                path,
+                params=params,
+                json=json,
+                max_retries=max_retries - 1,
+                **kwargs,
+            )
+
         if params is None:
             params = {}
         else:
             params = self.sanitize_params(params)
 
-        res = self.client.request(method, path, params=params, json=json, **kwargs)
+        try:
+            async with self.backend.semaphore:
+                res = await self.backend.async_client.request(
+                    method, path, params=params, json=json, **kwargs
+                )
+        except httpx.ReadTimeout:
+            logger.warn("Read timeout, retrying request...")
+            return await retry()
 
-        if res.status_code >= 400:
+        return await self._async_handle_response(res, retry)
+
+    async def _async_handle_response(
+        self,
+        res: httpx.Response,
+        retry: Callable[..., Coroutine[Any, Any, dict | list | None]],
+    ) -> dict | list | None:
+        if res.status_code in [
+            429,  # Too Many Requests
+            420,  # Enhance Your Calm
+        ]:
+            return await retry()
+        elif res.status_code >= 400:
             if res.status_code == 413:
                 raise ImproperlyConfigured(
                     "Received status code 413 (Payload Too Large). "
-                    "Consider decreasing `IXMP4_DEFAULT_UPLOAD_CHUNK_SIZE` "
-                    f"(current: {settings.default_upload_chunk_size})."
+                    "Consider decreasing `IXMP4_CLIENT_DEFAULT_UPLOAD_CHUNK_SIZE` "
+                    f"(current: {settings.client_default_upload_chunk_size})."
                 )
             raise self.get_remote_exception(res, res.status_code)
         else:
@@ -167,6 +240,38 @@ class BaseRepository(Generic[ModelType]):
             json=json,
         )
 
+    def _build_pagination_requests(
+        self,
+        total: int,
+        start: int,
+        limit: int,
+        params: dict | None,
+        json: dict | None,
+    ) -> list[Coroutine]:
+        requests: list[Coroutine] = []
+        for req_offset in range(start, total, limit):
+            if params is not None:
+                req_params = params.copy()
+            else:
+                req_params = {}
+
+            req_params.update({"limit": limit, "offset": req_offset})
+            request = self._async_request(
+                self.enumeration_method,
+                self.prefix,
+                params=req_params,
+                json=json,
+            )
+            requests.append(request)
+        return requests
+
+    def _collect_pagination_results(self, requests: list[Coroutine]) -> list:
+        async def gather():
+            return await asyncio.gather(*requests)
+
+        responses = asyncio.run(gather())
+        return [r.pop("results") for r in responses]
+
     def _handle_pagination(
         self,
         data: dict,
@@ -177,6 +282,11 @@ class BaseRepository(Generic[ModelType]):
         """Handles paginated response and sends subsequent requests if necessary.
         Returns aggregated pages as a list."""
 
+        if params is None:
+            params = {"table": table}
+        else:
+            params["table"] = table
+
         total = data.pop("total")
         pagination = data.pop("pagination")
         offset = pagination.pop("offset")
@@ -184,16 +294,11 @@ class BaseRepository(Generic[ModelType]):
         if total <= offset + limit:
             return [data.pop("results")]
         else:
-            new_params = {"limit": limit, "offset": offset + limit}
-            if params is not None:
-                params.update(new_params)
-            else:
-                params = new_params
-            next_data = self._request_enumeration(table=table, params=params, json=json)
-            pages = self._handle_pagination(
-                next_data, table=table, params=params, json=json
+            requests = self._build_pagination_requests(
+                total, offset + limit, limit, params, json
             )
-            return [data.pop("results")] + pages
+            results = self._collect_pagination_results(requests)
+            return [data.pop("results")] + results
 
     def _list(
         self, params: dict | None = None, json: dict | None = None, **kwargs
@@ -295,7 +400,7 @@ class BulkUpserter(BulkOperator[ModelType]):
     def bulk_upsert(
         self,
         df: pd.DataFrame,
-        chunk_size: int = settings.default_upload_chunk_size,
+        chunk_size: int = settings.client_default_upload_chunk_size,
         **kwargs,
     ):
         for chunk in self.yield_chunks(df, chunk_size):
@@ -316,7 +421,7 @@ class BulkDeleter(BulkOperator[ModelType]):
     def bulk_delete(
         self,
         df: pd.DataFrame,
-        chunk_size: int = settings.default_upload_chunk_size,
+        chunk_size: int = settings.client_default_upload_chunk_size,
         **kwargs,
     ):
         for chunk in self.yield_chunks(df, chunk_size):

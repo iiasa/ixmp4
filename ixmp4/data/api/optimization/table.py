@@ -39,9 +39,9 @@ class TableRepository(
     model_class = Table
     prefix = "optimization/tables/"
 
-    def __init__(self, client, *args, **kwargs) -> None:
-        super().__init__(client, *args, **kwargs)
-        self.docs = TableDocsRepository(self.client)
+    def __init__(self, backend, *args, **kwargs) -> None:
+        super().__init__(backend, *args, **kwargs)
+        self.docs = TableDocsRepository(backend)
 
     def create(
         self,
