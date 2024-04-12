@@ -16,6 +16,7 @@ from ixmp4.data.api import (
     RunRepository,
     ScalarRepository,
     ScenarioRepository,
+    TableRepository,
     TimeSeriesRepository,
     VariableRepository,
 )
@@ -97,6 +98,7 @@ class RestBackend(Backend):
         self.models = ModelRepository(self.client)
         self.optimization.indexsets = IndexSetRepository(self.client)
         self.optimization.scalars = ScalarRepository(self.client)
+        self.optimization.tables = TableRepository(self.client)
         self.regions = RegionRepository(self.client)
         self.runs = RunRepository(self.client)
         self.scenarios = ScenarioRepository(self.client)

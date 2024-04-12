@@ -196,7 +196,7 @@ class FilterMeta(PydanticMeta):
             lookups = {k: v for k, v in lookups.items() if k in override_lookups}
         elif override_lookups is None:
             pass
-        else:  # TODO (How) do we ensure the type of override_lookups?
+        else:
             lookups = {}
         base_field_alias = str(field.alias) if field.alias else field_name
 

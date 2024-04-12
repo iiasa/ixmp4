@@ -154,6 +154,8 @@ class InvalidRunMeta(IxmpError):
 
 
 # == Filters ==
+
+
 class BadFilterArguments(IxmpError):
     _message = "The provided filter arguments are malformed."
     http_status_code = 400
@@ -170,3 +172,14 @@ class InvalidCredentials(IxmpError):
     _message = "The provided credentials are invalid."
     http_status_code = 401
     http_error_name = "invalid_credentials"
+
+
+# == Optimization.Table ==
+
+
+class OptimizationTableDataKeysNotUnique(NotUnique):
+    _message = (
+        "The keys of the Table's data are not unique. Please consider using "
+        "`constrained_to_indexsets` to specify the IndexSet identifiers."
+    )
+    http_error_name = "optimization_table_data_keys_not_unique"

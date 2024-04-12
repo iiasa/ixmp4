@@ -1,7 +1,6 @@
 """
 This module contains sqlalchemy database models and repositories.
 """
-# flake8: noqa
 
 from .base import BaseModel, BaseRepository
 from .docs import BaseDocsRepository, docs_model
@@ -18,7 +17,16 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 )
 from .meta import RunMetaEntry, RunMetaEntryRepository
 from .model import Model, ModelRepository
-from .optimization import IndexSet, IndexSetRepository, Scalar, ScalarRepository
+from .optimization import (
+    Column,
+    ColumnRepository,
+    IndexSet,
+    IndexSetRepository,
+    Scalar,
+    ScalarRepository,
+    Table,
+    TableRepository,
+)
 from .region import Region, RegionRepository
 from .run import Run, RunRepository
 from .scenario import Scenario, ScenarioRepository

@@ -29,7 +29,14 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 )
 from .meta import MetaValue, RunMetaEntry, RunMetaEntryRepository, StrictMetaValue
 from .model import Model, ModelRepository
-from .optimization import IndexSet, IndexSetRepository, Scalar, ScalarRepository
+from .optimization import (
+    IndexSet,
+    IndexSetRepository,
+    Scalar,
+    ScalarRepository,
+    Table,
+    TableRepository,
+)
 from .region import Region, RegionRepository
 from .run import Run, RunRepository
 from .scenario import Scenario, ScenarioRepository
