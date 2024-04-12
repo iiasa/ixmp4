@@ -28,7 +28,7 @@ directly using these commands:
    alembic revision -m "<message>" --autogenerate
 
 You will have to run all migrations before being able to create new ones
-in the development database. Be sure to run ``black`` on newly created
+in the development database. Be sure to run ``ruff`` on newly created
 migrations before committing them!
 
 """
