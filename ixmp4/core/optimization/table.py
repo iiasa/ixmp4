@@ -87,8 +87,6 @@ class TableRepository(BaseFacade):
         super().__init__(*args, **kwargs)
         self._run = _run
 
-    # TODO Here, constrained_to_indexsets is a list[str], while above it's list[int]
-    # We should make this consistent
     def create(
         self,
         name: str,
