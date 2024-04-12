@@ -120,9 +120,6 @@ ignore = ["B008"]
 
 [tool.ruff.lint.per-file-ignores]
 "__init__.py" = ["F401"]
-# C901: warning for "too much branching logic"
-# in a function ...
-"ixmp4/data/api/base.py" = ["C901"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
