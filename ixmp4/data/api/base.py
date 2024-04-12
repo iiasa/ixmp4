@@ -1,7 +1,16 @@
 import asyncio
 import logging
 from json.decoder import JSONDecodeError
-from typing import TYPE_CHECKING, Any, ClassVar, Coroutine, Generic, Type, TypeVar
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    Callable,
+    ClassVar,
+    Coroutine,
+    Generic,
+    Type,
+    TypeVar,
+)
 
 import httpx
 import pandas as pd
@@ -140,10 +149,10 @@ class BaseRepository(Generic[ModelType]):
         but has a status code less than 300.
         """
 
-        async def retry(max_retries=max_retries):
+        async def retry(max_retries=max_retries) -> dict | list | None:
             if max_retries == 0:
                 self.backend.semaphore
-                logger.debug(f"API Encumbered: '{self.backend.info.dsn}'")
+                logger.error(f"API Encumbered: '{self.backend.info.dsn}'")
                 raise ApiEncumbered(
                     f"The service connected to the backend '{self.backend.info.name}' "
                     "is currently overencumbered with requests. "
@@ -180,6 +189,13 @@ class BaseRepository(Generic[ModelType]):
             logger.warn("Read timeout, retrying request...")
             return await retry()
 
+        return await self._async_handle_response(res, retry)
+
+    async def _async_handle_response(
+        self,
+        res: httpx.Response,
+        retry: Callable[..., Coroutine[Any, Any, dict | list | None]],
+    ) -> dict | list | None:
         if res.status_code in [
             429,  # Too Many Requests
             420,  # Enhance Your Calm
