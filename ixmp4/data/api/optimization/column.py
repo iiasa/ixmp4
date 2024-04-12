@@ -1,4 +1,3 @@
-from datetime import datetime
 from typing import ClassVar
 
 from ixmp4.data.abstract import optimization as abstract
@@ -19,6 +18,3 @@ class Column(base.BaseModel):
     indexset: IndexSet
     constrained_to_indexset: int
     unique: bool
-
-    created_at: datetime | None
-    created_by: str | None

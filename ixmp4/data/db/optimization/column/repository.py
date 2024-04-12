@@ -33,7 +33,6 @@ class ColumnRepository(
             dtype=dtype,
             constrained_to_indexset=constrained_to_indexset,
             unique=unique,
-            **self.get_creation_info(),
         )
         self.session.add(column)
         return column

@@ -11,7 +11,7 @@ class Column(base.BaseModel, Protocol):
     """Column data model."""
 
     name: types.String
-    """Unique name of the Table."""
+    """Unique name of the Column."""
     dtype: types.String
     """Type of the Column's data."""
     table__id: types.Integer
@@ -24,11 +24,6 @@ class Column(base.BaseModel, Protocol):
     unique: types.Boolean
     """Boolean to determine whether data in this Column must contribute to Uniqueness
     of Keys."""
-
-    created_at: types.DateTime
-    "Creation date/time. TODO"
-    created_by: types.String
-    "Creator. TODO"
 
     def __str__(self) -> str:
         return f"<Column {self.id} name={self.name}>"
