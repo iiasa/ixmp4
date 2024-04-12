@@ -144,15 +144,15 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     Return all data points for a given year.
 
-    >>> DataPointFilter(year = 2020)
+    >>> DataPointFilter(year=2020)
 
     Return all data points a number of years
 
-    >>> DataPointFilter(year__in = [2020, 2025])
+    >>> DataPointFilter(year__in=[2020, 2025])
 
     Return all data point that map to a given variable
 
-    >>> DataPointFilter(variable = VariableFilter(name = "variable 1"))
+    >>> DataPointFilter(variable=VariableFilter(name="variable 1"))
 
     Note that for actual use providing the filter parameters as key word arguments is
     sufficient. Calling an endpoint could look like this:

@@ -7,7 +7,7 @@ from ixmp4 import IndexSet
 from ..utils import all_platforms
 
 
-def df_from_list(indexsets: list):
+def df_from_list(indexsets: list[IndexSet]):
     return pd.DataFrame(
         # Order is important here to avoid utils.assert_unordered_equality,
         # which doesn't like lists
@@ -81,6 +81,11 @@ class TestCoreIndexSet:
         indexset_4 = run.optimization.indexsets.get("IndexSet 2")
         assert indexset_3.elements != indexset_4.elements
         assert len(indexset_3.elements) == len(indexset_4.elements)
+
+        test_elements_2 = ["One", 2, 3.141]
+        indexset_5 = run.optimization.indexsets.create("IndexSet 5")
+        indexset_5.add(test_elements_2)
+        assert indexset_5.elements == test_elements_2
 
     def test_list_indexsets(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)

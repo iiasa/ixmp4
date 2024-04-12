@@ -28,8 +28,7 @@ def get_dsn(database_path: Path) -> str:
 
 
 def search_databases(name: str) -> str | None:
-    """Returns a database URI if the desired database exists, otherwise returns
-    `None`."""
+    """Returns a database URI if the desired database exists, otherwise `None`."""
 
     database_path = get_database_path(name)
     if database_path.exists():

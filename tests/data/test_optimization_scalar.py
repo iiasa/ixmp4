@@ -60,10 +60,12 @@ class TestDataOptimizationScalar:
         scalar = test_mp.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
-
         assert scalar == test_mp.backend.optimization.scalars.get(
             run_id=run.id, name="Scalar"
         )
+
+        with pytest.raises(Scalar.NotFound):
+            _ = test_mp.backend.optimization.scalars.get(run_id=run.id, name="Scalar 2")
 
     def test_update_scalar(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)

@@ -1,5 +1,5 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import StrictInt, StrictStr
+from pydantic import StrictFloat, StrictInt, StrictStr
 
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
@@ -21,7 +21,9 @@ class IndexSetInput(BaseModel):
 
 
 class ElementsInput(BaseModel):
-    elements: StrictInt | list[StrictInt | StrictStr] | StrictStr
+    elements: StrictFloat | StrictInt | list[
+        StrictFloat | StrictInt | StrictStr
+    ] | StrictStr
 
 
 @autodoc

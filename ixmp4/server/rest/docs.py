@@ -213,3 +213,27 @@ def delete_scalars(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.scalars.docs.delete(dimension_id)
+
+
+@router.get("/optimization/tables/", response_model=list[api.Docs])
+def list_tables(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.tables.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/tables/", response_model=api.Docs)
+def set_tables(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.tables.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/tables/{dimension_id}/")
+def delete_tables(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.tables.docs.delete(dimension_id)

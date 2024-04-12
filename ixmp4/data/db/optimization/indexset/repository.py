@@ -67,7 +67,7 @@ class IndexSetRepository(
     def add_elements(
         self,
         indexset_id: int,
-        elements: int | List[int | str] | str,
+        elements: float | int | List[float | int | str] | str,
     ) -> None:
         indexset = self.get_by_id(id=indexset_id)
         if not isinstance(elements, list):
