@@ -1,5 +1,6 @@
 """This module only contains benchmarks, no assertions are made to validate the
 results."""
+
 import pandas as pd
 import pytest
 

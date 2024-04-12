@@ -103,7 +103,7 @@ class DataPointRepository(
         """
         ...
 
-    def bulk_upsert(self, df: pd.DataFrame) -> None:
+    def bulk_upsert(self, df: pd.DataFrame, **kwargs) -> None:
         """Looks which data points in the supplied data frame already exists,
         updates those that have changed and inserts new ones.
 
@@ -123,7 +123,7 @@ class DataPointRepository(
         """
         ...
 
-    def bulk_delete(self, df: pd.DataFrame) -> None:
+    def bulk_delete(self, df: pd.DataFrame, **kwargs) -> None:
         """Deletes data points which match criteria in the supplied data frame.
 
         Parameters

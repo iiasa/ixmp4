@@ -92,23 +92,27 @@ class RunIamcData(BaseFacade):
         super().__init__(*args, **kwargs)
         self.run = run
 
-    def _contract_parameters(self, df: pd.DataFrame) -> pd.DataFrame:
-        ts_df = df[["region", "variable", "unit", "run__id"]].drop_duplicates()
+    def _get_or_create_ts(self, df: pd.DataFrame) -> pd.DataFrame:
+        id_cols = ["region", "variable", "unit", "run__id"]
+        # create set of unqiue timeseries (if missing)
+        ts_df = df[id_cols].drop_duplicates()
         self.backend.iamc.timeseries.bulk_upsert(ts_df, create_related=True)
 
+        # retrieve them again to get database ids
         ts_df = self.backend.iamc.timeseries.tabulate(
             join_parameters=True,
             run={"id": self.run.id, "default_only": False},
         )
         ts_df = ts_df.rename(columns={"id": "time_series__id"})
 
+        # merge on the identity columns
         return pd.merge(
             df,
             ts_df,
             how="left",
-            on=["run__id", "region", "unit", "variable"],
+            on=id_cols,
             suffixes=(None, "_y"),
-        )
+        )  # tada, df with 'time_series__id' added from the database.
 
     def add(
         self,
@@ -118,7 +122,7 @@ class RunIamcData(BaseFacade):
         df = AddDataPointFrameSchema.validate(df)  # type:ignore
         df = to_dimensionless(df.copy())
         df["run__id"] = self.run.id
-        df = self._contract_parameters(df)
+        df = self._get_or_create_ts(df)
         substitute_type(df, type)
         self.backend.iamc.datapoints.bulk_upsert(df)
 
@@ -130,7 +134,7 @@ class RunIamcData(BaseFacade):
         df = RemoveDataPointFrameSchema.validate(df)  # type:ignore
         df = to_dimensionless(df.copy())
         df["run__id"] = self.run.id
-        df = self._contract_parameters(df)
+        df = self._get_or_create_ts(df)
         substitute_type(df, type)
         df = df.drop(columns=["unit", "variable", "region"])
         self.backend.iamc.datapoints.bulk_delete(df)
