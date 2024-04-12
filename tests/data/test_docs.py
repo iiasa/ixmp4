@@ -328,3 +328,64 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             test_mp.backend.optimization.scalars.docs.get(scalar.id)
+
+    def test_get_and_set_tabledocs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+        docs_table = test_mp.backend.optimization.tables.docs.set(
+            table.id, "Description of test Table"
+        )
+        docs_table1 = test_mp.backend.optimization.tables.docs.get(table.id)
+
+        assert docs_table == docs_table1
+
+    def test_change_empty_tabledocs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.tables.docs.get(table.id)
+
+        docs_table1 = test_mp.backend.optimization.tables.docs.set(
+            table.id, "Description of test Table"
+        )
+
+        assert test_mp.backend.optimization.tables.docs.get(table.id) == docs_table1
+
+        docs_table2 = test_mp.backend.optimization.tables.docs.set(
+            table.id, "Different description of test Table"
+        )
+
+        assert test_mp.backend.optimization.tables.docs.get(table.id) == docs_table2
+
+    def test_delete_tabledocs(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table = test_mp.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+        )
+        docs_table = test_mp.backend.optimization.tables.docs.set(
+            table.id, "Description of test Table"
+        )
+
+        assert test_mp.backend.optimization.tables.docs.get(table.id) == docs_table
+
+        test_mp.backend.optimization.tables.docs.delete(table.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.tables.docs.get(table.id)

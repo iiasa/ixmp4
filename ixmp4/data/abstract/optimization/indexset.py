@@ -121,11 +121,14 @@ class IndexSetRepository(
                 - id
                 - name
                 - elements
+                - run__id
+                - created_at
+                - created_by
         """
         ...
 
     def add_elements(
-        self, indexset_id: int, elements: int | List[int | str] | str
+        self, indexset_id: int, elements: float | int | List[float | int | str] | str
     ) -> None:
         """Adds elements to an existing IndexSet.
 
@@ -133,7 +136,7 @@ class IndexSetRepository(
         ----------
         indexset_id : int
             The id of the target IndexSet.
-        elements : int | List[int | str] | str
+        elements : float | int | List[float | int | str] | str
             The elements to be added to the IndexSet.
 
         Returns
