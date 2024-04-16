@@ -16,6 +16,8 @@ jobs:
           - false
         postgres-version:
           - "16"
+        pandas-version:
+          - false
         include:
           - python-version: "3.12"
             with-pyarrow: true
@@ -23,6 +25,10 @@ jobs:
           - python-version: "3.12"
             with-pyarrow: false
             postgres-version: "15"
+          - python-version: "3.12"
+            pandas-version: "2.1.1"
+          - python-version: "3.10"
+            pandas-version: "2.0.0"
     name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql${{ matrix.postgres-version }}
     runs-on: ubuntu-latest
     services:
@@ -89,6 +95,10 @@ jobs:
       - name: Install PyArrow
         if: ${{ matrix.with-pyarrow }}
         run: pip install pyarrow
+
+      - name: Install legacy pandas
+        if: ${{ matrix.pandas-version }}
+        run: pip install pandas==${{ matrix.pandas-version }}
 
       #------------------------
       #  install root project
