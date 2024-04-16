@@ -18,9 +18,6 @@ class IndexSet(base.BaseModel):
     name: types.String = db.Column(db.String(255), nullable=False, unique=False)
     elements: types.JsonList = db.Column(db.JsonType, nullable=False, default=[])
 
-    created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
-    created_by: types.String = db.Column(db.String(255), nullable=True)
-
     run__id: types.Integer = db.Column(
         db.Integer, db.ForeignKey("run.id"), nullable=False, index=True
     )

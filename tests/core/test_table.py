@@ -15,9 +15,9 @@ def df_from_list(tables: list[Table]):
                 table.name,
                 table.data,
                 table.run_id,
+                table.id,
                 table.created_at,
                 table.created_by,
-                table.id,
             ]
             for table in tables
         ],
@@ -25,9 +25,9 @@ def df_from_list(tables: list[Table]):
             "name",
             "data",
             "run__id",
+            "id",
             "created_at",
             "created_by",
-            "id",
         ],
     )
 

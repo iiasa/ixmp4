@@ -445,3 +445,8 @@ class BulkDeleter(BulkOperator[ModelType]):
             self.session.execute(exc, execution_options={"synchronize_session": False})
 
         self.session.commit()
+
+
+class TimestampMixin:
+    created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
+    created_by: types.String = db.Column(db.String(255), nullable=True)

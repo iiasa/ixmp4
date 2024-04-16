@@ -28,6 +28,3 @@ class Scalar(base.BaseModel):
     )
 
     __table_args__ = (UniqueConstraint(name, run__id),)
-
-    created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
-    created_by: types.String = db.Column(db.String(255), nullable=True)

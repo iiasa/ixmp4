@@ -10,9 +10,10 @@ from ..base import (
     Retriever,
     Selecter,
     Tabulator,
+    TimestampMixin,
 )
 
 
-class BaseModel(RootBaseModel):
+class BaseModel(RootBaseModel, TimestampMixin):
     __abstract__ = True
     table_prefix = "optimization_"

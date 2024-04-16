@@ -32,10 +32,6 @@ class Table(base.BaseModel):
 
     __table_args__ = (UniqueConstraint(name, "run__id"),)
 
-    # NOTE: This could probably also be a Mixin across almost all models
-    created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
-    created_by: types.String = db.Column(db.String(255), nullable=True)
-
     def collect_indexsets_to_check(self) -> dict[str, Any]:
         """Creates a {key:value} dict from linked Column.names and their
         IndexSet.elements."""
