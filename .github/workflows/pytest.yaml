@@ -22,14 +22,21 @@ jobs:
           - python-version: "3.12"
             with-pyarrow: true
             postgres-version: "16"
+            pandas-version: false
           - python-version: "3.12"
             with-pyarrow: false
             postgres-version: "15"
+            pandas-version: false
           - python-version: "3.12"
+            with-pyarrow: true
+            postgres-version: "16"
             pandas-version: "2.1.1"
           - python-version: "3.10"
+            with-pyarrow: true
+            postgres-version: "16"
             pandas-version: "2.0.0"
-    name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql${{ matrix.postgres-version }}
+
+    name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql${{ matrix.postgres-version }} | pandas${{ matrix.pandas-version }}
     runs-on: ubuntu-latest
     services:
       postgres:
