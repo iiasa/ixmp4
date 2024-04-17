@@ -5,7 +5,7 @@ on: pull_request
 
 jobs:
   test:
-    timeout-minutes: 15
+    timeout-minutes: 30
     strategy:
       matrix:
         python-version:
@@ -16,14 +16,28 @@ jobs:
           - false
         postgres-version:
           - "16"
+        pandas-version:
+          - false
         include:
           - python-version: "3.12"
             with-pyarrow: true
             postgres-version: "16"
+            pandas-version: false
           - python-version: "3.12"
             with-pyarrow: false
             postgres-version: "15"
-    name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql${{ matrix.postgres-version }}
+            pandas-version: false
+          - python-version: "3.11"
+            with-pyarrow: true
+            postgres-version: "16"
+            pandas-version: "2.1.3"
+          - python-version: "3.10"
+            with-pyarrow: true
+            postgres-version: "16"
+            pandas-version: "2.0.0"
+
+
+    name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql=${{ matrix.postgres-version }} | pandas=${{ matrix.pandas-version }}
     runs-on: ubuntu-latest
     services:
       postgres:
@@ -89,6 +103,10 @@ jobs:
       - name: Install PyArrow
         if: ${{ matrix.with-pyarrow }}
         run: pip install pyarrow
+
+      - name: Install legacy pandas
+        if: ${{ matrix.pandas-version }}
+        run: poetry add pandas@${{ matrix.pandas-version }} --lock
 
       #------------------------
       #  install root project
