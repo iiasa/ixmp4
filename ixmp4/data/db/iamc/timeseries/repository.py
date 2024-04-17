@@ -127,9 +127,16 @@ class TimeSeriesRepository(
             df["unit__id"] = unit__id
             return df
 
+        # ensure compatibility with pandas < 2.2
+        # TODO remove legacy-handling when dropping support for pandas < 2.2
+        if pd.__version__[0:3] in ["2.0", "2.1"]:
+            apply_args = dict()
+        else:
+            apply_args = dict(include_groups=False)
+
         return pd.DataFrame(
             df.groupby(["variable", "unit__id"], group_keys=False).apply(
-                map_measurand, include_groups=False
+                map_measurand, **apply_args
             )
         )
 

@@ -191,8 +191,15 @@ class RunMetaEntryRepository(
             df["type"] = type_str
             return df.drop(columns=RunMetaEntry._column_map.values())
 
+        # ensure compatibility with pandas y 2.2
+        # TODO remove legacy-handling when dropping support for pandas < 2.2
+        if pd.__version__[0:3] in ["2.0", "2.1"]:
+            apply_args = dict()
+        else:
+            apply_args = dict(include_groups=False)
+
         return df.groupby("type", group_keys=False).apply(
-            map_value_column, include_groups=False
+            map_value_column, **apply_args
         )
 
     @check_types
