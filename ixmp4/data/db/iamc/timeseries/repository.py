@@ -128,7 +128,7 @@ class TimeSeriesRepository(
             return df
 
         # ensure compatibility with pandas < 2.2
-        # TODO remove legacy-handing when dropping support for pandas < 2.2
+        # TODO remove legacy-handling when dropping support for pandas < 2.2
         if pd.__version__[0:3] in ["2.0", "2.1"]:
             apply_args = dict()
         else:
