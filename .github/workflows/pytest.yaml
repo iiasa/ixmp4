@@ -34,7 +34,7 @@ jobs:
           - python-version: "3.10"
             with-pyarrow: true
             postgres-version: "16"
-            pandas-version: "2.1.3"
+            pandas-version: "2.0.0"
 
 
     name: py${{ matrix.python-version }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql=${{ matrix.postgres-version }} | pandas=${{ matrix.pandas-version }}
