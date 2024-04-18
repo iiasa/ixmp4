@@ -8,14 +8,18 @@ from ..base import (
     Deleter,
     Enumerator,
     Lister,
+    OptimizationDataMixin,
+    OptimizationNameMixin,
     Retriever,
+    RunIDMixin,
     Selecter,
     Tabulator,
     TimestampMixin,
+    UniqueNameRunIDMixin,
 )
 
 
-class BaseModel(RootBaseModel, TimestampMixin):
+class BaseModel(RootBaseModel, OptimizationNameMixin, TimestampMixin):
     __abstract__ = True
     table_prefix = "optimization_"
 
