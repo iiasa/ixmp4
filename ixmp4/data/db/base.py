@@ -473,12 +473,8 @@ class UniqueNameRunIDMixin(OptimizationNameMixin, RunIDMixin):
     @declared_attr.directive
     def __table_args__(cls) -> tuple:
         return (
-            # UniqueConstraint(
-            #     "name",
-            #     "run__id",
-            #     name=f"uq_{cls.__class__.__name__.lower()}_name_run__id",
-            # ),
-            UniqueConstraint(cls.name, cls.run__id),
+            # Mypy recognizes run__id as int, while it should be a MappedColumn[int]
+            UniqueConstraint(cls.name, cls.run__id),  # type: ignore
         )
 
 
