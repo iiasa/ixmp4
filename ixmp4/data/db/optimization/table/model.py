@@ -14,7 +14,6 @@ from .. import Column, base, utils
 class Table(
     base.BaseModel,
     base.OptimizationDataMixin,
-    base.RunIDMixin,
     base.UniqueNameRunIDMixin,
 ):
     # NOTE: These might be mixin-able, but would require some abstraction
