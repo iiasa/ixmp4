@@ -13,22 +13,22 @@ def df_from_list(indexsets: list):
         # which doesn't like lists
         [
             [
-                indexset.name,
                 indexset.elements,
+                indexset.id,
+                indexset.name,
                 indexset.created_at,
                 indexset.created_by,
                 indexset.run__id,
-                indexset.id,
             ]
             for indexset in indexsets
         ],
         columns=[
-            "name",
             "elements",
+            "id",
+            "name",
             "created_at",
             "created_by",
             "run__id",
-            "id",
         ],
     )
 

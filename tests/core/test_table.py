@@ -12,22 +12,22 @@ def df_from_list(tables: list[Table]):
         # which doesn't like lists
         [
             [
-                table.name,
-                table.data,
-                table.run_id,
                 table.id,
+                table.name,
                 table.created_at,
                 table.created_by,
+                table.data,
+                table.run_id,
             ]
             for table in tables
         ],
         columns=[
-            "name",
-            "data",
-            "run__id",
             "id",
+            "name",
             "created_at",
             "created_by",
+            "data",
+            "run__id",
         ],
     )
 

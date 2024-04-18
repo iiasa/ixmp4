@@ -10,22 +10,22 @@ def df_from_list(tables: list):
     return pd.DataFrame(
         [
             [
-                table.name,
-                table.data,
-                table.run__id,
                 table.id,
+                table.name,
                 table.created_at,
                 table.created_by,
+                table.data,
+                table.run__id,
             ]
             for table in tables
         ],
         columns=[
-            "name",
-            "data",
-            "run__id",
             "id",
+            "name",
             "created_at",
             "created_by",
+            "data",
+            "run__id",
         ],
     )
 

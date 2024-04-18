@@ -1,6 +1,5 @@
 from typing import ClassVar
 
-from sqlalchemy import UniqueConstraint
 from sqlalchemy.orm import validates
 
 from ixmp4 import db
@@ -10,19 +9,12 @@ from ixmp4.data.abstract import optimization as abstract
 from .. import base
 
 
-class IndexSet(base.BaseModel):
+class IndexSet(base.BaseModel, base.RunIDMixin, base.UniqueNameRunIDMixin):
     NotFound: ClassVar = abstract.IndexSet.NotFound
     NotUnique: ClassVar = abstract.IndexSet.NotUnique
     DeletionPrevented: ClassVar = abstract.IndexSet.DeletionPrevented
 
-    name: types.String = db.Column(db.String(255), nullable=False, unique=False)
     elements: types.JsonList = db.Column(db.JsonType, nullable=False, default=[])
-
-    run__id: types.Integer = db.Column(
-        db.Integer, db.ForeignKey("run.id"), nullable=False, index=True
-    )
-
-    __table_args__ = (UniqueConstraint(name, run__id),)
 
     @validates("elements")
     def validate_elements(self, key, value: list[float | int | str]):
