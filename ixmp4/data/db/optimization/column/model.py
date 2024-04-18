@@ -1,7 +1,5 @@
 from typing import ClassVar
 
-from sqlalchemy import UniqueConstraint
-
 from ixmp4 import db
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
@@ -34,4 +32,4 @@ class Column(base.BaseModel):
     # Currently not in use:
     unique: types.Boolean = db.Column(db.Boolean, default=True)
 
-    __table_args__ = (UniqueConstraint("name", "table__id", "parameter__id"),)
+    __table_args__ = (db.UniqueConstraint("name", "table__id"),)
