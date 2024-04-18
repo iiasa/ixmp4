@@ -473,11 +473,12 @@ class UniqueNameRunIDMixin(OptimizationNameMixin, RunIDMixin):
     @declared_attr.directive
     def __table_args__(cls) -> tuple:
         return (
-            UniqueConstraint(
-                "name",
-                "run__id",
-                name=f"uq_{cls.__class__.__name__.lower()}_name_run__id",
-            ),
+            # UniqueConstraint(
+            #     "name",
+            #     "run__id",
+            #     name=f"uq_{cls.__class__.__name__.lower()}_name_run__id",
+            # ),
+            UniqueConstraint(cls.name, cls.run__id),
         )
 
 
