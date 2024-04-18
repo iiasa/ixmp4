@@ -469,7 +469,7 @@ class RunIDMixin:
     )
 
 
-class UniqueNameRunIDMixin:
+class UniqueNameRunIDMixin(OptimizationNameMixin, RunIDMixin):
     __table_args__ = (UniqueConstraint("name", "run__id"),)
 
 

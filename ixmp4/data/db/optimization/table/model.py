@@ -10,7 +10,6 @@ from .. import Column, base
 class Table(
     base.BaseModel,
     base.OptimizationDataMixin,
-    base.RunIDMixin,
     base.UniqueNameRunIDMixin,
 ):
     # NOTE: These might be mixin-able, but would require some abstraction

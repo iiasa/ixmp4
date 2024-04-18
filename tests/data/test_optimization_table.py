@@ -11,20 +11,20 @@ def df_from_list(tables: list):
         [
             [
                 table.id,
+                table.data,
                 table.name,
                 table.created_at,
                 table.created_by,
-                table.data,
                 table.run__id,
             ]
             for table in tables
         ],
         columns=[
             "id",
+            "data",
             "name",
             "created_at",
             "created_by",
-            "data",
             "run__id",
         ],
     )
