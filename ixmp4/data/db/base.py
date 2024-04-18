@@ -470,17 +470,17 @@ class RunIDMixin:
 
 
 class UniqueNameRunIDMixin(OptimizationNameMixin, RunIDMixin):
-    __table_args__ = (UniqueConstraint("name", "run__id"),)
+    @declared_attr.directive
+    def __table_args__(cls) -> tuple:
+        return (
+            UniqueConstraint("name", "run__id", name=f"uq_{cls.__repr__}_name_run__id"),
+        )
 
 
 class OptimizationDataMixin:
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     columns: types.Mapped[list["abstract.optimization.Column"]]
-
-    # @declared_attr
-    # def columns(cls) -> types.Mapped[list["Column"]]:
-    #     return db.relationship()
 
     def collect_indexsets_to_check(self) -> dict[str, Any]:
         """Creates a {key:value} dict from linked Column.names and their
