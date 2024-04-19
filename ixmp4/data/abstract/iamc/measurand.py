@@ -30,11 +30,9 @@ class MeasurandRepository(
     base.Enumerator,
     Protocol,
 ):
-    def create(self, variable_name: str, unit__id: int) -> Measurand:
-        ...
+    def create(self, variable_name: str, unit__id: int) -> Measurand: ...
 
-    def get(self, variable_name: str, unit__id: int) -> Measurand:
-        ...
+    def get(self, variable_name: str, unit__id: int) -> Measurand: ...
 
     def get_or_create(self, variable_name: str, unit__id: int) -> Measurand:
         try:
@@ -44,10 +42,8 @@ class MeasurandRepository(
 
     def list(
         self,
-    ) -> list[Measurand]:
-        ...
+    ) -> list[Measurand]: ...
 
     def tabulate(
         self,
-    ) -> pd.DataFrame:
-        ...
+    ) -> pd.DataFrame: ...

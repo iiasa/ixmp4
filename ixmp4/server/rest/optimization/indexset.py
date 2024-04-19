@@ -21,9 +21,9 @@ class IndexSetInput(BaseModel):
 
 
 class ElementsInput(BaseModel):
-    elements: StrictFloat | StrictInt | list[
-        StrictFloat | StrictInt | StrictStr
-    ] | StrictStr
+    elements: (
+        StrictFloat | StrictInt | StrictStr | list[StrictFloat | StrictInt | StrictStr]
+    )
 
 
 @autodoc
