@@ -1,3 +1,4 @@
+import json
 import logging
 import logging.config
 import os
@@ -22,9 +23,9 @@ here = Path(__file__).parent
 
 
 class Settings(BaseSettings):
-    mode: Literal["production"] | Literal["development"] | Literal[
-        "debug"
-    ] = "production"
+    mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
+        "production"
+    )
     storage_directory: Path = Field(
         "~/.local/share/ixmp4/", json_schema_extra={"env": "ixmp4_dir"}
     )
@@ -144,8 +145,10 @@ class Settings(BaseSettings):
         os.environ.setdefault("IXMP4_DEBUG_LOG", str(debug_file.absolute()))
         os.environ.setdefault("IXMP4_ERROR_LOG", str(error_file.absolute()))
 
-        logging_config = here / f"logging/{config}.conf"
-        logging.config.fileConfig(logging_config, disable_existing_loggers=False)
+        logging_config = here / f"logging/{config}.json"
+        with open(logging_config) as file:
+            config_dict = json.load(file)
+        logging.config.dictConfig(config_dict)
 
     def check_credentials(self):
         if self.default_credentials is not None:

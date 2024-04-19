@@ -17,9 +17,13 @@ class IndexSet(base.BaseModel):
 
     id: int
     name: str
-    elements: StrictFloat | StrictInt | list[
-        StrictFloat | StrictInt | StrictStr
-    ] | StrictStr | None
+    elements: (
+        StrictFloat
+        | StrictInt
+        | StrictStr
+        | list[StrictFloat | StrictInt | StrictStr]
+        | None
+    )
     run__id: int
 
     created_at: datetime | None
