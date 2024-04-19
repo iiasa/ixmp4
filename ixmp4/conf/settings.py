@@ -146,7 +146,7 @@ class Settings(BaseSettings):
         os.environ.setdefault("IXMP4_ERROR_LOG", str(error_file.absolute()))
 
         logging_config = here / f"logging/{config}.json"
-        with open(logging_config, "r") as file:
+        with open(logging_config) as file:
             config_dict = json.load(file)
         logging.config.dictConfig(config_dict)
 

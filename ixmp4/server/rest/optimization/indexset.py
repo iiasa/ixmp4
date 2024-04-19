@@ -22,7 +22,7 @@ class IndexSetInput(BaseModel):
 
 class ElementsInput(BaseModel):
     elements: (
-        StrictFloat | StrictInt | list[StrictFloat | StrictInt | StrictStr] | StrictStr
+        StrictFloat | StrictInt | StrictStr | list[StrictFloat | StrictInt | StrictStr]
     )
 
 

@@ -20,8 +20,8 @@ class IndexSet(base.BaseModel):
     elements: (
         StrictFloat
         | StrictInt
-        | list[StrictFloat | StrictInt | StrictStr]
         | StrictStr
+        | list[StrictFloat | StrictInt | StrictStr]
         | None
     )
     run__id: int
