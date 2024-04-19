@@ -1,0 +1,71 @@
+{
+  "version": 1,
+  "disable_existing_loggers": false,
+  "formatters":{
+    "generic": {
+      "format": "[%(levelname)s] %(asctime)s - %(name)s: %(message)s",
+      "datefmt": "%H:%M:%S"
+    }
+  },
+  "loggers": {
+    "fastapi": {
+      "level": "NOTSET",
+      "handlers": ["debug","error","console"]
+    },
+    "httpx": {
+      "level": "NOTSET",
+      "handlers": ["debug","error"]
+    },
+    "sqlalchemy": {
+      "level": "NOTSET",
+      "handlers": ["debug","error"]
+    },
+    "uvicorn": {
+      "level": "NOTSET",
+      "handlers": ["debug","error","console"]
+    },
+    "uvicorn.access": {
+      "level": "NOTSET",
+      "handlers": ["access"]
+    },
+    "watchfiles.main": {
+      "level": "ERROR",
+      "handlers": ["error","debug"]
+    }
+  },
+  "handlers": {
+    "access": {
+      "class": "logging.handlers.RotatingFileHandler",
+      "level": "INFO",
+      "formatter": "generic",
+      "filename": "os.getenv('IXMP4_ACCESS_LOG')",
+      "mode": "a",
+      "maxBytes": 250000
+    },
+    "console": {
+      "class": "logging.StreamHandler",
+      "level": "INFO",
+      "formatter": "generic"
+    },
+    "debug": {
+      "class": "logging.handlers.RotatingFileHandler",
+      "level": "DEBUG",
+      "formatter": "generic",
+      "filename": "os.getenv('IXMP4_DEBUG_LOG')", 
+      "mode": "a",
+      "maxBytes": 250000
+    },
+    "error": {
+      "class": "logging.handlers.RotatingFileHandler",
+      "level": "WARN",
+      "formatter": "generic",
+      "filename": "os.getenv('IXMP4_ERROR_LOG')",
+      "mode": "a",
+      "maxBytes": 250000
+    }
+  },
+  "root": { 
+    "level": "NOTSET",
+    "handlers": ["debug","error"]
+  }
+}
