@@ -80,8 +80,15 @@ class RestBackend(Backend):
             raise UnknownApiError(f"Server response not OK. ({root.status_code})")
 
         api_info = APIInfo(**root.json())
-        logger.info(f"Connected to Platform '{api_info.name}'")
-        logger.info("Server IXMP4 Version: " + api_info.version)
+        logger.info(f"Connected to IXMP4 Platform '{api_info.name}'")
+
+        import ixmp4
+
+        if ixmp4.__version__ != api_info.version:
+            logger.warning(
+                "IXMP4 Client and Server versions do not match. "
+                f"(Client: {ixmp4.__version__}, Server: {api_info.version})"
+            )
 
         logger.debug("Server UTC Time: " + api_info.utcnow.strftime("%c"))
         logger.debug("Server Is Managed: " + str(api_info.is_managed))
