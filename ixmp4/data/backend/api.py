@@ -44,7 +44,7 @@ class RestBackend(Backend):
         max_concurrent_requests: int = settings.client_max_concurrent_requests,
     ) -> None:
         super().__init__(info)
-        logger.info(f"Connecting to IXMP4 REST API at {info.dsn}.")
+        logger.debug(f"Connecting to IXMP4 REST API at {info.dsn}.")
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
         self.timeout = httpx.Timeout(settings.client_timeout, connect=60.0)
         if isinstance(info, ManagerPlatformInfo):
