@@ -47,10 +47,10 @@ class RestBackend(Backend):
         logger.debug(f"Connecting to IXMP4 REST API at {info.dsn}.")
         self.semaphore = asyncio.Semaphore(max_concurrent_requests)
         self.timeout = httpx.Timeout(settings.client_timeout, connect=60.0)
+        self.make_client(info.dsn, auth=auth)
         if isinstance(info, ManagerPlatformInfo):
             if info.notice is not None:
-                logger.info("Platform notice: " + info.notice)
-        self.make_client(info.dsn, auth=auth)
+                logger.info("Platform notice: >\n" + info.notice)
         self.create_repositories()
 
     def make_client(self, rest_url: str, auth: BaseAuth | None):
