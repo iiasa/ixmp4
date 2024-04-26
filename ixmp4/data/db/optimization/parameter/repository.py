@@ -151,14 +151,14 @@ class ParameterRepository(
         parameter = self.get_by_id(id=parameter_id)
 
         try:
-            parameter.values = data.pop(item="values").to_list()
+            values = data.pop(item="values").to_list()
         except KeyError as e:
             raise KeyError("Parameter.data must include a 'values' column!") from e
 
         try:
-            parameter.units = [
+            units = [
                 self.backend.units.get(name=unit_name)
-                for unit_name in data.pop(item="units").to_list()
+                for unit_name in data.pop(item="units")
             ]
         except KeyError as e:
             raise KeyError("Parameter.data must include a 'units' column!") from e
@@ -166,6 +166,10 @@ class ParameterRepository(
         parameter.data = pd.concat(
             [pd.DataFrame.from_dict(parameter.data), data]
         ).to_dict(orient="list")
+        parameter.values = parameter.values + values
+
+        # TODO does this actually work? Do we set the relationships correctly here?
+        parameter.units = parameter.units + units
 
         self.session.add(parameter)
         self.session.commit()

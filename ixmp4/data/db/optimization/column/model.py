@@ -34,5 +34,4 @@ class Column(base.BaseModel):
     # Currently not in use:
     unique: types.Boolean = db.Column(db.Boolean, default=True)
 
-    # TODO These should be individual constraints, I think
     __table_args__ = (UniqueConstraint("name", "table__id", "parameter__id"),)

@@ -14,13 +14,14 @@ from .. import Column, base
 # note for a Core table, we use the sqlalchemy.Column construct,
 # not sqlalchemy.orm.mapped_column
 
+# TODO Is this enough/correct? This follows many-to-many currently with units:
+# But does that work?
+
 parameter_unit_association_table = Table(
     "optimization_parameter_unit_association_table",
     base.BaseModel.metadata,
-    sqlaColumn(
-        "parameter_id", db.ForeignKey("optimization_parameter.id"), primary_key=True
-    ),
-    sqlaColumn("unit_id", db.ForeignKey("unit.id"), primary_key=True),
+    sqlaColumn("parameter__id", db.ForeignKey("optimization_parameter.id")),
+    sqlaColumn("unit__id", db.ForeignKey("unit.id")),
 )
 
 
@@ -36,6 +37,8 @@ class Parameter(base.BaseModel, base.OptimizationDataMixin, base.UniqueNameRunID
     units: types.Mapped[list["Unit"]] = db.relationship(
         secondary=parameter_unit_association_table
     )
+    # TODO: need some kind of primaryjoin adaption and unit_ids so that each unit_id is
+    # foreignkeyed to Unit.id correctly
 
     # TODO Same as in table/model.py
     columns: types.Mapped[list["Column"]] = db.relationship()  # type: ignore
