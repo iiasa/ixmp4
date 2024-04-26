@@ -5,6 +5,7 @@ import pandas as pd
 from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db.unit import Unit
 
 from .. import ColumnRepository, base
 from .docs import ParameterDocsRepository
@@ -150,26 +151,24 @@ class ParameterRepository(
             data = pd.DataFrame.from_dict(data=data)
         parameter = self.get_by_id(id=parameter_id)
 
-        try:
-            values = data.pop(item="values").to_list()
-        except KeyError as e:
-            raise KeyError("Parameter.data must include a 'values' column!") from e
+        missing_columns = set(["values", "units"]) - set(data.columns)
+        assert (
+            not missing_columns
+        ), f"Parameter.data must include the column(s): {' ,'.join(missing_columns)}!"
 
-        try:
-            units = [
+        # Can use a set for now, need full column if we care about order
+        for unit_name in set(data["units"]):
+            try:
                 self.backend.units.get(name=unit_name)
-                for unit_name in data.pop(item="units")
-            ]
-        except KeyError as e:
-            raise KeyError("Parameter.data must include a 'units' column!") from e
+            except Unit.NotFound as e:
+                # TODO Add a helpful hint on how to check defined Units
+                raise Unit.NotFound(
+                    message=f"'{unit_name}' is not defined for this Platform!"
+                ) from e
 
         parameter.data = pd.concat(
             [pd.DataFrame.from_dict(parameter.data), data]
         ).to_dict(orient="list")
-        parameter.values = parameter.values + values
-
-        # TODO does this actually work? Do we set the relationships correctly here?
-        parameter.units = parameter.units + units
 
         self.session.add(parameter)
         self.session.commit()

@@ -49,8 +49,6 @@ class TestDataOptimizationParameter:
         assert parameter.run__id == run.id
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
-        assert parameter.values == []
-        assert parameter.units == []
         assert parameter.columns[0].name == "Indexset"
         assert parameter.columns[0].constrained_to_indexset == indexset_1.id
 
@@ -161,8 +159,6 @@ class TestDataOptimizationParameter:
         parameter = test_mp.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter"
         )
-        assert parameter.values == test_data_1.pop("values")
-        assert [unit.name for unit in parameter.units] == test_data_1.pop("units")
         assert parameter.data == test_data_1
 
         parameter_2 = test_mp.backend.optimization.parameters.create(
@@ -171,7 +167,9 @@ class TestDataOptimizationParameter:
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
 
-        with pytest.raises(KeyError, match="must include a 'values' column!"):
+        with pytest.raises(
+            AssertionError, match=r"must include the column\(s\): values!"
+        ):
             test_mp.backend.optimization.parameters.add_data(
                 parameter_id=parameter_2.id,
                 data=pd.DataFrame(
@@ -183,7 +181,9 @@ class TestDataOptimizationParameter:
                 ),
             )
 
-        with pytest.raises(KeyError, match="must include a 'units' column!"):
+        with pytest.raises(
+            AssertionError, match=r"must include the column\(s\): units!"
+        ):
             test_mp.backend.optimization.parameters.add_data(
                 parameter_id=parameter_2.id,
                 data=pd.DataFrame(
@@ -232,8 +232,6 @@ class TestDataOptimizationParameter:
         parameter_2 = test_mp.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 2"
         )
-        assert parameter_2.values == test_data_2.pop("values")
-        assert [unit.name for unit in parameter_2.units] == test_data_2.pop("units")
         assert parameter_2.data == test_data_2
 
         # Test order is conserved with varying types and upon later addition of data
@@ -258,17 +256,8 @@ class TestDataOptimizationParameter:
         parameter_3 = test_mp.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 3"
         )
-        assert parameter_3.values == test_data_3.pop("values")
-        assert [unit.name for unit in parameter_3.units] == test_data_3.pop("units")
         assert parameter_3.data == test_data_3
 
-        # Repopulate test_data after pop()
-        test_data_3 = {
-            "Column 1": ["bar", "foo", ""],
-            "Column 2": [2, 3, 1],
-            "values": ["3", 2.0, 1],
-            "units": [unit_3.name, unit_2.name, unit.name],
-        }
         test_data_4 = {
             "Column 1": ["foo", "", "bar"],
             "Column 2": [2, 3, 1],
@@ -281,15 +270,10 @@ class TestDataOptimizationParameter:
         parameter_3 = test_mp.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 3"
         )
-        assert parameter_3.values == test_data_3.pop("values") + test_data_4.pop(
-            "values"
-        )
-        assert [unit.name for unit in parameter_3.units] == test_data_3.pop(
-            "units"
-        ) + test_data_4.pop("units")
-        assert parameter_3.data == pd.DataFrame([test_data_3, test_data_4]).to_dict(
-            orient="list"
-        )
+        test_data_5 = test_data_3.copy()
+        for key, value in test_data_4.items():
+            test_data_5[key].extend(value)
+        assert parameter_3.data == test_data_5
 
     # def test_list_parameter(self, test_mp, request):
     #     test_mp = request.getfixturevalue(test_mp)
