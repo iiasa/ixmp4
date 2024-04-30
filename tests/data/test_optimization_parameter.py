@@ -10,22 +10,22 @@ def df_from_list(parameters: list):
     return pd.DataFrame(
         [
             [
-                parameter.name,
+                parameter.id,
                 parameter.data,
-                parameter.run__id,
+                parameter.name,
                 parameter.created_at,
                 parameter.created_by,
-                parameter.id,
+                parameter.run__id,
             ]
             for parameter in parameters
         ],
         columns=[
-            "name",
+            "id",
             "data",
-            "run__id",
+            "name",
             "created_at",
             "created_by",
-            "id",
+            "run__id",
         ],
     )
 
@@ -275,80 +275,92 @@ class TestDataOptimizationParameter:
             test_data_5[key].extend(value)
         assert parameter_3.data == test_data_5
 
-    # def test_list_parameter(self, test_mp, request):
-    #     test_mp = request.getfixturevalue(test_mp)
-    #     run = test_mp.backend.runs.create("Model", "Scenario")
-    #     # Per default, list() lists scalars for `default` version runs:
-    #     test_mp.backend.runs.set_as_default_version(run.id)
-    #     _ = test_mp.backend.optimization.indexsets.create(
-    #         run_id=run.id, name="Indexset"
-    #     )
-    #     _ = test_mp.backend.optimization.indexsets.create(
-    #         run_id=run.id, name="Indexset 2"
-    #     )
-    #     parameter = test_mp.backend.optimization.parameters.create(
-    #         run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
-    #     )
-    #     parameter_2 = test_mp.backend.optimization.parameters.create(
-    #         run_id=run.id, name="Parameter 2", constrained_to_indexsets=["Indexset 2"]
-    #     )
-    #     assert [
-    #         parameter,
-    #         parameter_2,
-    #     ] == test_mp.backend.optimization.parameters.list()
+    def test_list_parameter(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        # Per default, list() lists scalars for `default` version runs:
+        test_mp.backend.runs.set_as_default_version(run.id)
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        parameter_2 = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter 2", constrained_to_indexsets=["Indexset 2"]
+        )
+        assert [
+            parameter,
+            parameter_2,
+        ] == test_mp.backend.optimization.parameters.list()
 
-    #     assert [parameter] == test_mp.backend.optimization.parameters.list(
-    #         name="Parameter"
-    #     )
+        assert [parameter] == test_mp.backend.optimization.parameters.list(
+            name="Parameter"
+        )
 
-    # def test_tabulate_parameter(self, test_mp, request):
-    #     test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-    #     run = test_mp.backend.runs.create("Model", "Scenario")
-    #     # Per default, tabulate() lists scalars for `default` version runs:
-    #     test_mp.backend.runs.set_as_default_version(run.id)
-    #     indexset = test_mp.backend.optimization.indexsets.create(
-    #         run_id=run.id, name="Indexset"
-    #     )
-    #     indexset_2 = test_mp.backend.optimization.indexsets.create(
-    #         run_id=run.id, name="Indexset 2"
-    #     )
-    #     parameter = test_mp.backend.optimization.parameters.create(
-    #         run_id=run.id,
-    #         name="Parameter",
-    #         constrained_to_indexsets=["Indexset", "Indexset 2"],
-    #     )
-    #     parameter_2 = test_mp.backend.optimization.parameters.create(
-    #         run_id=run.id,
-    #         name="Parameter 2",
-    #         constrained_to_indexsets=["Indexset", "Indexset 2"],
-    #     )
-    #     pd.testing.assert_frame_equal(
-    #         df_from_list([parameter_2]),
-    #         test_mp.backend.optimization.parameters.tabulate(name="Parameter 2"),
-    #     )
+    def test_tabulate_parameter(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        # Per default, tabulate() lists scalars for `default` version runs:
+        test_mp.backend.runs.set_as_default_version(run.id)
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        indexset_2 = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter",
+            constrained_to_indexsets=["Indexset", "Indexset 2"],
+        )
+        parameter_2 = test_mp.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 2",
+            constrained_to_indexsets=["Indexset", "Indexset 2"],
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([parameter_2]),
+            test_mp.backend.optimization.parameters.tabulate(name="Parameter 2"),
+        )
 
-    #     test_mp.backend.optimization.indexsets.add_elements(
-    #         indexset_id=indexset.id, elements=["foo", "bar"]
-    #     )
-    #     test_mp.backend.optimization.indexsets.add_elements(
-    #         indexset_id=indexset_2.id, elements=[1, 2, 3]
-    #     )
-    #     test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
-    #     test_mp.backend.optimization.parameters.add_data(
-    #         parameter_id=parameter.id, data=test_data_1
-    #     )
-    #     parameter = test_mp.backend.optimization.parameters.get(
-    #         run_id=run.id, name="Parameter"
-    #     )
+        unit = test_mp.backend.units.create("Unit")
+        unit_2 = test_mp.backend.units.create("Unit 2")
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar"]
+        )
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset_2.id, elements=[1, 2, 3]
+        )
+        test_data_1 = {
+            "Indexset": ["foo"],
+            "Indexset 2": [1],
+            "values": ["value"],
+            "units": [unit.name],
+        }
+        test_mp.backend.optimization.parameters.add_data(
+            parameter_id=parameter.id, data=test_data_1
+        )
+        parameter = test_mp.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter"
+        )
 
-    #     test_data_2 = {"Indexset 2": [2, 3], "Indexset": ["foo", "bar"]}
-    #     test_mp.backend.optimization.parameters.add_data(
-    #         parameter_id=parameter_2.id, data=test_data_2
-    #     )
-    #     parameter_2 = test_mp.backend.optimization.parameters.get(
-    #         run_id=run.id, name="Parameter 2"
-    #     )
-    #     pd.testing.assert_frame_equal(
-    #         df_from_list([parameter, parameter_2]),
-    #         test_mp.backend.optimization.parameters.tabulate(),
-    #     )
+        test_data_2 = {
+            "Indexset 2": [2, 3],
+            "Indexset": ["foo", "bar"],
+            "values": [1, "value"],
+            "units": [unit.name, unit_2.name],
+        }
+        test_mp.backend.optimization.parameters.add_data(
+            parameter_id=parameter_2.id, data=test_data_2
+        )
+        parameter_2 = test_mp.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter 2"
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([parameter, parameter_2]),
+            test_mp.backend.optimization.parameters.tabulate(),
+        )

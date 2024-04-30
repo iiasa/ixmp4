@@ -154,7 +154,7 @@ class ParameterRepository(
         missing_columns = set(["values", "units"]) - set(data.columns)
         assert (
             not missing_columns
-        ), f"Parameter.data must include the column(s): {' ,'.join(missing_columns)}!"
+        ), f"Parameter.data must include the column(s): {', '.join(missing_columns)}!"
 
         # Can use a set for now, need full column if we care about order
         for unit_name in set(data["units"]):
