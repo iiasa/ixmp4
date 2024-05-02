@@ -1,5 +1,5 @@
-import asyncio
 import logging
+from concurrent.futures import ThreadPoolExecutor
 
 import httpx
 import pandas as pd
@@ -34,7 +34,7 @@ logger = logging.getLogger(__name__)
 class RestBackend(Backend):
     client: httpx.Client
     async_client: httpx.AsyncClient
-    semaphore: asyncio.Semaphore
+    executor: ThreadPoolExecutor
     timeout: httpx.Timeout
 
     def __init__(
@@ -45,7 +45,7 @@ class RestBackend(Backend):
     ) -> None:
         super().__init__(info)
         logger.info(f"Connecting to IXMP4 REST API at {info.dsn}.")
-        self.semaphore = asyncio.Semaphore(max_concurrent_requests)
+        self.executor = ThreadPoolExecutor(max_workers=max_concurrent_requests)
         self.timeout = httpx.Timeout(settings.client_timeout, connect=60.0)
         if isinstance(info, ManagerPlatformInfo):
             if info.notice is not None:
