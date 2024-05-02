@@ -111,7 +111,6 @@ def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request, filter
     assert_unordered_equality(obs, exp, check_like=True)
 
 
-
 @generated_platforms
 def test_mp_tabulate_big_async(generated_mp, request):
     """Tests if big tabulations work in async contexts."""
@@ -123,11 +122,13 @@ def test_mp_tabulate_big_async(generated_mp, request):
     res = asyncio.run(tabulate())
     assert len(res) > settings.default_page_size
 
+
 @generated_platforms
 def test_mp_tabulate_big(generated_mp, request):
     generated_mp = request.getfixturevalue(generated_mp)
     res = generated_mp.iamc.tabulate(raw=True, run={"default_only": False})
     assert len(res) > settings.default_page_size
+
 
 def do_run_datapoints(test_mp, data, raw=True, _type=None):
     # Test adding, updating, removing data to a run
