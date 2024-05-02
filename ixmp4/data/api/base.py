@@ -1,12 +1,12 @@
-import asyncio
 import logging
+import time
+from concurrent import futures
 from json.decoder import JSONDecodeError
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
-    Coroutine,
     Generic,
     Type,
     TypeVar,
@@ -126,11 +126,7 @@ class BaseRepository(Generic[ModelType]):
             )
         return exc.from_dict(json)
 
-    def _request(self, *args, **kwargs) -> dict | list | None:
-        res = asyncio.run(self._async_request(*args, **kwargs))
-        return res
-
-    async def _async_request(
+    def _request(
         self,
         method: str,
         path: str,
@@ -139,19 +135,15 @@ class BaseRepository(Generic[ModelType]):
         max_retries: int = settings.client_max_request_retries,
         **kwargs,
     ) -> dict | list | None:
-        """Sends an asyncronous request and handles potential error responses.
-        Uses the backend's semaphore to limit how many
-        requests are sent concurrently per backend.
+        """Sends a request and handles potential error responses.
         Re-raises a remote `IxmpError` if thrown and transferred from the backend.
-        Handles read timeouts and rate limiting responses
-        via retries with exponential backoffs.
+        Handles read timeouts and rate limiting responses via retries with backoffs.
         Returns `None` if the response body is empty
         but has a status code less than 300.
         """
 
-        async def retry(max_retries=max_retries) -> dict | list | None:
+        def retry(max_retries=max_retries) -> dict | list | None:
             if max_retries == 0:
-                self.backend.semaphore
                 logger.error(f"API Encumbered: '{self.backend.info.dsn}'")
                 raise ApiEncumbered(
                     f"The service connected to the backend '{self.backend.info.name}' "
@@ -165,8 +157,8 @@ class BaseRepository(Generic[ModelType]):
                 settings.client_max_request_retries - max_retries
             )
             logger.debug(f"Retrying request in {backoff_s} seconds.")
-            await asyncio.sleep(backoff_s)
-            return await self._async_request(
+            time.sleep(backoff_s)
+            return self._request(
                 method,
                 path,
                 params=params,
@@ -181,26 +173,29 @@ class BaseRepository(Generic[ModelType]):
             params = self.sanitize_params(params)
 
         try:
-            async with self.backend.semaphore:
-                res = await self.backend.async_client.request(
-                    method, path, params=params, json=json, **kwargs
-                )
+            res = self.backend.client.request(
+                method,
+                path,
+                params=params,
+                json=json,
+                **kwargs,
+            )
         except httpx.ReadTimeout:
             logger.warn("Read timeout, retrying request...")
-            return await retry()
+            return retry()
 
-        return await self._async_handle_response(res, retry)
+        return self._handle_response(res, retry)
 
-    async def _async_handle_response(
+    def _handle_response(
         self,
         res: httpx.Response,
-        retry: Callable[..., Coroutine[Any, Any, dict | list | None]],
+        retry: Callable[..., dict | list | None],
     ) -> dict | list | None:
         if res.status_code in [
             429,  # Too Many Requests
             420,  # Enhance Your Calm
         ]:
-            return await retry()
+            return retry()
         elif res.status_code >= 400:
             if res.status_code == 413:
                 raise ImproperlyConfigured(
@@ -240,36 +235,34 @@ class BaseRepository(Generic[ModelType]):
             json=json,
         )
 
-    def _build_pagination_requests(
+    def _dispatch_pagination_requests(
         self,
         total: int,
         start: int,
         limit: int,
         params: dict | None,
         json: dict | None,
-    ) -> list[Coroutine]:
-        requests: list[Coroutine] = []
-        for req_offset in range(start, total, limit):
-            if params is not None:
-                req_params = params.copy()
-            else:
-                req_params = {}
+    ) -> list[list | dict]:
+        """Uses the backends executor to send many pagination requests concurrently."""
+        requests: list[tuple] = []
+        with self.backend.executor as exec:
+            for req_offset in range(start, total, limit):
+                if params is not None:
+                    req_params = params.copy()
+                else:
+                    req_params = {}
 
-            req_params.update({"limit": limit, "offset": req_offset})
-            request = self._async_request(
-                self.enumeration_method,
-                self.prefix,
-                params=req_params,
-                json=json,
-            )
-            requests.append(request)
-        return requests
-
-    def _collect_pagination_results(self, requests: list[Coroutine]) -> list:
-        async def gather():
-            return await asyncio.gather(*requests)
-
-        responses = asyncio.run(gather())
+                req_params.update({"limit": limit, "offset": req_offset})
+                futu = exec.submit(
+                    self._request,
+                    self.enumeration_method,
+                    self.prefix,
+                    params=req_params,
+                    json=json,
+                )
+                requests.append(futu)
+        results = futures.wait(requests)
+        responses = [f.result() for f in results.done]
         return [r.pop("results") for r in responses]
 
     def _handle_pagination(
@@ -294,10 +287,9 @@ class BaseRepository(Generic[ModelType]):
         if total <= offset + limit:
             return [data.pop("results")]
         else:
-            requests = self._build_pagination_requests(
+            results = self._dispatch_pagination_requests(
                 total, offset + limit, limit, params, json
             )
-            results = self._collect_pagination_results(requests)
             return [data.pop("results")] + results
 
     def _list(
