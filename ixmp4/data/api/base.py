@@ -244,7 +244,7 @@ class BaseRepository(Generic[ModelType]):
         json: dict | None,
     ) -> list[list | dict]:
         """Uses the backends executor to send many pagination requests concurrently."""
-        requests: list[tuple] = []
+        requests: list[futures.Future] = []
         with self.backend.executor as exec:
             for req_offset in range(start, total, limit):
                 if params is not None:
