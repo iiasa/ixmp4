@@ -1,9 +1,18 @@
+import asyncio
+
 import pytest
 
 from ixmp4 import DataPoint
+from ixmp4.conf import settings
 from ixmp4.core.exceptions import SchemaError
 
-from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
+from ..utils import (
+    add_regions,
+    add_units,
+    all_platforms,
+    assert_unordered_equality,
+    generated_platforms,
+)
 
 
 @all_platforms
@@ -101,6 +110,24 @@ def test_run_tabulate_with_filter_raw(test_mp, test_data_annual, request, filter
     exp = test_data_annual[test_data_annual.variable == "Primary Energy"]
     assert_unordered_equality(obs, exp, check_like=True)
 
+
+
+@generated_platforms
+def test_mp_tabulate_big_async(generated_mp, request):
+    """Tests if big tabulations work in async contexts."""
+    generated_mp = request.getfixturevalue(generated_mp)
+
+    async def tabulate():
+        return generated_mp.iamc.tabulate(raw=True, run={"default_only": False})
+
+    res = asyncio.run(tabulate())
+    assert len(res) > settings.default_page_size
+
+@generated_platforms
+def test_mp_tabulate_big(generated_mp, request):
+    generated_mp = request.getfixturevalue(generated_mp)
+    res = generated_mp.iamc.tabulate(raw=True, run={"default_only": False})
+    assert len(res) > settings.default_page_size
 
 def do_run_datapoints(test_mp, data, raw=True, _type=None):
     # Test adding, updating, removing data to a run
