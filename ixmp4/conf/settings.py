@@ -137,6 +137,9 @@ class Settings(BaseSettings):
         # translate ~/asdf into /home/user/asdf
         return Path.expanduser(v)
 
+    def get_server_logconf(self):
+        return here / "logging/server.conf"
+
     def configure_logging(self, config: str):
         access_file = self.log_dir / "access.log"
         debug_file = self.log_dir / "debug.log"
