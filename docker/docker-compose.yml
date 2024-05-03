@@ -3,8 +3,14 @@ version: "3"
 services:
   ixmp4_server:
     restart: always
-    image: ene-docker.iiasa.ac.at/ixmp4-server:dev
+    #image: registry.iiasa.ac.at/ixmp4/ixmp4-server:dev
+    build: ..
     volumes:
       - ./run:/opt/ixmp4/run
     env_file:
       - ./.env
+    deploy:
+      mode: replicated
+      replicas: 4
+    ports:
+     - 9000-9099:9000
