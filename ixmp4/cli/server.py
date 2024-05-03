@@ -17,6 +17,7 @@ app = typer.Typer()
 def start(
     host: str = typer.Option(default="127.0.0.1", help="The hostname to bind to."),
     port: int = typer.Option(default=9000, help="Requested server port."),
+    workers: int = typer.Option(default=2, help="How many worker threads to start."),
 ) -> None:
     """Starts the ixmp4 web api."""
     reload = settings.mode != "production"
@@ -25,6 +26,7 @@ def start(
         host=host,
         port=port,
         reload=reload,
+        workers=workers,
         log_config="ixmp4/conf/logging/server.conf",
     )
 
