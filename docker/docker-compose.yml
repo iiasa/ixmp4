@@ -8,7 +8,6 @@ services:
       - server
       - start
       - --host=0.0.0.0
-      - --port=9000
     build: ..
     volumes:
       - ./run:/opt/ixmp4/run
@@ -18,4 +17,4 @@ services:
       mode: replicated
       replicas: 4
     ports:
-      - 9000-9099:9000
+      - 9000-9003:9000
