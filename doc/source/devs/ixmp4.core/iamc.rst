@@ -13,12 +13,6 @@ IAMC Data
    :noindex:
 
 
-.. automodule:: ixmp4.core.iamc.repository
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 .. automodule:: ixmp4.core.iamc.variable
    :members:
    :undoc-members:
