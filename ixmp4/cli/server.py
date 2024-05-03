@@ -18,11 +18,9 @@ def start(
     host: str = typer.Option(default="127.0.0.1", help="The hostname to bind to."),
     port: int = typer.Option(default=9000, help="Requested server port."),
     workers: int = typer.Option(default=1, help="How many worker threads to start."),
-    reload: Optional[bool] = typer.Option(default=None, help="Wether to hot-reload."),
+    reload: bool = typer.Option(default=False, help="Wether to hot-reload."),
 ) -> None:
     """Starts the ixmp4 web api."""
-    if reload is None:
-        reload = settings.mode != "production"
 
     uvicorn.run(
         "ixmp4.server:app",

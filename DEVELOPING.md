@@ -314,25 +314,26 @@ services:
   ixmp4_server:
     image: registry.iiasa.ac.at/ixmp4/ixmp4-server:latest
     # To change the amount of workers in a single container
-    # override the imxp4 cli command:
+    # override the ixmp4 cli command:
     command:
       - ixmp4
       - server
       - start
       - --host=0.0.0.0
       - --port=9000
-      # note--workers=. only has an effect when IXMP4_MODE=production (default)
-      - --workers=3
+      - --workers=2
     volumes:
       - ./run:/opt/ixmp4/run
     env_file:
       - ./.env
     deploy:
       mode: replicated
-      replicas: 4
+      replicas: 2
     ports:
       - 9000-9099:9000
 ```
+
+This configurations spawns two containers at ports `9000` and `9001` with 2 workers each.
 
 ## Version number
 
