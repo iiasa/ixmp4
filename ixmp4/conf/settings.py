@@ -26,9 +26,7 @@ class Settings(BaseSettings):
     mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
         "production"
     )
-    storage_directory: Path = Field(
-        "~/.local/share/ixmp4/", json_schema_extra={"env": "ixmp4_dir"}
-    )
+    storage_directory: Path = Field("~/.local/share/ixmp4/")
     secret_hs256: str = "default_secret_hs256"
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
     manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
@@ -138,7 +136,7 @@ class Settings(BaseSettings):
         return Path.expanduser(v)
 
     def get_server_logconf(self):
-        return here / "logging/server.conf"
+        return here / "./logging/server.conf"
 
     def configure_logging(self, config: str):
         access_file = self.log_dir / "access.log"
