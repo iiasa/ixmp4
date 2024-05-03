@@ -10,7 +10,10 @@ __pycache__/
 docker/run/*
 run/*
 !run/.keep
+
+# env & secrets
 .env
+secrets.env
 
 # vscode
 .vscode
