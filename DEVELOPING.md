@@ -330,7 +330,7 @@ services:
       mode: replicated
       replicas: 2
     ports:
-      - 9000-9099:9000
+      - 9000-9001:9000
 ```
 
 This configurations spawns two containers at ports `9000` and `9001` with 2 workers each.
