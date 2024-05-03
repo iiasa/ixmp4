@@ -2,8 +2,13 @@ version: "3"
 
 services:
   ixmp4_server:
-    restart: always
-    #image: registry.iiasa.ac.at/ixmp4/ixmp4-server:dev
+    image: registry.iiasa.ac.at/ixmp4/ixmp4-server:dev
+    command:
+      - ixmp4
+      - server
+      - start
+      - --host=0.0.0.0
+      - --port=9000
     build: ..
     volumes:
       - ./run:/opt/ixmp4/run
@@ -13,4 +18,4 @@ services:
       mode: replicated
       replicas: 4
     ports:
-     - 9000-9099:9000
+      - 9000-9099:9000
