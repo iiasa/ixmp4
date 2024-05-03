@@ -36,7 +36,7 @@ class Settings(BaseSettings):
     max_page_size: int = 10_000
     default_page_size: int = 5_000
     client_default_upload_chunk_size: int = 10_000
-    client_max_concurrent_requests: int = Field(2, lt=4)
+    client_max_concurrent_requests: int = Field(2, le=4)
     client_max_request_retries: int = Field(3)
     client_backoff_factor: int = Field(5)
     client_timeout: int = Field(30)
