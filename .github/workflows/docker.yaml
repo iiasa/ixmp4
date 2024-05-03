@@ -22,6 +22,12 @@ jobs:
           registry: ene-docker.iiasa.ac.at
           username: ixmp-server-workflow-build-user
           password: ${{ secrets.NEXUS_PASSWORD }}
+      - name: Login to Docker Hub
+        uses: docker/login-action@v3
+        with:
+          registry: registry.iiasa.ac.at
+          username: ixmp4
+          password: ${{ secrets.IIASA_REG_PASSWORD_IXMP4 }}
       - name: Check out repository
         uses: actions/checkout@v4
       - name: Write release version
@@ -37,7 +43,8 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS=--with server
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:${{env.VERSION_TAG}}
+          tags: "ene-docker.iiasa.ac.at/ixmp4-server:latest,ene-docker.iiasa.ac.at/ixmp4-server:${{env.VERSION_TAG}},\
+                registry.iiasa.ac.at/ixmp4/ixmp4-server:latest,registry.iiasa.ac.at/ixmp4/ixmp4-server:${{env.VERSION_TAG}}"
       - if: github.event_name != 'release'
         name: Build and push dev
         uses: docker/build-push-action@v5
@@ -46,4 +53,6 @@ jobs:
           push: true
           build-args: |
             POETRY_OPTS=--with server
-          tags: ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:${{env.VERSION_TAG}}
+          tags: "ene-docker.iiasa.ac.at/ixmp4-server:dev,ene-docker.iiasa.ac.at/ixmp4-server:${{env.VERSION_TAG}},\
+                registry.iiasa.ac.at/ixmp4/ixmp4-server:dev,registry.iiasa.ac.at/ixmp4/ixmp4-server:${{env.VERSION_TAG}}"
+
