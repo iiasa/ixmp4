@@ -181,3 +181,5 @@ class RestTestBackend(RestBackend):
 
     def close(self):
         self.client.close()
+        self.executor.shutdown(cancel_futures=True)
+

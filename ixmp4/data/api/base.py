@@ -245,22 +245,21 @@ class BaseRepository(Generic[ModelType]):
     ) -> list[list | dict]:
         """Uses the backends executor to send many pagination requests concurrently."""
         requests: list[futures.Future] = []
-        with self.backend.executor as exec:
-            for req_offset in range(start, total, limit):
-                if params is not None:
-                    req_params = params.copy()
-                else:
-                    req_params = {}
+        for req_offset in range(start, total, limit):
+            if params is not None:
+                req_params = params.copy()
+            else:
+                req_params = {}
 
-                req_params.update({"limit": limit, "offset": req_offset})
-                futu = exec.submit(
-                    self._request,
-                    self.enumeration_method,
-                    self.prefix,
-                    params=req_params,
-                    json=json,
-                )
-                requests.append(futu)
+            req_params.update({"limit": limit, "offset": req_offset})
+            futu = self.backend.executor.submit(
+                self._request,
+                self.enumeration_method,
+                self.prefix,
+                params=req_params,
+                json=json,
+            )
+            requests.append(futu)
         results = futures.wait(requests)
         responses = [f.result() for f in results.done]
         return [r.pop("results") for r in responses]
