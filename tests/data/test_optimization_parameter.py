@@ -3,7 +3,7 @@ import pytest
 
 from ixmp4 import Parameter, Platform
 
-from ..utils import database_platforms
+from ..utils import all_platforms
 
 
 def df_from_list(parameters: list):
@@ -30,7 +30,7 @@ def df_from_list(parameters: list):
     )
 
 
-@database_platforms
+@all_platforms
 class TestDataOptimizationParameter:
     def test_create_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore

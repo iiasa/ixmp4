@@ -57,13 +57,13 @@ class ParameterRepository(
             column_names=column_names,
         )
 
-    def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def add_data(self, parameter_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, pd.DataFrame):
             # data will always contains str, not only Hashable
             data: dict[str, Any] = data.to_dict(orient="list")  # type: ignore
         kwargs = {"data": data}
         self._request(
-            method="PATCH", path=self.prefix + str(table_id) + "/data/", json=kwargs
+            method="PATCH", path=self.prefix + str(parameter_id) + "/data/", json=kwargs
         )
 
     def get(self, run_id: int, name: str) -> Parameter:
