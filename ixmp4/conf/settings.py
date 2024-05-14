@@ -136,7 +136,7 @@ class Settings(BaseSettings):
         return Path.expanduser(v)
 
     def get_server_logconf(self):
-        return here / "./logging/server.conf"
+        return here / "./logging/server.json"
 
     def configure_logging(self, config: str):
         access_file = self.log_dir / "access.log"
