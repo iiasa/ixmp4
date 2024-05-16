@@ -17,15 +17,18 @@ app = typer.Typer()
 def start(
     host: str = typer.Option(default="127.0.0.1", help="The hostname to bind to."),
     port: int = typer.Option(default=9000, help="Requested server port."),
+    workers: int = typer.Option(default=1, help="How many worker threads to start."),
+    reload: bool = typer.Option(default=False, help="Wether to hot-reload."),
 ) -> None:
     """Starts the ixmp4 web api."""
-    reload = settings.mode != "production"
+    log_config = settings.get_server_logconf()
     uvicorn.run(
         "ixmp4.server:app",
         host=host,
         port=port,
         reload=reload,
-        log_config="ixmp4/conf/logging/server.conf",
+        workers=workers,
+        log_config=str(log_config.absolute()),
     )
 
 
