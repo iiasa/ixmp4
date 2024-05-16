@@ -1,7 +1,6 @@
 import json
 import logging
 import logging.config
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -26,9 +25,7 @@ class Settings(BaseSettings):
     mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
         "production"
     )
-    storage_directory: Path = Field(
-        "~/.local/share/ixmp4/", json_schema_extra={"env": "ixmp4_dir"}
-    )
+    storage_directory: Path = Field("~/.local/share/ixmp4/")
     secret_hs256: str = "default_secret_hs256"
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
     manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
@@ -137,13 +134,13 @@ class Settings(BaseSettings):
         # translate ~/asdf into /home/user/asdf
         return Path.expanduser(v)
 
+    def get_server_logconf(self):
+        return here / "./logging/server.json"
+
     def configure_logging(self, config: str):
-        access_file = self.log_dir / "access.log"
-        debug_file = self.log_dir / "debug.log"
-        error_file = self.log_dir / "error.log"
-        os.environ.setdefault("IXMP4_ACCESS_LOG", str(access_file.absolute()))
-        os.environ.setdefault("IXMP4_DEBUG_LOG", str(debug_file.absolute()))
-        os.environ.setdefault("IXMP4_ERROR_LOG", str(error_file.absolute()))
+        self.access_file = str((self.log_dir / "access.log").absolute())
+        self.debug_file = str((self.log_dir / "debug.log").absolute())
+        self.error_file = str((self.log_dir / "error.log").absolute())
 
         logging_config = here / f"logging/{config}.json"
         with open(logging_config) as file:

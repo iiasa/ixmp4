@@ -41,4 +41,5 @@ RUN pip install ./dist/*.whl  && \
     pip install -r constraints.txt 
 
 
-CMD [ "/opt/ixmp4/docker/start.sh" ]
+EXPOSE 9000
+CMD [ "ixmp4", "server", "start", "--host=0.0.0.0", "--port=9000" ]
