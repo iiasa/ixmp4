@@ -38,7 +38,7 @@
       "class": "logging.handlers.RotatingFileHandler",
       "level": "INFO",
       "formatter": "generic",
-      "filename": "ext://ixmp4.conf.access_file",
+      "filename": "ext://ixmp4.conf.settings.access_file",
       "mode": "a",
       "maxBytes": 250000
     },
@@ -51,7 +51,7 @@
       "class": "logging.handlers.RotatingFileHandler",
       "level": "DEBUG",
       "formatter": "generic",
-      "filename": "ext://ixmp4.conf.debug_file", 
+      "filename": "ext://ixmp4.conf.settings.debug_file", 
       "mode": "a",
       "maxBytes": 250000
     },
@@ -59,7 +59,7 @@
       "class": "logging.handlers.RotatingFileHandler",
       "level": "WARN",
       "formatter": "generic",
-      "filename": "ext://ixmp4.conf.error_file",
+      "filename": "ext://ixmp4.conf.settings.error_file",
       "mode": "a",
       "maxBytes": 250000
     }

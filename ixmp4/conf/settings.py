@@ -1,7 +1,6 @@
 import json
 import logging
 import logging.config
-import os
 from pathlib import Path
 from typing import Literal
 
@@ -139,12 +138,9 @@ class Settings(BaseSettings):
         return here / "./logging/server.json"
 
     def configure_logging(self, config: str):
-        access_file = self.log_dir / "access.log"
-        debug_file = self.log_dir / "debug.log"
-        error_file = self.log_dir / "error.log"
-        os.environ.setdefault("IXMP4_ACCESS_LOG", str(access_file.absolute()))
-        os.environ.setdefault("IXMP4_DEBUG_LOG", str(debug_file.absolute()))
-        os.environ.setdefault("IXMP4_ERROR_LOG", str(error_file.absolute()))
+        self.access_file = str((self.log_dir / "access.log").absolute())
+        self.debug_file = str((self.log_dir / "debug.log").absolute())
+        self.error_file = str((self.log_dir / "error.log").absolute())
 
         logging_config = here / f"logging/{config}.json"
         with open(logging_config) as file:
