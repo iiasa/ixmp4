@@ -66,6 +66,9 @@ class TestCoreUnit:
 
         assert unit1.id == unit2.id
 
+        assert "" in test_mp.units.tabulate().values
+        assert "" in [unit.name for unit in test_mp.units.list()]
+
     def test_unit_illegal_names(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
         with pytest.raises(ValueError, match="Unit name 'dimensionless' is reserved,"):
