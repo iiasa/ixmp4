@@ -60,7 +60,7 @@ class TestCoreScalar:
         assert scalar_1.id != scalar_2.id
 
         scalar_3 = run.optimization.scalars.create("Scalar 3", value=1)
-        assert scalar_3.unit.name == "dimensionless"
+        assert scalar_3.unit.name == ""
 
     def test_get_scalar(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)

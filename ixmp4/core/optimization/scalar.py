@@ -107,8 +107,8 @@ class ScalarRepository(BaseFacade):
             unit_name = unit
         else:
             # TODO: provide logging information about None-units being converted
-            # to dimensionless
-            dimensionless_unit = self.backend.units.create(name="dimensionless")
+            # if unit is None, assume that this is a dimensionless scalar (unit = "")
+            dimensionless_unit = self.backend.units.create(name="")
             unit_name = dimensionless_unit.name
 
         try:

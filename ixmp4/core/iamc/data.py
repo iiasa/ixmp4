@@ -13,15 +13,6 @@ from ..utils import substitute_type
 from .variable import VariableRepository
 
 
-def to_dimensionless(df: pd.DataFrame) -> pd.DataFrame:
-    if "dimensionless" in df.unit:
-        raise ValueError(
-            "Unit name 'dimensionless' is reserved, use an empty string '' instead."
-        )
-    df.replace(to_replace={"unit": ""}, value="dimensionless", inplace=True)
-    return df
-
-
 class RemoveDataPointFrameSchema(pa.DataFrameModel):
     type: Optional[Series[pa.String]] = pa.Field(isin=[t for t in DataPointModel.Type])
     step_year: Optional[Series[pa.Int]] = pa.Field(coerce=True, nullable=True)
@@ -69,7 +60,6 @@ def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
 def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool) -> pd.DataFrame:
     if not df.empty:
         df = df.drop(columns=["time_series__id"])
-        df.unit = df.unit.replace({"dimensionless": ""})
         if raw is False:
             return convert_to_std_format(df, join_runs)
     return df
@@ -120,7 +110,6 @@ class RunIamcData(BaseFacade):
         type: Optional[DataPointModel.Type] = None,
     ):
         df = AddDataPointFrameSchema.validate(df)  # type:ignore
-        df = to_dimensionless(df.copy())
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
@@ -132,7 +121,6 @@ class RunIamcData(BaseFacade):
         type: Optional[DataPointModel.Type] = None,
     ):
         df = RemoveDataPointFrameSchema.validate(df)  # type:ignore
-        df = to_dimensionless(df.copy())
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
