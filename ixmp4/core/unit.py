@@ -7,14 +7,6 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Unit as UnitModel
 
 
-def to_dimensionless(name):
-    if name == "dimensionless":
-        raise ValueError(
-            "Unit name 'dimensionless' is reserved, use an empty string '' instead."
-        )
-    return "dimensionless" if name == "" else name
-
-
 class Unit(BaseModelFacade):
     _model: UnitModel
     NotUnique = UnitModel.NotUnique
@@ -71,10 +63,12 @@ class UnitRepository(BaseFacade):
         self,
         name: str,
     ) -> Unit:
-        name = to_dimensionless(name)
-        if name.strip() == "":
+        if name != "" and name.strip() == "":
             raise ValueError("Using a space-only unit name is not allowed.")
-
+        if name == "dimensionless":
+            raise ValueError(
+                "Unit name 'dimensionless' is reserved, use an empty string '' instead."
+            )
         model = self.backend.units.create(name)
         return Unit(_backend=self.backend, _model=model)
 
@@ -92,7 +86,7 @@ class UnitRepository(BaseFacade):
         self.backend.units.delete(id)
 
     def get(self, name: str) -> Unit:
-        model = self.backend.units.get(to_dimensionless(name))
+        model = self.backend.units.get(name)
         return Unit(_backend=self.backend, _model=model)
 
     def list(self, name: str | None = None) -> list[Unit]:
