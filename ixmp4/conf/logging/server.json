@@ -9,63 +9,33 @@
   },
   "loggers": {
     "fastapi": {
-      "level": "NOTSET",
-      "handlers": ["debug","error","console"]
+      "level": "NOTSET"
     },
     "httpx": {
-      "level": "NOTSET",
-      "handlers": ["debug","error"]
+      "level": "NOTSET"
     },
     "sqlalchemy": {
-      "level": "NOTSET",
-      "handlers": ["debug","error"]
-    },
-    "uvicorn": {
-      "level": "NOTSET",
-      "handlers": ["debug","error","console"]
+      "level": "NOTSET"
     },
     "uvicorn.access": {
-      "level": "NOTSET",
-      "handlers": ["access"]
+      "level": "NOTSET"
+    },
+    "uvicorn": {
+      "level": "NOTSET"
     },
     "watchfiles.main": {
-      "level": "ERROR",
-      "handlers": ["error","debug"]
+      "level": "ERROR"
     }
   },
   "handlers": {
-    "access": {
-      "class": "logging.handlers.RotatingFileHandler",
-      "level": "INFO",
-      "formatter": "generic",
-      "filename": "ext://ixmp4.conf.settings.access_file",
-      "mode": "a",
-      "maxBytes": 250000
-    },
     "console": {
       "class": "logging.StreamHandler",
-      "level": "INFO",
-      "formatter": "generic"
-    },
-    "debug": {
-      "class": "logging.handlers.RotatingFileHandler",
       "level": "DEBUG",
-      "formatter": "generic",
-      "filename": "ext://ixmp4.conf.settings.debug_file", 
-      "mode": "a",
-      "maxBytes": 250000
-    },
-    "error": {
-      "class": "logging.handlers.RotatingFileHandler",
-      "level": "WARN",
-      "formatter": "generic",
-      "filename": "ext://ixmp4.conf.settings.error_file",
-      "mode": "a",
-      "maxBytes": 250000
+      "formatter": "generic"
     }
   },
   "root": { 
-    "level": "NOTSET",
-    "handlers": ["debug","error"]
+    "level": "DEBUG",
+    "handlers": ["console"]
   }
 }
