@@ -43,7 +43,6 @@ logger = logging.getLogger(__name__)
 
 @lru_cache()
 def cached_create_engine(dsn: str) -> Engine:
-    logger.info(f"Creating database engine for {dsn}")
     return create_engine(dsn)
 
 
@@ -74,6 +73,7 @@ class SqlAlchemyBackend(Backend):
 
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
+        logger.info(f"Creating database engine for platform '{info.name}'.")
         self.make_engine(info.dsn)
         self.make_repositories()
 
