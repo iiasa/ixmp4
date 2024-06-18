@@ -9,24 +9,22 @@
   },
   "loggers": {
     "fastapi": {
-      "level": "NOTSET",
-      "handlers": ["console"]
+      "level": "NOTSET"
     },
     "httpx": {
-      "level": "NOTSET",
-      "handlers": ["console"]
+      "level": "NOTSET"
     },
     "sqlalchemy": {
-      "level": "NOTSET",
-      "handlers": ["console"]
+      "level": "NOTSET"
     },
     "uvicorn.access": {
-      "level": "NOTSET",
-      "handlers": ["console"]
+      "level": "NOTSET"
+    },
+    "uvicorn": {
+      "level": "NOTSET"
     },
     "watchfiles.main": {
-      "level": "ERROR",
-      "handlers": ["console"]
+      "level": "ERROR"
     }
   },
   "handlers": {
