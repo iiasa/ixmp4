@@ -8,7 +8,7 @@ from ixmp4.data.db.unit import Unit
 from .. import base
 
 
-class Scalar(base.BaseModel, base.UniqueNameRunIDMixin):
+class Scalar(base.UniqueRunIDBaseModel):
     NotFound: ClassVar = abstract.Scalar.NotFound
     NotUnique: ClassVar = abstract.Scalar.NotUnique
     DeletionPrevented: ClassVar = abstract.Scalar.DeletionPrevented

@@ -7,7 +7,6 @@ from ..base import (
     Deleter,
     Enumerator,
     Lister,
-    NameMixin,
     Retriever,
     Selecter,
     Tabulator,

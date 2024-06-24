@@ -8,9 +8,7 @@ from .. import Column, base
 
 
 class Table(
-    base.BaseModel,
-    base.OptimizationDataMixin,
-    base.UniqueNameRunIDMixin,
+    base.OptimizationDataBaseModel,
 ):
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Table.NotFound

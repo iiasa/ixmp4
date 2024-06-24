@@ -32,7 +32,8 @@ in the development database. Be sure to run ``ruff`` on newly created
 migrations before committing them!
 
 """
-# flake8: noqa
+
+from typing import Annotated
 
 from sqlalchemy import (
     ForeignKey,
@@ -66,3 +67,14 @@ from . import utils
 Column = mapped_column
 JsonType = JSON()
 JsonType = JsonType.with_variant(JSONB(), "postgresql")
+Name = Annotated[str, Column(String(255), nullable=False, unique=False)]
+RunID = Annotated[
+    int,
+    Column(
+        Integer,
+        ForeignKey("run.id"),
+        nullable=False,
+        index=True,
+    ),
+]
+UniqueName = Annotated[str, Column(String(255), nullable=False, unique=True)]
