@@ -7,12 +7,10 @@ from ixmp4 import db
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
-from .. import Column, base
+from .. import Column, base, utils
 
 
-class Table(
-    base.BaseModel,
-):
+class Table(base.BaseModel):
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Table.NotFound
     NotUnique: ClassVar = abstract.Table.NotUnique
@@ -20,20 +18,16 @@ class Table(
 
     # constrained_to_indexsets: ClassVar[list[str] | None] = None
 
-    run__id: Mapped[db.RunId]
+    run__id: types.RunId
     columns: types.Mapped[list["Column"]] = db.relationship()
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @validates("data")
     def validate_data(self, key, data: dict[str, Any]):
-        return base.OptimizationData.validate_data(
-            # TODO Types don't match since we can't import Column in db/base.py and we
-            # can't make Column inherit from abstract.opt.Column because "the metaclass
-            # of a derived class must be a (non-strict) subclass of the metaclasses of
-            # all its bases" -- So what's the elegant solution here?
+        return utils.validate_data(
             key=key,
             data=data,
-            columns=self.columns,  # type: ignore
+            columns=self.columns,
         )
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
