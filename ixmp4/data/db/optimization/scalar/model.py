@@ -1,7 +1,5 @@
 from typing import ClassVar
 
-from sqlalchemy.orm import Mapped as Mapped
-
 from ixmp4 import db
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
@@ -15,7 +13,7 @@ class Scalar(base.BaseModel):
     NotUnique: ClassVar = abstract.Scalar.NotUnique
     DeletionPrevented: ClassVar = abstract.Scalar.DeletionPrevented
 
-    run__id: Mapped[db.RunId]
+    run__id: types.RunId
 
     value: types.Float = db.Column(db.Float, nullable=True, unique=False)
 

@@ -1,6 +1,5 @@
 from typing import ClassVar
 
-from sqlalchemy.orm import Mapped as Mapped
 from sqlalchemy.orm import validates
 
 from ixmp4 import db
@@ -27,6 +26,6 @@ class IndexSet(base.BaseModel):
                 unique.add(element)
         return value
 
-    run__id: Mapped[db.RunId]
+    run__id: types.RunId
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)

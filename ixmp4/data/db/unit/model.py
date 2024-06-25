@@ -1,9 +1,6 @@
 from typing import ClassVar
 
-from sqlalchemy.orm import Mapped as Mapped
-
-from ixmp4 import db
-from ixmp4.data import abstract
+from ixmp4.data import abstract, types
 
 from .. import base
 
@@ -13,4 +10,4 @@ class Unit(base.BaseModel, base.TimestampMixin):
     NotUnique: ClassVar = abstract.Unit.NotUnique
     DeletionPrevented: ClassVar = abstract.Unit.DeletionPrevented
 
-    name: Mapped[db.UniqueName]
+    name: types.UniqueName

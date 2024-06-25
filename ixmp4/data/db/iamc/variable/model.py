@@ -2,7 +2,7 @@ from typing import ClassVar
 
 from sqlalchemy.orm import Mapped as Mapped
 
-from ixmp4 import db
+from ixmp4.data import types
 from ixmp4.data.abstract import iamc as abstract
 
 from .. import base
@@ -13,4 +13,4 @@ class Variable(base.BaseModel, base.TimestampMixin):
     NotUnique: ClassVar = abstract.Variable.NotUnique
     DeletionPrevented: ClassVar = abstract.Variable.DeletionPrevented
 
-    name: Mapped[db.UniqueName]
+    name: types.UniqueName
