@@ -27,6 +27,7 @@ from sqlalchemy.sql.schema import Identity, MetaData
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
 from ixmp4.data import abstract, types
+from ixmp4.data.auth.context import AuthorizationContext
 from ixmp4.db import filters
 
 if TYPE_CHECKING:
@@ -450,3 +451,7 @@ class BulkDeleter(BulkOperator[ModelType]):
 class TimestampMixin:
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
     created_by: types.String = db.Column(db.String(255), nullable=True)
+
+    def set_creation_info(self, auth_context: AuthorizationContext | None) -> None:
+        self.created_at = datetime.now(tz=timezone.utc)
+        self.created_by = auth_context.user.username if auth_context else "@unknown"
