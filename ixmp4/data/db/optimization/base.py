@@ -1,4 +1,5 @@
-# flake8: noqa
+from ixmp4.data import types
+
 from ..base import BaseModel as RootBaseModel
 from ..base import (
     BulkDeleter,
@@ -10,9 +11,12 @@ from ..base import (
     Retriever,
     Selecter,
     Tabulator,
+    TimestampMixin,
 )
 
 
-class BaseModel(RootBaseModel):
+class BaseModel(RootBaseModel, TimestampMixin):
     __abstract__ = True
     table_prefix = "optimization_"
+
+    name: types.Name

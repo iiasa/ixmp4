@@ -73,7 +73,8 @@ class TableRepository(
         run_id: int,
         name: str,
     ) -> Table:
-        table = Table(name=name, run__id=run_id, **self.get_creation_info())
+        table = Table(name=name, run__id=run_id)
+        table.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(table)
 
         return table

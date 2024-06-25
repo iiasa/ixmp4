@@ -34,8 +34,8 @@ class ScalarRepository(
             value=value,
             unit__id=unit_id,
             run__id=run_id,
-            **self.get_creation_info(),
         )
+        scalar.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(scalar)
         return scalar
 

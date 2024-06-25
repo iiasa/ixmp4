@@ -15,7 +15,6 @@ class Column(base.BaseModel):
     NotUnique: ClassVar = abstract.Column.NotUnique
     DeletionPrevented: ClassVar = abstract.Column.DeletionPrevented
 
-    name: types.String = db.Column(db.String(255), nullable=False, unique=False)
     # Currently not in use:
     dtype: types.String = db.Column(
         db.String(255), nullable=False, unique=False
@@ -32,4 +31,4 @@ class Column(base.BaseModel):
     # Currently not in use:
     unique: types.Boolean = db.Column(db.Boolean, default=True)
 
-    __table_args__ = (UniqueConstraint(name, table__id),)
+    __table_args__ = (UniqueConstraint("name", "table__id"),)

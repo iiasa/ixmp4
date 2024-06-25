@@ -27,7 +27,8 @@ class ModelRepository(
         self.filter_class = ModelFilter
 
     def add(self, name: str) -> Model:
-        model = Model(name=name, **self.get_creation_info())
+        model = Model(name=name)
+        model.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(model)
         return model
 
