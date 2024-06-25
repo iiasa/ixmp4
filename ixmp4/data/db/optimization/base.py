@@ -2,7 +2,7 @@ from typing import Any, ClassVar
 
 import pandas as pd
 from sqlalchemy.orm import Mapped as Mapped
-from sqlalchemy.orm import declared_attr, validates
+from sqlalchemy.orm import validates
 
 from ixmp4 import db
 from ixmp4.data import abstract, types
@@ -27,7 +27,6 @@ class BaseModel(RootBaseModel, TimestampMixin):
     table_prefix = "optimization_"
 
     name: Mapped[db.Name]
-    run__id: Mapped[db.RunId]
 
 
 class OptimizationDataBaseModel(BaseModel):
