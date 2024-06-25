@@ -68,7 +68,7 @@ Column = mapped_column
 JsonType = JSON()
 JsonType = JsonType.with_variant(JSONB(), "postgresql")
 Name = Annotated[str, Column(String(255), nullable=False, unique=False)]
-RunID = Annotated[
+RunId = Annotated[
     int,
     Column(
         Integer,

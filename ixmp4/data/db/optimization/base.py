@@ -27,7 +27,7 @@ class BaseModel(RootBaseModel, TimestampMixin):
     table_prefix = "optimization_"
 
     name: Mapped[db.Name]
-    run__id: Mapped[db.RunID]
+    run__id: Mapped[db.RunId]
 
 
 class OptimizationDataBaseModel(BaseModel):
