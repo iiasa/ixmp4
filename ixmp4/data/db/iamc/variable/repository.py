@@ -26,7 +26,8 @@ class VariableRepository(
         self.filter_class = VariableFilter
 
     def add(self, name: str) -> Variable:
-        variable = Variable(name=name, **self.get_creation_info())
+        variable = Variable(name=name)
+        variable.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(variable)
         return variable
 

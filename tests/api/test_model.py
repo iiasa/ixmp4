@@ -1,3 +1,5 @@
+from ixmp4 import Platform
+
 from ..utils import (
     api_platforms,
     create_iamc_query_test_data,
@@ -6,7 +8,7 @@ from ..utils import (
 
 @api_platforms
 def test_index_model(test_mp, request):
-    test_mp = request.getfixturevalue(test_mp)
+    test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
     table_endpoint = "iamc/models/?table=True"
     _, _ = create_iamc_query_test_data(test_mp)
 

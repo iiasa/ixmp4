@@ -13,7 +13,7 @@ from . import base
 from .variable import Variable
 
 
-class Measurand(base.BaseModel):
+class Measurand(base.BaseModel, base.TimestampMixin):
     NotFound: ClassVar = abstract.Measurand.NotFound
     NotUnique: ClassVar = abstract.Measurand.NotUnique
     DeletionPrevented: ClassVar = abstract.Measurand.DeletionPrevented
@@ -39,9 +39,6 @@ class Measurand(base.BaseModel):
         foreign_keys=[unit__id],
         lazy="select",
     )
-
-    created_at = db.Column(db.DateTime)
-    created_by = db.Column(db.String(255))
 
 
 class MeasurandRepository(

@@ -28,7 +28,8 @@ class UnitRepository(
         self.docs = UnitDocsRepository(*args, **kwargs)
 
     def add(self, name: str) -> Unit:
-        unit = Unit(name=name, **self.get_creation_info())
+        unit = Unit(name=name)
+        unit.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(unit)
         return unit
 
