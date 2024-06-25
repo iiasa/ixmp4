@@ -22,3 +22,5 @@ class Table(
     # class must be a (non-strict) subclass of the metaclasses of all its bases"
     # So what's the elegant solution here?
     columns: types.Mapped[list["Column"]] = db.relationship()  # type: ignore
+
+    __table_args__ = (db.UniqueConstraint("name", "run__id"),)

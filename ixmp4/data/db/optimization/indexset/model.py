@@ -9,7 +9,7 @@ from ixmp4.data.abstract import optimization as abstract
 from .. import base
 
 
-class IndexSet(base.UniqueRunIDBaseModel):
+class IndexSet(base.BaseModel):
     NotFound: ClassVar = abstract.IndexSet.NotFound
     NotUnique: ClassVar = abstract.IndexSet.NotUnique
     DeletionPrevented: ClassVar = abstract.IndexSet.DeletionPrevented
@@ -25,3 +25,5 @@ class IndexSet(base.UniqueRunIDBaseModel):
             else:
                 unique.add(element)
         return value
+
+    __table_args__ = (db.UniqueConstraint("name", "run__id"),)

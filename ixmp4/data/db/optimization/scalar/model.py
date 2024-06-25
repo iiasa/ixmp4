@@ -8,7 +8,7 @@ from ixmp4.data.db.unit import Unit
 from .. import base
 
 
-class Scalar(base.UniqueRunIDBaseModel):
+class Scalar(base.BaseModel):
     NotFound: ClassVar = abstract.Scalar.NotFound
     NotUnique: ClassVar = abstract.Scalar.NotUnique
     DeletionPrevented: ClassVar = abstract.Scalar.DeletionPrevented
@@ -19,3 +19,5 @@ class Scalar(base.UniqueRunIDBaseModel):
     unit__id: types.Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("unit.id"), index=True
     )
+
+    __table_args__ = (db.UniqueConstraint("name", "run__id"),)

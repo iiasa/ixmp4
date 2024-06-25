@@ -30,16 +30,7 @@ class BaseModel(RootBaseModel, TimestampMixin):
     run__id: Mapped[db.RunID]
 
 
-class UniqueRunIDBaseModel(BaseModel):
-    @declared_attr.directive
-    def __table_args__(cls) -> tuple:
-        return (
-            # Mypy recognizes run__id as int, while it should be a MappedColumn[int]
-            db.UniqueConstraint(cls.name, cls.run__id),  # type: ignore
-        )
-
-
-class OptimizationDataBaseModel(UniqueRunIDBaseModel):
+class OptimizationDataBaseModel(BaseModel):
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     columns: ClassVar[list[abstract.optimization.Column]]
