@@ -28,7 +28,8 @@ class IndexSetRepository(
         self.filter_class = OptimizationIndexSetFilter
 
     def add(self, run_id: int, name: str) -> IndexSet:
-        indexset = IndexSet(run__id=run_id, name=name, **self.get_creation_info())
+        indexset = IndexSet(run__id=run_id, name=name)
+        indexset.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(indexset)
         return indexset
 

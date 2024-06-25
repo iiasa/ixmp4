@@ -44,7 +44,8 @@ class RunRepository(
             exc: db.sql.Select = self.models.select(name=model_name)
             model = self.session.execute(exc).scalar_one()
         except NoResultFound:
-            model = Model(name=model_name, **self.get_creation_info())
+            model = Model(name=model_name)
+            model.set_creation_info(auth_context=self.backend.auth_context)
             self.session.add(model)
 
         # Get or create scenario
@@ -52,7 +53,8 @@ class RunRepository(
             exc = self.scenarios.select(name=scenario_name)
             scenario: Scenario = self.session.execute(exc).scalar_one()
         except NoResultFound:
-            scenario = Scenario(name=scenario_name, **self.get_creation_info())
+            scenario = Scenario(name=scenario_name)
+            scenario.set_creation_info(auth_context=self.backend.auth_context)
             self.session.add(scenario)
 
         (version,) = (

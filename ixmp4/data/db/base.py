@@ -117,15 +117,6 @@ class Retriever(BaseRepository[ModelType], abstract.Retriever):
 
 
 class Creator(BaseRepository[ModelType], abstract.Creator):
-    def get_creation_info(self) -> dict:
-        info = {
-            "created_at": datetime.now(tz=timezone.utc),
-            "created_by": "@unknown",
-        }
-        if self.backend.auth_context is not None:
-            info["created_by"] = self.backend.auth_context.user.username
-        return info
-
     def add(self, *args, **kwargs) -> ModelType:
         raise NotImplementedError
 
