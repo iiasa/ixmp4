@@ -14,21 +14,21 @@ def df_from_list(indexsets: list[IndexSet]):
         [
             [
                 indexset.elements,
-                indexset.id,
+                indexset.run_id,
                 indexset.name,
+                indexset.id,
                 indexset.created_at,
                 indexset.created_by,
-                indexset.run_id,
             ]
             for indexset in indexsets
         ],
         columns=[
             "elements",
-            "id",
+            "run__id",
             "name",
+            "id",
             "created_at",
             "created_by",
-            "run__id",
         ],
     )
 

@@ -11,24 +11,24 @@ def df_from_list(scalars: list):
     return pd.DataFrame(
         [
             [
+                scalar.run__id,
                 scalar.value,
                 scalar.unit.id,
-                scalar.id,
                 scalar.name,
+                scalar.id,
                 scalar.created_at,
                 scalar.created_by,
-                scalar.run__id,
             ]
             for scalar in scalars
         ],
         columns=[
+            "run__id",
             "value",
             "unit__id",
-            "id",
             "name",
+            "id",
             "created_at",
             "created_by",
-            "run__id",
         ],
     )
 

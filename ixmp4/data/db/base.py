@@ -1,3 +1,5 @@
+from __future__ import annotations
+
 import logging
 import sqlite3
 from datetime import datetime, timezone
@@ -27,10 +29,10 @@ from sqlalchemy.sql.schema import Identity, MetaData
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
 from ixmp4.data import abstract, types
-from ixmp4.data.auth.context import AuthorizationContext
 from ixmp4.db import filters
 
 if TYPE_CHECKING:
+    from ixmp4.data.auth.context import AuthorizationContext
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 logger = logging.getLogger(__name__)
