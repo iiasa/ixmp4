@@ -34,11 +34,19 @@ class Parameter(BaseModelFacade):
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to an existing Parameter."""
         self.backend.optimization.parameters.add_data(
-            table_id=self._model.id, data=data
+            parameter_id=self._model.id, data=data
         )
         self._model.data = self.backend.optimization.parameters.get(
             run_id=self._model.run__id, name=self._model.name
         ).data
+
+    @property
+    def values(self) -> list:
+        return self._model.data.get("values", [])
+
+    @property
+    def units(self) -> list:
+        return self._model.data.get("units", [])
 
     @property
     def constrained_to_indexsets(self) -> list[str]:

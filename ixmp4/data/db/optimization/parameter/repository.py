@@ -74,7 +74,8 @@ class ParameterRepository(
         run_id: int,
         name: str,
     ) -> Parameter:
-        parameter = Parameter(name=name, run__id=run_id, **self.get_creation_info())
+        parameter = Parameter(name=name, run__id=run_id)
+        parameter.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(parameter)
 
         return parameter
@@ -154,7 +155,7 @@ class ParameterRepository(
         missing_columns = set(["values", "units"]) - set(data.columns)
         assert (
             not missing_columns
-        ), f"Parameter.data must include the column(s): {' ,'.join(missing_columns)}!"
+        ), f"Parameter.data must include the column(s): {', '.join(missing_columns)}!"
 
         # Can use a set for now, need full column if we care about order
         for unit_name in set(data["units"]):
