@@ -10,7 +10,7 @@ def df_from_list(parameters: list):
     return pd.DataFrame(
         [
             [
-                parameter.run__id,
+                parameter.run_id,
                 parameter.data,
                 parameter.name,
                 parameter.id,
@@ -34,43 +34,40 @@ def df_from_list(parameters: list):
 class TestDataOptimizationParameter:
     def test_create_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
+        run = test_mp.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
-        )
-        parameter = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
+        indexset_1 = run.optimization.indexsets.create("Indexset")
+        parameter = run.optimization.parameters.create(
             name="Parameter",
             constrained_to_indexsets=["Indexset"],
         )
 
-        assert parameter.run__id == run.id
+        assert parameter.run_id == run.id
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
         assert parameter.columns[0].name == "Indexset"
-        assert parameter.columns[0].constrained_to_indexset == indexset_1.id
+        assert parameter.constrained_to_indexsets == [indexset_1.name]
+        assert parameter.values == []
+        assert parameter.units == []
 
         # Test duplicate name raises
         with pytest.raises(Parameter.NotUnique):
-            _ = test_mp.backend.optimization.parameters.create(
-                run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+            _ = run.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=["Indexset"]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
-            _ = test_mp.backend.optimization.parameters.create(
-                run_id=run.id,
-                name="Parameter 2",
+            _ = run.optimization.parameters.create(
+                "Parameter 2",
                 constrained_to_indexsets=["Indexset"],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
-        parameter_2 = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
-            name="Parameter 2",
+        parameter_2 = run.optimization.parameters.create(
+            "Parameter 2",
             constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
@@ -78,24 +75,17 @@ class TestDataOptimizationParameter:
 
         # Test duplicate column_names raise
         with pytest.raises(ValueError, match="`column_names` are not unique"):
-            _ = test_mp.backend.optimization.parameters.create(
-                run_id=run.id,
+            _ = run.optimization.parameters.create(
                 name="Parameter 3",
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
 
         # Test column.dtype is registered correctly
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 2"
-        )
-        test_mp.backend.optimization.indexsets.add_elements(
-            indexset_2.id, elements=2024
-        )
-        indexset_2 = test_mp.backend.optimization.indexsets.get(run.id, indexset_2.name)
-        parameter_3 = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
-            name="Parameter 5",
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset_2.add(elements=2024)
+        parameter_3 = run.optimization.parameters.create(
+            "Parameter 5",
             constrained_to_indexsets=["Indexset", indexset_2.name],
         )
         # If indexset doesn't have elements, a generic dtype is registered
@@ -104,38 +94,32 @@ class TestDataOptimizationParameter:
 
     def test_get_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        _ = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
+        run = test_mp.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        _ = run.optimization.parameters.create(
+            name="Parameter", constrained_to_indexsets=["Indexset"]
         )
-        parameter = test_mp.backend.optimization.parameters.create(
-            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
-        )
-        assert parameter == test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter"
-        )
+        parameter = run.optimization.parameters.get(name="Parameter")
+        assert parameter.run_id == run.id
+        assert parameter.id == 1
+        assert parameter.name == "Parameter"
+        assert parameter.data == {}
+        assert parameter.values == []
+        assert parameter.units == []
+        assert parameter.columns[0].name == indexset.name
+        assert parameter.constrained_to_indexsets == [indexset.name]
 
         with pytest.raises(Parameter.NotFound):
-            _ = test_mp.backend.optimization.parameters.get(
-                run_id=run.id, name="Parameter 2"
-            )
+            _ = run.optimization.parameters.get("Parameter 2")
 
     def test_parameter_add_data(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        unit = test_mp.backend.units.create("Unit")
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
-        )
-        test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_1.id, elements=["foo", "bar", ""]
-        )
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 2"
-        )
-        test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_2.id, elements=[1, 2, 3]
-        )
+        run = test_mp.runs.create("Model", "Scenario")
+        unit = test_mp.units.create("Unit")
+        indexset_1 = run.optimization.indexsets.create("Indexset")
+        indexset_1.add(elements=["foo", "bar", ""])
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset_2.add(elements=[1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
         # can remedy this. Or maybe we want to catch the resulting
@@ -147,22 +131,16 @@ class TestDataOptimizationParameter:
             "values": [3.14],
             "units": [unit.name],
         }
-        parameter = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
-            name="Parameter",
+        parameter = run.optimization.parameters.create(
+            "Parameter",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
-        test_mp.backend.optimization.parameters.add_data(
-            parameter_id=parameter.id, data=test_data_1
-        )
-
-        parameter = test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter"
-        )
+        parameter.add(data=test_data_1)
         assert parameter.data == test_data_1
+        assert parameter.values == test_data_1["values"]
+        assert parameter.units == test_data_1["units"]
 
-        parameter_2 = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
+        parameter_2 = run.optimization.parameters.create(
             name="Parameter 2",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
@@ -170,9 +148,8 @@ class TestDataOptimizationParameter:
         with pytest.raises(
             AssertionError, match=r"must include the column\(s\): values!"
         ):
-            test_mp.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
-                data=pd.DataFrame(
+            parameter_2.add(
+                pd.DataFrame(
                     {
                         "Indexset": [None],
                         "Indexset 2": [2],
@@ -184,8 +161,7 @@ class TestDataOptimizationParameter:
         with pytest.raises(
             AssertionError, match=r"must include the column\(s\): units!"
         ):
-            test_mp.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+            parameter_2.add(
                 data=pd.DataFrame(
                     {
                         "Indexset": [None],
@@ -198,8 +174,7 @@ class TestDataOptimizationParameter:
         # By converting data to pd.DataFrame, we automatically enforce equal length
         # of new columns, raises All arrays must be of the same length otherwise:
         with pytest.raises(ValueError, match="All arrays must be of the same length"):
-            test_mp.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+            parameter_2.add(
                 data={
                     "Indexset": ["foo", "foo"],
                     "Indexset 2": [2, 2],
@@ -209,8 +184,7 @@ class TestDataOptimizationParameter:
             )
 
         with pytest.raises(ValueError, match="contains duplicate rows"):
-            test_mp.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+            parameter_2.add(
                 data={
                     "Indexset": ["foo", "foo"],
                     "Indexset 2": [2, 2],
@@ -226,23 +200,19 @@ class TestDataOptimizationParameter:
             "values": [6, 5, 4, 3, 2, 1],
             "units": [unit.name] * 6,
         }
-        test_mp.backend.optimization.parameters.add_data(
-            parameter_id=parameter_2.id, data=test_data_2
-        )
-        parameter_2 = test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter 2"
-        )
+        parameter_2.add(test_data_2)
         assert parameter_2.data == test_data_2
+        assert parameter_2.values == test_data_2["values"]
+        assert parameter_2.units == test_data_2["units"]
 
         # Test order is conserved with varying types and upon later addition of data
-        parameter_3 = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
+        parameter_3 = run.optimization.parameters.create(
             name="Parameter 3",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
-        unit_2 = test_mp.backend.units.create("Unit 2")
-        unit_3 = test_mp.backend.units.create("Unit 3")
+        unit_2 = test_mp.units.create("Unit 2")
+        unit_3 = test_mp.units.create("Unit 3")
 
         test_data_3 = {
             "Column 1": ["bar", "foo", ""],
@@ -250,13 +220,10 @@ class TestDataOptimizationParameter:
             "values": ["3", 2.0, 1],
             "units": [unit_3.name, unit_2.name, unit.name],
         }
-        test_mp.backend.optimization.parameters.add_data(
-            parameter_id=parameter_3.id, data=test_data_3
-        )
-        parameter_3 = test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter 3"
-        )
+        parameter_3.add(data=test_data_3)
         assert parameter_3.data == test_data_3
+        assert parameter_3.values == test_data_3["values"]
+        assert parameter_3.units == test_data_3["units"]
 
         test_data_4 = {
             "Column 1": ["foo", "", "bar"],
@@ -264,89 +231,70 @@ class TestDataOptimizationParameter:
             "values": [3.14, 2, "1"],
             "units": [unit_2.name, unit.name, unit_3.name],
         }
-        test_mp.backend.optimization.parameters.add_data(
-            parameter_id=parameter_3.id, data=test_data_4
-        )
-        parameter_3 = test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter 3"
-        )
+        parameter_3.add(data=test_data_4)
         test_data_5 = test_data_3.copy()
         for key, value in test_data_4.items():
             test_data_5[key].extend(value)
         assert parameter_3.data == test_data_5
+        assert parameter_3.values == test_data_5["values"]
+        assert parameter_3.units == test_data_5["units"]
 
     def test_list_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
+        run = test_mp.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
-        _ = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
+        run.set_as_default()
+        _ = run.optimization.indexsets.create("Indexset")
+        _ = run.optimization.indexsets.create("Indexset 2")
+        parameter = run.optimization.parameters.create(
+            "Parameter", constrained_to_indexsets=["Indexset"]
         )
-        _ = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 2"
+        parameter_2 = run.optimization.parameters.create(
+            "Parameter 2", constrained_to_indexsets=["Indexset 2"]
         )
-        parameter = test_mp.backend.optimization.parameters.create(
-            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
-        )
-        parameter_2 = test_mp.backend.optimization.parameters.create(
-            run_id=run.id, name="Parameter 2", constrained_to_indexsets=["Indexset 2"]
-        )
-        assert [
-            parameter,
-            parameter_2,
-        ] == test_mp.backend.optimization.parameters.list()
+        expected_ids = [parameter.id, parameter_2.id]
+        list_ids = [parameter.id for parameter in run.optimization.parameters.list()]
+        assert not (set(expected_ids) ^ set(list_ids))
 
-        assert [parameter] == test_mp.backend.optimization.parameters.list(
-            name="Parameter"
-        )
+        # Test retrieving just one result by providing a name
+        expected_id = [parameter.id]
+        list_id = [
+            parameter.id
+            for parameter in run.optimization.parameters.list(name="Parameter")
+        ]
+        assert not (set(expected_id) ^ set(list_id))
 
     def test_tabulate_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
+        run = test_mp.runs.create("Model", "Scenario")
         # Per default, tabulate() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
-        indexset = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
-        )
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 2"
-        )
-        parameter = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
+        run.set_as_default()
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        parameter = run.optimization.parameters.create(
             name="Parameter",
             constrained_to_indexsets=["Indexset", "Indexset 2"],
         )
-        parameter_2 = test_mp.backend.optimization.parameters.create(
-            run_id=run.id,
+        parameter_2 = run.optimization.parameters.create(
             name="Parameter 2",
             constrained_to_indexsets=["Indexset", "Indexset 2"],
         )
         pd.testing.assert_frame_equal(
             df_from_list([parameter_2]),
-            test_mp.backend.optimization.parameters.tabulate(name="Parameter 2"),
+            run.optimization.parameters.tabulate(name="Parameter 2"),
         )
 
-        unit = test_mp.backend.units.create("Unit")
-        unit_2 = test_mp.backend.units.create("Unit 2")
-        test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset.id, elements=["foo", "bar"]
-        )
-        test_mp.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_2.id, elements=[1, 2, 3]
-        )
+        unit = test_mp.units.create("Unit")
+        unit_2 = test_mp.units.create("Unit 2")
+        indexset.add(elements=["foo", "bar"])
+        indexset_2.add(elements=[1, 2, 3])
         test_data_1 = {
             "Indexset": ["foo"],
             "Indexset 2": [1],
             "values": ["value"],
             "units": [unit.name],
         }
-        test_mp.backend.optimization.parameters.add_data(
-            parameter_id=parameter.id, data=test_data_1
-        )
-        parameter = test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter"
-        )
+        parameter.add(data=test_data_1)
 
         test_data_2 = {
             "Indexset 2": [2, 3],
@@ -354,13 +302,22 @@ class TestDataOptimizationParameter:
             "values": [1, "value"],
             "units": [unit.name, unit_2.name],
         }
-        test_mp.backend.optimization.parameters.add_data(
-            parameter_id=parameter_2.id, data=test_data_2
-        )
-        parameter_2 = test_mp.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter 2"
-        )
+        parameter_2.add(data=test_data_2)
         pd.testing.assert_frame_equal(
             df_from_list([parameter, parameter_2]),
-            test_mp.backend.optimization.parameters.tabulate(),
+            run.optimization.parameters.tabulate(),
         )
+
+    def test_parameter_docs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        parameter_1 = run.optimization.parameters.create(
+            "Parameter 1", constrained_to_indexsets=[indexset.name]
+        )
+        docs = "Documentation of Parameter 1"
+        parameter_1.docs = docs
+        assert parameter_1.docs == docs
+
+        parameter_1.docs = None
+        assert parameter_1.docs is None
