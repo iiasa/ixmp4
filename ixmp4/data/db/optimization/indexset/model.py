@@ -10,7 +10,7 @@ from ixmp4.data.abstract import optimization as abstract
 from .. import base
 
 
-class IndexSet(base.BaseModel, base.UniqueNameRunIDMixin):
+class IndexSet(base.BaseModel):
     NotFound: ClassVar = abstract.IndexSet.NotFound
     NotUnique: ClassVar = abstract.IndexSet.NotUnique
     DataInvalid: ClassVar = OptimizationDataValidationError

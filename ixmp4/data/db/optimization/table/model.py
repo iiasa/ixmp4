@@ -11,11 +11,7 @@ from ixmp4.data.abstract import optimization as abstract
 from .. import Column, base, utils
 
 
-class Table(
-    base.BaseModel,
-    base.OptimizationDataMixin,
-    base.UniqueNameRunIDMixin,
-):
+class Table(base.BaseModel):
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Table.NotFound
     NotUnique: ClassVar = abstract.Table.NotUnique
