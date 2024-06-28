@@ -74,7 +74,8 @@ class ParameterRepository(
         run_id: int,
         name: str,
     ) -> Parameter:
-        parameter = Parameter(name=name, run__id=run_id, **self.get_creation_info())
+        parameter = Parameter(name=name, run__id=run_id)
+        parameter.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(parameter)
 
         return parameter

@@ -1,16 +1,16 @@
+import copy
 from typing import Any, ClassVar
 
-import pandas as pd
 from sqlalchemy.orm import validates
 
 from ixmp4 import db
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
-from .. import Column, base
+from .. import Column, base, utils
 
 
-class Parameter(base.BaseModel, base.OptimizationDataMixin, base.UniqueNameRunIDMixin):
+class Parameter(base.BaseModel):
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Parameter.NotFound
     NotUnique: ClassVar = abstract.Parameter.NotUnique
@@ -18,13 +18,20 @@ class Parameter(base.BaseModel, base.OptimizationDataMixin, base.UniqueNameRunID
 
     # constrained_to_indexsets: ClassVar[list[str] | None] = None
 
-    # TODO Same as in table/model.py
-    columns: types.Mapped[list["Column"]] = db.relationship()  # type: ignore
+    run__id: types.RunId
+    columns: types.Mapped[list["Column"]] = db.relationship()
+    data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @validates("data")
     def validate_data(self, key, data: dict[str, Any]):
-        data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
-        data_frame_to_validate = data_frame.drop(columns=["values", "units"])
+        data_to_validate = copy.deepcopy(data)
+        del data_to_validate["values"]
+        del data_to_validate["units"]
+        _ = utils.validate_data(
+            key=key,
+            data=data_to_validate,
+            columns=self.columns,
+        )
+        return data
 
-        self._validate_data(data_frame=data_frame_to_validate, data=data)
-        return data_frame.to_dict(orient="list")
+    __table_args__ = (db.UniqueConstraint("name", "run__id"),)

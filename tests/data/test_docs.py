@@ -3,7 +3,7 @@ import pytest
 from ixmp4 import Platform
 from ixmp4.data.abstract import Docs
 
-from ..utils import all_platforms, database_platforms
+from ..utils import all_platforms
 
 
 @all_platforms
@@ -391,72 +391,72 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             test_mp.backend.optimization.tables.docs.get(table.id)
 
+    def test_get_and_set_parameterdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        docs_parameter = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+        docs_parameter1 = test_mp.backend.optimization.parameters.docs.get(parameter.id)
 
-# TODO Integrate with above once API layer is implemented
-@database_platforms
-def test_get_and_set_parameterdocs(test_mp, request):
-    test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-    run = test_mp.backend.runs.create("Model", "Scenario")
-    _ = test_mp.backend.optimization.indexsets.create(run_id=run.id, name="Indexset")
-    parameter = test_mp.backend.optimization.parameters.create(
-        run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
-    )
-    docs_parameter = test_mp.backend.optimization.parameters.docs.set(
-        parameter.id, "Description of test Parameter"
-    )
-    docs_parameter1 = test_mp.backend.optimization.parameters.docs.get(parameter.id)
+        assert docs_parameter == docs_parameter1
 
-    assert docs_parameter == docs_parameter1
+    def test_change_empty_parameterdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
 
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
 
-@database_platforms
-def test_change_empty_parameterdocs(test_mp, request):
-    test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-    run = test_mp.backend.runs.create("Model", "Scenario")
-    _ = test_mp.backend.optimization.indexsets.create(run_id=run.id, name="Indexset")
-    parameter = test_mp.backend.optimization.parameters.create(
-        run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
-    )
+        docs_parameter1 = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
 
-    with pytest.raises(Docs.NotFound):
-        test_mp.backend.optimization.parameters.docs.get(parameter.id)
+        assert (
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter1
+        )
 
-    docs_parameter1 = test_mp.backend.optimization.parameters.docs.set(
-        parameter.id, "Description of test Parameter"
-    )
+        docs_parameter2 = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Different description of test Parameter"
+        )
 
-    assert (
-        test_mp.backend.optimization.parameters.docs.get(parameter.id)
-        == docs_parameter1
-    )
+        assert (
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter2
+        )
 
-    docs_parameter2 = test_mp.backend.optimization.parameters.docs.set(
-        parameter.id, "Different description of test Parameter"
-    )
+    def test_delete_parameterdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        docs_parameter = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
 
-    assert (
-        test_mp.backend.optimization.parameters.docs.get(parameter.id)
-        == docs_parameter2
-    )
+        assert (
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter
+        )
 
+        test_mp.backend.optimization.parameters.docs.delete(parameter.id)
 
-@database_platforms
-def test_delete_parameterdocs(test_mp, request):
-    test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-    run = test_mp.backend.runs.create("Model", "Scenario")
-    _ = test_mp.backend.optimization.indexsets.create(run_id=run.id, name="Indexset")
-    parameter = test_mp.backend.optimization.parameters.create(
-        run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
-    )
-    docs_parameter = test_mp.backend.optimization.parameters.docs.set(
-        parameter.id, "Description of test Parameter"
-    )
-
-    assert (
-        test_mp.backend.optimization.parameters.docs.get(parameter.id) == docs_parameter
-    )
-
-    test_mp.backend.optimization.parameters.docs.delete(parameter.id)
-
-    with pytest.raises(Docs.NotFound):
-        test_mp.backend.optimization.parameters.docs.get(parameter.id)
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
