@@ -2,7 +2,6 @@
 This module holds a shared datastructure and interface for normalization
 between the database and api data models and repositories.
 """
-# flake8: noqa
 
 from .base import (
     BaseMeta,
@@ -32,6 +31,8 @@ from .model import Model, ModelRepository
 from .optimization import (
     IndexSet,
     IndexSetRepository,
+    Parameter,
+    ParameterRepository,
     Scalar,
     ScalarRepository,
     Table,

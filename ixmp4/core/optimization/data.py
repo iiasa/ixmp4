@@ -2,6 +2,7 @@ from ixmp4.data.abstract import Run
 
 from ..base import BaseFacade
 from .indexset import IndexSetRepository
+from .parameter import ParameterRepository
 from .scalar import ScalarRepository
 from .table import TableRepository
 
@@ -11,11 +12,13 @@ class OptimizationData(BaseFacade):
     IndexSet, Table, Variable, etc."""
 
     indexsets: IndexSetRepository
+    parameters: ParameterRepository
     scalars: ScalarRepository
     tables: TableRepository
 
     def __init__(self, *args, run: Run, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.indexsets = IndexSetRepository(_backend=self.backend, _run=run)
+        self.parameters = ParameterRepository(_backend=self.backend, _run=run)
         self.scalars = ScalarRepository(_backend=self.backend, _run=run)
         self.tables = TableRepository(_backend=self.backend, _run=run)
