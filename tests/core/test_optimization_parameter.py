@@ -10,22 +10,22 @@ def df_from_list(parameters: list):
     return pd.DataFrame(
         [
             [
-                parameter.id,
+                parameter.run_id,
                 parameter.data,
                 parameter.name,
+                parameter.id,
                 parameter.created_at,
                 parameter.created_by,
-                parameter.run_id,
             ]
             for parameter in parameters
         ],
         columns=[
-            "id",
+            "run__id",
             "data",
             "name",
+            "id",
             "created_at",
             "created_by",
-            "run__id",
         ],
     )
 
