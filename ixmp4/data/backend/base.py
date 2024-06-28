@@ -3,6 +3,7 @@ from ixmp4.data.abstract import (
     DataPointRepository,
     IndexSetRepository,
     ModelRepository,
+    ParameterRepository,
     RegionRepository,
     RunMetaEntryRepository,
     RunRepository,
@@ -23,6 +24,7 @@ class IamcSubobject(object):
 
 class OptimizationSubobject(object):
     indexsets: IndexSetRepository
+    parameters: ParameterRepository
     scalars: ScalarRepository
     tables: TableRepository
 

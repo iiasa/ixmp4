@@ -22,6 +22,8 @@ from .optimization import (
     ColumnRepository,
     IndexSet,
     IndexSetRepository,
+    Parameter,
+    ParameterRepository,
     Scalar,
     ScalarRepository,
     Table,

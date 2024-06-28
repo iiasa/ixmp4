@@ -1,8 +1,6 @@
-# flake8: noqa
-
 from .base import BaseModel, DataFrame
 from .docs import Docs, DocsRepository
-from .iamc import (  # Measurand,; MeasurandRepository,; AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint,
+from .iamc import (  # Measurand,; MeasurandRepository,; AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint, # noqa: E501
     DataPoint,
     DataPointRepository,
     TimeSeries,
@@ -15,6 +13,8 @@ from .model import Model, ModelRepository
 from .optimization import (
     IndexSet,
     IndexSetRepository,
+    Parameter,
+    ParameterRepository,
     Scalar,
     ScalarRepository,
     Table,

@@ -1,5 +1,6 @@
 import pytest
 
+from ixmp4 import Platform
 from ixmp4.data.abstract import Docs
 
 from ..utils import all_platforms
@@ -8,7 +9,7 @@ from ..utils import all_platforms
 @all_platforms
 class TestDataDocs:
     def test_get_and_set_modeldocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         model = test_mp.backend.models.create("Model")
 
         docs_model = test_mp.backend.models.docs.set(model.id, "Description of Model")
@@ -16,7 +17,7 @@ class TestDataDocs:
         assert docs_model == docs_model1
 
     def test_change_empty_modeldocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         model = test_mp.backend.models.create("Model")
 
         with pytest.raises(Docs.NotFound):
@@ -35,7 +36,7 @@ class TestDataDocs:
         assert test_mp.backend.models.docs.get(model.id) == docs_model2
 
     def test_delete_modeldocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         model = test_mp.backend.models.create("Model")
         docs_model = test_mp.backend.models.docs.set(
             model.id, "Description of test Model"
@@ -49,7 +50,7 @@ class TestDataDocs:
             test_mp.backend.models.docs.get(model.id)
 
     def test_get_and_set_regiondocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         region = test_mp.backend.regions.create("Region", "Hierarchy")
         docs_region = test_mp.backend.regions.docs.set(
             region.id, "Description of test Region"
@@ -59,7 +60,7 @@ class TestDataDocs:
         assert docs_region == docs_region1
 
     def test_change_empty_regiondocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         region = test_mp.backend.regions.create("Region", "Hierarchy")
 
         with pytest.raises(Docs.NotFound):
@@ -78,7 +79,7 @@ class TestDataDocs:
         assert test_mp.backend.regions.docs.get(region.id) == docs_region2
 
     def test_delete_regiondocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         region = test_mp.backend.regions.create("Region", "Hierarchy")
         docs_region = test_mp.backend.regions.docs.set(
             region.id, "Description of test region"
@@ -92,7 +93,7 @@ class TestDataDocs:
             test_mp.backend.regions.docs.get(region.id)
 
     def test_get_and_set_scenariodocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         scenario = test_mp.backend.scenarios.create("Scenario")
         docs_scenario = test_mp.backend.scenarios.docs.set(
             scenario.id, "Description of Scenario"
@@ -101,7 +102,7 @@ class TestDataDocs:
         assert docs_scenario == docs_scenario1
 
     def test_change_empty_scenariodocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         scenario = test_mp.backend.scenarios.create("Scenario")
 
         with pytest.raises(Docs.NotFound):
@@ -120,7 +121,7 @@ class TestDataDocs:
         assert test_mp.backend.scenarios.docs.get(scenario.id) == docs_scenario2
 
     def test_delete_scenariodocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         scenario = test_mp.backend.scenarios.create("Scenario")
         docs_scenario = test_mp.backend.scenarios.docs.set(
             scenario.id, "Description of test Scenario"
@@ -134,7 +135,7 @@ class TestDataDocs:
             test_mp.backend.scenarios.docs.get(scenario.id)
 
     def test_get_and_set_unitdocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         unit = test_mp.backend.units.create("Unit")
         docs_unit = test_mp.backend.units.docs.set(unit.id, "Description of test Unit")
         docs_unit1 = test_mp.backend.units.docs.get(unit.id)
@@ -142,7 +143,7 @@ class TestDataDocs:
         assert docs_unit == docs_unit1
 
     def test_change_empty_unitdocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         unit = test_mp.backend.units.create("Unit")
 
         with pytest.raises(Docs.NotFound):
@@ -159,7 +160,7 @@ class TestDataDocs:
         assert test_mp.backend.units.docs.get(unit.id) == docs_unit2
 
     def test_delete_unitdocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         unit = test_mp.backend.units.create("Unit")
         docs_unit = test_mp.backend.units.docs.set(unit.id, "Description of test Unit")
 
@@ -171,7 +172,7 @@ class TestDataDocs:
             test_mp.backend.units.docs.get(unit.id)
 
     def test_get_and_set_variabledocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         variable = test_mp.backend.iamc.variables.create("Variable")
         docs_variable = test_mp.backend.iamc.variables.docs.set(
             variable.id, "Description of test Variable"
@@ -181,7 +182,7 @@ class TestDataDocs:
         assert docs_variable == docs_variables1
 
     def test_change_empty_variabledocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         variable = test_mp.backend.iamc.variables.create("Variable")
 
         with pytest.raises(Docs.NotFound):
@@ -200,7 +201,7 @@ class TestDataDocs:
         assert test_mp.backend.iamc.variables.docs.get(variable.id) == docs_variable2
 
     def test_delete_variabledocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         variable = test_mp.backend.iamc.variables.create("Variable")
         docs_variable = test_mp.backend.iamc.variables.docs.set(
             variable.id, "Description of test Variable"
@@ -214,7 +215,7 @@ class TestDataDocs:
             test_mp.backend.iamc.variables.docs.get(variable.id)
 
     def test_get_and_set_indexsetdocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet"
@@ -227,7 +228,7 @@ class TestDataDocs:
         assert docs_indexset == docs_indexset1
 
     def test_change_empty_indexsetdocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet"
@@ -255,7 +256,7 @@ class TestDataDocs:
         )
 
     def test_delete_indexsetdocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet"
@@ -275,7 +276,7 @@ class TestDataDocs:
             test_mp.backend.optimization.indexsets.docs.get(indexset.id)
 
     def test_get_and_set_scalardocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
@@ -289,7 +290,7 @@ class TestDataDocs:
         assert docs_scalar == docs_scalar1
 
     def test_change_empty_scalardocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
@@ -312,7 +313,7 @@ class TestDataDocs:
         assert test_mp.backend.optimization.scalars.docs.get(scalar.id) == docs_scalar2
 
     def test_delete_scalardocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         unit = test_mp.backend.units.create("Unit")
         scalar = test_mp.backend.optimization.scalars.create(
@@ -330,7 +331,7 @@ class TestDataDocs:
             test_mp.backend.optimization.scalars.docs.get(scalar.id)
 
     def test_get_and_set_tabledocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -346,7 +347,7 @@ class TestDataDocs:
         assert docs_table == docs_table1
 
     def test_change_empty_tabledocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -371,7 +372,7 @@ class TestDataDocs:
         assert test_mp.backend.optimization.tables.docs.get(table.id) == docs_table2
 
     def test_delete_tabledocs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -389,3 +390,73 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             test_mp.backend.optimization.tables.docs.get(table.id)
+
+    def test_get_and_set_parameterdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        docs_parameter = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+        docs_parameter1 = test_mp.backend.optimization.parameters.docs.get(parameter.id)
+
+        assert docs_parameter == docs_parameter1
+
+    def test_change_empty_parameterdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+
+        docs_parameter1 = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+
+        assert (
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter1
+        )
+
+        docs_parameter2 = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Different description of test Parameter"
+        )
+
+        assert (
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter2
+        )
+
+    def test_delete_parameterdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = test_mp.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        docs_parameter = test_mp.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+
+        assert (
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter
+        )
+
+        test_mp.backend.optimization.parameters.docs.delete(parameter.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.parameters.docs.get(parameter.id)
