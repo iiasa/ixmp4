@@ -115,7 +115,7 @@ jobs:
 
       - name: Install legacy pandas
         if: ${{ matrix.pandas-version }}
-        run: poetry add pandas@${{ matrix.pandas-version }} --lock
+        run: poetry add pandas@${{ matrix.pandas-version }} numpy@1.26.4 --lock
 
       #------------------------
       #  install root project
