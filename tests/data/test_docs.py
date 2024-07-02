@@ -460,3 +460,73 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             test_mp.backend.optimization.parameters.docs.get(parameter.id)
+
+    def test_get_and_set_optimizationvariabledocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        variable = test_mp.backend.optimization.variables.create(
+            run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
+        )
+        docs_variable = test_mp.backend.optimization.variables.docs.set(
+            variable.id, "Description of test Variable"
+        )
+        docs_variable1 = test_mp.backend.optimization.variables.docs.get(variable.id)
+
+        assert docs_variable == docs_variable1
+
+    def test_change_empty_optimizationvariabledocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        variable = test_mp.backend.optimization.variables.create(
+            run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.variables.docs.get(variable.id)
+
+        docs_variable1 = test_mp.backend.optimization.variables.docs.set(
+            variable.id, "Description of test Variable"
+        )
+
+        assert (
+            test_mp.backend.optimization.variables.docs.get(variable.id)
+            == docs_variable1
+        )
+
+        docs_variable2 = test_mp.backend.optimization.variables.docs.set(
+            variable.id, "Different description of test Variable"
+        )
+
+        assert (
+            test_mp.backend.optimization.variables.docs.get(variable.id)
+            == docs_variable2
+        )
+
+    def test_delete_optimizationvariabledocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        variable = test_mp.backend.optimization.variables.create(
+            run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
+        )
+        docs_variable = test_mp.backend.optimization.variables.docs.set(
+            variable.id, "Description of test Variable"
+        )
+
+        assert (
+            test_mp.backend.optimization.variables.docs.get(variable.id)
+            == docs_variable
+        )
+
+        test_mp.backend.optimization.variables.docs.delete(variable.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.variables.docs.get(variable.id)
