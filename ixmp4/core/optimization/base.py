@@ -52,14 +52,15 @@ class Creator(OptimizationBaseRepository[OptimizationModelType], abstract.Creato
     def create(
         self,
         name: str,
-        constrained_to_indexsets: list[str],
-        column_names: list[str] | None = None,
+        # TODO But how do we know show in core layer that e.g. Table needs these?
+        # constrained_to_indexsets: list[str],
+        # column_names: list[str] | None = None,
+        *args,
+        **kwargs,
     ) -> OptimizationModelType:
         model = self._backend_repository.create(
-            name=name,
-            run_id=self._run.id,
-            constrained_to_indexsets=constrained_to_indexsets,
-            column_names=column_names,
+            *args,
+            **dict(kwargs, name=name, run_id=self._run.id),
         )
         return self._model_type(_backend=self.backend, _model=model)
 
