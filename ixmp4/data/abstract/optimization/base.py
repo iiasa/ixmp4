@@ -1,4 +1,4 @@
-from typing import Any, Generic, Iterable, Protocol, TypeVar
+from typing import Generic, Iterable, Protocol, TypeVar
 
 import pandas as pd
 
@@ -36,13 +36,13 @@ class BackendBaseRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
-        column_names: list[str] | None = None,
+        # constrained_to_indexsets: list[str],
+        # column_names: list[str] | None = None,
+        *args,
+        **kwargs,
     ) -> BackendModelType: ...
 
     def get(self, run_id: int, name: str) -> BackendModelType: ...
-
-    def get_by_id(self, id: int) -> BackendModelType: ...
 
     def list(
         self, *, name: str | None = None, **kwargs
@@ -50,4 +50,9 @@ class BackendBaseRepository(
 
     def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame: ...
 
-    def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None: ...
+    # TODO Not needed as type hint in core layer:
+    # def get_by_id(self, id: int) -> BackendModelType: ...
+
+    # def add_data(
+    #     self, table_id: int, data: dict[str, Any] | pd.DataFrame
+    # ) -> None: ...
