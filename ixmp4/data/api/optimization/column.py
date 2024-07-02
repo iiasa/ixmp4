@@ -16,6 +16,7 @@ class Column(base.BaseModel):
     dtype: str
     table__id: int | None
     parameter__id: int | None
+    variable__id: int | None
     indexset: IndexSet
     constrained_to_indexset: int
     unique: bool

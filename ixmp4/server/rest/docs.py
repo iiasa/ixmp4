@@ -261,3 +261,27 @@ def delete_parameters(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.parameters.docs.delete(dimension_id)
+
+
+@router.get("/optimization/variables/", response_model=list[api.Docs])
+def list_optimization_variables(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.variables.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/variables/", response_model=api.Docs)
+def set_optimization_variables(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.variables.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/variables/{dimension_id}/")
+def delete_optimization_variables(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.variables.docs.delete(dimension_id)
