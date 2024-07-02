@@ -3,6 +3,7 @@ from ixmp4.data.abstract import (
     DataPointRepository,
     IndexSetRepository,
     ModelRepository,
+    OptimizationVariableRepository,
     RegionRepository,
     RunMetaEntryRepository,
     RunRepository,
@@ -25,6 +26,7 @@ class OptimizationSubobject(object):
     indexsets: IndexSetRepository
     scalars: ScalarRepository
     tables: TableRepository
+    variables: OptimizationVariableRepository
 
 
 class Backend(object):

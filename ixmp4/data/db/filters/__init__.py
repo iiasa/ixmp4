@@ -4,6 +4,7 @@ from .optimizationcolumn import OptimizationColumnFilter
 from .optimizationindexset import OptimizationIndexSetFilter
 from .optimizationscalar import OptimizationScalarFilter
 from .optimizationtable import OptimizationTableFilter
+from .optimizationvariable import OptimizationVariableFilter
 from .region import RegionFilter
 from .run import RunFilter
 from .scenario import ScenarioFilter

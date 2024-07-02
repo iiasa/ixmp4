@@ -16,6 +16,7 @@ from ixmp4.data.db import (
     DataPointRepository,
     IndexSetRepository,
     ModelRepository,
+    OptimizationVariableRepository,
     RegionRepository,
     RunMetaEntryRepository,
     RunRepository,
@@ -56,6 +57,7 @@ class OptimizationSubobject(BaseOptimizationSubobject):
     indexsets: IndexSetRepository
     scalars: ScalarRepository
     tables: TableRepository
+    variables: OptimizationVariableRepository
 
 
 class SqlAlchemyBackend(Backend):
@@ -95,6 +97,7 @@ class SqlAlchemyBackend(Backend):
         self.optimization.indexsets = IndexSetRepository(self)
         self.optimization.scalars = ScalarRepository(self)
         self.optimization.tables = TableRepository(self)
+        self.optimization.variables = OptimizationVariableRepository(self)
         self.regions = RegionRepository(self)
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)

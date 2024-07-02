@@ -4,6 +4,7 @@ from ..base import BaseFacade
 from .indexset import IndexSetRepository
 from .scalar import ScalarRepository
 from .table import TableRepository
+from .variable import VariableRepository
 
 
 class OptimizationData(BaseFacade):
@@ -13,9 +14,11 @@ class OptimizationData(BaseFacade):
     indexsets: IndexSetRepository
     scalars: ScalarRepository
     tables: TableRepository
+    variables: VariableRepository
 
     def __init__(self, *args, run: Run, **kwargs) -> None:
         super().__init__(*args, **kwargs)
         self.indexsets = IndexSetRepository(_backend=self.backend, _run=run)
         self.scalars = ScalarRepository(_backend=self.backend, _run=run)
         self.tables = TableRepository(_backend=self.backend, _run=run)
+        self.variables = VariableRepository(_backend=self.backend, _run=run)
