@@ -13,6 +13,8 @@ from .iamc import (  # Measurand,; MeasurandRepository,; AnnualDataPoint,; SubAn
 from .meta import RunMetaEntry, RunMetaEntryRepository
 from .model import Model, ModelRepository
 from .optimization import (
+    Equation,
+    EquationRepository,
     IndexSet,
     IndexSetRepository,
     Scalar,

@@ -14,6 +14,7 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.db import (
     BaseModel,
     DataPointRepository,
+    EquationRepository,
     IndexSetRepository,
     ModelRepository,
     RegionRepository,
@@ -53,6 +54,7 @@ class IamcSubobject(BaseIamcSubobject):
 
 
 class OptimizationSubobject(BaseOptimizationSubobject):
+    equations: EquationRepository
     indexsets: IndexSetRepository
     scalars: ScalarRepository
     tables: TableRepository
@@ -92,6 +94,7 @@ class SqlAlchemyBackend(Backend):
         self.iamc.variables = VariableRepository(self)
         self.meta = RunMetaEntryRepository(self)
         self.models = ModelRepository(self)
+        self.optimization.equations = EquationRepository(self)
         self.optimization.indexsets = IndexSetRepository(self)
         self.optimization.scalars = ScalarRepository(self)
         self.optimization.tables = TableRepository(self)
