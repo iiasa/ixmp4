@@ -31,7 +31,7 @@ def df_from_list(parameters: list):
 
 
 @all_platforms
-class TestDataOptimizationParameter:
+class TestCoreParameter:
     def test_create_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
