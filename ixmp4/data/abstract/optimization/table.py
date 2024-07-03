@@ -134,7 +134,7 @@ class TableRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.optimization.table.filter.OptimizationTableFilter`.
 
         Returns
         -------
@@ -153,7 +153,7 @@ class TableRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.optimization.table.filter.OptimizationTableFilter`.
 
         Returns
         -------
