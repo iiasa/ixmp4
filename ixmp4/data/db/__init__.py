@@ -20,6 +20,8 @@ from .model import Model, ModelRepository
 from .optimization import (
     Column,
     ColumnRepository,
+    Equation,
+    EquationRepository,
     IndexSet,
     IndexSetRepository,
     Parameter,

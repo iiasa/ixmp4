@@ -530,3 +530,73 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             test_mp.backend.optimization.variables.docs.get(variable.id)
+
+    def test_get_and_set_equationdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation = test_mp.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=["Indexset"]
+        )
+        docs_equation = test_mp.backend.optimization.equations.docs.set(
+            equation.id, "Description of test Equation"
+        )
+        docs_equation1 = test_mp.backend.optimization.equations.docs.get(equation.id)
+
+        assert docs_equation == docs_equation1
+
+    def test_change_empty_equationdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation = test_mp.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.equations.docs.get(equation.id)
+
+        docs_equation1 = test_mp.backend.optimization.equations.docs.set(
+            equation.id, "Description of test Equation"
+        )
+
+        assert (
+            test_mp.backend.optimization.equations.docs.get(equation.id)
+            == docs_equation1
+        )
+
+        docs_equation2 = test_mp.backend.optimization.equations.docs.set(
+            equation.id, "Different description of test Equation"
+        )
+
+        assert (
+            test_mp.backend.optimization.equations.docs.get(equation.id)
+            == docs_equation2
+        )
+
+    def test_delete_optimizationequationdocs(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        _ = test_mp.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation = test_mp.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=["Indexset"]
+        )
+        docs_equation = test_mp.backend.optimization.equations.docs.set(
+            equation.id, "Description of test Equation"
+        )
+
+        assert (
+            test_mp.backend.optimization.equations.docs.get(equation.id)
+            == docs_equation
+        )
+
+        test_mp.backend.optimization.equations.docs.delete(equation.id)
+
+        with pytest.raises(Docs.NotFound):
+            test_mp.backend.optimization.equations.docs.get(equation.id)

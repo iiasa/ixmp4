@@ -14,6 +14,7 @@ class Column(base.BaseModel):
     id: int
     name: str
     dtype: str
+    equation__id: int | None
     parameter__id: int | None
     table__id: int | None
     variable__id: int | None

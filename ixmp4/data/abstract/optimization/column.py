@@ -14,6 +14,8 @@ class Column(base.BaseModel, Protocol):
     """Unique name of the Column."""
     dtype: types.String
     """Type of the Column's data."""
+    equation__id: types.Mapped[int | None]
+    """Foreign unique integer id of a Equation."""
     parameter__id: types.Mapped[int | None]
     """Foreign unique integer id of a Parameter."""
     table__id: types.Mapped[int | None]

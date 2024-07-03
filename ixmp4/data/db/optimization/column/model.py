@@ -18,6 +18,9 @@ class Column(base.BaseModel):
         db.String(255), nullable=False, unique=False
     )  # pandas dtype
 
+    equation__id: types.Mapped[int | None] = db.Column(
+        db.Integer, db.ForeignKey("optimization_equation.id"), nullable=True
+    )
     parameter__id: types.Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("optimization_parameter.id"), nullable=True
     )
