@@ -134,7 +134,7 @@ class EquationRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter Equations as specified in
-            `ixmp4.data.db.iamc.variable.filters.EquationFilter`.
+            `ixmp4.data.db.optimization.equation.filter.OptimizationEquationFilter`.
 
         Returns
         -------
@@ -153,7 +153,7 @@ class EquationRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter variables as specified in
-            `ixmp4.data.db.iamc.variable.filters.EquationFilter`.
+            `ixmp4.data.db.optimization.equation.filter.OptimizationEquationFilter`.
 
         Returns
         -------
