@@ -47,6 +47,7 @@ class VariableRepository(
         column_names: list[str] | None = None,
     ) -> Variable:
         """Creates a Variable.
+
         Each column of the Variable needs to be constrained to an existing
         :class:ixmp4.data.abstract.optimization.IndexSet. These are specified by name
         and per default, these will be the column names. They can be overwritten by
@@ -133,7 +134,7 @@ class VariableRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter Variables as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.optimization.variable.filter.OptimizationVariableFilter`.
 
         Returns
         -------
@@ -152,7 +153,7 @@ class VariableRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter variables as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.optimization.variable.filter.OptimizationVariableFilter`.
 
         Returns
         -------
@@ -172,6 +173,7 @@ class VariableRepository(
     # they permit
     def add_data(self, variable_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         r"""Adds data to a Variable.
+
         The data will be validated with the linked constrained
         :class:`ixmp4.data.abstract.optimization.IndexSet`s. For that, `data.keys()`
         must correspond to the names of the Variable's columns. Each column can only
