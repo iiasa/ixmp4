@@ -285,3 +285,27 @@ def delete_optimization_variables(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.variables.docs.delete(dimension_id)
+
+
+@router.get("/optimization/equations/", response_model=list[api.Docs])
+def list_equations(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.equations.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/equations/", response_model=api.Docs)
+def set_equations(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.equations.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/equations/{dimension_id}/")
+def delete_equations(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.equations.docs.delete(dimension_id)

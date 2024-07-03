@@ -501,3 +501,70 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.variables.docs.get(variable.id)
+
+    def test_get_and_set_equationdocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=["Indexset"]
+        )
+        docs_equation = platform.backend.optimization.equations.docs.set(
+            equation.id, "Description of test Equation"
+        )
+        docs_equation1 = platform.backend.optimization.equations.docs.get(equation.id)
+
+        assert docs_equation == docs_equation1
+
+    def test_change_empty_equationdocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            platform.backend.optimization.equations.docs.get(equation.id)
+
+        docs_equation1 = platform.backend.optimization.equations.docs.set(
+            equation.id, "Description of test Equation"
+        )
+
+        assert (
+            platform.backend.optimization.equations.docs.get(equation.id)
+            == docs_equation1
+        )
+
+        docs_equation2 = platform.backend.optimization.equations.docs.set(
+            equation.id, "Different description of test Equation"
+        )
+
+        assert (
+            platform.backend.optimization.equations.docs.get(equation.id)
+            == docs_equation2
+        )
+
+    def test_delete_optimizationequationdocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=["Indexset"]
+        )
+        docs_equation = platform.backend.optimization.equations.docs.set(
+            equation.id, "Description of test Equation"
+        )
+
+        assert (
+            platform.backend.optimization.equations.docs.get(equation.id)
+            == docs_equation
+        )
+
+        platform.backend.optimization.equations.docs.delete(equation.id)
+
+        with pytest.raises(Docs.NotFound):
+            platform.backend.optimization.equations.docs.get(equation.id)

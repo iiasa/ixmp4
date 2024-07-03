@@ -17,6 +17,7 @@ from .iamc import scenario as iamc_scenario
 from .iamc import unit as iamc_unit
 from .iamc import variable as iamc_variable
 from .middleware import RequestSizeLoggerMiddleware, RequestTimeLoggerMiddleware
+from .optimization import equation as optimization_equation
 from .optimization import indexset as optimization_indexset
 from .optimization import parameter as optimization_parameter
 from .optimization import scalar as optimization_scalar
@@ -51,6 +52,7 @@ v1.include_router(iamc_unit.router, prefix="/iamc")
 v1.include_router(iamc_variable.router, prefix="/iamc")
 v1.include_router(meta.router)
 v1.include_router(model.router)
+v1.include_router(optimization_equation.router, prefix="/optimization")
 v1.include_router(optimization_indexset.router, prefix="/optimization")
 v1.include_router(optimization_parameter.router, prefix="/optimization")
 v1.include_router(optimization_scalar.router, prefix="/optimization")
