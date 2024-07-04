@@ -13,7 +13,7 @@ from . import base
 from .variable import Variable
 
 
-class Measurand(base.BaseModel, base.TimestampMixin):
+class Measurand(base.BaseModel, base.HasCreationInfo):
     NotFound: ClassVar = abstract.Measurand.NotFound
     NotUnique: ClassVar = abstract.Measurand.NotUnique
     DeletionPrevented: ClassVar = abstract.Measurand.DeletionPrevented

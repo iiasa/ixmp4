@@ -441,10 +441,25 @@ class BulkDeleter(BulkOperator[ModelType]):
         self.session.commit()
 
 
-class TimestampMixin:
+class HasCreationInfo:
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
-    created_by: types.String = db.Column(db.String(255), nullable=True)
+    created_by: types.Username
+
+    def get_username(self, auth_context: AuthorizationContext | None):
+        if auth_context is not None:
+            return auth_context.user.username
+        else:
+            return "@unknown"
 
     def set_creation_info(self, auth_context: AuthorizationContext | None) -> None:
         self.created_at = datetime.now(tz=timezone.utc)
-        self.created_by = auth_context.user.username if auth_context else "@unknown"
+        self.created_by = self.get_username(auth_context)
+
+
+class HasUpdateInfo(HasCreationInfo):
+    updated_at: types.DateTime = db.Column(db.DateTime, nullable=True)
+    updated_by: types.Username
+
+    def set_update_info(self, auth_context: AuthorizationContext | None) -> None:
+        self.updated_at = datetime.now(tz=timezone.utc)
+        self.updated_by = self.get_username(auth_context)

@@ -7,15 +7,15 @@ from ..base import (
     Creator,
     Deleter,
     Enumerator,
+    HasCreationInfo,
     Lister,
     Retriever,
     Selecter,
     Tabulator,
-    TimestampMixin,
 )
 
 
-class BaseModel(RootBaseModel, TimestampMixin):
+class BaseModel(RootBaseModel, HasCreationInfo):
     __abstract__ = True
     table_prefix = "optimization_"
 

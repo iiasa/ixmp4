@@ -6,7 +6,7 @@ from ixmp4.data import abstract, types
 from .. import base
 
 
-class Region(base.BaseModel, base.TimestampMixin):
+class Region(base.BaseModel, base.HasCreationInfo):
     NotFound: ClassVar = abstract.Region.NotFound
     NotUnique: ClassVar = abstract.Region.NotUnique
     DeletionPrevented: ClassVar = abstract.Region.DeletionPrevented
