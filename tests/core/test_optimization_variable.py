@@ -37,20 +37,30 @@ class TestCoreVariable:
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
 
-        # Test normal creation
+        # Test creation without indexset
+        variable = run.optimization.variables.create("Variable")
+        assert variable.run_id == run.id
+        assert variable.name == "Variable"
+        assert variable.data == {}
+        assert variable.columns == []
+        assert variable.constrained_to_indexsets == []
+        assert variable.levels == []
+        assert variable.marginals == []
+
+        # Test creation with indexset
         indexset_1 = run.optimization.indexsets.create("Indexset")
-        variable = run.optimization.variables.create(
-            name="Variable",
+        variable_2 = run.optimization.variables.create(
+            name="Variable 2",
             constrained_to_indexsets=["Indexset"],
         )
 
-        assert variable.run_id == run.id
-        assert variable.name == "Variable"
-        assert variable.data == {}  # JsonDict type currently requires a dict, not None
-        assert variable.columns[0].name == "Indexset"
-        assert variable.constrained_to_indexsets == [indexset_1.name]
-        assert variable.levels == []
-        assert variable.marginals == []
+        assert variable_2.run_id == run.id
+        assert variable_2.name == "Variable 2"
+        assert variable_2.data == {}  # JsonDict type currently requires dict, not None
+        assert variable_2.columns[0].name == "Indexset"
+        assert variable_2.constrained_to_indexsets == [indexset_1.name]
+        assert variable_2.levels == []
+        assert variable_2.marginals == []
 
         # Test duplicate name raises
         with pytest.raises(OptimizationVariable.NotUnique):
@@ -61,23 +71,23 @@ class TestCoreVariable:
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
             _ = run.optimization.variables.create(
-                "Variable 2",
+                "Variable 0",
                 constrained_to_indexsets=["Indexset"],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
-        variable_2 = run.optimization.variables.create(
-            "Variable 2",
+        variable_3 = run.optimization.variables.create(
+            "Variable 3",
             constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
-        assert variable_2.columns[0].name == "Column 1"
+        assert variable_3.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
         with pytest.raises(ValueError, match="`column_names` are not unique"):
             _ = run.optimization.variables.create(
-                name="Variable 3",
+                name="Variable 0",
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
@@ -85,13 +95,13 @@ class TestCoreVariable:
         # Test column.dtype is registered correctly
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
         indexset_2.add(elements=2024)
-        variable_3 = run.optimization.variables.create(
-            "Variable 5",
+        variable_4 = run.optimization.variables.create(
+            "Variable 4",
             constrained_to_indexsets=["Indexset", indexset_2.name],
         )
         # If indexset doesn't have elements, a generic dtype is registered
-        assert variable_3.columns[0].dtype == "object"
-        assert variable_3.columns[1].dtype == "int64"
+        assert variable_4.columns[0].dtype == "object"
+        assert variable_4.columns[1].dtype == "int64"
 
     def test_get_variable(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore

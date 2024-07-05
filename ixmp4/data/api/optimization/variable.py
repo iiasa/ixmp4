@@ -47,7 +47,7 @@ class VariableRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: str | list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Variable:
         return super().create(
