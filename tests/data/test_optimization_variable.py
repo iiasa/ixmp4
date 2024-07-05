@@ -37,21 +37,30 @@ class TestDataOptimizationVariable:
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
 
-        # Test normal creation
+        # Test creation without indexset
+        variable = test_mp.backend.optimization.variables.create(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.run__id == run.id
+        assert variable.name == "Variable"
+        assert variable.data == {}
+        assert variable.columns == []
+
+        # Test creation with indexset
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        variable = test_mp.backend.optimization.variables.create(
+        variable_2 = test_mp.backend.optimization.variables.create(
             run_id=run.id,
-            name="Variable",
+            name="Variable 2",
             constrained_to_indexsets=["Indexset"],
         )
 
-        assert variable.run__id == run.id
-        assert variable.name == "Variable"
-        assert variable.data == {}  # JsonDict type currently requires a dict, not None
-        assert variable.columns[0].name == "Indexset"
-        assert variable.columns[0].constrained_to_indexset == indexset_1.id
+        assert variable_2.run__id == run.id
+        assert variable_2.name == "Variable 2"
+        assert variable_2.data == {}  # JsonDict type currently requires dict, not None
+        assert variable_2.columns[0].name == "Indexset"
+        assert variable_2.columns[0].constrained_to_indexset == indexset_1.id
 
         # Test duplicate name raises
         with pytest.raises(OptimizationVariable.NotUnique):
@@ -59,29 +68,41 @@ class TestDataOptimizationVariable:
                 run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
             )
 
+        # Test that giving column_names, but not constrained_to_indexsets raises
+        with pytest.raises(
+            ValueError,
+            match="Received `column_names` to name columns, but no "
+            "`constrained_to_indexsets`",
+        ):
+            _ = test_mp.backend.optimization.variables.create(
+                run_id=run.id,
+                name="Variable 0",
+                column_names=["Dimension 1"],
+            )
+
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
             _ = test_mp.backend.optimization.variables.create(
                 run_id=run.id,
-                name="Variable 2",
+                name="Variable 0",
                 constrained_to_indexsets=["Indexset"],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
-        variable_2 = test_mp.backend.optimization.variables.create(
+        variable_3 = test_mp.backend.optimization.variables.create(
             run_id=run.id,
-            name="Variable 2",
+            name="Variable 3",
             constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
-        assert variable_2.columns[0].name == "Column 1"
+        assert variable_3.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
         with pytest.raises(ValueError, match="`column_names` are not unique"):
             _ = test_mp.backend.optimization.variables.create(
                 run_id=run.id,
-                name="Variable 3",
+                name="Variable 0",
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
@@ -94,14 +115,14 @@ class TestDataOptimizationVariable:
             indexset_2.id, elements=2024
         )
         indexset_2 = test_mp.backend.optimization.indexsets.get(run.id, indexset_2.name)
-        variable_3 = test_mp.backend.optimization.variables.create(
+        variable_4 = test_mp.backend.optimization.variables.create(
             run_id=run.id,
-            name="Variable 5",
+            name="Variable 4",
             constrained_to_indexsets=["Indexset", indexset_2.name],
         )
         # If indexset doesn't have elements, a generic dtype is registered
-        assert variable_3.columns[0].dtype == "object"
-        assert variable_3.columns[1].dtype == "int64"
+        assert variable_4.columns[0].dtype == "object"
+        assert variable_4.columns[1].dtype == "int64"
 
     def test_get_variable(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
