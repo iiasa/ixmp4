@@ -1,4 +1,4 @@
-from typing import Any, Iterable, Protocol
+from typing import Any, Iterable, Never, Protocol
 
 import pandas as pd
 
@@ -16,7 +16,7 @@ class Variable(base.BaseModel, Protocol):
     """Unique name of the Variable."""
     data: types.JsonDict
     """Data stored in the Variable."""
-    columns: types.Mapped[list[Column]]
+    columns: types.Mapped[list[Column | Never]]
     """Data specifying this Variable's Columns."""
 
     run__id: types.Integer
@@ -43,7 +43,7 @@ class VariableRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: str | list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Variable:
         """Creates a Variable.
@@ -60,9 +60,10 @@ class VariableRepository(
             defined.
         name : str
             The unique name of the Variable.
-        constrained_to_indexsets : list[str]
-            List of :class:`ixmp4.data.abstract.optimization.IndexSet` names that define
-            the allowed contents of the Variable's columns.
+        constrained_to_indexsets : str | list[str] | None = None
+            One or a List of :class:`ixmp4.data.abstract.optimization.IndexSet` names
+            that define the allowed contents of the Variable's columns. If None, no data
+            can be added beyond `levels` and `marginals`!
         column_names: list[str] | None = None
             Optional list of names to use as column names. If given, overwrites the
             names inferred from `constrained_to_indexsets`.

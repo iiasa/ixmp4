@@ -19,7 +19,7 @@ router: APIRouter = APIRouter(
 class VariableCreateInput(BaseModel):
     run_id: int
     name: str
-    constrained_to_indexsets: list[str]
+    constrained_to_indexsets: str | list[str] | None
     column_names: list[str] | None
 
 

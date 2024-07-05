@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any, ClassVar, Iterable
+from typing import Any, ClassVar, Iterable, Never
 
 import pandas as pd
 
@@ -49,11 +49,11 @@ class Variable(BaseModelFacade):
         return self._model.data.get("marginals", [])
 
     @property
-    def constrained_to_indexsets(self) -> list[str]:
+    def constrained_to_indexsets(self) -> list[str | Never]:
         return [column.indexset.name for column in self._model.columns]
 
     @property
-    def columns(self) -> list[Column]:
+    def columns(self) -> list[Column | Never]:
         return self._model.columns
 
     @property
@@ -100,7 +100,7 @@ class VariableRepository(BaseFacade):
     def create(
         self,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: str | list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Variable:
         model = self.backend.optimization.variables.create(

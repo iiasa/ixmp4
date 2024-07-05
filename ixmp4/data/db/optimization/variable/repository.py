@@ -103,37 +103,48 @@ class VariableRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: str | list[str] | None = None,
         column_names: list[str] | None = None,
         **kwargs,
     ) -> Variable:
         # Convert to list to avoid enumerate() splitting strings to letters
         if isinstance(constrained_to_indexsets, str):
             constrained_to_indexsets = list(constrained_to_indexsets)
-        if column_names and len(column_names) != len(constrained_to_indexsets):
-            raise ValueError(
-                "`constrained_to_indexsets` and `column_names` not equal in length! "
-                "Please provide the same number of entries for both!"
-            )
-        # TODO: activate something like this if each column must be indexed by a unique
-        # indexset
-        # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
-        #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
-        if column_names and len(column_names) != len(set(column_names)):
-            raise ValueError("The given `column_names` are not unique!")
+        if column_names:
+            # TODO If this is removed, need to check above that constrained_to_indexsets
+            #  is not None
+            if constrained_to_indexsets is None:
+                raise ValueError(
+                    "Received `column_names` to name columns, but no "
+                    "`constrained_to_indexsets` to indicate which IndexSets to use for "
+                    "these columns. Please provide `constrained_to_indexsets` or "
+                    "remove `column_names`!"
+                )
+            elif len(column_names) != len(constrained_to_indexsets):
+                raise ValueError(
+                    "`constrained_to_indexsets` and `column_names` not equal in "
+                    "length! Please provide the same number of entries for both!"
+                )
+            # TODO: activate something like this if each column must be indexed by a
+            # unique indexset
+            # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
+            #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
+            elif len(column_names) != len(set(column_names)):
+                raise ValueError("The given `column_names` are not unique!")
 
         variable = super().create(
             run_id=run_id,
             name=name,
             **kwargs,
         )
-        for i, name in enumerate(constrained_to_indexsets):
-            self._add_column(
-                run_id=run_id,
-                variable_id=variable.id,
-                column_name=column_names[i] if column_names else name,
-                indexset_name=name,
-            )
+        if constrained_to_indexsets:
+            for i, name in enumerate(constrained_to_indexsets):
+                self._add_column(
+                    run_id=run_id,
+                    variable_id=variable.id,
+                    column_name=column_names[i] if column_names else name,
+                    indexset_name=name,
+                )
 
         return variable
 
