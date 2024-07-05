@@ -28,7 +28,6 @@ class RegionRepository(
 
     def add(self, name: str, hierarchy: str) -> Region:
         region = Region(name=name, hierarchy=hierarchy)
-        region.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(region)
         return region
 

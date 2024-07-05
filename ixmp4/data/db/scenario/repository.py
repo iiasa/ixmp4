@@ -38,7 +38,6 @@ class ScenarioRepository(
 
     def add(self, name: str) -> Scenario:
         scenario = Scenario(name=name)
-        scenario.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(scenario)
         return scenario
 

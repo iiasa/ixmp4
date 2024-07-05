@@ -1,5 +1,6 @@
 from ixmp4.data import types
 
+from .. import mixins
 from ..base import BaseModel as RootBaseModel
 from ..base import (
     BulkDeleter,
@@ -7,7 +8,6 @@ from ..base import (
     Creator,
     Deleter,
     Enumerator,
-    HasCreationInfo,
     Lister,
     Retriever,
     Selecter,
@@ -15,7 +15,7 @@ from ..base import (
 )
 
 
-class BaseModel(RootBaseModel, HasCreationInfo):
+class BaseModel(RootBaseModel, mixins.HasCreationInfo):
     __abstract__ = True
     table_prefix = "optimization_"
 
