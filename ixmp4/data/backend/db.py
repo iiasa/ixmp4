@@ -1,11 +1,9 @@
 import logging
 from contextlib import contextmanager
 from functools import lru_cache
-from typing import Generator, cast
+from typing import Generator
 
-from sqlalchemy import event, sql
 from sqlalchemy.engine import Engine, create_engine
-from sqlalchemy.orm import ORMExecuteState
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import StaticPool
 
@@ -28,17 +26,14 @@ from ixmp4.data.db import (
     UnitRepository,
     VariableRepository,
 )
+from ixmp4.data.db.events import SqlaEventHandler
 
 from ..auth.context import AuthorizationContext
 from .base import (
     Backend,
 )
-from .base import (
-    IamcSubobject as BaseIamcSubobject,
-)
-from .base import (
-    OptimizationSubobject as BaseOptimizationSubobject,
-)
+from .base import IamcSubobject as BaseIamcSubobject
+from .base import OptimizationSubobject as BaseOptimizationSubobject
 
 logger = logging.getLogger(__name__)
 
@@ -72,51 +67,14 @@ class SqlAlchemyBackend(Backend):
     units: UnitRepository
     Session = sessionmaker(autocommit=False, autoflush=False, future=True)
     auth_context: AuthorizationContext | None = None
+    event_handler: SqlaEventHandler
 
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
         logger.info(f"Creating database engine for platform '{info.name}'.")
-        self.listener = event.listens_for(self.Session, "do_orm_execute")(
-            self.receive_do_orm_execute
-        )
-
         self.make_engine(info.dsn)
         self.make_repositories()
-
-        @event.listens_for(self.session, "do_orm_execute")
-        def test(oes):
-            print(oes)
-
-    def receive_do_orm_execute(self, orm_execute_state: ORMExecuteState):
-        logger.info(f"Received 'do_orm_execute' event with state: {orm_execute_state}")
-        if orm_execute_state.is_select:
-            select = cast(sql.Select, orm_execute_state.statement)
-            self.receive_select(select)
-        if orm_execute_state.is_insert:
-            insert = cast(sql.Insert, orm_execute_state.statement)
-            self.receive_insert(insert)
-        if orm_execute_state.is_update:
-            update = cast(sql.Update, orm_execute_state.statement)
-            self.receive_update(update)
-        if orm_execute_state.is_delete:
-            delete = cast(sql.Delete, orm_execute_state.statement)
-            self.receive_delete(delete)
-
-    def receive_select(self, statement: sql.Select):
-        columns = statement.column_descriptions
-        entities = []
-        for col in columns:
-            col_enitity = col["entity"]
-            entities.append(col_enitity)
-
-    def receive_insert(self, statement: sql.Insert):
-        pass
-
-    def receive_update(self, statement: sql.Update):
-        pass
-
-    def receive_delete(self, statement: sql.Delete):
-        pass
+        self.event_handler = SqlaEventHandler(self)
 
     def make_engine(self, dsn: str):
         if dsn.startswith("postgresql://"):
