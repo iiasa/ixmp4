@@ -1,4 +1,5 @@
-from typing import Any, Iterable, Never, Protocol
+import sys
+from typing import Any, Iterable, Protocol
 
 import pandas as pd
 
@@ -7,6 +8,11 @@ from ixmp4.data import types
 from .. import base
 from ..docs import DocsRepository
 from .column import Column
+
+if sys.version_info >= (3, 11):
+    from typing import Never
+else:
+    from typing import NoReturn as Never
 
 
 class Variable(base.BaseModel, Protocol):
