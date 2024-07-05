@@ -84,14 +84,9 @@ class SqlaEventHandler(object):
         """
         self.set_logger(orm_execute_state)
         self.logger.debug("Received 'do_orm_execute' event.")
-        statement = orm_execute_state.statement
         if orm_execute_state.is_select:
-            select = cast(sql.Select, statement)
-            return self.receive_select(select)
+            return self.receive_select(orm_execute_state)
         else:
-            parameters = orm_execute_state.parameters
-            session = orm_execute_state.session
-
             if orm_execute_state.is_insert:
                 self.logger.debug("Operation: 'insert'")
                 return self.receive_insert(orm_execute_state)
@@ -100,15 +95,11 @@ class SqlaEventHandler(object):
                 return self.receive_update(orm_execute_state)
             if orm_execute_state.is_delete:
                 self.logger.debug("Operation: 'delete'")
-                delete = cast(sql.Delete, statement)
-                return self.receive_delete(delete, parameters, session)
+                return self.receive_delete(orm_execute_state)
 
-    def receive_select(self, statement: sql.Select):
-        columns = statement.column_descriptions
-        entities = set()
-        for col in columns:
-            col_entity = col["entity"]
-            entities.add(col_entity)
+    def receive_select(self, oes: ORMExecuteState):
+        # select = cast(sql.Select, oes.statement)
+        pass
 
     def receive_insert(self, oes: ORMExecuteState):
         insert = cast(sql.Insert, oes.statement)
@@ -147,15 +138,9 @@ class SqlaEventHandler(object):
             else:
                 raise ProgrammingError(f"Cannot handle update statement: {update}")
 
-    def receive_delete(
-        self, statement: sql.Delete, parameters: ParametersT | None, session: db.Session
-    ):
-        entity = statement.entity_description
-        self.logger.info(f"Entity: '{entity['name']}'")
-
-        exc = self.select_affected(statement)
-        deleted_rows = session.execute(exc).scalars().all()
-        self.logger.info(f"Deleted Rows: {[r.id for r in deleted_rows]}")
+    def receive_delete(self, oes: ORMExecuteState):
+        # delete = cast(sql.Delete, oes.statement)
+        pass
 
     def select_affected(self, statement: sql.Delete | sql.Update) -> sql.Select:
         entity = statement.entity_description
