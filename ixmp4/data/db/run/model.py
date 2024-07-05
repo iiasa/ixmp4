@@ -8,10 +8,10 @@ from ixmp4.data.db.optimization.scalar import Scalar
 from ixmp4.data.db.optimization.table import Table
 from ixmp4.data.db.scenario.model import Scenario
 
-from .. import base
+from .. import base, mixins
 
 
-class Run(base.BaseModel):
+class Run(base.BaseModel, mixins.HasUpdateInfo):
     NotFound: ClassVar = abstract.Run.NotFound
     NotUnique: ClassVar = abstract.Run.NotUnique
     DeletionPrevented: ClassVar = abstract.Run.DeletionPrevented
