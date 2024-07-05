@@ -33,7 +33,6 @@ logger = logging.getLogger(__name__)
 
 class RestBackend(Backend):
     client: httpx.Client
-    async_client: httpx.AsyncClient
     executor: ThreadPoolExecutor
     timeout: httpx.Timeout
 
@@ -61,16 +60,6 @@ class RestBackend(Backend):
             timeout=self.timeout,
             http2=True,
             auth=auth,
-        )
-        self.async_client = httpx.AsyncClient(
-            base_url=rest_url,
-            timeout=self.timeout,
-            http2=True,
-            auth=auth,
-            # when requesting concurrently,
-            # we send need to send this header
-            # to
-            headers=[("Connection", "close")],
         )
 
     def get_auth(self, rest_url: str, override_auth: BaseAuth | None) -> BaseAuth:
@@ -164,9 +153,6 @@ class RestTestBackend(RestBackend):
         self.client = TestClient(
             app=app,
             base_url=rest_url,
-        )
-        self.async_client = httpx.AsyncClient(
-            app=app, base_url=rest_url, headers=[("Connection", "close")]
         )
 
         app.dependency_overrides[deps.validate_token] = deps.do_not_validate_token
