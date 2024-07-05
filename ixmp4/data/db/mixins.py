@@ -11,7 +11,7 @@ if TYPE_CHECKING:
 class HasCreationInfo:
     """Mixin for adding creation audit info to a model.
     The added fields `created_at`, `created_by` are automatically set
-    by ixmp4's sqlalchemy event handlers for 'before_insert' and 'do_orm_execute.
+    by ixmp4's sqlalchemy event handlers for 'before_insert' and 'do_orm_execute'.
     """
 
     created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
@@ -36,7 +36,7 @@ class HasCreationInfo:
 class HasUpdateInfo(HasCreationInfo):
     """Mixin for adding creation audit info to a model.
     The added fields `updated_at`, `updated_by` are automatically set
-    by ixmp4's sqlalchemy event handlers for 'before_update' and 'do_orm_execute
+    by ixmp4's sqlalchemy event handlers for 'before_update' and 'do_orm_execute'
     (in addition to the inherited fields from `HasCreationInfo`).
     """
 
