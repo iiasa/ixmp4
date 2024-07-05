@@ -26,7 +26,6 @@ class SqlaEventHandler(object):
         event.listen(
             base.BaseModel, "before_insert", self.receive_before_insert, propagate=True
         )
-
         event.listen(
             base.BaseModel, "before_update", self.receive_before_update, propagate=True
         )
@@ -37,6 +36,13 @@ class SqlaEventHandler(object):
     def receive_before_insert(
         self, mapper: Mapper, connection: Connection, target: base.BaseModel
     ):
+        """Handles the insert event when creating data like this:
+        ```
+        model = Model(**kwargs)
+        session.add(model)
+        session.commit()
+        ```
+        """
         self.set_logger((id(mapper), id(connection), id(target)))
         if connection.engine is not self.backend.engine:
             self.logger.debug("Event dispatched from another backend, ignoring.")
@@ -49,6 +55,13 @@ class SqlaEventHandler(object):
     def receive_before_update(
         self, mapper: Mapper, connection: Connection, target: base.BaseModel
     ):
+        """Handles the update event when changing data like this:
+        ```
+        model = query_model()
+        model.attribute = "foo"
+        session.commit()
+        ```
+        """
         self.set_logger((id(mapper), id(connection), id(target)))
         if connection.engine is not self.backend.engine:
             self.logger.debug("Event dispatched from another backend, ignoring.")
@@ -59,6 +72,16 @@ class SqlaEventHandler(object):
             target.set_update_info(self.backend.auth_context)
 
     def receive_do_orm_execute(self, orm_execute_state: ORMExecuteState):
+        """Handles ORM execution events like:
+        ```
+        exc = select/update/delete(Model)
+        exc = exc.where(<expression>)
+        result = session.execute(exc)
+        # or
+        exc = insert/update(Model)
+        result = session.execute(exc, [{"attribute": "foo", ...}, ...])
+        ```
+        """
         self.set_logger(orm_execute_state)
         self.logger.debug("Received 'do_orm_execute' event.")
         statement = orm_execute_state.statement
