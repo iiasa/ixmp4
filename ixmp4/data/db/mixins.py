@@ -34,7 +34,7 @@ class HasCreationInfo:
 
 
 class HasUpdateInfo(HasCreationInfo):
-    """Mixin for adding creation audit info to a model.
+    """Mixin for adding update and creation audit info to a model.
     The added fields `updated_at`, `updated_by` are automatically set
     by ixmp4's sqlalchemy event handlers for 'before_update' and 'do_orm_execute'
     (in addition to the inherited fields from `HasCreationInfo`).
