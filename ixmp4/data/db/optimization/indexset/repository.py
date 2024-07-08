@@ -29,7 +29,6 @@ class IndexSetRepository(
 
     def add(self, run_id: int, name: str) -> IndexSet:
         indexset = IndexSet(run__id=run_id, name=name)
-        indexset.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(indexset)
         return indexset
 

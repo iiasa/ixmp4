@@ -78,3 +78,4 @@ RunIdType = Annotated[
     ),
 ]
 UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
+UsernameType = Annotated[str, Column(String(255), nullable=True)]

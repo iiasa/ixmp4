@@ -99,9 +99,11 @@ class TestDataRun:
         )
 
         runs = test_mp.backend.runs.tabulate(default_only=False)
+        self.drop_audit_info(runs)
         assert_unordered_equality(runs, true_runs)
 
         runs = test_mp.backend.runs.tabulate(default_only=False, iamc=False)
+        self.drop_audit_info(runs)
         assert_unordered_equality(runs, true_runs)
 
         runs = test_mp.backend.runs.tabulate(default_only=False, iamc={})
@@ -109,3 +111,21 @@ class TestDataRun:
 
         runs = test_mp.backend.runs.tabulate(default_only=False, iamc=True)
         assert runs.empty
+
+    def drop_audit_info(self, df):
+        df.drop(
+            inplace=True,
+            columns=["created_by", "created_at", "updated_by", "updated_at"],
+        )
+
+    def test_audit_info(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        test_mp.backend.runs.set_as_default_version(run.id)
+        test_mp.backend.runs.create("Model", "Scenario")
+
+        runs = test_mp.backend.runs.tabulate(default_only=False)
+        assert (runs["created_by"] == "@unknown").all()
+        # was updated by set_as_default_version
+        assert runs["updated_by"][0] == "@unknown"
+        assert runs["updated_by"][1] is None

@@ -2,7 +2,6 @@ from __future__ import annotations
 
 import logging
 import sqlite3
-from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -32,7 +31,6 @@ from ixmp4.data import abstract, types
 from ixmp4.db import filters
 
 if TYPE_CHECKING:
-    from ixmp4.data.auth.context import AuthorizationContext
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 logger = logging.getLogger(__name__)
@@ -439,12 +437,3 @@ class BulkDeleter(BulkOperator[ModelType]):
             self.session.execute(exc, execution_options={"synchronize_session": False})
 
         self.session.commit()
-
-
-class TimestampMixin:
-    created_at: types.DateTime = db.Column(db.DateTime, nullable=True)
-    created_by: types.String = db.Column(db.String(255), nullable=True)
-
-    def set_creation_info(self, auth_context: AuthorizationContext | None) -> None:
-        self.created_at = datetime.now(tz=timezone.utc)
-        self.created_by = auth_context.user.username if auth_context else "@unknown"

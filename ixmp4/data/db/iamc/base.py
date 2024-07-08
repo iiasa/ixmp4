@@ -10,7 +10,6 @@ from ..base import (
     Retriever,
     Selecter,
     Tabulator,
-    TimestampMixin,
 )
 
 
