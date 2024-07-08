@@ -26,17 +26,14 @@ from ixmp4.data.db import (
     UnitRepository,
     VariableRepository,
 )
+from ixmp4.data.db.events import SqlaEventHandler
 
 from ..auth.context import AuthorizationContext
 from .base import (
     Backend,
 )
-from .base import (
-    IamcSubobject as BaseIamcSubobject,
-)
-from .base import (
-    OptimizationSubobject as BaseOptimizationSubobject,
-)
+from .base import IamcSubobject as BaseIamcSubobject
+from .base import OptimizationSubobject as BaseOptimizationSubobject
 
 logger = logging.getLogger(__name__)
 
@@ -70,12 +67,14 @@ class SqlAlchemyBackend(Backend):
     units: UnitRepository
     Session = sessionmaker(autocommit=False, autoflush=False, future=True)
     auth_context: AuthorizationContext | None = None
+    event_handler: SqlaEventHandler
 
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
         logger.info(f"Creating database engine for platform '{info.name}'.")
         self.make_engine(info.dsn)
         self.make_repositories()
+        self.event_handler = SqlaEventHandler(self)
 
     def make_engine(self, dsn: str):
         if dsn.startswith("postgresql://"):

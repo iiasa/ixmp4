@@ -27,7 +27,6 @@ class VariableRepository(
 
     def add(self, name: str) -> Variable:
         variable = Variable(name=name)
-        variable.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(variable)
         return variable
 

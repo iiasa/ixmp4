@@ -45,7 +45,6 @@ class RunRepository(
             model = self.session.execute(exc).scalar_one()
         except NoResultFound:
             model = Model(name=model_name)
-            model.set_creation_info(auth_context=self.backend.auth_context)
             self.session.add(model)
 
         # Get or create scenario
@@ -54,7 +53,6 @@ class RunRepository(
             scenario: Scenario = self.session.execute(exc).scalar_one()
         except NoResultFound:
             scenario = Scenario(name=scenario_name)
-            scenario.set_creation_info(auth_context=self.backend.auth_context)
             self.session.add(scenario)
 
         (version,) = (

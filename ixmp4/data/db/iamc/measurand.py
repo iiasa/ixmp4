@@ -7,13 +7,14 @@ from ixmp4 import db
 from ixmp4.data import types
 from ixmp4.data.abstract import iamc as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import mixins
 
 from ..unit import Unit
 from . import base
 from .variable import Variable
 
 
-class Measurand(base.BaseModel, base.TimestampMixin):
+class Measurand(base.BaseModel, mixins.HasCreationInfo):
     NotFound: ClassVar = abstract.Measurand.NotFound
     NotUnique: ClassVar = abstract.Measurand.NotUnique
     DeletionPrevented: ClassVar = abstract.Measurand.DeletionPrevented
