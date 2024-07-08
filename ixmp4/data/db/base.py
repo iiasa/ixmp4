@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     Tuple,
     TypeVar,
+    cast,
 )
 
 import numpy as np
@@ -21,7 +22,7 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
+from sqlalchemy.orm import Bundle, DeclarativeBase, Mapper, declared_attr
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import Identity, MetaData
 
@@ -401,7 +402,7 @@ class BulkUpserter(BulkOperator[ModelType]):
 
     def bulk_insert(self, df: pd.DataFrame, **kwargs) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
-        m: list[dict[str, Any]] = df.to_dict("records")  # type: ignore
+        m = cast(list[dict[str, Any]], df.to_dict("records"))
 
         try:
             self.session.execute(db.insert(self.model_class), m)
@@ -410,8 +411,8 @@ class BulkUpserter(BulkOperator[ModelType]):
 
     def bulk_update(self, df: pd.DataFrame, **kwargs) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
-        m: list[dict[str, Any]] = df.to_dict("records")  # type: ignore
-        self.session.bulk_update_mappings(self.model_class, m)  # type: ignore
+        m = cast(list[dict[str, Any]], df.to_dict("records"))
+        self.session.bulk_update_mappings(cast(Mapper, self.model_class), m)
 
 
 class BulkDeleter(BulkOperator[ModelType]):
