@@ -1,27 +1,3 @@
-# m = linopy.Model()
-# i = {"Canning Plants": ["seattle", "san-diego"]}
-# j = {"Markets": ["new-york", "chicago", "topeka"]}
-# a = xr.DataArray([350, 600], coords=i, name="capacity of plant i in cases")
-# b = xr.DataArray([325, 300, 275], coords=j, name="demand at market j in cases")
-# d = xr.DataArray(
-#     [[2.5, 1.7, 1.8], [2.5, 1.8, 1.4]],
-#     coords=i | j,
-#     name="distance in thousands of miles",
-# )
-# f = 90  # Freight in dollars per case per thousand miles
-# c = d * f / 1000
-# c.name = "transport cost in thousands of dollars per case"
-# x = m.add_variables(lower=0.0, coords=c.coords, name="Shipment quantities in cases")
-# con = x.sum(dim="Markets") <= a
-# con1 = m.add_constraints(con, name="Observe supply limit at plant i")
-# con = x.sum(dim="Canning Plants") >= b
-# con2 = m.add_constraints(con, name="Satisfy demand at market j")
-# obj = c * x
-# m.add_objective(obj)
-# print(linopy.available_solvers)
-# m.solve("highs")
-# print(x.solution)
-
 import linopy
 import pandas as pd
 
@@ -71,11 +47,12 @@ def create_dantzig_model(
         lower=0.0, coords=[i_set, j_set], name="Shipment quantities in cases"
     )
 
+    # The constraints don't seem to be typed correctly by linopy
     con = x.sum(dim="Markets") <= a_parameter
-    m.add_constraints(con, name="Observe supply limit at plant i")
+    m.add_constraints(con, name="Observe supply limit at plant i")  # type: ignore
 
     con = x.sum(dim="Canning Plants") >= b_parameter
-    m.add_constraints(con, name="Satisfy demand at market j")
+    m.add_constraints(con, name="Satisfy demand at market j")  # type: ignore
 
     obj = c.to_xarray() * x
     m.add_objective(obj)
