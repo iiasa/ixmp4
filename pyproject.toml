@@ -73,6 +73,8 @@ optional = true
 
 [tool.poetry.group.tutorial.dependencies]
 ipykernel = ">=6.27.1"
+linopy = {git = "git@github.com:glatterf42/linopy.git", rev = "enh/remove-numpy-pin", develop = true}
+highspy = ">=1.7.2"
 
 [tool.poetry.scripts]
 ixmp4 = "ixmp4.__main__:app"
