@@ -28,11 +28,12 @@ class OptimizationVariable(base.BaseModel):
         data_to_validate = copy.deepcopy(data)
         del data_to_validate["levels"]
         del data_to_validate["marginals"]
-        _ = utils.validate_data(
-            key=key,
-            data=data_to_validate,
-            columns=self.columns,
-        )
+        if data_to_validate != {}:
+            _ = utils.validate_data(
+                key=key,
+                data=data_to_validate,
+                columns=self.columns,
+            )
         return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
