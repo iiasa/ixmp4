@@ -47,12 +47,19 @@ def create_dantzig_model(
         lower=0.0, coords=[i_set, j_set], name="Shipment quantities in cases"
     )
 
-    # The constraints don't seem to be typed correctly by linopy
-    con = x.sum(dim="Markets") <= a_parameter
-    m.add_constraints(con, name="Observe supply limit at plant i")  # type: ignore
+    m.add_constraints(
+        lhs=x.sum(dim="Markets"),
+        sign="<=",
+        rhs=a_parameter,
+        name="Observe supply limit at plant i",
+    )
 
-    con = x.sum(dim="Canning Plants") >= b_parameter
-    m.add_constraints(con, name="Satisfy demand at market j")  # type: ignore
+    m.add_constraints(
+        lhs=x.sum(dim="Canning Plants"),
+        sign=">=",
+        rhs=b_parameter,
+        name="Satisfy demand at market j",
+    )
 
     obj = c.to_xarray() * x
     m.add_objective(obj)
