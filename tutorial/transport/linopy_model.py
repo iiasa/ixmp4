@@ -60,7 +60,7 @@ def create_dantzig_model(
     return m
 
 
-def store_dantzig_solution(
+def read_dantzig_solution(
     model: linopy.Model, z: Variable, x: Variable, demand: Equation, supply: Equation
 ) -> None:
     # Handle objective
