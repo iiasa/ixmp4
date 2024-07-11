@@ -5,10 +5,6 @@ from ixmp4.core import Equation, IndexSet, Parameter, Scalar
 from ixmp4.core import OptimizationVariable as Variable
 
 
-def create_set(indexset: IndexSet, name: str | None = None) -> pd.Index:
-    return pd.Index(indexset.elements, name=name or indexset.name)
-
-
 def create_parameter(
     parameter: Parameter, index: pd.Index | list[pd.Index], name: str
 ) -> pd.Series:
@@ -27,8 +23,8 @@ def create_dantzig_model(
     f: Scalar,
 ) -> linopy.Model:
     m = linopy.Model()
-    i_set = create_set(indexset=i, name="Canning Plants")
-    j_set = create_set(indexset=j, name="Markets")
+    i_set = pd.Index(i.elements, name="Canning Plants")
+    j_set = pd.Index(j.elements, name="Markets")
     a_parameter = create_parameter(
         parameter=a, index=i_set, name="capacity of plant i in cases"
     )
