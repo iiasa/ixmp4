@@ -88,35 +88,15 @@ def read_dantzig_solution(model: linopy.Model, run: Run) -> None:
     # Add supply data
     supply_data = {
         "i": ["seattle", "san-diego"],
-        "levels": [
-            level
-            for level in model.constraints["Observe supply limit at plant i"]
-            .data.rhs.to_pandas()
-            .values
-        ],  # type: ignore
-        "marginals": [
-            marginal
-            for marginal in model.constraints["Observe supply limit at plant i"]
-            .data.dual.to_pandas()
-            .values
-        ],  # type: ignore
+        "levels": model.constraints["Observe supply limit at plant i"].data.rhs,  # type: ignore
+        "marginals": model.constraints["Observe supply limit at plant i"].data.dual,  # type: ignore
     }
     run.optimization.equations.get("supply").add(data=supply_data)
 
     # Add demand data
     demand_data = {
         "j": ["new-york", "chicago", "topeka"],
-        "levels": [
-            level
-            for level in model.constraints["Satisfy demand at market j"]
-            .data.rhs.to_pandas()
-            .values
-        ],  # type: ignore
-        "marginals": [
-            marginal
-            for marginal in model.constraints["Satisfy demand at market j"]
-            .data.dual.to_pandas()
-            .values
-        ],  # type: ignore
+        "levels": model.constraints["Satisfy demand at market j"].data.rhs,  # type: ignore
+        "marginals": model.constraints["Satisfy demand at market j"].data.dual,  # type: ignore
     }
     run.optimization.equations.get("demand").add(data=demand_data)
