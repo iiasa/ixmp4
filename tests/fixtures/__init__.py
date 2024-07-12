@@ -1,7 +1,6 @@
 from pathlib import Path
 
 import pandas as pd
-import pytest
 
 import ixmp4
 from ixmp4.core.exceptions import ProgrammingError
@@ -39,11 +38,11 @@ class SmallIamcDataset:
         run2.set_as_default()
 
         datapoints = cls.annual.copy()
-        run1.iamc.add(datapoints)
+        run1.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
         run1.meta = {"run": 1, "test": 0.1293, "bool": True}
 
         datapoints["variable"] = "Variable 4"
-        run2.iamc.add(datapoints)
+        run2.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
         run2.meta = {"run": 2, "test": "string", "bool": False}
 
 

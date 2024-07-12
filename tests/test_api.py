@@ -126,12 +126,12 @@ class TestApi:
         )
 
         res = backend.client.patch(
-            table_endpoint, json={"variable": {"name": "Variable 4"}}
+            table_endpoint, json={"variable": {"name": "Variable 1"}}
         )
 
         self.assert_table_res(
             res,
-            has_data_for_columns={"name": ["Model 2"]},
+            has_data_for_columns={"name": ["Model 1"]},
         )
 
     def test_index_scenario(self, rest_platform: ixmp4.Platform):
@@ -167,7 +167,7 @@ class TestApi:
         )
         self.assert_table_res(
             res,
-            has_data_for_columns={"name": ["Scenario 2"]},
+            has_data_for_columns={"name": ["Scenario 1", "Scenario 2"]},
         )
 
     def test_index_region(self, rest_platform: ixmp4.Platform):
@@ -178,35 +178,35 @@ class TestApi:
         res = backend.client.patch(table_endpoint)
         self.assert_table_res(
             res,
-            has_data_for_columns={"id": [1, 2, 3]},
+            has_data_for_columns={"id": [1, 3]},
         )
         res = backend.client.patch(
             table_endpoint, json={"unit": {"name__in": ["Unit 1", "Unit 2"]}}
         )
         self.assert_table_res(
             res,
-            has_data_for_columns={"id": [1, 2]},
+            has_data_for_columns={"id": [1, 3]},
         )
 
         res = backend.client.patch(
             table_endpoint,
-            json={"variable": {"name__in": ["Variable 2", "Variable 3"]}},
+            json={"variable": {"name__in": ["Variable 3"]}},
         )
         self.assert_table_res(
             res,
-            has_data_for_columns={"id": [2, 3]},
+            has_data_for_columns={"id": [3]},
         )
 
         res = backend.client.patch(
             table_endpoint,
             json={
                 "unit": {"name__in": ["Unit 1", "Unit 2"]},
-                "variable": {"name__in": ["Variable 2", "Variable 3"]},
+                "variable": {"name__in": ["Variable 1"]},
             },
         )
         self.assert_table_res(
             res,
-            has_data_for_columns={"id": [2]},
+            has_data_for_columns={"id": [1]},
         )
 
     def test_index_unit(self, rest_platform: ixmp4.Platform):
@@ -230,24 +230,24 @@ class TestApi:
 
         res = backend.client.patch(
             table_endpoint,
-            json={"variable": {"name__in": ["Variable 2", "Variable 3"]}},
+            json={"variable": {"name__in": ["Variable 1", "Variable 3"]}},
         )
         self.assert_table_res(
             res,
-            has_data_for_columns={"id": [2, 3]},
+            has_data_for_columns={"id": [1, 2, 3]},
         )
 
         res = backend.client.patch(
             table_endpoint,
             json={
                 "region": {"name__in": ["Region 1", "Region 2"]},
-                "variable": {"name__in": ["Variable 2", "Variable 3"]},
+                "variable": {"name__in": ["Variable 1", "Variable 3"]},
             },
         )
 
         self.assert_table_res(
             res,
-            has_data_for_columns={"id": [2]},
+            has_data_for_columns={"id": [1, 2]},
         )
 
     def test_paginate_datapoints(self, rest_platform: ixmp4.Platform):

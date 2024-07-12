@@ -216,13 +216,13 @@ class TestAuthContext:
 
                     with pytest.raises(Forbidden):
                         run.iamc.add(
-                            self.small.datapoints.copy(),
+                            self.small.annual.copy(),
                             type=ixmp4.DataPoint.Type.ANNUAL,
                         )
 
                     with pytest.raises(Forbidden):
                         run.iamc.remove(
-                            self.small.datapoints.copy().drop(columns=["value"])
+                            self.small.annual.copy().drop(columns=["value"])
                         )
 
                     with pytest.raises(Forbidden):
@@ -260,7 +260,7 @@ class TestAuthContext:
         self.small.load_units(mp)
 
         run = mp.runs.create(model, "Scenario")
-        annual_dps = self.small.datapoints.copy()
+        annual_dps = self.small.annual.copy()
         run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
         run.meta = {"meta": "test"}
         run.set_as_default()

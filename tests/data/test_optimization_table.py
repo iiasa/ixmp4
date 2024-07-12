@@ -1,9 +1,8 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Platform, Table
-
-from ..utils import all_platforms
+import ixmp4
+from ixmp4 import Table
 
 
 def df_from_list(tables: list):
@@ -30,17 +29,15 @@ def df_from_list(tables: list):
     )
 
 
-@all_platforms
 class TestDataOptimizationTable:
-    def test_create_table(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
+    def test_create_table(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
+        indexset_1 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        table = test_mp.backend.optimization.tables.create(
+        table = platform.backend.optimization.tables.create(
             run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
         )
 
@@ -52,13 +49,13 @@ class TestDataOptimizationTable:
 
         # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
-            _ = test_mp.backend.optimization.tables.create(
+            _ = platform.backend.optimization.tables.create(
                 run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
-            _ = test_mp.backend.optimization.tables.create(
+            _ = platform.backend.optimization.tables.create(
                 run_id=run.id,
                 name="Table 2",
                 constrained_to_indexsets=["Indexset"],
@@ -66,7 +63,7 @@ class TestDataOptimizationTable:
             )
 
         # Test columns_names are used for names if given
-        table_2 = test_mp.backend.optimization.tables.create(
+        table_2 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 2",
             constrained_to_indexsets=[indexset_1.name],
@@ -76,7 +73,7 @@ class TestDataOptimizationTable:
 
         # Test duplicate column_names raise
         with pytest.raises(ValueError, match="`column_names` are not unique"):
-            _ = test_mp.backend.optimization.tables.create(
+            _ = platform.backend.optimization.tables.create(
                 run_id=run.id,
                 name="Table 3",
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
@@ -84,14 +81,16 @@ class TestDataOptimizationTable:
             )
 
         # Test column.dtype is registered correctly
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
+        indexset_2 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 2"
         )
-        test_mp.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_elements(
             indexset_2.id, elements=2024
         )
-        indexset_2 = test_mp.backend.optimization.indexsets.get(run.id, indexset_2.name)
-        table_3 = test_mp.backend.optimization.tables.create(
+        indexset_2 = platform.backend.optimization.indexsets.get(
+            run.id, indexset_2.name
+        )
+        table_3 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 5",
             constrained_to_indexsets=["Indexset", indexset_2.name],
@@ -100,35 +99,33 @@ class TestDataOptimizationTable:
         assert table_3.columns[0].dtype == "object"
         assert table_3.columns[1].dtype == "int64"
 
-    def test_get_table(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        _ = test_mp.backend.optimization.indexsets.create(
+    def test_get_table(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        table = test_mp.backend.optimization.tables.create(
+        table = platform.backend.optimization.tables.create(
             run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
         )
-        assert table == test_mp.backend.optimization.tables.get(
+        assert table == platform.backend.optimization.tables.get(
             run_id=run.id, name="Table"
         )
 
         with pytest.raises(Table.NotFound):
-            _ = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
+            _ = platform.backend.optimization.tables.get(run_id=run.id, name="Table 2")
 
-    def test_table_add_data(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
+    def test_table_add_data(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        test_mp.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_1.id, elements=["foo", "bar", ""]
         )
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
+        indexset_2 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 2"
         )
-        test_mp.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_2.id, elements=[1, 2, 3]
         )
         # pandas can only convert dicts to dataframes if the values are lists
@@ -137,200 +134,214 @@ class TestDataOptimizationTable:
         # "ValueError: If using all scalar values, you must pass an index" and
         # reraise a custom informative error?
         test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
-        table = test_mp.backend.optimization.tables.create(
+        table = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table.id, data=test_data_1
         )
 
-        table = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table")
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
         assert table.data == test_data_1
 
-        table_2 = test_mp.backend.optimization.tables.create(
+        table_2 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 2",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
 
         with pytest.raises(ValueError, match="missing values"):
-            test_mp.backend.optimization.tables.add_data(
+            platform.backend.optimization.tables.add_data(
                 table_id=table_2.id,
                 data=pd.DataFrame({"Indexset": [None], "Indexset 2": [2]}),
                 # empty string is allowed for now (see below), but None or NaN raise
             )
 
         with pytest.raises(ValueError, match="contains duplicate rows"):
-            test_mp.backend.optimization.tables.add_data(
+            platform.backend.optimization.tables.add_data(
                 table_id=table_2.id,
                 data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
             )
 
         # Test raising on unrecognised data.values()
         with pytest.raises(ValueError, match="contains values that are not allowed"):
-            test_mp.backend.optimization.tables.add_data(
+            platform.backend.optimization.tables.add_data(
                 table_id=table_2.id,
                 data={"Indexset": ["foo"], "Indexset 2": [0]},
             )
 
         test_data_2 = {"Indexset": [""], "Indexset 2": [3]}
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_2.id, data=test_data_2
         )
-        table_2 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
+        table_2 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 2"
+        )
         assert table_2.data == test_data_2
 
-        table_3 = test_mp.backend.optimization.tables.create(
+        table_3 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 3",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
         with pytest.raises(ValueError, match="Data is missing for some Columns!"):
-            test_mp.backend.optimization.tables.add_data(
+            platform.backend.optimization.tables.add_data(
                 table_id=table_3.id, data={"Column 1": ["bar"]}
             )
 
         test_data_3 = {"Column 1": ["bar"], "Column 2": [2]}
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_3.id, data=test_data_3
         )
-        table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
+        table_3 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 3"
+        )
         assert table_3.data == test_data_3
 
         # Test data is expanded when Column.name is already present
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_3.id,
             data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
         )
-        table_3 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 3")
+        table_3 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 3"
+        )
         assert table_3.data == {"Column 1": ["bar", "foo"], "Column 2": [2, 3]}
 
         # Test raising on non-existing Column.name
         with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
-            test_mp.backend.optimization.tables.add_data(
+            platform.backend.optimization.tables.add_data(
                 table_id=table_3.id, data={"Column 3": [1]}
             )
 
         # Test that order is not important...
-        table_4 = test_mp.backend.optimization.tables.create(
+        table_4 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 4",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
         test_data_4 = {"Column 2": [2], "Column 1": ["bar"]}
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_4.id, data=test_data_4
         )
-        table_4 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 4")
+        table_4 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 4"
+        )
         assert table_4.data == test_data_4
 
         # ...even for expanding
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_4.id, data={"Column 1": ["foo"], "Column 2": [1]}
         )
-        table_4 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 4")
+        table_4 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 4"
+        )
         assert table_4.data == {"Column 2": [2, 1], "Column 1": ["bar", "foo"]}
 
         # This doesn't seem to test a distinct case compared to the above
         with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
-            test_mp.backend.optimization.tables.add_data(
+            platform.backend.optimization.tables.add_data(
                 table_id=table_4.id,
                 data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
             )
 
         # Test various data types
         test_data_5 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
-        indexset_3 = test_mp.backend.optimization.indexsets.create(
+        indexset_3 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 3"
         )
-        test_mp.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_3.id, elements=[1, "2", 3.14]
         )
-        table_5 = test_mp.backend.optimization.tables.create(
+        table_5 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 5",
             constrained_to_indexsets=[indexset_1.name, indexset_3.name],
         )
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_5.id, data=test_data_5
         )
-        table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
+        table_5 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 5"
+        )
         assert table_5.data == test_data_5
 
         # This doesn't raise since the union of existing and new data is validated
-        test_mp.backend.optimization.tables.add_data(table_id=table_5.id, data={})
-        table_5 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 5")
+        platform.backend.optimization.tables.add_data(table_id=table_5.id, data={})
+        table_5 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 5"
+        )
         assert table_5.data == test_data_5
 
-    def test_list_table(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.backend.runs.create("Model", "Scenario")
+    def test_list_table(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
-        _ = test_mp.backend.optimization.indexsets.create(
+        platform.backend.runs.set_as_default_version(run.id)
+        _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        _ = test_mp.backend.optimization.indexsets.create(
+        _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 2"
         )
-        table = test_mp.backend.optimization.tables.create(
+        table = platform.backend.optimization.tables.create(
             run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
         )
-        table_2 = test_mp.backend.optimization.tables.create(
+        table_2 = platform.backend.optimization.tables.create(
             run_id=run.id, name="Table 2", constrained_to_indexsets=["Indexset 2"]
         )
-        assert [table, table_2] == test_mp.backend.optimization.tables.list()
+        assert [table, table_2] == platform.backend.optimization.tables.list()
 
-        assert [table] == test_mp.backend.optimization.tables.list(name="Table")
+        assert [table] == platform.backend.optimization.tables.list(name="Table")
 
-    def test_tabulate_table(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
+    def test_tabulate_table(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
         # Per default, tabulate() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
-        indexset = test_mp.backend.optimization.indexsets.create(
+        platform.backend.runs.set_as_default_version(run.id)
+        indexset = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
+        indexset_2 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 2"
         )
-        table = test_mp.backend.optimization.tables.create(
+        table = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table",
             constrained_to_indexsets=["Indexset", "Indexset 2"],
         )
-        table_2 = test_mp.backend.optimization.tables.create(
+        table_2 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 2",
             constrained_to_indexsets=["Indexset", "Indexset 2"],
         )
         pd.testing.assert_frame_equal(
             df_from_list([table_2]),
-            test_mp.backend.optimization.tables.tabulate(name="Table 2"),
+            platform.backend.optimization.tables.tabulate(name="Table 2"),
         )
 
-        test_mp.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_elements(
             indexset_id=indexset.id, elements=["foo", "bar"]
         )
-        test_mp.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_2.id, elements=[1, 2, 3]
         )
         test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table.id, data=test_data_1
         )
-        table = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table")
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
 
         test_data_2 = {"Indexset 2": [2, 3], "Indexset": ["foo", "bar"]}
-        test_mp.backend.optimization.tables.add_data(
+        platform.backend.optimization.tables.add_data(
             table_id=table_2.id, data=test_data_2
         )
-        table_2 = test_mp.backend.optimization.tables.get(run_id=run.id, name="Table 2")
+        table_2 = platform.backend.optimization.tables.get(
+            run_id=run.id, name="Table 2"
+        )
         pd.testing.assert_frame_equal(
             df_from_list([table, table_2]),
-            test_mp.backend.optimization.tables.tabulate(),
+            platform.backend.optimization.tables.tabulate(),
         )

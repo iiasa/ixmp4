@@ -1,65 +1,58 @@
 import pandas as pd
 import pytest
 
+import ixmp4
 from ixmp4 import Region
 
-from ..utils import all_platforms, assert_unordered_equality, create_filter_test_data
+from ..utils import assert_unordered_equality, create_filter_test_data
 
 
-@all_platforms
 class TestDataRegion:
-    def test_create_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        region1 = test_mp.backend.regions.create("Region", "Hierarchy")
+    def test_create_region(self, platform: ixmp4.Platform):
+        region1 = platform.backend.regions.create("Region", "Hierarchy")
         assert region1.name == "Region"
         assert region1.hierarchy == "Hierarchy"
         assert region1.created_at is not None
         assert region1.created_by == "@unknown"
 
-    def test_delete_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        region1 = test_mp.backend.regions.create("Region", "Hierarchy")
-        test_mp.backend.regions.delete(region1.id)
-        assert test_mp.backend.regions.tabulate().empty
+    def test_delete_region(self, platform: ixmp4.Platform):
+        region1 = platform.backend.regions.create("Region", "Hierarchy")
+        platform.backend.regions.delete(region1.id)
+        assert platform.backend.regions.tabulate().empty
 
-    def test_region_unique(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.regions.create("Region", "Hierarchy")
+    def test_region_unique(self, platform: ixmp4.Platform):
+        platform.backend.regions.create("Region", "Hierarchy")
 
         with pytest.raises(Region.NotUnique):
-            test_mp.regions.create("Region", "Hierarchy")
+            platform.regions.create("Region", "Hierarchy")
 
         with pytest.raises(Region.NotUnique):
-            test_mp.regions.create("Region", "Another Hierarchy")
+            platform.regions.create("Region", "Another Hierarchy")
 
-    def test_get_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        region1 = test_mp.backend.regions.create("Region", "Hierarchy")
-        region2 = test_mp.backend.regions.get("Region")
+    def test_get_region(self, platform: ixmp4.Platform):
+        region1 = platform.backend.regions.create("Region", "Hierarchy")
+        region2 = platform.backend.regions.get("Region")
         assert region1 == region2
 
-    def test_region_not_found(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+    def test_region_not_found(self, platform: ixmp4.Platform):
         with pytest.raises(Region.NotFound):
-            test_mp.regions.get("Region")
+            platform.regions.get("Region")
 
-    def test_get_or_create_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        region1 = test_mp.backend.regions.create("Region", "Hierarchy")
-        region2 = test_mp.backend.regions.get_or_create("Region")
+    def test_get_or_create_region(self, platform: ixmp4.Platform):
+        region1 = platform.backend.regions.create("Region", "Hierarchy")
+        region2 = platform.backend.regions.get_or_create("Region")
         assert region1.id == region2.id
 
-        test_mp.backend.regions.get_or_create("Other", hierarchy="Hierarchy")
+        platform.backend.regions.get_or_create("Other", hierarchy="Hierarchy")
 
         with pytest.raises(Region.NotUnique):
-            test_mp.backend.regions.get_or_create("Other", hierarchy="Other Hierarchy")
+            platform.backend.regions.get_or_create("Other", hierarchy="Other Hierarchy")
 
-    def test_list_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.regions.create("Region 1", "Hierarchy")
-        test_mp.backend.regions.create("Region 2", "Hierarchy")
+    def test_list_region(self, platform: ixmp4.Platform):
+        platform.backend.regions.create("Region 1", "Hierarchy")
+        platform.backend.regions.create("Region 2", "Hierarchy")
 
-        regions = test_mp.backend.regions.list()
+        regions = platform.backend.regions.list()
         regions = sorted(regions, key=lambda x: x.id)
         assert regions[0].id == 1
         assert regions[0].name == "Region 1"
@@ -67,10 +60,9 @@ class TestDataRegion:
         assert regions[1].id == 2
         assert regions[1].name == "Region 2"
 
-    def test_tabulate_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.regions.create("Region 1", "Hierarchy")
-        test_mp.backend.regions.create("Region 2", "Hierarchy")
+    def test_tabulate_region(self, platform: ixmp4.Platform):
+        platform.backend.regions.create("Region 1", "Hierarchy")
+        platform.backend.regions.create("Region 2", "Hierarchy")
 
         true_regions = pd.DataFrame(
             [
@@ -80,16 +72,15 @@ class TestDataRegion:
             columns=["id", "name", "hierarchy"],
         )
 
-        regions = test_mp.backend.regions.tabulate()
+        regions = platform.backend.regions.tabulate()
         assert_unordered_equality(
             regions.drop(columns=["created_at", "created_by"]), true_regions
         )
 
-    def test_filter_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run1, run2 = create_filter_test_data(test_mp)
+    def test_filter_region(self, platform: ixmp4.Platform):
+        run1, run2 = create_filter_test_data(platform)
 
-        res = test_mp.backend.regions.tabulate(
+        res = platform.backend.regions.tabulate(
             iamc={
                 "run": {"model": {"name": "Model 1"}},
                 "variable": {"name": "Variable 1"},
@@ -98,7 +89,7 @@ class TestDataRegion:
         assert sorted(res["name"].tolist()) == ["Region 1", "Region 3"]
 
         run2.set_as_default()
-        res = test_mp.backend.regions.tabulate(
+        res = platform.backend.regions.tabulate(
             iamc={
                 "run": {"model": {"name": "Model 1"}},
                 "variable": {"name": "Variable 1"},
@@ -107,7 +98,7 @@ class TestDataRegion:
         assert sorted(res["name"].tolist()) == ["Region 3", "Region 5"]
 
         run1.set_as_default()
-        res = test_mp.backend.regions.tabulate(
+        res = platform.backend.regions.tabulate(
             iamc={
                 "variable": {"name": "Variable 1"},
                 "unit": {"name__in": ["Unit 3", "Unit 4"]},
@@ -116,7 +107,7 @@ class TestDataRegion:
         )
         assert res["name"].tolist() == []
 
-        res = test_mp.backend.regions.tabulate(
+        res = platform.backend.regions.tabulate(
             iamc={
                 "variable": {"name": "Variable 1"},
                 "unit": {"name__in": ["Unit 3", "Unit 4"]},
@@ -125,11 +116,11 @@ class TestDataRegion:
         )
         assert sorted(res["name"].tolist()) == ["Region 3", "Region 5"]
 
-        res = test_mp.backend.regions.tabulate(iamc=False)
+        res = platform.backend.regions.tabulate(iamc=False)
 
         assert res["name"].tolist() == ["Region 7"]
 
-        res = test_mp.backend.regions.tabulate()
+        res = platform.backend.regions.tabulate()
 
         assert sorted(res["name"].tolist()) == [
             "Region 1",

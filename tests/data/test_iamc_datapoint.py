@@ -1,12 +1,12 @@
 import pandas as pd
 import pytest
 
+import ixmp4
 from ixmp4.core.exceptions import BadFilterArguments
 
-from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
+from ..utils import add_regions, add_units, assert_unordered_equality
 
 
-@all_platforms
 @pytest.mark.parametrize(
     "filter,exp_filter",
     [
@@ -27,8 +27,7 @@ from ..utils import add_regions, add_units, all_platforms, assert_unordered_equa
         ({"scenario": {"name__in": ["scen_1", "scen_2"]}}, None),
     ],
 )
-def test_filtering(test_mp, filter, exp_filter, request):
-    test_mp = request.getfixturevalue(test_mp)
+def test_filtering(platform: ixmp4.Platform, filter, exp_filter):
     # preparing the data
     test_data_columns = ["region", "variable", "unit", "step_year", "value"]
     test_data = [
@@ -48,15 +47,15 @@ def test_filtering(test_mp, filter, exp_filter, request):
 
     for i, data in enumerate(test_data):
         data["type"] = "ANNUAL"
-        add_regions(test_mp, data.region.unique())
-        add_units(test_mp, data.unit.unique())
+        add_regions(platform, data.region.unique())
+        add_units(platform, data.unit.unique())
         # add the data for two different models to test filtering
-        run = test_mp.runs.create(f"model_{i + 1}", f"scen_{i + 1}")
+        run = platform.runs.create(f"model_{i + 1}", f"scen_{i + 1}")
         run.iamc.add(data)
         run.set_as_default()
 
     obs = (
-        test_mp.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
+        platform.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
         .drop(["id", "time_series__id"], axis="columns")
         .sort_index(axis=1)
     )
@@ -67,7 +66,6 @@ def test_filtering(test_mp, filter, exp_filter, request):
     assert_unordered_equality(obs, exp, check_like=True)
 
 
-@all_platforms
 @pytest.mark.parametrize(
     "filter",
     [
@@ -77,9 +75,8 @@ def test_filtering(test_mp, filter, exp_filter, request):
         {"run": {"default_only": "test"}},
     ],
 )
-def test_invalid_filters(test_mp, filter, request):
-    test_mp = request.getfixturevalue(test_mp)
+def test_invalid_filters(platform: ixmp4.Platform, filter, request):
     with pytest.raises(BadFilterArguments):
-        test_mp.backend.iamc.datapoints.tabulate(**filter)
+        platform.backend.iamc.datapoints.tabulate(**filter)
     with pytest.raises(BadFilterArguments):
-        test_mp.backend.iamc.datapoints.list(**filter)
+        platform.backend.iamc.datapoints.list(**filter)
