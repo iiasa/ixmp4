@@ -1,21 +1,21 @@
-import contextlib
-import cProfile
-import pstats
 from datetime import datetime
-from pathlib import Path
 
 import pandas as pd
 import pytest
 from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
+from ixmp4.conf.base import PlatformInfo
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
-from ixmp4.data.generator import MockDataGenerator
 
 TEST_DATA_BIG = None
 try:
-    TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual_big.csv")
+    TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual.csv")
+    TEST_DATA_BIG.drop(columns=["id"], inplace=True)
+    # TEST_DATA_BIG.drop_duplicates(inplace=True)
+    TEST_DATA_BIG.dropna(inplace=True)
+
     if TEST_DATA_BIG.empty:
         TEST_DATA_BIG = None
     # TEST_DATA_BIG = read_test_data(
@@ -24,12 +24,12 @@ try:
 except FileNotFoundError:
     TEST_DATA_BIG = None  # skip benchmark tests
 
-SKIP_PGSQL_TESTS = False
-try:
-    mp = Platform(_backend=PostgresTestBackend())
-    mp.backend.close()
-except OperationalError:
-    SKIP_PGSQL_TESTS = True
+# SKIP_PGSQL_TESTS = False
+# try:
+#     mp = Platform(_backend=PostgresTestBackend())
+#     mp.backend.close()
+# except OperationalError:
+#     SKIP_PGSQL_TESTS = True
 
 
 @pytest.fixture(scope="function")
@@ -81,86 +81,158 @@ TEST_DF_ANNUAL = pd.DataFrame(
 )
 
 
-@pytest.fixture(scope="function")
-def test_data_annual():
-    df = TEST_DF_ANNUAL.copy()
-    return df
+# @pytest.fixture(scope="function")
+# def test_data_annual():
+#     df = TEST_DF_ANNUAL.copy()
+#     return df
 
 
-@pytest.fixture(scope="function")
-def profiled(request):
-    testname = request.node.name
-    pr = cProfile.Profile()
+# @pytest.fixture(scope="function")
+# def profiled(request):
+#     testname = request.node.name
+#     pr = cProfile.Profile()
 
-    @contextlib.contextmanager
-    def profiled():
-        pr.enable()
-        yield
-        pr.disable()
+#     @contextlib.contextmanager
+#     def profiled():
+#         pr.enable()
+#         yield
+#         pr.disable()
 
-    yield profiled
-    ps = pstats.Stats(pr)
-    Path(".profiles").mkdir(parents=True, exist_ok=True)
-    ps.dump_stats(f".profiles/{testname}.prof")
+#     yield profiled
+#     ps = pstats.Stats(pr)
+#     Path(".profiles").mkdir(parents=True, exist_ok=True)
+#     ps.dump_stats(f".profiles/{testname}.prof")
+
+
+# @pytest.fixture
+# def test_sqlite_mp():
+#     return Platform(_backend=SqliteTestBackend())
+
+
+# @pytest.fixture
+# def test_pgsql_mp():
+#     mp = Platform(_backend=PostgresTestBackend())
+#     yield mp
+#     mp.backend.close()
+
+
+# @pytest.fixture
+# def test_api_sqlite_mp(test_sqlite_mp):
+#     return Platform(_backend=RestTestBackend(test_sqlite_mp.backend))
+
+
+# @pytest.fixture
+# def test_api_pgsql_mp(test_pgsql_mp):
+#     return Platform(_backend=RestTestBackend(test_pgsql_mp.backend))
+
+
+# @pytest.fixture(scope="module")
+# def test_sqlite_mp_generated():
+#     mp = Platform(_backend=SqliteTestBackend())
+#     generate_mock_data(mp)
+#     return mp
+
+
+# @pytest.fixture(scope="module")
+# def test_pgsql_mp_generated(request):
+#     mp = Platform(_backend=PostgresTestBackend())
+#     generate_mock_data(mp)
+#     yield mp
+#     mp.backend.close()
+
+
+# @pytest.fixture(scope="module")
+# def test_api_sqlite_mp_generated(test_sqlite_mp_generated):
+#     return Platform(_backend=RestTestBackend(test_sqlite_mp_generated.backend))
+
+
+# @pytest.fixture(scope="module")
+# def test_api_pgsql_mp_generated(test_pgsql_mp_generated):
+#     return Platform(_backend=RestTestBackend(test_pgsql_mp_generated.backend))
+
+
+# gen_obj_nums = dict(
+#     num_models=10,
+#     num_runs=30,
+#     num_regions=100,
+#     num_variables=100,
+#     num_units=50,
+#     num_datapoints=100_000,
+# )
+
+
+# def generate_mock_data(mp):
+#     gen = MockDataGenerator(mp, **gen_obj_nums)
+#     gen.generate()
+
+
+def pytest_addoption(parser):
+    parser.addoption(
+        "--backend",
+        action="store",
+        default="sqlite",
+        choices=("sqlite", "postgres", "rest-sqlite", "rest-postgres"),
+    )
 
 
 @pytest.fixture
-def test_sqlite_mp():
-    return Platform(_backend=SqliteTestBackend())
+def rest_platform(request):
+    print(request.param)
+    type = request.param
+    if not type.startswith("rest"):
+        pytest.skip("Skipped because of incompatible platform type.")
+
+    db_type = type.replace("rest-", "")
+
+    if db_type == "sqlite":
+        db_backend = SqliteTestBackend(
+            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
+        )
+    elif db_type == "postgres":
+        try:
+            db_backend = PostgresTestBackend(
+                PlatformInfo(
+                    name="postgres-test",
+                    dsn="postgresql://postgres:postgres@localhost/test",
+                ),
+            )
+        except OperationalError:
+            return None
+
+    return Platform(_backend=RestTestBackend(db_backend))
 
 
 @pytest.fixture
-def test_pgsql_mp():
-    mp = Platform(_backend=PostgresTestBackend())
-    yield mp
-    mp.backend.close()
+def platform(request):
+    type = request.param
+    if type.endswith("sqlite"):
+        backend = SqliteTestBackend(
+            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
+        )
+    elif type == "postgres":
+        try:
+            backend = PostgresTestBackend(
+                PlatformInfo(
+                    name="postgres-test",
+                    dsn="postgresql://postgres:postgres@localhost/test",
+                ),
+            )
+        except OperationalError:
+            pytest.skip("Could not reach postgresql db.")
+
+    if type.startswith("rest"):
+        return Platform(_backend=RestTestBackend(backend))
+    else:
+        return Platform(_backend=backend)
 
 
-@pytest.fixture
-def test_api_sqlite_mp(test_sqlite_mp):
-    return Platform(_backend=RestTestBackend(test_sqlite_mp.backend))
+def pytest_generate_tests(metafunc):
+    # This is called for every test. Only get/set command line arguments
+    # if the argument is specified in the list of test "fixturenames".
+    backend_type = metafunc.config.option.backend
 
+    if "platform" in metafunc.fixturenames:
+        metafunc.parametrize("platform", [backend_type], indirect=True)
 
-@pytest.fixture
-def test_api_pgsql_mp(test_pgsql_mp):
-    return Platform(_backend=RestTestBackend(test_pgsql_mp.backend))
-
-
-@pytest.fixture(scope="module")
-def test_sqlite_mp_generated():
-    mp = Platform(_backend=SqliteTestBackend())
-    generate_mock_data(mp)
-    return mp
-
-
-@pytest.fixture(scope="module")
-def test_pgsql_mp_generated(request):
-    mp = Platform(_backend=PostgresTestBackend())
-    generate_mock_data(mp)
-    yield mp
-    mp.backend.close()
-
-
-@pytest.fixture(scope="module")
-def test_api_sqlite_mp_generated(test_sqlite_mp_generated):
-    return Platform(_backend=RestTestBackend(test_sqlite_mp_generated.backend))
-
-
-@pytest.fixture(scope="module")
-def test_api_pgsql_mp_generated(test_pgsql_mp_generated):
-    return Platform(_backend=RestTestBackend(test_pgsql_mp_generated.backend))
-
-
-gen_obj_nums = dict(
-    num_models=10,
-    num_runs=30,
-    num_regions=100,
-    num_variables=200,
-    num_units=50,
-    num_datapoints=10_000,
-)
-
-
-def generate_mock_data(mp):
-    gen = MockDataGenerator(mp, **gen_obj_nums)
-    gen.generate()
+    if "rest_platform" in metafunc.fixturenames:
+        metafunc.parametrize("rest_platform", [backend_type], indirect=True)

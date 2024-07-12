@@ -132,7 +132,6 @@ class SqlAlchemyBackend(Backend):
 class SqliteTestBackend(SqlAlchemyBackend):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(
-            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:"),
             *args,
             **kwargs,
         )
@@ -150,10 +149,6 @@ class SqliteTestBackend(SqlAlchemyBackend):
 class PostgresTestBackend(SqlAlchemyBackend):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(
-            PlatformInfo(
-                name="postgres-test",
-                dsn="postgresql://postgres:postgres@localhost/test",
-            ),
             *args,
             **kwargs,
         )

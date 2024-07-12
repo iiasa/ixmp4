@@ -96,6 +96,8 @@ class SqlaEventHandler(object):
             if orm_execute_state.is_delete:
                 self.logger.debug("Operation: 'delete'")
                 return self.receive_delete(orm_execute_state)
+            else:
+                self.logger.debug(f"Ignoring operation: {orm_execute_state}")
 
     def receive_select(self, oes: ORMExecuteState):
         # select = cast(sql.Select, oes.statement)
@@ -105,7 +107,7 @@ class SqlaEventHandler(object):
         insert = cast(sql.Insert, oes.statement)
         entity = insert.entity_description
         type_ = entity["type"]
-        self.logger.info(f"Entity: '{entity['name']}'")
+        self.logger.debug(f"Entity: '{entity['name']}'")
 
         if issubclass(type_, mixins.HasCreationInfo):
             creation_info = {
@@ -121,7 +123,7 @@ class SqlaEventHandler(object):
         update = cast(sql.Update, oes.statement)
         entity = update.entity_description
         type_ = entity["type"]
-        self.logger.info(f"Entity: '{entity['name']}'")
+        self.logger.debug(f"Entity: '{entity['name']}'")
 
         if issubclass(type_, mixins.HasUpdateInfo):
             update_info = {
