@@ -1,9 +1,8 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Platform, Table
-
-from ..utils import all_platforms
+import ixmp4
+from ixmp4 import Table
 
 
 def df_from_list(tables: list[Table]):
@@ -32,11 +31,9 @@ def df_from_list(tables: list[Table]):
     )
 
 
-@all_platforms
 class TestCoreTable:
-    def test_create_table(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_create_table(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
         indexset = run.optimization.indexsets.create("Indexset")
@@ -92,9 +89,8 @@ class TestCoreTable:
         assert table_3.columns[0].dtype == "object"
         assert table_3.columns[1].dtype == "int64"
 
-    def test_get_table(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_get_table(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create(name="Indexset")
         _ = run.optimization.tables.create(
             name="Table", constrained_to_indexsets=["Indexset"]
@@ -110,9 +106,8 @@ class TestCoreTable:
         with pytest.raises(Table.NotFound):
             _ = run.optimization.tables.get(name="Table 2")
 
-    def test_table_add_data(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_table_add_data(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(elements=["foo", "bar", ""])
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
@@ -213,9 +208,8 @@ class TestCoreTable:
         table_5.add(data={})
         assert table_5.data == test_data_5
 
-    def test_list_tables(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_list_tables(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
         run.set_as_default()
         _ = run.optimization.indexsets.create("Indexset")
@@ -235,9 +229,8 @@ class TestCoreTable:
         list_id = [table.id for table in run.optimization.tables.list(name="Table")]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_table(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_tabulate_table(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         # Per default, tabulate() lists scalars for `default` version runs:
         run.set_as_default()
         indexset = run.optimization.indexsets.create("Indexset")
@@ -266,9 +259,8 @@ class TestCoreTable:
             run.optimization.tables.tabulate(),
         )
 
-    def test_table_docs(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_table_docs(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         table_1 = run.optimization.tables.create(
             "Table 1", constrained_to_indexsets=[indexset.name]

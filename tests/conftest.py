@@ -1,84 +1,81 @@
-from datetime import datetime
-
-import pandas as pd
 import pytest
-from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
 from ixmp4.conf.base import PlatformInfo
+from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
-TEST_DATA_BIG = None
-try:
-    TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual.csv")
-    TEST_DATA_BIG.drop(columns=["id"], inplace=True)
-    # TEST_DATA_BIG.drop_duplicates(inplace=True)
-    TEST_DATA_BIG.dropna(inplace=True)
-
-    if TEST_DATA_BIG.empty:
-        TEST_DATA_BIG = None
-    # TEST_DATA_BIG = read_test_data(
-    #     "./tests/test-data/very-big-test-data.xlsx"
-    # ).reset_index(drop=True)
-except FileNotFoundError:
-    TEST_DATA_BIG = None  # skip benchmark tests
-
-# SKIP_PGSQL_TESTS = False
+# TEST_DATA_BIG = None
 # try:
-#     mp = Platform(_backend=PostgresTestBackend())
-#     mp.backend.close()
-# except OperationalError:
-#     SKIP_PGSQL_TESTS = True
+#     TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual.csv")
+#     TEST_DATA_BIG.drop(columns=["id"], inplace=True)
+#     # TEST_DATA_BIG.drop_duplicates(inplace=True)
+#     TEST_DATA_BIG.dropna(inplace=True)
+
+#     if TEST_DATA_BIG.empty:
+#         TEST_DATA_BIG = None
+#     # TEST_DATA_BIG = read_test_data(
+#     #     "./tests/test-data/very-big-test-data.xlsx"
+#     # ).reset_index(drop=True)
+# except FileNotFoundError:
+#     TEST_DATA_BIG = None  # skip benchmark tests
+
+# # SKIP_PGSQL_TESTS = False
+# # try:
+# #     mp = Platform(_backend=PostgresTestBackend())
+# #     mp.backend.close()
+# # except OperationalError:
+# #     SKIP_PGSQL_TESTS = True
 
 
-@pytest.fixture(scope="function")
-def test_data_big():
-    yield TEST_DATA_BIG.copy()
+# @pytest.fixture(scope="function")
+# def test_data_big():
+#     yield TEST_DATA_BIG.copy()
 
 
-TEST_DF_DATETIME = pd.DataFrame(
-    [
-        ["World", "Primary Energy", "EJ/yr", datetime(2005, 1, 1, 1, 0, 0), 1],
-        ["World", "Primary Energy", "EJ/yr", datetime(2010, 1, 1, 1, 0, 0), 6.0],
-        ["World", "Primary Energy|Coal", "EJ/yr", datetime(2005, 1, 1, 1, 0, 0), 0.5],
-        ["World", "Primary Energy|Coal", "EJ/yr", datetime(2010, 1, 1, 1, 0, 0), 3],
-    ],
-    columns=["region", "variable", "unit", "step_datetime", "value"],
-)
+# TEST_DF_DATETIME = pd.DataFrame(
+#     [
+#         ["World", "Primary Energy", "EJ/yr", datetime(2005, 1, 1, 1, 0, 0), 1],
+#         ["World", "Primary Energy", "EJ/yr", datetime(2010, 1, 1, 1, 0, 0), 6.0],
+#         ["World", "Primary Energy|Coal", "EJ/yr", datetime(2005, 1, 1, 1, 0, 0), 0.5],
+#         ["World", "Primary Energy|Coal", "EJ/yr", datetime(2010, 1, 1, 1, 0, 0), 3],
+#     ],
+#     columns=["region", "variable", "unit", "step_datetime", "value"],
+# )
 
 
-@pytest.fixture(scope="function")
-def test_data_datetime():
-    return TEST_DF_DATETIME.copy()
+# @pytest.fixture(scope="function")
+# def test_data_datetime():
+#     return TEST_DF_DATETIME.copy()
 
 
-TEST_DF_CATEGORICAL = pd.DataFrame(
-    [
-        ["World", "Primary Energy", "EJ/yr", 2010, "A", 6.0],
-        ["World", "Primary Energy", "EJ/yr", 2010, "B", 3],
-        ["World", "Primary Energy", "EJ/yr", 2005, "A", 1],
-        ["World", "Primary Energy", "EJ/yr", 2005, "B", 0.5],
-    ],
-    columns=["region", "variable", "unit", "step_year", "step_category", "value"],
-)
+# TEST_DF_CATEGORICAL = pd.DataFrame(
+#     [
+#         ["World", "Primary Energy", "EJ/yr", 2010, "A", 6.0],
+#         ["World", "Primary Energy", "EJ/yr", 2010, "B", 3],
+#         ["World", "Primary Energy", "EJ/yr", 2005, "A", 1],
+#         ["World", "Primary Energy", "EJ/yr", 2005, "B", 0.5],
+#     ],
+#     columns=["region", "variable", "unit", "step_year", "step_category", "value"],
+# )
 
 
-@pytest.fixture(scope="function")
-def test_data_categorical():
-    df = TEST_DF_CATEGORICAL.copy()
-    return df
+# @pytest.fixture(scope="function")
+# def test_data_categorical():
+#     df = TEST_DF_CATEGORICAL.copy()
+#     return df
 
 
-TEST_DF_ANNUAL = pd.DataFrame(
-    [
-        ["World", "Primary Energy", "EJ/yr", 2005, 1],
-        ["World", "Primary Energy", "EJ/yr", 2010, 6.0],
-        ["World", "Primary Energy|Coal", "EJ/yr", 2005, 0.5],
-        ["World", "Primary Energy|Coal", "EJ/yr", 2010, 3],
-    ],
-    columns=["region", "variable", "unit", "step_year", "value"],
-)
+# TEST_DF_ANNUAL = pd.DataFrame(
+#     [
+#         ["World", "Primary Energy", "EJ/yr", 2005, 1],
+#         ["World", "Primary Energy", "EJ/yr", 2010, 6.0],
+#         ["World", "Primary Energy|Coal", "EJ/yr", 2005, 0.5],
+#         ["World", "Primary Energy|Coal", "EJ/yr", 2010, 3],
+#     ],
+#     columns=["region", "variable", "unit", "step_year", "value"],
+# )
 
 
 # @pytest.fixture(scope="function")
@@ -166,73 +163,114 @@ TEST_DF_ANNUAL = pd.DataFrame(
 #     gen.generate()
 
 
+backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
+
+
 def pytest_addoption(parser):
     parser.addoption(
         "--backend",
         action="store",
-        default="sqlite",
-        choices=("sqlite", "postgres", "rest-sqlite", "rest-postgres"),
+        default="sqlite,rest-sqlite",
     )
 
 
 @pytest.fixture
+def rest_sqlite_platform():
+    sqlite = SqliteTestBackend(
+        PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
+    )
+    return Platform(_backend=RestTestBackend(sqlite))
+
+
+@pytest.fixture
+def rest_postgresql_platform():
+    pgsql = PostgresTestBackend(
+        PlatformInfo(
+            name="postgres-test",
+            dsn="postgresql://postgres:postgres@localhost/test",
+        ),
+    )
+    return Platform(_backend=RestTestBackend(pgsql))
+
+
+@pytest.fixture
+def postgresql_platform():
+    pgsql = PostgresTestBackend(
+        PlatformInfo(
+            name="postgres-test",
+            dsn="postgresql://postgres:postgres@localhost/test",
+        ),
+    )
+    return Platform(_backend=pgsql)
+
+
+@pytest.fixture
+def sqlite_platform():
+    sqlite = SqliteTestBackend(
+        PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
+    )
+    return Platform(_backend=sqlite)
+
+
+@pytest.fixture
 def rest_platform(request):
-    print(request.param)
     type = request.param
-    if not type.startswith("rest"):
-        pytest.skip("Skipped because of incompatible platform type.")
+    if type == "rest-sqlite":
+        return request.getfixturevalue(rest_sqlite_platform.__name__)
+    elif type == "rest-postgres":
+        return request.getfixturevalue(rest_postgresql_platform.__name__)
 
-    db_type = type.replace("rest-", "")
 
-    if db_type == "sqlite":
-        db_backend = SqliteTestBackend(
-            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
-        )
-    elif db_type == "postgres":
-        try:
-            db_backend = PostgresTestBackend(
-                PlatformInfo(
-                    name="postgres-test",
-                    dsn="postgresql://postgres:postgres@localhost/test",
-                ),
-            )
-        except OperationalError:
-            return None
-
-    return Platform(_backend=RestTestBackend(db_backend))
+@pytest.fixture
+def db_platform(request):
+    type = request.param
+    if type == "sqlite":
+        return request.getfixturevalue(sqlite_platform.__name__)
+    elif type == "postgres":
+        return request.getfixturevalue(postgresql_platform.__name__)
 
 
 @pytest.fixture
 def platform(request):
     type = request.param
-    if type.endswith("sqlite"):
-        backend = SqliteTestBackend(
-            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
-        )
+    if type == "rest-sqlite":
+        return request.getfixturevalue(rest_sqlite_platform.__name__)
+    elif type == "rest-postgres":
+        return request.getfixturevalue(rest_postgresql_platform.__name__)
+    elif type == "sqlite":
+        return request.getfixturevalue(sqlite_platform.__name__)
     elif type == "postgres":
-        try:
-            backend = PostgresTestBackend(
-                PlatformInfo(
-                    name="postgres-test",
-                    dsn="postgresql://postgres:postgres@localhost/test",
-                ),
-            )
-        except OperationalError:
-            pytest.skip("Could not reach postgresql db.")
-
-    if type.startswith("rest"):
-        return Platform(_backend=RestTestBackend(backend))
-    else:
-        return Platform(_backend=backend)
+        return request.getfixturevalue(postgresql_platform.__name__)
 
 
 def pytest_generate_tests(metafunc):
     # This is called for every test. Only get/set command line arguments
     # if the argument is specified in the list of test "fixturenames".
-    backend_type = metafunc.config.option.backend
 
+    # parse '--backend' option
+    be_args = metafunc.config.option.backend.split(",")
+    backend_types = [t.strip() for t in be_args]
+    for bt in backend_types:
+        if bt not in backend_choices:
+            raise ProgrammingError(f"'{bt}' not a valid backend")
+
+    rest_backend_types = [t for t in backend_types if t.startswith("rest")]
+    db_backend_types = [t for t in backend_types if not t.startswith("rest")]
+    run_sqlite = "sqlite" in backend_types
+
+    # parameterize tests with platform fixture requests
     if "platform" in metafunc.fixturenames:
-        metafunc.parametrize("platform", [backend_type], indirect=True)
+        metafunc.parametrize("platform", backend_types, indirect=True)
+
+    if "db_platform" in metafunc.fixturenames:
+        metafunc.parametrize("db_platform", db_backend_types, indirect=True)
 
     if "rest_platform" in metafunc.fixturenames:
-        metafunc.parametrize("rest_platform", [backend_type], indirect=True)
+        metafunc.parametrize("rest_platform", rest_backend_types, indirect=True)
+
+    if "sqlite_platform" in metafunc.fixturenames:
+        metafunc.parametrize(
+            "sqlite_platform",
+            ["sqlite"] if run_sqlite else [],
+            indirect=True,
+        )

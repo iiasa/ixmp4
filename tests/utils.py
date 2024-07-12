@@ -1,10 +1,7 @@
 import pandas as pd
 import pandas.testing as pdt
-import pytest
 
 from ixmp4 import DataPoint
-
-from .conftest import SKIP_PGSQL_TESTS
 
 
 def add_regions(mp, regions):
@@ -23,108 +20,6 @@ def assert_unordered_equality(df1, df2, **kwargs):
     df2 = df2.sort_index(axis=1)
     df2 = df2.sort_values(by=list(df2.columns)).reset_index(drop=True)
     pdt.assert_frame_equal(df1, df2, **kwargs)
-
-
-all_platforms = pytest.mark.parametrize(
-    "test_mp",
-    [
-        "test_sqlite_mp",
-        pytest.param(
-            "test_pgsql_mp",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-        "test_api_sqlite_mp",
-        pytest.param(
-            "test_api_pgsql_mp",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-    ],
-)
-
-generated_platforms = pytest.mark.parametrize(
-    "generated_mp",
-    [
-        "test_sqlite_mp_generated",
-        pytest.param(
-            "test_pgsql_mp_generated",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-        "test_api_sqlite_mp_generated",
-        pytest.param(
-            "test_api_pgsql_mp_generated",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-    ],
-)
-
-generated_db_platforms = pytest.mark.parametrize(
-    "generated_mp",
-    [
-        "test_sqlite_mp_generated",
-        pytest.param(
-            "test_pgsql_mp_generated",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-    ],
-)
-
-
-generated_api_platforms = pytest.mark.parametrize(
-    "generated_mp",
-    [
-        "test_api_sqlite_mp_generated",
-        pytest.param(
-            "test_api_pgsql_mp_generated",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-    ],
-)
-
-api_platforms = pytest.mark.parametrize(
-    "test_mp",
-    [
-        "test_api_sqlite_mp",
-        pytest.param(
-            "test_api_pgsql_mp",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-    ],
-)
-
-database_platforms = pytest.mark.parametrize(
-    "test_mp",
-    [
-        "test_sqlite_mp",
-        pytest.param(
-            "test_pgsql_mp",
-            marks=pytest.mark.skipif(
-                SKIP_PGSQL_TESTS,
-                reason="Cannot connect to PostgreSQL database service, skipping test",
-            ),
-        ),
-    ],
-)
 
 
 def create_filter_test_data(test_mp):

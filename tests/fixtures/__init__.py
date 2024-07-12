@@ -12,7 +12,10 @@ here = Path(__file__).parent
 class SmallIamcDataset:
     units = pd.read_csv(here / "small/units.csv")
     regions = pd.read_csv(here / "small/regions.csv")
-    datapoints = pd.read_csv(here / "small/datapoints.csv")
+    annual = pd.read_csv(here / "small/annual.csv")
+    categorical = pd.read_csv(here / "small/categorical.csv")
+    datetime = pd.read_csv(here / "small/datetime.csv")
+    datetime["step_datetime"] = pd.to_datetime(datetime["step_datetime"])
 
     @classmethod
     def load_regions(cls, platform: ixmp4.Platform):
@@ -35,7 +38,7 @@ class SmallIamcDataset:
         run2 = platform.runs.create("Model 2", "Scenario 2")
         run2.set_as_default()
 
-        datapoints = cls.datapoints.copy()
+        datapoints = cls.annual.copy()
         run1.iamc.add(datapoints)
         run1.meta = {"run": 1, "test": 0.1293, "bool": True}
 

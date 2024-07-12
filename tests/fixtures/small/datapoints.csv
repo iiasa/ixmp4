@@ -1,4 +1,0 @@
-region,variable,unit,type,step_year,value
-Region 1,Variable 1,Unit 1,ANNUAL,2000,0.5
-Region 2,Variable 2,Unit 2,ANNUAL,2010,1.0
-Region 3,Variable 3,Unit 3,ANNUAL,2020,1.5
