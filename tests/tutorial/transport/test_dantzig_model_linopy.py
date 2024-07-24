@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import xarray as xr
 
@@ -80,13 +81,14 @@ class TestTransportTutorialLinopy:
 
         # Set expectations
         expected = {
-            "supply_constraint_rhs": xr.DataArray([350.0, 600.0]),
             "supply_constraint_sign": xr.DataArray(["<=", "<="]),
-            "demand_constraint_rhs": xr.DataArray([325.0, 300.0, 275.0]),
             "demand_constraint_sign": xr.DataArray([">=", ">=", ">="]),
-            "objective_coeffs": xr.DataArray(
-                [0.162, 0.225, 0.126, 0.153, 0.225, 0.162]
-            ),
+            # TODO enable this once #95 is merged; allows removal of xarray from file
+            # "supply_constraint_sign": np.array(["<=", "<="]),
+            # "demand_constraint_sign": np.array([">=", ">=", ">="]),
+            "supply_constraint_rhs": pd.Series([350.0, 600.0]),
+            "demand_constraint_rhs": pd.Series([325.0, 300.0, 275.0]),
+            "objective_coeffs": pd.Series([0.162, 0.225, 0.126, 0.153, 0.225, 0.162]),
         }
 
         assert model.variables["Shipment quantities in cases"].dims == (
@@ -96,31 +98,40 @@ class TestTransportTutorialLinopy:
         assert model.constraints["Observe supply limit at plant i"].coord_dims == (
             "Canning Plants",
         )
-        assert (
-            model.constraints["Observe supply limit at plant i"].data.rhs.values
-            == expected["supply_constraint_rhs"]
-        ).all()
+        assert np.allclose(
+            model.constraints["Observe supply limit at plant i"].data.rhs.values,
+            expected["supply_constraint_rhs"],
+        )
         assert (
             model.constraints["Observe supply limit at plant i"].data.sign.values
             == expected["supply_constraint_sign"]
         ).all()
+        # TODO enable this once #95 is merged
+        # assert np.strings.equal(
+        #     model.constraints["Observe supply limit at plant i"].data.sign.values,
+        #     expected["supply_constraint_sign"],
+        # ).all()
         assert model.constraints["Satisfy demand at market j"].coord_dims == (
             "Markets",
         )
-        assert (
-            model.constraints["Satisfy demand at market j"].data.rhs.values
-            == expected["demand_constraint_rhs"]
-        ).all()
+        assert np.allclose(
+            model.constraints["Satisfy demand at market j"].data.rhs.values,
+            expected["demand_constraint_rhs"],
+        )
         assert (
             model.constraints["Satisfy demand at market j"].data.sign.values
             == expected["demand_constraint_sign"]
         ).all()
+        # TODO enable this once #95 is merged
+        # assert np.strings.equal(
+        #     model.constraints["Satisfy demand at market j"].data.sign.values,
+        #     expected["demand_constraint_sign"],
+        # ).all()
         assert model.objective.sense == "min"
 
-        # TODO Currently doesn't work though they should be equal
-        # assert (
-        #     model.objective.coeffs.to_pandas().values == expected["objective_coeffs"]
-        # ).all()
+        assert np.allclose(
+            model.objective.coeffs.to_pandas(), expected["objective_coeffs"]
+        )
 
     def test_read_dantzig_solution(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
