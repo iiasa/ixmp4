@@ -107,7 +107,7 @@ jobs:
       #------------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --with dev,server
+        run: poetry install --no-interaction --no-root --with dev,server,tutorial
 
       - name: Install PyArrow
         if: ${{ matrix.with-pyarrow }}
@@ -174,7 +174,7 @@ jobs:
       #------------------------------------------------
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
-        run: poetry install --no-interaction --no-root --with dev,server
+        run: poetry install --no-interaction --no-root --with dev,server,tutorial
 
       #------------------------
       #  install root project
