@@ -94,7 +94,9 @@ class IndexSetRepository(BaseFacade):
         return IndexSet(_backend=self.backend, _model=indexset)
 
     def list(self, name: str | None = None) -> list[IndexSet]:
-        indexsets = self.backend.optimization.indexsets.list(name=name)
+        indexsets = self.backend.optimization.indexsets.list(
+            run_id=self._run.id, name=name
+        )
         return [
             IndexSet(
                 _backend=self.backend,
@@ -104,4 +106,6 @@ class IndexSetRepository(BaseFacade):
         ]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.indexsets.tabulate(name=name)
+        return self.backend.optimization.indexsets.tabulate(
+            run_id=self._run.id, name=name
+        )
