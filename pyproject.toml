@@ -73,7 +73,6 @@ optional = true
 
 [tool.poetry.group.tutorial.dependencies]
 ipykernel = ">=6.27.1"
-# linopy = {git = "git@github.com:glatterf42/linopy.git", rev = "enh/remove-numpy-pin", develop = true}
 linopy = ">=0.3.10"
 highspy = ">=1.7.2"
 
@@ -97,7 +96,7 @@ implicit_reexport = true
 plugins = ['sqlalchemy.ext.mypy.plugin']
 
 [[tool.mypy.overrides]]
-module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
+module = ["linopy", "pandas", "uvicorn.workers", "sqlalchemy_utils"]
 ignore_missing_imports = true
 
 [tool.ruff]
