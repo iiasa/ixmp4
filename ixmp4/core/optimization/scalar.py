@@ -135,4 +135,6 @@ class ScalarRepository(BaseFacade):
         ]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.scalars.tabulate(name=name)
+        return self.backend.optimization.scalars.tabulate(
+            run_id=self._run.id, name=name
+        )
