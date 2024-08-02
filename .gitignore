@@ -42,3 +42,7 @@ requirements.txt
 # misc
 PR.md
 .DS_STORE
+
+# tutorial/gams
+tutorial/transport/*.gdx
+tutorial/transport/*.lst
