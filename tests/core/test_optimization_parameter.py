@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Parameter, Platform
+from ixmp4.core import Parameter, Platform
 
 from ..utils import all_platforms
 
@@ -242,8 +242,6 @@ class TestCoreParameter:
     def test_list_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        run.set_as_default()
         _ = run.optimization.indexsets.create("Indexset")
         _ = run.optimization.indexsets.create("Indexset 2")
         parameter = run.optimization.parameters.create(
@@ -264,11 +262,22 @@ class TestCoreParameter:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
+        # Test that only Parameters belonging to a Run are listed
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset = run_2.optimization.indexsets.create("Indexset")
+        parameter_3 = run_2.optimization.parameters.create(
+            "Parameter", constrained_to_indexsets=[indexset.name]
+        )
+        parameter_4 = run_2.optimization.parameters.create(
+            "Parameter 2", constrained_to_indexsets=[indexset.name]
+        )
+        expected_ids = [parameter_3.id, parameter_4.id]
+        list_ids = [parameter.id for parameter in run_2.optimization.parameters.list()]
+        assert not (set(expected_ids) ^ set(list_ids))
+
     def test_tabulate_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        run.set_as_default()
         indexset = run.optimization.indexsets.create("Indexset")
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
         parameter = run.optimization.parameters.create(
@@ -306,6 +315,20 @@ class TestCoreParameter:
         pd.testing.assert_frame_equal(
             df_from_list([parameter, parameter_2]),
             run.optimization.parameters.tabulate(),
+        )
+
+        # Test that only Parameters belonging to a Run are listed
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset = run_2.optimization.indexsets.create("Indexset")
+        parameter_3 = run_2.optimization.parameters.create(
+            "Parameter", constrained_to_indexsets=[indexset.name]
+        )
+        parameter_4 = run_2.optimization.parameters.create(
+            "Parameter 2", constrained_to_indexsets=[indexset.name]
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([parameter_3, parameter_4]),
+            run_2.optimization.parameters.tabulate(),
         )
 
     def test_parameter_docs(self, test_mp, request):

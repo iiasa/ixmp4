@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Parameter, Platform
+from ixmp4.core import Parameter, Platform
 
 from ..utils import all_platforms
 
@@ -278,8 +278,6 @@ class TestDataOptimizationParameter:
     def test_list_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -301,11 +299,27 @@ class TestDataOptimizationParameter:
             name="Parameter"
         )
 
+        # Test listing of Parameters belonging to specific Run
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset"
+        )
+        parameter_3 = test_mp.backend.optimization.parameters.create(
+            run_id=run_2.id, name="Parameter", constrained_to_indexsets=[indexset.name]
+        )
+        parameter_4 = test_mp.backend.optimization.parameters.create(
+            run_id=run_2.id,
+            name="Parameter 2",
+            constrained_to_indexsets=[indexset.name],
+        )
+        assert [
+            parameter_3,
+            parameter_4,
+        ] == test_mp.backend.optimization.parameters.list(run_id=run_2.id)
+
     def test_tabulate_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
         indexset = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -363,4 +377,22 @@ class TestDataOptimizationParameter:
         pd.testing.assert_frame_equal(
             df_from_list([parameter, parameter_2]),
             test_mp.backend.optimization.parameters.tabulate(),
+        )
+
+        # Test tabulation of Parameters belonging to specific Run
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset"
+        )
+        parameter_3 = test_mp.backend.optimization.parameters.create(
+            run_id=run_2.id, name="Parameter", constrained_to_indexsets=[indexset.name]
+        )
+        parameter_4 = test_mp.backend.optimization.parameters.create(
+            run_id=run_2.id,
+            name="Parameter 2",
+            constrained_to_indexsets=[indexset.name],
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([parameter_3, parameter_4]),
+            test_mp.backend.optimization.parameters.tabulate(run_id=run_2.id),
         )
