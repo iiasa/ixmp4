@@ -128,4 +128,6 @@ class ParameterRepository(BaseFacade):
         ]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.parameters.tabulate(name=name)
+        return self.backend.optimization.parameters.tabulate(
+            run_id=self._run.id, name=name
+        )
