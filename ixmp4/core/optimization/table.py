@@ -116,4 +116,4 @@ class TableRepository(BaseFacade):
         ]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.tables.tabulate(name=name)
+        return self.backend.optimization.tables.tabulate(run_id=self._run.id, name=name)

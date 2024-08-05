@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Platform, Table
+from ixmp4.core import Platform, Table
 
 from ..utils import all_platforms
 
@@ -101,7 +101,7 @@ class TestDataOptimizationTable:
         assert table_3.columns[1].dtype == "int64"
 
     def test_get_table(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -267,10 +267,8 @@ class TestDataOptimizationTable:
         assert table_5.data == test_data_5
 
     def test_list_table(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -287,11 +285,27 @@ class TestDataOptimizationTable:
 
         assert [table] == test_mp.backend.optimization.tables.list(name="Table")
 
+        # Test listing of Tables when specifying a Run
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset_3 = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset 3"
+        )
+        indexset_4 = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset 4"
+        )
+        table_3 = test_mp.backend.optimization.tables.create(
+            run_id=run_2.id, name="Table", constrained_to_indexsets=[indexset_3.name]
+        )
+        table_4 = test_mp.backend.optimization.tables.create(
+            run_id=run_2.id, name="Table 2", constrained_to_indexsets=[indexset_4.name]
+        )
+        assert [table_3, table_4] == test_mp.backend.optimization.tables.list(
+            run_id=run_2.id
+        )
+
     def test_tabulate_table(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
         indexset = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -333,4 +347,23 @@ class TestDataOptimizationTable:
         pd.testing.assert_frame_equal(
             df_from_list([table, table_2]),
             test_mp.backend.optimization.tables.tabulate(),
+        )
+
+        # Test tabulation of Tables when specifying a Run
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset_3 = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset 3"
+        )
+        indexset_4 = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset 4"
+        )
+        table_3 = test_mp.backend.optimization.tables.create(
+            run_id=run_2.id, name="Table", constrained_to_indexsets=[indexset_3.name]
+        )
+        table_4 = test_mp.backend.optimization.tables.create(
+            run_id=run_2.id, name="Table 2", constrained_to_indexsets=[indexset_4.name]
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([table_3, table_4]),
+            test_mp.backend.optimization.tables.tabulate(run_id=run_2.id),
         )
