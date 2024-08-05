@@ -1,3 +1,4 @@
+import operator
 from types import UnionType
 from typing import Any, ClassVar, Optional, Union, get_args, get_origin
 
@@ -6,10 +7,6 @@ from pydantic.fields import FieldInfo
 
 from ixmp4 import db
 from ixmp4.core.exceptions import BadFilterArguments, ProgrammingError
-
-
-def exact(c, v):
-    return c == v
 
 
 def in_(c, v):
@@ -30,22 +27,6 @@ def notlike(c, v):
 
 def notilike(c, v):
     return c.notilike(escape_wildcard(v), escape="\\")
-
-
-def gt(c, v):
-    return c > v
-
-
-def lt(c, v):
-    return c < v
-
-
-def gte(c, v):
-    return c >= v
-
-
-def lte(c, v):
-    return c <= v
 
 
 def escape_wildcard(v):
@@ -82,30 +63,30 @@ argument_seperator = "__"
 filter_func_prefix = "filter_"
 lookup_map: dict[object, dict] = {
     Id: {
-        "__root__": (int, exact),
+        "__root__": (int, operator.eq),
         "in": (list[int], in_),
     },
     Float: {
-        "__root__": (int, exact),
+        "__root__": (int, operator.eq),
         "in": (list[int], in_),
-        "gt": (int, gt),
-        "lt": (int, lt),
-        "gte": (int, gte),
-        "lte": (int, lte),
+        "gt": (int, operator.gt),
+        "lt": (int, operator.lt),
+        "gte": (int, operator.ge),
+        "lte": (int, operator.le),
     },
     Integer: {
-        "__root__": (int, exact),
+        "__root__": (int, operator.eq),
         "in": (list[int], in_),
-        "gt": (int, gt),
-        "lt": (int, lt),
-        "gte": (int, gte),
-        "lte": (int, lte),
+        "gt": (int, operator.gt),
+        "lt": (int, operator.lt),
+        "gte": (int, operator.ge),
+        "lte": (int, operator.le),
     },
     Boolean: {
-        "__root__": (bool, exact),
+        "__root__": (bool, operator.eq),
     },
     String: {
-        "__root__": (str, exact),
+        "__root__": (str, operator.eq),
         "in": (list[str], in_),
         "like": (str, like),
         "ilike": (str, ilike),
@@ -168,7 +149,7 @@ class FilterMeta(PydanticMeta):
                     )
                 return lookups
             else:
-                return {"__root__": (field_type, exact)}
+                return {"__root__": (field_type, operator.eq)}
         else:
             return lookup_map[field_type]
 
