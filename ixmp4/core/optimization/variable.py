@@ -134,4 +134,6 @@ class VariableRepository(BaseFacade):
         ]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.variables.tabulate(name=name)
+        return self.backend.optimization.variables.tabulate(
+            run_id=self._run.id, name=name
+        )

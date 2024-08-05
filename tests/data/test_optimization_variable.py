@@ -297,8 +297,6 @@ class TestDataOptimizationVariable:
     def test_list_variable(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -320,11 +318,25 @@ class TestDataOptimizationVariable:
             name="Variable"
         )
 
+        # Test listing Variables for specific Run
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset"
+        )
+        variable_3 = test_mp.backend.optimization.variables.create(
+            run_id=run_2.id, name="Variable", constrained_to_indexsets=[indexset.name]
+        )
+        variable_4 = test_mp.backend.optimization.variables.create(
+            run_id=run_2.id, name="Variable 2", constrained_to_indexsets=[indexset.name]
+        )
+        assert [
+            variable_3,
+            variable_4,
+        ] == test_mp.backend.optimization.variables.list(run_id=run_2.id)
+
     def test_tabulate_variable(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
         indexset = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
         )
@@ -380,4 +392,20 @@ class TestDataOptimizationVariable:
         pd.testing.assert_frame_equal(
             df_from_list([variable, variable_2]),
             test_mp.backend.optimization.variables.tabulate(),
+        )
+
+        # Test tabulation of Variables for specific Run
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(
+            run_id=run_2.id, name="Indexset"
+        )
+        variable_3 = test_mp.backend.optimization.variables.create(
+            run_id=run_2.id, name="Variable", constrained_to_indexsets=[indexset.name]
+        )
+        variable_4 = test_mp.backend.optimization.variables.create(
+            run_id=run_2.id, name="Variable 2", constrained_to_indexsets=[indexset.name]
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([variable_3, variable_4]),
+            test_mp.backend.optimization.variables.tabulate(run_id=run_2.id),
         )
