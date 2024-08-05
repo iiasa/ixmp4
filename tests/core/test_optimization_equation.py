@@ -240,8 +240,6 @@ class TestCoreEquation:
     def test_list_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        run.set_as_default()
         _ = run.optimization.indexsets.create("Indexset")
         _ = run.optimization.indexsets.create("Indexset 2")
         equation = run.optimization.equations.create(
@@ -261,11 +259,22 @@ class TestCoreEquation:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
+        # Test listing Equations of specific Run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset = run_2.optimization.indexsets.create("Indexset")
+        equation_3 = run_2.optimization.equations.create(
+            "Equation", constrained_to_indexsets=[indexset.name]
+        )
+        equation_4 = run_2.optimization.equations.create(
+            "Equation 2", constrained_to_indexsets=[indexset.name]
+        )
+        expected_ids = [equation_3.id, equation_4.id]
+        list_ids = [equation.id for equation in run_2.optimization.equations.list()]
+        assert not (set(expected_ids) ^ set(list_ids))
+
     def test_tabulate_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        run.set_as_default()
         indexset = run.optimization.indexsets.create("Indexset")
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
         equation = run.optimization.equations.create(
@@ -301,6 +310,20 @@ class TestCoreEquation:
         pd.testing.assert_frame_equal(
             df_from_list([equation, equation_2]),
             run.optimization.equations.tabulate(),
+        )
+
+        # Test tabulating Equations of specific Run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset = run_2.optimization.indexsets.create("Indexset")
+        equation_3 = run_2.optimization.equations.create(
+            "Equation", constrained_to_indexsets=[indexset.name]
+        )
+        equation_4 = run_2.optimization.equations.create(
+            "Equation 2", constrained_to_indexsets=[indexset.name]
+        )
+        pd.testing.assert_frame_equal(
+            df_from_list([equation_3, equation_4]),
+            run_2.optimization.equations.tabulate(),
         )
 
     def test_equation_docs(self, test_mp, request):

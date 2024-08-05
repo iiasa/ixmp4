@@ -128,4 +128,6 @@ class EquationRepository(BaseFacade):
         ]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.equations.tabulate(name=name)
+        return self.backend.optimization.equations.tabulate(
+            run_id=self._run.id, name=name
+        )
