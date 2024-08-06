@@ -3,73 +3,12 @@ import pandas as pd
 import xarray as xr
 
 from ixmp4 import Platform
-from ixmp4.core import Run, Unit
 
-from ...utils import all_platforms
+from ...utils import all_platforms, create_dantzig_run
 from .dantzig_model_linopy import (
     create_dantzig_model,
     read_dantzig_solution,
 )
-
-
-def create_dantzig_run(mp: Platform) -> Run:
-    """Create a Run for the transport tutorial.
-
-    Please see the tutorial file for explanation.
-    """
-    # Only needed once for each mp
-    try:
-        cases = mp.units.get("cases")
-        km = mp.units.get("km")
-        unit_cost_per_case = mp.units.get("USD/km")
-    except Unit.NotFound:
-        cases = mp.units.create("cases")
-        km = mp.units.create("km")
-        unit_cost_per_case = mp.units.create("USD/km")
-
-    # Create run and all data sets
-    run = mp.runs.create(model="transport problem", scenario="standard")
-    a_data = {
-        "i": ["seattle", "san-diego"],
-        "values": [350, 600],
-        "units": [cases.name, cases.name],
-    }
-    b_data = pd.DataFrame(
-        [
-            ["new-york", 325, cases.name],
-            ["chicago", 300, cases.name],
-            ["topeka", 275, cases.name],
-        ],
-        columns=["j", "values", "units"],
-    )
-    d_data = {
-        "i": ["seattle", "seattle", "seattle", "san-diego", "san-diego", "san-diego"],
-        "j": ["new-york", "chicago", "topeka", "new-york", "chicago", "topeka"],
-        "values": [2.5, 1.7, 1.8, 2.5, 1.8, 1.4],
-        "units": [km.name] * 6,
-    }
-
-    # Add all data to the run
-    run.optimization.indexsets.create("i").add(["seattle", "san-diego"])
-    run.optimization.indexsets.create("j").add(["new-york", "chicago", "topeka"])
-    run.optimization.parameters.create(name="a", constrained_to_indexsets=["i"]).add(
-        data=a_data
-    )
-    run.optimization.parameters.create("b", constrained_to_indexsets=["j"]).add(
-        data=b_data
-    )
-    run.optimization.parameters.create("d", constrained_to_indexsets=["i", "j"]).add(
-        data=d_data
-    )
-    run.optimization.scalars.create(name="f", value=90, unit=unit_cost_per_case)
-
-    # Create further optimization items to store solution data
-    run.optimization.variables.create("z")
-    run.optimization.variables.create("x", constrained_to_indexsets=["i", "j"])
-    run.optimization.equations.create("supply", constrained_to_indexsets=["i"])
-    run.optimization.equations.create("demand", constrained_to_indexsets=["j"])
-
-    return run
 
 
 @all_platforms
