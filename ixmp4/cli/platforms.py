@@ -5,9 +5,11 @@ from typing import Generator, Optional
 
 import typer
 from rich.progress import Progress, track
+from sqlalchemy.exc import OperationalError
 
 from ixmp4.conf import settings
-from ixmp4.conf.manager import ManagerPlatformInfo
+from ixmp4.conf.auth import SelfSignedAuth
+from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
 from ixmp4.conf.toml import TomlPlatformInfo
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.core.platform import Platform
@@ -165,12 +167,24 @@ def list_():
     )
 )
 def upgrade():
-    for c in settings.toml.list_platforms():
-        if c.dsn.startswith("http"):
-            utils.echo(f"Skipping '{c.name}' because it is a REST platform.")
+    utils.echo(
+        f"Establishing self-signed admin connection to '{settings.manager_url}'."
+    )
+
+    manager_conf = ManagerConfig(
+        str(settings.manager_url), SelfSignedAuth(settings.secret_hs256), remote=False
+    )
+    for m in manager_conf.list_platforms():
+        if m.dsn.startswith("http"):
+            # This should probably never happen unless the manager registeres an
+            # external rest platform.
+            utils.echo(f"Skipping '{m.name}' because it is a REST platform.")
         else:
-            utils.echo(f"Upgrading platform '{c.name}' with dsn '{c.dsn}'...")
-            alembic.upgrade_database(c.dsn, "head")
+            utils.echo(f"Upgrading manager platform '{m.name}' with dsn '{m.dsn}'...")
+            try:
+                alembic.upgrade_database(m.dsn, "head")
+            except OperationalError as e:
+                utils.echo(f"Skipping '{m.name}' because of an error: {str(e)}")
 
 
 @app.command(
