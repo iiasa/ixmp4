@@ -18,22 +18,28 @@ jobs:
           - "16"
         pandas-version:
           - false
+        backends:
+          - "sqlite,rest-sqlite,postgres,rest-postgres"
         include:
           - python-version: "3.12"
             with-pyarrow: true
             postgres-version: "16"
             pandas-version: false
+            backends: "sqlite,rest-sqlite"
           - python-version: "3.12"
             with-pyarrow: false
             postgres-version: "15"
             pandas-version: false
+            backends: "postgres,rest-postgres"
           - python-version: "3.11"
             with-pyarrow: true
             postgres-version: "16"
+            backends: "sqlite,rest-sqlite"
             pandas-version: "2.1.3"
           - python-version: "3.10"
             with-pyarrow: true
             postgres-version: "16"
+            backends: "sqlite,rest-sqlite"
             pandas-version: "2.0.0"
 
 
@@ -120,7 +126,7 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest --cov-report xml:.coverage.xml --cov-report term --cov=ixmp4 -rsx --benchmark-skip
+          pytest --backend ${{ matrix.backends }} --cov-report xml:.coverage.xml --cov-report term --cov=ixmp4 -rsx --benchmark-skip
 
   pre-commit:
     name: Code quality
