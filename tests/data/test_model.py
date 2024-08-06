@@ -4,10 +4,13 @@ import pytest
 import ixmp4
 from ixmp4 import Model
 
-from ..utils import assert_unordered_equality, create_filter_test_data
+from ..fixtures import FilterIamcDataset
+from ..utils import assert_unordered_equality
 
 
 class TestDataModel:
+    filter = FilterIamcDataset()
+
     def test_create_model(self, platform: ixmp4.Platform):
         model = platform.backend.models.create("Model")
         assert model.name == "Model"
@@ -62,41 +65,41 @@ class TestDataModel:
         assert platform.backend.models.map() == {1: "Model 1", 2: "Model 2"}
 
     def test_filter_model(self, platform: ixmp4.Platform):
-        run1, _ = create_filter_test_data(platform)
+        run1, run2 = self.filter.load_dataset(platform)
+        run2.set_as_default()
 
         res = platform.backend.models.tabulate(name__like="Model *")
-        assert sorted(res["name"].tolist()) == ["Model 1", "Model 2", "Model 3"]
+        assert sorted(res["name"].tolist()) == ["Model 1", "Model 2"]
 
         res = platform.backend.models.tabulate(
             iamc={
                 "region": {"name": "Region 1"},
-                "run": {"default_only": False},
             }
         )
         assert sorted(res["name"].tolist()) == ["Model 1"]
 
         res = platform.backend.models.tabulate(
             iamc={
-                "region": {"name": "Region 3"},
-                "run": {"default_only": False},
+                "region": {"name__in": ["Region 1", "Region 2"]},
             }
         )
         assert sorted(res["name"].tolist()) == ["Model 1", "Model 2"]
 
-        run1.set_as_default()
+        run2.unset_as_default()
         res = platform.backend.models.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
+                "variable": {"name": "Variable 5"},
                 "unit": {"name__in": ["Unit 3", "Unit 4"]},
                 "run": {"default_only": True},
             }
         )
-        assert res["name"].tolist() == ["Model 2"]
+        assert res["name"].tolist() == []
 
         res = platform.backend.models.tabulate(
             iamc={
-                "run": {"default_only": False, "scenario": {"name": "Scenario 2"}},
+                "variable": {"name": "Variable 5"},
+                "unit": {"name__in": ["Unit 3", "Unit 4"]},
+                "run": {"default_only": False},
             }
         )
-
         assert sorted(res["name"].tolist()) == ["Model 2"]

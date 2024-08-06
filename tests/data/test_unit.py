@@ -4,10 +4,13 @@ import pytest
 import ixmp4
 from ixmp4 import Unit
 
-from ..utils import assert_unordered_equality, create_filter_test_data
+from ..fixtures import FilterIamcDataset
+from ..utils import assert_unordered_equality
 
 
 class TestDataUnit:
+    filter = FilterIamcDataset()
+
     def test_create_get_unit(self, platform: ixmp4.Platform):
         unit1 = platform.backend.units.create("Unit")
         assert unit1.name == "Unit"
@@ -69,10 +72,9 @@ class TestDataUnit:
         )
 
     def test_filter_unit(self, platform: ixmp4.Platform):
-        run1, run2 = create_filter_test_data(platform)
+        run1, run2 = self.filter.load_dataset(platform)
         res = platform.backend.units.tabulate(
             iamc={
-                "run": {"model": {"name": "Model 1"}},
                 "variable": {"name": "Variable 1"},
             }
         )
@@ -81,27 +83,26 @@ class TestDataUnit:
         run2.set_as_default()
         res = platform.backend.units.tabulate(
             iamc={
-                "run": {"model": {"name": "Model 1"}},
-                "variable": {"name": "Variable 1"},
+                "run": {"model": {"name": "Model 2"}},
             }
         )
         assert sorted(res["name"].tolist()) == ["Unit 3", "Unit 4"]
 
-        run1.set_as_default()
+        run2.unset_as_default()
         res = platform.backend.units.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "region": {"name__in": ["Region 5", "Region 6"]},
-                "run": {"model": {"name": "Model 1"}, "default_only": True},
+                "variable": {"name": "Variable 6"},
+                "region": {"name__in": ["Region 2", "Region 4"]},
+                "run": {"model": {"name": "Model 2"}, "default_only": True},
             }
         )
         assert res["name"].tolist() == []
 
         res = platform.backend.units.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "region": {"name__in": ["Region 5", "Region 6"]},
-                "run": {"model": {"name": "Model 1"}, "default_only": False},
+                "variable": {"name": "Variable 6"},
+                "region": {"name__in": ["Region 2", "Region 4"]},
+                "run": {"model": {"name": "Model 2"}, "default_only": False},
             }
         )
         assert sorted(res["name"].tolist()) == ["Unit 4"]

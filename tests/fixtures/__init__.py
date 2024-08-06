@@ -44,6 +44,38 @@ class SmallIamcDataset:
         datapoints["variable"] = "Variable 4"
         run2.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
         run2.meta = {"run": 2, "test": "string", "bool": False}
+        return run1, run2
+
+
+class FilterIamcDataset:
+    units = pd.read_csv(here / "filters/units.csv")
+    regions = pd.read_csv(here / "filters/regions.csv")
+    datapoints = pd.read_csv(here / "filters/datapoints.csv")
+
+    @classmethod
+    def load_regions(cls, platform: ixmp4.Platform):
+        for _, name, hierarchy in cls.regions.itertuples():
+            platform.regions.create(name, hierarchy)
+
+    @classmethod
+    def load_units(cls, platform: ixmp4.Platform):
+        for _, name in cls.units.itertuples():
+            platform.units.create(name)
+
+    @classmethod
+    def load_dataset(cls, platform: ixmp4.Platform):
+        cls.load_regions(platform)
+        cls.load_units(platform)
+
+        # create runs
+        run1 = platform.runs.create("Model 1", "Scenario 1")
+        run1.set_as_default()
+        run2 = platform.runs.create("Model 2", "Scenario 2")
+
+        dps = cls.datapoints.copy()
+        run1.iamc.add(dps[dps["model"] == "Model 1"], type=ixmp4.DataPoint.Type.ANNUAL)
+        run2.iamc.add(dps[dps["model"] == "Model 2"], type=ixmp4.DataPoint.Type.ANNUAL)
+        return run1, run2
 
 
 class BigIamcDataset:

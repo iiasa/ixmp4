@@ -4,10 +4,13 @@ import pytest
 import ixmp4
 from ixmp4 import Region
 
-from ..utils import assert_unordered_equality, create_filter_test_data
+from ..fixtures import FilterIamcDataset
+from ..utils import assert_unordered_equality
 
 
 class TestDataRegion:
+    filter = FilterIamcDataset()
+
     def test_create_region(self, platform: ixmp4.Platform):
         region1 = platform.backend.regions.create("Region", "Hierarchy")
         assert region1.name == "Region"
@@ -78,12 +81,12 @@ class TestDataRegion:
         )
 
     def test_filter_region(self, platform: ixmp4.Platform):
-        run1, run2 = create_filter_test_data(platform)
+        run1, run2 = self.filter.load_dataset(platform)
 
         res = platform.backend.regions.tabulate(
             iamc={
                 "run": {"model": {"name": "Model 1"}},
-                "variable": {"name": "Variable 1"},
+                "unit": {"name": "Unit 1"},
             }
         )
         assert sorted(res["name"].tolist()) == ["Region 1", "Region 3"]
@@ -91,34 +94,44 @@ class TestDataRegion:
         run2.set_as_default()
         res = platform.backend.regions.tabulate(
             iamc={
-                "run": {"model": {"name": "Model 1"}},
-                "variable": {"name": "Variable 1"},
+                "variable": {"name__in": ["Variable 3", "Variable 5"]},
             }
         )
-        assert sorted(res["name"].tolist()) == ["Region 3", "Region 5"]
+        assert sorted(res["name"].tolist()) == ["Region 2", "Region 3"]
 
-        run1.set_as_default()
+        run2.unset_as_default()
         res = platform.backend.regions.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "unit": {"name__in": ["Unit 3", "Unit 4"]},
-                "run": {"model": {"name": "Model 1"}, "default_only": True},
+                "variable": {"name__like": "Variable *"},
+                "unit": {"name__in": ["Unit 1", "Unit 3"]},
+                "run": {
+                    "model": {"name__in": ["Model 1", "Model 2"]},
+                    "default_only": True,
+                },
             }
         )
-        assert res["name"].tolist() == []
+        assert res["name"].tolist() == ["Region 1", "Region 3"]
 
         res = platform.backend.regions.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "unit": {"name__in": ["Unit 3", "Unit 4"]},
-                "run": {"model": {"name": "Model 1"}, "default_only": False},
+                "variable": {"name__like": "Variable *"},
+                "unit": {"name__in": ["Unit 1", "Unit 3"]},
+                "run": {
+                    "model": {"name__in": ["Model 1", "Model 2"]},
+                    "default_only": False,
+                },
             }
         )
-        assert sorted(res["name"].tolist()) == ["Region 3", "Region 5"]
+        assert sorted(res["name"].tolist()) == [
+            "Region 1",
+            "Region 2",
+            "Region 3",
+            "Region 4",
+        ]
 
         res = platform.backend.regions.tabulate(iamc=False)
 
-        assert res["name"].tolist() == ["Region 7"]
+        assert res["name"].tolist() == ["Region 5"]
 
         res = platform.backend.regions.tabulate()
 
@@ -128,6 +141,4 @@ class TestDataRegion:
             "Region 3",
             "Region 4",
             "Region 5",
-            "Region 6",
-            "Region 7",
         ]

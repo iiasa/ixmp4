@@ -4,10 +4,13 @@ import pytest
 import ixmp4
 from ixmp4 import Scenario
 
-from ..utils import assert_unordered_equality, create_filter_test_data
+from ..fixtures import FilterIamcDataset
+from ..utils import assert_unordered_equality
 
 
 class TestDataScenario:
+    filter = FilterIamcDataset()
+
     def test_create_scenario(self, platform: ixmp4.Platform):
         scenario = platform.backend.scenarios.create("Scenario")
         assert scenario.name == "Scenario"
@@ -64,7 +67,7 @@ class TestDataScenario:
         assert platform.backend.scenarios.map() == {1: "Scenario 1", 2: "Scenario 2"}
 
     def test_filter_scenario(self, platform: ixmp4.Platform):
-        run1, _ = create_filter_test_data(platform)
+        run1, run2 = self.filter.load_dataset(platform)
 
         res = platform.backend.scenarios.tabulate(
             iamc={
@@ -76,21 +79,19 @@ class TestDataScenario:
 
         res = platform.backend.scenarios.tabulate(
             iamc={
-                "region": {"name": "Region 3"},
+                "region": {"name__in": ["Region 2", "Region 3"]},
                 "run": {"default_only": False},
             }
         )
         assert sorted(res["name"].tolist()) == ["Scenario 1", "Scenario 2"]
 
-        run1.set_as_default()
         res = platform.backend.scenarios.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "unit": {"name__in": ["Unit 3", "Unit 4"]},
+                "unit": {"name__in": ["Unit 2", "Unit 4"]},
                 "run": {"default_only": True},
             }
         )
-        assert res["name"].tolist() == ["Scenario 2"]
+        assert res["name"].tolist() == ["Scenario 1"]
 
         res = platform.backend.scenarios.tabulate(
             iamc={
