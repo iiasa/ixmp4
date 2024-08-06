@@ -176,7 +176,7 @@ def upgrade():
     )
     for m in manager_conf.list_platforms():
         if m.dsn.startswith("http"):
-            # This should probably never happen unless the manager registeres an
+            # This should probably never happen unless the manager registers an
             # external rest platform.
             utils.echo(f"Skipping '{m.name}' because it is a REST platform.")
         else:
