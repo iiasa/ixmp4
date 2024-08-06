@@ -2,7 +2,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4 import IndexSet
+from ixmp4 import IndexSet, Platform
 
 from ..utils import all_platforms
 
@@ -36,7 +36,7 @@ def df_from_list(indexsets: list[IndexSet]):
 @all_platforms
 class TestCoreIndexSet:
     def test_create_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         assert indexset_1.id == 1
@@ -49,8 +49,9 @@ class TestCoreIndexSet:
             _ = run.optimization.indexsets.create("IndexSet 1")
 
     def test_get_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
+        run.set_as_default()
         _ = run.optimization.indexsets.create("IndexSet 1")
         indexset = run.optimization.indexsets.get("IndexSet 1")
         assert indexset.id == 1
@@ -60,7 +61,7 @@ class TestCoreIndexSet:
             _ = run.optimization.indexsets.get("Foo")
 
     def test_add_elements(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
@@ -88,10 +89,8 @@ class TestCoreIndexSet:
         assert indexset_5.elements == test_elements_2
 
     def test_list_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, list() lists only `default` version runs:
-        run.set_as_default()
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
         expected_ids = [indexset_1.id, indexset_2.id]
@@ -106,11 +105,17 @@ class TestCoreIndexSet:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
+        # Test that only indexsets belonging to this Run are listed
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset_3 = run_2.optimization.indexsets.create("Indexset 1")
+        indexset_4 = run_2.optimization.indexsets.create("Indexset 2")
+        expected_ids = [indexset_3.id, indexset_4.id]
+        list_ids = [indexset.id for indexset in run_2.optimization.indexsets.list()]
+        assert not (set(expected_ids) ^ set(list_ids))
+
     def test_tabulate_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists only `default` version runs:
-        run.set_as_default()
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
         indexset_2 = run.optimization.indexsets.create("Indexset 2")
         expected = df_from_list(indexsets=[indexset_1, indexset_2])
@@ -123,8 +128,18 @@ class TestCoreIndexSet:
         result = run.optimization.indexsets.tabulate(name="Indexset 2")
         pdt.assert_frame_equal(expected, result)
 
+        # Test that only IndexSets belonging to this Run are tabulated
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset_3 = run_2.optimization.indexsets.create("Indexset 1")
+        indexset_4 = run_2.optimization.indexsets.create("Indexset 2")
+        expected = df_from_list(indexsets=[indexset_3, indexset_4])
+        result = run_2.optimization.indexsets.tabulate()
+        # utils.assert_unordered_equality doesn't like lists, so make sure the order in
+        # df_from_list() is correct!
+        pdt.assert_frame_equal(expected, result)
+
     def test_indexset_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         docs = "Documentation of IndexSet 1"

@@ -2,7 +2,6 @@
 This module holds a shared datastructure and interface for normalization
 between the database and api data models and repositories.
 """
-# flake8: noqa
 
 from .base import (
     BaseMeta,
@@ -30,13 +29,21 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 from .meta import MetaValue, RunMetaEntry, RunMetaEntryRepository, StrictMetaValue
 from .model import Model, ModelRepository
 from .optimization import (
+    Equation,
+    EquationRepository,
     IndexSet,
     IndexSetRepository,
+    Parameter,
+    ParameterRepository,
     Scalar,
     ScalarRepository,
     Table,
     TableRepository,
 )
+
+# TODO for PR: avoiding name conflict here Is that okay?
+from .optimization import Variable as OptimizationVariable
+from .optimization import VariableRepository as OptimizationVariableRepository
 from .region import Region, RegionRepository
 from .run import Run, RunRepository
 from .scenario import Scenario, ScenarioRepository

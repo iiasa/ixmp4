@@ -20,13 +20,21 @@ from .model import Model, ModelRepository
 from .optimization import (
     Column,
     ColumnRepository,
+    Equation,
+    EquationRepository,
     IndexSet,
     IndexSetRepository,
+    Parameter,
+    ParameterRepository,
     Scalar,
     ScalarRepository,
     Table,
     TableRepository,
 )
+
+# TODO for PR: avoiding name conflict here Is that okay?
+from .optimization import Variable as OptimizationVariable
+from .optimization import VariableRepository as OptimizationVariableRepository
 from .region import Region, RegionRepository
 from .run import Run, RunRepository
 from .scenario import Scenario, ScenarioRepository

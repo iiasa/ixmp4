@@ -14,7 +14,10 @@ class Column(base.BaseModel):
     id: int
     name: str
     dtype: str
-    table__id: int
+    equation__id: int | None
+    parameter__id: int | None
+    table__id: int | None
+    variable__id: int | None
     indexset: IndexSet
     constrained_to_indexset: int
     unique: bool

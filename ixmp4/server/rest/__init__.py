@@ -17,7 +17,12 @@ from .iamc import scenario as iamc_scenario
 from .iamc import unit as iamc_unit
 from .iamc import variable as iamc_variable
 from .middleware import RequestSizeLoggerMiddleware, RequestTimeLoggerMiddleware
-from .optimization import indexset, scalar, table
+from .optimization import equation as optimization_equation
+from .optimization import indexset as optimization_indexset
+from .optimization import parameter as optimization_parameter
+from .optimization import scalar as optimization_scalar
+from .optimization import table as optimization_table
+from .optimization import variable as optimization_variable
 
 v1 = FastAPI(
     servers=[{"url": "/v1", "description": "v1"}],
@@ -45,14 +50,17 @@ v1.include_router(iamc_scenario.router, prefix="/iamc")
 v1.include_router(iamc_region.router, prefix="/iamc")
 v1.include_router(iamc_unit.router, prefix="/iamc")
 v1.include_router(iamc_variable.router, prefix="/iamc")
-v1.include_router(indexset.router, prefix="/optimization")
 v1.include_router(meta.router)
 v1.include_router(model.router)
+v1.include_router(optimization_equation.router, prefix="/optimization")
+v1.include_router(optimization_indexset.router, prefix="/optimization")
+v1.include_router(optimization_parameter.router, prefix="/optimization")
+v1.include_router(optimization_scalar.router, prefix="/optimization")
+v1.include_router(optimization_table.router, prefix="/optimization")
+v1.include_router(optimization_variable.router, prefix="/optimization")
 v1.include_router(region.router)
 v1.include_router(run.router)
-v1.include_router(scalar.router, prefix="/optimization")
 v1.include_router(scenario.router)
-v1.include_router(table.router, prefix="/optimization")
 v1.include_router(timeseries.router, prefix="/iamc")
 v1.include_router(unit.router)
 

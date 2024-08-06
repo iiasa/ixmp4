@@ -237,3 +237,75 @@ def delete_tables(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.tables.docs.delete(dimension_id)
+
+
+@router.get("/optimization/parameters/", response_model=list[api.Docs])
+def list_parameters(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.parameters.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/parameters/", response_model=api.Docs)
+def set_parameters(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.parameters.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/parameters/{dimension_id}/")
+def delete_parameters(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.parameters.docs.delete(dimension_id)
+
+
+@router.get("/optimization/variables/", response_model=list[api.Docs])
+def list_optimization_variables(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.variables.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/variables/", response_model=api.Docs)
+def set_optimization_variables(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.variables.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/variables/{dimension_id}/")
+def delete_optimization_variables(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.variables.docs.delete(dimension_id)
+
+
+@router.get("/optimization/equations/", response_model=list[api.Docs])
+def list_equations(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.equations.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/equations/", response_model=api.Docs)
+def set_equations(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.equations.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/equations/{dimension_id}/")
+def delete_equations(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.equations.docs.delete(dimension_id)
