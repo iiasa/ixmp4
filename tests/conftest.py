@@ -1,3 +1,8 @@
+import cProfile
+import pstats
+from contextlib import contextmanager
+from pathlib import Path
+
 import pytest
 
 from ixmp4 import Platform
@@ -82,23 +87,6 @@ from ixmp4.data.backend.db import PostgresTestBackend
 # def test_data_annual():
 #     df = TEST_DF_ANNUAL.copy()
 #     return df
-
-
-# @pytest.fixture(scope="function")
-# def profiled(request):
-#     testname = request.node.name
-#     pr = cProfile.Profile()
-
-#     @contextlib.contextmanager
-#     def profiled():
-#         pr.enable()
-#         yield
-#         pr.disable()
-
-#     yield profiled
-#     ps = pstats.Stats(pr)
-#     Path(".profiles").mkdir(parents=True, exist_ok=True)
-#     ps.dump_stats(f".profiles/{testname}.prof")
 
 
 # @pytest.fixture
@@ -274,3 +262,20 @@ def pytest_generate_tests(metafunc):
             ["sqlite"] if run_sqlite else [],
             indirect=True,
         )
+
+
+@pytest.fixture(scope="function")
+def profiled(request):
+    testname = request.node.name
+    pr = cProfile.Profile()
+
+    @contextmanager
+    def profiled():
+        pr.enable()
+        yield
+        pr.disable()
+
+    yield profiled
+    ps = pstats.Stats(pr)
+    Path(".profiles").mkdir(parents=True, exist_ok=True)
+    ps.dump_stats(f".profiles/{testname}.prof")
