@@ -35,32 +35,6 @@ filter_dataset = FilterIamcDataset()
     ],
 )
 def test_filtering(platform: ixmp4.Platform, filter, exp_filter):
-    # # preparing wthe data
-    # test_data_columns = ["region", "variable", "unit", "step_year", "value"]
-    # test_data = [
-    #     pd.DataFrame(
-    #         [
-    #             ["World", "Primary Energy", "EJ/yr", 2005, 1.0],
-    #         ],
-    #         columns=test_data_columns,
-    #     ),
-    #     pd.DataFrame(
-    #         [
-    #             ["Europe", "Efficiency", "%", 2010, 60.0],
-    #         ],
-    #         columns=test_data_columns,
-    #     ),
-    # ]
-
-    # for i, data in enumerate(test_data):
-    #     data["type"] = "ANNUAL"
-    #     add_regions(platform, data.region.unique())
-    #     add_units(platform, data.unit.unique())
-    #     # add the data for two different models to test filtering
-    #     run = platform.runs.create(f"model_{i + 1}", f"scen_{i + 1}")
-    #     run.iamc.add(data)
-    #     run.set_as_default()
-
     run1, run2 = filter_dataset.load_dataset(platform)
     run2.set_as_default()
     obs = platform.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
