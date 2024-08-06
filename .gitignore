@@ -46,3 +46,5 @@ PR.md
 # tutorial/gams
 tutorial/transport/*.gdx
 tutorial/transport/*.lst
+tests/tutorial/transport/*.gdx
+tests/tutorial/transport/*.lst
