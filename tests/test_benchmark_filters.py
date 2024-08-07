@@ -1,9 +1,12 @@
 import pytest
 
-from .utils import generated_platforms
+import ixmp4
+
+from .fixtures import BigIamcDataset
+
+big = BigIamcDataset()
 
 
-@generated_platforms
 @pytest.mark.parametrize(
     "filters",
     [
@@ -31,14 +34,18 @@ from .utils import generated_platforms
     ],
 )
 def test_filter_datapoints_benchmark(
-    generated_mp, profiled, benchmark, filters, request
+    platform: ixmp4.Platform, profiled, benchmark, filters
 ):
     """Benchmarks a the filtration of `test_data_big`."""
-    generated_mp = request.getfixturevalue(generated_mp)
+
+    big.load_regions(platform)
+    big.load_units(platform)
+    big.load_runs(platform)
+    big.load_datapoints(platform)
 
     def run():
         with profiled():
-            return generated_mp.iamc.tabulate(**filters)
+            return platform.iamc.tabulate(**filters)
 
     df = benchmark.pedantic(run, warmup_rounds=5, rounds=10)
     assert not df.empty

@@ -85,11 +85,7 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def tabulate(
-        self,
-        *,
-        name: str | None = None,
-    ) -> pd.DataFrame:
+    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
         """Tabulate scenarios by specified criteria.
 
         Parameters

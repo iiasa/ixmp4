@@ -15,7 +15,7 @@ def toml_config() -> TomlConfig:
     tmp = tempfile.NamedTemporaryFile()
     with tmp:
         config = TomlConfig(Path(tmp.name), local_user)
-        yield config
+        return config
 
 
 class HasPath(Protocol):
@@ -69,7 +69,7 @@ def credentials() -> Credentials:
     tmp = tempfile.NamedTemporaryFile()
     with tmp:
         credentials = Credentials(Path(tmp.name))
-        yield credentials
+        return credentials
 
 
 class TestTomlCredentials(TomlTest):

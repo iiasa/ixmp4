@@ -2,14 +2,18 @@ from functools import reduce
 
 import pytest
 
-from ..utils import generated_db_platforms
+import ixmp4
+
+from ..fixtures import BigIamcDataset
 
 
 def deepgetattr(obj, attr):
     return reduce(getattr, attr.split("."), obj)
 
 
-@generated_db_platforms
+big = BigIamcDataset()
+
+
 @pytest.mark.parametrize(
     "repo_name,filters",
     [
@@ -75,7 +79,7 @@ def deepgetattr(obj, attr):
         ],
     ],
 )
-def test_count(generated_mp, repo_name, filters, request):
-    generated_mp = request.getfixturevalue(generated_mp)
-    repo = deepgetattr(generated_mp.backend, repo_name)
+def test_count(db_platform: ixmp4.Platform, repo_name, filters):
+    big.load_dataset(db_platform)
+    repo = deepgetattr(db_platform.backend, repo_name)
     assert len(repo.list(**filters)) == repo.count(**filters)

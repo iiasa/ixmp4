@@ -2,9 +2,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+import ixmp4
 from ixmp4 import IndexSet
-
-from ..utils import all_platforms
 
 
 def df_from_list(indexsets: list[IndexSet]):
@@ -33,11 +32,9 @@ def df_from_list(indexsets: list[IndexSet]):
     )
 
 
-@all_platforms
 class TestCoreIndexSet:
-    def test_create_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_create_indexset(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         assert indexset_1.id == 1
         assert indexset_1.name == "IndexSet 1"
@@ -48,9 +45,8 @@ class TestCoreIndexSet:
         with pytest.raises(IndexSet.NotUnique):
             _ = run.optimization.indexsets.create("IndexSet 1")
 
-    def test_get_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_get_indexset(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         _ = run.optimization.indexsets.create("IndexSet 1")
         indexset = run.optimization.indexsets.get("IndexSet 1")
         assert indexset.id == 1
@@ -59,13 +55,13 @@ class TestCoreIndexSet:
         with pytest.raises(IndexSet.NotFound):
             _ = run.optimization.indexsets.get("Foo")
 
-    def test_add_elements(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_add_elements(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
-        indexset_1.add(test_elements)
-        run.optimization.indexsets.create("IndexSet 2").add(test_elements)
+        # there is some typing issue with the opt api here
+        indexset_1.add(test_elements)  # type: ignore
+        run.optimization.indexsets.create("IndexSet 2").add(test_elements)  # type: ignore
         indexset_2 = run.optimization.indexsets.get("IndexSet 2")
         assert indexset_1.elements == indexset_2.elements
 
@@ -84,12 +80,11 @@ class TestCoreIndexSet:
 
         test_elements_2 = ["One", 2, 3.141]
         indexset_5 = run.optimization.indexsets.create("IndexSet 5")
-        indexset_5.add(test_elements_2)
+        indexset_5.add(test_elements_2)  # type: ignore
         assert indexset_5.elements == test_elements_2
 
-    def test_list_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_list_indexsets(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         # Per default, list() lists only `default` version runs:
         run.set_as_default()
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
@@ -106,9 +101,8 @@ class TestCoreIndexSet:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_tabulate_indexsets(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         # Per default, tabulate() lists only `default` version runs:
         run.set_as_default()
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
@@ -123,9 +117,8 @@ class TestCoreIndexSet:
         result = run.optimization.indexsets.tabulate(name="Indexset 2")
         pdt.assert_frame_equal(expected, result)
 
-    def test_indexset_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_indexset_docs(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("IndexSet 1")
         docs = "Documentation of IndexSet 1"
         indexset_1.docs = docs

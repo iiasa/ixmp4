@@ -96,6 +96,7 @@ class ModelRepository(
         self,
         *,
         name: str | None = None,
+        **kwargs,
     ) -> pd.DataFrame:
         """Tabulate models by specified criteria.
 
