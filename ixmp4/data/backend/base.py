@@ -1,8 +1,11 @@
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.data.abstract import (
     DataPointRepository,
+    EquationRepository,
     IndexSetRepository,
     ModelRepository,
+    OptimizationVariableRepository,
+    ParameterRepository,
     RegionRepository,
     RunMetaEntryRepository,
     RunRepository,
@@ -22,9 +25,12 @@ class IamcSubobject(object):
 
 
 class OptimizationSubobject(object):
+    equations: EquationRepository
     indexsets: IndexSetRepository
+    parameters: ParameterRepository
     scalars: ScalarRepository
     tables: TableRepository
+    variables: OptimizationVariableRepository
 
 
 class Backend(object):

@@ -60,10 +60,10 @@ class TableRepository(
             run_id=run_id, name=indexset_name
         )
         self.columns.create(
-            table_id=table_id,
             name=column_name,
-            dtype=pd.Series(indexset.elements).dtype.name,
             constrained_to_indexset=indexset.id,
+            dtype=pd.Series(indexset.elements).dtype.name,
+            table_id=table_id,
             unique=True,
             **kwargs,
         )

@@ -1,7 +1,5 @@
 from typing import ClassVar
 
-from sqlalchemy.orm import Mapped as Mapped
-
 from ixmp4.data import abstract, types
 from ixmp4.data.db import mixins
 
