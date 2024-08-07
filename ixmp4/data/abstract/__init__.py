@@ -2,7 +2,6 @@
 This module holds a shared datastructure and interface for normalization
 between the database and api data models and repositories.
 """
-# flake8: noqa
 
 from .base import (
     BaseMeta,
@@ -30,6 +29,7 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 from .meta import MetaValue, RunMetaEntry, RunMetaEntryRepository, StrictMetaValue
 from .model import Model, ModelRepository
 from .optimization import (
+    BackendBaseRepository,
     IndexSet,
     IndexSetRepository,
     Scalar,

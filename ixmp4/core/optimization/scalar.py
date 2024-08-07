@@ -1,13 +1,12 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import ClassVar
 
-import pandas as pd
-
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.core.base import BaseModelFacade
 from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
+
+from .base import Lister, Retriever, Tabulator
 
 
 class Scalar(BaseModelFacade):
@@ -93,12 +92,11 @@ class Scalar(BaseModelFacade):
         return f"<Scalar {self.id} name={self.name}>"
 
 
-class ScalarRepository(BaseFacade):
-    _run: Run
-
-    def __init__(self, _run: Run, *args, **kwargs) -> None:
+class ScalarRepository(Retriever[Scalar], Lister[Scalar], Tabulator[Scalar]):
+    def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
-        self._run = _run
+        self._backend_repository = self.backend.optimization.scalars
+        self._model_type = Scalar
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
         if isinstance(unit, Unit):
@@ -121,20 +119,3 @@ class ScalarRepository(BaseFacade):
                 "run.optimization.scalars.update()?"
             ) from e
         return Scalar(_backend=self.backend, _model=model)
-
-    def get(self, name: str) -> Scalar:
-        model = self.backend.optimization.scalars.get(run_id=self._run.id, name=name)
-        return Scalar(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> Iterable[Scalar]:
-        scalars = self.backend.optimization.scalars.list(run_id=self._run.id, name=name)
-        return [
-            Scalar(
-                _backend=self.backend,
-                _model=i,
-            )
-            for i in scalars
-        ]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.scalars.tabulate(name=name)
