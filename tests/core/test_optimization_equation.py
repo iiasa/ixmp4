@@ -2,9 +2,9 @@ import pandas as pd
 import pytest
 
 from ixmp4 import Platform
-from ixmp4.core import Equation
+from ixmp4.core import Equation, IndexSet
 
-from ..utils import all_platforms
+from ..utils import all_platforms, create_indexsets_for_run
 
 
 def df_from_list(equations: list):
@@ -38,38 +38,41 @@ class TestCoreEquation:
         run = test_mp.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset_1 = run.optimization.indexsets.create("Indexset")
+        indexset, indexset_2 = tuple(
+            IndexSet(_backend=test_mp.backend, _model=model)
+            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+        )
         equation = run.optimization.equations.create(
             name="Equation",
-            constrained_to_indexsets=["Indexset"],
+            constrained_to_indexsets=[indexset.name],
         )
 
         assert equation.run_id == run.id
         assert equation.name == "Equation"
         assert equation.data == {}  # JsonDict type currently requires a dict, not None
-        assert equation.columns[0].name == "Indexset"
-        assert equation.constrained_to_indexsets == [indexset_1.name]
+        assert equation.columns[0].name == indexset.name
+        assert equation.constrained_to_indexsets == [indexset.name]
         assert equation.levels == []
         assert equation.marginals == []
 
         # Test duplicate name raises
         with pytest.raises(Equation.NotUnique):
             _ = run.optimization.equations.create(
-                "Equation", constrained_to_indexsets=["Indexset"]
+                "Equation", constrained_to_indexsets=[indexset.name]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
             _ = run.optimization.equations.create(
                 "Equation 2",
-                constrained_to_indexsets=["Indexset"],
+                constrained_to_indexsets=[indexset.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
         equation_2 = run.optimization.equations.create(
             "Equation 2",
-            constrained_to_indexsets=[indexset_1.name],
+            constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
         assert equation_2.columns[0].name == "Column 1"
@@ -78,16 +81,15 @@ class TestCoreEquation:
         with pytest.raises(ValueError, match="`column_names` are not unique"):
             _ = run.optimization.equations.create(
                 name="Equation 3",
-                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+                constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
 
         # Test column.dtype is registered correctly
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
         indexset_2.add(elements=2024)
         equation_3 = run.optimization.equations.create(
             "Equation 5",
-            constrained_to_indexsets=["Indexset", indexset_2.name],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         # If indexset doesn't have elements, a generic dtype is registered
         assert equation_3.columns[0].dtype == "object"
@@ -96,9 +98,11 @@ class TestCoreEquation:
     def test_get_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create("Indexset")
+        (indexset,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run.id, amount=1
+        )
         _ = run.optimization.equations.create(
-            name="Equation", constrained_to_indexsets=["Indexset"]
+            name="Equation", constrained_to_indexsets=[indexset.name]
         )
         equation = run.optimization.equations.get(name="Equation")
         assert equation.run_id == run.id
@@ -116,9 +120,11 @@ class TestCoreEquation:
     def test_equation_add_data(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        indexset_1 = run.optimization.indexsets.create("Indexset")
-        indexset_1.add(elements=["foo", "bar", ""])
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset, indexset_2 = tuple(
+            IndexSet(_backend=test_mp.backend, _model=model)
+            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+        )
+        indexset.add(elements=["foo", "bar", ""])
         indexset_2.add(elements=[1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -126,14 +132,14 @@ class TestCoreEquation:
         # "ValueError: If using all scalar values, you must pass an index" and
         # reraise a custom informative error?
         test_data_1 = {
-            "Indexset": ["foo"],
-            "Indexset 2": [1],
+            indexset.name: ["foo"],
+            indexset_2.name: [1],
             "levels": [3.14],
             "marginals": [0.000314],
         }
         equation = run.optimization.equations.create(
             "Equation",
-            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         equation.add(data=test_data_1)
         assert equation.data == test_data_1
@@ -142,7 +148,7 @@ class TestCoreEquation:
 
         equation_2 = run.optimization.equations.create(
             name="Equation 2",
-            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
 
         with pytest.raises(
@@ -151,8 +157,8 @@ class TestCoreEquation:
             equation_2.add(
                 pd.DataFrame(
                     {
-                        "Indexset": [None],
-                        "Indexset 2": [2],
+                        indexset.name: [None],
+                        indexset_2.name: [2],
                         "levels": [1],
                     }
                 ),
@@ -164,8 +170,8 @@ class TestCoreEquation:
             equation_2.add(
                 data=pd.DataFrame(
                     {
-                        "Indexset": [None],
-                        "Indexset 2": [2],
+                        indexset.name: [None],
+                        indexset_2.name: [2],
                         "marginals": [0],
                     }
                 ),
@@ -176,8 +182,8 @@ class TestCoreEquation:
         with pytest.raises(ValueError, match="All arrays must be of the same length"):
             equation_2.add(
                 data={
-                    "Indexset": ["foo", "foo"],
-                    "Indexset 2": [2, 2],
+                    indexset.name: ["foo", "foo"],
+                    indexset_2.name: [2, 2],
                     "levels": [1, 2],
                     "marginals": [3],
                 },
@@ -186,8 +192,8 @@ class TestCoreEquation:
         with pytest.raises(ValueError, match="contains duplicate rows"):
             equation_2.add(
                 data={
-                    "Indexset": ["foo", "foo"],
-                    "Indexset 2": [2, 2],
+                    indexset.name: ["foo", "foo"],
+                    indexset_2.name: [2, 2],
                     "levels": [1, 2],
                     "marginals": [3.4, 5.6],
                 },
@@ -195,8 +201,8 @@ class TestCoreEquation:
 
         # Test that order is conserved
         test_data_2 = {
-            "Indexset": ["", "", "foo", "foo", "bar", "bar"],
-            "Indexset 2": [3, 1, 2, 1, 2, 3],
+            indexset.name: ["", "", "foo", "foo", "bar", "bar"],
+            indexset_2.name: [3, 1, 2, 1, 2, 3],
             "levels": [6, 5, 4, 3, 2, 1],
             "marginals": [1, 3, 5, 6, 4, 2],
         }
@@ -208,7 +214,7 @@ class TestCoreEquation:
         # Test order is conserved with varying types and upon later addition of data
         equation_3 = run.optimization.equations.create(
             name="Equation 3",
-            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
 
@@ -240,13 +246,12 @@ class TestCoreEquation:
     def test_list_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        _ = run.optimization.indexsets.create("Indexset")
-        _ = run.optimization.indexsets.create("Indexset 2")
+        indexset, indexset_2 = create_indexsets_for_run(platform=test_mp, run_id=run.id)
         equation = run.optimization.equations.create(
-            "Equation", constrained_to_indexsets=["Indexset"]
+            "Equation", constrained_to_indexsets=[indexset.name]
         )
         equation_2 = run.optimization.equations.create(
-            "Equation 2", constrained_to_indexsets=["Indexset 2"]
+            "Equation 2", constrained_to_indexsets=[indexset_2.name]
         )
         expected_ids = [equation.id, equation_2.id]
         list_ids = [equation.id for equation in run.optimization.equations.list()]
@@ -261,7 +266,9 @@ class TestCoreEquation:
 
         # Test listing Equations of specific Run
         run_2 = test_mp.runs.create("Model", "Scenario")
-        indexset = run_2.optimization.indexsets.create("Indexset")
+        (indexset,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, amount=1
+        )
         equation_3 = run_2.optimization.equations.create(
             "Equation", constrained_to_indexsets=[indexset.name]
         )
@@ -275,15 +282,17 @@ class TestCoreEquation:
     def test_tabulate_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create("Indexset")
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset, indexset_2 = tuple(
+            IndexSet(_backend=test_mp.backend, _model=model)
+            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+        )
         equation = run.optimization.equations.create(
             name="Equation",
-            constrained_to_indexsets=["Indexset", "Indexset 2"],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         equation_2 = run.optimization.equations.create(
             name="Equation 2",
-            constrained_to_indexsets=["Indexset", "Indexset 2"],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         pd.testing.assert_frame_equal(
             df_from_list([equation_2]),
@@ -293,16 +302,16 @@ class TestCoreEquation:
         indexset.add(elements=["foo", "bar"])
         indexset_2.add(elements=[1, 2, 3])
         test_data_1 = {
-            "Indexset": ["foo"],
-            "Indexset 2": [1],
+            indexset.name: ["foo"],
+            indexset_2.name: [1],
             "levels": [314],
             "marginals": [2.0],
         }
         equation.add(data=test_data_1)
 
         test_data_2 = {
-            "Indexset 2": [2, 3],
-            "Indexset": ["foo", "bar"],
+            indexset_2.name: [2, 3],
+            indexset.name: ["foo", "bar"],
             "levels": [1, -2.0],
             "marginals": [0, 10],
         }
@@ -314,7 +323,9 @@ class TestCoreEquation:
 
         # Test tabulating Equations of specific Run
         run_2 = test_mp.runs.create("Model", "Scenario")
-        indexset = run_2.optimization.indexsets.create("Indexset")
+        (indexset,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, amount=1
+        )
         equation_3 = run_2.optimization.equations.create(
             "Equation", constrained_to_indexsets=[indexset.name]
         )
@@ -329,7 +340,12 @@ class TestCoreEquation:
     def test_equation_docs(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create("Indexset")
+        (indexset,) = tuple(
+            IndexSet(_backend=test_mp.backend, _model=model)
+            for model in create_indexsets_for_run(
+                platform=test_mp, run_id=run.id, amount=1
+            )
+        )
         equation_1 = run.optimization.equations.create(
             "Equation 1", constrained_to_indexsets=[indexset.name]
         )
