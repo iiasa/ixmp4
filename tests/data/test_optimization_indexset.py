@@ -2,7 +2,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4 import IndexSet
+from ixmp4.core import IndexSet, Platform
 
 from ..utils import all_platforms
 
@@ -36,7 +36,7 @@ def df_from_list(indexsets: list):
 @all_platforms
 class TestDataOptimizationIndexSet:
     def test_create_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -51,7 +51,7 @@ class TestDataOptimizationIndexSet:
             )
 
     def test_get_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         _ = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -69,7 +69,7 @@ class TestDataOptimizationIndexSet:
             )
 
     def test_list_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 1"
@@ -95,7 +95,7 @@ class TestDataOptimizationIndexSet:
         )
 
     def test_tabulate_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset 1"
@@ -140,7 +140,7 @@ class TestDataOptimizationIndexSet:
         )
 
     def test_add_elements(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         test_elements = ["foo", "bar"]
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(

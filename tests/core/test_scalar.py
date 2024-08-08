@@ -107,6 +107,11 @@ class TestCoreScalar:
             "Scalar 1", value=1, unit="Test Unit"
         )
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        # Create scalar in another run to test listing scalars for specific run
+        test_mp.runs.create("Model", "Scenario").optimization.scalars.create(
+            "Scalar 1", value=1, unit=unit
+        )
+
         expected_ids = [scalar_1.id, scalar_2.id]
         list_ids = [scalar.id for scalar in run.optimization.scalars.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -118,42 +123,23 @@ class TestCoreScalar:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-        # Test that only Scalars belonging to this Run are listed
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        scalar_3 = run_2.optimization.scalars.create(
-            "Scalar 1", value=1, unit="Test Unit"
-        )
-        scalar_4 = run_2.optimization.scalars.create(
-            "Scalar 2", value=2, unit=unit.name
-        )
-        expected_ids = [scalar_3.id, scalar_4.id]
-        list_ids = [scalar.id for scalar in run_2.optimization.scalars.list()]
-        assert not (set(expected_ids) ^ set(list_ids))
-
     def test_tabulate_scalars(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         unit = test_mp.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create("Scalar 1", value=1, unit=unit.name)
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        # Create scalar in another run to test tabulating scalars for specific run
+        test_mp.runs.create("Model", "Scenario").optimization.scalars.create(
+            "Scalar 1", value=1, unit=unit
+        )
+
         expected = df_from_list(scalars=[scalar_1, scalar_2])
         result = run.optimization.scalars.tabulate()
         assert_unordered_equality(expected, result, check_dtype=False)
 
         expected = df_from_list(scalars=[scalar_2])
         result = run.optimization.scalars.tabulate(name="Scalar 2")
-        assert_unordered_equality(expected, result, check_dtype=False)
-
-        # Test that only Scalars belonging to this Run are tabulated
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        scalar_3 = run_2.optimization.scalars.create(
-            "Scalar 1", value=1, unit=unit.name
-        )
-        scalar_4 = run_2.optimization.scalars.create(
-            "Scalar 2", value=2, unit=unit.name
-        )
-        expected = df_from_list(scalars=[scalar_3, scalar_4])
-        result = run_2.optimization.scalars.tabulate()
         assert_unordered_equality(expected, result, check_dtype=False)
 
     def test_scalar_docs(self, test_mp, request):

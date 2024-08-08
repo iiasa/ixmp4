@@ -224,6 +224,13 @@ class TestCoreTable:
         table_2 = run.optimization.tables.create(
             "Table 2", constrained_to_indexsets=["Indexset 2"]
         )
+        # Create table in another run to test listing tables for specific run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
+        run_2.optimization.tables.create(
+            "Table 1", constrained_to_indexsets=[indexset_3.name]
+        )
+
         expected_ids = [table.id, table_2.id]
         list_ids = [table.id for table in run.optimization.tables.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -232,20 +239,6 @@ class TestCoreTable:
         expected_id = [table.id]
         list_id = [table.id for table in run.optimization.tables.list(name="Table")]
         assert not (set(expected_id) ^ set(list_id))
-
-        # Test that only Tables belonging to this Run are listed
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
-        indexset_4 = run_2.optimization.indexsets.create("Indexset 4")
-        table_3 = run_2.optimization.tables.create(
-            "Table", constrained_to_indexsets=[indexset_3.name, indexset_4.name]
-        )
-        table_4 = run_2.optimization.tables.create(
-            "Table 2", constrained_to_indexsets=[indexset_3.name, indexset_4.name]
-        )
-        expected_ids = [table_3.id, table_4.id]
-        list_ids = [table.id for table in run_2.optimization.tables.list()]
-        assert not (set(expected_ids) ^ set(list_ids))
 
     def test_tabulate_table(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
@@ -260,6 +253,13 @@ class TestCoreTable:
             name="Table 2",
             constrained_to_indexsets=["Indexset", "Indexset 2"],
         )
+        # Create table in another run to test listing tables for specific run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
+        run_2.optimization.tables.create(
+            "Table 1", constrained_to_indexsets=[indexset_3.name]
+        )
+
         pd.testing.assert_frame_equal(
             df_from_list([table_2]),
             run.optimization.tables.tabulate(name="Table 2"),
@@ -274,21 +274,6 @@ class TestCoreTable:
         pd.testing.assert_frame_equal(
             df_from_list([table, table_2]),
             run.optimization.tables.tabulate(),
-        )
-
-        # Test that only Tables belonging to this Run are listed
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
-        indexset_4 = run_2.optimization.indexsets.create("Indexset 4")
-        table_3 = run_2.optimization.tables.create(
-            "Table", constrained_to_indexsets=[indexset_3.name, indexset_4.name]
-        )
-        table_4 = run_2.optimization.tables.create(
-            "Table 2", constrained_to_indexsets=[indexset_3.name, indexset_4.name]
-        )
-        pd.testing.assert_frame_equal(
-            df_from_list([table_3, table_4]),
-            run_2.optimization.tables.tabulate(),
         )
 
     def test_table_docs(self, test_mp, request):
