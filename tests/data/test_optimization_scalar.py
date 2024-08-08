@@ -2,7 +2,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.core import Platform, Scalar
+from ixmp4.core import Platform
+from ixmp4.data.abstract import Scalar
 
 from ..utils import all_platforms
 
