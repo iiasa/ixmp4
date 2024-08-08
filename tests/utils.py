@@ -3,6 +3,8 @@ import pandas.testing as pdt
 import pytest
 
 from ixmp4 import DataPoint
+from ixmp4.core import Platform
+from ixmp4.data.abstract import IndexSet
 
 from .conftest import SKIP_PGSQL_TESTS
 
@@ -198,3 +200,16 @@ def create_iamc_query_test_data(test_mp):
     run2.meta = {"run": 2, "test": "string", "bool": False}
 
     return [r1, r2, r3], units
+
+
+def create_indexsets_for_run(
+    platform: Platform, run_id: int, amount: int = 2, offset: int = 0
+) -> tuple[IndexSet, ...]:
+    """Create `amount` indexsets called `Indexset n` for `run` (n in (offset,
+    offset+amount])."""
+    return tuple(
+        platform.backend.optimization.indexsets.create(
+            run_id=run_id, name=f"Indexset {i+1}"
+        )
+        for i in range(offset, offset + amount)
+    )
