@@ -205,8 +205,7 @@ def create_iamc_query_test_data(test_mp):
 def create_indexsets_for_run(
     platform: Platform, run_id: int, amount: int = 2, offset: int = 1
 ) -> tuple[IndexSet, ...]:
-    """Create `amount` indexsets called `Indexset n` for `run` (n in (offset,
-    offset+amount])."""
+    """Create `amount` indexsets called `Indexset n` for `run`."""
     return tuple(
         platform.backend.optimization.indexsets.create(
             run_id=run_id, name=f"Indexset {i}"
