@@ -3,6 +3,7 @@ from typing import ClassVar
 from ixmp4 import db
 from ixmp4.data import abstract, types
 from ixmp4.data.db.model.model import Model
+from ixmp4.data.db.optimization.equation import Equation
 from ixmp4.data.db.optimization.indexset import IndexSet
 from ixmp4.data.db.optimization.scalar import Scalar
 from ixmp4.data.db.optimization.table import Table
@@ -40,6 +41,7 @@ class Run(base.BaseModel, mixins.HasUpdateInfo):
         foreign_keys=[scenario__id],
     )
 
+    equations: types.Mapped[list["Equation"]] = db.relationship()
     indexsets: types.Mapped[list["IndexSet"]] = db.relationship()
     scalars: types.Mapped[list["Scalar"]] = db.relationship()
     tables: types.Mapped[list["Table"]] = db.relationship()

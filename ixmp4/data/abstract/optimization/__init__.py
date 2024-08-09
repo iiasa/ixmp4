@@ -1,4 +1,5 @@
 from .column import Column
+from .equation import Equation, EquationRepository
 from .indexset import IndexSet, IndexSetRepository
 from .scalar import Scalar, ScalarRepository
 from .table import Table, TableRepository

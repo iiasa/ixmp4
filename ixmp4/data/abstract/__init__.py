@@ -30,6 +30,8 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 from .meta import MetaValue, RunMetaEntry, RunMetaEntryRepository, StrictMetaValue
 from .model import Model, ModelRepository
 from .optimization import (
+    Equation,
+    EquationRepository,
     IndexSet,
     IndexSetRepository,
     Scalar,

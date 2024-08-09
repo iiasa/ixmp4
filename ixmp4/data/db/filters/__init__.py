@@ -1,6 +1,7 @@
 from .meta import RunMetaEntryFilter
 from .model import ModelFilter
 from .optimizationcolumn import OptimizationColumnFilter
+from .optimizationequation import OptimizationEquationFilter
 from .optimizationindexset import OptimizationIndexSetFilter
 from .optimizationscalar import OptimizationScalarFilter
 from .optimizationtable import OptimizationTableFilter
