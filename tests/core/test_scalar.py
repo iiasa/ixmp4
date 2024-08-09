@@ -1,7 +1,7 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Scalar
+from ixmp4.core import Platform, Scalar
 
 from ..utils import all_platforms, assert_unordered_equality
 
@@ -35,7 +35,7 @@ def df_from_list(scalars: list[Scalar]):
 @all_platforms
 class TestCoreScalar:
     def test_create_scalar(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         unit = test_mp.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create(
@@ -63,7 +63,7 @@ class TestCoreScalar:
         assert scalar_3.unit.name == ""
 
     def test_get_scalar(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         unit = test_mp.units.create("Test Unit")
         scalar = run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
@@ -77,7 +77,7 @@ class TestCoreScalar:
             _ = run.optimization.scalars.get("Foo")
 
     def test_update_scalar(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         unit = test_mp.units.create("Test Unit")
         unit2 = test_mp.units.create("Test Unit 2")
@@ -100,15 +100,18 @@ class TestCoreScalar:
         assert scalar.unit.id == result.unit.id == 1
 
     def test_list_scalars(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, list() lists only `default` version runs:
-        run.set_as_default()
         unit = test_mp.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create(
             "Scalar 1", value=1, unit="Test Unit"
         )
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        # Create scalar in another run to test listing scalars for specific run
+        test_mp.runs.create("Model", "Scenario").optimization.scalars.create(
+            "Scalar 1", value=1, unit=unit
+        )
+
         expected_ids = [scalar_1.id, scalar_2.id]
         list_ids = [scalar.id for scalar in run.optimization.scalars.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -121,13 +124,16 @@ class TestCoreScalar:
         assert not (set(expected_id) ^ set(list_id))
 
     def test_tabulate_scalars(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists only `default` version runs:
-        run.set_as_default()
         unit = test_mp.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create("Scalar 1", value=1, unit=unit.name)
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        # Create scalar in another run to test tabulating scalars for specific run
+        test_mp.runs.create("Model", "Scenario").optimization.scalars.create(
+            "Scalar 1", value=1, unit=unit
+        )
+
         expected = df_from_list(scalars=[scalar_1, scalar_2])
         result = run.optimization.scalars.tabulate()
         assert_unordered_equality(expected, result, check_dtype=False)
@@ -137,7 +143,7 @@ class TestCoreScalar:
         assert_unordered_equality(expected, result, check_dtype=False)
 
     def test_scalar_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
         unit = test_mp.units.create("Test Unit")
         scalar = run.optimization.scalars.create("Scalar 1", value=4, unit=unit.name)

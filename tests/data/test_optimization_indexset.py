@@ -2,9 +2,10 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4 import IndexSet
+from ixmp4.core import Platform
+from ixmp4.data.abstract import IndexSet
 
-from ..utils import all_platforms
+from ..utils import all_platforms, create_indexsets_for_run
 
 
 def df_from_list(indexsets: list):
@@ -36,7 +37,7 @@ def df_from_list(indexsets: list):
 @all_platforms
 class TestDataOptimizationIndexSet:
     def test_create_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
         indexset_1 = test_mp.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -51,17 +52,15 @@ class TestDataOptimizationIndexSet:
             )
 
     def test_get_indexset(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        _ = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
-        )
+        create_indexsets_for_run(platform=test_mp, run_id=run.id, amount=1)
         indexset = test_mp.backend.optimization.indexsets.get(
-            run_id=run.id, name="Indexset"
+            run_id=run.id, name="Indexset 1"
         )
         assert indexset.id == 1
         assert indexset.run__id == 1
-        assert indexset.name == "Indexset"
+        assert indexset.name == "Indexset 1"
 
         with pytest.raises(IndexSet.NotFound):
             _ = test_mp.backend.optimization.indexsets.get(
@@ -69,31 +68,30 @@ class TestDataOptimizationIndexSet:
             )
 
     def test_list_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 1"
-        )
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 2"
+        indexset_1, indexset_2 = create_indexsets_for_run(
+            platform=test_mp, run_id=run.id
         )
         assert [indexset_1] == test_mp.backend.optimization.indexsets.list(
-            name="Indexset 1"
+            name=indexset_1.name
         )
         assert [indexset_1, indexset_2] == test_mp.backend.optimization.indexsets.list()
 
-    def test_tabulate_indexsets(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        test_mp.backend.runs.set_as_default_version(run.id)
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 1"
+        # Test only indexsets belonging to this Run are listed when run_id is provided
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset_3, indexset_4 = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, offset=2
         )
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset 2"
+        assert [indexset_3, indexset_4] == test_mp.backend.optimization.indexsets.list(
+            run_id=run_2.id
+        )
+
+    def test_tabulate_indexsets(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = create_indexsets_for_run(
+            platform=test_mp, run_id=run.id
         )
         test_mp.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_1.id, elements="foo"
@@ -118,23 +116,31 @@ class TestDataOptimizationIndexSet:
             expected, test_mp.backend.optimization.indexsets.tabulate(name="Indexset 1")
         )
 
+        # Test only indexsets belonging to this Run are tabulated if run_id is provided
+        run_2 = test_mp.backend.runs.create("Model", "Scenario")
+        indexset_3, indexset_4 = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, offset=2
+        )
+        expected = df_from_list(indexsets=[indexset_3, indexset_4])
+        pdt.assert_frame_equal(
+            expected, test_mp.backend.optimization.indexsets.tabulate(run_id=run_2.id)
+        )
+
     def test_add_elements(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         test_elements = ["foo", "bar"]
         run = test_mp.backend.runs.create("Model", "Scenario")
-        indexset_1 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="IndexSet 1"
+        indexset_1, indexset_2 = create_indexsets_for_run(
+            platform=test_mp, run_id=run.id
         )
+
         test_mp.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_1.id, elements=test_elements
         )
         indexset_1 = test_mp.backend.optimization.indexsets.get(
-            run_id=run.id, name="IndexSet 1"
+            run_id=run.id, name=indexset_1.name
         )
 
-        indexset_2 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="IndexSet 2"
-        )
         test_mp.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_2.id, elements=test_elements
         )
@@ -142,7 +148,7 @@ class TestDataOptimizationIndexSet:
         assert (
             indexset_1.elements
             == test_mp.backend.optimization.indexsets.get(
-                run_id=run.id, name="IndexSet 2"
+                run_id=run.id, name=indexset_2.name
             ).elements
         )
 
@@ -160,25 +166,25 @@ class TestDataOptimizationIndexSet:
             indexset_id=indexset_1.id, elements=1
         )
         indexset_3 = test_mp.backend.optimization.indexsets.get(
-            run_id=run.id, name="IndexSet 1"
+            run_id=run.id, name=indexset_1.name
         )
         test_mp.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_2.id, elements="1"
         )
         indexset_4 = test_mp.backend.optimization.indexsets.get(
-            run_id=run.id, name="IndexSet 2"
+            run_id=run.id, name=indexset_2.name
         )
         assert indexset_3.elements != indexset_4.elements
         assert len(indexset_3.elements) == len(indexset_4.elements)
 
         test_elements_2 = [1, "2", 3.14]
         indexset_5 = test_mp.backend.optimization.indexsets.create(
-            run_id=run.id, name="IndexSet 5"
+            run_id=run.id, name="Indexset 5"
         )
         test_mp.backend.optimization.indexsets.add_elements(
             indexset_id=indexset_5.id, elements=test_elements_2
         )
         indexset_5 = test_mp.backend.optimization.indexsets.get(
-            run_id=run.id, name="IndexSet 5"
+            run_id=run.id, name="Indexset 5"
         )
         assert indexset_5.elements == test_elements_2
