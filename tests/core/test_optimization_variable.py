@@ -263,6 +263,14 @@ class TestCoreVariable:
         variable_2 = run.optimization.variables.create(
             "Variable 2", constrained_to_indexsets=[indexset_2.name]
         )
+        # Create new run to test listing variables for specific run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        (indexset,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, amount=1
+        )
+        run_2.optimization.variables.create(
+            "Variable", constrained_to_indexsets=[indexset.name]
+        )
         expected_ids = [variable.id, variable_2.id]
         list_ids = [variable.id for variable in run.optimization.variables.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -273,21 +281,6 @@ class TestCoreVariable:
             variable.id for variable in run.optimization.variables.list(name="Variable")
         ]
         assert not (set(expected_id) ^ set(list_id))
-
-        # Test listing Variables for specific Run
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
-        )
-        variable_3 = run_2.optimization.variables.create(
-            "Variable", constrained_to_indexsets=[indexset.name]
-        )
-        variable_4 = run_2.optimization.variables.create(
-            "Variable 2", constrained_to_indexsets=[indexset.name]
-        )
-        expected_ids = [variable_3.id, variable_4.id]
-        list_ids = [variable.id for variable in run_2.optimization.variables.list()]
-        assert not (set(expected_ids) ^ set(list_ids))
 
     def test_tabulate_variable(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
@@ -303,6 +296,14 @@ class TestCoreVariable:
         variable_2 = run.optimization.variables.create(
             name="Variable 2",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
+        )
+        # Create new run to test tabulating variables for specific run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        (indexset_3,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, amount=1
+        )
+        run_2.optimization.variables.create(
+            "Variable", constrained_to_indexsets=[indexset_3.name]
         )
         pd.testing.assert_frame_equal(
             df_from_list([variable_2]),
@@ -329,22 +330,6 @@ class TestCoreVariable:
         pd.testing.assert_frame_equal(
             df_from_list([variable, variable_2]),
             run.optimization.variables.tabulate(),
-        )
-
-        # Test tabulation of Variables for specific Run
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
-        )
-        variable_3 = run_2.optimization.variables.create(
-            "Variable", constrained_to_indexsets=[indexset.name]
-        )
-        variable_4 = run_2.optimization.variables.create(
-            "Variable 2", constrained_to_indexsets=[indexset.name]
-        )
-        pd.testing.assert_frame_equal(
-            df_from_list([variable_3, variable_4]),
-            run_2.optimization.variables.tabulate(),
         )
 
     def test_variable_docs(self, test_mp, request):
