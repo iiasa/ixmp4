@@ -2,6 +2,7 @@ from .meta import RunMetaEntryFilter
 from .model import ModelFilter
 from .optimizationcolumn import OptimizationColumnFilter
 from .optimizationindexset import OptimizationIndexSetFilter
+from .optimizationparameter import OptimizationParameterFilter
 from .optimizationscalar import OptimizationScalarFilter
 from .optimizationtable import OptimizationTableFilter
 from .region import RegionFilter

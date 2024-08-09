@@ -237,3 +237,27 @@ def delete_tables(
     backend: Backend = Depends(deps.get_backend),
 ):
     return backend.optimization.tables.docs.delete(dimension_id)
+
+
+@router.get("/optimization/parameters/", response_model=list[api.Docs])
+def list_parameters(
+    dimension_id: int | None = Query(None),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.parameters.docs.list(dimension_id=dimension_id)
+
+
+@router.post("/optimization/parameters/", response_model=api.Docs)
+def set_parameters(
+    docs: DocsInput,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.parameters.docs.set(**docs.model_dump())
+
+
+@router.delete("/optimization/parameters/{dimension_id}/")
+def delete_parameters(
+    dimension_id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.optimization.parameters.docs.delete(dimension_id)
