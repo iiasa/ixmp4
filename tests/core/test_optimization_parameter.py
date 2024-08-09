@@ -255,6 +255,14 @@ class TestCoreParameter:
         parameter_2 = run.optimization.parameters.create(
             "Parameter 2", constrained_to_indexsets=["Indexset 2"]
         )
+        # Create new run to test listing parameters for specific run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        (indexset,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, amount=1
+        )
+        run_2.optimization.parameters.create(
+            "Parameter", constrained_to_indexsets=[indexset.name]
+        )
         expected_ids = [parameter.id, parameter_2.id]
         list_ids = [parameter.id for parameter in run.optimization.parameters.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -266,21 +274,6 @@ class TestCoreParameter:
             for parameter in run.optimization.parameters.list(name="Parameter")
         ]
         assert not (set(expected_id) ^ set(list_id))
-
-        # Test that only Parameters belonging to a Run are listed
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
-        )
-        parameter_3 = run_2.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=[indexset.name]
-        )
-        parameter_4 = run_2.optimization.parameters.create(
-            "Parameter 2", constrained_to_indexsets=[indexset.name]
-        )
-        expected_ids = [parameter_3.id, parameter_4.id]
-        list_ids = [parameter.id for parameter in run_2.optimization.parameters.list()]
-        assert not (set(expected_ids) ^ set(list_ids))
 
     def test_tabulate_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
@@ -296,6 +289,14 @@ class TestCoreParameter:
         parameter_2 = run.optimization.parameters.create(
             name="Parameter 2",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
+        )
+        # Create new run to test listing parameters for specific run
+        run_2 = test_mp.runs.create("Model", "Scenario")
+        (indexset_3,) = create_indexsets_for_run(
+            platform=test_mp, run_id=run_2.id, amount=1
+        )
+        run_2.optimization.parameters.create(
+            "Parameter", constrained_to_indexsets=[indexset_3.name]
         )
         pd.testing.assert_frame_equal(
             df_from_list([parameter_2]),
@@ -324,22 +325,6 @@ class TestCoreParameter:
         pd.testing.assert_frame_equal(
             df_from_list([parameter, parameter_2]),
             run.optimization.parameters.tabulate(),
-        )
-
-        # Test that only Parameters belonging to a Run are listed
-        run_2 = test_mp.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
-        )
-        parameter_3 = run_2.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=[indexset.name]
-        )
-        parameter_4 = run_2.optimization.parameters.create(
-            "Parameter 2", constrained_to_indexsets=[indexset.name]
-        )
-        pd.testing.assert_frame_equal(
-            df_from_list([parameter_3, parameter_4]),
-            run_2.optimization.parameters.tabulate(),
         )
 
     def test_parameter_docs(self, test_mp, request):
