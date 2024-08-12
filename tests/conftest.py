@@ -20,6 +20,11 @@ def pytest_addoption(parser):
         action="store",
         default="sqlite,rest-sqlite",
     )
+    parser.addoption(
+        "--postgres-dsn",
+        action="store",
+        default="postgresql://postgres:postgres@localhost:5432/test",
+    )
 
 
 @pytest.fixture
@@ -27,29 +32,32 @@ def rest_sqlite_platform():
     sqlite = SqliteTestBackend(
         PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
     )
-    return Platform(_backend=RestTestBackend(sqlite))
+    yield Platform(_backend=RestTestBackend(sqlite))
+    sqlite.close()
 
 
 @pytest.fixture
-def rest_postgresql_platform():
+def rest_postgresql_platform(pytestconfig):
     pgsql = PostgresTestBackend(
         PlatformInfo(
             name="postgres-test",
-            dsn="postgresql://postgres:postgres@localhost/test",
+            dsn=pytestconfig.option.postgres_dsn,
         ),
     )
-    return Platform(_backend=RestTestBackend(pgsql))
+    yield Platform(_backend=RestTestBackend(pgsql))
+    pgsql.close()
 
 
 @pytest.fixture
-def postgresql_platform():
+def postgresql_platform(pytestconfig):
     pgsql = PostgresTestBackend(
         PlatformInfo(
             name="postgres-test",
-            dsn="postgresql://postgres:postgres@localhost/test",
+            dsn=pytestconfig.option.postgres_dsn,
         ),
     )
-    return Platform(_backend=pgsql)
+    yield Platform(_backend=pgsql)
+    pgsql.close()
 
 
 @pytest.fixture
@@ -57,7 +65,8 @@ def sqlite_platform():
     sqlite = SqliteTestBackend(
         PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
     )
-    return Platform(_backend=sqlite)
+    yield Platform(_backend=sqlite)
+    sqlite.close()
 
 
 @pytest.fixture
