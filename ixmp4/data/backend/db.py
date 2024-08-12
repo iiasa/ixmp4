@@ -72,16 +72,20 @@ class SqlAlchemyBackend(Backend):
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
         logger.info(f"Creating database engine for platform '{info.name}'.")
-        self.make_engine(info.dsn)
+        dsn = self.check_dsn(info.dsn)
+        self.make_engine(dsn)
         self.make_repositories()
         self.event_handler = SqlaEventHandler(self)
 
-    def make_engine(self, dsn: str):
+    def check_dsn(self, dsn: str):
         if dsn.startswith("postgresql://"):
             logger.debug(
                 "Replacing the platform dsn prefix to use the new `psycopg` driver."
             )
             dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
+        return dsn
+
+    def make_engine(self, dsn: str):
         self.engine = cached_create_engine(dsn)
         self.session = self.Session(bind=self.engine)
 
@@ -101,6 +105,7 @@ class SqlAlchemyBackend(Backend):
 
     def close(self):
         self.session.close()
+        self.engine.dispose()
 
     @contextmanager
     def auth(
@@ -124,7 +129,8 @@ class SqlAlchemyBackend(Backend):
         BaseModel.metadata.drop_all(bind=self.engine, checkfirst=True)
 
     def reset(self):
-        self.session.commit()
+        self.session.rollback()
+        self.engine.dispose()
         self._drop_all()
         self._create_all()
 
@@ -153,3 +159,7 @@ class PostgresTestBackend(SqlAlchemyBackend):
             **kwargs,
         )
         self.reset()
+
+    def make_engine(self, dsn: str):
+        self.engine = create_engine(dsn)
+        self.session = self.Session(bind=self.engine)
