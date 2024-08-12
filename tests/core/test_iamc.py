@@ -7,7 +7,7 @@ from ixmp4 import DataPoint
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import SchemaError
 
-from ..fixtures import MediumIamcDataset, SmallIamcDataset
+from ..fixtures import SmallIamcDataset
 from ..utils import (
     assert_unordered_equality,
 )
@@ -164,9 +164,7 @@ class TestCoreIamc:
         assert ret.empty
 
 
-class TestCoreIamcBig:
-    medium = MediumIamcDataset()
-
+class TestCoreIamcReadOnly:
     @pytest.mark.parametrize(
         "filters, run, exp_len",
         (
@@ -206,25 +204,22 @@ class TestCoreIamcBig:
         ),
     )
     def test_run_tabulate_with_filter_raw(
-        self, platform: ixmp4.Platform, filters, run, exp_len
+        self, ro_platform_med: ixmp4.Platform, filters, run, exp_len
     ):
-        self.medium.load_dataset(platform)
-        run = platform.runs.get(*run)
+        run = ro_platform_med.runs.get(*run)
         obs = run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
         # assert_unordered_equality(obs, exp, check_like=True)
 
-    def test_mp_tabulate_big_async(self, platform: ixmp4.Platform):
+    def test_mp_tabulate_big_async(self, ro_platform_med: ixmp4.Platform):
         """Tests if big tabulations work in async contexts."""
-        self.medium.load_dataset(platform)
 
         async def tabulate():
-            return platform.iamc.tabulate(raw=True, run={"default_only": False})
+            return ro_platform_med.iamc.tabulate(raw=True, run={"default_only": False})
 
         res = asyncio.run(tabulate())
         assert len(res) > settings.default_page_size
 
-    def test_mp_tabulate_big(self, platform: ixmp4.Platform):
-        self.medium.load_dataset(platform)
-        res = platform.iamc.tabulate(raw=True, run={"default_only": False})
+    def test_mp_tabulate_big(self, ro_platform_med: ixmp4.Platform):
+        res = ro_platform_med.iamc.tabulate(raw=True, run={"default_only": False})
         assert len(res) > settings.default_page_size
