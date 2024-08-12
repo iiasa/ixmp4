@@ -17,5 +17,10 @@
       "level": "NOTSET",
       "formatter": "generic"
     }
+  },
+  "loggers": {
+    "sqlalchemy": {
+      "level": "NOTSET"
+    }
   }
 }
