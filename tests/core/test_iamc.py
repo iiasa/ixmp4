@@ -209,7 +209,6 @@ class TestCoreIamcReadOnly:
         run = ro_platform_med.runs.get(*run)
         obs = run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
-        # assert_unordered_equality(obs, exp, check_like=True)
 
     def test_mp_tabulate_big_async(self, ro_platform_med: ixmp4.Platform):
         """Tests if big tabulations work in async contexts."""
