@@ -141,7 +141,6 @@ class SqliteTestBackend(SqlAlchemyBackend):
             *args,
             **kwargs,
         )
-        self.reset()
 
     def make_engine(self, dsn: str):
         self.engine = create_engine(
@@ -158,7 +157,6 @@ class PostgresTestBackend(SqlAlchemyBackend):
             *args,
             **kwargs,
         )
-        self.reset()
 
     def make_engine(self, dsn: str):
         self.engine = create_engine(dsn)
