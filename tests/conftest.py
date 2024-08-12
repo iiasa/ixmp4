@@ -47,14 +47,18 @@ class Backends:
     def rest_sqlite(self):
         with self.sqlite() as backend:
             rest = RestTestBackend(backend)
+            rest.setup()
             yield rest
+            rest.teardown()
             rest.close()
 
     @contextmanager
     def rest_postgresql(self):
         with self.postgresql() as backend:
             rest = RestTestBackend(backend)
+            rest.setup()
             yield rest
+            rest.teardown()
             rest.close()
 
     @contextmanager
@@ -65,7 +69,9 @@ class Backends:
                 dsn=self.postgres_dsn,
             ),
         )
+        pgsql.setup()
         yield pgsql
+        pgsql.teardown()
         pgsql.close()
 
     @contextmanager
@@ -73,7 +79,9 @@ class Backends:
         sqlite = SqliteTestBackend(
             PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
         )
+        sqlite.setup()
         yield sqlite
+        sqlite.teardown()
         sqlite.close()
 
 
@@ -97,9 +105,7 @@ def platform_fixture(request):
     bctx = get_backend_context(type, postgres_dsn)
 
     with bctx as backend:
-        backend.setup()
         yield Platform(_backend=backend)
-        backend.teardown()
 
 
 rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
@@ -116,11 +122,9 @@ def platform_td_big(request):
     bctx = get_backend_context(type, postgres_dsn)
 
     with bctx as backend:
-        backend.setup()
         platform = Platform(_backend=backend)
         big.load_dataset(platform)
         yield platform
-        backend.teardown()
 
 
 db_platform_big = pytest.fixture(
