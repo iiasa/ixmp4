@@ -115,10 +115,10 @@ def platform_td_big(request):
     bctx = get_backend_context(type, postgres_dsn)
 
     with bctx as backend:
-        backend.reset()
         platform = Platform(_backend=backend)
         big.load_dataset(platform)
         yield platform
+        backend.reset()
 
 
 db_platform_big = pytest.fixture(
