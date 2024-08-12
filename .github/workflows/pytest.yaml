@@ -28,53 +28,32 @@ jobs:
             with-pyarrow: true
             postgres-version: "16"
             pandas-version: false
-            backend: "sqlite"
-          - python-version: "3.12"
-            with-pyarrow: true
-            postgres-version: "16"
-            pandas-version: false
-            backend: "rest-sqlite"
+            backend: "sqlite,rest-sqlite"
           # pgsql 15
           - python-version: "3.12"
             with-pyarrow: false
             postgres-version: "15"
             pandas-version: false
-            backend: "postgres"
-          - python-version: "3.12"
-            with-pyarrow: false
-            postgres-version: "15"
-            pandas-version: false
-            backend: "rest-postgres"
-            
+            backend: "postgres,rest-postgres"
+
           # pandas 2.1.3
           - python-version: "3.11"
             with-pyarrow: true
             postgres-version: "16"
-            backend: "sqlite"
-            pandas-version: "2.1.3"
-          - python-version: "3.11"
-            with-pyarrow: true
-            postgres-version: "16"
-            backend: "rest-sqlite"
+            backend: "sqlite,rest-sqlite"
             pandas-version: "2.1.3"
           # pandas 2.0.0
           - python-version: "3.10"
             with-pyarrow: true
             postgres-version: "16"
-            backend: "rest-sqlite"
+            backend: "sqlite,rest-sqlite"
             pandas-version: "2.0.0"
-          - python-version: "3.10"
-            with-pyarrow: true
-            postgres-version: "16"
-            backend: "sqlite"
-            pandas-version: "2.0.0"
-
 
     name: py${{ matrix.python-version }} | backend=${{ matrix.backend }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql=${{ matrix.postgres-version }} | pandas=${{ matrix.pandas-version }}
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: ${{ ( matrix.backend == 'postgres'||matrix.backend == 'rest-postgres' ) && format('postgres:{0}', matrix.postgres-version) || '' }}
+        image: ${{ contains(matrix.backend, 'postgres') && format('postgres:{0}', matrix.postgres-version) || '' }}
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test
