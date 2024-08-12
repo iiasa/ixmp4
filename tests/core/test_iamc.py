@@ -7,7 +7,7 @@ from ixmp4 import DataPoint
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import SchemaError
 
-from ..fixtures import SmallIamcDataset
+from ..fixtures import FilterIamcDataset, MediumIamcDataset, SmallIamcDataset
 from ..utils import (
     assert_unordered_equality,
 )
@@ -15,6 +15,7 @@ from ..utils import (
 
 class TestCoreIamc:
     small = SmallIamcDataset()
+    filter = FilterIamcDataset()
 
     def test_run_annual_datapoints_raw(self, platform: ixmp4.Platform):
         self.do_run_datapoints(
@@ -163,19 +164,17 @@ class TestCoreIamc:
         ret = run.iamc.tabulate(raw=raw)
         assert ret.empty
 
-
-class TestCoreIamcReadOnly:
     @pytest.mark.parametrize(
         "filters, run, exp_len",
         (
-            (dict(variable={"name": "Variable 4"}), ("Model 1", "Scenario 1", 1), 50),
+            (dict(variable={"name": "Variable 4"}), ("Model 1", "Scenario 1", 1), 1),
             (
                 dict(
                     variable={"name": "Variable 4"},
-                    unit={"name": "Unit 4"},
+                    unit={"name": "Unit 2"},
                 ),
                 ("Model 1", "Scenario 1", 1),
-                50,
+                1,
             ),
             (
                 dict(
@@ -183,42 +182,50 @@ class TestCoreIamcReadOnly:
                     unit={"name__like": "Unit *"},
                 ),
                 ("Model 2", "Scenario 2", 1),
-                280,
+                4,
             ),
             (
-                dict(variable={"name__in": ["Variable 4", "Variable 24"]}),
+                dict(variable={"name__in": ["Variable 3", "Variable 4"]}),
                 ("Model 1", "Scenario 1", 1),
-                50,
+                2,
             ),
-            (dict(variable="Variable 24"), ("Model 1", "Scenario 1", 1), 0),
+            (dict(variable="Variable 1"), ("Model 1", "Scenario 1", 1), 2),
             (
-                dict(variable="Variable 54", unit="Unit 54"),
-                ("Model 8", "Scenario 0", 1),
-                50,
-            ),
-            (
-                dict(variable=["Variable 54", "Variable 25", "Variable 4"]),
+                dict(variable="Variable 1", unit="Unit 2"),
                 ("Model 1", "Scenario 1", 1),
-                50,
+                1,
+            ),
+            (
+                dict(variable=["Variable 1", "Variable 2", "Variable 3", "Variable 4"]),
+                ("Model 1", "Scenario 1", 1),
+                4,
             ),
         ),
     )
     def test_run_tabulate_with_filter_raw(
-        self, ro_platform_med: ixmp4.Platform, filters, run, exp_len
+        self, platform: ixmp4.Platform, filters, run, exp_len
     ):
-        run = ro_platform_med.runs.get(*run)
+        self.filter.load_dataset(platform)
+        run = platform.runs.get(*run)
         obs = run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
 
-    def test_mp_tabulate_big_async(self, ro_platform_med: ixmp4.Platform):
+
+class TestCoreIamcReadOnly:
+    medium = MediumIamcDataset()
+
+    def test_mp_tabulate_big_async(self, platform: ixmp4.Platform):
         """Tests if big tabulations work in async contexts."""
+        self.medium.load_dataset(platform)
 
         async def tabulate():
-            return ro_platform_med.iamc.tabulate(raw=True, run={"default_only": False})
+            return platform.iamc.tabulate(raw=True, run={"default_only": False})
 
         res = asyncio.run(tabulate())
         assert len(res) > settings.default_page_size
 
-    def test_mp_tabulate_big(self, ro_platform_med: ixmp4.Platform):
-        res = ro_platform_med.iamc.tabulate(raw=True, run={"default_only": False})
+    def test_mp_tabulate_big(self, platform: ixmp4.Platform):
+        self.medium.load_dataset(platform)
+
+        res = platform.iamc.tabulate(raw=True, run={"default_only": False})
         assert len(res) > settings.default_page_size

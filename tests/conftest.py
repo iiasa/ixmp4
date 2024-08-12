@@ -11,11 +11,12 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
-from .fixtures import MediumIamcDataset
+from .fixtures import BigIamcDataset
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 backend_fixtures = {
-    "ro_platform_med": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
+    "platform_big": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
+    "db_platform_big": ["sqlite", "postgres"],
     "platform": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "db_platform": ["sqlite", "postgres"],
     "rest_platform": ["rest-sqlite", "rest-postgres"],
@@ -105,11 +106,10 @@ db_platform = pytest.fixture(platform_fixture, name="db_platform")
 sqlite_platform = pytest.fixture(platform_fixture, name="sqlite_platform")
 platform = pytest.fixture(platform_fixture, name="platform")
 
-medium = MediumIamcDataset()
+big = BigIamcDataset()
 
 
-@pytest.fixture(scope="module")
-def ro_platform_med(request):
+def platform_td_big(request):
     type = request.param
     postgres_dsn = request.config.option.postgres_dsn
     bctx = get_backend_context(type, postgres_dsn)
@@ -117,8 +117,13 @@ def ro_platform_med(request):
     with bctx as backend:
         backend.reset()
         platform = Platform(_backend=backend)
-        medium.load_dataset(platform)
+        big.load_dataset(platform)
         yield platform
+
+
+db_platform_big = pytest.fixture(
+    platform_td_big, scope="session", name="db_platform_big"
+)
 
 
 def pytest_generate_tests(metafunc):

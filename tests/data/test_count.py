@@ -79,7 +79,6 @@ big = BigIamcDataset()
         ],
     ],
 )
-def test_count(db_platform: ixmp4.Platform, repo_name, filters):
-    big.load_dataset(db_platform)
-    repo = deepgetattr(db_platform.backend, repo_name)
+def test_count(db_platform_big: ixmp4.Platform, repo_name, filters):
+    repo = deepgetattr(db_platform_big.backend, repo_name)
     assert len(repo.list(**filters)) == repo.count(**filters)
