@@ -127,9 +127,7 @@ def platform_td_big(request):
         yield platform
 
 
-db_platform_big = pytest.fixture(
-    platform_td_big, scope="session", name="db_platform_big"
-)
+db_platform_big = pytest.fixture(platform_td_big, scope="class", name="db_platform_big")
 
 
 def pytest_generate_tests(metafunc):
