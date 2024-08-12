@@ -70,7 +70,7 @@ class TestDataOptimizationIndexSet:
             platform=platform, run_id=run.id
         )
         assert [indexset_1] == platform.backend.optimization.indexsets.list(
-            name="Indexset 1"
+            name=indexset_1.name
         )
         assert [
             indexset_1,
