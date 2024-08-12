@@ -116,7 +116,6 @@ class TestCoreRun:
         assert sorted(res["model"].tolist()) == ["Model 1"]
         assert sorted(res["scenario"].tolist()) == ["Scenario 0"]
 
-        # run1.set_as_default()
         res = platform.runs.tabulate(
             iamc={
                 "variable": {"name__like": "Variable 10*"},
