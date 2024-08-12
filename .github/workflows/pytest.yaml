@@ -74,7 +74,8 @@ jobs:
     runs-on: ubuntu-latest
     services:
       postgres:
-        image: postgres:${{ matrix.postgres-version }}
+        image: ${{ (matrix.backend == 'postgres' || matrix.backend == 'rest-postgres') && 'postgres:${{ matrix.postgres-version }}' || '' }}
+        image: 
         env:
           POSTGRES_PASSWORD: postgres
           POSTGRES_DB: test
