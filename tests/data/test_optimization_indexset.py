@@ -66,8 +66,6 @@ class TestDataOptimizationIndexSet:
 
     def test_list_indexsets(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        platform.backend.runs.set_as_default_version(run.id)
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
@@ -90,8 +88,6 @@ class TestDataOptimizationIndexSet:
 
     def test_tabulate_indexsets(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        platform.backend.runs.set_as_default_version(run.id)
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )

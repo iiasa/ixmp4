@@ -277,8 +277,6 @@ class TestDataOptimizationTable:
 
     def test_list_table(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        platform.backend.runs.set_as_default_version(run.id)
         create_indexsets_for_run(platform=platform, run_id=run.id)
         table = platform.backend.optimization.tables.create(
             run_id=run.id, name="Table", constrained_to_indexsets=["Indexset 1"]
@@ -306,8 +304,6 @@ class TestDataOptimizationTable:
 
     def test_tabulate_table(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        platform.backend.runs.set_as_default_version(run.id)
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id, offset=2
         )

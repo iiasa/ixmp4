@@ -85,8 +85,6 @@ class TestDataOptimizationScalar:
 
     def test_list_scalars(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        platform.backend.runs.set_as_default_version(run.id)
         unit = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.create("Unit 2")
         scalar_1 = platform.backend.optimization.scalars.create(
@@ -100,8 +98,6 @@ class TestDataOptimizationScalar:
 
     def test_tabulate_scalars(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        platform.backend.runs.set_as_default_version(run.id)
         unit = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.create("Unit 2")
         scalar_1 = platform.backend.optimization.scalars.create(
