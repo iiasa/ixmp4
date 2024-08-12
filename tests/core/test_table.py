@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import IndexSet, Table
+from ixmp4.core import IndexSet, Table
 
 from ..utils import create_indexsets_for_run
 

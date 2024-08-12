@@ -2,7 +2,8 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import DataPoint, Region
+from ixmp4 import DataPoint
+from ixmp4.core import Region
 
 from ..fixtures import SmallIamcDataset
 from ..utils import assert_unordered_equality

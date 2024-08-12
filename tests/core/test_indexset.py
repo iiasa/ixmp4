@@ -3,7 +3,7 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
-from ixmp4 import IndexSet
+from ixmp4.core import IndexSet
 
 from ..utils import create_indexsets_for_run
 

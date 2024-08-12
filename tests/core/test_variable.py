@@ -4,7 +4,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import Variable
+from ixmp4.core import Variable
 
 from ..utils import assert_unordered_equality
 

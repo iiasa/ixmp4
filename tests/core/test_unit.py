@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import DataPoint, Unit
+from ixmp4.core import Unit
 
 from ..fixtures import SmallIamcDataset
 from ..utils import assert_unordered_equality
@@ -42,7 +42,7 @@ class TestCoreUnit:
         self.small.load_units(platform)
 
         run = platform.runs.create("Model", "Scenario")
-        run.iamc.add(self.small.annual, type=DataPoint.Type.ANNUAL)
+        run.iamc.add(self.small.annual, type=ixmp4.DataPoint.Type.ANNUAL)
 
         with pytest.raises(Unit.DeletionPrevented):
             platform.units.delete("Unit 1")
@@ -86,7 +86,7 @@ class TestCoreUnit:
 
         run = platform.runs.create("Model", "Scenario")
         with pytest.raises(Unit.NotFound):
-            run.iamc.add(invalid_data, type=DataPoint.Type.ANNUAL)
+            run.iamc.add(invalid_data, type=ixmp4.DataPoint.Type.ANNUAL)
 
     def test_list_unit(self, platform: ixmp4.Platform):
         units = create_testcase_units(platform)

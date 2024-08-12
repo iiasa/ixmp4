@@ -3,7 +3,8 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
-from ixmp4 import IxmpError, Run
+from ixmp4.core import Run
+from ixmp4.core.exceptions import IxmpError
 
 from ..fixtures import MediumIamcDataset
 

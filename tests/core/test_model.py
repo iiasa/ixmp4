@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import Model
+from ixmp4.core import Model
 
 from ..utils import assert_unordered_equality
 

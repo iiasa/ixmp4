@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import Scenario
+from ixmp4.core import Scenario
 
 from ..utils import assert_unordered_equality
 
