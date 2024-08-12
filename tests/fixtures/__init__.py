@@ -78,6 +78,80 @@ class FilterIamcDataset:
         return run1, run2
 
 
+class MediumIamcDataset:
+    runs = pd.read_csv(here / "medium/runs.csv")
+    units = pd.read_csv(here / "medium/units.csv")
+    regions = pd.read_csv(here / "medium/regions.csv")
+    datapoints = pd.read_csv(here / "medium/datapoints.csv")
+    run_cols = ["model", "scenario", "version"]
+
+    @classmethod
+    def load_regions(cls, platform: ixmp4.Platform):
+        for _, name, hierarchy in cls.regions.itertuples():
+            platform.regions.create(name, hierarchy)
+
+    @classmethod
+    def load_units(cls, platform: ixmp4.Platform):
+        for _, name in cls.units.itertuples():
+            platform.units.create(name)
+
+    @classmethod
+    def load_runs(cls, platform: ixmp4.Platform):
+        for _, model, scenario, version, is_default in cls.runs.itertuples():
+            run = platform.runs.create(model, scenario)
+            if run.version != version:
+                raise ProgrammingError("Run fixture incomplete or out of order.")
+
+            if is_default:
+                run.set_as_default()
+
+    @classmethod
+    def load_run_datapoints(
+        cls, platform: ixmp4.Platform, run_tup: tuple[str, str, int], dps: pd.DataFrame
+    ):
+        run = platform.runs.get(*run_tup)
+
+        annual = dps[dps["type"] == "ANNUAL"].dropna(how="all", axis="columns")
+        categorical = dps[dps["type"] == "CATEGORICAL"].dropna(
+            how="all", axis="columns"
+        )
+        datetime = dps[dps["type"] == "DATETIME"].dropna(how="all", axis="columns")
+        if not annual.empty:
+            run.iamc.add(annual, type=ixmp4.DataPoint.Type.ANNUAL)
+        if not categorical.empty:
+            run.iamc.add(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
+        if not datetime.empty:
+            run.iamc.add(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+
+    @classmethod
+    def get_run_dps(cls, df: pd.DataFrame, model, scenario, version):
+        dps = df.copy()
+        dps = dps[dps["model"] == model]
+        dps = dps[dps["scenario"] == scenario]
+        dps = dps[dps["version"] == version]
+        dps = dps.drop(columns=cls.run_cols)
+        return dps
+
+    @classmethod
+    def load_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame):
+        runs = df[cls.run_cols].copy()
+        runs.drop_duplicates(inplace=True)
+        for _, model, scenario, version in runs.itertuples():
+            dps = cls.get_run_dps(df, model, scenario, version)
+            cls.load_run_datapoints(platform, (model, scenario, version), dps)
+
+    @classmethod
+    def load_datapoints(cls, platform: ixmp4.Platform):
+        cls.load_dp_df(platform, cls.datapoints)
+
+    @classmethod
+    def load_dataset(cls, platform: ixmp4.Platform):
+        cls.load_regions(platform)
+        cls.load_units(platform)
+        cls.load_runs(platform)
+        cls.load_datapoints(platform)
+
+
 class BigIamcDataset:
     runs = pd.read_csv(here / "big/runs.csv")
     units = pd.read_csv(here / "big/units.csv")
