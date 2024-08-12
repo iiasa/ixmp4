@@ -97,8 +97,10 @@ def platform_fixture(request):
     bctx = get_backend_context(type, postgres_dsn)
 
     with bctx as backend:
-        backend.reset()
+        backend._create_all()
         yield Platform(_backend=backend)
+        backend.session.rollback()
+        backend._drop_all()
 
 
 rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
