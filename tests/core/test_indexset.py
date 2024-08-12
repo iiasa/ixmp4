@@ -49,7 +49,6 @@ class TestCoreIndexset:
 
     def test_get_indexset(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        run.set_as_default()
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
         indexset = run.optimization.indexsets.get("Indexset 1")
         assert indexset.id == 1
@@ -88,8 +87,6 @@ class TestCoreIndexset:
 
     def test_list_indexsets(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        # Per default, list() lists only `default` version runs:
-        run.set_as_default()
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
@@ -111,8 +108,6 @@ class TestCoreIndexset:
 
     def test_tabulate_indexsets(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists only `default` version runs:
-        run.set_as_default()
         indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
