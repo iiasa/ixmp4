@@ -102,6 +102,7 @@ def platform_fixture(request):
 
 rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
 db_platform = pytest.fixture(platform_fixture, name="db_platform")
+sqlite_platform = pytest.fixture(platform_fixture, name="sqlite_platform")
 platform = pytest.fixture(platform_fixture, name="platform")
 
 medium = MediumIamcDataset()
