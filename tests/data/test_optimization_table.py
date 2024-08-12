@@ -40,7 +40,7 @@ class TestDataOptimizationTable:
             platform=platform, run_id=run.id
         )
         table = platform.backend.optimization.tables.create(
-            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset 1"]
         )
 
         assert table.run__id == run.id
@@ -52,7 +52,7 @@ class TestDataOptimizationTable:
         # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
             _ = platform.backend.optimization.tables.create(
-                run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+                run_id=run.id, name="Table", constrained_to_indexsets=["Indexset 1"]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
@@ -100,11 +100,9 @@ class TestDataOptimizationTable:
 
     def test_get_table(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
-        _ = platform.backend.optimization.indexsets.create(
-            run_id=run.id, name="Indexset"
-        )
+        _, _ = create_indexsets_for_run(platform=platform, run_id=run.id)
         table = platform.backend.optimization.tables.create(
-            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset"]
+            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset 1"]
         )
         assert table == platform.backend.optimization.tables.get(
             run_id=run.id, name="Table"
@@ -168,7 +166,7 @@ class TestDataOptimizationTable:
                 data={indexset_1.name: ["foo"], indexset_2.name: [0]},
             )
 
-        test_data_2 = {"Indexset": [""], "Indexset 2": [3]}
+        test_data_2 = {"Indexset 1": [""], "Indexset 2": [3]}
         platform.backend.optimization.tables.add_data(
             table_id=table_2.id, data=test_data_2
         )
