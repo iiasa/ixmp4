@@ -34,10 +34,10 @@ def df_from_list(indexsets: list[IndexSet]):
     )
 
 
-class TestCoreIndexSet:
+class TestCoreIndexset:
     def test_create_indexset(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        indexset_1 = run.optimization.indexsets.create("IndexSet 1")
+        indexset_1 = run.optimization.indexsets.create("Indexset 1")
         assert indexset_1.id == 1
         assert indexset_1.name == "Indexset 1"
 
@@ -51,7 +51,7 @@ class TestCoreIndexSet:
         run = platform.runs.create("Model", "Scenario")
         run.set_as_default()
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
-        indexset = run.optimization.indexsets.get("IndexSet 1")
+        indexset = run.optimization.indexsets.get("Indexset 1")
         assert indexset.id == 1
         assert indexset.name == "Indexset 1"
 
@@ -61,10 +61,10 @@ class TestCoreIndexSet:
     def test_add_elements(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
         test_elements = ["foo", "bar"]
-        indexset_1 = run.optimization.indexsets.create("IndexSet 1")
+        indexset_1 = run.optimization.indexsets.create("Indexset 1")
         indexset_1.add(test_elements)  # type: ignore
-        run.optimization.indexsets.create("IndexSet 2").add(test_elements)  # type: ignore
-        indexset_2 = run.optimization.indexsets.get("IndexSet 2")
+        run.optimization.indexsets.create("Indexset 2").add(test_elements)  # type: ignore
+        indexset_2 = run.optimization.indexsets.get("Indexset 2")
 
         assert indexset_1.elements == indexset_2.elements
 
@@ -82,7 +82,7 @@ class TestCoreIndexSet:
         assert len(indexset_3.elements) == len(indexset_4.elements)
 
         test_elements_2 = ["One", 2, 3.141]
-        indexset_5 = run.optimization.indexsets.create("IndexSet 5")
+        indexset_5 = run.optimization.indexsets.create("Indexset 5")
         indexset_5.add(test_elements_2)  # type: ignore
         assert indexset_5.elements == test_elements_2
 
@@ -140,7 +140,7 @@ class TestCoreIndexSet:
                 platform=platform, run_id=run.id, amount=1
             )
         )
-        docs = "Documentation of IndexSet 1"
+        docs = "Documentation of Indexset 1"
         indexset_1.docs = docs
         assert indexset_1.docs == docs
 

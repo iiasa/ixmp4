@@ -53,7 +53,7 @@ class TestDataOptimizationIndexSet:
         run = platform.backend.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
         indexset = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name="Indexset"
+            run_id=run.id, name="Indexset 1"
         )
         assert indexset.id == 1
         assert indexset.run__id == 1
@@ -139,7 +139,7 @@ class TestDataOptimizationIndexSet:
             elements=test_elements,  # type: ignore
         )
         indexset_1 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name="IndexSet 1"
+            run_id=run.id, name="Indexset 1"
         )
 
         platform.backend.optimization.indexsets.add_elements(
@@ -150,7 +150,7 @@ class TestDataOptimizationIndexSet:
         assert (
             indexset_1.elements
             == platform.backend.optimization.indexsets.get(
-                run_id=run.id, name="IndexSet 2"
+                run_id=run.id, name="Indexset 2"
             ).elements
         )
 
