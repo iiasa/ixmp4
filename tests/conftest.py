@@ -37,7 +37,7 @@ def pytest_addoption(parser):
 
 
 @contextmanager
-def yield_rest_sqlite_platform():
+def yield_rest_sqlite_platform(*args):
     sqlite = SqliteTestBackend(
         PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
     )
@@ -70,7 +70,7 @@ def yield_postgresql_platform(dsn):
 
 
 @contextmanager
-def yield_sqlite_platform():
+def yield_sqlite_platform(*args):
     sqlite = SqliteTestBackend(
         PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
     )
@@ -79,8 +79,8 @@ def yield_sqlite_platform():
 
 
 def get_platform(gen):
-    def fixture():
-        with gen() as p:
+    def fixture(request):
+        with gen(request.config.options.postgres_dsn) as p:
             yield p
 
     return fixture
