@@ -6,7 +6,7 @@ import ixmp4
 from ixmp4.core import Run
 from ixmp4.core.exceptions import IxmpError
 
-from ..fixtures import MediumIamcDataset
+from ..fixtures import FilterIamcDataset
 
 
 def _expected_runs_table(*row_default):
@@ -21,7 +21,7 @@ def _expected_runs_table(*row_default):
 
 
 class TestCoreRun:
-    medium = MediumIamcDataset()
+    filter = FilterIamcDataset()
 
     def test_run_notfound(self, platform: ixmp4.Platform):
         # no Run with that model and scenario name exists
@@ -95,45 +95,43 @@ class TestCoreRun:
         with pytest.raises(IxmpError):
             run2.unset_as_default()
 
-        self.medium.load_dataset(platform)
-        all_runs = self.medium.runs.copy()
+        self.filter.load_dataset(platform)
 
         res = platform.runs.tabulate(
-            default_only=False,
             iamc={
                 "region": {"name": "Region 1"},
             },
         )
-        assert sorted(res["model"].tolist()) == ["Model 0"]
+        assert sorted(res["model"].tolist()) == ["Model 1"]
         assert sorted(res["scenario"].tolist()) == ["Scenario 1"]
 
         res = platform.runs.tabulate(
             default_only=False,
             iamc={
-                "region": {"name": "Region 3"},
+                "region": {"name": "Region 2"},
+            },
+        )
+        assert sorted(res["model"].tolist()) == ["Model 2"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
+
+        res = platform.runs.tabulate(
+            default_only=True,
+            iamc={
+                "variable": {"name__like": "Variable *"},
+                "unit": {"name__in": ["Unit 2", "Unit 4"]},
             },
         )
         assert sorted(res["model"].tolist()) == ["Model 1"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 0"]
-
-        res = platform.runs.tabulate(
-            iamc={
-                "variable": {"name__like": "Variable 10*"},
-                "unit": {"name__in": ["Unit 10", "Unit 2"]},
-            }
-        )
-        assert sorted(res["model"].tolist()) == ["Model 3", "Model 4"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 0", "Scenario 1"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 1"]
 
         res = platform.runs.tabulate(
             default_only=False,
-            scenario={"name__in": ["Scenario 2", "Scenario 3"]},
+            scenario={"name__in": ["Scenario 1", "Scenario 2"]},
             iamc=None,
         )
-        exp_runs = all_runs[all_runs["scenario"].isin(["Scenario 2", "Scenario 3"])]
 
-        assert sorted(res["model"].tolist()) == sorted(exp_runs["model"].tolist())
-        assert sorted(res["scenario"].tolist()) == sorted(exp_runs["scenario"].tolist())
+        assert sorted(res["model"].tolist()) == ["Model 1", "Model 2"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 1", "Scenario 2"]
 
         res = platform.runs.tabulate(
             default_only=False,
@@ -145,7 +143,7 @@ class TestCoreRun:
         for run in platform.runs.list(
             default_only=False,
             model={"name": "Model 1"},
-            scenario={"name": "Scenario 0"},
+            scenario={"name": "Scenario 1"},
         ):
             self.delete_all_datapoints(run)
         res = platform.runs.tabulate(
@@ -170,6 +168,9 @@ class TestCoreRun:
             how="all", axis="columns"
         )
 
-        run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
-        run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
-        run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+        if not annual.empty:
+            run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
+        if not cat.empty:
+            run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
+        if not datetime.empty:
+            run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
