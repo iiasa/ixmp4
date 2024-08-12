@@ -130,7 +130,6 @@ class SqlAlchemyBackend(Backend):
 
     def reset(self):
         self.session.rollback()
-        self.engine.dispose()
         self._drop_all()
         self._create_all()
 
