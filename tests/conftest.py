@@ -36,111 +36,88 @@ def pytest_addoption(parser):
     )
 
 
-@contextmanager
-def yield_rest_sqlite_platform(*args):
-    sqlite = SqliteTestBackend(
-        PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
-    )
-    yield Platform(_backend=RestTestBackend(sqlite))
-    sqlite.close()
+class Backends:
+    postgres_dsn: str
+
+    def __init__(self, postgres_dsn: str) -> None:
+        self.postgres_dsn = postgres_dsn
+
+    @contextmanager
+    def rest_sqlite(self):
+        with self.sqlite() as backend:
+            rest = RestTestBackend(backend)
+            yield rest
+            rest.close()
+
+    @contextmanager
+    def rest_postgresql(self):
+        with self.postgresql() as backend:
+            rest = RestTestBackend(backend)
+            yield rest
+            rest.close()
+
+    @contextmanager
+    def postgresql(self):
+        pgsql = PostgresTestBackend(
+            PlatformInfo(
+                name="postgres-test",
+                dsn=self.postgres_dsn,
+            ),
+        )
+        yield pgsql
+        pgsql.close()
+
+    @contextmanager
+    def sqlite(self):
+        sqlite = SqliteTestBackend(
+            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
+        )
+        yield sqlite
+        sqlite.close()
 
 
-@contextmanager
-def yield_rest_postgresql_platform(dsn):
-    pgsql = PostgresTestBackend(
-        PlatformInfo(
-            name="postgres-test",
-            dsn=dsn,
-        ),
-    )
-    yield Platform(_backend=RestTestBackend(pgsql))
-    pgsql.close()
+def get_backend_context(type, postgres_dsn):
+    backends = Backends(postgres_dsn)
 
-
-@contextmanager
-def yield_postgresql_platform(dsn):
-    pgsql = PostgresTestBackend(
-        PlatformInfo(
-            name="postgres-test",
-            dsn=dsn,
-        ),
-    )
-    yield Platform(_backend=pgsql)
-    pgsql.close()
-
-
-@contextmanager
-def yield_sqlite_platform(*args):
-    sqlite = SqliteTestBackend(
-        PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
-    )
-    yield Platform(_backend=sqlite)
-    sqlite.close()
-
-
-def get_platform(gen):
-    def fixture(pytestconfig):
-        with gen(pytestconfig.option.postgres_dsn) as p:
-            yield p
-
-    return fixture
-
-
-rest_sqlite_platform = pytest.fixture(
-    get_platform(yield_rest_sqlite_platform), name="rest_sqlite_platform"
-)
-session_rest_sqlite_platform = pytest.fixture(
-    get_platform(yield_rest_sqlite_platform), name="session_rest_sqlite_platform"
-)
-
-sqlite_platform = pytest.fixture(
-    get_platform(yield_sqlite_platform), name="sqlite_platform"
-)
-session_sqlite_platform = pytest.fixture(
-    get_platform(yield_sqlite_platform), name="session_sqlite_platform"
-)
-
-rest_postgresql_platform = pytest.fixture(
-    get_platform(yield_rest_postgresql_platform), name="rest_postgresql_platform"
-)
-session_rest_postgresql_platform = pytest.fixture(
-    get_platform(yield_rest_postgresql_platform),
-    name="session_rest_postgresql_platform",
-)
-
-postgresql_platform = pytest.fixture(
-    get_platform(yield_postgresql_platform), name="postgresql_platform"
-)
-session_postgresql_platform = pytest.fixture(
-    get_platform(yield_postgresql_platform), name="session_postgresql_platform"
-)
-
-
-def get_platform_fixture(request, prefix=""):
-    type = request.param
     if type == "rest-sqlite":
-        return request.getfixturevalue(prefix + "rest_sqlite_platform")
+        bctx = backends.rest_sqlite()
     elif type == "rest-postgres":
-        return request.getfixturevalue(prefix + "rest_postgresql_platform")
+        bctx = backends.rest_postgresql()
     elif type == "sqlite":
-        return request.getfixturevalue(prefix + "sqlite_platform")
+        bctx = backends.sqlite()
     elif type == "postgres":
-        return request.getfixturevalue(prefix + "postgresql_platform")
+        bctx = backends.postgresql()
+    return bctx
 
 
-rest_platform = pytest.fixture(get_platform_fixture, name="rest_platform")
-db_platform = pytest.fixture(get_platform_fixture, name="db_platform")
-platform = pytest.fixture(get_platform_fixture, name="platform")
+def platform_fixture(request):
+    type = request.param
+    postgres_dsn = request.config.option.postgres_dsn
+    bctx = get_backend_context(type, postgres_dsn)
+
+    with bctx as backend:
+        backend.reset()
+        yield Platform(_backend=backend)
+
+
+rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
+db_platform = pytest.fixture(platform_fixture, name="db_platform")
+platform = pytest.fixture(platform_fixture, name="platform")
 
 medium = MediumIamcDataset()
 
 
-@pytest.fixture(scope="session")
+@pytest.fixture(scope="module")
 def ro_platform_med(request):
-    """Session wide platform fixture pre-loaded with medium size test data."""
-    p = get_platform_fixture(request, prefix="session_")
-    medium.load_dataset(p)
-    return p
+    type = request.param
+    postgres_dsn = request.config.option.postgres_dsn
+    bctx = get_backend_context(type, postgres_dsn)
+
+    with bctx as backend:
+        backend.reset()
+        platform = Platform(_backend=backend)
+        medium.load_dataset(platform)
+        yield platform
 
 
 def pytest_generate_tests(metafunc):
@@ -157,9 +134,7 @@ def pytest_generate_tests(metafunc):
     for fixturename, allowed_types in backend_fixtures.items():
         pres_types = [t for t in backend_types if t in allowed_types]
         if fixturename in metafunc.fixturenames:
-            metafunc.parametrize(
-                fixturename, pres_types, indirect=True, scope="function"
-            )
+            metafunc.parametrize(fixturename, pres_types, indirect=True)
 
 
 @pytest.fixture(scope="function")
