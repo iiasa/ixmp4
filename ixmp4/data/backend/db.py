@@ -5,7 +5,7 @@ from typing import Generator
 
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool, StaticPool
 
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
@@ -103,10 +103,6 @@ class SqlAlchemyBackend(Backend):
         self.scenarios = ScenarioRepository(self)
         self.units = UnitRepository(self)
 
-    def close(self):
-        self.session.close()
-        self.engine.dispose()
-
     @contextmanager
     def auth(
         self,
@@ -134,6 +130,12 @@ class SqlAlchemyBackend(Backend):
     def teardown(self):
         self.session.rollback()
         self._drop_all()
+        self.engine = None
+        self.session = None
+
+    def close(self):
+        self.session.close()
+        self.engine.dispose()
 
 
 class SqliteTestBackend(SqlAlchemyBackend):
@@ -160,5 +162,5 @@ class PostgresTestBackend(SqlAlchemyBackend):
         )
 
     def make_engine(self, dsn: str):
-        self.engine = create_engine(dsn)
+        self.engine = create_engine(dsn, poolclass=NullPool)
         self.session = self.Session(bind=self.engine)
