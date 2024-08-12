@@ -2,7 +2,9 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import Table
+from ixmp4 import IndexSet, Table
+
+from ..utils import create_indexsets_for_run
 
 
 def df_from_list(tables: list[Table]):
@@ -36,7 +38,10 @@ class TestCoreTable:
         run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset = run.optimization.indexsets.create("Indexset")
+        indexset, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
         table = run.optimization.tables.create(
             "Table 1",
             constrained_to_indexsets=[indexset.name],
@@ -45,20 +50,20 @@ class TestCoreTable:
         assert table.id == 1
         assert table.name == "Table 1"
         assert table.data == {}
-        assert table.columns[0].name == "Indexset"
+        assert table.columns[0].name == indexset.name
         assert table.constrained_to_indexsets == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
             _ = run.optimization.tables.create(
-                "Table 1", constrained_to_indexsets=["Indexset"]
+                "Table 1", constrained_to_indexsets=[indexset.name]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(ValueError, match="not equal in length"):
             _ = run.optimization.tables.create(
                 name="Table 2",
-                constrained_to_indexsets=["Indexset"],
+                constrained_to_indexsets=[indexset.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
@@ -79,11 +84,10 @@ class TestCoreTable:
             )
 
         # Test column.dtype is registered correctly
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
         indexset_2.add(elements=2024)
         table_3 = run.optimization.tables.create(
             "Table 5",
-            constrained_to_indexsets=["Indexset", indexset_2.name],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         # If indexset doesn't have elements, a generic dtype is registered
         assert table_3.columns[0].dtype == "object"
@@ -91,9 +95,11 @@ class TestCoreTable:
 
     def test_get_table(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create(name="Indexset")
+        (indexset,) = create_indexsets_for_run(
+            platform=platform, run_id=run.id, amount=1
+        )
         _ = run.optimization.tables.create(
-            name="Table", constrained_to_indexsets=["Indexset"]
+            name="Table", constrained_to_indexsets=[indexset.name]
         )
         table = run.optimization.tables.get("Table")
         assert table.run_id == run.id
@@ -108,16 +114,18 @@ class TestCoreTable:
 
     def test_table_add_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create("Indexset")
+        indexset, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
         indexset.add(elements=["foo", "bar", ""])
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
         indexset_2.add([1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
         # can remedy this. Or maybe we want to catch the resulting
         # "ValueError: If using all scalar values, you must pass an index" and
         # reraise a custom informative error?
-        test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
+        test_data_1 = {indexset.name: ["foo"], indexset_2.name: [1]}
         table = run.optimization.tables.create(
             "Table",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
@@ -132,22 +140,22 @@ class TestCoreTable:
 
         with pytest.raises(ValueError, match="missing values"):
             table_2.add(
-                pd.DataFrame({"Indexset": [None], "Indexset 2": [2]}),
+                pd.DataFrame({indexset.name: [None], indexset_2.name: [2]}),
                 # empty string is allowed for now, but None or NaN raise
             )
 
         with pytest.raises(ValueError, match="contains duplicate rows"):
             table_2.add(
-                data={"Indexset": ["foo", "foo"], "Indexset 2": [2, 2]},
+                data={indexset.name: ["foo", "foo"], indexset_2.name: [2, 2]},
             )
 
         # Test raising on unrecognised data.values()
         with pytest.raises(ValueError, match="contains values that are not allowed"):
             table_2.add(
-                data={"Indexset": ["foo"], "Indexset 2": [0]},
+                data={indexset.name: ["foo"], indexset_2.name: [0]},
             )
 
-        test_data_2 = {"Indexset": [""], "Indexset 2": [3]}
+        test_data_2 = {indexset.name: [""], indexset_2.name: [3]}
         table_2.add(data=test_data_2)
         assert table_2.data == test_data_2
 
@@ -190,12 +198,15 @@ class TestCoreTable:
         # This doesn't seem to test a distinct case compared to the above
         with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
             table_4.add(
-                data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
+                data={"Column 1": ["bar"], "Column 2": [3], indexset.name: ["foo"]},
             )
 
         # Test various data types
-        test_data_5 = {"Indexset": ["foo", "foo", "bar"], "Indexset 3": [1, "2", 3.14]}
         indexset_3 = run.optimization.indexsets.create(name="Indexset 3")
+        test_data_5 = {
+            indexset.name: ["foo", "foo", "bar"],
+            indexset_3.name: [1, "2", 3.14],
+        }
         indexset_3.add(elements=[1, "2", 3.14])
         table_5 = run.optimization.tables.create(
             name="Table 5",
@@ -212,14 +223,20 @@ class TestCoreTable:
         run = platform.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
         run.set_as_default()
-        _ = run.optimization.indexsets.create("Indexset")
-        _ = run.optimization.indexsets.create("Indexset 2")
+        create_indexsets_for_run(platform=platform, run_id=run.id)
         table = run.optimization.tables.create(
-            "Table", constrained_to_indexsets=["Indexset"]
+            "Table", constrained_to_indexsets=["Indexset 1"]
         )
         table_2 = run.optimization.tables.create(
             "Table 2", constrained_to_indexsets=["Indexset 2"]
         )
+        # Create table in another run to test listing tables for specific run
+        run_2 = platform.runs.create("Model", "Scenario")
+        indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
+        run_2.optimization.tables.create(
+            "Table 1", constrained_to_indexsets=[indexset_3.name]
+        )
+
         expected_ids = [table.id, table_2.id]
         list_ids = [table.id for table in run.optimization.tables.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -233,16 +250,25 @@ class TestCoreTable:
         run = platform.runs.create("Model", "Scenario")
         # Per default, tabulate() lists scalars for `default` version runs:
         run.set_as_default()
-        indexset = run.optimization.indexsets.create("Indexset")
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
         table = run.optimization.tables.create(
             name="Table",
-            constrained_to_indexsets=["Indexset", "Indexset 2"],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         table_2 = run.optimization.tables.create(
             name="Table 2",
-            constrained_to_indexsets=["Indexset", "Indexset 2"],
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
+        # Create table in another run to test listing tables for specific run
+        run_2 = platform.runs.create("Model", "Scenario")
+        indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
+        run_2.optimization.tables.create(
+            "Table 1", constrained_to_indexsets=[indexset_3.name]
+        )
+
         pd.testing.assert_frame_equal(
             df_from_list([table_2]),
             run.optimization.tables.tabulate(name="Table 2"),
@@ -250,9 +276,9 @@ class TestCoreTable:
 
         indexset.add(["foo", "bar"])
         indexset_2.add([1, 2, 3])
-        test_data_1 = {"Indexset": ["foo"], "Indexset 2": [1]}
+        test_data_1 = {indexset.name: ["foo"], indexset_2.name: [1]}
         table.add(test_data_1)
-        test_data_2 = {"Indexset 2": [2, 3], "Indexset": ["foo", "bar"]}
+        test_data_2 = {indexset_2.name: [2, 3], indexset.name: ["foo", "bar"]}
         table_2.add(test_data_2)
         pd.testing.assert_frame_equal(
             df_from_list([table, table_2]),
@@ -261,7 +287,9 @@ class TestCoreTable:
 
     def test_table_docs(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create("Indexset")
+        (indexset,) = create_indexsets_for_run(
+            platform=platform, run_id=run.id, amount=1
+        )
         table_1 = run.optimization.tables.create(
             "Table 1", constrained_to_indexsets=[indexset.name]
         )

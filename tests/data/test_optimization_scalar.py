@@ -119,3 +119,16 @@ class TestDataOptimizationScalar:
         pdt.assert_frame_equal(
             expected, platform.backend.optimization.scalars.tabulate(name="Scalar")
         )
+
+        # Test tabulation of scalars of particular run only
+        run_2 = platform.backend.runs.create("Model", "Scenario")
+        scalar_3 = platform.backend.optimization.scalars.create(
+            run_id=run_2.id, name="Scalar", value=1, unit_name=unit.name
+        )
+        scalar_4 = platform.backend.optimization.scalars.create(
+            run_id=run_2.id, name="Scalar 2", value=2, unit_name=unit2.name
+        )
+        expected = df_from_list(scalars=[scalar_3, scalar_4])
+        pdt.assert_frame_equal(
+            expected, platform.backend.optimization.scalars.tabulate(run_id=run_2.id)
+        )

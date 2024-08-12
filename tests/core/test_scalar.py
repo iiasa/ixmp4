@@ -105,6 +105,11 @@ class TestCoreScalar:
             "Scalar 1", value=1, unit="Test Unit"
         )
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        # Create scalar in another run to test listing scalars for specific run
+        platform.runs.create("Model", "Scenario").optimization.scalars.create(
+            "Scalar 1", value=1, unit=unit
+        )
+
         expected_ids = [scalar_1.id, scalar_2.id]
         list_ids = [scalar.id for scalar in run.optimization.scalars.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -123,6 +128,11 @@ class TestCoreScalar:
         unit = platform.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create("Scalar 1", value=1, unit=unit.name)
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        # Create scalar in another run to test tabulating scalars for specific run
+        platform.runs.create("Model", "Scenario").optimization.scalars.create(
+            "Scalar 1", value=1, unit=unit
+        )
+
         expected = df_from_list(scalars=[scalar_1, scalar_2])
         result = run.optimization.scalars.tabulate()
         assert_unordered_equality(expected, result, check_dtype=False)
