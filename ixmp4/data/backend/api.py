@@ -168,10 +168,9 @@ class RestTestBackend(RestBackend):
     def close(self):
         self.client.close()
         self.executor.shutdown(cancel_futures=True)
-        self.db_backend.close()
 
     def setup(self):
-        self.db_backend.setup()
+        pass
 
     def teardown(self):
-        self.db_backend.teardown()
+        pass
