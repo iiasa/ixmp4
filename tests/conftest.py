@@ -97,10 +97,9 @@ def platform_fixture(request):
     bctx = get_backend_context(type, postgres_dsn)
 
     with bctx as backend:
-        backend._create_all()
+        backend.setup()
         yield Platform(_backend=backend)
-        backend.session.rollback()
-        backend._drop_all()
+        backend.teardown()
 
 
 rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
@@ -117,12 +116,11 @@ def platform_td_big(request):
     bctx = get_backend_context(type, postgres_dsn)
 
     with bctx as backend:
-        backend._create_all()
+        backend.setup()
         platform = Platform(_backend=backend)
         big.load_dataset(platform)
         yield platform
-        backend.session.rollback()
-        backend._drop_all()
+        backend.teardown()
 
 
 db_platform_big = pytest.fixture(

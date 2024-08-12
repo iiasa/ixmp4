@@ -128,10 +128,12 @@ class SqlAlchemyBackend(Backend):
     def _drop_all(self):
         BaseModel.metadata.drop_all(bind=self.engine, checkfirst=True)
 
-    def reset(self):
+    def setup(self):
+        self._create_all()
+
+    def teardown(self):
         self.session.rollback()
         self._drop_all()
-        self._create_all()
 
 
 class SqliteTestBackend(SqlAlchemyBackend):

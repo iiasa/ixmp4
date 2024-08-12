@@ -169,5 +169,8 @@ class RestTestBackend(RestBackend):
         self.client.close()
         self.executor.shutdown(cancel_futures=True)
 
-    def reset(self):
-        self.db_backend.reset()
+    def setup(self):
+        self.db_backend.setup()
+
+    def teardown(self):
+        self.db_backend.teardown()
