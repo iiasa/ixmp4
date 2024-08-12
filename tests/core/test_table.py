@@ -221,8 +221,6 @@ class TestCoreTable:
 
     def test_list_tables(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        # Per default, list() lists scalars for `default` version runs:
-        run.set_as_default()
         create_indexsets_for_run(platform=platform, run_id=run.id)
         table = run.optimization.tables.create(
             "Table", constrained_to_indexsets=["Indexset 1"]
@@ -248,8 +246,6 @@ class TestCoreTable:
 
     def test_tabulate_table(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists scalars for `default` version runs:
-        run.set_as_default()
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)  # type: ignore
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)

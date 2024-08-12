@@ -98,8 +98,6 @@ class TestCoreScalar:
 
     def test_list_scalars(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        # Per default, list() lists only `default` version runs:
-        run.set_as_default()
         unit = platform.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create(
             "Scalar 1", value=1, unit="Test Unit"
@@ -123,8 +121,6 @@ class TestCoreScalar:
 
     def test_tabulate_scalars(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        # Per default, tabulate() lists only `default` version runs:
-        run.set_as_default()
         unit = platform.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create("Scalar 1", value=1, unit=unit.name)
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
