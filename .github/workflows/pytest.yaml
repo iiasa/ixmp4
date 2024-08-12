@@ -18,8 +18,7 @@ jobs:
         pandas-version:
           - false
         backend:
-          - "sqlite,rest-sqlite"
-          - "postgres,rest-postgres"
+          - "sqlite,rest-sqlite,postgres,rest-postgres"
         include:
           # with pyarrow
           - python-version: "3.12"
