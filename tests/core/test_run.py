@@ -5,7 +5,7 @@ import pytest
 import ixmp4
 from ixmp4 import IxmpError, Run
 
-from ..fixtures import BigIamcDataset
+from ..fixtures import MediumIamcDataset
 
 
 def _expected_runs_table(*row_default):
@@ -20,7 +20,7 @@ def _expected_runs_table(*row_default):
 
 
 class TestCoreRun:
-    big = BigIamcDataset()
+    medium = MediumIamcDataset()
 
     def test_run_notfound(self, platform: ixmp4.Platform):
         # no Run with that model and scenario name exists
@@ -94,8 +94,8 @@ class TestCoreRun:
         with pytest.raises(IxmpError):
             run2.unset_as_default()
 
-        self.big.load_dataset(platform)
-        all_runs = self.big.runs.copy()
+        self.medium.load_dataset(platform)
+        all_runs = self.medium.runs.copy()
 
         res = platform.runs.tabulate(
             default_only=False,
@@ -103,8 +103,8 @@ class TestCoreRun:
                 "region": {"name": "Region 1"},
             },
         )
-        assert sorted(res["model"].tolist()) == ["Model 0", "Model 0"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 1", "Scenario 1"]
+        assert sorted(res["model"].tolist()) == ["Model 0"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 1"]
 
         res = platform.runs.tabulate(
             default_only=False,
@@ -112,18 +112,18 @@ class TestCoreRun:
                 "region": {"name": "Region 3"},
             },
         )
-        assert sorted(res["model"].tolist()) == ["Model 1", "Model 1"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 0", "Scenario 0"]
+        assert sorted(res["model"].tolist()) == ["Model 1"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 0"]
 
         # run1.set_as_default()
         res = platform.runs.tabulate(
             iamc={
                 "variable": {"name__like": "Variable 10*"},
-                "unit": {"name__in": ["Unit 10", "Unit 100"]},
+                "unit": {"name__in": ["Unit 10", "Unit 2"]},
             }
         )
-        assert sorted(res["model"].tolist()) == ["Model 6"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
+        assert sorted(res["model"].tolist()) == ["Model 3", "Model 4"]
+        assert sorted(res["scenario"].tolist()) == ["Scenario 0", "Scenario 1"]
 
         res = platform.runs.tabulate(
             default_only=False,

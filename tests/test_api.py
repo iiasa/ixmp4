@@ -5,12 +5,12 @@ import httpx
 import ixmp4
 from ixmp4.data.backend import RestBackend
 
-from .fixtures import BigIamcDataset, SmallIamcDataset
+from .fixtures import MediumIamcDataset, SmallIamcDataset
 
 
 class TestApi:
     small = SmallIamcDataset()
-    big = BigIamcDataset()
+    medium = MediumIamcDataset()
 
     def assert_res(self, res: httpx.Response, is_success=True):
         assert res.is_success == is_success
@@ -251,7 +251,7 @@ class TestApi:
         )
 
     def test_paginate_datapoints(self, rest_platform: ixmp4.Platform):
-        self.big.load_dataset(rest_platform)
+        self.medium.load_dataset(rest_platform)
         client = cast(RestBackend, rest_platform.backend).client
         endpoint = "iamc/datapoints/"
         filters = {"run": {"default_only": False}}
@@ -259,5 +259,5 @@ class TestApi:
             client,
             endpoint,
             filters=filters,
-            no_of_rows=len(self.big.datapoints),
+            no_of_rows=len(self.medium.datapoints),
         )

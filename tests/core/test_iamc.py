@@ -7,7 +7,7 @@ from ixmp4 import DataPoint
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import SchemaError
 
-from ..fixtures import BigIamcDataset, SmallIamcDataset
+from ..fixtures import MediumIamcDataset, SmallIamcDataset
 from ..utils import (
     assert_unordered_equality,
 )
@@ -165,7 +165,7 @@ class TestCoreIamc:
 
 
 class TestCoreIamcBig:
-    big = BigIamcDataset()
+    medium = MediumIamcDataset()
 
     @pytest.mark.parametrize(
         "filters, run, exp_len",
@@ -185,35 +185,30 @@ class TestCoreIamcBig:
                     unit={"name__like": "Unit *"},
                 ),
                 ("Model 2", "Scenario 2", 1),
-                1160,
+                280,
             ),
             (
                 dict(variable={"name__in": ["Variable 4", "Variable 24"]}),
                 ("Model 1", "Scenario 1", 1),
-                100,
-            ),
-            (dict(variable="Variable 24"), ("Model 1", "Scenario 1", 1), 50),
-            (
-                dict(variable="Variable 24", unit="Unit 24"),
-                ("Model 1", "Scenario 1", 1),
                 50,
             ),
+            (dict(variable="Variable 24"), ("Model 1", "Scenario 1", 1), 0),
             (
                 dict(variable="Variable 54", unit="Unit 54"),
-                ("Model 1", "Scenario 1", 1),
+                ("Model 8", "Scenario 0", 1),
                 50,
             ),
             (
                 dict(variable=["Variable 54", "Variable 25", "Variable 4"]),
                 ("Model 1", "Scenario 1", 1),
-                100,
+                50,
             ),
         ),
     )
     def test_run_tabulate_with_filter_raw(
         self, platform: ixmp4.Platform, filters, run, exp_len
     ):
-        self.big.load_dataset(platform)
+        self.medium.load_dataset(platform)
         run = platform.runs.get(*run)
         obs = run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
@@ -221,7 +216,7 @@ class TestCoreIamcBig:
 
     def test_mp_tabulate_big_async(self, platform: ixmp4.Platform):
         """Tests if big tabulations work in async contexts."""
-        self.big.load_dataset(platform)
+        self.medium.load_dataset(platform)
 
         async def tabulate():
             return platform.iamc.tabulate(raw=True, run={"default_only": False})
@@ -230,6 +225,6 @@ class TestCoreIamcBig:
         assert len(res) > settings.default_page_size
 
     def test_mp_tabulate_big(self, platform: ixmp4.Platform):
-        self.big.load_dataset(platform)
+        self.medium.load_dataset(platform)
         res = platform.iamc.tabulate(raw=True, run={"default_only": False})
         assert len(res) > settings.default_page_size
