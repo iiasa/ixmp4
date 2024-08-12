@@ -49,8 +49,8 @@ class Backends:
             rest = RestTestBackend(backend)
             rest.setup()
             yield rest
-            rest.teardown()
             rest.close()
+            rest.teardown()
 
     @contextmanager
     def rest_postgresql(self):
@@ -58,8 +58,8 @@ class Backends:
             rest = RestTestBackend(backend)
             rest.setup()
             yield rest
-            rest.teardown()
             rest.close()
+            rest.teardown()
 
     @contextmanager
     def postgresql(self):
@@ -71,8 +71,8 @@ class Backends:
         )
         pgsql.setup()
         yield pgsql
-        pgsql.teardown()
         pgsql.close()
+        pgsql.teardown()
 
     @contextmanager
     def sqlite(self):
@@ -81,8 +81,8 @@ class Backends:
         )
         sqlite.setup()
         yield sqlite
-        sqlite.teardown()
         sqlite.close()
+        sqlite.teardown()
 
 
 def get_backend_context(type, postgres_dsn):
