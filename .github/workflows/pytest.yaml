@@ -18,7 +18,7 @@ jobs:
           - "16"
         pandas-version:
           - false
-        backends:
+        backend:
           - "sqlite"
           - "rest-sqlite"
           - "postgres"
@@ -154,7 +154,7 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest --backend ${{ matrix.backends }} --postgres-dsn postgresql://postgres:postgres@postgres:5432/test --cov-report xml:.coverage.xml --cov-report term --cov=ixmp4 -rsx --benchmark-skip
+          pytest --backend ${{ matrix.backend }} --postgres-dsn postgresql://postgres:postgres@postgres:5432/test --cov-report xml:.coverage.xml --cov-report term --cov=ixmp4 -rsx --benchmark-skip
 
   pre-commit:
     name: Code quality
