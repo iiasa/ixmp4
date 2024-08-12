@@ -79,8 +79,8 @@ def yield_sqlite_platform(*args):
 
 
 def get_platform(gen):
-    def fixture(request):
-        with gen(request.config.options.postgres_dsn) as p:
+    def fixture(pytestconfig):
+        with gen(pytestconfig.option.postgres_dsn) as p:
             yield p
 
     return fixture
