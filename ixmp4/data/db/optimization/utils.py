@@ -8,13 +8,10 @@ if TYPE_CHECKING:
 
 def collect_indexsets_to_check(
     columns: list["Column"],
-) -> dict[str, Any]:
+) -> dict[str, list[float | int | str]]:
     """Creates a {key:value} dict from linked Column.names and their
     IndexSet.elements."""
-    collection: dict[str, Any] = {}
-    for column in columns:
-        collection[column.name] = column.indexset.elements
-    return collection
+    return {column.name: column.indexset.elements for column in columns}
 
 
 def validate_data(key, data: dict[str, Any], columns: list["Column"]):
