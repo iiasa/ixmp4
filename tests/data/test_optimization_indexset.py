@@ -135,7 +135,7 @@ class TestDataOptimizationIndexSet:
             elements=test_elements,  # type: ignore
         )
         indexset_1 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name="Indexset 1"
+            run_id=run.id, name=indexset_1.name
         )
 
         platform.backend.optimization.indexsets.add_elements(
