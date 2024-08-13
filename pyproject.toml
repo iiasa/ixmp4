@@ -44,6 +44,7 @@ sphinx-multiversion = ">=0.2.4"
 sphinx-rtd-theme = ">=2.0.0"
 sphinxcontrib-bibtex = ">=2.6.1"
 sphinxcontrib-openapi = ">=0.8.1"
+setuptools = ">=69.2.0"
 
 [tool.poetry.group.server]
 optional = true
