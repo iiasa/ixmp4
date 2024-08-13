@@ -1,0 +1,11 @@
+
+model,scenario,region,variable,unit,step_year,value
+Model 1,Scenario 1,Region 1,Variable 1,Unit 1,2000,0.5
+Model 1,Scenario 1,Region 1,Variable 1,Unit 2,2010,1.0
+Model 1,Scenario 1,Region 3,Variable 3,Unit 1,2020,1.5
+Model 1,Scenario 1,Region 3,Variable 4,Unit 2,2020,1.7
+
+Model 2,Scenario 2,Region 2,Variable 5,Unit 3,2000,0.5
+Model 2,Scenario 2,Region 2,Variable 6,Unit 4,2010,1.7
+Model 2,Scenario 2,Region 4,Variable 7,Unit 3,2020,1.5
+Model 2,Scenario 2,Region 4,Variable 8,Unit 4,2020,1.7

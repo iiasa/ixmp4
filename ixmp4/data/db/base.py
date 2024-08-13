@@ -12,6 +12,7 @@ from typing import (
     Iterator,
     Tuple,
     TypeVar,
+    cast,
 )
 
 import numpy as np
@@ -353,7 +354,6 @@ class BulkOperator(Tabulator[ModelType]):
 
 class BulkUpserter(BulkOperator[ModelType]):
     def bulk_upsert(self, df: pd.DataFrame) -> None:
-        # slight performance improvement on small operations
         if len(df.index) < self.max_list_length:
             self.bulk_upsert_chunk(df)
         else:
@@ -361,10 +361,12 @@ class BulkUpserter(BulkOperator[ModelType]):
                 self.bulk_upsert_chunk(pd.DataFrame(chunk_df))
 
     def bulk_upsert_chunk(self, df: pd.DataFrame) -> None:
+        logger.debug(f"Starting `bulk_upsert_chunk` for {len(df)} rows.")
         columns = db.utils.get_columns(self.model_class)
         df = df[list(set(columns.keys()) & set(df.columns))]
         existing_df = self.tabulate_existing(df)
         if existing_df.empty:
+            logger.debug(f"Inserting {len(df)} rows.")
             self.bulk_insert(df, skip_validation=True)
         else:
             df = self.merge_existing(df, existing_df)
@@ -393,25 +395,37 @@ class BulkUpserter(BulkOperator[ModelType]):
             )
 
             if not insert_df.empty:
+                logger.debug(f"Inserting {len(insert_df)} rows.")
                 self.bulk_insert(insert_df, skip_validation=True)
             if not update_df.empty:
+                logger.debug(f"Updating {len(update_df)} rows.")
                 self.bulk_update(update_df, skip_validation=True)
 
         self.session.commit()
 
     def bulk_insert(self, df: pd.DataFrame, **kwargs) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
-        m: list[dict[str, Any]] = df.to_dict("records")  # type: ignore
+        if "id" in df.columns:
+            raise ProgrammingError("You may not insert the 'id' column.")
+        m = cast(list[dict[str, Any]], df.to_dict("records"))
 
         try:
-            self.session.execute(db.insert(self.model_class), m)
+            self.session.execute(
+                db.insert(self.model_class),
+                m,
+                execution_options={"synchronize_session": False},
+            )
         except IntegrityError as e:
             raise self.model_class.NotUnique(*e.args)
 
     def bulk_update(self, df: pd.DataFrame, **kwargs) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
-        m: list[dict[str, Any]] = df.to_dict("records")  # type: ignore
-        self.session.bulk_update_mappings(self.model_class, m)  # type: ignore
+        m = cast(list[dict[str, Any]], df.to_dict("records"))
+        self.session.execute(
+            db.update(self.model_class),
+            m,
+            execution_options={"synchronize_session": False},
+        )
 
 
 class BulkDeleter(BulkOperator[ModelType]):

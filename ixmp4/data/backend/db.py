@@ -5,7 +5,7 @@ from typing import Generator
 
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.pool import StaticPool
+from sqlalchemy.pool import NullPool, StaticPool
 
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
@@ -72,16 +72,20 @@ class SqlAlchemyBackend(Backend):
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
         logger.info(f"Creating database engine for platform '{info.name}'.")
-        self.make_engine(info.dsn)
+        dsn = self.check_dsn(info.dsn)
+        self.make_engine(dsn)
         self.make_repositories()
         self.event_handler = SqlaEventHandler(self)
 
-    def make_engine(self, dsn: str):
+    def check_dsn(self, dsn: str):
         if dsn.startswith("postgresql://"):
             logger.debug(
                 "Replacing the platform dsn prefix to use the new `psycopg` driver."
             )
             dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
+        return dsn
+
+    def make_engine(self, dsn: str):
         self.engine = cached_create_engine(dsn)
         self.session = self.Session(bind=self.engine)
 
@@ -98,9 +102,6 @@ class SqlAlchemyBackend(Backend):
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)
         self.units = UnitRepository(self)
-
-    def close(self):
-        self.session.close()
 
     @contextmanager
     def auth(
@@ -123,20 +124,26 @@ class SqlAlchemyBackend(Backend):
     def _drop_all(self):
         BaseModel.metadata.drop_all(bind=self.engine, checkfirst=True)
 
-    def reset(self):
-        self.session.commit()
-        self._drop_all()
+    def setup(self):
         self._create_all()
+
+    def teardown(self):
+        self.session.rollback()
+        self._drop_all()
+        self.engine = None
+        self.session = None
+
+    def close(self):
+        self.session.close()
+        self.engine.dispose()
 
 
 class SqliteTestBackend(SqlAlchemyBackend):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(
-            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:"),
             *args,
             **kwargs,
         )
-        self.reset()
 
     def make_engine(self, dsn: str):
         self.engine = create_engine(
@@ -150,11 +157,10 @@ class SqliteTestBackend(SqlAlchemyBackend):
 class PostgresTestBackend(SqlAlchemyBackend):
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(
-            PlatformInfo(
-                name="postgres-test",
-                dsn="postgresql://postgres:postgres@localhost/test",
-            ),
             *args,
             **kwargs,
         )
-        self.reset()
+
+    def make_engine(self, dsn: str):
+        self.engine = create_engine(dsn, poolclass=NullPool)
+        self.session = self.Session(bind=self.engine)

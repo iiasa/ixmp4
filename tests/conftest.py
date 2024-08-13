@@ -1,98 +1,194 @@
-import contextlib
 import cProfile
 import pstats
-from datetime import datetime
+from contextlib import contextmanager
 from pathlib import Path
 
-import pandas as pd
 import pytest
-from sqlalchemy.exc import OperationalError
 
 from ixmp4 import Platform
+from ixmp4.conf.base import PlatformInfo
+from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
-from ixmp4.data.generator import MockDataGenerator
 
-TEST_DATA_BIG = None
-try:
-    TEST_DATA_BIG = pd.read_csv("./tests/test-data/iamc-test-data_annual_big.csv")
-    if TEST_DATA_BIG.empty:
-        TEST_DATA_BIG = None
-    # TEST_DATA_BIG = read_test_data(
-    #     "./tests/test-data/very-big-test-data.xlsx"
-    # ).reset_index(drop=True)
-except FileNotFoundError:
-    TEST_DATA_BIG = None  # skip benchmark tests
+from .fixtures import BigIamcDataset, MediumIamcDataset
 
-SKIP_PGSQL_TESTS = False
-try:
-    mp = Platform(_backend=PostgresTestBackend())
-    mp.backend.close()
-except OperationalError:
-    SKIP_PGSQL_TESTS = True
+backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
+backend_fixtures = {
+    "rest_platform_med": ["rest-sqlite", "rest-postgres"],
+    "platform_med": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
+    "platform_big": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
+    "db_platform_big": ["sqlite", "postgres"],
+    "platform": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
+    "db_platform": ["sqlite", "postgres"],
+    "rest_platform": ["rest-sqlite", "rest-postgres"],
+    "sqlite_platform": ["sqlite"],
+}
 
 
-@pytest.fixture(scope="function")
-def test_data_big():
-    yield TEST_DATA_BIG.copy()
+def pytest_addoption(parser):
+    """Called to set up the pytest command line parser.
+    We can add our own options here."""
+
+    parser.addoption(
+        "--backend",
+        action="store",
+        default="sqlite,rest-sqlite",
+    )
+    parser.addoption(
+        "--postgres-dsn",
+        action="store",
+        default="postgresql://postgres:postgres@localhost:5432/test",
+    )
 
 
-TEST_DF_DATETIME = pd.DataFrame(
-    [
-        ["World", "Primary Energy", "EJ/yr", datetime(2005, 1, 1, 1, 0, 0), 1],
-        ["World", "Primary Energy", "EJ/yr", datetime(2010, 1, 1, 1, 0, 0), 6.0],
-        ["World", "Primary Energy|Coal", "EJ/yr", datetime(2005, 1, 1, 1, 0, 0), 0.5],
-        ["World", "Primary Energy|Coal", "EJ/yr", datetime(2010, 1, 1, 1, 0, 0), 3],
-    ],
-    columns=["region", "variable", "unit", "step_datetime", "value"],
+class Backends:
+    """Defines creation, setup and teardown for all types of backends."""
+
+    postgres_dsn: str
+
+    def __init__(self, postgres_dsn: str) -> None:
+        self.postgres_dsn = postgres_dsn
+
+    @contextmanager
+    def rest_sqlite(self):
+        with self.sqlite() as backend:
+            rest = RestTestBackend(backend)
+            rest.setup()
+            yield rest
+            rest.close()
+            rest.teardown()
+
+    @contextmanager
+    def rest_postgresql(self):
+        with self.postgresql() as backend:
+            rest = RestTestBackend(backend)
+            rest.setup()
+            yield rest
+            rest.close()
+            rest.teardown()
+
+    @contextmanager
+    def postgresql(self):
+        pgsql = PostgresTestBackend(
+            PlatformInfo(
+                name="postgres-test",
+                dsn=self.postgres_dsn,
+            ),
+        )
+        pgsql.setup()
+        yield pgsql
+        pgsql.close()
+        pgsql.teardown()
+
+    @contextmanager
+    def sqlite(self):
+        sqlite = SqliteTestBackend(
+            PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
+        )
+        sqlite.setup()
+        yield sqlite
+        sqlite.close()
+        sqlite.teardown()
+
+
+def get_backend_context(type, postgres_dsn):
+    backends = Backends(postgres_dsn)
+
+    if type == "rest-sqlite":
+        bctx = backends.rest_sqlite()
+    elif type == "rest-postgres":
+        bctx = backends.rest_postgresql()
+    elif type == "sqlite":
+        bctx = backends.sqlite()
+    elif type == "postgres":
+        bctx = backends.postgresql()
+    return bctx
+
+
+def platform_fixture(request):
+    type = request.param
+    postgres_dsn = request.config.option.postgres_dsn
+    bctx = get_backend_context(type, postgres_dsn)
+
+    with bctx as backend:
+        yield Platform(_backend=backend)
+
+
+# function scope fixtures
+rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
+db_platform = pytest.fixture(platform_fixture, name="db_platform")
+sqlite_platform = pytest.fixture(platform_fixture, name="sqlite_platform")
+platform = pytest.fixture(platform_fixture, name="platform")
+
+big = BigIamcDataset()
+medium = MediumIamcDataset()
+
+
+def td_platform_fixture(td):
+    def platform_with_td(request):
+        type = request.param
+        postgres_dsn = request.config.option.postgres_dsn
+        bctx = get_backend_context(type, postgres_dsn)
+
+        with bctx as backend:
+            platform = Platform(_backend=backend)
+            td.load_dataset(platform)
+            yield platform
+
+    return platform_with_td
+
+
+# class scope fixture with big test data
+db_platform_big = pytest.fixture(
+    td_platform_fixture(big), scope="class", name="db_platform_big"
+)
+
+platform_med = pytest.fixture(
+    td_platform_fixture(medium), scope="class", name="platform_med"
+)
+
+rest_platform_med = pytest.fixture(
+    td_platform_fixture(medium), scope="class", name="rest_platform_med"
 )
 
 
-@pytest.fixture(scope="function")
-def test_data_datetime():
-    return TEST_DF_DATETIME.copy()
+def pytest_generate_tests(metafunc):
+    # This is called for every test. Only get/set command line arguments
+    # if the argument is specified in the list of test "fixturenames".
 
+    # parse '--backend' option
+    be_args = metafunc.config.option.backend.split(",")
+    backend_types = [t.strip() for t in be_args]
+    for bt in backend_types:
+        if bt not in backend_choices:
+            raise ProgrammingError(f"'{bt}' not a valid backend")
 
-TEST_DF_CATEGORICAL = pd.DataFrame(
-    [
-        ["World", "Primary Energy", "EJ/yr", 2010, "A", 6.0],
-        ["World", "Primary Energy", "EJ/yr", 2010, "B", 3],
-        ["World", "Primary Energy", "EJ/yr", 2005, "A", 1],
-        ["World", "Primary Energy", "EJ/yr", 2005, "B", 0.5],
-    ],
-    columns=["region", "variable", "unit", "step_year", "step_category", "value"],
-)
-
-
-@pytest.fixture(scope="function")
-def test_data_categorical():
-    df = TEST_DF_CATEGORICAL.copy()
-    return df
-
-
-TEST_DF_ANNUAL = pd.DataFrame(
-    [
-        ["World", "Primary Energy", "EJ/yr", 2005, 1],
-        ["World", "Primary Energy", "EJ/yr", 2010, 6.0],
-        ["World", "Primary Energy|Coal", "EJ/yr", 2005, 0.5],
-        ["World", "Primary Energy|Coal", "EJ/yr", 2010, 3],
-    ],
-    columns=["region", "variable", "unit", "step_year", "value"],
-)
-
-
-@pytest.fixture(scope="function")
-def test_data_annual():
-    df = TEST_DF_ANNUAL.copy()
-    return df
+    # the `backend_fixtures` dict tells us which backends are allowed
+    # for which fixtures
+    for fixturename, allowed_types in backend_fixtures.items():
+        pres_types = [t for t in backend_types if t in allowed_types]
+        if fixturename in metafunc.fixturenames:
+            metafunc.parametrize(fixturename, pres_types, indirect=True)
 
 
 @pytest.fixture(scope="function")
 def profiled(request):
+    """Use this fixture for profiling tests:
+    ```
+    def test(profiled):
+        # setup() ...
+        with profiled():
+            complex_procedure()
+        # teardown() ...
+    ```
+    Profiler output will be written to '.profiles/{testname}.prof'
+    """
+
     testname = request.node.name
     pr = cProfile.Profile()
 
-    @contextlib.contextmanager
+    @contextmanager
     def profiled():
         pr.enable()
         yield
@@ -102,65 +198,3 @@ def profiled(request):
     ps = pstats.Stats(pr)
     Path(".profiles").mkdir(parents=True, exist_ok=True)
     ps.dump_stats(f".profiles/{testname}.prof")
-
-
-@pytest.fixture
-def test_sqlite_mp():
-    return Platform(_backend=SqliteTestBackend())
-
-
-@pytest.fixture
-def test_pgsql_mp():
-    mp = Platform(_backend=PostgresTestBackend())
-    yield mp
-    mp.backend.close()
-
-
-@pytest.fixture
-def test_api_sqlite_mp(test_sqlite_mp):
-    return Platform(_backend=RestTestBackend(test_sqlite_mp.backend))
-
-
-@pytest.fixture
-def test_api_pgsql_mp(test_pgsql_mp):
-    return Platform(_backend=RestTestBackend(test_pgsql_mp.backend))
-
-
-@pytest.fixture(scope="module")
-def test_sqlite_mp_generated():
-    mp = Platform(_backend=SqliteTestBackend())
-    generate_mock_data(mp)
-    return mp
-
-
-@pytest.fixture(scope="module")
-def test_pgsql_mp_generated(request):
-    mp = Platform(_backend=PostgresTestBackend())
-    generate_mock_data(mp)
-    yield mp
-    mp.backend.close()
-
-
-@pytest.fixture(scope="module")
-def test_api_sqlite_mp_generated(test_sqlite_mp_generated):
-    return Platform(_backend=RestTestBackend(test_sqlite_mp_generated.backend))
-
-
-@pytest.fixture(scope="module")
-def test_api_pgsql_mp_generated(test_pgsql_mp_generated):
-    return Platform(_backend=RestTestBackend(test_pgsql_mp_generated.backend))
-
-
-gen_obj_nums = dict(
-    num_models=10,
-    num_runs=30,
-    num_regions=100,
-    num_variables=200,
-    num_units=50,
-    num_datapoints=10_000,
-)
-
-
-def generate_mock_data(mp):
-    gen = MockDataGenerator(mp, **gen_obj_nums)
-    gen.generate()

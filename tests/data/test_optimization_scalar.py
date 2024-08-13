@@ -2,10 +2,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.core import Platform
-from ixmp4.data.abstract import Scalar
-
-from ..utils import all_platforms
+import ixmp4
+from ixmp4 import Scalar
 
 
 def df_from_list(scalars: list):
@@ -34,14 +32,12 @@ def df_from_list(scalars: list):
     )
 
 
-@all_platforms
 class TestDataOptimizationScalar:
-    def test_create_scalar(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        unit = test_mp.backend.units.create("Unit")
-        unit2 = test_mp.backend.units.create("Unit 2")
-        scalar = test_mp.backend.optimization.scalars.create(
+    def test_create_scalar(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        unit2 = platform.backend.units.create("Unit 2")
+        scalar = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar", value=1, unit_name="Unit"
         )
         assert scalar.run__id == run.id
@@ -50,36 +46,36 @@ class TestDataOptimizationScalar:
         assert scalar.unit__id == unit.id
 
         with pytest.raises(Scalar.NotUnique):
-            _ = test_mp.backend.optimization.scalars.create(
+            _ = platform.backend.optimization.scalars.create(
                 run_id=run.id, name="Scalar", value=2, unit_name=unit2.name
             )
 
-    def test_get_scalar(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        unit = test_mp.backend.units.create("Unit")
-        scalar = test_mp.backend.optimization.scalars.create(
+    def test_get_scalar(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        scalar = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
-        assert scalar == test_mp.backend.optimization.scalars.get(
+        assert scalar == platform.backend.optimization.scalars.get(
             run_id=run.id, name="Scalar"
         )
 
         with pytest.raises(Scalar.NotFound):
-            _ = test_mp.backend.optimization.scalars.get(run_id=run.id, name="Scalar 2")
+            _ = platform.backend.optimization.scalars.get(
+                run_id=run.id, name="Scalar 2"
+            )
 
-    def test_update_scalar(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        unit = test_mp.backend.units.create("Unit")
-        unit2 = test_mp.backend.units.create("Unit 2")
-        scalar = test_mp.backend.optimization.scalars.create(
+    def test_update_scalar(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        unit2 = platform.backend.units.create("Unit 2")
+        scalar = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
         assert scalar.id == 1
         assert scalar.unit__id == unit.id
 
-        ret = test_mp.backend.optimization.scalars.update(
+        ret = platform.backend.optimization.scalars.update(
             scalar.id, unit_id=unit2.id, value=20
         )
 
@@ -87,62 +83,48 @@ class TestDataOptimizationScalar:
         assert ret.unit__id == unit2.id
         assert ret.value == 20
 
-    def test_list_scalars(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        unit = test_mp.backend.units.create("Unit")
-        unit2 = test_mp.backend.units.create("Unit 2")
-        scalar_1 = test_mp.backend.optimization.scalars.create(
+    def test_list_scalars(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        unit2 = platform.backend.units.create("Unit 2")
+        scalar_1 = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
-        scalar_2 = test_mp.backend.optimization.scalars.create(
+        scalar_2 = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar 2", value=2, unit_name=unit2.name
         )
-        assert [scalar_1] == test_mp.backend.optimization.scalars.list(name="Scalar")
-        assert [scalar_1, scalar_2] == test_mp.backend.optimization.scalars.list()
+        assert [scalar_1] == platform.backend.optimization.scalars.list(name="Scalar")
+        assert [scalar_1, scalar_2] == platform.backend.optimization.scalars.list()
 
-        # Test listing of scalars of particular run only
-        run_2 = test_mp.backend.runs.create("Model", "Scenario")
-        scalar_3 = test_mp.backend.optimization.scalars.create(
-            run_id=run_2.id, name="Scalar", value=1, unit_name=unit.name
-        )
-        scalar_4 = test_mp.backend.optimization.scalars.create(
-            run_id=run_2.id, name="Scalar 2", value=2, unit_name=unit2.name
-        )
-        assert [scalar_3, scalar_4] == test_mp.backend.optimization.scalars.list(
-            run_id=run_2.id
-        )
-
-    def test_tabulate_scalars(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.backend.runs.create("Model", "Scenario")
-        unit = test_mp.backend.units.create("Unit")
-        unit2 = test_mp.backend.units.create("Unit 2")
-        scalar_1 = test_mp.backend.optimization.scalars.create(
+    def test_tabulate_scalars(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        unit2 = platform.backend.units.create("Unit 2")
+        scalar_1 = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar", value=1, unit_name=unit.name
         )
-        scalar_2 = test_mp.backend.optimization.scalars.create(
+        scalar_2 = platform.backend.optimization.scalars.create(
             run_id=run.id, name="Scalar 2", value=2, unit_name=unit2.name
         )
         expected = df_from_list(scalars=[scalar_1, scalar_2])
         pdt.assert_frame_equal(
-            expected, test_mp.backend.optimization.scalars.tabulate()
+            expected, platform.backend.optimization.scalars.tabulate()
         )
 
         expected = df_from_list(scalars=[scalar_1])
         pdt.assert_frame_equal(
-            expected, test_mp.backend.optimization.scalars.tabulate(name="Scalar")
+            expected, platform.backend.optimization.scalars.tabulate(name="Scalar")
         )
 
         # Test tabulation of scalars of particular run only
-        run_2 = test_mp.backend.runs.create("Model", "Scenario")
-        scalar_3 = test_mp.backend.optimization.scalars.create(
+        run_2 = platform.backend.runs.create("Model", "Scenario")
+        scalar_3 = platform.backend.optimization.scalars.create(
             run_id=run_2.id, name="Scalar", value=1, unit_name=unit.name
         )
-        scalar_4 = test_mp.backend.optimization.scalars.create(
+        scalar_4 = platform.backend.optimization.scalars.create(
             run_id=run_2.id, name="Scalar 2", value=2, unit_name=unit2.name
         )
         expected = df_from_list(scalars=[scalar_3, scalar_4])
         pdt.assert_frame_equal(
-            expected, test_mp.backend.optimization.scalars.tabulate(run_id=run_2.id)
+            expected, platform.backend.optimization.scalars.tabulate(run_id=run_2.id)
         )

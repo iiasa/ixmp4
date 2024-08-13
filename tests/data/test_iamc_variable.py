@@ -1,61 +1,60 @@
 import pytest
 
+import ixmp4
 from ixmp4 import Variable
 
-from ..utils import all_platforms, create_filter_test_data
+from ..fixtures import FilterIamcDataset
 
 
-@all_platforms
 class TestDataIamcVariable:
-    def test_create_iamc_variable(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        variable = test_mp.backend.iamc.variables.create("Variable")
+    filter = FilterIamcDataset()
+
+    def test_create_iamc_variable(self, platform: ixmp4.Platform):
+        variable = platform.backend.iamc.variables.create("Variable")
         assert variable.name == "Variable"
         assert variable.created_at is not None
         assert variable.created_by == "@unknown"
 
-    def test_iamc_variable_unique(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.iamc.variables.create("Variable")
+    def test_iamc_variable_unique(self, platform: ixmp4.Platform):
+        platform.backend.iamc.variables.create("Variable")
 
         with pytest.raises(Variable.NotUnique):
-            test_mp.iamc.variables.create("Variable")
+            platform.iamc.variables.create("Variable")
 
-    def test_iamc_variable_not_found(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+    def test_iamc_variable_not_found(self, platform: ixmp4.Platform):
         with pytest.raises(Variable.NotFound):
-            test_mp.iamc.variables.get("Variable")
+            platform.iamc.variables.get("Variable")
 
-    def test_filter_iamc_variable(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run1, run2 = create_filter_test_data(test_mp)
-        res = test_mp.backend.iamc.variables.tabulate(unit={"name": "Unit 1"})
-        assert sorted(res["name"].tolist()) == ["Variable 1", "Variable 2"]
+    def test_filter_iamc_variable(self, platform: ixmp4.Platform):
+        run1, run2 = self.filter.load_dataset(platform)
+        res = platform.backend.iamc.variables.tabulate(unit={"name": "Unit 1"})
+        assert sorted(res["name"].tolist()) == ["Variable 1", "Variable 3"]
 
         run2.set_as_default()
-        res = test_mp.backend.iamc.variables.tabulate(
-            unit={"name": "Unit 3"}, region={"name": "Region 3"}
+        res = platform.backend.iamc.variables.tabulate(
+            unit={"name": "Unit 3"}, region={"name": "Region 4"}
         )
-        assert sorted(res["name"].tolist()) == ["Variable 1"]
+        assert sorted(res["name"].tolist()) == ["Variable 7"]
 
-        run1.set_as_default()
-        res = test_mp.backend.iamc.variables.tabulate(
+        run2.unset_as_default()
+        res = platform.backend.iamc.variables.tabulate(
             unit={"name": "Unit 3"},
-            region={"name__in": ["Region 4", "Region 5"]},
-            run={"model": {"name": "Model 1"}, "default_only": True},
+            region={"name__in": ["Region 2", "Region 4"]},
+            run={"model": {"name": "Model 2"}, "default_only": True},
         )
         assert res["name"].tolist() == []
 
-        res = test_mp.backend.iamc.variables.tabulate(
+        res = platform.backend.iamc.variables.tabulate(
             unit={"name": "Unit 3"},
-            region={"name__in": ["Region 4", "Region 5"]},
-            run={"default_only": False},
+            region={"name__in": ["Region 2", "Region 4"]},
+            run={"model": {"name": "Model 2"}, "default_only": False},
         )
-        assert sorted(res["name"].tolist()) == ["Variable 2"]
+        assert sorted(res["name"].tolist()) == ["Variable 5", "Variable 7"]
 
-        res = test_mp.backend.iamc.variables.tabulate()
+        res = platform.backend.iamc.variables.tabulate()
 
         assert sorted(res["name"].tolist()) == [
             "Variable 1",
-            "Variable 2",
+            "Variable 3",
+            "Variable 4",
         ]

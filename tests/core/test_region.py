@@ -1,14 +1,17 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import DataPoint, Region
+import ixmp4
+from ixmp4 import DataPoint
+from ixmp4.core import Region
 
-from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
+from ..fixtures import SmallIamcDataset
+from ..utils import assert_unordered_equality
 
 
-def create_testcase_regions(test_mp):
-    reg = test_mp.regions.create("Test", hierarchy="default")
-    other = test_mp.regions.create("Test Other", hierarchy="other")
+def create_testcase_regions(platform):
+    reg = platform.regions.create("Test", hierarchy="default")
+    other = platform.regions.create("Test Other", hierarchy="other")
     return reg, other
 
 
@@ -19,115 +22,110 @@ def df_from_list(regions):
     )
 
 
-@all_platforms
 class TestCoreRegion:
-    def test_delete_region(self, test_mp, test_data_annual, request):
-        test_mp = request.getfixturevalue(test_mp)
-        reg1 = test_mp.regions.create("Test 1", hierarchy="default")
-        reg2 = test_mp.regions.create("Test 2", hierarchy="default")
-        reg3 = test_mp.regions.create("Test 3", hierarchy="default")
-        test_mp.regions.create("Test 4", hierarchy="default")
+    small = SmallIamcDataset
+
+    def test_delete_region(self, platform: ixmp4.Platform):
+        reg1 = platform.regions.create("Test 1", hierarchy="default")
+        reg2 = platform.regions.create("Test 2", hierarchy="default")
+        reg3 = platform.regions.create("Test 3", hierarchy="default")
+        platform.regions.create("Test 4", hierarchy="default")
 
         assert reg1.id != reg2.id != reg3.id
-        test_mp.regions.delete(reg1)
-        test_mp.regions.delete(reg2.id)
+        platform.regions.delete(reg1)
+        platform.regions.delete(reg2.id)
         reg3.delete()
-        test_mp.regions.delete("Test 4")
+        platform.regions.delete("Test 4")
 
-        assert test_mp.regions.tabulate().empty
+        assert platform.regions.tabulate().empty
 
-        add_regions(test_mp, test_data_annual["region"].unique())
-        add_units(test_mp, test_data_annual["unit"].unique())
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
 
-        run = test_mp.runs.create("Model", "Scenario")
-        run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
+        run = platform.runs.create("Model", "Scenario")
+        run.iamc.add(self.small.annual.copy(), type=DataPoint.Type.ANNUAL)
 
         with pytest.raises(Region.DeletionPrevented):
-            test_mp.regions.delete("World")
+            platform.regions.delete("Region 1")
 
-    def test_region_has_hierarchy(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+    def test_region_has_hierarchy(self, platform: ixmp4.Platform):
         with pytest.raises(TypeError):
-            test_mp.regions.create("Test")
+            platform.regions.create("Test Region")  # type:ignore
 
-        reg1 = test_mp.regions.create("Test", hierarchy="default")
-        reg2 = test_mp.regions.get("Test")
+        reg1 = platform.regions.create("Test", hierarchy="default")
+        reg2 = platform.regions.get("Test")
 
         assert reg1.id == reg2.id
 
-    def test_get_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        reg1 = test_mp.regions.create("Test", hierarchy="default")
-        reg2 = test_mp.regions.get("Test")
+    def test_get_region(self, platform: ixmp4.Platform):
+        reg1 = platform.regions.create("Test", hierarchy="default")
+        reg2 = platform.regions.get("Test")
 
         assert reg1.id == reg2.id
 
         with pytest.raises(Region.NotFound):
-            test_mp.regions.get("Does not exist")
+            platform.regions.get("Does not exist")
 
-    def test_region_unique(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.regions.create("Test", hierarchy="default")
+    def test_region_unique(self, platform: ixmp4.Platform):
+        platform.regions.create("Test", hierarchy="default")
 
         with pytest.raises(Region.NotUnique):
-            test_mp.regions.create("Test", hierarchy="other")
+            platform.regions.create("Test", hierarchy="other")
 
-    def test_region_unknown(self, test_mp, test_data_annual, request):
-        test_mp = request.getfixturevalue(test_mp)
-        add_regions(test_mp, test_data_annual["region"].unique())
-        add_units(test_mp, test_data_annual["unit"].unique())
+    def test_region_unknown(self, platform):
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
 
-        test_data_annual["region"] = "foo"
+        invalid_data = self.small.annual.copy()
+        invalid_data["region"] = "invalid"
 
-        run = test_mp.runs.create("Model", "Scenario")
+        run = platform.runs.create("Model", "Scenario")
         with pytest.raises(Region.NotFound):
-            run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
+            run.iamc.add(invalid_data, type=DataPoint.Type.ANNUAL)
 
-    def test_list_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        regions = create_testcase_regions(test_mp)
+    def test_list_region(self, platform: ixmp4.Platform):
+        regions = create_testcase_regions(platform)
         reg, other = regions
 
         a = [r.id for r in regions]
-        b = [r.id for r in test_mp.regions.list()]
+        b = [r.id for r in platform.regions.list()]
         assert not (set(a) ^ set(b))
 
         a = [other.id]
-        b = [r.id for r in test_mp.regions.list(hierarchy="other")]
+        b = [r.id for r in platform.regions.list(hierarchy="other")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_region(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        regions = create_testcase_regions(test_mp)
+    def test_tabulate_region(self, platform: ixmp4.Platform):
+        regions = create_testcase_regions(platform)
         _, other = regions
 
         a = df_from_list(regions)
-        b = test_mp.regions.tabulate()
+        b = platform.regions.tabulate()
         assert_unordered_equality(a, b, check_dtype=False)
 
         a = df_from_list([other])
-        b = test_mp.regions.tabulate(hierarchy="other")
+        b = platform.regions.tabulate(hierarchy="other")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.regions.create("Region", "Hierarchy")
-        docs_region1 = test_mp.regions.set_docs("Region", "Description of test Region")
-        docs_region2 = test_mp.regions.get_docs("Region")
+    def test_retrieve_docs(self, platform: ixmp4.Platform):
+        platform.regions.create("Test Region", "Test Hierarchy")
+        docs_region1 = platform.regions.set_docs(
+            "Test Region", "Description of test Region"
+        )
+        docs_region2 = platform.regions.get_docs("Test Region")
 
         assert docs_region1 == docs_region2
 
-        region2 = test_mp.regions.create("Region2", "Hierarchy")
+        region2 = platform.regions.create("Test Region 2", "Hierarchy")
 
         assert region2.docs is None
 
-        region2.docs = "Description of test region2"
+        region2.docs = "Description of test region 2"
 
-        assert test_mp.regions.get_docs("Region2") == region2.docs
+        assert platform.regions.get_docs("Test Region 2") == region2.docs
 
-    def test_delete_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        region = test_mp.regions.create("Region", "Hierarchy")
+    def test_delete_docs(self, platform: ixmp4.Platform):
+        region = platform.regions.create("Test Region", "Hierarchy")
         region.docs = "Description of test region"
         region.docs = None
 
@@ -139,6 +137,6 @@ class TestCoreRegion:
         assert region.docs is None
 
         region.docs = "Third description of test region"
-        test_mp.regions.delete_docs("Region")
+        platform.regions.delete_docs("Test Region")
 
         assert region.docs is None
