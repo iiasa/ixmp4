@@ -40,7 +40,7 @@ class TestDataOptimizationTable:
             platform=platform, run_id=run.id
         )
         table = platform.backend.optimization.tables.create(
-            run_id=run.id, name="Table", constrained_to_indexsets=["Indexset 1"]
+            run_id=run.id, name="Table", constrained_to_indexsets=[indexset_1.name]
         )
 
         assert table.run__id == run.id
