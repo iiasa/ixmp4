@@ -52,7 +52,7 @@ class TestDataOptimizationTable:
         # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
             _ = platform.backend.optimization.tables.create(
-                run_id=run.id, name="Table", constrained_to_indexsets=["Indexset 1"]
+                run_id=run.id, name="Table", constrained_to_indexsets=[indexset_1.name]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
