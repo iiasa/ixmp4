@@ -102,7 +102,7 @@ class TestDataOptimizationIndexSet:
             run_id=run.id, name=indexset_1.name
         )
         indexset_2 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name="Indexset 2"
+            run_id=run.id, name=indexset_2.name
         )
         expected = df_from_list(indexsets=[indexset_1, indexset_2])
         pdt.assert_frame_equal(
