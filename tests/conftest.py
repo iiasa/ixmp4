@@ -11,10 +11,12 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
-from .fixtures import BigIamcDataset
+from .fixtures import BigIamcDataset, MediumIamcDataset
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 backend_fixtures = {
+    "rest_platform_med": ["rest-sqlite", "rest-postgres"],
+    "platform_med": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "platform_big": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "db_platform_big": ["sqlite", "postgres"],
     "platform": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
@@ -25,6 +27,9 @@ backend_fixtures = {
 
 
 def pytest_addoption(parser):
+    """Called to set up the pytest command line parser.
+    We can add our own options here."""
+
     parser.addoption(
         "--backend",
         action="store",
@@ -38,6 +43,8 @@ def pytest_addoption(parser):
 
 
 class Backends:
+    """Defines creation, setup and teardown for all types of backends."""
+
     postgres_dsn: str
 
     def __init__(self, postgres_dsn: str) -> None:
@@ -108,26 +115,42 @@ def platform_fixture(request):
         yield Platform(_backend=backend)
 
 
+# function scope fixtures
 rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
 db_platform = pytest.fixture(platform_fixture, name="db_platform")
 sqlite_platform = pytest.fixture(platform_fixture, name="sqlite_platform")
 platform = pytest.fixture(platform_fixture, name="platform")
 
 big = BigIamcDataset()
+medium = MediumIamcDataset()
 
 
-def platform_td_big(request):
-    type = request.param
-    postgres_dsn = request.config.option.postgres_dsn
-    bctx = get_backend_context(type, postgres_dsn)
+def td_platform_fixture(td):
+    def platform_with_td(request):
+        type = request.param
+        postgres_dsn = request.config.option.postgres_dsn
+        bctx = get_backend_context(type, postgres_dsn)
 
-    with bctx as backend:
-        platform = Platform(_backend=backend)
-        big.load_dataset(platform)
-        yield platform
+        with bctx as backend:
+            platform = Platform(_backend=backend)
+            td.load_dataset(platform)
+            yield platform
+
+    return platform_with_td
 
 
-db_platform_big = pytest.fixture(platform_td_big, scope="class", name="db_platform_big")
+# class scope fixture with big test data
+db_platform_big = pytest.fixture(
+    td_platform_fixture(big), scope="class", name="db_platform_big"
+)
+
+platform_med = pytest.fixture(
+    td_platform_fixture(medium), scope="session", name="platform_med"
+)
+
+rest_platform_med = pytest.fixture(
+    td_platform_fixture(medium), scope="session", name="rest_platform_med"
+)
 
 
 def pytest_generate_tests(metafunc):
@@ -141,6 +164,8 @@ def pytest_generate_tests(metafunc):
         if bt not in backend_choices:
             raise ProgrammingError(f"'{bt}' not a valid backend")
 
+    # the `backend_fixtures` dict tells us which backends are allowed
+    # for which fixtures
     for fixturename, allowed_types in backend_fixtures.items():
         pres_types = [t for t in backend_types if t in allowed_types]
         if fixturename in metafunc.fixturenames:
@@ -149,6 +174,17 @@ def pytest_generate_tests(metafunc):
 
 @pytest.fixture(scope="function")
 def profiled(request):
+    """Use this fixture for profiling tests:
+    ```
+    def test(profiled):
+        # setup() ...
+        with profiled():
+            complex_procedure()
+        # teardown() ...
+    ```
+    Profiler output will be written to '.profiles/{testname}.prof'
+    """
+
     testname = request.node.name
     pr = cProfile.Profile()
 

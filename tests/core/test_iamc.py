@@ -214,18 +214,15 @@ class TestCoreIamc:
 class TestCoreIamcReadOnly:
     medium = MediumIamcDataset()
 
-    def test_mp_tabulate_big_async(self, platform: ixmp4.Platform):
+    def test_mp_tabulate_big_async(self, platform_med: ixmp4.Platform):
         """Tests if big tabulations work in async contexts."""
-        self.medium.load_dataset(platform)
 
         async def tabulate():
-            return platform.iamc.tabulate(raw=True, run={"default_only": False})
+            return platform_med.iamc.tabulate(raw=True, run={"default_only": False})
 
         res = asyncio.run(tabulate())
         assert len(res) > settings.default_page_size
 
-    def test_mp_tabulate_big(self, platform: ixmp4.Platform):
-        self.medium.load_dataset(platform)
-
-        res = platform.iamc.tabulate(raw=True, run={"default_only": False})
+    def test_mp_tabulate_big(self, platform_med: ixmp4.Platform):
+        res = platform_med.iamc.tabulate(raw=True, run={"default_only": False})
         assert len(res) > settings.default_page_size

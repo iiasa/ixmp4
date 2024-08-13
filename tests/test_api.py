@@ -250,9 +250,8 @@ class TestApi:
             has_data_for_columns={"id": [1, 2]},
         )
 
-    def test_paginate_datapoints(self, rest_platform: ixmp4.Platform):
-        self.medium.load_dataset(rest_platform)
-        client = cast(RestBackend, rest_platform.backend).client
+    def test_paginate_datapoints(self, rest_platform_med: ixmp4.Platform):
+        client = cast(RestBackend, rest_platform_med.backend).client
         endpoint = "iamc/datapoints/"
         filters = {"run": {"default_only": False}}
         self.assert_paginated_res(
