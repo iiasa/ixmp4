@@ -166,7 +166,7 @@ class TestDataOptimizationTable:
                 data={indexset_1.name: ["foo"], indexset_2.name: [0]},
             )
 
-        test_data_2 = {"Indexset 1": [""], "Indexset 2": [3]}
+        test_data_2 = {indexset_1.name: [""], indexset_2.name: [3]}
         platform.backend.optimization.tables.add_data(
             table_id=table_2.id, data=test_data_2
         )
