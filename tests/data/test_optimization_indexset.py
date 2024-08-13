@@ -184,6 +184,6 @@ class TestDataOptimizationIndexSet:
             elements=test_elements_2,  # type:ignore
         )
         indexset_5 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name="IndexSet 5"
+            run_id=run.id, name=indexset_5.name
         )
         assert indexset_5.elements == test_elements_2
