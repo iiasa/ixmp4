@@ -99,7 +99,7 @@ class TestDataOptimizationIndexSet:
         )
 
         indexset_1 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name="Indexset 1"
+            run_id=run.id, name=indexset_1.name
         )
         indexset_2 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name="Indexset 2"
