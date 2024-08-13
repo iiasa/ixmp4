@@ -1,14 +1,16 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import DataPoint, Unit
+import ixmp4
+from ixmp4.core import Unit
 
-from ..utils import add_regions, add_units, all_platforms, assert_unordered_equality
+from ..fixtures import SmallIamcDataset
+from ..utils import assert_unordered_equality
 
 
-def create_testcase_units(test_mp):
-    unit = test_mp.units.create("Test")
-    unit2 = test_mp.units.create("Test 2")
+def create_testcase_units(platform: ixmp4.Platform):
+    unit = platform.units.create("Test")
+    unit2 = platform.units.create("Test 2")
     return unit, unit2
 
 
@@ -19,122 +21,114 @@ def df_from_list(units):
     )
 
 
-@all_platforms
 class TestCoreUnit:
-    def test_delete_unit(self, test_mp, test_data_annual, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit1 = test_mp.units.create("Test 1")
-        unit2 = test_mp.units.create("Test 2")
-        unit3 = test_mp.units.create("Test 3")
-        test_mp.units.create("Test 4")
+    small = SmallIamcDataset()
+
+    def test_delete_unit(self, platform: ixmp4.Platform):
+        unit1 = platform.units.create("Test 1")
+        unit2 = platform.units.create("Test 2")
+        unit3 = platform.units.create("Test 3")
+        platform.units.create("Test 4")
 
         assert unit1.id != unit2.id != unit3.id
-        test_mp.units.delete(unit1)
-        test_mp.units.delete(unit2.id)
+        platform.units.delete(unit1)
+        platform.units.delete(unit2.id)
         unit3.delete()
-        test_mp.units.delete("Test 4")
+        platform.units.delete("Test 4")
 
-        assert test_mp.units.tabulate().empty
+        assert platform.units.tabulate().empty
 
-        add_regions(test_mp, test_data_annual["region"].unique())
-        add_units(test_mp, test_data_annual["unit"].unique())
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
 
-        run = test_mp.runs.create("Model", "Scenario")
-        run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
+        run = platform.runs.create("Model", "Scenario")
+        run.iamc.add(self.small.annual, type=ixmp4.DataPoint.Type.ANNUAL)
 
         with pytest.raises(Unit.DeletionPrevented):
-            test_mp.units.delete("EJ/yr")
+            platform.units.delete("Unit 1")
 
-    def test_retrieve_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit1 = test_mp.units.create("Test")
-        unit2 = test_mp.units.get("Test")
+    def test_retrieve_unit(self, platform: ixmp4.Platform):
+        unit1 = platform.units.create("Test")
+        unit2 = platform.units.get("Test")
 
         assert unit1.id == unit2.id
 
-    def test_unit_unqiue(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.units.create("Test")
+    def test_unit_unqiue(self, platform: ixmp4.Platform):
+        platform.units.create("Test")
 
         with pytest.raises(Unit.NotUnique):
-            test_mp.units.create("Test")
+            platform.units.create("Test")
 
-    def test_unit_dimensionless(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit1 = test_mp.units.create("")
-        unit2 = test_mp.units.get("")
+    def test_unit_dimensionless(self, platform: ixmp4.Platform):
+        unit1 = platform.units.create("")
+        unit2 = platform.units.get("")
 
         assert unit1.id == unit2.id
 
-        assert "" in test_mp.units.tabulate().values
-        assert "" in [unit.name for unit in test_mp.units.list()]
+        assert "" in platform.units.tabulate().values
+        assert "" in [unit.name for unit in platform.units.list()]
 
-    def test_unit_illegal_names(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+    def test_unit_illegal_names(self, platform: ixmp4.Platform):
         with pytest.raises(ValueError, match="Unit name 'dimensionless' is reserved,"):
-            test_mp.units.create("dimensionless")
+            platform.units.create("dimensionless")
 
         with pytest.raises(
             ValueError, match="Using a space-only unit name is not allowed"
         ):
-            test_mp.units.create("   ")
+            platform.units.create("   ")
 
-    def test_unit_unknown(self, test_mp, test_data_annual, request):
-        test_mp = request.getfixturevalue(test_mp)
-        add_regions(test_mp, test_data_annual["region"].unique())
-        add_units(test_mp, test_data_annual["unit"].unique())
+    def test_unit_unknown(self, platform: ixmp4.Platform):
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
 
-        test_data_annual["unit"] = "foo"
+        invalid_data = self.small.annual.copy()
+        invalid_data["unit"] = "foo"
 
-        run = test_mp.runs.create("Model", "Scenario")
+        run = platform.runs.create("Model", "Scenario")
         with pytest.raises(Unit.NotFound):
-            run.iamc.add(test_data_annual, type=DataPoint.Type.ANNUAL)
+            run.iamc.add(invalid_data, type=ixmp4.DataPoint.Type.ANNUAL)
 
-    def test_list_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        units = create_testcase_units(test_mp)
+    def test_list_unit(self, platform: ixmp4.Platform):
+        units = create_testcase_units(platform)
         unit, _ = units
 
         a = [u.id for u in units]
-        b = [u.id for u in test_mp.units.list()]
+        b = [u.id for u in platform.units.list()]
         assert not (set(a) ^ set(b))
 
         a = [unit.id]
-        b = [u.id for u in test_mp.units.list(name="Test")]
+        b = [u.id for u in platform.units.list(name="Test")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        units = create_testcase_units(test_mp)
+    def test_tabulate_unit(self, platform: ixmp4.Platform):
+        units = create_testcase_units(platform)
         unit, _ = units
 
         a = df_from_list(units)
-        b = test_mp.units.tabulate()
+        b = platform.units.tabulate()
         assert_unordered_equality(a, b, check_dtype=False)
 
         a = df_from_list([unit])
-        b = test_mp.units.tabulate(name="Test")
+        b = platform.units.tabulate(name="Test")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.units.create("Unit")
-        docs_unit1 = test_mp.units.set_docs("Unit", "Description of test Unit")
-        docs_unit2 = test_mp.units.get_docs("Unit")
+    def test_retrieve_docs(self, platform: ixmp4.Platform):
+        platform.units.create("Unit")
+        docs_unit1 = platform.units.set_docs("Unit", "Description of test Unit")
+        docs_unit2 = platform.units.get_docs("Unit")
 
         assert docs_unit1 == docs_unit2
 
-        unit2 = test_mp.units.create("Unit2")
+        unit2 = platform.units.create("Unit2")
 
         assert unit2.docs is None
 
         unit2.docs = "Description of test Unit2"
 
-        assert test_mp.units.get_docs("Unit2") == unit2.docs
+        assert platform.units.get_docs("Unit2") == unit2.docs
 
-    def test_delete_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit = test_mp.units.create("Unit")
+    def test_delete_docs(self, platform: ixmp4.Platform):
+        unit = platform.units.create("Unit")
         unit.docs = "Description of test Unit"
         unit.docs = None
 
@@ -146,6 +140,6 @@ class TestCoreUnit:
         assert unit.docs is None
 
         unit.docs = "Third description of test Unit"
-        test_mp.units.delete_docs("Unit")
+        platform.units.delete_docs("Unit")
 
         assert unit.docs is None

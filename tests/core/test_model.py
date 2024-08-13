@@ -1,9 +1,10 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Model
+import ixmp4
+from ixmp4.core import Model
 
-from ..utils import all_platforms, assert_unordered_equality
+from ..utils import assert_unordered_equality
 
 
 def create_testcase_models(test_mp):
@@ -19,66 +20,59 @@ def df_from_list(models):
     )
 
 
-@all_platforms
 class TestCoreModel:
-    def test_retrieve_model(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        model1 = test_mp.models.create("Model")
-        model2 = test_mp.models.get("Model")
+    def test_retrieve_model(self, platform: ixmp4.Platform):
+        model1 = platform.models.create("Model")
+        model2 = platform.models.get("Model")
 
         assert model1.id == model2.id
 
-    def test_model_unqiue(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.models.create("Model")
+    def test_model_unqiue(self, platform: ixmp4.Platform):
+        platform.models.create("Model")
 
         with pytest.raises(Model.NotUnique):
-            test_mp.models.create("Model")
+            platform.models.create("Model")
 
-    def test_list_model(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        models = create_testcase_models(test_mp)
+    def test_list_model(self, platform: ixmp4.Platform):
+        models = create_testcase_models(platform)
         model, _ = models
 
         a = [m.id for m in models]
-        b = [m.id for m in test_mp.models.list()]
+        b = [m.id for m in platform.models.list()]
         assert not (set(a) ^ set(b))
 
         a = [model.id]
-        b = [m.id for m in test_mp.models.list(name="Model")]
+        b = [m.id for m in platform.models.list(name="Model")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_model(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        models = create_testcase_models(test_mp)
+    def test_tabulate_model(self, platform: ixmp4.Platform):
+        models = create_testcase_models(platform)
         model, _ = models
 
         a = df_from_list(models)
-        b = test_mp.models.tabulate()
+        b = platform.models.tabulate()
         assert_unordered_equality(a, b, check_dtype=False)
 
         a = df_from_list([model])
-        b = test_mp.models.tabulate(name="Model")
+        b = platform.models.tabulate(name="Model")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.models.create("Model")
-        docs_model1 = test_mp.models.set_docs("Model", "Description of test Model")
-        docs_model2 = test_mp.models.get_docs("Model")
+    def test_retrieve_docs(self, platform: ixmp4.Platform):
+        platform.models.create("Model")
+        docs_model1 = platform.models.set_docs("Model", "Description of test Model")
+        docs_model2 = platform.models.get_docs("Model")
 
         assert docs_model1 == docs_model2
 
-        model2 = test_mp.models.create("Model2")
+        model2 = platform.models.create("Model2")
         assert model2.docs is None
 
         model2.docs = "Description of test Model2"
 
-        assert test_mp.models.get_docs("Model2") == model2.docs
+        assert platform.models.get_docs("Model2") == model2.docs
 
-    def test_delete_docs(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        model = test_mp.models.create("Model")
+    def test_delete_docs(self, platform: ixmp4.Platform):
+        model = platform.models.create("Model")
         model.docs = "Description of test Model"
         model.docs = None
 
@@ -90,6 +84,6 @@ class TestCoreModel:
         assert model.docs is None
 
         model.docs = "Third description of test Model"
-        test_mp.models.delete_docs("Model")
+        platform.models.delete_docs("Model")
 
         assert model.docs is None

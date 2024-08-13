@@ -1,0 +1,27 @@
+name: deploy
+
+on:
+  push:
+    tags: ["v*"]
+  release:
+    types: ["published"]
+
+jobs:
+  create_deployment:
+    timeout-minutes: 15
+    runs-on: ubuntu-latest
+    permissions:
+      id-token: write
+    steps:
+      - if: github.event_name == 'release'      
+        uses: chrnorm/deployment-action@v2
+        name: Create Testing Deployment
+        with:
+          token: ${{ github.token }}
+          environment: testing
+      - if: github.event_name != 'release'   
+        uses: chrnorm/deployment-action@v2
+        name: Create Development Deployment
+        with:
+          token: ${{ github.token }}
+          environment: development

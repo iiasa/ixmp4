@@ -1,55 +1,52 @@
 import pandas as pd
 import pytest
 
+import ixmp4
 from ixmp4 import Unit
 
-from ..utils import all_platforms, assert_unordered_equality, create_filter_test_data
+from ..fixtures import FilterIamcDataset
+from ..utils import assert_unordered_equality
 
 
-@all_platforms
 class TestDataUnit:
-    def test_create_get_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit1 = test_mp.backend.units.create("Unit")
+    filter = FilterIamcDataset()
+
+    def test_create_get_unit(self, platform: ixmp4.Platform):
+        unit1 = platform.backend.units.create("Unit")
         assert unit1.name == "Unit"
 
-        unit2 = test_mp.backend.units.get("Unit")
+        unit2 = platform.backend.units.get("Unit")
         assert unit1.id == unit2.id
 
-    def test_delete_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit1 = test_mp.backend.units.create("Unit")
-        test_mp.backend.units.delete(unit1.id)
-        assert test_mp.backend.units.tabulate().empty
+    def test_delete_unit(self, platform: ixmp4.Platform):
+        unit1 = platform.backend.units.create("Unit")
+        platform.backend.units.delete(unit1.id)
+        assert platform.backend.units.tabulate().empty
 
-    def test_get_or_create_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        unit1 = test_mp.backend.units.create("Unit")
-        unit2 = test_mp.backend.units.get_or_create("Unit")
+    def test_get_or_create_unit(self, platform: ixmp4.Platform):
+        unit1 = platform.backend.units.create("Unit")
+        unit2 = platform.backend.units.get_or_create("Unit")
         assert unit1.id == unit2.id
 
-        unit3 = test_mp.backend.units.get_or_create("Another Unit")
+        unit3 = platform.backend.units.get_or_create("Another Unit")
         assert unit3.name == "Another Unit"
         assert unit1.id != unit3.id
 
-    def test_unit_unique(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.units.create("Unit")
+    def test_unit_unique(self, platform: ixmp4.Platform):
+        platform.backend.units.create("Unit")
 
         with pytest.raises(Unit.NotUnique):
-            test_mp.backend.units.create("Unit")
+            platform.backend.units.create("Unit")
 
-    def test_unit_not_found(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
+    def test_unit_not_found(self, platform: ixmp4.Platform):
         with pytest.raises(Unit.NotFound):
-            test_mp.backend.units.get("Unit")
+            platform.backend.units.get("Unit")
 
-    def test_list_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.units.create("Unit 1")
-        test_mp.backend.units.create("Unit 2")
+    def test_list_unit(self, platform: ixmp4.Platform):
+        platform.backend.units.create("Unit 1")
+        platform.backend.units.create("Unit 2")
 
-        units = test_mp.backend.units.list()
+        units = platform.backend.units.list()
         units = sorted(units, key=lambda x: x.id)
 
         assert units[0].id == 1
@@ -57,10 +54,9 @@ class TestDataUnit:
         assert units[1].id == 2
         assert units[1].name == "Unit 2"
 
-    def test_tabulate_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        test_mp.backend.units.create("Unit 1")
-        test_mp.backend.units.create("Unit 2")
+    def test_tabulate_unit(self, platform: ixmp4.Platform):
+        platform.backend.units.create("Unit 1")
+        platform.backend.units.create("Unit 2")
 
         true_units = pd.DataFrame(
             [
@@ -70,55 +66,52 @@ class TestDataUnit:
             columns=["id", "name"],
         )
 
-        units = test_mp.backend.units.tabulate()
+        units = platform.backend.units.tabulate()
         assert_unordered_equality(
             units.drop(columns=["created_at", "created_by"]), true_units
         )
 
-    def test_filter_unit(self, test_mp, request):
-        test_mp = request.getfixturevalue(test_mp)
-        run1, run2 = create_filter_test_data(test_mp)
-        res = test_mp.backend.units.tabulate(
+    def test_filter_unit(self, platform: ixmp4.Platform):
+        run1, run2 = self.filter.load_dataset(platform)
+        res = platform.backend.units.tabulate(
             iamc={
-                "run": {"model": {"name": "Model 1"}},
                 "variable": {"name": "Variable 1"},
             }
         )
         assert sorted(res["name"].tolist()) == ["Unit 1", "Unit 2"]
 
         run2.set_as_default()
-        res = test_mp.backend.units.tabulate(
+        res = platform.backend.units.tabulate(
             iamc={
-                "run": {"model": {"name": "Model 1"}},
-                "variable": {"name": "Variable 1"},
+                "run": {"model": {"name": "Model 2"}},
             }
         )
         assert sorted(res["name"].tolist()) == ["Unit 3", "Unit 4"]
 
-        run1.set_as_default()
-        res = test_mp.backend.units.tabulate(
+        run2.unset_as_default()
+        res = platform.backend.units.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "region": {"name__in": ["Region 5", "Region 6"]},
-                "run": {"model": {"name": "Model 1"}, "default_only": True},
+                "variable": {"name": "Variable 6"},
+                "region": {"name__in": ["Region 2", "Region 4"]},
+                "run": {"model": {"name": "Model 2"}, "default_only": True},
             }
         )
         assert res["name"].tolist() == []
 
-        res = test_mp.backend.units.tabulate(
+        res = platform.backend.units.tabulate(
             iamc={
-                "variable": {"name": "Variable 1"},
-                "region": {"name__in": ["Region 5", "Region 6"]},
-                "run": {"model": {"name": "Model 1"}, "default_only": False},
+                "variable": {"name": "Variable 6"},
+                "region": {"name__in": ["Region 2", "Region 4"]},
+                "run": {"model": {"name": "Model 2"}, "default_only": False},
             }
         )
         assert sorted(res["name"].tolist()) == ["Unit 4"]
 
-        res = test_mp.backend.units.tabulate(iamc=False)
+        res = platform.backend.units.tabulate(iamc=False)
 
         assert res["name"].tolist() == ["Unit 5"]
 
-        res = test_mp.backend.units.tabulate()
+        res = platform.backend.units.tabulate()
 
         assert sorted(res["name"].tolist()) == [
             "Unit 1",
