@@ -112,7 +112,7 @@ class TestDataOptimizationIndexSet:
         expected = df_from_list(indexsets=[indexset_1])
         pdt.assert_frame_equal(
             expected,
-            platform.backend.optimization.indexsets.tabulate(name="Indexset 1"),
+            platform.backend.optimization.indexsets.tabulate(name=indexset_1.name),
         )
         # Test only indexsets belonging to this Run are tabulated if run_id is provided
         run_2 = platform.backend.runs.create("Model", "Scenario")
