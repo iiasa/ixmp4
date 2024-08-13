@@ -7,7 +7,7 @@ from ixmp4 import DataPoint
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import SchemaError
 
-from ..fixtures import FilterIamcDataset, MediumIamcDataset, SmallIamcDataset
+from ..fixtures import FilterIamcDataset, SmallIamcDataset
 from ..utils import (
     assert_unordered_equality,
 )
@@ -212,8 +212,6 @@ class TestCoreIamc:
 
 
 class TestCoreIamcReadOnly:
-    medium = MediumIamcDataset()
-
     def test_mp_tabulate_big_async(self, platform_med: ixmp4.Platform):
         """Tests if big tabulations work in async contexts."""
 

@@ -145,11 +145,11 @@ db_platform_big = pytest.fixture(
 )
 
 platform_med = pytest.fixture(
-    td_platform_fixture(medium), scope="session", name="platform_med"
+    td_platform_fixture(medium), scope="class", name="platform_med"
 )
 
 rest_platform_med = pytest.fixture(
-    td_platform_fixture(medium), scope="session", name="rest_platform_med"
+    td_platform_fixture(medium), scope="class", name="rest_platform_med"
 )
 
 
