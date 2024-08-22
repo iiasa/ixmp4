@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Platform
+import ixmp4
 from ixmp4.core import IndexSet, OptimizationVariable
 
-from ..utils import all_platforms, create_indexsets_for_run
+from ..utils import create_indexsets_for_run
 
 
 def df_from_list(variables: list):
@@ -31,11 +31,9 @@ def df_from_list(variables: list):
     )
 
 
-@all_platforms
 class TestCoreVariable:
-    def test_create_variable(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_create_variable(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
 
         # Test creation without indexset
         variable = run.optimization.variables.create("Variable")
@@ -49,8 +47,8 @@ class TestCoreVariable:
 
         # Test creation with indexset
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         variable_2 = run.optimization.variables.create(
             name="Variable 2",
@@ -105,11 +103,10 @@ class TestCoreVariable:
         assert variable_4.columns[0].dtype == "object"
         assert variable_4.columns[1].dtype == "int64"
 
-    def test_get_variable(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_get_variable(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run.id, amount=1
+            platform=platform, run_id=run.id, amount=1
         )
         _ = run.optimization.variables.create(
             name="Variable", constrained_to_indexsets=[indexset.name]
@@ -127,12 +124,11 @@ class TestCoreVariable:
         with pytest.raises(OptimizationVariable.NotFound):
             _ = run.optimization.variables.get("Variable 2")
 
-    def test_variable_add_data(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_variable_add_data(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         indexset.add(elements=["foo", "bar", ""])
         indexset_2.add(elements=[1, 2, 3])
@@ -248,15 +244,16 @@ class TestCoreVariable:
         variable_3.add(data=test_data_4)
         test_data_5 = test_data_3.copy()
         for key, value in test_data_4.items():
-            test_data_5[key].extend(value)
+            test_data_5[key].extend(value)  # type: ignore
         assert variable_3.data == test_data_5
         assert variable_3.levels == test_data_5["levels"]
         assert variable_3.marginals == test_data_5["marginals"]
 
-    def test_list_variable(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
-        indexset, indexset_2 = create_indexsets_for_run(platform=test_mp, run_id=run.id)
+    def test_list_variable(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        indexset, indexset_2 = create_indexsets_for_run(
+            platform=platform, run_id=run.id
+        )
         variable = run.optimization.variables.create(
             "Variable", constrained_to_indexsets=[indexset.name]
         )
@@ -264,9 +261,9 @@ class TestCoreVariable:
             "Variable 2", constrained_to_indexsets=[indexset_2.name]
         )
         # Create new run to test listing variables for specific run
-        run_2 = test_mp.runs.create("Model", "Scenario")
+        run_2 = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
+            platform=platform, run_id=run_2.id, amount=1
         )
         run_2.optimization.variables.create(
             "Variable", constrained_to_indexsets=[indexset.name]
@@ -282,12 +279,11 @@ class TestCoreVariable:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_variable(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_tabulate_variable(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         variable = run.optimization.variables.create(
             name="Variable",
@@ -298,9 +294,9 @@ class TestCoreVariable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         # Create new run to test tabulating variables for specific run
-        run_2 = test_mp.runs.create("Model", "Scenario")
+        run_2 = platform.runs.create("Model", "Scenario")
         (indexset_3,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
+            platform=platform, run_id=run_2.id, amount=1
         )
         run_2.optimization.variables.create(
             "Variable", constrained_to_indexsets=[indexset_3.name]
@@ -332,11 +328,10 @@ class TestCoreVariable:
             run.optimization.variables.tabulate(),
         )
 
-    def test_variable_docs(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_variable_docs(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run.id, amount=1
+            platform=platform, run_id=run.id, amount=1
         )
         variable_1 = run.optimization.variables.create(
             "Variable 1", constrained_to_indexsets=[indexset.name]
