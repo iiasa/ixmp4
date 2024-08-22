@@ -1,9 +1,12 @@
+from typing import Any
+
 import pandas as pd
 import pytest
 
-from ixmp4.core import IndexSet, Parameter, Platform
+import ixmp4
+from ixmp4.core import IndexSet, Parameter
 
-from ..utils import all_platforms, create_indexsets_for_run
+from ..utils import create_indexsets_for_run
 
 
 def df_from_list(parameters: list):
@@ -30,16 +33,14 @@ def df_from_list(parameters: list):
     )
 
 
-@all_platforms
 class TestCoreParameter:
-    def test_create_parameter(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_create_parameter(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         parameter = run.optimization.parameters.create(
             name="Parameter",
@@ -94,11 +95,10 @@ class TestCoreParameter:
         assert parameter_3.columns[0].dtype == "object"
         assert parameter_3.columns[1].dtype == "int64"
 
-    def test_get_parameter(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_get_parameter(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run.id, amount=1
+            platform=platform, run_id=run.id, amount=1
         )
         _ = run.optimization.parameters.create(
             name="Parameter", constrained_to_indexsets=[indexset.name]
@@ -116,13 +116,12 @@ class TestCoreParameter:
         with pytest.raises(Parameter.NotFound):
             _ = run.optimization.parameters.get("Parameter 2")
 
-    def test_parameter_add_data(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
-        unit = test_mp.units.create("Unit")
+    def test_parameter_add_data(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        unit = platform.units.create("Unit")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         indexset.add(elements=["foo", "bar", ""])
         indexset_2.add(elements=[1, 2, 3])
@@ -217,10 +216,10 @@ class TestCoreParameter:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
-        unit_2 = test_mp.units.create("Unit 2")
-        unit_3 = test_mp.units.create("Unit 3")
+        unit_2 = platform.units.create("Unit 2")
+        unit_3 = platform.units.create("Unit 3")
 
-        test_data_3 = {
+        test_data_3: dict[str, list[Any]] = {
             "Column 1": ["bar", "foo", ""],
             "Column 2": [2, 3, 1],
             "values": ["3", 2.0, 1],
@@ -231,24 +230,23 @@ class TestCoreParameter:
         assert parameter_3.values == test_data_3["values"]
         assert parameter_3.units == test_data_3["units"]
 
-        test_data_4 = {
+        test_data_4: dict[str, list[Any]] = {
             "Column 1": ["foo", "", "bar"],
             "Column 2": [2, 3, 1],
             "values": [3.14, 2, "1"],
             "units": [unit_2.name, unit.name, unit_3.name],
         }
         parameter_3.add(data=test_data_4)
-        test_data_5 = test_data_3.copy()
+        test_data_5: dict[str, list[Any]] = test_data_3.copy()
         for key, value in test_data_4.items():
             test_data_5[key].extend(value)
         assert parameter_3.data == test_data_5
         assert parameter_3.values == test_data_5["values"]
         assert parameter_3.units == test_data_5["units"]
 
-    def test_list_parameter(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
-        create_indexsets_for_run(platform=test_mp, run_id=run.id)
+    def test_list_parameter(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        create_indexsets_for_run(platform=platform, run_id=run.id)
         parameter = run.optimization.parameters.create(
             "Parameter", constrained_to_indexsets=["Indexset 1"]
         )
@@ -256,9 +254,9 @@ class TestCoreParameter:
             "Parameter 2", constrained_to_indexsets=["Indexset 2"]
         )
         # Create new run to test listing parameters for specific run
-        run_2 = test_mp.runs.create("Model", "Scenario")
+        run_2 = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
+            platform=platform, run_id=run_2.id, amount=1
         )
         run_2.optimization.parameters.create(
             "Parameter", constrained_to_indexsets=[indexset.name]
@@ -275,12 +273,11 @@ class TestCoreParameter:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_parameter(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_tabulate_parameter(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         parameter = run.optimization.parameters.create(
             name="Parameter",
@@ -291,9 +288,9 @@ class TestCoreParameter:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         # Create new run to test listing parameters for specific run
-        run_2 = test_mp.runs.create("Model", "Scenario")
+        run_2 = platform.runs.create("Model", "Scenario")
         (indexset_3,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
+            platform=platform, run_id=run_2.id, amount=1
         )
         run_2.optimization.parameters.create(
             "Parameter", constrained_to_indexsets=[indexset_3.name]
@@ -303,8 +300,8 @@ class TestCoreParameter:
             run.optimization.parameters.tabulate(name="Parameter 2"),
         )
 
-        unit = test_mp.units.create("Unit")
-        unit_2 = test_mp.units.create("Unit 2")
+        unit = platform.units.create("Unit")
+        unit_2 = platform.units.create("Unit 2")
         indexset.add(elements=["foo", "bar"])
         indexset_2.add(elements=[1, 2, 3])
         test_data_1 = {
@@ -327,11 +324,10 @@ class TestCoreParameter:
             run.optimization.parameters.tabulate(),
         )
 
-    def test_parameter_docs(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_parameter_docs(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run.id, amount=1
+            platform=platform, run_id=run.id, amount=1
         )
         parameter_1 = run.optimization.parameters.create(
             "Parameter 1", constrained_to_indexsets=[indexset.name]
