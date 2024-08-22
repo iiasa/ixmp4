@@ -1,10 +1,10 @@
 import pandas as pd
 import pytest
 
-from ixmp4 import Platform
+import ixmp4
 from ixmp4.core import Equation, IndexSet
 
-from ..utils import all_platforms, create_indexsets_for_run
+from ..utils import create_indexsets_for_run
 
 
 def df_from_list(equations: list):
@@ -31,16 +31,14 @@ def df_from_list(equations: list):
     )
 
 
-@all_platforms
 class TestCoreEquation:
-    def test_create_equation(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_create_equation(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         equation = run.optimization.equations.create(
             name="Equation",
@@ -95,11 +93,10 @@ class TestCoreEquation:
         assert equation_3.columns[0].dtype == "object"
         assert equation_3.columns[1].dtype == "int64"
 
-    def test_get_equation(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_get_equation(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run.id, amount=1
+            platform=platform, run_id=run.id, amount=1
         )
         _ = run.optimization.equations.create(
             name="Equation", constrained_to_indexsets=[indexset.name]
@@ -117,12 +114,11 @@ class TestCoreEquation:
         with pytest.raises(Equation.NotFound):
             _ = run.optimization.equations.get("Equation 2")
 
-    def test_equation_add_data(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_equation_add_data(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         indexset.add(elements=["foo", "bar", ""])
         indexset_2.add(elements=[1, 2, 3])
@@ -238,15 +234,16 @@ class TestCoreEquation:
         equation_3.add(data=test_data_4)
         test_data_5 = test_data_3.copy()
         for key, value in test_data_4.items():
-            test_data_5[key].extend(value)
+            test_data_5[key].extend(value)  # type: ignore
         assert equation_3.data == test_data_5
         assert equation_3.levels == test_data_5["levels"]
         assert equation_3.marginals == test_data_5["marginals"]
 
-    def test_list_equation(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
-        indexset, indexset_2 = create_indexsets_for_run(platform=test_mp, run_id=run.id)
+    def test_list_equation(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        indexset, indexset_2 = create_indexsets_for_run(
+            platform=platform, run_id=run.id
+        )
         equation = run.optimization.equations.create(
             "Equation", constrained_to_indexsets=[indexset.name]
         )
@@ -254,9 +251,9 @@ class TestCoreEquation:
             "Equation 2", constrained_to_indexsets=[indexset_2.name]
         )
         # Create new run to test listing equations of specific run
-        run_2 = test_mp.runs.create("Model", "Scenario")
+        run_2 = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
+            platform=platform, run_id=run_2.id, amount=1
         )
         run_2.optimization.equations.create(
             "Equation", constrained_to_indexsets=[indexset.name]
@@ -272,12 +269,11 @@ class TestCoreEquation:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_equation(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_tabulate_equation(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
-            for model in create_indexsets_for_run(platform=test_mp, run_id=run.id)
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         equation = run.optimization.equations.create(
             name="Equation",
@@ -288,9 +284,9 @@ class TestCoreEquation:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         # Create new run to test tabulating equations of specific run
-        run_2 = test_mp.runs.create("Model", "Scenario")
+        run_2 = platform.runs.create("Model", "Scenario")
         (indexset_3,) = create_indexsets_for_run(
-            platform=test_mp, run_id=run_2.id, amount=1
+            platform=platform, run_id=run_2.id, amount=1
         )
         run_2.optimization.equations.create(
             "Equation", constrained_to_indexsets=[indexset_3.name]
@@ -322,13 +318,12 @@ class TestCoreEquation:
             run.optimization.equations.tabulate(),
         )
 
-    def test_equation_docs(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = test_mp.runs.create("Model", "Scenario")
+    def test_equation_docs(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
         (indexset,) = tuple(
-            IndexSet(_backend=test_mp.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(
-                platform=test_mp, run_id=run.id, amount=1
+                platform=platform, run_id=run.id, amount=1
             )
         )
         equation_1 = run.optimization.equations.create(
