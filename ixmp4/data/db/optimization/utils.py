@@ -10,15 +10,13 @@ if TYPE_CHECKING:
 
 def collect_indexsets_to_check(
     columns: list["Column"],
-) -> dict[str, Any]:
+) -> dict[str, list[float | int | str]]:
     """Creates a {key:value} dict from linked Column.names and their
     IndexSet.elements."""
-    collection: dict[str, Any] = {}
-    for column in columns:
-        collection[column.name] = column.indexset.elements
-    return collection
+    return {column.name: column.indexset.elements for column in columns}
 
 
+# TODO clean up once add_data implementation is final
 def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Column"]):
     data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
     # TODO for all of the following, we might want to create unique exceptions
@@ -61,3 +59,38 @@ def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Col
         )
 
     return data_frame.to_dict(orient="list")
+
+
+def validate_data_json(data: pd.DataFrame, columns: list["Column"]) -> None:
+    # TODO for all of the following, we might want to create unique exceptions
+    # Could me make both more specific by specifiying missing/extra columns?
+    if len(data.columns) < len(columns):
+        raise ValueError(
+            f"Data is missing for some Columns! \n Data: {data} \n "
+            f"Columns: {[column.name for column in columns]}"
+        )
+    elif len(data.columns) > len(columns):
+        raise ValueError(
+            f"Trying to add data to unknown Columns! \n Data: {data} \n "
+            f"Columns: {[column.name for column in columns]}"
+        )
+
+    # We could make this more specific maybe by pointing to the missing values
+    if data.isna().any(axis=None):
+        raise ValueError(
+            "The data is missing values, please make sure it "
+            "does not contain None or NaN, either!"
+        )
+    # We can make this more specific e.g. highlighting all duplicate rows via
+    # pd.DataFrame.duplicated(keep="False")
+    if data.value_counts().max() > 1:
+        raise ValueError("The data contains duplicate rows!")
+
+    # Can we make this more specific? Iterating over columns; if any is False,
+    # return its name or something?
+    limited_to_indexsets = collect_indexsets_to_check(columns=columns)
+    if not data.isin(limited_to_indexsets).all(axis=None):
+        raise ValueError(
+            "The data contains values that are not allowed as per the IndexSets "
+            "and Columns it is constrained to!"
+        )
