@@ -35,10 +35,12 @@ migrations before committing them!
 
 from typing import Annotated
 
+from sqlalchemy import Column as SAColumn
 from sqlalchemy import (
     ForeignKey,
     Index,
     Sequence,
+    Table,
     UniqueConstraint,
     delete,
     exists,
@@ -47,9 +49,12 @@ from sqlalchemy import (
     or_,
     select,
     sql,
+    true,
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
+from sqlalchemy.dialects.postgresql import insert as pg_insert
+from sqlalchemy.dialects.sqlite import insert as sqlite_insert
 from sqlalchemy.exc import MultipleResultsFound
 from sqlalchemy.orm import (
     Relationship,
