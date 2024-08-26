@@ -13,17 +13,23 @@ class Column(base.BaseModel):
     NotUnique: ClassVar = abstract.Column.NotUnique
     DeletionPrevented: ClassVar = abstract.Column.DeletionPrevented
 
-    # Currently not in use:
     dtype: types.String = db.Column(
         db.String(255), nullable=False, unique=False
     )  # pandas dtype
 
-    table__id: types.Mapped[int | None] = db.Column(
-        db.Integer, db.ForeignKey("optimization_table.id"), nullable=True
-    )
+    # equation__id: types.Mapped[int | None] = db.Column(
+    #     db.Integer, db.ForeignKey("optimization_equation.id"), nullable=True
+    # )
     parameter__id: types.Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("optimization_parameter.id"), nullable=True
     )
+    table__id: types.Mapped[int | None] = db.Column(
+        db.Integer, db.ForeignKey("optimization_table.id"), nullable=True
+    )
+    # TODO ...
+    # variable__id: types.Mapped[int | None] = db.Column(
+    #     db.Integer, db.ForeignKey("optimization_optimizationvariable.id"), nullable=True # noqa: E501
+    # )
     indexset: types.Mapped[IndexSet] = db.relationship(single_parent=True)
     constrained_to_indexset: types.Integer = db.Column(
         db.Integer, db.ForeignKey("optimization_indexset.id"), index=True
@@ -32,4 +38,5 @@ class Column(base.BaseModel):
     # Currently not in use:
     unique: types.Boolean = db.Column(db.Boolean, default=True)
 
-    __table_args__ = (db.UniqueConstraint("name", "table__id"),)
+    # TODO expand this for equation, variable
+    __table_args__ = (db.UniqueConstraint("name", "parameter__id", "table__id"),)

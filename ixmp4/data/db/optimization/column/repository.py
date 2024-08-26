@@ -1,3 +1,6 @@
+from typing import Iterable
+
+from ixmp4 import db
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
@@ -6,8 +9,7 @@ from .model import Column
 
 
 class ColumnRepository(
-    base.Creator[Column],
-    base.Retriever[Column],
+    base.Creator[Column], base.Retriever[Column], base.Enumerator[Column]
 ):
     model_class = Column
 
@@ -24,16 +26,20 @@ class ColumnRepository(
         name: str,
         constrained_to_indexset: str,
         dtype: str,
+        # equation_id: int,
         parameter_id: int,
         table_id: int,
+        # variable_id: int,
         unique: bool,
     ) -> Column:
         column = Column(
             name=name,
             constrained_to_indexset=constrained_to_indexset,
             dtype=dtype,
+            # equation__id=equation_id,
             parameter__id=parameter_id,
             table__id=table_id,
+            # variable__id=variable_id,
             unique=unique,
         )
         self.session.add(column)
@@ -45,11 +51,14 @@ class ColumnRepository(
         name: str,
         constrained_to_indexset: int,
         dtype: str,
+        equation_id: int | None = None,
         parameter_id: int | None = None,
         table_id: int | None = None,
+        variable_id: int | None = None,
         unique: bool = True,
         **kwargs,
     ) -> Column:
+        # TODO why is equation_id not optional?
         """Creates a Column.
 
         Parameters
@@ -61,6 +70,9 @@ class ColumnRepository(
             contain all values used as entries in this Column.
         dtype : str
             The pandas-inferred type of the Column's data.
+        equation_id : int
+            The unique integer id of the
+            :class:`ixmp4.data.abstract.optimization.Equation` this Column belongs to.
         parameter_id : int | None, default None
             The unique integer id of the
             :class:`ixmp4.data.abstract.optimization.Parameter` this Column belongs to,
@@ -68,6 +80,10 @@ class ColumnRepository(
         table_id : int | None, default None
             The unique integer id of the :class:`ixmp4.data.abstract.optimization.Table`
             this Column belongs to, if it belongs to a `Table`.
+        variable_id : int | None, default None
+            The unique integer id of the
+            :class:`ixmp4.data.abstract.optimization.Variable` this Column belongs to,
+            if it belongs to a `Variable`.
         unique : bool
             A bool to determine whether entries in this Column should be considered for
             evaluating uniqueness of keys. Defaults to True.
@@ -87,8 +103,35 @@ class ColumnRepository(
             name=name,
             constrained_to_indexset=constrained_to_indexset,
             dtype=dtype,
+            # equation_id=equation_id,
             parameter_id=parameter_id,
             table_id=table_id,
+            # variable_id=variable_id,
             unique=unique,
             **kwargs,
         )
+
+    @guard("view")
+    def get(
+        self,
+        equation_id: int | None,
+        parameter_id: int | None,
+        table_id: int | None,
+        variable_id: int | None,
+        name: str,
+    ) -> Column:
+        exc = db.select(Column).where(
+            (Column.name == name)
+            # & (Column.equation__id == equation_id)
+            & (Column.parameter__id == parameter_id)
+            & (Column.table__id == table_id)
+            # & (Column.variable__id == variable_id)
+        )
+        try:
+            return self.session.execute(exc).scalar_one()
+        except db.NoResultFound:
+            raise Column.NotFound
+
+    @guard("view")
+    def list(self, *args, **kwargs) -> Iterable[Column]:
+        return super().list(*args, **kwargs)
