@@ -167,8 +167,12 @@ class ParameterRepository(
                     message=f"'{unit_name}' is not defined for this Platform!"
                 ) from e
 
-        parameter.data = pd.concat(
-            [pd.DataFrame.from_dict(parameter.data), data]
+        index_list = [column.name for column in parameter.columns]
+        existing_data = pd.DataFrame(parameter.data)
+        if not existing_data.empty:
+            existing_data.set_index(index_list, inplace=True)
+        parameter.data = (
+            data.set_index(index_list).combine_first(existing_data).reset_index()
         ).to_dict(orient="list")
 
         self.session.add(parameter)
