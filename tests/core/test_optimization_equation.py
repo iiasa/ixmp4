@@ -239,8 +239,29 @@ class TestCoreEquation:
         assert equation_3.levels == test_data_5["levels"]
         assert equation_3.marginals == test_data_5["marginals"]
 
+    def test_equation_remove_data(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset.add(elements=["foo", "bar"])
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        equation = run.optimization.equations.create(
+            "Equation",
+            constrained_to_indexsets=[indexset.name],
+        )
+        equation.add(test_data)
+        assert equation.data == test_data
+
+        equation.remove_data()
+        assert equation.data == {}
+
     def test_list_equation(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
+        # Per default, list() lists scalars for `default` version runs:
+        run.set_as_default()
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )

@@ -69,6 +69,15 @@ def add_data(
 
 
 @autodoc
+@router.delete("/{equation_id}/data/")
+def remove_data(
+    equation_id: int,
+    backend: Backend = Depends(deps.get_backend),
+):
+    backend.optimization.equations.remove_data(equation_id == equation_id)
+
+
+@autodoc
 @router.post("/", response_model=api.Equation)
 def create(
     equation: EquationCreateInput,

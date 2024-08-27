@@ -265,8 +265,40 @@ class TestDataOptimizationEquation:
             test_data_5[key].extend(value)  # type: ignore
         assert equation_3.data == test_data_5
 
+    def test_equation_remove_data(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        (indexset,) = create_indexsets_for_run(
+            platform=platform, run_id=run.id, amount=1
+        )
+        platform.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar"]
+        )
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        equation = platform.backend.optimization.equations.create(
+            run_id=run.id,
+            name="Equation",
+            constrained_to_indexsets=[indexset.name],
+        )
+        platform.backend.optimization.equations.add_data(equation.id, test_data)
+        equation = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
+        assert equation.data == test_data
+
+        platform.backend.optimization.equations.remove_data(equation_id=equation.id)
+        equation = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
+        assert equation.data == {}
+
     def test_list_equation(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
+        # Per default, list() lists scalars for `default` version runs:
+        platform.backend.runs.set_as_default_version(run.id)
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
