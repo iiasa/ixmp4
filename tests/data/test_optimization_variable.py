@@ -294,6 +294,35 @@ class TestDataOptimizationVariable:
             test_data_5[key].extend(value)
         assert variable_3.data == test_data_5
 
+    def test_variable_remove_data(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(run.id, "Indexset")
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar"]
+        )
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        variable = test_mp.backend.optimization.variables.create(
+            run_id=run.id,
+            name="Variable",
+            constrained_to_indexsets=[indexset.name],
+        )
+        test_mp.backend.optimization.variables.add_data(variable.id, test_data)
+        variable = test_mp.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.data == test_data
+
+        test_mp.backend.optimization.variables.remove_data(variable_id=variable.id)
+        variable = test_mp.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.data == {}
+
     def test_list_variable(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")

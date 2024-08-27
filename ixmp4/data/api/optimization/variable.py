@@ -66,6 +66,9 @@ class VariableRepository(
             method="PATCH", path=self.prefix + str(variable_id) + "/data/", json=kwargs
         )
 
+    def remove_data(self, variable_id: int) -> None:
+        self._request(method="DELETE", path=self.prefix + str(variable_id) + "/data/")
+
     def get(self, run_id: int, name: str) -> Variable:
         return super().get(run_id=run_id, name=name)
 

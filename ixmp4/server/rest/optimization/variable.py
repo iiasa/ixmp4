@@ -71,6 +71,15 @@ def add_data(
 
 
 @autodoc
+@router.delete("/{variable_id}/data/")
+def remove_data(
+    variable_id: int,
+    backend: Backend = Depends(deps.get_backend),
+):
+    backend.optimization.variables.remove_data(variable_id=variable_id)
+
+
+@autodoc
 @router.post("/", response_model=api.OptimizationVariable)
 def create(
     variable: VariableCreateInput,

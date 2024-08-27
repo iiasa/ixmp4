@@ -178,6 +178,7 @@ class VariableRepository(
     # TODO Question for Daniel: do variables need to allow adding data manually?
     # TODO Once present, state how to check which IndexSets are linked and which values
     # they permit
+    # TODO Can we remove the r-marker?
     def add_data(self, variable_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         r"""Adds data to a Variable.
 
@@ -202,6 +203,20 @@ class VariableRepository(
             - If values are missing, `None`, or `NaN`
             - If values are not allowed based on constraints to `Indexset`s
             - If rows are not unique
+
+        Returns
+        -------
+        None
+        """
+        ...
+
+    def remove_data(self, variable_id: int) -> None:
+        """Removes data from a Variable.
+
+        Parameters
+        ----------
+        variable_id : int
+            The id of the :class:`ixmp4.data.abstract.optimization.Variable`.
 
         Returns
         -------
