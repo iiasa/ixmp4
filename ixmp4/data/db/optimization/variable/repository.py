@@ -173,3 +173,11 @@ class VariableRepository(
 
         self.session.add(variable)
         self.session.commit()
+
+    @guard("edit")
+    def remove_data(self, variable_id: int) -> None:
+        variable = self.get_by_id(id=variable_id)
+        # TODO Is there a better way to reset .data?
+        variable.data = {}
+        self.session.add(variable)
+        self.session.commit()

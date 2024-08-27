@@ -249,6 +249,25 @@ class TestCoreVariable:
         assert variable_3.levels == test_data_5["levels"]
         assert variable_3.marginals == test_data_5["marginals"]
 
+    def test_variable_remove_data(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset.add(elements=["foo", "bar"])
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        variable = run.optimization.variables.create(
+            "Variable",
+            constrained_to_indexsets=[indexset.name],
+        )
+        variable.add(test_data)
+        assert variable.data == test_data
+
+        variable.remove_data()
+        assert variable.data == {}
+
     def test_list_variable(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(

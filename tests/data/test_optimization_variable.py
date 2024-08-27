@@ -286,6 +286,34 @@ class TestDataOptimizationVariable:
             test_data_5[key].extend(value)  # type: ignore
         assert variable_3.data == test_data_5
 
+    def test_variable_remove_data(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")
+        platform.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar"]
+        )
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        variable = platform.backend.optimization.variables.create(
+            run_id=run.id,
+            name="Variable",
+            constrained_to_indexsets=[indexset.name],
+        )
+        platform.backend.optimization.variables.add_data(variable.id, test_data)
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.data == test_data
+
+        platform.backend.optimization.variables.remove_data(variable_id=variable.id)
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.data == {}
+
     def test_list_variable(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
