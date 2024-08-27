@@ -3,7 +3,7 @@ import pytest
 
 from ixmp4 import Parameter, Platform
 
-from ..utils import all_platforms
+from ..utils import all_platforms, assert_unordered_equality
 
 
 def df_from_list(parameters: list):
@@ -205,39 +205,44 @@ class TestCoreParameter:
         assert parameter_2.values == test_data_2["values"]
         assert parameter_2.units == test_data_2["units"]
 
-        # Test order is conserved with varying types and upon later addition of data
-        parameter_3 = run.optimization.parameters.create(
-            name="Parameter 3",
+        unit_2 = test_mp.backend.units.create("Unit 2")
+
+        # Test updating of existing keys
+        parameter_4 = test_mp.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 4",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
-            column_names=["Column 1", "Column 2"],
         )
-        unit_2 = test_mp.units.create("Unit 2")
-        unit_3 = test_mp.units.create("Unit 3")
-
-        test_data_3 = {
-            "Column 1": ["bar", "foo", ""],
-            "Column 2": [2, 3, 1],
-            "values": ["3", 2.0, 1],
-            "units": [unit_3.name, unit_2.name, unit.name],
+        test_data_6 = {
+            indexset_1.name: ["foo", "foo", "bar", "bar"],
+            indexset_2.name: [1, 3, 1, 2],
+            "values": [1, "2", 2.3, "4"],
+            "units": [unit.name] * 4,
         }
-        parameter_3.add(data=test_data_3)
-        assert parameter_3.data == test_data_3
-        assert parameter_3.values == test_data_3["values"]
-        assert parameter_3.units == test_data_3["units"]
-
-        test_data_4 = {
-            "Column 1": ["foo", "", "bar"],
-            "Column 2": [2, 3, 1],
-            "values": [3.14, 2, "1"],
-            "units": [unit_2.name, unit.name, unit_3.name],
+        test_mp.backend.optimization.parameters.add_data(
+            parameter_id=parameter_4.id, data=test_data_6
+        )
+        test_data_7 = {
+            indexset_1.name: ["foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 2, 1],
+            "values": [1, 2.3, 3, 4, "5"],
+            "units": [unit.name] * 2 + [unit_2.name] * 3,
         }
-        parameter_3.add(data=test_data_4)
-        test_data_5 = test_data_3.copy()
-        for key, value in test_data_4.items():
-            test_data_5[key].extend(value)
-        assert parameter_3.data == test_data_5
-        assert parameter_3.values == test_data_5["values"]
-        assert parameter_3.units == test_data_5["units"]
+        test_mp.backend.optimization.parameters.add_data(
+            parameter_id=parameter_4.id, data=test_data_7
+        )
+        parameter_4 = test_mp.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter 4"
+        )
+        expected = (
+            pd.DataFrame(test_data_7)
+            .set_index([indexset_1.name, indexset_2.name])
+            .combine_first(
+                pd.DataFrame(test_data_6).set_index([indexset_1.name, indexset_2.name])
+            )
+            .reset_index()
+        )
+        assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
     def test_list_parameter(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
