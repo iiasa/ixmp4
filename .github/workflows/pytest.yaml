@@ -93,9 +93,24 @@ jobs:
           path: .venv
           key: venv-${{ runner.os }}-${{ steps.setup-python.outputs.python-version }}-${{ hashFiles('**/poetry.lock') }}
 
+      - name: Load cached gams install
+        id: cached-gams
+        uses: actions/cache@v4
+        with:
+          path: gams
+          key: gams-${{ runner.os }}
+          restore-keys: gams-${{ runner.os }}
+
       #------------------------------------------------
       #  install dependencies if cache does not exist
       #------------------------------------------------
+      - name: Install gams
+        if: steps.cached-gams.outputs.cache-hit != 'true'
+        uses: iiasa/actions/setup-gams@main
+        with:
+          version: 45.7.0
+          license: ${{ secrets.GAMS_LICENSE }}
+
       - name: Install dependencies
         if: steps.cached-poetry-dependencies.outputs.cache-hit != 'true'
         run: poetry install --no-interaction --no-root --with dev,server,tutorial
