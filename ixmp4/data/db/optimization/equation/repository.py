@@ -162,3 +162,11 @@ class EquationRepository(
 
         self.session.add(equation)
         self.session.commit()
+
+    @guard("edit")
+    def remove_data(self, equation_id: int) -> None:
+        equation = self.get_by_id(id=equation_id)
+        # TODO Is there a better way to reset .data?
+        equation.data = {}
+        self.session.add(equation)
+        self.session.commit()

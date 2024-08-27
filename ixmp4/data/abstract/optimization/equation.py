@@ -201,3 +201,17 @@ class EquationRepository(
         None
         """
         ...
+
+    def remove_data(self, equation_id: int) -> None:
+        """Removes data from an Equation.
+
+        Parameters
+        ----------
+        equation_id : int
+            The id of the :class:`ixmp4.data.abstract.optimization.Equation`.
+
+        Returns
+        -------
+        None
+        """
+        ...

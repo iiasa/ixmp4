@@ -273,6 +273,35 @@ class TestDataOptimizationEquation:
             test_data_5[key].extend(value)
         assert equation_3.data == test_data_5
 
+    def test_equation_remove_data(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.backend.runs.create("Model", "Scenario")
+        indexset = test_mp.backend.optimization.indexsets.create(run.id, "Indexset")
+        test_mp.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar"]
+        )
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        equation = test_mp.backend.optimization.equations.create(
+            run_id=run.id,
+            name="Equation",
+            constrained_to_indexsets=[indexset.name],
+        )
+        test_mp.backend.optimization.equations.add_data(equation.id, test_data)
+        equation = test_mp.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
+        assert equation.data == test_data
+
+        test_mp.backend.optimization.equations.remove_data(equation_id=equation.id)
+        equation = test_mp.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
+        assert equation.data == {}
+
     def test_list_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.backend.runs.create("Model", "Scenario")

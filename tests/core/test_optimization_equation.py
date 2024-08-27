@@ -237,6 +237,26 @@ class TestCoreEquation:
         assert equation_3.levels == test_data_5["levels"]
         assert equation_3.marginals == test_data_5["marginals"]
 
+    def test_equation_remove_data(self, test_mp, request):
+        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
+        run = test_mp.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset.add(elements=["foo", "bar"])
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        equation = run.optimization.equations.create(
+            "Equation",
+            constrained_to_indexsets=[indexset.name],
+        )
+        equation.add(test_data)
+        assert equation.data == test_data
+
+        equation.remove_data()
+        assert equation.data == {}
+
     def test_list_equation(self, test_mp, request):
         test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
         run = test_mp.runs.create("Model", "Scenario")
