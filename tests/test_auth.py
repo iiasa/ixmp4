@@ -311,5 +311,5 @@ def test_invalid_credentials():
     # @wronguser cannot exist ("@" is not allowed) and will therefore always be invalid.
     with pytest.raises(InvalidCredentials):
         ManagerAuth(
-            "@wronguser", "wrongpwd", "https://api.dev.manager.ece.iiasa.ac.at/v1/"
+            "@wronguser", "wrongpwd", "https://api.testing.manager.ece.iiasa.ac.at/v1/"
         )
