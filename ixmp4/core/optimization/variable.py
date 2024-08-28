@@ -57,10 +57,14 @@ class Variable(BaseModelFacade):
 
     @property
     def constrained_to_indexsets(self) -> list[str]:
-        return [column.indexset.name for column in self._model.columns]
+        return (
+            [column.indexset.name for column in self._model.columns]
+            if self._model.columns
+            else []
+        )
 
     @property
-    def columns(self) -> list[Column]:
+    def columns(self) -> list[Column] | None:
         return self._model.columns
 
     @property

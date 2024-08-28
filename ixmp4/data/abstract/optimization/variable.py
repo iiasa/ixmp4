@@ -1,4 +1,3 @@
-import sys
 from typing import Any, Iterable, Protocol
 
 import pandas as pd
@@ -9,11 +8,6 @@ from .. import base
 from ..docs import DocsRepository
 from .column import Column
 
-if sys.version_info >= (3, 11):
-    from typing import Never
-else:
-    from typing import NoReturn as Never
-
 
 class Variable(base.BaseModel, Protocol):
     """Variable data model."""
@@ -22,7 +16,7 @@ class Variable(base.BaseModel, Protocol):
     """Unique name of the Variable."""
     data: types.JsonDict
     """Data stored in the Variable."""
-    columns: types.Mapped[list[Column | Never]]
+    columns: types.Mapped[list[Column] | None]
     """Data specifying this Variable's Columns."""
 
     run__id: types.Integer
