@@ -1,4 +1,3 @@
-import sys
 from datetime import datetime
 from typing import Any, ClassVar, Iterable
 
@@ -9,11 +8,6 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import OptimizationVariable as VariableModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract.optimization import Column
-
-if sys.version_info >= (3, 11):
-    from typing import Never
-else:
-    from typing import NoReturn as Never
 
 
 class Variable(BaseModelFacade):
