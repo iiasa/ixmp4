@@ -60,6 +60,12 @@ class TestDataRun:
         run3 = test_mp.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id == run3.id
 
+    def test_get_run_by_id(self, test_mp, request):
+        test_mp = request.getfixturevalue(test_mp)
+        expected = test_mp.backend.runs.create("Model", "Scenario")
+        result = test_mp.backend.runs.get_by_id(id=expected.id)
+        assert expected.id == result.id
+
     def test_list_run(self, test_mp, request):
         test_mp = request.getfixturevalue(test_mp)
         run1 = test_mp.backend.runs.create("Model", "Scenario")
