@@ -32,6 +32,7 @@ class Equation(BaseModelFacade):
         return self._model.data
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
+        # TODO change to "to the Equation"
         """Adds data to an existing Equation."""
         self.backend.optimization.equations.add_data(
             equation_id=self._model.id, data=data

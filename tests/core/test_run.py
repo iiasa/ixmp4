@@ -174,3 +174,34 @@ class TestCoreRun:
             run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
         if not datetime.empty:
             run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+
+    def test_run_remove_solution(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset.add(["foo", "bar"])
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        equation = run.optimization.equations.create(
+            "Equation",
+            constrained_to_indexsets=[indexset.name],
+        )
+        equation.add(test_data)
+        variable = run.optimization.variables.create(
+            "Variable",
+            constrained_to_indexsets=[indexset.name],
+        )
+        variable.add(test_data)
+
+        run.optimization.remove_solution()
+        # TODO Why is it necessary in the API run to get them again?
+        # Idea: core-equations.list() returns same equations, but API different ones?
+        # No, equations.list() always returns different objects.
+        # So run.opt.remove_solution() should be affecting different objects always.
+        # Why does it work when connecting directly to the DB in the first place?
+        equation = run.optimization.equations.get("Equation")
+        variable = run.optimization.variables.get("Variable")
+        assert equation.data == {}
+        assert variable.data == {}
