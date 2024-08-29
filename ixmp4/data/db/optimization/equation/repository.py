@@ -156,8 +156,12 @@ class EquationRepository(
             not missing_columns
         ), f"Equation.data must include the column(s): {', '.join(missing_columns)}!"
 
-        equation.data = pd.concat(
-            [pd.DataFrame.from_dict(equation.data), data]
+        index_list = [column.name for column in equation.columns]
+        existing_data = pd.DataFrame(equation.data)
+        if not existing_data.empty:
+            existing_data.set_index(index_list, inplace=True)
+        equation.data = (
+            data.set_index(index_list).combine_first(existing_data).reset_index()
         ).to_dict(orient="list")
 
         self.session.commit()
