@@ -171,7 +171,6 @@ class VariableRepository(
             [pd.DataFrame.from_dict(variable.data), data]
         ).to_dict(orient="list")
 
-        self.session.add(variable)
         self.session.commit()
 
     @guard("edit")
@@ -179,5 +178,4 @@ class VariableRepository(
         variable = self.get_by_id(id=variable_id)
         # TODO Is there a better way to reset .data?
         variable.data = {}
-        self.session.add(variable)
         self.session.commit()
