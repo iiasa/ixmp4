@@ -44,9 +44,7 @@ class Scalar(BaseModelFacade):
 
     @unit.setter
     def unit(self, unit: str | Unit):
-        if isinstance(unit, Unit):
-            unit = unit
-        else:
+        if not isinstance(unit, Unit):
             unit_model = self.backend.units.get(unit)
             unit = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
