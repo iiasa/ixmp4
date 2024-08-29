@@ -14,6 +14,7 @@ def create_parameter(
 
 
 def create_dantzig_model(run: Run) -> linopy.Model:
+    """Creates new linopy.Model for Dantzig's problem based on ixmp4.Run."""
     m = linopy.Model()
     i = pd.Index(run.optimization.indexsets.get("i").elements, name="Canning Plants")
     j = pd.Index(run.optimization.indexsets.get("j").elements, name="Markets")
@@ -60,6 +61,7 @@ def create_dantzig_model(run: Run) -> linopy.Model:
 
 
 def read_dantzig_solution(model: linopy.Model, run: Run) -> None:
+    """Reads the Dantzig solution from linopy.Model to ixmp4.Run."""
     # Handle objective
     # TODO adding fake marginals here until Variables don't require this column anymore
     # Can't add units if this column was not declared above. Better stored as Scalar
@@ -87,7 +89,7 @@ def read_dantzig_solution(model: linopy.Model, run: Run) -> None:
     # The following don't seem to be typed correctly by linopy
     # Add supply data
     supply_data = {
-        "i": ["seattle", "san-diego"],
+        "i": run.optimization.indexsets.get("i").elements,
         "levels": model.constraints["Observe supply limit at plant i"].data.rhs,  # type: ignore
         "marginals": model.constraints["Observe supply limit at plant i"].data.dual,  # type: ignore
     }
@@ -95,7 +97,7 @@ def read_dantzig_solution(model: linopy.Model, run: Run) -> None:
 
     # Add demand data
     demand_data = {
-        "j": ["new-york", "chicago", "topeka"],
+        "j": run.optimization.indexsets.get("j").elements,
         "levels": model.constraints["Satisfy demand at market j"].data.rhs,  # type: ignore
         "marginals": model.constraints["Satisfy demand at market j"].data.dual,  # type: ignore
     }
