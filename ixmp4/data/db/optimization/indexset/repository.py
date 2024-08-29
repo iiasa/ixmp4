@@ -78,5 +78,4 @@ class IndexSetRepository(
         else:
             indexset.elements = indexset.elements + elements
 
-        self.session.add(indexset)
         self.session.commit()
