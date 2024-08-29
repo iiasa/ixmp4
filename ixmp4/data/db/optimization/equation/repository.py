@@ -160,7 +160,6 @@ class EquationRepository(
             [pd.DataFrame.from_dict(equation.data), data]
         ).to_dict(orient="list")
 
-        self.session.add(equation)
         self.session.commit()
 
     @guard("edit")
@@ -168,5 +167,4 @@ class EquationRepository(
         equation = self.get_by_id(id=equation_id)
         # TODO Is there a better way to reset .data?
         equation.data = {}
-        self.session.add(equation)
         self.session.commit()
