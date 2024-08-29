@@ -287,3 +287,8 @@ class TestCoreRun:
         expected = indexset.elements
         expected.append("baz")
         assert cloned_indexset.elements == expected
+
+        # Test cloning Run without iamc data
+        run = test_mp.runs.create("Model", "Scenario")
+        clone_without_iamc = test_mp.runs.clone(run.id)
+        assert clone_without_iamc.iamc.tabulate().empty

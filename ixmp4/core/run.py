@@ -112,7 +112,9 @@ class RunRepository(BaseFacade):
                 scenario if scenario else base_run.scenario.name,
             ),
         )
-        run.iamc.add(df=base_run.iamc.tabulate())
+        datapoints = base_run.iamc.tabulate()
+        if not datapoints.empty:
+            run.iamc.add(df=datapoints)
         for scalar in base_run.optimization.scalars.list():
             run.optimization.scalars.create(
                 name=scalar.name,
