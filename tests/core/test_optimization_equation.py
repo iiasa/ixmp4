@@ -4,7 +4,7 @@ import pytest
 import ixmp4
 from ixmp4.core import Equation, IndexSet
 
-from ..utils import create_indexsets_for_run
+from ..utils import assert_unordered_equality, create_indexsets_for_run
 
 
 def df_from_list(equations: list):
@@ -207,37 +207,34 @@ class TestCoreEquation:
         assert equation_2.levels == test_data_2["levels"]
         assert equation_2.marginals == test_data_2["marginals"]
 
-        # Test order is conserved with varying types and upon later addition of data
-        equation_3 = run.optimization.equations.create(
-            name="Equation 3",
+        # Test updating of existing keys
+        parameter_4 = run.optimization.equations.create(
+            name="Parameter 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
-            column_names=["Column 1", "Column 2"],
         )
-
-        test_data_3 = {
-            "Column 1": ["bar", "foo", ""],
-            "Column 2": [2, 3, 1],
-            "levels": [3, 2.0, 1],
-            "marginals": [100000, 1, 0.00001],
+        test_data_6 = {
+            indexset.name: ["foo", "foo", "bar", "bar"],
+            indexset_2.name: [1, 3, 1, 2],
+            "levels": [1, "2", 2.3, "4"],
+            "marginals": [6, 7.8, 9, 0],
         }
-        equation_3.add(data=test_data_3)
-        assert equation_3.data == test_data_3
-        assert equation_3.levels == test_data_3["levels"]
-        assert equation_3.marginals == test_data_3["marginals"]
-
-        test_data_4 = {
-            "Column 1": ["foo", "", "bar"],
-            "Column 2": [2, 3, 1],
-            "levels": [3.14, 2, 1.0],
-            "marginals": [1, 0.00001, 100000],
+        parameter_4.add(data=test_data_6)
+        test_data_7 = {
+            indexset.name: ["foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 2, 1],
+            "levels": [1, 2.3, 3, 4, "5"],
+            "marginals": [6, 7.8, 9, "0", 3],
         }
-        equation_3.add(data=test_data_4)
-        test_data_5 = test_data_3.copy()
-        for key, value in test_data_4.items():
-            test_data_5[key].extend(value)  # type: ignore
-        assert equation_3.data == test_data_5
-        assert equation_3.levels == test_data_5["levels"]
-        assert equation_3.marginals == test_data_5["marginals"]
+        parameter_4.add(data=test_data_7)
+        expected = (
+            pd.DataFrame(test_data_7)
+            .set_index([indexset.name, indexset_2.name])
+            .combine_first(
+                pd.DataFrame(test_data_6).set_index([indexset.name, indexset_2.name])
+            )
+            .reset_index()
+        )
+        assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
     def test_equation_remove_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
