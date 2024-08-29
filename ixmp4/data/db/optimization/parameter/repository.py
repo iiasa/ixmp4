@@ -175,5 +175,4 @@ class ParameterRepository(
             data.set_index(index_list).combine_first(existing_data).reset_index()
         ).to_dict(orient="list")
 
-        self.session.add(parameter)
         self.session.commit()
