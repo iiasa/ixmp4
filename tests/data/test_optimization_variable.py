@@ -4,7 +4,7 @@ import pytest
 import ixmp4
 from ixmp4.data.abstract import OptimizationVariable
 
-from ..utils import create_indexsets_for_run
+from ..utils import assert_unordered_equality, create_indexsets_for_run
 
 
 def df_from_list(variables: list):
@@ -57,6 +57,7 @@ class TestDataOptimizationVariable:
         assert variable_2.run__id == run.id
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
+        assert variable_2.columns is not None
         assert variable_2.columns[0].name == indexset.name
         assert variable_2.columns[0].constrained_to_indexset == indexset.id
 
@@ -94,6 +95,7 @@ class TestDataOptimizationVariable:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
+        assert variable_3.columns is not None
         assert variable_3.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
@@ -118,6 +120,7 @@ class TestDataOptimizationVariable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         # If indexset doesn't have elements, a generic dtype is registered
+        assert variable_4.columns is not None
         assert variable_4.columns[0].dtype == "object"
         assert variable_4.columns[1].dtype == "int64"
 
@@ -247,44 +250,42 @@ class TestDataOptimizationVariable:
         )
         assert variable_2.data == test_data_2
 
-        # Test order is conserved with varying types and upon later addition of data
-        variable_3 = platform.backend.optimization.variables.create(
+        # Test updating of existing keys
+        variable_4 = platform.backend.optimization.variables.create(
             run_id=run.id,
-            name="Variable 3",
+            name="Variable 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
-            column_names=["Column 1", "Column 2"],
         )
-
-        test_data_3 = {
-            "Column 1": ["bar", "foo", ""],
-            "Column 2": [2, 3, 1],
-            "levels": [3, 2.0, -1],
-            "marginals": [100000, 1, 0.00001],
+        test_data_6 = {
+            indexset.name: ["foo", "foo", "bar", "bar"],
+            indexset_2.name: [1, 3, 1, 2],
+            "levels": [0.00001, "2", 2.3, 400000],
+            "marginals": [6, 7.8, 9, 0],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_3.id, data=test_data_3
+            variable_id=variable_4.id, data=test_data_6
         )
-        variable_3 = platform.backend.optimization.variables.get(
-            run_id=run.id, name="Variable 3"
-        )
-        assert variable_3.data == test_data_3
-
-        test_data_4 = {
-            "Column 1": ["foo", "", "bar"],
-            "Column 2": [2, 3, 1],
-            "levels": [3.14, 2, -1],
-            "marginals": [1, 0.00001, 100000],
+        test_data_7 = {
+            indexset.name: ["foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 2, 1],
+            "levels": [0.00001, 2.3, 3, "400000", "5"],
+            "marginals": [6, 7.8, 9, "0", 3],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_3.id, data=test_data_4
+            variable_id=variable_4.id, data=test_data_7
         )
-        variable_3 = platform.backend.optimization.variables.get(
-            run_id=run.id, name="Variable 3"
+        variable_4 = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable 4"
         )
-        test_data_5 = test_data_3.copy()
-        for key, value in test_data_4.items():
-            test_data_5[key].extend(value)  # type: ignore
-        assert variable_3.data == test_data_5
+        expected = (
+            pd.DataFrame(test_data_7)
+            .set_index([indexset.name, indexset_2.name])
+            .combine_first(
+                pd.DataFrame(test_data_6).set_index([indexset.name, indexset_2.name])
+            )
+            .reset_index()
+        )
+        assert_unordered_equality(expected, pd.DataFrame(variable_4.data))
 
     def test_variable_remove_data(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
