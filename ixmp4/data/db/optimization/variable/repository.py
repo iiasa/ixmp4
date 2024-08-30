@@ -167,8 +167,12 @@ class VariableRepository(
             not missing_columns
         ), f"Variable.data must include the column(s): {', '.join(missing_columns)}!"
 
-        variable.data = pd.concat(
-            [pd.DataFrame.from_dict(variable.data), data]
+        index_list = [column.name for column in variable.columns]
+        existing_data = pd.DataFrame(variable.data)
+        if not existing_data.empty:
+            existing_data.set_index(index_list, inplace=True)
+        variable.data = (
+            data.set_index(index_list).combine_first(existing_data).reset_index()
         ).to_dict(orient="list")
 
         self.session.commit()
