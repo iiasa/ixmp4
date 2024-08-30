@@ -208,11 +208,10 @@ class TestCoreParameter:
         assert parameter_2.values == test_data_2["values"]
         assert parameter_2.units == test_data_2["units"]
 
-        unit_2 = platform.backend.units.create("Unit 2")
+        unit_2 = platform.units.create("Unit 2")
 
         # Test updating of existing keys
-        parameter_4 = platform.backend.optimization.parameters.create(
-            run_id=run.id,
+        parameter_4 = run.optimization.parameters.create(
             name="Parameter 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
@@ -222,21 +221,14 @@ class TestCoreParameter:
             "values": [1, "2", 2.3, "4"],
             "units": [unit.name] * 4,
         }
-        platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_4.id, data=test_data_6
-        )
+        parameter_4.add(data=test_data_6)
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 2, 1],
             "values": [1, 2.3, 3, 4, "5"],
             "units": [unit.name] * 2 + [unit_2.name] * 3,
         }
-        platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_4.id, data=test_data_7
-        )
-        parameter_4 = platform.backend.optimization.parameters.get(
-            run_id=run.id, name="Parameter 4"
-        )
+        parameter_4.add(data=test_data_7)
         expected = (
             pd.DataFrame(test_data_7)
             .set_index([indexset.name, indexset_2.name])
