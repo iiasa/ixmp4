@@ -235,7 +235,7 @@ class TestDataOptimizationEquation:
         test_data_6 = {
             indexset.name: ["foo", "foo", "bar", "bar"],
             indexset_2.name: [1, 3, 1, 2],
-            "levels": [1, "2", 2.3, "4"],
+            "levels": [0.00001, "2", 2.3, 400000],
             "marginals": [6, 7.8, 9, 0],
         }
         platform.backend.optimization.equations.add_data(
@@ -244,7 +244,7 @@ class TestDataOptimizationEquation:
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 2, 1],
-            "levels": [1, 2.3, 3, 4, "5"],
+            "levels": [0.00001, 2.3, 3, "400000", "5"],
             "marginals": [6, 7.8, 9, "0", 3],
         }
         platform.backend.optimization.equations.add_data(

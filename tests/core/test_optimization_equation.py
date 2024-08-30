@@ -208,24 +208,24 @@ class TestCoreEquation:
         assert equation_2.marginals == test_data_2["marginals"]
 
         # Test updating of existing keys
-        parameter_4 = run.optimization.equations.create(
-            name="Parameter 4",
+        equation_4 = run.optimization.equations.create(
+            name="Equation 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         test_data_6 = {
             indexset.name: ["foo", "foo", "bar", "bar"],
             indexset_2.name: [1, 3, 1, 2],
-            "levels": [1, "2", 2.3, "4"],
+            "levels": [0.00001, "2", 2.3, 400000],
             "marginals": [6, 7.8, 9, 0],
         }
-        parameter_4.add(data=test_data_6)
+        equation_4.add(data=test_data_6)
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 2, 1],
-            "levels": [1, 2.3, 3, 4, "5"],
+            "levels": [0.00001, 2.3, 3, "400000", "5"],
             "marginals": [6, 7.8, 9, "0", 3],
         }
-        parameter_4.add(data=test_data_7)
+        equation_4.add(data=test_data_7)
         expected = (
             pd.DataFrame(test_data_7)
             .set_index([indexset.name, indexset_2.name])
@@ -234,7 +234,7 @@ class TestCoreEquation:
             )
             .reset_index()
         )
-        assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
+        assert_unordered_equality(expected, pd.DataFrame(equation_4.data))
 
     def test_equation_remove_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
