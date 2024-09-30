@@ -3,6 +3,7 @@ from typing import Any, Iterable
 import pandas as pd
 
 from ixmp4 import db
+from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 
@@ -18,6 +19,8 @@ class VariableRepository(
     abstract.VariableRepository,
 ):
     model_class = Variable
+
+    UsageError = OptimizationItemUsageError
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -114,14 +117,16 @@ class VariableRepository(
             # TODO If this is removed, need to check above that constrained_to_indexsets
             #  is not None
             if constrained_to_indexsets is None:
-                raise ValueError(
+                raise self.UsageError(
+                    f"While processing Variable {name}: \n"
                     "Received `column_names` to name columns, but no "
                     "`constrained_to_indexsets` to indicate which IndexSets to use for "
                     "these columns. Please provide `constrained_to_indexsets` or "
                     "remove `column_names`!"
                 )
             elif len(column_names) != len(constrained_to_indexsets):
-                raise ValueError(
+                raise self.UsageError(
+                    f"While processing Variable {name}: \n"
                     "`constrained_to_indexsets` and `column_names` not equal in "
                     "length! Please provide the same number of entries for both!"
                 )
@@ -130,7 +135,10 @@ class VariableRepository(
             # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
             #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
             elif len(column_names) != len(set(column_names)):
-                raise ValueError("The given `column_names` are not unique!")
+                raise self.UsageError(
+                    f"While processing Variable {name}: \n"
+                    "The given `column_names` are not unique!"
+                )
 
         variable = super().create(
             run_id=run_id,
@@ -159,13 +167,18 @@ class VariableRepository(
     @guard("edit")
     def add_data(self, variable_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
-            data = pd.DataFrame.from_dict(data=data)
+            try:
+                data = pd.DataFrame.from_dict(data=data)
+            except ValueError as e:
+                raise Variable.DataInvalid(str(e)) from e
         variable = self.get_by_id(id=variable_id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)
-        assert (
-            not missing_columns
-        ), f"Variable.data must include the column(s): {', '.join(missing_columns)}!"
+        if missing_columns:
+            raise OptimizationItemUsageError(
+                "Variable.data must include the column(s): "
+                f"{', '.join(missing_columns)}!"
+            )
 
         index_list = [column.name for column in variable.columns]
         existing_data = pd.DataFrame(variable.data)

@@ -3,6 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4.core import IndexSet, OptimizationVariable
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationItemUsageError,
+)
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -70,8 +74,19 @@ class TestCoreVariable:
                 "Variable", constrained_to_indexsets=[indexset.name]
             )
 
+        # Test that giving column_names, but not constrained_to_indexsets raises
+        with pytest.raises(
+            OptimizationItemUsageError,
+            match="Received `column_names` to name columns, but no "
+            "`constrained_to_indexsets`",
+        ):
+            _ = run.optimization.variables.create(
+                "Variable 0",
+                column_names=["Dimension 1"],
+            )
+
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(ValueError, match="not equal in length"):
+        with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = run.optimization.variables.create(
                 "Variable 0",
                 constrained_to_indexsets=[indexset.name],
@@ -88,7 +103,9 @@ class TestCoreVariable:
         assert variable_3.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
-        with pytest.raises(ValueError, match="`column_names` are not unique"):
+        with pytest.raises(
+            OptimizationItemUsageError, match="`column_names` are not unique"
+        ):
             _ = run.optimization.variables.create(
                 name="Variable 0",
                 constrained_to_indexsets=[indexset.name, indexset.name],
@@ -162,7 +179,8 @@ class TestCoreVariable:
         )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): marginals!"
+            OptimizationItemUsageError,
+            match=r"must include the column\(s\): marginals!",
         ):
             variable_2.add(
                 pd.DataFrame(
@@ -175,7 +193,7 @@ class TestCoreVariable:
             )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): levels!"
+            OptimizationItemUsageError, match=r"must include the column\(s\): levels!"
         ):
             variable_2.add(
                 data=pd.DataFrame(
@@ -189,7 +207,10 @@ class TestCoreVariable:
 
         # By converting data to pd.DataFrame, we automatically enforce equal length
         # of new columns, raises All arrays must be of the same length otherwise:
-        with pytest.raises(ValueError, match="All arrays must be of the same length"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="All arrays must be of the same length",
+        ):
             variable_2.add(
                 data={
                     indexset.name: ["foo", "foo"],
@@ -199,7 +220,9 @@ class TestCoreVariable:
                 },
             )
 
-        with pytest.raises(ValueError, match="contains duplicate rows"):
+        with pytest.raises(
+            OptimizationDataValidationError, match="contains duplicate rows"
+        ):
             variable_2.add(
                 data={
                     indexset.name: ["foo", "foo"],
