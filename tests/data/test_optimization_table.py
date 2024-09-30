@@ -3,7 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4 import Table
-from ixmp4.core.exceptions import OptimizationDataValidationError
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationTableUsageError,
+)
 
 from ..utils import create_indexsets_for_run
 
@@ -57,7 +60,7 @@ class TestDataOptimizationTable:
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(ValueError, match="not equal in length"):
+        with pytest.raises(OptimizationTableUsageError, match="not equal in length"):
             _ = platform.backend.optimization.tables.create(
                 run_id=run.id,
                 name="Table 2",
@@ -75,7 +78,9 @@ class TestDataOptimizationTable:
         assert table_2.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
-        with pytest.raises(ValueError, match="`column_names` are not unique"):
+        with pytest.raises(
+            OptimizationTableUsageError, match="`column_names` are not unique"
+        ):
             _ = platform.backend.optimization.tables.create(
                 run_id=run.id,
                 name="Table 3",
