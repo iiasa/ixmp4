@@ -182,7 +182,7 @@ class InvalidCredentials(IxmpError):
 
 
 class OptimizationDataValidationError(IxmpError):
-    http_status_code = 431
+    http_status_code = 422
     http_error_name = "optimization_data_validation_error"
 
 
@@ -190,5 +190,5 @@ class OptimizationDataValidationError(IxmpError):
 
 
 class OptimizationTableUsageError(IxmpError):
-    http_status_code = 432
+    http_status_code = 422
     http_error_name = "optimization_table_usage_error"
