@@ -2,6 +2,10 @@ import pandas as pd
 import pytest
 
 import ixmp4
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationItemUsageError,
+)
 from ixmp4.data.abstract import Equation
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
@@ -58,7 +62,7 @@ class TestDataOptimizationEquation:
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(ValueError, match="not equal in length"):
+        with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = platform.backend.optimization.equations.create(
                 run_id=run.id,
                 name="Equation 2",
@@ -76,7 +80,9 @@ class TestDataOptimizationEquation:
         assert equation_2.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
-        with pytest.raises(ValueError, match="`column_names` are not unique"):
+        with pytest.raises(
+            OptimizationItemUsageError, match="`column_names` are not unique"
+        ):
             _ = platform.backend.optimization.equations.create(
                 run_id=run.id,
                 name="Equation 3",
@@ -160,7 +166,7 @@ class TestDataOptimizationEquation:
         )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): levels!"
+            OptimizationItemUsageError, match=r"must include the column\(s\): levels!"
         ):
             platform.backend.optimization.equations.add_data(
                 equation_id=equation_2.id,
@@ -174,7 +180,8 @@ class TestDataOptimizationEquation:
             )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): marginals!"
+            OptimizationItemUsageError,
+            match=r"must include the column\(s\): marginals!",
         ):
             platform.backend.optimization.equations.add_data(
                 equation_id=equation_2.id,
@@ -189,7 +196,10 @@ class TestDataOptimizationEquation:
 
         # By converting data to pd.DataFrame, we automatically enforce equal length
         # of new columns, raises All arrays must be of the same length otherwise:
-        with pytest.raises(ValueError, match="All arrays must be of the same length"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="All arrays must be of the same length",
+        ):
             platform.backend.optimization.equations.add_data(
                 equation_id=equation_2.id,
                 data={
@@ -200,7 +210,9 @@ class TestDataOptimizationEquation:
                 },
             )
 
-        with pytest.raises(ValueError, match="contains duplicate rows"):
+        with pytest.raises(
+            OptimizationDataValidationError, match="contains duplicate rows"
+        ):
             platform.backend.optimization.equations.add_data(
                 equation_id=equation_2.id,
                 data={

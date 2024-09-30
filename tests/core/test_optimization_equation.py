@@ -3,6 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4.core import Equation, IndexSet
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationItemUsageError,
+)
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -60,7 +64,7 @@ class TestCoreEquation:
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(ValueError, match="not equal in length"):
+        with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = run.optimization.equations.create(
                 "Equation 2",
                 constrained_to_indexsets=[indexset.name],
@@ -76,7 +80,9 @@ class TestCoreEquation:
         assert equation_2.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
-        with pytest.raises(ValueError, match="`column_names` are not unique"):
+        with pytest.raises(
+            OptimizationItemUsageError, match="`column_names` are not unique"
+        ):
             _ = run.optimization.equations.create(
                 name="Equation 3",
                 constrained_to_indexsets=[indexset.name, indexset.name],
@@ -148,7 +154,8 @@ class TestCoreEquation:
         )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): marginals!"
+            OptimizationItemUsageError,
+            match=r"must include the column\(s\): marginals!",
         ):
             equation_2.add(
                 pd.DataFrame(
@@ -161,7 +168,7 @@ class TestCoreEquation:
             )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): levels!"
+            OptimizationItemUsageError, match=r"must include the column\(s\): levels!"
         ):
             equation_2.add(
                 data=pd.DataFrame(
@@ -175,7 +182,10 @@ class TestCoreEquation:
 
         # By converting data to pd.DataFrame, we automatically enforce equal length
         # of new columns, raises All arrays must be of the same length otherwise:
-        with pytest.raises(ValueError, match="All arrays must be of the same length"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="All arrays must be of the same length",
+        ):
             equation_2.add(
                 data={
                     indexset.name: ["foo", "foo"],
@@ -185,7 +195,9 @@ class TestCoreEquation:
                 },
             )
 
-        with pytest.raises(ValueError, match="contains duplicate rows"):
+        with pytest.raises(
+            OptimizationDataValidationError, match="contains duplicate rows"
+        ):
             equation_2.add(
                 data={
                     indexset.name: ["foo", "foo"],

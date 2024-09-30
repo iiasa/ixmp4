@@ -3,6 +3,7 @@ from typing import Any, Iterable
 import pandas as pd
 
 from ixmp4 import db
+from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 
@@ -18,6 +19,8 @@ class EquationRepository(
     abstract.EquationRepository,
 ):
     model_class = Equation
+
+    UsageError = OptimizationItemUsageError
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -111,7 +114,8 @@ class EquationRepository(
         if isinstance(constrained_to_indexsets, str):
             constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
-            raise ValueError(
+            raise OptimizationItemUsageError(
+                f"While processing Equation {name}: \n"
                 "`constrained_to_indexsets` and `column_names` not equal in length! "
                 "Please provide the same number of entries for both!"
             )
@@ -120,7 +124,10 @@ class EquationRepository(
         # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
         #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
         if column_names and len(column_names) != len(set(column_names)):
-            raise ValueError("The given `column_names` are not unique!")
+            raise OptimizationItemUsageError(
+                f"While processing Equation {name}: \n"
+                "The given `column_names` are not unique!"
+            )
 
         equation = super().create(
             run_id=run_id,
@@ -148,13 +155,18 @@ class EquationRepository(
     @guard("edit")
     def add_data(self, equation_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
-            data = pd.DataFrame.from_dict(data=data)
+            try:
+                data = pd.DataFrame.from_dict(data=data)
+            except ValueError as e:
+                raise Equation.DataInvalid(str(e)) from e
         equation = self.get_by_id(id=equation_id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)
-        assert (
-            not missing_columns
-        ), f"Equation.data must include the column(s): {', '.join(missing_columns)}!"
+        if missing_columns:
+            raise OptimizationItemUsageError(
+                f"Equation.data must include the column(s): "
+                f"{', '.join(missing_columns)}!"
+            )
 
         index_list = [column.name for column in equation.columns]
         existing_data = pd.DataFrame(equation.data)
