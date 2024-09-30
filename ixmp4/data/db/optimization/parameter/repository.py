@@ -3,6 +3,7 @@ from typing import Any, Iterable
 import pandas as pd
 
 from ixmp4 import db
+from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.unit import Unit
@@ -19,6 +20,8 @@ class ParameterRepository(
     abstract.ParameterRepository,
 ):
     model_class = Parameter
+
+    UsageError = OptimizationItemUsageError
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -112,16 +115,20 @@ class ParameterRepository(
         if isinstance(constrained_to_indexsets, str):
             constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
-            raise ValueError(
+            raise self.UsageError(
+                f"While processing Parameter {name}: \n"
                 "`constrained_to_indexsets` and `column_names` not equal in length! "
                 "Please provide the same number of entries for both!"
             )
         # TODO: activate something like this if each column must be indexed by a unique
         # indexset
         # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
-        #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
+        #     raise self.UsageError("Each dimension must be constrained to a unique indexset!") # noqa
         if column_names and len(column_names) != len(set(column_names)):
-            raise ValueError("The given `column_names` are not unique!")
+            raise self.UsageError(
+                f"While processing Parameter {name}: \n"
+                "The given `column_names` are not unique!"
+            )
 
         parameter = super().create(
             run_id=run_id,
@@ -149,13 +156,19 @@ class ParameterRepository(
     @guard("edit")
     def add_data(self, parameter_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
-            data = pd.DataFrame.from_dict(data=data)
+            try:
+                data = pd.DataFrame.from_dict(data=data)
+            except ValueError as e:
+                raise Parameter.DataInvalid(str(e)) from e
+
         parameter = self.get_by_id(id=parameter_id)
 
         missing_columns = set(["values", "units"]) - set(data.columns)
-        assert (
-            not missing_columns
-        ), f"Parameter.data must include the column(s): {', '.join(missing_columns)}!"
+        if missing_columns:
+            raise OptimizationItemUsageError(
+                "Parameter.data must include the column(s): "
+                f"{', '.join(missing_columns)}!"
+            )
 
         # Can use a set for now, need full column if we care about order
         for unit_name in set(data["units"]):

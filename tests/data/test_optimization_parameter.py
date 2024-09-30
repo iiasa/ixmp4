@@ -2,6 +2,10 @@ import pandas as pd
 import pytest
 
 import ixmp4
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationItemUsageError,
+)
 from ixmp4.data.abstract import Parameter
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
@@ -60,7 +64,7 @@ class TestDataOptimizationParameter:
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(ValueError, match="not equal in length"):
+        with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = platform.backend.optimization.parameters.create(
                 run_id=run.id,
                 name="Parameter 2",
@@ -78,7 +82,9 @@ class TestDataOptimizationParameter:
         assert parameter_2.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
-        with pytest.raises(ValueError, match="`column_names` are not unique"):
+        with pytest.raises(
+            OptimizationItemUsageError, match="`column_names` are not unique"
+        ):
             _ = platform.backend.optimization.parameters.create(
                 run_id=run.id,
                 name="Parameter 3",
@@ -161,7 +167,7 @@ class TestDataOptimizationParameter:
         )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): values!"
+            OptimizationItemUsageError, match=r"must include the column\(s\): values!"
         ):
             platform.backend.optimization.parameters.add_data(
                 parameter_id=parameter_2.id,
@@ -175,7 +181,7 @@ class TestDataOptimizationParameter:
             )
 
         with pytest.raises(
-            AssertionError, match=r"must include the column\(s\): units!"
+            OptimizationItemUsageError, match=r"must include the column\(s\): units!"
         ):
             platform.backend.optimization.parameters.add_data(
                 parameter_id=parameter_2.id,
@@ -190,7 +196,10 @@ class TestDataOptimizationParameter:
 
         # By converting data to pd.DataFrame, we automatically enforce equal length
         # of new columns, raises All arrays must be of the same length otherwise:
-        with pytest.raises(ValueError, match="All arrays must be of the same length"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="All arrays must be of the same length",
+        ):
             platform.backend.optimization.parameters.add_data(
                 parameter_id=parameter_2.id,
                 data={
@@ -201,7 +210,9 @@ class TestDataOptimizationParameter:
                 },
             )
 
-        with pytest.raises(ValueError, match="contains duplicate rows"):
+        with pytest.raises(
+            OptimizationDataValidationError, match="contains duplicate rows"
+        ):
             platform.backend.optimization.parameters.add_data(
                 parameter_id=parameter_2.id,
                 data={

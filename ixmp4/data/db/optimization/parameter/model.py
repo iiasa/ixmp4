@@ -4,6 +4,7 @@ from typing import Any, ClassVar
 from sqlalchemy.orm import validates
 
 from ixmp4 import db
+from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
@@ -14,6 +15,7 @@ class Parameter(base.BaseModel):
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Parameter.NotFound
     NotUnique: ClassVar = abstract.Parameter.NotUnique
+    DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Parameter.DeletionPrevented
 
     # constrained_to_indexsets: ClassVar[list[str] | None] = None
@@ -28,7 +30,7 @@ class Parameter(base.BaseModel):
         del data_to_validate["values"]
         del data_to_validate["units"]
         _ = utils.validate_data(
-            key=key,
+            host=self,
             data=data_to_validate,
             columns=self.columns,
         )
