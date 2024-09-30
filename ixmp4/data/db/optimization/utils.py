@@ -25,13 +25,13 @@ def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Col
     # Could me make both more specific by specifiying missing/extra columns?
     if len(data_frame.columns) < len(columns):
         raise host.DataInvalid(
-            f"While handling {host.__str__}: \n"
+            f"While handling {host.__str__()}: \n"
             f"Data is missing for some Columns! \n Data: {data} \n "
             f"Columns: {[column.name for column in columns]}"
         )
     elif len(data_frame.columns) > len(columns):
         raise host.DataInvalid(
-            f"While handling {host.__str__}: \n"
+            f"While handling {host.__str__()}: \n"
             f"Trying to add data to unknown Columns! \n Data: {data} \n "
             f"Columns: {[column.name for column in columns]}"
         )
@@ -39,7 +39,7 @@ def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Col
     # We could make this more specific maybe by pointing to the missing values
     if data_frame.isna().any(axis=None):
         raise host.DataInvalid(
-            f"While handling {host.__str__}: \n"
+            f"While handling {host.__str__()}: \n"
             "The data is missing values, please make sure it "
             "does not contain None or NaN, either!"
         )
@@ -47,7 +47,7 @@ def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Col
     # pd.DataFrame.duplicated(keep="False")
     if data_frame.value_counts().max() > 1:
         raise host.DataInvalid(
-            f"While handling {host.__str__}: \n" "The data contains duplicate rows!"
+            f"While handling {host.__str__()}: \n" "The data contains duplicate rows!"
         )
 
     # Can we make this more specific? Iterating over columns; if any is False,
@@ -55,7 +55,7 @@ def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Col
     limited_to_indexsets = collect_indexsets_to_check(columns=columns)
     if not data_frame.isin(limited_to_indexsets).all(axis=None):
         raise host.DataInvalid(
-            f"While handling {host.__str__}: \n"
+            f"While handling {host.__str__()}: \n"
             "The data contains values that are not allowed as per the IndexSets "
             "and Columns it is constrained to!"
         )
