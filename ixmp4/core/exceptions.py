@@ -178,12 +178,17 @@ class InvalidCredentials(IxmpError):
     http_error_name = "invalid_credentials"
 
 
+# == Optimization ==
+
+
+class OptimizationDataValidationError(IxmpError):
+    http_status_code = 431
+    http_error_name = "optimization_data_validation_error"
+
+
 # == Optimization.Table ==
 
 
-class OptimizationTableDataKeysNotUnique(NotUnique):
-    _message = (
-        "The keys of the Table's data are not unique. Please consider using "
-        "`constrained_to_indexsets` to specify the IndexSet identifiers."
-    )
-    http_error_name = "optimization_table_data_keys_not_unique"
+class OptimizationTableUsageError(IxmpError):
+    http_status_code = 432
+    http_error_name = "optimization_table_usage_error"
