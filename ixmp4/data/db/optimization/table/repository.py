@@ -3,7 +3,7 @@ from typing import Any, Iterable
 import pandas as pd
 
 from ixmp4 import db
-from ixmp4.core.exceptions import OptimizationTableUsageError
+from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 
@@ -20,7 +20,7 @@ class TableRepository(
 ):
     model_class = Table
 
-    UsageError = OptimizationTableUsageError
+    UsageError = OptimizationItemUsageError
 
     def __init__(self, *args, **kwargs) -> None:
         super().__init__(*args, **kwargs)
@@ -112,6 +112,7 @@ class TableRepository(
             constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
             raise self.UsageError(
+                f"While processing Table {name}: \n"
                 "`constrained_to_indexsets` and `column_names` not equal in length! "
                 "Please provide the same number of entries for both!"
             )
@@ -120,7 +121,10 @@ class TableRepository(
         # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
         #     raise self.UsageError("Each dimension must be constrained to a unique indexset!") # noqa
         if column_names and len(column_names) != len(set(column_names)):
-            raise self.UsageError("The given `column_names` are not unique!")
+            raise self.UsageError(
+                f"While processing Table {name}: \n"
+                "The given `column_names` are not unique!"
+            )
 
         table = super().create(
             run_id=run_id,

@@ -5,7 +5,7 @@ import ixmp4
 from ixmp4.core import IndexSet, Table
 from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
-    OptimizationTableUsageError,
+    OptimizationItemUsageError,
 )
 
 from ..utils import create_indexsets_for_run
@@ -64,7 +64,7 @@ class TestCoreTable:
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(OptimizationTableUsageError, match="not equal in length"):
+        with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = run.optimization.tables.create(
                 name="Table 2",
                 constrained_to_indexsets=[indexset.name],
@@ -81,7 +81,7 @@ class TestCoreTable:
 
         # Test duplicate column_names raise
         with pytest.raises(
-            OptimizationTableUsageError, match="`column_names` are not unique"
+            OptimizationItemUsageError, match="`column_names` are not unique"
         ):
             _ = run.optimization.tables.create(
                 name="Table 3",
