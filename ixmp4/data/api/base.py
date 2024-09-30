@@ -167,10 +167,7 @@ class BaseRepository(Generic[ModelType]):
                 **kwargs,
             )
 
-        if params is None:
-            params = {}
-        else:
-            params = self.sanitize_params(params)
+        params = self.sanitize_params(params) if params else {}
 
         try:
             res = self.backend.client.request(
@@ -181,7 +178,7 @@ class BaseRepository(Generic[ModelType]):
                 **kwargs,
             )
         except httpx.ReadTimeout:
-            logger.warn("Read timeout, retrying request...")
+            logger.warning("Read timeout, retrying request...")
             return retry()
 
         return self._handle_response(res, retry)

@@ -4,6 +4,7 @@ import pytest
 
 import ixmp4
 from ixmp4.core import IndexSet
+from ixmp4.core.exceptions import OptimizationDataValidationError
 
 from ..utils import create_indexsets_for_run
 
@@ -67,10 +68,10 @@ class TestCoreIndexset:
 
         assert indexset_1.elements == indexset_2.elements
 
-        with pytest.raises(ValueError):
+        with pytest.raises(OptimizationDataValidationError):
             indexset_1.add(["baz", "foo"])
 
-        with pytest.raises(ValueError):
+        with pytest.raises(OptimizationDataValidationError):
             indexset_2.add(["baz", "baz"])
 
         indexset_1.add(1)
