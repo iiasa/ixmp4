@@ -3,6 +3,7 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
+from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data.abstract import IndexSet
 
 from ..utils import create_indexsets_for_run
@@ -150,12 +151,12 @@ class TestDataOptimizationIndexSet:
             ).elements
         )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(OptimizationDataValidationError):
             platform.backend.optimization.indexsets.add_elements(
                 indexset_id=indexset_1.id, elements=["baz", "foo"]
             )
 
-        with pytest.raises(ValueError):
+        with pytest.raises(OptimizationDataValidationError):
             platform.backend.optimization.indexsets.add_elements(
                 indexset_id=indexset_2.id, elements=["baz", "baz"]
             )
