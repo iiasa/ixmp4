@@ -153,6 +153,7 @@ class RestTestBackend(RestBackend):
         self.client = TestClient(
             app=app,
             base_url=rest_url,
+            raise_server_exceptions=False,
         )
 
         app.dependency_overrides[deps.validate_token] = deps.do_not_validate_token
