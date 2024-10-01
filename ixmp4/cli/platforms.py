@@ -167,24 +167,30 @@ def list_():
     )
 )
 def upgrade():
-    utils.echo(
-        f"Establishing self-signed admin connection to '{settings.manager_url}'."
-    )
+    if settings.managed:
+        utils.echo(
+            f"Establishing self-signed admin connection to '{settings.manager_url}'."
+        )
+        manager_conf = ManagerConfig(
+            str(settings.manager_url),
+            SelfSignedAuth(settings.secret_hs256),
+            remote=False,
+        )
+        platform_list = manager_conf.list_platforms()
+    else:
+        platform_list = settings.toml.list_platforms()
 
-    manager_conf = ManagerConfig(
-        str(settings.manager_url), SelfSignedAuth(settings.secret_hs256), remote=False
-    )
-    for m in manager_conf.list_platforms():
-        if m.dsn.startswith("http"):
+    for p in platform_list:
+        if p.dsn.startswith("http"):
             # This should probably never happen unless the manager registers an
             # external rest platform.
-            utils.echo(f"Skipping '{m.name}' because it is a REST platform.")
+            utils.echo(f"Skipping '{p.name}' because it is a REST platform.")
         else:
-            utils.echo(f"Upgrading manager platform '{m.name}' with dsn '{m.dsn}'...")
+            utils.echo(f"Upgrading platform '{p.name}' with dsn '{p.dsn}'...")
             try:
-                alembic.upgrade_database(m.dsn, "head")
+                alembic.upgrade_database(p.dsn, "head")
             except OperationalError as e:
-                utils.echo(f"Skipping '{m.name}' because of an error: {str(e)}")
+                utils.echo(f"Skipping '{p.name}' because of an error: {str(e)}")
 
 
 @app.command(
