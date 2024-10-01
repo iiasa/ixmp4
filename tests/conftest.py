@@ -11,7 +11,7 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
-from .fixtures import BigIamcDataset, MediumIamcDataset
+from .fixtures import BigIamcDataset, BigOptimizationDataset, MediumIamcDataset
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 backend_fixtures = {
@@ -19,6 +19,7 @@ backend_fixtures = {
     "platform_med": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "platform_big": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "db_platform_big": ["sqlite", "postgres"],
+    "db_platform_big_optimization": ["sqlite", "postgres"],
     "platform": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "db_platform": ["sqlite", "postgres"],
     "rest_platform": ["rest-sqlite", "rest-postgres"],
@@ -124,6 +125,8 @@ platform = pytest.fixture(platform_fixture, name="platform")
 big = BigIamcDataset()
 medium = MediumIamcDataset()
 
+big_optimization = BigOptimizationDataset()
+
 
 def td_platform_fixture(td):
     def platform_with_td(request):
@@ -150,6 +153,12 @@ platform_med = pytest.fixture(
 
 rest_platform_med = pytest.fixture(
     td_platform_fixture(medium), scope="class", name="rest_platform_med"
+)
+
+db_platform_big_optimization = pytest.fixture(
+    td_platform_fixture(big_optimization),
+    scope="class",
+    name="db_platform_big_optimization",
 )
 
 

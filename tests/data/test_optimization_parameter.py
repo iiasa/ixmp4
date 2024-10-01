@@ -285,6 +285,173 @@ class TestDataOptimizationParameter:
         )
         assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
+    def test_parameter_add_data_json(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        unit_2 = platform.backend.units.create("Unit 2")
+        indexset = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        platform.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset.id, elements=["foo", "bar", ""]
+        )
+        indexset_2 = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset 2"
+        )
+        platform.backend.optimization.indexsets.add_elements(
+            indexset_id=indexset_2.id, elements=[1, 2, 3]
+        )
+
+        # pandas can only convert dicts to dataframes if the values are lists
+        # or if index is given. But maybe using read_json instead of from_dict
+        # can remedy this. Or maybe we want to catch the resulting
+        # "ValueError: If using all scalar values, you must pass an index" and
+        # reraise a custom informative error?
+        test_data_1 = {
+            "Indexset": ["foo"],
+            "Indexset 2": [1],
+            "values": [3.14],
+            "units": [unit.name],
+        }
+        parameter = platform.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+        )
+        # TODO add add_data_json to abstract layer once implementation is complete
+        platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+            parameter_id=parameter.id, data=test_data_1
+        )
+
+        parameter = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter"
+        )
+        assert parameter.data == test_data_1
+
+        parameter_2 = platform.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 2",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+        )
+
+        with pytest.raises(
+            OptimizationItemUsageError, match=r"must include the column\(s\): values!"
+        ):
+            # TODO add add_data_json to abstract layer once implementation is complete
+            platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+                parameter_id=parameter_2.id,
+                data=pd.DataFrame(
+                    {
+                        "Indexset": [None],
+                        "Indexset 2": [2],
+                        "units": [unit.name],
+                    }
+                ),
+            )
+
+        with pytest.raises(
+            OptimizationItemUsageError, match=r"must include the column\(s\): units!"
+        ):
+            # TODO add add_data_json to abstract layer once implementation is complete
+            platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+                parameter_id=parameter_2.id,
+                data=pd.DataFrame(
+                    {
+                        "Indexset": [None],
+                        "Indexset 2": [2],
+                        "values": [""],
+                    }
+                ),
+            )
+
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="All arrays must be of the same length",
+        ):
+            # TODO add add_data_json to abstract layer once implementation is complete
+            platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+                parameter_id=parameter_2.id,
+                data={
+                    "Indexset": ["foo", "bar"],
+                    "Indexset 2": [2, 2],
+                    "values": [1, 2],
+                    "units": [unit.name],
+                },
+            )
+
+        with pytest.raises(
+            OptimizationDataValidationError, match="contains duplicate rows"
+        ):
+            # TODO add add_data_json to abstract layer once implementation is complete
+            platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+                parameter_id=parameter_2.id,
+                data={
+                    "Indexset": ["foo", "foo"],
+                    "Indexset 2": [2, 2],
+                    "values": [1, 2],
+                    "units": [unit.name, unit.name],
+                },
+            )
+
+        # Test that order is conserved
+        test_data_2 = {
+            "Indexset": ["", "", "foo", "foo", "bar", "bar"],
+            "Indexset 2": [3, 1, 2, 1, 2, 3],
+            "values": [6, 5, 4, 3, 2, 1],
+            "units": [unit.name] * 6,
+        }
+        # TODO add add_data_json to abstract layer once implementation is complete
+        platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+            parameter_id=parameter_2.id, data=test_data_2
+        )
+        parameter_2 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter 2"
+        )
+        assert parameter_2.data == test_data_2
+
+        # Test updating of existing keys
+        parameter_4 = platform.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 4",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+        )
+        test_data_6 = {
+            indexset.name: ["foo", "foo", "bar", "bar"],
+            indexset_2.name: [1, 3, 1, 2],
+            "values": [1, 2, 3, 4],
+            "units": [unit.name] * 4,
+        }
+        # TODO add add_data_json to abstract layer once implementation is complete
+        platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+            parameter_id=parameter_4.id, data=test_data_6
+        )
+        test_data_7 = {
+            indexset.name: ["foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 2, 1],
+            "values": [1, 2, 3, 4, 5],
+            "units": [unit.name] * 2 + [unit_2.name] * 3,
+        }
+        # TODO add add_data_json to abstract layer once implementation is complete
+        platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
+            parameter_id=parameter_4.id, data=test_data_7
+        )
+        parameter_4 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter 4"
+        )
+        expected = (
+            pd.DataFrame(test_data_7)
+            .set_index([indexset.name, indexset_2.name])
+            .combine_first(
+                pd.DataFrame(test_data_6).set_index([indexset.name, indexset_2.name])
+            )
+            .reset_index()
+        )
+
+        assert_unordered_equality(
+            expected,
+            pd.DataFrame(parameter_4.data),
+        )
+
     def test_list_parameter(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(

@@ -226,7 +226,7 @@ py.test
 ### Running tests with PostgreSQL
 
 In order to run the local tests with PostgreSQL you'll need to have a local instance
-of this database running. The easiest way to do this using a docker container.
+of this database running. The easiest way to do this is using a docker container.
 
 Using the official [`postgres`](https://hub.docker.com/_/postgres) image is recommended.
 Get the latest version on you local machine using (having docker installed):

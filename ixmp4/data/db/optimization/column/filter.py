@@ -7,6 +7,7 @@ from .model import Column
 
 # NB: This is currently not in use, but would be the basis to filter Columns by
 # corresponding Tables
+# TODO Why don't we seem to need this for filtering by parameter_ids?
 class OptimizationTableFilter(
     base.OptimizationTableFilter, metaclass=filters.FilterMeta
 ):

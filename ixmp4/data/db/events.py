@@ -106,7 +106,7 @@ class SqlaEventHandler(object):
     def receive_insert(self, oes: ORMExecuteState):
         insert = cast(sql.Insert, oes.statement)
         entity = insert.entity_description
-        type_ = entity["type"]
+        type_ = entity.get("type", type(None))
         self.logger.debug(f"Entity: '{entity['name']}'")
 
         if issubclass(type_, mixins.HasCreationInfo):
@@ -122,7 +122,7 @@ class SqlaEventHandler(object):
     def receive_update(self, oes: ORMExecuteState):
         update = cast(sql.Update, oes.statement)
         entity = update.entity_description
-        type_ = entity["type"]
+        type_ = entity.get("type", type(None))
         self.logger.debug(f"Entity: '{entity['name']}'")
 
         if issubclass(type_, mixins.HasUpdateInfo):
