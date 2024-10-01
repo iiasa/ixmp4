@@ -255,14 +255,18 @@ class BigIamcDataset:
 
 
 class BigOptimizationDataset:
+    units = pd.read_csv(here / "big/units.csv")
     # For big data
     # indexsets = pd.read_csv(here / "big/indexsets.csv")
     # parameter_data = pd.read_csv(here / "big/parameterdata.csv")
     # TODO
     # To troubleshoot the big data, hijack this structure for small data temporarily
-    indexsets = pd.read_csv(here / "small/indexsets.csv")
-    parameter_data = pd.read_csv(here / "small/parameterdata.csv")
-    units = pd.read_csv(here / "big/units.csv")
+    # indexsets = pd.read_csv(here / "small/indexsets.csv")
+    # parameter_data = pd.read_csv(here / "small/parameterdata.csv")
+    # For special case requested by Volker:
+    indexsets = pd.read_csv(here / "big/indexsets_vk.csv")
+    InsertParameterData = pd.read_csv(here / "big/insert_parameterdata_vk.csv")
+    UpsertParameterData = pd.read_csv(here / "big/upsert_parameterdata_vk.csv")
 
     @classmethod
     def load_units(cls, platform: ixmp4.Platform):
@@ -276,7 +280,7 @@ class BigOptimizationDataset:
         for _, name, elements in cls.indexsets.itertuples():
             indexset = run.optimization.indexsets.create(name)
             # TODO figure out how to store/parse lists from csv properly
-            indexset.add(elements=[x for x in range(1000)])
+            indexset.add(elements=[x for x in range(50)])
 
     @classmethod
     def load_parameter(cls, platform: ixmp4.Platform):
@@ -293,48 +297,56 @@ class BigOptimizationDataset:
     # TODO clean up after finalizing the implementation
     @classmethod
     def insert_parameter_data(cls, platform: ixmp4.Platform, parameter_id: int):
-        cls.parameter_data["values"] = [x for x in range(len(cls.parameter_data))]
-        cls.parameter_data["units"] = random.choices(
-            [unit.name for unit in platform.units.list()], k=len(cls.parameter_data)
+        cls.InsertParameterData["values"] = [
+            x for x in range(len(cls.InsertParameterData))
+        ]
+        cls.InsertParameterData["units"] = random.choices(
+            [unit.name for unit in platform.units.list()],
+            k=len(cls.InsertParameterData),
         )
         platform.backend.optimization.parameters.add_data(
-            parameter_id, cls.parameter_data
+            parameter_id, cls.InsertParameterData
         )
 
     @classmethod
     def insert_parameter_data_json(cls, platform: ixmp4.Platform, parameter_id: int):
-        cls.parameter_data["values"] = [x for x in range(len(cls.parameter_data))]
-        cls.parameter_data["units"] = random.choices(
-            [unit.name for unit in platform.units.list()], k=len(cls.parameter_data)
+        cls.InsertParameterData["values"] = [
+            x for x in range(len(cls.InsertParameterData))
+        ]
+        cls.InsertParameterData["units"] = random.choices(
+            [unit.name for unit in platform.units.list()],
+            k=len(cls.InsertParameterData),
         )
         # TODO add add_data_json to abstract layer once implementation is complete
         platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
-            parameter_id, cls.parameter_data
+            parameter_id, cls.InsertParameterData
         )
 
     @classmethod
     def upsert_parameter_data(cls, platform: ixmp4.Platform, parameter_id: int):
-        cls.parameter_data["values"] = [
-            x for x in range(1, len(cls.parameter_data) + 1)
+        cls.UpsertParameterData["values"] = [
+            x for x in range(1, len(cls.UpsertParameterData) + 1)
         ]
-        cls.parameter_data["units"] = random.choices(
-            [unit.name for unit in platform.units.list()], k=len(cls.parameter_data)
+        cls.UpsertParameterData["units"] = random.choices(
+            [unit.name for unit in platform.units.list()],
+            k=len(cls.UpsertParameterData),
         )
         platform.backend.optimization.parameters.add_data(
-            parameter_id, cls.parameter_data
+            parameter_id, cls.UpsertParameterData
         )
 
     @classmethod
     def upsert_parameter_data_json(cls, platform: ixmp4.Platform, parameter_id: int):
-        cls.parameter_data["values"] = [
-            x for x in range(1, len(cls.parameter_data) + 1)
+        cls.UpsertParameterData["values"] = [
+            x for x in range(1, len(cls.UpsertParameterData) + 1)
         ]
-        cls.parameter_data["units"] = random.choices(
-            [unit.name for unit in platform.units.list()], k=len(cls.parameter_data)
+        cls.UpsertParameterData["units"] = random.choices(
+            [unit.name for unit in platform.units.list()],
+            k=len(cls.UpsertParameterData),
         )
         # TODO add add_data_json to abstract layer once implementation is complete
         platform.backend.optimization.parameters.add_data_json(  # type: ignore[attr-defined]
-            parameter_id, cls.parameter_data
+            parameter_id, cls.UpsertParameterData
         )
 
     @classmethod
