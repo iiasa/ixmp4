@@ -3,6 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4.core import IndexSet, Table
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationTableUsageError,
+)
 
 from ..utils import create_indexsets_for_run
 
@@ -60,7 +64,7 @@ class TestCoreTable:
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(ValueError, match="not equal in length"):
+        with pytest.raises(OptimizationTableUsageError, match="not equal in length"):
             _ = run.optimization.tables.create(
                 name="Table 2",
                 constrained_to_indexsets=[indexset.name],
@@ -76,7 +80,9 @@ class TestCoreTable:
         assert table_2.columns[0].name == "Column 1"
 
         # Test duplicate column_names raise
-        with pytest.raises(ValueError, match="`column_names` are not unique"):
+        with pytest.raises(
+            OptimizationTableUsageError, match="`column_names` are not unique"
+        ):
             _ = run.optimization.tables.create(
                 name="Table 3",
                 constrained_to_indexsets=[indexset.name, indexset.name],
@@ -138,19 +144,24 @@ class TestCoreTable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
 
-        with pytest.raises(ValueError, match="missing values"):
+        with pytest.raises(OptimizationDataValidationError, match="missing values"):
             table_2.add(
                 pd.DataFrame({indexset.name: [None], indexset_2.name: [2]}),
                 # empty string is allowed for now, but None or NaN raise
             )
 
-        with pytest.raises(ValueError, match="contains duplicate rows"):
+        with pytest.raises(
+            OptimizationDataValidationError, match="contains duplicate rows"
+        ):
             table_2.add(
                 data={indexset.name: ["foo", "foo"], indexset_2.name: [2, 2]},
             )
 
         # Test raising on unrecognised data.values()
-        with pytest.raises(ValueError, match="contains values that are not allowed"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="contains values that are not allowed",
+        ):
             table_2.add(
                 data={indexset.name: ["foo"], indexset_2.name: [0]},
             )
@@ -164,7 +175,9 @@ class TestCoreTable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
-        with pytest.raises(ValueError, match="Data is missing for some Columns!"):
+        with pytest.raises(
+            OptimizationDataValidationError, match="Data is missing for some Columns!"
+        ):
             table_3.add(data={"Column 1": ["bar"]})
 
         test_data_3 = {"Column 1": ["bar"], "Column 2": [2]}
@@ -178,7 +191,10 @@ class TestCoreTable:
         assert table_3.data == {"Column 1": ["bar", "foo"], "Column 2": [2, 3]}
 
         # Test raising on non-existing Column.name
-        with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="Trying to add data to unknown Columns!",
+        ):
             table_3.add({"Column 3": [1]})
 
         # Test that order is not important...
@@ -196,7 +212,10 @@ class TestCoreTable:
         assert table_4.data == {"Column 2": [2, 1], "Column 1": ["bar", "foo"]}
 
         # This doesn't seem to test a distinct case compared to the above
-        with pytest.raises(ValueError, match="Trying to add data to unknown Columns!"):
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="Trying to add data to unknown Columns!",
+        ):
             table_4.add(
                 data={"Column 1": ["bar"], "Column 2": [3], indexset.name: ["foo"]},
             )
