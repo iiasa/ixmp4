@@ -11,7 +11,7 @@ jobs:
     timeout-minutes: 15
     runs-on: ubuntu-latest
     permissions:
-      id-token: write
+      deployments: write
     steps:
       - if: github.event_name == 'release'      
         uses: chrnorm/deployment-action@v2
