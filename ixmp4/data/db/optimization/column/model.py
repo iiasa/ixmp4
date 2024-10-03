@@ -18,16 +18,20 @@ class Column(base.BaseModel):
         db.String(255), nullable=False, unique=False
     )  # pandas dtype
 
-    table__id: types.Mapped[int | None] = db.Column(
-        db.Integer, db.ForeignKey("optimization_table.id"), nullable=True
+    equation__id: types.Mapped[int | None] = db.Column(
+        db.Integer, db.ForeignKey("optimization_equation.id"), nullable=True
     )
     parameter__id: types.Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("optimization_parameter.id"), nullable=True
+    )
+    table__id: types.Mapped[int | None] = db.Column(
+        db.Integer, db.ForeignKey("optimization_table.id"), nullable=True
     )
     # TODO ...
     variable__id: types.Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("optimization_optimizationvariable.id"), nullable=True
     )
+
     indexset: types.Mapped[IndexSet] = db.relationship(single_parent=True)
     constrained_to_indexset: types.Integer = db.Column(
         db.Integer, db.ForeignKey("optimization_indexset.id"), index=True

@@ -24,6 +24,7 @@ class ColumnRepository(
         name: str,
         constrained_to_indexset: str,
         dtype: str,
+        equation_id: int,
         parameter_id: int,
         table_id: int,
         variable_id: int,
@@ -33,6 +34,7 @@ class ColumnRepository(
             name=name,
             constrained_to_indexset=constrained_to_indexset,
             dtype=dtype,
+            equation__id=equation_id,
             parameter__id=parameter_id,
             table__id=table_id,
             variable__id=variable_id,
@@ -47,6 +49,7 @@ class ColumnRepository(
         name: str,
         constrained_to_indexset: int,
         dtype: str,
+        equation_id: int | None = None,
         parameter_id: int | None = None,
         table_id: int | None = None,
         variable_id: int | None = None,
@@ -64,6 +67,9 @@ class ColumnRepository(
             contain all values used as entries in this Column.
         dtype : str
             The pandas-inferred type of the Column's data.
+        equation_id : int
+            The unique integer id of the
+            :class:`ixmp4.data.abstract.optimization.Equation` this Column belongs to.
         parameter_id : int | None, default None
             The unique integer id of the
             :class:`ixmp4.data.abstract.optimization.Parameter` this Column belongs to,
@@ -94,6 +100,7 @@ class ColumnRepository(
             name=name,
             constrained_to_indexset=constrained_to_indexset,
             dtype=dtype,
+            equation_id=equation_id,
             parameter_id=parameter_id,
             table_id=table_id,
             variable_id=variable_id,
