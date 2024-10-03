@@ -13,17 +13,18 @@ from ixmp4.data.api import (
     DataPointRepository,
     IndexSetRepository,
     ModelRepository,
+    OptimizationVariableRepository,
     ParameterRepository,
+    RegionRepository,
     RunMetaEntryRepository,
     RunRepository,
     ScalarRepository,
     ScenarioRepository,
     TableRepository,
     TimeSeriesRepository,
+    UnitRepository,
     VariableRepository,
 )
-from ixmp4.data.api.region import RegionRepository
-from ixmp4.data.api.unit import UnitRepository
 from ixmp4.server import app, v1
 from ixmp4.server.rest import APIInfo, deps
 
@@ -117,6 +118,7 @@ class RestBackend(Backend):
         self.optimization.parameters = ParameterRepository(self)
         self.optimization.scalars = ScalarRepository(self)
         self.optimization.tables = TableRepository(self)
+        self.optimization.variables = OptimizationVariableRepository(self)
         self.regions = RegionRepository(self)
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)

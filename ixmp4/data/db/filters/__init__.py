@@ -5,6 +5,7 @@ from .optimizationindexset import OptimizationIndexSetFilter
 from .optimizationparameter import OptimizationParameterFilter
 from .optimizationscalar import OptimizationScalarFilter
 from .optimizationtable import OptimizationTableFilter
+from .optimizationvariable import OptimizationVariableFilter
 from .region import RegionFilter
 from .run import RunFilter
 from .scenario import ScenarioFilter

@@ -18,6 +18,8 @@ class Column(base.BaseModel, Protocol):
     """Foreign unique integer id of a Table."""
     parameter__id: types.Mapped[int | None]
     """Foreign unique integer id of a Parameter."""
+    variable__id: types.Mapped[int | None]
+    """Foreign unique integer id of a Variable."""
     indexset: types.Mapped[IndexSet]
     """Associated IndexSet."""
     constrained_to_indexset: types.Integer

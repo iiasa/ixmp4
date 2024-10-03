@@ -26,6 +26,7 @@ class ColumnRepository(
         dtype: str,
         parameter_id: int,
         table_id: int,
+        variable_id: int,
         unique: bool,
     ) -> Column:
         column = Column(
@@ -34,6 +35,7 @@ class ColumnRepository(
             dtype=dtype,
             parameter__id=parameter_id,
             table__id=table_id,
+            variable__id=variable_id,
             unique=unique,
         )
         self.session.add(column)
@@ -47,6 +49,7 @@ class ColumnRepository(
         dtype: str,
         parameter_id: int | None = None,
         table_id: int | None = None,
+        variable_id: int | None = None,
         unique: bool = True,
         **kwargs,
     ) -> Column:
@@ -68,6 +71,10 @@ class ColumnRepository(
         table_id : int | None, default None
             The unique integer id of the :class:`ixmp4.data.abstract.optimization.Table`
             this Column belongs to, if it belongs to a `Table`.
+        variable_id : int | None, default None
+            The unique integer id of the
+            :class:`ixmp4.data.abstract.optimization.Variable` this Column belongs to,
+            if it belongs to a `Variable`.
         unique : bool
             A bool to determine whether entries in this Column should be considered for
             evaluating uniqueness of keys. Defaults to True.
@@ -89,6 +96,7 @@ class ColumnRepository(
             dtype=dtype,
             parameter_id=parameter_id,
             table_id=table_id,
+            variable_id=variable_id,
             unique=unique,
             **kwargs,
         )
