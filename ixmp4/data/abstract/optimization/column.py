@@ -14,10 +14,12 @@ class Column(base.BaseModel, Protocol):
     """Unique name of the Column."""
     dtype: types.String
     """Type of the Column's data."""
-    table__id: types.Mapped[int | None]
-    """Foreign unique integer id of a Table."""
+    equation__id: types.Mapped[int | None]
+    """Foreign unique integer id of a Equation."""
     parameter__id: types.Mapped[int | None]
     """Foreign unique integer id of a Parameter."""
+    table__id: types.Mapped[int | None]
+    """Foreign unique integer id of a Table."""
     variable__id: types.Mapped[int | None]
     """Foreign unique integer id of a Variable."""
     indexset: types.Mapped[IndexSet]

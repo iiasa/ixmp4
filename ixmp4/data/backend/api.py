@@ -11,6 +11,7 @@ from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig, PlatformI
 from ixmp4.core.exceptions import ImproperlyConfigured, UnknownApiError
 from ixmp4.data.api import (
     DataPointRepository,
+    EquationRepository,
     IndexSetRepository,
     ModelRepository,
     OptimizationVariableRepository,
@@ -114,6 +115,7 @@ class RestBackend(Backend):
         self.iamc.variables = VariableRepository(self)
         self.meta = RunMetaEntryRepository(self)
         self.models = ModelRepository(self)
+        self.optimization.equations = EquationRepository(self)
         self.optimization.indexsets = IndexSetRepository(self)
         self.optimization.parameters = ParameterRepository(self)
         self.optimization.scalars = ScalarRepository(self)
