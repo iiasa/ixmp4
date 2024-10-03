@@ -365,3 +365,72 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.tables.docs.get(table.id)
+
+    def test_get_and_set_parameterdocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        docs_parameter = platform.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+        docs_parameter1 = platform.backend.optimization.parameters.docs.get(
+            parameter.id
+        )
+
+        assert docs_parameter == docs_parameter1
+
+    def test_change_empty_parameterdocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            platform.backend.optimization.parameters.docs.get(parameter.id)
+
+        docs_parameter1 = platform.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+
+        assert (
+            platform.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter1
+        )
+
+        docs_parameter2 = platform.backend.optimization.parameters.docs.set(
+            parameter.id, "Different description of test Parameter"
+        )
+
+        assert (
+            platform.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter2
+        )
+
+    def test_delete_parameterdocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=["Indexset"]
+        )
+        docs_parameter = platform.backend.optimization.parameters.docs.set(
+            parameter.id, "Description of test Parameter"
+        )
+
+        assert (
+            platform.backend.optimization.parameters.docs.get(parameter.id)
+            == docs_parameter
+        )
+
+        platform.backend.optimization.parameters.docs.delete(parameter.id)
+
+        with pytest.raises(Docs.NotFound):
+            platform.backend.optimization.parameters.docs.get(parameter.id)

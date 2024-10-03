@@ -186,9 +186,6 @@ class OptimizationDataValidationError(IxmpError):
     http_error_name = "optimization_data_validation_error"
 
 
-# == Optimization.Table ==
-
-
-class OptimizationTableUsageError(IxmpError):
+class OptimizationItemUsageError(IxmpError):
     http_status_code = 422
-    http_error_name = "optimization_table_usage_error"
+    http_error_name = "optimization_item_usage_error"

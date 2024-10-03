@@ -21,17 +21,19 @@ class ColumnRepository(
 
     def add(
         self,
-        table_id: int,
         name: str,
-        dtype: str,
         constrained_to_indexset: str,
+        dtype: str,
+        parameter_id: int,
+        table_id: int,
         unique: bool,
     ) -> Column:
         column = Column(
-            table__id=table_id,
             name=name,
-            dtype=dtype,
             constrained_to_indexset=constrained_to_indexset,
+            dtype=dtype,
+            parameter__id=parameter_id,
+            table__id=table_id,
             unique=unique,
         )
         self.session.add(column)
@@ -40,27 +42,32 @@ class ColumnRepository(
     @guard("edit")
     def create(
         self,
-        table_id: int,
         name: str,
-        dtype: str,
         constrained_to_indexset: int,
-        unique: bool,
+        dtype: str,
+        parameter_id: int | None = None,
+        table_id: int | None = None,
+        unique: bool = True,
         **kwargs,
     ) -> Column:
         """Creates a Column.
 
         Parameters
         ----------
-        table_id : int
-            The unique integer id of the :class:`ixmp4.data.abstract.optimization.Table`
-            this Column belongs to.
         name : str
             The unique name of the Column.
-        dtype : str
-            The pandas-inferred type of the Column's data.
         constrained_to_indexset : int
             The id of an :class:`ixmp4.data.abstract.optimization.IndexSet`, which must
             contain all values used as entries in this Column.
+        dtype : str
+            The pandas-inferred type of the Column's data.
+        parameter_id : int | None, default None
+            The unique integer id of the
+            :class:`ixmp4.data.abstract.optimization.Parameter` this Column belongs to,
+            if it belongs to a `Paremeter`.
+        table_id : int | None, default None
+            The unique integer id of the :class:`ixmp4.data.abstract.optimization.Table`
+            this Column belongs to, if it belongs to a `Table`.
         unique : bool
             A bool to determine whether entries in this Column should be considered for
             evaluating uniqueness of keys. Defaults to True.
@@ -77,10 +84,11 @@ class ColumnRepository(
             The created Column.
         """
         return super().create(
-            table_id=table_id,
             name=name,
-            dtype=dtype,
             constrained_to_indexset=constrained_to_indexset,
+            dtype=dtype,
+            parameter_id=parameter_id,
+            table_id=table_id,
             unique=unique,
             **kwargs,
         )

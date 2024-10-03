@@ -39,12 +39,12 @@ jobs:
             postgres-version: "16"
             backend: "sqlite,rest-sqlite"
             pandas-version: "2.1.3"
-          # pandas 2.0.0
+          # pandas 2.1.0
           - python-version: "3.10"
             with-pyarrow: true
             postgres-version: "16"
             backend: "sqlite,rest-sqlite"
-            pandas-version: "2.0.0"
+            pandas-version: "2.1.0"
 
     name: py${{ matrix.python-version }} | backend=${{ matrix.backend }} | with-pyarrow=${{ matrix.with-pyarrow }} | pgsql=${{ matrix.postgres-version }} | pandas=${{ matrix.pandas-version }}
     runs-on: ubuntu-latest
