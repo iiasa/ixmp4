@@ -180,13 +180,18 @@ class VariableRepository(
                 f"{', '.join(missing_columns)}!"
             )
 
+        # TODO Somehow, this got to main without the if index_list checks
+        # -> Do we need/have a test for add_data() to a scalar variable?
         index_list = [column.name for column in variable.columns]
         existing_data = pd.DataFrame(variable.data)
-        if not existing_data.empty:
-            existing_data.set_index(index_list, inplace=True)
-        variable.data = (
-            data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")
+        if index_list:
+            data = data.set_index(index_list)
+            if not existing_data.empty:
+                existing_data.set_index(index_list, inplace=True)
+        data = data.combine_first(existing_data)
+        if index_list:
+            data = data.reset_index()
+        variable.data = data.to_dict(orient="list")
 
         self.session.commit()
 
