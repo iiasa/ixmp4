@@ -142,7 +142,7 @@ class ScalarRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns
         -------
@@ -161,7 +161,7 @@ class ScalarRepository(
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns
         -------
