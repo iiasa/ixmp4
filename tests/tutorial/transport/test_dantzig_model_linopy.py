@@ -1,18 +1,16 @@
 import numpy as np
 import pandas as pd
-import xarray as xr
 
-from ixmp4 import Platform
+import ixmp4
 from ixmp4.core import Run, Unit
 
-from ...utils import all_platforms
 from .dantzig_model_linopy import (
     create_dantzig_model,
     read_dantzig_solution,
 )
 
 
-def create_dantzig_run(mp: Platform) -> Run:
+def create_dantzig_run(mp: ixmp4.Platform) -> Run:
     """Create a Run for the transport tutorial.
 
     Please see the tutorial file for explanation.
@@ -72,20 +70,15 @@ def create_dantzig_run(mp: Platform) -> Run:
     return run
 
 
-@all_platforms
 class TestTransportTutorialLinopy:
-    def test_create_dantzig_model(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-        run = create_dantzig_run(test_mp)
+    def test_create_dantzig_model(self, platform: ixmp4.Platform):
+        run = create_dantzig_run(platform)
         model = create_dantzig_model(run)
 
         # Set expectations
-        expected = {
-            "supply_constraint_sign": xr.DataArray(["<=", "<="]),
-            "demand_constraint_sign": xr.DataArray([">=", ">=", ">="]),
-            # TODO enable this once #95 is merged; allows removal of xarray from file
-            # "supply_constraint_sign": np.array(["<=", "<="]),
-            # "demand_constraint_sign": np.array([">=", ">=", ">="]),
+        expected: dict[str, pd.Series] = {
+            "supply_constraint_sign": pd.Series(["<=", "<="]),
+            "demand_constraint_sign": pd.Series([">=", ">=", ">="]),
             "supply_constraint_rhs": pd.Series([350.0, 600.0]),
             "demand_constraint_rhs": pd.Series([325.0, 300.0, 275.0]),
             "objective_coeffs": pd.Series([0.162, 0.225, 0.126, 0.153, 0.225, 0.162]),
@@ -102,15 +95,11 @@ class TestTransportTutorialLinopy:
             model.constraints["Observe supply limit at plant i"].data.rhs.values,
             expected["supply_constraint_rhs"],
         )
-        assert (
-            model.constraints["Observe supply limit at plant i"].data.sign.values
-            == expected["supply_constraint_sign"]
+        # TODO Replace this with np.strings.equal once supporting numpy >= 2.0.0
+        assert np.char.equal(
+            model.constraints["Observe supply limit at plant i"].data.sign.values,
+            expected["supply_constraint_sign"],
         ).all()
-        # TODO enable this once #95 is merged
-        # assert np.strings.equal(
-        #     model.constraints["Observe supply limit at plant i"].data.sign.values,
-        #     expected["supply_constraint_sign"],
-        # ).all()
         assert model.constraints["Satisfy demand at market j"].coord_dims == (
             "Markets",
         )
@@ -118,26 +107,20 @@ class TestTransportTutorialLinopy:
             model.constraints["Satisfy demand at market j"].data.rhs.values,
             expected["demand_constraint_rhs"],
         )
-        assert (
-            model.constraints["Satisfy demand at market j"].data.sign.values
-            == expected["demand_constraint_sign"]
+        # TODO Replace this with np.strings.equal once supporting numpy >= 2.0.0
+        assert np.char.equal(
+            model.constraints["Satisfy demand at market j"].data.sign.values,
+            expected["demand_constraint_sign"],
         ).all()
-        # TODO enable this once #95 is merged
-        # assert np.strings.equal(
-        #     model.constraints["Satisfy demand at market j"].data.sign.values,
-        #     expected["demand_constraint_sign"],
-        # ).all()
         assert model.objective.sense == "min"
 
         assert np.allclose(
             model.objective.coeffs.to_pandas(), expected["objective_coeffs"]
         )
 
-    def test_read_dantzig_solution(self, test_mp, request):
-        test_mp: Platform = request.getfixturevalue(test_mp)  # type: ignore
-
+    def test_read_dantzig_solution(self, platform: ixmp4.Platform):
         # Could we store this as class attributes to avoid repetition?
-        run = create_dantzig_run(test_mp)
+        run = create_dantzig_run(platform)
         model = create_dantzig_model(run)
         model.solve("highs")
         read_dantzig_solution(model=model, run=run)
