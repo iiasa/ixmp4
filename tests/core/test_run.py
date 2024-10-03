@@ -237,7 +237,7 @@ class TestCoreRun:
         assert equation.data == {}
         assert variable.data == {}
 
-    def test_run_clone(self, platform: ixmp4.Platform, test_data_annual):
+    def test_run_clone(self, platform: ixmp4.Platform):
         # Prepare test data and platform
         test_data_annual = self.small.annual.copy()
         # Define required regions and units in the database
@@ -289,6 +289,6 @@ class TestCoreRun:
         assert cloned_indexset.elements == expected
 
         # Test cloning Run without iamc data
-        run = test_mp.runs.create("Model", "Scenario")
-        clone_without_iamc = test_mp.runs.clone(run.id)
+        run = platform.runs.create("Model", "Scenario")
+        clone_without_iamc = platform.runs.clone(run.id)
         assert clone_without_iamc.iamc.tabulate().empty

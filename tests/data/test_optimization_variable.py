@@ -85,11 +85,11 @@ class TestDataOptimizationVariable:
 
         # Test that giving column_names, but not constrained_to_indexsets raises
         with pytest.raises(
-            ValueError,
+            OptimizationItemUsageError,
             match="Received `column_names` to name columns, but no "
             "`constrained_to_indexsets`",
         ):
-            _ = test_mp.backend.optimization.variables.create(
+            _ = platform.backend.optimization.variables.create(
                 run_id=run.id,
                 name="Variable 0",
                 column_names=["Dimension 1"],
