@@ -434,3 +434,70 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.parameters.docs.get(parameter.id)
+
+    def test_get_and_set_optimizationvariabledocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        variable = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
+        )
+        docs_variable = platform.backend.optimization.variables.docs.set(
+            variable.id, "Description of test Variable"
+        )
+        docs_variable1 = platform.backend.optimization.variables.docs.get(variable.id)
+
+        assert docs_variable == docs_variable1
+
+    def test_change_empty_optimizationvariabledocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        variable = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
+        )
+
+        with pytest.raises(Docs.NotFound):
+            platform.backend.optimization.variables.docs.get(variable.id)
+
+        docs_variable1 = platform.backend.optimization.variables.docs.set(
+            variable.id, "Description of test Variable"
+        )
+
+        assert (
+            platform.backend.optimization.variables.docs.get(variable.id)
+            == docs_variable1
+        )
+
+        docs_variable2 = platform.backend.optimization.variables.docs.set(
+            variable.id, "Different description of test Variable"
+        )
+
+        assert (
+            platform.backend.optimization.variables.docs.get(variable.id)
+            == docs_variable2
+        )
+
+    def test_delete_optimizationvariabledocs(self, platform: ixmp4.Platform):
+        run = platform.backend.runs.create("Model", "Scenario")
+        _ = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        variable = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable", constrained_to_indexsets=["Indexset"]
+        )
+        docs_variable = platform.backend.optimization.variables.docs.set(
+            variable.id, "Description of test Variable"
+        )
+
+        assert (
+            platform.backend.optimization.variables.docs.get(variable.id)
+            == docs_variable
+        )
+
+        platform.backend.optimization.variables.docs.delete(variable.id)
+
+        with pytest.raises(Docs.NotFound):
+            platform.backend.optimization.variables.docs.get(variable.id)

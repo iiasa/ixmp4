@@ -20,6 +20,10 @@ from .optimization import (
     Table,
     TableRepository,
 )
+
+# TODO for PR: avoiding name conflict here Is that okay?
+from .optimization import Variable as OptimizationVariable
+from .optimization import VariableRepository as OptimizationVariableRepository
 from .region import Region, RegionParent, RegionRepository
 from .run import Run, RunRepository
 from .scenario import Scenario, ScenarioRepository

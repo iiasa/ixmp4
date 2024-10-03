@@ -7,6 +7,7 @@ from ixmp4.data.db.optimization.indexset import IndexSet
 from ixmp4.data.db.optimization.parameter import Parameter
 from ixmp4.data.db.optimization.scalar import Scalar
 from ixmp4.data.db.optimization.table import Table
+from ixmp4.data.db.optimization.variable import Variable as OptimizationVariable
 from ixmp4.data.db.scenario.model import Scenario
 
 from .. import base, mixins
@@ -45,6 +46,7 @@ class Run(base.BaseModel, mixins.HasUpdateInfo):
     parameters: types.Mapped[list["Parameter"]] = db.relationship()
     scalars: types.Mapped[list["Scalar"]] = db.relationship()
     tables: types.Mapped[list["Table"]] = db.relationship()
+    variables: types.Mapped[list["OptimizationVariable"]] = db.relationship()
 
     version: types.Integer = db.Column(db.Integer, nullable=False)
     is_default: types.Boolean = db.Column(db.Boolean, default=False, nullable=False)

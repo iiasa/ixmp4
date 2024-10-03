@@ -21,6 +21,7 @@ from .optimization import indexset as optimization_indexset
 from .optimization import parameter as optimization_parameter
 from .optimization import scalar as optimization_scalar
 from .optimization import table as optimization_table
+from .optimization import variable as optimization_variable
 
 v1 = FastAPI(
     servers=[{"url": "/v1", "description": "v1"}],
@@ -54,6 +55,7 @@ v1.include_router(optimization_indexset.router, prefix="/optimization")
 v1.include_router(optimization_parameter.router, prefix="/optimization")
 v1.include_router(optimization_scalar.router, prefix="/optimization")
 v1.include_router(optimization_table.router, prefix="/optimization")
+v1.include_router(optimization_variable.router, prefix="/optimization")
 v1.include_router(region.router)
 v1.include_router(run.router)
 v1.include_router(scenario.router)

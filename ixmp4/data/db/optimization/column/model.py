@@ -24,6 +24,10 @@ class Column(base.BaseModel):
     parameter__id: types.Mapped[int | None] = db.Column(
         db.Integer, db.ForeignKey("optimization_parameter.id"), nullable=True
     )
+    # TODO ...
+    variable__id: types.Mapped[int | None] = db.Column(
+        db.Integer, db.ForeignKey("optimization_optimizationvariable.id"), nullable=True
+    )
     indexset: types.Mapped[IndexSet] = db.relationship(single_parent=True)
     constrained_to_indexset: types.Integer = db.Column(
         db.Integer, db.ForeignKey("optimization_indexset.id"), index=True

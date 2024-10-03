@@ -1,1 +1,1 @@
-from . import indexset, parameter, scalar, table
+from . import indexset, parameter, scalar, table, variable
