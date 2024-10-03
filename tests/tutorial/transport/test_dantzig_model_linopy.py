@@ -76,9 +76,9 @@ class TestTransportTutorialLinopy:
         model = create_dantzig_model(run)
 
         # Set expectations
-        expected: dict[str, pd.Series] = {
-            "supply_constraint_sign": pd.Series(["<=", "<="]),
-            "demand_constraint_sign": pd.Series([">=", ">=", ">="]),
+        expected: dict[str, np.ndarray | pd.Series] = {
+            "supply_constraint_sign": np.array(["<=", "<="]),
+            "demand_constraint_sign": np.array([">=", ">=", ">="]),
             "supply_constraint_rhs": pd.Series([350.0, 600.0]),
             "demand_constraint_rhs": pd.Series([325.0, 300.0, 275.0]),
             "objective_coeffs": pd.Series([0.162, 0.225, 0.126, 0.153, 0.225, 0.162]),
