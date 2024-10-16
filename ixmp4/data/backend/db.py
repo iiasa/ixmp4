@@ -143,7 +143,6 @@ class SqlAlchemyBackend(Backend):
         self.session = None
 
     def close(self):
-        self.session.rollback()
         self.session.close()
 
 
