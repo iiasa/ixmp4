@@ -43,7 +43,7 @@ logger = logging.getLogger(__name__)
 
 @lru_cache()
 def cached_create_engine(dsn: str) -> Engine:
-    return create_engine(dsn, pool_pre_ping=True)
+    return create_engine(dsn, poolclass=NullPool)
 
 
 class IamcSubobject(BaseIamcSubobject):
@@ -143,8 +143,8 @@ class SqlAlchemyBackend(Backend):
         self.session = None
 
     def close(self):
+        self.session.rollback()
         self.session.close()
-        self.engine.dispose()
 
 
 class SqliteTestBackend(SqlAlchemyBackend):
