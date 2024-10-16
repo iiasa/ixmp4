@@ -144,6 +144,7 @@ class SqlAlchemyBackend(Backend):
 
     def close(self):
         self.session.close()
+        self.engine.dispose()
 
 
 class SqliteTestBackend(SqlAlchemyBackend):
