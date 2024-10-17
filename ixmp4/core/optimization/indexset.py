@@ -23,17 +23,17 @@ class IndexSet(BaseModelFacade):
         return self._model.name
 
     @property
-    def elements(self) -> list[float | int | str]:
-        return self._model.elements
+    def data(self) -> list[float | int | str]:
+        return self._model.data
 
-    def add(self, elements: float | int | list[float | int | str] | str) -> None:
-        """Adds elements to an existing IndexSet."""
-        self.backend.optimization.indexsets.add_elements(
-            indexset_id=self._model.id, elements=elements
+    def add(self, data: float | int | list[float | int | str] | str) -> None:
+        """Adds data to an existing IndexSet."""
+        self.backend.optimization.indexsets.add_data(
+            indexset_id=self._model.id, data=data
         )
-        self._model.elements = self.backend.optimization.indexsets.get(
+        self._model.data = self.backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
-        ).elements
+        ).data
 
     @property
     def run_id(self) -> int:
