@@ -17,8 +17,8 @@ class IndexSet(base.BaseModel, Protocol):
     """The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
     defined. """
 
-    elements: types.JsonList
-    """Unique list of str or int."""
+    data: types.OptimizationDataList
+    """Unique list of str, int, or float."""
 
     created_at: types.DateTime
     "Creation date/time. TODO"
@@ -120,24 +120,24 @@ class IndexSetRepository(
             A data frame with the columns:
                 - id
                 - name
-                - elements
+                - data
                 - run__id
                 - created_at
                 - created_by
         """
         ...
 
-    def add_elements(
-        self, indexset_id: int, elements: float | int | List[float | int | str] | str
+    def add_data(
+        self, indexset_id: int, data: float | int | List[float | int | str] | str
     ) -> None:
-        """Adds elements to an existing IndexSet.
+        """Adds data to an existing IndexSet.
 
         Parameters
         ----------
         indexset_id : int
             The id of the target IndexSet.
-        elements : float | int | List[float | int | str] | str
-            The elements to be added to the IndexSet.
+        data : float | int | List[float | int | str] | str
+            The data to be added to the IndexSet.
 
         Returns
         -------

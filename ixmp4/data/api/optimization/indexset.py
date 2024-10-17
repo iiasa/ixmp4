@@ -17,7 +17,7 @@ class IndexSet(base.BaseModel):
 
     id: int
     name: str
-    elements: (
+    data: (
         StrictFloat
         | StrictInt
         | StrictStr
@@ -67,13 +67,13 @@ class IndexSetRepository(
     def tabulate(self, **kwargs) -> pd.DataFrame:
         return super()._tabulate(json=kwargs)
 
-    def add_elements(
+    def add_data(
         self,
         indexset_id: int,
-        elements: StrictFloat
+        data: StrictFloat
         | StrictInt
         | List[StrictFloat | StrictInt | StrictStr]
         | StrictStr,
     ) -> None:
-        kwargs = {"indexset_id": indexset_id, "elements": elements}
+        kwargs = {"indexset_id": indexset_id, "data": data}
         self._request("PATCH", self.prefix + str(indexset_id) + "/", json=kwargs)

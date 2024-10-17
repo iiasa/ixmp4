@@ -20,8 +20,8 @@ class IndexSetInput(BaseModel):
     name: str
 
 
-class ElementsInput(BaseModel):
-    elements: (
+class DataInput(BaseModel):
+    data: (
         StrictFloat | StrictInt | StrictStr | list[StrictFloat | StrictInt | StrictStr]
     )
 
@@ -57,11 +57,11 @@ def create(
 
 @autodoc
 @router.patch("/{indexset_id}/")
-def add_elements(
+def add_data(
     indexset_id: int,
-    elements: ElementsInput,
+    data: DataInput,
     backend: Backend = Depends(deps.get_backend),
 ):
-    backend.optimization.indexsets.add_elements(
-        indexset_id=indexset_id, **elements.model_dump()
+    backend.optimization.indexsets.add_data(
+        indexset_id=indexset_id, **data.model_dump()
     )

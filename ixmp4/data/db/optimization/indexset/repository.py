@@ -8,7 +8,7 @@ from ixmp4.data.auth.decorators import guard
 
 from .. import base
 from .docs import IndexSetDocsRepository
-from .model import IndexSet
+from .model import IndexSet, IndexSetData
 
 
 class IndexSetRepository(
@@ -61,21 +61,36 @@ class IndexSetRepository(
 
     @guard("view")
     def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+        result = super().tabulate(*args, **kwargs).drop(labels="data_type", axis=1)
+        result.insert(
+            loc=0,
+            column="data",
+            value=[self.get_by_id(id=indexset_id).data for indexset_id in result.id],
+        )
+        return result
 
     @guard("edit")
-    def add_elements(
+    def add_data(
         self,
         indexset_id: int,
-        elements: float | int | List[float | int | str] | str,
+        data: float | int | List[float | int | str] | str,
     ) -> None:
         indexset = self.get_by_id(id=indexset_id)
-        if not isinstance(elements, list):
-            elements = [elements]
-        if indexset.elements is None:
-            indexset.elements = elements
-        else:
-            indexset.elements = indexset.elements + elements
+        if not isinstance(data, list):
+            data = [data]
+        # TODO If adding rows one by one is too expensive, look into executemany pattern
+        for value in data:
+            self.session.add(
+                IndexSetData(indexset=indexset, indexset__id=indexset_id, value=value)
+            )
+
+        try:
+            self.session.flush()
+        except db.IntegrityError as e:
+            self.session.rollback()
+            raise indexset.DataInvalid from e
+
+        indexset.data_type = type(data[0]).__name__
 
         self.session.add(indexset)
         self.session.commit()

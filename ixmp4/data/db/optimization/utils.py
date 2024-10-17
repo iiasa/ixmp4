@@ -12,10 +12,10 @@ def collect_indexsets_to_check(
     columns: list["Column"],
 ) -> dict[str, Any]:
     """Creates a {key:value} dict from linked Column.names and their
-    IndexSet.elements."""
+    IndexSet.data."""
     collection: dict[str, Any] = {}
     for column in columns:
-        collection[column.name] = column.indexset.elements
+        collection[column.name] = column.indexset.data
     return collection
 
 
