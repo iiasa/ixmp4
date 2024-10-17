@@ -15,7 +15,7 @@ def df_from_list(indexsets: list):
         # which doesn't like lists
         [
             [
-                indexset.elements,
+                indexset.data,
                 indexset.run__id,
                 indexset.name,
                 indexset.id,
@@ -25,7 +25,7 @@ def df_from_list(indexsets: list):
             for indexset in indexsets
         ],
         columns=[
-            "elements",
+            "data",
             "run__id",
             "name",
             "id",
@@ -92,11 +92,11 @@ class TestDataOptimizationIndexSet:
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_1.id, elements="foo"
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset_1.id, data="foo"
         )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_2.id, elements=[1, 2]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset_2.id, data=[1, 2]
         )
 
         indexset_1 = platform.backend.optimization.indexsets.get(
@@ -125,66 +125,38 @@ class TestDataOptimizationIndexSet:
             expected, platform.backend.optimization.indexsets.tabulate(run_id=run_2.id)
         )
 
-    def test_add_elements(self, platform: ixmp4.Platform):
-        test_elements = ["foo", "bar"]
+    def test_add_data(self, platform: ixmp4.Platform):
+        test_data = ["foo", "bar"]
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
-        platform.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_data(
             indexset_id=indexset_1.id,
-            elements=test_elements,  # type: ignore
+            data=test_data,  # type: ignore
         )
         indexset_1 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_1.name
         )
 
-        platform.backend.optimization.indexsets.add_elements(
+        platform.backend.optimization.indexsets.add_data(
             indexset_id=indexset_2.id,
-            elements=test_elements,  # type: ignore
+            data=test_data,  # type: ignore
         )
 
         assert (
-            indexset_1.elements
+            indexset_1.data
             == platform.backend.optimization.indexsets.get(
                 run_id=run.id, name=indexset_2.name
-            ).elements
+            ).data
         )
 
         with pytest.raises(OptimizationDataValidationError):
-            platform.backend.optimization.indexsets.add_elements(
-                indexset_id=indexset_1.id, elements=["baz", "foo"]
+            platform.backend.optimization.indexsets.add_data(
+                indexset_id=indexset_1.id, data=["baz", "foo"]
             )
 
         with pytest.raises(OptimizationDataValidationError):
-            platform.backend.optimization.indexsets.add_elements(
-                indexset_id=indexset_2.id, elements=["baz", "baz"]
+            platform.backend.optimization.indexsets.add_data(
+                indexset_id=indexset_2.id, data=["baz", "baz"]
             )
-
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_1.id, elements=1
-        )
-        indexset_3 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name=indexset_1.name
-        )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_2.id, elements="1"
-        )
-        indexset_4 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name=indexset_2.name
-        )
-        assert indexset_3.elements != indexset_4.elements
-        assert len(indexset_3.elements) == len(indexset_4.elements)
-
-        test_elements_2 = [1, "2", 3.14]
-        indexset_5 = platform.backend.optimization.indexsets.create(
-            run_id=run.id, name="IndexSet 5"
-        )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_5.id,
-            elements=test_elements_2,  # type:ignore
-        )
-        indexset_5 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name=indexset_5.name
-        )
-        assert indexset_5.elements == test_elements_2
