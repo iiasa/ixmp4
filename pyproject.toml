@@ -73,6 +73,8 @@ optional = true
 
 [tool.poetry.group.tutorial.dependencies]
 ipykernel = ">=6.27.1"
+linopy = ">=0.3.10"
+highspy = ">=1.7.2"
 
 [tool.poetry.scripts]
 ixmp4 = "ixmp4.__main__:app"
@@ -94,7 +96,7 @@ implicit_reexport = true
 plugins = ['sqlalchemy.ext.mypy.plugin']
 
 [[tool.mypy.overrides]]
-module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
+module = ["linopy", "pandas", "uvicorn.workers", "sqlalchemy_utils"]
 ignore_missing_imports = true
 
 [tool.ruff]
