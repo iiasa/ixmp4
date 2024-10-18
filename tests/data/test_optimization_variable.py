@@ -114,9 +114,7 @@ class TestDataOptimizationVariable:
             )
 
         # Test column.dtype is registered correctly
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_2.id, elements=2024
-        )
+        platform.backend.optimization.indexsets.add_data(indexset_2.id, data=2024)
         indexset_2 = platform.backend.optimization.indexsets.get(
             run.id, indexset_2.name
         )
@@ -125,7 +123,7 @@ class TestDataOptimizationVariable:
             name="Variable 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
-        # If indexset doesn't have elements, a generic dtype is registered
+        # If indexset doesn't have data, a generic dtype is registered
         assert variable_4.columns is not None
         assert variable_4.columns[0].dtype == "object"
         assert variable_4.columns[1].dtype == "int64"
@@ -152,11 +150,11 @@ class TestDataOptimizationVariable:
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset.id, elements=["foo", "bar", ""]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset.id, data=["foo", "bar", ""]
         )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_2.id, elements=[1, 2, 3]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset_2.id, data=[1, 2, 3]
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -302,8 +300,8 @@ class TestDataOptimizationVariable:
     def test_variable_remove_data(self, platform: ixmp4.Platform):
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset.id, elements=["foo", "bar"]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset.id, data=["foo", "bar"]
         )
         test_data = {
             "Indexset": ["bar", "foo"],
@@ -383,11 +381,11 @@ class TestDataOptimizationVariable:
             platform.backend.optimization.variables.tabulate(name="Variable 2"),
         )
 
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset.id, elements=["foo", "bar"]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset.id, data=["foo", "bar"]
         )
-        platform.backend.optimization.indexsets.add_elements(
-            indexset_id=indexset_2.id, elements=[1, 2, 3]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset_2.id, data=[1, 2, 3]
         )
         test_data_1 = {
             indexset.name: ["foo"],

@@ -90,12 +90,12 @@ class TestCoreEquation:
             )
 
         # Test column.dtype is registered correctly
-        indexset_2.add(elements=2024)
+        indexset_2.add(data=2024)
         equation_3 = run.optimization.equations.create(
             "Equation 5",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
-        # If indexset doesn't have elements, a generic dtype is registered
+        # If indexset doesn't have data, a generic dtype is registered
         assert equation_3.columns[0].dtype == "object"
         assert equation_3.columns[1].dtype == "int64"
 
@@ -126,8 +126,8 @@ class TestCoreEquation:
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        indexset.add(elements=["foo", "bar", ""])
-        indexset_2.add(elements=[1, 2, 3])
+        indexset.add(data=["foo", "bar", ""])
+        indexset_2.add(data=[1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
         # can remedy this. Or maybe we want to catch the resulting
@@ -251,7 +251,7 @@ class TestCoreEquation:
     def test_equation_remove_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
-        indexset.add(elements=["foo", "bar"])
+        indexset.add(data=["foo", "bar"])
         test_data = {
             "Indexset": ["bar", "foo"],
             "levels": [2.0, 1],
@@ -326,8 +326,8 @@ class TestCoreEquation:
             run.optimization.equations.tabulate(name="Equation 2"),
         )
 
-        indexset.add(elements=["foo", "bar"])
-        indexset_2.add(elements=[1, 2, 3])
+        indexset.add(data=["foo", "bar"])
+        indexset_2.add(data=[1, 2, 3])
         test_data_1 = {
             indexset.name: ["foo"],
             indexset_2.name: [1],
