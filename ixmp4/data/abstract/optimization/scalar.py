@@ -6,6 +6,7 @@ from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from ..unit import Unit
 
 
 class Scalar(base.BaseModel, Protocol):
@@ -17,7 +18,7 @@ class Scalar(base.BaseModel, Protocol):
     """Value of the Scalar."""
     unit__id: types.Integer
     "Foreign unique integer id of a unit."
-    unit: types.Mapped
+    unit: types.Mapped[Unit]
     "Associated unit."
     run__id: types.Integer
     "Foreign unique integer id of a run."

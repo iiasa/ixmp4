@@ -19,6 +19,6 @@ def create_indexsets_for_run(
     return tuple(
         platform.backend.optimization.indexsets.create(
             run_id=run_id, name=f"Indexset {i}"
-        )  # type: ignore
+        )
         for i in range(offset, offset + amount)
     )
