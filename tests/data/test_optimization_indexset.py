@@ -126,14 +126,16 @@ class TestDataOptimizationIndexSet:
         )
 
     def test_add_data(self, platform: ixmp4.Platform):
-        test_data = ["foo", "bar"]
+        # See https://mypy.readthedocs.io/en/stable/common_issues.html#variance for why
+        # a type hint is required here
+        test_data: list[float | int | str] = ["foo", "bar"]
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
             indexset_id=indexset_1.id,
-            data=test_data,  # type: ignore
+            data=test_data,
         )
         indexset_1 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_1.name
@@ -141,7 +143,7 @@ class TestDataOptimizationIndexSet:
 
         platform.backend.optimization.indexsets.add_data(
             indexset_id=indexset_2.id,
-            data=test_data,  # type: ignore
+            data=test_data,
         )
 
         assert (

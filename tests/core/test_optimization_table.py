@@ -43,7 +43,7 @@ class TestCoreTable:
 
         # Test normal creation
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         table = run.optimization.tables.create(
@@ -121,7 +121,7 @@ class TestCoreTable:
     def test_table_add_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         indexset.add(data=["foo", "bar", ""])
@@ -266,7 +266,7 @@ class TestCoreTable:
     def test_tabulate_table(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         table = run.optimization.tables.create(

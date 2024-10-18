@@ -8,6 +8,7 @@ from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
+from ixmp4.data.abstract import Unit as UnitModel
 
 
 class Scalar(BaseModelFacade):
@@ -38,21 +39,19 @@ class Scalar(BaseModelFacade):
         )
 
     @property
-    def unit(self):
+    def unit(self) -> UnitModel:
         """Associated unit."""
         return self._model.unit
 
     @unit.setter
-    def unit(self, unit: str | Unit):
-        if isinstance(unit, Unit):
-            unit = unit
-        else:
-            unit_model = self.backend.units.get(unit)
-            unit = Unit(_backend=self.backend, _model=unit_model)
+    def unit(self, value: str | Unit):
+        if isinstance(value, str):
+            unit_model = self.backend.units.get(value)
+            value = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
             id=self._model.id,
             value=self._model.value,
-            unit_id=unit.id,
+            unit_id=value.id,
         )
 
     @property

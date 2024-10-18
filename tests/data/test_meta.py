@@ -1,3 +1,5 @@
+from typing import Literal
+
 import pandas as pd
 import pytest
 
@@ -7,7 +9,18 @@ from ixmp4.data.abstract.meta import RunMetaEntry
 
 from ..utils import assert_unordered_equality
 
-TEST_ENTRIES = [
+TEST_ENTRIES: list[
+    tuple[
+        str,
+        bool | float | int | str,
+        Literal[
+            RunMetaEntry.Type.BOOL,
+            RunMetaEntry.Type.FLOAT,
+            RunMetaEntry.Type.INT,
+            RunMetaEntry.Type.STR,
+        ],
+    ]
+] = [
     ("Boolean", True, RunMetaEntry.Type.BOOL),
     ("Float", 0.2, RunMetaEntry.Type.FLOAT),
     ("Integer", 1, RunMetaEntry.Type.INT),
@@ -26,7 +39,7 @@ class TestDataMeta:
         run.set_as_default()
 
         for key, value, type in TEST_ENTRIES:
-            entry = platform.backend.meta.create(run.id, key, value)  # type:ignore
+            entry = platform.backend.meta.create(run.id, key, value)
             assert entry.key == key
             assert entry.value == value
             assert entry.type == type
