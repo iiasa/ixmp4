@@ -66,7 +66,7 @@ class ParameterRepository(
         self.columns.create(
             name=column_name,
             constrained_to_indexset=indexset.id,
-            dtype=pd.Series(indexset.elements).dtype.name,
+            dtype=pd.Series(indexset.data).dtype.name,
             parameter_id=parameter_id,
             unique=True,
             **kwargs,

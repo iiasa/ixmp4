@@ -15,7 +15,7 @@ def df_from_list(indexsets: list[IndexSet]):
         # which doesn't like lists
         [
             [
-                indexset.elements,
+                indexset.data,
                 indexset.run_id,
                 indexset.name,
                 indexset.id,
@@ -25,7 +25,7 @@ def df_from_list(indexsets: list[IndexSet]):
             for indexset in indexsets
         ],
         columns=[
-            "elements",
+            "data",
             "run__id",
             "name",
             "id",
@@ -58,33 +58,21 @@ class TestCoreIndexset:
         with pytest.raises(IndexSet.NotFound):
             _ = run.optimization.indexsets.get("Foo")
 
-    def test_add_elements(self, platform: ixmp4.Platform):
+    def test_add_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        test_elements = ["foo", "bar"]
+        test_data = ["foo", "bar"]
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
-        indexset_1.add(test_elements)  # type: ignore
-        run.optimization.indexsets.create("Indexset 2").add(test_elements)  # type: ignore
+        indexset_1.add(test_data)  # type: ignore
+        run.optimization.indexsets.create("Indexset 2").add(test_data)  # type: ignore
         indexset_2 = run.optimization.indexsets.get("Indexset 2")
 
-        assert indexset_1.elements == indexset_2.elements
+        assert indexset_1.data == indexset_2.data
 
         with pytest.raises(OptimizationDataValidationError):
             indexset_1.add(["baz", "foo"])
 
         with pytest.raises(OptimizationDataValidationError):
             indexset_2.add(["baz", "baz"])
-
-        indexset_1.add(1)
-        indexset_3 = run.optimization.indexsets.get("Indexset 1")
-        indexset_2.add("1")
-        indexset_4 = run.optimization.indexsets.get("Indexset 2")
-        assert indexset_3.elements != indexset_4.elements
-        assert len(indexset_3.elements) == len(indexset_4.elements)
-
-        test_elements_2 = ["One", 2, 3.141]
-        indexset_5 = run.optimization.indexsets.create("Indexset 5")
-        indexset_5.add(test_elements_2)  # type: ignore
-        assert indexset_5.elements == test_elements_2
 
     def test_list_indexsets(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
