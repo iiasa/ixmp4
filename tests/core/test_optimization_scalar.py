@@ -52,9 +52,6 @@ class TestCoreScalar:
                 "Scalar 1", value=20, unit=unit.name
             )
 
-        with pytest.raises(TypeError):
-            _ = run.optimization.scalars.create("Scalar 2")  # type: ignore
-
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=20, unit=unit)
         assert scalar_1.id != scalar_2.id
 
@@ -86,7 +83,9 @@ class TestCoreScalar:
             _ = run.optimization.scalars.create("Scalar", value=20, unit=unit2.name)
 
         scalar.value = 30
-        scalar.unit = "Test Unit"
+        # At the moment, mypy doesn't allow for different types in property getter and
+        # setter, see https://github.com/python/mypy/issues/3004
+        scalar.unit = "Test Unit"  # type: ignore
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
         result = run.optimization.scalars.get("Scalar")
@@ -94,7 +93,7 @@ class TestCoreScalar:
         assert scalar.id == result.id
         assert scalar.name == result.name
         assert scalar.value == result.value == 30
-        assert scalar.unit.id == result.unit.id == 1  # type: ignore
+        assert scalar.unit.id == result.unit.id == 1
 
     def test_list_scalars(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")

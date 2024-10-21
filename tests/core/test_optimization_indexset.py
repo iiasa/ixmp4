@@ -60,10 +60,12 @@ class TestCoreIndexset:
 
     def test_add_data(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        test_data = ["foo", "bar"]
+        # See https://mypy.readthedocs.io/en/stable/common_issues.html#variance for why
+        # a type hint is required here
+        test_data: list[float | int | str] = ["foo", "bar"]
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
-        indexset_1.add(test_data)  # type: ignore
-        run.optimization.indexsets.create("Indexset 2").add(test_data)  # type: ignore
+        indexset_1.add(test_data)
+        run.optimization.indexsets.create("Indexset 2").add(test_data)
         indexset_2 = run.optimization.indexsets.get("Indexset 2")
 
         assert indexset_1.data == indexset_2.data
