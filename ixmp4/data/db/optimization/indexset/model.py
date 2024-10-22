@@ -1,4 +1,6 @@
-from typing import ClassVar, Literal
+from typing import ClassVar
+
+import numpy as np
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
@@ -6,20 +8,6 @@ from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
 from .. import base
-
-
-# TODO Feels like there ought to be this kind of functionality already
-def cast_data_as_type(
-    data: "IndexSetData", type: Literal["float", "int", "str"] | None
-) -> float | int | str:
-    if type == "str":
-        return data.value
-    elif type == "int":
-        return int(data.value)
-    elif type == "float":
-        return float(data.value)
-    else:  # type is None
-        return 0
 
 
 class IndexSet(base.BaseModel):
@@ -36,7 +24,11 @@ class IndexSet(base.BaseModel):
 
     @db.hybrid_property
     def data(self) -> list[float | int | str]:
-        return [cast_data_as_type(data, self.data_type) for data in self._data]
+        return (
+            []
+            if self.data_type is None
+            else np.array([d.value for d in self._data], dtype=self.data_type).tolist()
+        )
 
     # NOTE For the core layer (setting and retrieving) to work, the property needs a
     # setter method
