@@ -1,6 +1,12 @@
 name: test
 
-on: pull_request
+# TODO workaround for Codecov/squash and merge, a bit wasteful
+# Revise e.g. via https://github.com/codecov/feedback/issues/369
+on: 
+  pull_request:
+  push:
+    branches:
+      - 'main'
 
 jobs:
   test:
@@ -138,15 +144,6 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: .coverage.xml
-      #-----------------------------------
-      #  Upload coverage for `main`, too 
-      #-----------------------------------
-      - name: Upload results to Codecov for `main`
-        uses: codecov/codecov-action@v4
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-          files: .coverage.xml
-          override_branch: main
 
   pre-commit:
     name: Code quality
