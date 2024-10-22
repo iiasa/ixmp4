@@ -130,7 +130,6 @@ jobs:
         run: |
           source .venv/bin/activate
           pytest --backend ${{ matrix.backend }} --postgres-dsn "postgresql://postgres:postgres@localhost:5432/test" --cov-report xml:.coverage.xml --cov=ixmp4 -rsxX --benchmark-skip --color=yes
-
       #------------------------------
       #  Upload coverage to codecov
       #------------------------------
@@ -139,6 +138,15 @@ jobs:
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
           files: .coverage.xml
+      #-----------------------------------
+      #  Upload coverage for `main`, too 
+      #-----------------------------------
+      - name: Upload results to Codecov for `main`
+        uses: codecov/codecov-action@v4
+        with:
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: .coverage.xml
+          override_branch: main
 
   pre-commit:
     name: Code quality
