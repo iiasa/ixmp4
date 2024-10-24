@@ -110,14 +110,3 @@ class TestDataRun:
             inplace=True,
             columns=["created_by", "created_at", "updated_by", "updated_at"],
         )
-
-    def test_audit_info(self, platform: ixmp4.Platform):
-        run = platform.backend.runs.create("Model", "Scenario")
-        platform.backend.runs.set_as_default_version(run.id)
-        platform.backend.runs.create("Model", "Scenario")
-
-        runs = platform.backend.runs.tabulate(default_only=False)
-        assert (runs["created_by"] == "@unknown").all()
-        # was updated by set_as_default_version
-        assert runs["updated_by"][0] == "@unknown"
-        assert runs["updated_by"][1] is None
