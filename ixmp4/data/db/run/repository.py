@@ -149,12 +149,16 @@ class RunRepository(
             .where(
                 Run.model__id == run.model__id,
                 Run.scenario__id == run.scenario__id,
+                Run.is_default,
             )
             .values(is_default=False)
         )
 
-        self.session.execute(exc)
-        self.session.commit()
+        with self.backend.event_handler.pause():
+            # we dont want to trigger the
+            # updated_at fields for this operation.
+            self.session.execute(exc)
+            self.session.commit()
 
         run.is_default = True
         self.session.commit()

@@ -228,6 +228,31 @@ class TestAuthContext:
                     with pytest.raises(Forbidden):
                         run.meta = {"meta": "test"}
 
+    def test_run_audit_info(self, db_platform: ixmp4.Platform):
+        backend = cast(SqlAlchemyBackend, db_platform.backend)
+
+        test_user = User(username="test_audit", is_verified=True, is_superuser=True)
+
+        run1 = backend.runs.create("Model 1", "Scenario 1")
+
+        backend.runs.create("Model 1", "Scenario 1")
+        backend.runs.set_as_default_version(run1.id)
+
+        with backend.auth(test_user, self.mock_manager, self.TEST_PLATFORMS[0]):
+            run3 = backend.runs.create("Model 1", "Scenario 1")
+            backend.runs.set_as_default_version(run3.id)
+
+        runs = backend.runs.tabulate(default_only=False)
+        assert runs["created_by"][0] == "@unknown"
+        assert runs["created_by"][1] == "@unknown"
+        assert runs["created_by"][2] == "test_audit"
+
+        # run1 was updated by set_as_default_version
+        # run2 was not
+        assert runs["updated_by"][0] == "@unknown"
+        assert runs["updated_by"][1] is None
+        assert runs["updated_by"][2] == "test_audit"
+
     @pytest.mark.parametrize(
         "model, platform_info, access",
         [
