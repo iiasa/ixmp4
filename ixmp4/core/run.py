@@ -89,11 +89,16 @@ class RunRepository(BaseFacade):
             for r in self.backend.runs.list(default_only=default_only, **kwargs)
         ]
 
-    def tabulate(self, default_only: bool = True, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, default_only: bool = True, audit_info: bool = False, **kwargs
+    ) -> pd.DataFrame:
         runs = self.backend.runs.tabulate(default_only=default_only, **kwargs)
         runs["model"] = runs["model__id"].map(self.backend.models.map())
         runs["scenario"] = runs["scenario__id"].map(self.backend.scenarios.map())
-        return runs[["id", "model", "scenario", "version", "is_default"]]
+        columns = ["model", "scenario", "version", "is_default"]
+        if audit_info:
+            columns += ["updated_at", "updated_by", "created_at", "created_by", "id"]
+        return runs[columns]
 
 
 class RunMetaFacade(BaseFacade, UserDict):
