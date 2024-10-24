@@ -13,11 +13,9 @@ def _expected_runs_table(*row_default):
     rows = []
     for i, default in enumerate(row_default, start=1):
         if default is not None:
-            rows.append([i, "Model", "Scenario", i] + [default])
+            rows.append(["Model", "Scenario", i] + [default])
 
-    return pd.DataFrame(
-        rows, columns=["id", "model", "scenario", "version", "is_default"]
-    )
+    return pd.DataFrame(rows, columns=["model", "scenario", "version", "is_default"])
 
 
 class TestCoreRun:
