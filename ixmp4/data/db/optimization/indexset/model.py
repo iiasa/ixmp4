@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from sqlalchemy.orm import validates
+import numpy as np
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
@@ -16,20 +16,34 @@ class IndexSet(base.BaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.IndexSet.DeletionPrevented
 
-    elements: types.JsonList = db.Column(db.JsonType, nullable=False, default=[])
+    data_type: types.OptimizationDataType
 
-    @validates("elements")
-    def validate_elements(self, key, value: list[float | int | str]):
-        unique = set()
-        for element in value:
-            if element in unique:
-                raise self.DataInvalid(
-                    f"{element} already defined for IndexSet {self.name}!"
-                )
-            else:
-                unique.add(element)
-        return value
+    _data: types.Mapped[list["IndexSetData"]] = db.relationship(
+        back_populates="indexset"
+    )
+
+    @db.hybrid_property
+    def data(self) -> list[float | int | str]:
+        return (
+            []
+            if self.data_type is None
+            else np.array([d.value for d in self._data], dtype=self.data_type).tolist()
+        )
+
+    # NOTE For the core layer (setting and retrieving) to work, the property needs a
+    # setter method
+    @data.inplace.setter
+    def _data_setter(self, value: list[float | int | str]) -> None:
+        return None
 
     run__id: types.RunId
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
+
+
+class IndexSetData(base.RootBaseModel):
+    indexset: types.Mapped["IndexSet"] = db.relationship(back_populates="_data")
+    indexset__id: types.IndexSetId
+    value: types.String = db.Column(db.String, nullable=False)
+
+    __table_args__ = (db.UniqueConstraint("indexset__id", "value"),)

@@ -50,7 +50,8 @@ from sqlalchemy import (
     update,
 )
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.exc import IntegrityError, MultipleResultsFound
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Relationship,
     Session,
@@ -65,17 +66,16 @@ from sqlalchemy.types import *
 from . import utils
 
 Column = mapped_column
+IndexSetIdType = Annotated[
+    int,
+    Column(Integer, ForeignKey("optimization_indexset.id"), nullable=False, index=True),
+]
 JsonType = JSON()
 JsonType = JsonType.with_variant(JSONB(), "postgresql")
 NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
 RunIdType = Annotated[
     int,
-    Column(
-        Integer,
-        ForeignKey("run.id"),
-        nullable=False,
-        index=True,
-    ),
+    Column(Integer, ForeignKey("run.id"), nullable=False, index=True),
 ]
 UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
 UsernameType = Annotated[str, Column(String(255), nullable=True)]
