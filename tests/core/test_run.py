@@ -13,11 +13,9 @@ def _expected_runs_table(*row_default):
     rows = []
     for i, default in enumerate(row_default, start=1):
         if default is not None:
-            rows.append([i, "Model", "Scenario", i] + [default])
+            rows.append(["Model", "Scenario", i] + [default])
 
-    return pd.DataFrame(
-        rows, columns=["id", "model", "scenario", "version", "is_default"]
-    )
+    return pd.DataFrame(rows, columns=["model", "scenario", "version", "is_default"])
 
 
 class TestCoreRun:
@@ -67,6 +65,12 @@ class TestCoreRun:
             platform.runs.tabulate(default_only=False),
             pd.DataFrame(_expected_runs_table(True, False)),
         )
+
+        # using audit_info=True shows additional columns
+        audit_info = platform.runs.tabulate(default_only=False, audit_info=True)
+        for column in ["updated_at", "updated_by", "created_at", "created_by", "id"]:
+            assert column in audit_info.columns
+        pdt.assert_series_equal(audit_info.id, pd.Series([run1.id, run2.id], name="id"))
 
         # default version can be retrieved directly
         run = platform.runs.get("Model", "Scenario")
