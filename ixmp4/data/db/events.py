@@ -1,4 +1,5 @@
 import logging
+from contextlib import contextmanager
 from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
 
 from sqlalchemy import Connection, event, sql
@@ -20,15 +21,34 @@ class SqlaEventHandler(object):
 
     def __init__(self, backend: "SqlAlchemyBackend") -> None:
         self.backend = backend
-        event.listen(
-            self.backend.session, "do_orm_execute", self.receive_do_orm_execute
-        )
-        event.listen(
-            base.BaseModel, "before_insert", self.receive_before_insert, propagate=True
-        )
-        event.listen(
-            base.BaseModel, "before_update", self.receive_before_update, propagate=True
-        )
+        self.listeners = [
+            ((backend.session, "do_orm_execute", self.receive_do_orm_execute), {}),
+            (
+                (base.BaseModel, "before_insert", self.receive_before_insert),
+                {"propagate": True},
+            ),
+            (
+                (base.BaseModel, "before_update", self.receive_before_update),
+                {"propagate": True},
+            ),
+        ]
+        self.add_listeners()
+
+    def add_listeners(self):
+        for args, kwargs in self.listeners:
+            event.listen(*args, **kwargs)
+
+    def remove_listeners(self):
+        for args, kwargs in self.listeners:
+            if event.contains(*args):
+                event.remove(*args)
+
+    @contextmanager
+    def pause(self):
+        """Temporarily removes all event listeners for the enclosed scope."""
+        self.remove_listeners()
+        yield
+        self.add_listeners()
 
     def set_logger(self, state):
         self.logger = logging.getLogger(__name__ + "." + str(id(state)))
