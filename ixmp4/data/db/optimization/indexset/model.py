@@ -16,24 +16,22 @@ class IndexSet(base.BaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.IndexSet.DeletionPrevented
 
-    data_type: types.OptimizationDataType
+    _data_type: types.OptimizationDataType
 
     _data: types.Mapped[list["IndexSetData"]] = db.relationship(
         back_populates="indexset"
     )
 
-    @db.hybrid_property
+    @property
     def data(self) -> list[float | int | str]:
         return (
             []
-            if self.data_type is None
-            else np.array([d.value for d in self._data], dtype=self.data_type).tolist()
+            if self._data_type is None
+            else np.array([d.value for d in self._data], dtype=self._data_type).tolist()
         )
 
-    # NOTE For the core layer (setting and retrieving) to work, the property needs a
-    # setter method
-    @data.inplace.setter
-    def _data_setter(self, value: list[float | int | str]) -> None:
+    @data.setter
+    def data(self, value: list[float | int | str]) -> None:
         return None
 
     run__id: types.RunId
@@ -42,6 +40,8 @@ class IndexSet(base.BaseModel):
 
 
 class IndexSetData(base.RootBaseModel):
+    table_prefix = "optimization_"
+
     indexset: types.Mapped["IndexSet"] = db.relationship(back_populates="_data")
     indexset__id: types.IndexSetId
     value: types.String = db.Column(db.String, nullable=False)

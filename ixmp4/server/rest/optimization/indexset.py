@@ -1,5 +1,4 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import StrictFloat, StrictInt, StrictStr
 
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
@@ -21,16 +20,19 @@ class IndexSetInput(BaseModel):
 
 
 class DataInput(BaseModel):
-    data: (
-        StrictFloat | StrictInt | StrictStr | list[StrictFloat | StrictInt | StrictStr]
-    )
+    data: float | int | str | list[float | int | str]
 
 
 @autodoc
-@router.patch("/", response_model=EnumerationOutput[api.IndexSet])
+@router.patch(
+    "/",
+    response_model=EnumerationOutput[api.IndexSet],
+    response_model_exclude={"_data_type"},
+)
 def query(
     filter: OptimizationIndexSetFilter = Body(OptimizationIndexSetFilter()),
     table: bool = Query(False),
+    include_data: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ):
@@ -40,6 +42,7 @@ def query(
             limit=pagination.limit,
             offset=pagination.offset,
             table=bool(table),
+            include_data=bool(include_data),
         ),
         total=backend.optimization.indexsets.count(_filter=filter),
         pagination=pagination,

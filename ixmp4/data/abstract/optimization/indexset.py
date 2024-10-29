@@ -102,13 +102,18 @@ class IndexSetRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, *, name: str | None = None, include_data: bool = False, **kwargs
+    ) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str
+        name : str, optional
             The name of an IndexSet. If supplied only one result will be returned.
+        include_data : bool, optional
+            Whether to load all IndexSet data, which reduces loading speed. Defaults to
+            `False`.
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter parameters as specified in

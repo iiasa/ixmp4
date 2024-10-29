@@ -9,13 +9,12 @@ from ixmp4.core.exceptions import OptimizationDataValidationError
 from ..utils import create_indexsets_for_run
 
 
-def df_from_list(indexsets: list[IndexSet]):
-    return pd.DataFrame(
+def df_from_list(indexsets: list[IndexSet], include_data: bool = False) -> pd.DataFrame:
+    result = pd.DataFrame(
         # Order is important here to avoid utils.assert_unordered_equality,
         # which doesn't like lists
         [
             [
-                indexset.data,
                 indexset.run_id,
                 indexset.name,
                 indexset.id,
@@ -25,7 +24,6 @@ def df_from_list(indexsets: list[IndexSet]):
             for indexset in indexsets
         ],
         columns=[
-            "data",
             "run__id",
             "name",
             "id",
@@ -33,6 +31,20 @@ def df_from_list(indexsets: list[IndexSet]):
             "created_by",
         ],
     )
+    if include_data:
+        result.insert(
+            loc=0, column="data", value=[indexset.data for indexset in indexsets]
+        )
+    else:
+        result.insert(
+            loc=0,
+            column="data_type",
+            value=[
+                type(indexset.data[0]).__name__ if indexset.data != [] else None
+                for indexset in indexsets
+            ],
+        )
+    return result
 
 
 class TestCoreIndexset:
@@ -73,6 +85,21 @@ class TestCoreIndexset:
 
         with pytest.raises(OptimizationDataValidationError):
             indexset_2.add(["baz", "baz"])
+
+        # Test data types are conserved
+        indexset_3 = run.optimization.indexsets.create("Indexset 3")
+        test_data_2: list[float | int | str] = [1.2, 3.4, 5.6]
+        indexset_3.add(data=test_data_2)
+
+        assert indexset_3.data == test_data_2
+        assert type(indexset_3.data[0]).__name__ == "float"
+
+        indexset_4 = run.optimization.indexsets.create("Indexset 4")
+        test_data_3: list[float | int | str] = [0, 1, 2]
+        indexset_4.add(data=test_data_3)
+
+        assert indexset_4.data == test_data_3
+        assert type(indexset_4.data[0]).__name__ == "int"
 
     def test_list_indexsets(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
@@ -115,6 +142,15 @@ class TestCoreIndexset:
         expected = df_from_list(indexsets=[indexset_2])
         result = run.optimization.indexsets.tabulate(name="Indexset 2")
         pdt.assert_frame_equal(expected, result)
+
+        # Test tabulating including the data
+        expected = df_from_list(indexsets=[indexset_2], include_data=True)
+        pdt.assert_frame_equal(
+            expected,
+            run.optimization.indexsets.tabulate(
+                name=indexset_2.name, include_data=True
+            ),
+        )
 
     def test_indexset_docs(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")

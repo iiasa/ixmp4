@@ -48,21 +48,21 @@ class IndexSet(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.optimization.indexsets.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.indexsets.docs.delete(self.id)
         else:
             self.backend.optimization.indexsets.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.optimization.indexsets.docs.delete(self.id)
         # TODO: silently failing
@@ -105,7 +105,9 @@ class IndexSetRepository(BaseFacade):
             for i in indexsets
         ]
 
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
+    def tabulate(
+        self, name: str | None = None, include_data: bool = False
+    ) -> pd.DataFrame:
         return self.backend.optimization.indexsets.tabulate(
-            run_id=self._run.id, name=name
+            run_id=self._run.id, name=name, include_data=include_data
         )
