@@ -35,8 +35,9 @@ class EnumerationOutput(BaseModel, Generic[EnumeratedT]):
         results: pd.DataFrame | api.DataFrame | list[EnumeratedT],
         **kwargs,
     ):
-        if isinstance(results, pd.DataFrame):
-            kwargs["results"] = api.DataFrame.model_validate(results)
-        else:
-            kwargs["results"] = results
+        kwargs["results"] = (
+            api.DataFrame.model_validate(results)
+            if isinstance(results, pd.DataFrame)
+            else results
+        )
         super().__init__(**kwargs)
