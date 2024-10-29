@@ -24,11 +24,7 @@ class DataInput(BaseModel):
 
 
 @autodoc
-@router.patch(
-    "/",
-    response_model=EnumerationOutput[api.IndexSet],
-    response_model_exclude={"_data_type"},
-)
+@router.patch("/", response_model=EnumerationOutput[api.IndexSet])
 def query(
     filter: OptimizationIndexSetFilter = Body(OptimizationIndexSetFilter()),
     table: bool = Query(False),
