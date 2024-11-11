@@ -55,10 +55,14 @@ class TestDataRun:
         run3 = platform.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id == run3.id
 
+    def test_get_run_by_id(self, platform: ixmp4.Platform):
+        expected = platform.backend.runs.create("Model", "Scenario")
+        result = platform.backend.runs.get_by_id(id=expected.id)
+        assert expected.id == result.id
+
     def test_list_run(self, platform: ixmp4.Platform):
         run1 = platform.backend.runs.create("Model", "Scenario")
         platform.backend.runs.create("Model", "Scenario")
-
         runs = platform.backend.runs.list(default_only=False)
         assert runs[0].id == 1
         assert runs[0].version == 1

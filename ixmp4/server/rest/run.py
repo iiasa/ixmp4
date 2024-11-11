@@ -60,3 +60,11 @@ def unset_as_default_version(
     backend: Backend = Depends(deps.get_backend),
 ):
     backend.runs.unset_as_default_version(id)
+
+
+@router.get("/{id}/", response_model=api.Run)
+def get_by_id(
+    id: int,
+    backend: Backend = Depends(deps.get_backend),
+):
+    return backend.runs.get_by_id(id)

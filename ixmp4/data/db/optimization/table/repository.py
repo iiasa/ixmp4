@@ -159,5 +159,4 @@ class TableRepository(
             orient="list"
         )
 
-        self.session.add(table)
         self.session.commit()

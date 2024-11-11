@@ -100,6 +100,68 @@ class RunRepository(BaseFacade):
             columns += ["updated_at", "updated_by", "created_at", "created_by", "id"]
         return runs[columns]
 
+    def clone(
+        self,
+        run_id: int,
+        model: str | None = None,
+        scenario: str | None = None,
+        keep_solution: bool = True,
+    ) -> Run:
+        base_run = Run(
+            _backend=self.backend, _model=self.backend.runs.get_by_id(run_id)
+        )
+        run = Run(
+            _backend=self.backend,
+            _model=self.backend.runs.create(
+                model if model else base_run.model.name,
+                scenario if scenario else base_run.scenario.name,
+            ),
+        )
+        datapoints = base_run.iamc.tabulate()
+        if not datapoints.empty:
+            run.iamc.add(df=datapoints)
+        for scalar in base_run.optimization.scalars.list():
+            run.optimization.scalars.create(
+                name=scalar.name,
+                value=scalar.value,
+                unit=self.backend.units.get(scalar.unit.name).name,
+            )
+        for indexset in base_run.optimization.indexsets.list():
+            run.optimization.indexsets.create(name=indexset.name).add(
+                elements=indexset.elements
+            )
+        for table in base_run.optimization.tables.list():
+            run.optimization.tables.create(
+                name=table.name,
+                constrained_to_indexsets=table.constrained_to_indexsets,
+                column_names=[column.name for column in table.columns],
+            ).add(data=table.data)
+        for parameter in base_run.optimization.parameters.list():
+            run.optimization.parameters.create(
+                name=parameter.name,
+                constrained_to_indexsets=parameter.constrained_to_indexsets,
+                column_names=[column.name for column in parameter.columns],
+            ).add(data=parameter.data)
+        for equation in base_run.optimization.equations.list():
+            cloned_equation = run.optimization.equations.create(
+                name=equation.name,
+                constrained_to_indexsets=equation.constrained_to_indexsets,
+                column_names=[column.name for column in equation.columns],
+            )
+            if keep_solution:
+                cloned_equation.add(data=equation.data)
+        for variable in base_run.optimization.variables.list():
+            cloned_variable = run.optimization.variables.create(
+                name=variable.name,
+                constrained_to_indexsets=variable.constrained_to_indexsets,
+                column_names=[column.name for column in variable.columns]
+                if variable.columns
+                else None,
+            )
+            if keep_solution:
+                cloned_variable.add(data=variable.data)
+        return run
+
 
 class RunMetaFacade(BaseFacade, UserDict):
     run: RunModel
