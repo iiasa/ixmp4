@@ -1,4 +1,5 @@
 from contextlib import suppress
+from typing import TYPE_CHECKING
 
 from sqlalchemy import inspect, sql
 from sqlalchemy.orm import Mapper
@@ -6,8 +7,11 @@ from sqlalchemy.sql import ColumnCollection
 
 from ixmp4.core.exceptions import ProgrammingError
 
+if TYPE_CHECKING:
+    from ixmp4.data.db.base import BaseModel
 
-def is_joined(exc: sql.Select, model):
+
+def is_joined(exc: sql.Select, model: type["BaseModel"]) -> bool:
     """Returns `True` if `model` has been joined in `exc`."""
     for visitor in sql.visitors.iterate(exc):
         # Checking for `.join(Child)` clauses
@@ -15,7 +19,7 @@ def is_joined(exc: sql.Select, model):
             # Visitor might be of ColumnCollection or so,
             # which cannot be compared to model
             with suppress(TypeError):
-                if model == visitor.entity_namespace:  # type: ignore
+                if model == visitor.entity_namespace:  # type: ignore[attr-defined]
                     return True
     return False
 

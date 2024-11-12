@@ -77,7 +77,7 @@ class APIInfo(BaseModel):
 def root(
     platform: str = Path(),
     version: str = Depends(deps.get_version),
-):
+) -> APIInfo:
     return APIInfo(
         name=platform,
         version=version,
@@ -88,7 +88,7 @@ def root(
 
 
 @v1.exception_handler(IxmpError)
-async def http_exception_handler(request: Request, exc: IxmpError):
+async def http_exception_handler(request: Request, exc: IxmpError) -> JSONResponse:
     return JSONResponse(
         content=jsonable_encoder(
             {

@@ -30,21 +30,21 @@ class Variable(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.iamc.variables.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str) -> None:
         if description is None:
             self.backend.iamc.variables.docs.delete(self.id)
         else:
             self.backend.iamc.variables.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.iamc.variables.docs.delete(self.id)
         # TODO: silently failing
@@ -56,10 +56,7 @@ class Variable(BaseModelFacade):
 
 
 class VariableRepository(BaseFacade):
-    def create(
-        self,
-        name: str,
-    ) -> Variable:
+    def create(self, name: str) -> Variable:
         model = self.backend.iamc.variables.create(name)
         return Variable(_backend=self.backend, _model=model)
 

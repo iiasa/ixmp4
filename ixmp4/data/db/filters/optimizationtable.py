@@ -1,17 +1,17 @@
 from typing import ClassVar
 
-from ixmp4.db import filters
+from ixmp4.db import Session, filters, sql
 
 from .. import Run, Table
 
 
 class OptimizationTableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id
-    name: filters.String
-    run__id: filters.Integer = filters.Field(None, alias="run_id")
+    id: filters.Id | None = filters.Field(None)
+    name: filters.String | None = filters.Field(None)
+    run__id: filters.Integer | None = filters.Field(None, alias="run_id")
 
     sqla_model: ClassVar[type] = Table
 
-    def join(self, exc, **kwargs):
+    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
         exc = exc.join(Run, onclause=Table.run__id == Run.id)
         return exc

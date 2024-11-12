@@ -1,12 +1,12 @@
 import logging
-from typing import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable
 
 import jwt
 from fastapi import Depends, Header, Path
 
 from ixmp4.conf import settings
 from ixmp4.conf.auth import SelfSignedAuth
-from ixmp4.conf.manager import ManagerConfig
+from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
 from ixmp4.conf.user import User, anonymous_user, local_user
 from ixmp4.core.exceptions import Forbidden, InvalidToken, PlatformNotFound
 from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -26,9 +26,10 @@ async def validate_token(authorization: str = Header(None)) -> dict | None:
 
     encoded_jwt = authorization.split(" ")[1]
     try:
-        return jwt.decode(
+        decoded_jwt: dict = jwt.decode(
             encoded_jwt, settings.secret_hs256, leeway=300, algorithms=["HS256"]
         )
+        return decoded_jwt
     except jwt.InvalidTokenError as e:
         raise InvalidToken("The supplied token is expired or invalid.") from e
 
@@ -52,7 +53,7 @@ async def get_user(token: dict | None = Depends(validate_token)) -> User:
     return User(**user_dict)
 
 
-async def get_version():
+async def get_version() -> str:
     from ixmp4 import __version__
 
     return __version__
@@ -99,7 +100,10 @@ else:
     get_backend = get_toml_backend
 
 
-def get_test_backend_dependency(backend, auth_params) -> Callable:
+def get_test_backend_dependency(
+    backend: SqlAlchemyBackend,
+    auth_params: tuple[User, ManagerConfig, ManagerPlatformInfo],
+) -> Callable:
     async def get_memory_backend(
         platform: str = Path(), user: User = Depends(get_user)
     ) -> AsyncGenerator[SqlAlchemyBackend, None]:

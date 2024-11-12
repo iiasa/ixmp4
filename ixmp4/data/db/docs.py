@@ -1,7 +1,9 @@
-from typing import ClassVar, TypeVar
+from typing import ClassVar, TypeVar, cast
 
-import pandas as pd
 from sqlalchemy.exc import NoResultFound
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.data import abstract, types
@@ -40,6 +42,10 @@ def docs_model(model: type[base.BaseModel]) -> type[AbstractDocs]:
 DocsType = TypeVar("DocsType", bound=AbstractDocs)
 
 
+class ListKwargs(TypedDict, total=False):
+    dimension_id: int | None
+
+
 class BaseDocsRepository(
     base.Creator[DocsType],
     base.Retriever[DocsType],
@@ -69,8 +75,7 @@ class BaseDocsRepository(
     def get(self, dimension_id: int) -> DocsType:
         exc = self.select(dimension_id=dimension_id)
         try:
-            docs = self.session.execute(exc).scalar_one()
-            return docs
+            return cast(DocsType, self.session.execute(exc).scalar_one())
         except NoResultFound:
             raise self.model_class.NotFound
 
@@ -78,7 +83,7 @@ class BaseDocsRepository(
     def set(self, dimension_id: int, description: str) -> DocsType:
         exc = self.select(dimension_id=dimension_id)
         try:
-            docs = self.session.execute(exc).scalar_one()
+            docs = cast(DocsType, self.session.execute(exc).scalar_one())
             docs.description = description
             self.session.commit()
             return docs
@@ -104,9 +109,5 @@ class BaseDocsRepository(
             raise self.model_class.NotFound
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
-
-    @guard("view")
-    def list(self, *args, **kwargs) -> list[DocsType]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[ListKwargs]) -> list[DocsType]:
+        return super().list(**kwargs)

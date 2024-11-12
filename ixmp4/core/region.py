@@ -1,5 +1,4 @@
 from datetime import datetime
-from typing import Optional, Union
 
 import pandas as pd
 
@@ -38,26 +37,26 @@ class Region(BaseModelFacade):
     def created_by(self) -> str | None:
         return self._model.created_by
 
-    def delete(self):
+    def delete(self) -> None:
         """Deletes the region from the database."""
         self.backend.regions.delete(self._model.id)
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.regions.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str) -> None:
         if description is None:
             self.backend.regions.docs.delete(self.id)
         else:
             self.backend.regions.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.regions.docs.delete(self.id)
         # TODO: silently failing
@@ -69,7 +68,7 @@ class Region(BaseModelFacade):
 
 
 class RegionRepository(BaseFacade):
-    def _get_region_id(self, region: Optional[Union[str, int, "Region"]]) -> int | None:
+    def _get_region_id(self, region: str | int | Region | None) -> int | None:
         if region is None:
             return None
         elif isinstance(region, str):
@@ -94,7 +93,7 @@ class RegionRepository(BaseFacade):
         model = self.backend.regions.get(name)
         return Region(_backend=self.backend, _model=model)
 
-    def delete(self, x: Region | int | str):
+    def delete(self, x: Region | int | str) -> None:
         if isinstance(x, Region):
             id = x.id
         elif isinstance(x, int):

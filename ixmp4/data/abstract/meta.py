@@ -1,8 +1,12 @@
+from collections.abc import Iterable
 from enum import Enum
 from typing import ClassVar, Protocol
 
 import pandas as pd
 from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4.data import types
 
@@ -23,19 +27,19 @@ class RunMetaEntry(base.BaseModel, Protocol):
         BOOL = "BOOL"
 
         @classmethod
-        def from_pytype(cls, type_):
+        def from_pytype(cls, type_: type) -> str:
             return RunMetaEntry._type_map[type_]
 
     run__id: types.Integer
     "Foreign unique integer id of a run."
     key: types.String
     "Key for the entry. Unique for each `run__id`."
-    type: types.String
+    dtype: types.String
     "Datatype of the entry's value."
     value: types.Integer | types.Float | types.Integer | types.Boolean
     "Value of the entry."
 
-    _type_map: ClassVar[dict] = {
+    _type_map: ClassVar[dict[type, str]] = {
         int: Type.INT,
         str: Type.STR,
         float: Type.FLOAT,
@@ -45,6 +49,61 @@ class RunMetaEntry(base.BaseModel, Protocol):
     def __str__(self) -> str:
         return f"<RunMetaEntry {self.id} run__id={self.run__id} \
             key={self.key} value={self.value}"
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    id: int
+    id__in: Iterable[int]
+    dtype: str
+    dtype__in: Iterable[str]
+    dtype__like: str
+    dtype__ilike: str
+    dtype__notlike: str
+    dtype__notilike: str
+    run_id: int | None
+    run_id__in: Iterable[int]
+    run_id__gt: int
+    run_id__lt: int
+    run_id__gte: int
+    run_id__lte: int
+    run__id: int | None
+    run__id__in: Iterable[int]
+    run__id__gt: int
+    run__id__lt: int
+    run__id__gte: int
+    run__id__lte: int
+    key: str
+    key__in: Iterable[str]
+    key__like: str
+    key__ilike: str
+    key__notlike: str
+    key__notilike: str
+    value_int: int
+    value_int_id__in: Iterable[int]
+    value_int_id__gt: int
+    value_int_id__lt: int
+    value_int_id__gte: int
+    value_int_id__lte: int
+    value_str: str
+    value_str__in: Iterable[str]
+    value_str__like: str
+    value_str__ilike: str
+    value_str__notlike: str
+    value_str__notilike: str
+    value_float: float
+    value_float_id__in: Iterable[float]
+    value_float_id__gt: float
+    value_float_id__lt: float
+    value_float_id__gte: float
+    value_float_id__lte: float
+    value_bool: bool
+    run: dict[
+        str,
+        bool
+        | int
+        | Iterable[int]
+        | dict[str, int | str | Iterable[int] | Iterable[str]],
+    ]
 
 
 class RunMetaEntryRepository(
@@ -126,12 +185,15 @@ class RunMetaEntryRepository(
 
     def list(
         self,
-        **kwargs,
+        join_run_index: bool = False,
+        **kwargs: Unpack[EnumerateKwargs],
     ) -> list[RunMetaEntry]:
         r"""Lists run's meta indicator entries by specified criteria.
 
         Parameters
         ----------
+        join_run_index: bool, optional
+            Default `False`.
         \*\*kwargs: any
             Filter parameters as specified in
             `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.
@@ -146,12 +208,14 @@ class RunMetaEntryRepository(
     def tabulate(
         self,
         join_run_index: bool = False,
-        **kwargs,
+        **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         r"""Tabulates run's meta indicator entries by specified criteria.
 
         Parameters
         ----------
+        join_run_index: bool, optional
+            Default `False`.
         \*\*kwargs: any
             Filter parameters as specified in
             `ixmp4.data.db.meta.filter.RunMetaEntryFilter`.

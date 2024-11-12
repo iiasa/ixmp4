@@ -1,13 +1,12 @@
 from ixmp4.data.db import filters as base
-from ixmp4.db import filters
+from ixmp4.db import Session, filters, sql
 
 
 class TimeSeriesFilter(base.TimeSeriesFilter, metaclass=filters.FilterMeta):
-    id: filters.Id
     run: base.RunFilter = filters.Field(default=base.RunFilter())
-    region: base.RegionFilter | None
-    variable: base.VariableFilter | None
-    unit: base.UnitFilter | None
+    region: base.RegionFilter | None = filters.Field(None)
+    variable: base.VariableFilter | None = filters.Field(None)
+    unit: base.UnitFilter | None = filters.Field(None)
 
-    def join(self, exc, **kwargs):
+    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
         return exc

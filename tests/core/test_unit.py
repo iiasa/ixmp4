@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import pandas as pd
 import pytest
 
@@ -8,13 +10,13 @@ from ..fixtures import SmallIamcDataset
 from ..utils import assert_unordered_equality
 
 
-def create_testcase_units(platform: ixmp4.Platform):
+def create_testcase_units(platform: ixmp4.Platform) -> tuple[Unit, Unit]:
     unit = platform.units.create("Test")
     unit2 = platform.units.create("Test 2")
     return unit, unit2
 
 
-def df_from_list(units):
+def df_from_list(units: Iterable[Unit]) -> pd.DataFrame:
     return pd.DataFrame(
         [[u.id, u.name, u.created_at, u.created_by] for u in units],
         columns=["id", "name", "created_at", "created_by"],
@@ -24,7 +26,7 @@ def df_from_list(units):
 class TestCoreUnit:
     small = SmallIamcDataset()
 
-    def test_delete_unit(self, platform: ixmp4.Platform):
+    def test_delete_unit(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.units.create("Test 1")
         unit2 = platform.units.create("Test 2")
         unit3 = platform.units.create("Test 3")
@@ -47,19 +49,19 @@ class TestCoreUnit:
         with pytest.raises(Unit.DeletionPrevented):
             platform.units.delete("Unit 1")
 
-    def test_retrieve_unit(self, platform: ixmp4.Platform):
+    def test_retrieve_unit(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.units.create("Test")
         unit2 = platform.units.get("Test")
 
         assert unit1.id == unit2.id
 
-    def test_unit_unqiue(self, platform: ixmp4.Platform):
+    def test_unit_unqiue(self, platform: ixmp4.Platform) -> None:
         platform.units.create("Test")
 
         with pytest.raises(Unit.NotUnique):
             platform.units.create("Test")
 
-    def test_unit_dimensionless(self, platform: ixmp4.Platform):
+    def test_unit_dimensionless(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.units.create("")
         unit2 = platform.units.get("")
 
@@ -68,7 +70,7 @@ class TestCoreUnit:
         assert "" in platform.units.tabulate().values
         assert "" in [unit.name for unit in platform.units.list()]
 
-    def test_unit_illegal_names(self, platform: ixmp4.Platform):
+    def test_unit_illegal_names(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(ValueError, match="Unit name 'dimensionless' is reserved,"):
             platform.units.create("dimensionless")
 
@@ -77,7 +79,7 @@ class TestCoreUnit:
         ):
             platform.units.create("   ")
 
-    def test_unit_unknown(self, platform: ixmp4.Platform):
+    def test_unit_unknown(self, platform: ixmp4.Platform) -> None:
         self.small.load_regions(platform)
         self.small.load_units(platform)
 
@@ -88,7 +90,7 @@ class TestCoreUnit:
         with pytest.raises(Unit.NotFound):
             run.iamc.add(invalid_data, type=ixmp4.DataPoint.Type.ANNUAL)
 
-    def test_list_unit(self, platform: ixmp4.Platform):
+    def test_list_unit(self, platform: ixmp4.Platform) -> None:
         units = create_testcase_units(platform)
         unit, _ = units
 
@@ -100,7 +102,7 @@ class TestCoreUnit:
         b = [u.id for u in platform.units.list(name="Test")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_unit(self, platform: ixmp4.Platform):
+    def test_tabulate_unit(self, platform: ixmp4.Platform) -> None:
         units = create_testcase_units(platform)
         unit, _ = units
 
@@ -112,7 +114,7 @@ class TestCoreUnit:
         b = platform.units.tabulate(name="Test")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, platform: ixmp4.Platform):
+    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
         platform.units.create("Unit")
         docs_unit1 = platform.units.set_docs("Unit", "Description of test Unit")
         docs_unit2 = platform.units.get_docs("Unit")
@@ -127,7 +129,7 @@ class TestCoreUnit:
 
         assert platform.units.get_docs("Unit2") == unit2.docs
 
-    def test_delete_docs(self, platform: ixmp4.Platform):
+    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
         unit = platform.units.create("Unit")
         unit.docs = "Description of test Unit"
         unit.docs = None

@@ -1,6 +1,10 @@
+from collections.abc import Iterable, Mapping
 from typing import Protocol
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4.data import types
 
@@ -21,6 +25,26 @@ class Variable(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Variable {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    id: int
+    id__in: Iterable[int]
+    # name: str
+    name__in: Iterable[str]
+    name__like: str
+    name__ilike: str
+    name__notlike: str
+    name__notilike: str
+    region: dict[str, int | str | Iterable[int] | Iterable[str]]
+    unit: dict[str, int | str | Iterable[int] | Iterable[str]]
+    run: dict[
+        str,
+        bool
+        | int
+        | Iterable[int]
+        | Mapping[str, int | str | Iterable[int] | Iterable[str]],
+    ]
 
 
 class VariableRepository(
@@ -71,7 +95,9 @@ class VariableRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> list[Variable]:
+    def list(
+        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
+    ) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
         Parameters
@@ -80,7 +106,7 @@ class VariableRepository(
             The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
         -------
@@ -89,7 +115,9 @@ class VariableRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
+    ) -> pd.DataFrame:
         r"""Tabulate variables by specified criteria.
 
         Parameters
@@ -98,7 +126,7 @@ class VariableRepository(
             The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
         -------

@@ -23,7 +23,6 @@ class Docs(base.BaseModel, Protocol):
     #    )
 
 
-# TODO: adjust all type hints once things work
 class DocsRepository(
     base.Retriever,
     base.Deleter,

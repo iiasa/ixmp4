@@ -30,21 +30,21 @@ class Model(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.models.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str) -> None:
         if description is None:
             self.backend.models.docs.delete(self.id)
         else:
             self.backend.models.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.models.docs.delete(self.id)
         # TODO: silently failing

@@ -2,6 +2,9 @@ from typing import ClassVar
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import abstract
 
 from . import base
@@ -15,7 +18,7 @@ class RunMetaEntry(base.BaseModel):
     id: int
     run__id: int
     key: str
-    type: str
+    dtype: str
     value: abstract.StrictMetaValue
 
 
@@ -45,14 +48,27 @@ class RunMetaEntryRepository(
     def delete(self, id: int) -> None:
         super().delete(id)
 
-    def enumerate(self, **kwargs) -> list[RunMetaEntry] | pd.DataFrame:
+    def enumerate(
+        self, **kwargs: Unpack[abstract.meta.EnumerateKwargs]
+    ) -> list[RunMetaEntry] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(self, join_run_index: bool | None = None, **kwargs) -> list[RunMetaEntry]:
-        return super()._list(json=kwargs, params={"join_run_index": join_run_index})
+    def list(
+        self,
+        join_run_index: bool | None = None,
+        **kwargs: Unpack[abstract.meta.EnumerateKwargs],
+    ) -> list[RunMetaEntry]:
+        # base functions require dict, but TypedDict just inherits from Mapping
+        json = {k: v for k, v in kwargs.items()}
+        return super()._list(json=json, params={"join_run_index": join_run_index})
 
-    def tabulate(self, join_run_index: bool | None = None, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs, params={"join_run_index": join_run_index})
+    def tabulate(
+        self,
+        join_run_index: bool | None = None,
+        **kwargs: Unpack[abstract.meta.EnumerateKwargs],
+    ) -> pd.DataFrame:
+        json = {k: v for k, v in kwargs.items()}
+        return super()._tabulate(json=json, params={"join_run_index": join_run_index})
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         super().bulk_upsert(df)

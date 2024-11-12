@@ -1,24 +1,29 @@
-from typing import Any
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
-from sqlalchemy import select
+from sqlalchemy import Select, select
 from sqlalchemy.orm import Bundle
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.region import Region, RegionRepository
 from ixmp4.data.db.run import RunRepository
-from ixmp4.data.db.timeseries import (
-    TimeSeriesRepository as BaseTimeSeriesRepository,
-)
+from ixmp4.data.db.timeseries import EnumerateKwargs, GetKwargs
+from ixmp4.data.db.timeseries import TimeSeriesRepository as BaseTimeSeriesRepository
 from ixmp4.data.db.unit import Unit, UnitRepository
 from ixmp4.data.db.utils import map_existing
 
 from ..measurand import MeasurandRepository
 from ..variable import Variable
 from .model import TimeSeries
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
 class TimeSeriesRepository(
@@ -30,22 +35,23 @@ class TimeSeriesRepository(
     measurands: MeasurandRepository
     units: UnitRepository
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
         from .filter import TimeSeriesFilter
 
         self.filter_class = TimeSeriesFilter
 
-        self.runs = RunRepository(*args, **kwargs)
-        self.regions = RegionRepository(*args, **kwargs)
-        self.measurands = MeasurandRepository(*args, **kwargs)
-        self.units = UnitRepository(*args, **kwargs)
-        super().__init__(*args, **kwargs)
+        self.runs = RunRepository(*args)
+        self.regions = RegionRepository(*args)
+        self.measurands = MeasurandRepository(*args)
+        self.units = UnitRepository(*args)
+        super().__init__(*args)
 
     @guard("view")
-    def get(self, run_id: int, **kwargs: Any) -> TimeSeries:
-        return super().get(run_id, **kwargs)
+    def get(self, run_id: int, **kwargs: Unpack[GetKwargs]) -> TimeSeries:
+        timeseries: TimeSeries = super().get(run_id, **kwargs)
+        return timeseries
 
-    def select_joined_parameters(self):
+    def select_joined_parameters(self) -> Select:
         return (
             select(
                 self.bundle,
@@ -69,12 +75,14 @@ class TimeSeriesRepository(
         )
 
     @guard("view")
-    def list(self, **kwargs) -> list[TimeSeries]:
-        return super().list(**kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[TimeSeries]:
+        timeseries_list: list[TimeSeries] = super().list(**kwargs)
+        return timeseries_list
 
     @guard("view")
-    def tabulate(self, **kwargs) -> pd.DataFrame:
-        return super().tabulate(**kwargs)
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        df: pd.DataFrame = super().tabulate(**kwargs)
+        return df
 
     @guard("edit")
     def bulk_upsert(self, df: pd.DataFrame, create_related: bool = False) -> None:
@@ -92,7 +100,7 @@ class TimeSeriesRepository(
             df = df.drop_duplicates()
         super().bulk_upsert(df)
 
-    def map_regions(self, df: pd.DataFrame):
+    def map_regions(self, df: pd.DataFrame) -> pd.DataFrame:
         existing_regions = self.regions.tabulate(name__in=df["region"].unique())
         df, missing = map_existing(
             df,
@@ -117,7 +125,7 @@ class TimeSeriesRepository(
 
         df["measurand__id"] = np.nan
 
-        def map_measurand(df):
+        def map_measurand(df: pd.DataFrame) -> pd.DataFrame:
             variable_name, unit__id = df.name
             measurand = self.measurands.get_or_create(
                 variable_name=variable_name, unit__id=int(unit__id)
@@ -129,10 +137,11 @@ class TimeSeriesRepository(
 
         # ensure compatibility with pandas < 2.2
         # TODO remove legacy-handling when dropping support for pandas < 2.2
-        if pd.__version__[0:3] in ["2.0", "2.1"]:
-            apply_args = dict()
-        else:
-            apply_args = dict(include_groups=False)
+        apply_args = (
+            dict()
+            if pd.__version__[0:3] in ["2.0", "2.1"]
+            else dict(include_groups=False)
+        )
 
         return pd.DataFrame(
             df.groupby(["variable", "unit__id"], group_keys=False).apply(

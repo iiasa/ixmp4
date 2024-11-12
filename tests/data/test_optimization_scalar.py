@@ -3,10 +3,10 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
-from ixmp4 import Scalar
+from ixmp4.data.abstract import Scalar
 
 
-def df_from_list(scalars: list):
+def df_from_list(scalars: list[Scalar]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -33,7 +33,7 @@ def df_from_list(scalars: list):
 
 
 class TestDataOptimizationScalar:
-    def test_create_scalar(self, platform: ixmp4.Platform):
+    def test_create_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.create("Unit 2")
@@ -50,7 +50,7 @@ class TestDataOptimizationScalar:
                 run_id=run.id, name="Scalar", value=2, unit_name=unit2.name
             )
 
-    def test_get_scalar(self, platform: ixmp4.Platform):
+    def test_get_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         scalar = platform.backend.optimization.scalars.create(
@@ -65,7 +65,7 @@ class TestDataOptimizationScalar:
                 run_id=run.id, name="Scalar 2"
             )
 
-    def test_update_scalar(self, platform: ixmp4.Platform):
+    def test_update_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.create("Unit 2")
@@ -83,7 +83,7 @@ class TestDataOptimizationScalar:
         assert ret.unit__id == unit2.id
         assert ret.value == 20
 
-    def test_list_scalars(self, platform: ixmp4.Platform):
+    def test_list_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.create("Unit 2")
@@ -96,7 +96,7 @@ class TestDataOptimizationScalar:
         assert [scalar_1] == platform.backend.optimization.scalars.list(name="Scalar")
         assert [scalar_1, scalar_2] == platform.backend.optimization.scalars.list()
 
-    def test_tabulate_scalars(self, platform: ixmp4.Platform):
+    def test_tabulate_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.create("Unit 2")

@@ -57,7 +57,7 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 build = ">=1.0.3"
-mypy = ">=1.0.0"
+mypy = ">=1.13.0"
 pandas-stubs = ">=2.0.0.230412"
 pre-commit = ">=3.3.3"
 ptvsd = ">=4.3.2"
@@ -83,19 +83,29 @@ requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
 exclude = [
-    '^example\.py$',
-    '^import\.py$',
-    '^tests\/',
     '^doc\/',
     '^ixmp4\/db\/migrations\/',
 ]
 disable_error_code = ['override']
 implicit_reexport = true
-plugins = ['sqlalchemy.ext.mypy.plugin']
+plugins = ['numpy.typing.mypy_plugin', 'pandera.mypy', 'pydantic.mypy', 'sqlalchemy.ext.mypy.plugin']
+disallow_untyped_defs = true
+disallow_any_unimported = true
+# disallow_any_generics = true
+no_implicit_optional = true
+check_untyped_defs = true
+warn_return_any = true
+show_error_codes = true
+warn_unused_ignores = true
 
 [[tool.mypy.overrides]]
-module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
+module = ["uvicorn.workers", "sqlalchemy_utils"]
 ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.ruff]
 exclude = [
@@ -122,6 +132,7 @@ ignore = ["B008"]
 # Ignore unused imports:
 "__init__.py" = ["F401"]
 "ixmp4/data/db/optimization/base.py" = ["F401"]
+"ixmp4/data/db/iamc/base.py"= ["F401"]
 # Ignore importing * and resulting possibly missing imports:
 "ixmp4/db/__init__.py" = ["F403", "F405"]
 

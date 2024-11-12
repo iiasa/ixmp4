@@ -3,6 +3,9 @@ from typing import ClassVar
 import pandas as pd
 from pydantic import Field
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import abstract
 
 from . import base
@@ -50,14 +53,28 @@ class RunRepository(
             is_default=None,
         )
 
-    def enumerate(self, **kwargs) -> list[Run] | pd.DataFrame:
+    def enumerate(
+        self, **kwargs: Unpack[abstract.run.EnumerateKwargs]
+    ) -> list[Run] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(self, **kwargs) -> list[Run]:
-        return super()._list(json=kwargs)
+    def list(
+        self,
+        version: int | None = None,
+        default_only: bool = True,
+        **kwargs: Unpack[abstract.run.EnumerateKwargs],
+    ) -> list[Run]:
+        json = {"version": version, "default_only": default_only, **kwargs}
+        return super()._list(json=json)
 
-    def tabulate(self, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs)
+    def tabulate(
+        self,
+        version: int | None = None,
+        default_only: bool = True,
+        **kwargs: Unpack[abstract.run.EnumerateKwargs],
+    ) -> pd.DataFrame:
+        json = {"version": version, "default_only": default_only, **kwargs}
+        return super()._tabulate(json=json)
 
     def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         try:

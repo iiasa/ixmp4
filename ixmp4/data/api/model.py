@@ -1,8 +1,14 @@
 from datetime import datetime
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 import pandas as pd
 from pydantic import Field
+
+# TODO Import this from typing when dropping support for Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 
@@ -31,8 +37,8 @@ class ModelRepository(
     model_class = Model
     prefix = "models/"
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: Unpack[tuple["RestBackend"]]) -> None:
+        super().__init__(*args)
         self.docs = ModelDocsRepository(self.backend)
 
     def create(
@@ -44,14 +50,22 @@ class ModelRepository(
     def get(self, name: str) -> Model:
         return super().get(name=name)
 
-    def enumerate(self, **kwargs) -> list[Model] | pd.DataFrame:
+    def enumerate(
+        self, **kwargs: Unpack[abstract.model.EnumerateKwargs]
+    ) -> list[Model] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(self, **kwargs) -> list[Model]:
-        return super()._list(json=kwargs)
+    def list(
+        self, name: str | None = None, **kwargs: Unpack[abstract.model.EnumerateKwargs]
+    ) -> list[Model]:
+        json = {"name": name, **kwargs}
+        return super()._list(json=json)
 
-    def tabulate(self, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs)
+    def tabulate(
+        self, name: str | None = None, **kwargs: Unpack[abstract.model.EnumerateKwargs]
+    ) -> pd.DataFrame:
+        json = {"name": name, **kwargs}
+        return super()._tabulate(json=json)
 
 
 class ModelDocsRepository(DocsRepository):

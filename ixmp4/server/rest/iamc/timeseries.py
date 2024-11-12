@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Query, Response
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.iamc.timeseries.filter import TimeSeriesFilter
+from ixmp4.data.db.iamc.timeseries.model import TimeSeries
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -29,7 +30,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput:
     return EnumerationOutput(
         results=backend.iamc.timeseries.paginate(
             _filter=filter,
@@ -43,11 +44,11 @@ def query(
     )
 
 
-@router.post("/", response_model=api.Run)
+@router.post("/", response_model=api.TimeSeries)
 def create(
     timeseries: TimeSeriesInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> TimeSeries:
     return backend.iamc.timeseries.create(**timeseries.model_dump())
 
 
@@ -55,15 +56,15 @@ def create(
 def get_by_id(
     id: int,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> TimeSeries:
     return backend.iamc.timeseries.get_by_id(id)
 
 
 @router.post("/bulk/")
 def bulk_upsert(
     df: api.DataFrame,
-    create_related: bool | None = Query(False),
+    create_related: bool = Query(False),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Response:
     backend.iamc.timeseries.bulk_upsert(df.to_pandas(), create_related=create_related)
     return Response(status_code=201)

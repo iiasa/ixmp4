@@ -1,7 +1,10 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4 import db
 from ixmp4.data import types
@@ -10,6 +13,10 @@ from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db import mixins
 
 from ..unit import Unit
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 from . import base
 from .variable import Variable
 
@@ -50,8 +57,8 @@ class MeasurandRepository(
 ):
     model_class = Measurand
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
 
     @guard("view")
     def get(self, variable_name: str, unit__id: int) -> Measurand:
@@ -63,7 +70,8 @@ class MeasurandRepository(
         )
 
         try:
-            return self.session.execute(exc).scalar_one()
+            measurand: Measurand = self.session.execute(exc).scalar_one()
+            return measurand
         except NoResultFound:
             raise Measurand.NotFound
 
@@ -80,16 +88,16 @@ class MeasurandRepository(
         return measurand
 
     @guard("edit")
-    def create(self, *args, **kwargs) -> Measurand:
-        return super().create(*args, **kwargs)
+    def create(self, *args: Unpack[tuple[str, int]]) -> Measurand:
+        return super().create(*args)
 
-    def select(self, *args, **kwargs) -> db.sql.Select:
+    def select(self) -> db.sql.Select:
         return db.select(Measurand)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[Measurand]:
-        return super().list(*args, **kwargs)
+    def list(self) -> list[Measurand]:
+        return super().list()
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self) -> pd.DataFrame:
+        return super().tabulate()

@@ -1,7 +1,13 @@
 from datetime import datetime
-from typing import ClassVar, List
+from typing import TYPE_CHECKING, ClassVar, List
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 import pandas as pd
+
+# TODO Import this from typing when dropping support for Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 
@@ -37,8 +43,8 @@ class IndexSetRepository(
     model_class = IndexSet
     prefix = "optimization/indexsets/"
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: Unpack[tuple["RestBackend"]]) -> None:
+        super().__init__(*args)
         self.docs = IndexSetDocsRepository(self.backend)
 
     def create(
@@ -51,19 +57,32 @@ class IndexSetRepository(
     def get(self, run_id: int, name: str) -> IndexSet:
         return super().get(name=name, run_id=run_id)
 
-    def enumerate(self, **kwargs) -> list[IndexSet] | pd.DataFrame:
+    def enumerate(
+        self, **kwargs: Unpack[abstract.optimization.EnumerateKwargs]
+    ) -> list[IndexSet] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(self, **kwargs) -> list[IndexSet]:
-        return super()._list(json=kwargs)
+    def list(
+        self,
+        name: str | None = None,
+        **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
+    ) -> list[IndexSet]:
+        json = {"name": name, **kwargs}
+        return super()._list(json=json)
 
-    def tabulate(self, include_data: bool = False, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs, params={"include_data": include_data})
+    def tabulate(
+        self,
+        include_data: bool = False,
+        name: str | None = None,
+        **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
+    ) -> pd.DataFrame:
+        json = {"name": name, **kwargs}
+        return super()._tabulate(json=json, params={"include_data": include_data})
 
     def add_data(
         self,
         indexset_id: int,
-        data: float | int | str | List[float | int | str],
+        data: float | int | str | List[float] | List[int] | List[str],
     ) -> None:
         kwargs = {"indexset_id": indexset_id, "data": data}
         self._request("PATCH", self.prefix + str(indexset_id) + "/", json=kwargs)

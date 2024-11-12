@@ -1,4 +1,4 @@
-from typing import ClassVar, Type
+from typing import ClassVar
 
 from ixmp4.data import abstract
 
@@ -22,7 +22,7 @@ class DocsRepository(
     base.Enumerator[Docs],
     abstract.DocsRepository,
 ):
-    model_class: Type[Docs]
+    model_class: type[Docs]
     enumeration_method = "GET"
 
     def get(self, dimension_id: int) -> Docs:

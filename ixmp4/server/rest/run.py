@@ -4,6 +4,7 @@ from pydantic import Field
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.run.filter import RunFilter
+from ixmp4.data.db.run.model import Run
 
 from . import deps
 from .base import BaseModel, EnumerationOutput, Pagination
@@ -25,7 +26,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput:
     return EnumerationOutput(
         results=backend.runs.paginate(
             _filter=filter,
@@ -42,7 +43,7 @@ def query(
 def create(
     run: RunInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Run:
     return backend.runs.create(**run.model_dump(by_alias=True))
 
 
@@ -50,7 +51,7 @@ def create(
 def set_as_default_version(
     id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> None:
     backend.runs.set_as_default_version(id)
 
 
@@ -58,5 +59,5 @@ def set_as_default_version(
 def unset_as_default_version(
     id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> None:
     backend.runs.unset_as_default_version(id)

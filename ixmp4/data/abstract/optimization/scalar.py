@@ -1,11 +1,34 @@
-from typing import Iterable, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs as BaseEnumerateKwargs
+
+    class EnumerateKwargs(BaseEnumerateKwargs, total=False):
+        unit_id: int | None
+        unit_id__in: Iterable[int]
+        unit_id__gt: int
+        unit_id__lt: int
+        unit_id__gte: int
+        unit_id__lte: int
+        unit__id: int | None
+        unit__id__in: Iterable[int]
+        unit__id__gt: int
+        unit__id__lt: int
+        unit__id__gte: int
+        unit__id__lte: int
+
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from ..unit import Unit
 
 
 class Scalar(base.BaseModel, Protocol):
@@ -17,7 +40,7 @@ class Scalar(base.BaseModel, Protocol):
     """Value of the Scalar."""
     unit__id: types.Integer
     "Foreign unique integer id of a unit."
-    unit: types.Mapped
+    unit: types.Mapped[Unit]
     "Associated unit."
     run__id: types.Integer
     "Foreign unique integer id of a run."
@@ -132,7 +155,9 @@ class ScalarRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Scalar]:
+    def list(
+        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
+    ) -> Iterable[Scalar]:
         r"""Lists Scalars by specified criteria.
 
         Parameters
@@ -151,7 +176,9 @@ class ScalarRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
+    ) -> pd.DataFrame:
         r"""Tabulate Scalars by specified criteria.
 
         Parameters

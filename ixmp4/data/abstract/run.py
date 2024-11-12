@@ -1,11 +1,18 @@
-from typing import ClassVar, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, ClassVar, Protocol
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion
 from ixmp4.data import types
 
 from . import base
+
+if TYPE_CHECKING:
+    from . import Model, Scenario
 
 
 class Run(base.BaseModel, Protocol):
@@ -15,12 +22,12 @@ class Run(base.BaseModel, Protocol):
 
     model__id: types.Integer
     "Foreign unique integer id of the model."
-    model: types.Mapped
+    model: types.Mapped["Model"]
     "Associated model."
 
     scenario__id: types.Integer
     "Foreign unique integer id of the scenario."
-    scenario: types.Mapped
+    scenario: types.Mapped["Scenario"]
     "Associated scenario."
 
     version: types.Integer
@@ -32,6 +39,17 @@ class Run(base.BaseModel, Protocol):
         return f"<Run {self.id} model={self.model.name} \
             scenario={self.scenario.name} version={self.version} \
             is_default={self.is_default}>"
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    id: int
+    id__in: Iterable[int]
+    # version: int
+    # default_only: bool
+    is_default: bool
+    model: dict[str, int | str | Iterable[int] | Iterable[str]]
+    scenario: dict[str, int | str | Iterable[int] | Iterable[str]]
+    iamc: dict[str, dict[str, int | str | Iterable[int] | Iterable[str]]] | bool | None
 
 
 class RunRepository(
@@ -147,19 +165,20 @@ class RunRepository(
         self,
         *,
         version: int | None = None,
-        **kwargs,
+        default_only: bool = True,
+        **kwargs: Unpack[EnumerateKwargs],
     ) -> list[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters
         ----------
-        version : int
+        version : int, optional
             The run's version.
-        default_only : bool
+        default_only : bool, optional
             True by default. This function will return default runs only if true.
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.run.filters.RunFilter`.
+            `ixmp4.data.db.run.filter.RunFilter`.
 
         Returns
         -------
@@ -172,19 +191,20 @@ class RunRepository(
         self,
         *,
         version: int | None = None,
-        **kwargs,
+        default_only: bool = True,
+        **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         r"""Tabulate runs by specified criteria.
 
         Parameters
         ----------
-        version : int
+        version : int, optional
             The run's version.
-        default_only : bool
+        default_only : bool, optional
             True by default. This function will return default runs only if true.
         \*\*kwargs: any
             More filter parameters as specified in
-            `ixmp4.data.db.run.filters.RunFilter`.
+            `ixmp4.data.db.run.filter.RunFilter`.
 
         Returns
         -------

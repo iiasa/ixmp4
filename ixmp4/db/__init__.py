@@ -36,12 +36,16 @@ migrations before committing them!
 from typing import Annotated
 
 from sqlalchemy import (
+    BinaryExpression,
+    BindParameter,
     ForeignKey,
     Index,
+    Label,
     Sequence,
     UniqueConstraint,
     delete,
     exists,
+    false,
     func,
     insert,
     or_,
@@ -49,10 +53,13 @@ from sqlalchemy import (
     sql,
     update,
 )
+from sqlalchemy import Column as typing_column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
+    Bundle,
+    MappedColumn,
     Relationship,
     Session,
     aliased,

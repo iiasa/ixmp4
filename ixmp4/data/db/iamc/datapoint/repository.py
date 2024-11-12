@@ -1,9 +1,13 @@
-from typing import Any
+from typing import TYPE_CHECKING, Any
 
 import numpy as np
 import pandas as pd
 import pandera as pa
+from pandera.engines import pandas_engine
 from pandera.typing import DataFrame, Series
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4 import db
 from ixmp4.core.decorators import check_types
@@ -15,6 +19,7 @@ from ixmp4.data.db.region import Region
 from ixmp4.data.db.run import Run, RunRepository
 from ixmp4.data.db.scenario import Scenario
 from ixmp4.data.db.unit import Unit
+from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from ..measurand import Measurand
@@ -24,11 +29,16 @@ from . import get_datapoint_model
 from .filter import DataPointFilter
 from .model import DataPoint
 
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 
 class RemoveDataPointFrameSchema(pa.DataFrameModel):
     type: Series[pa.String] | None = pa.Field(isin=[t for t in DataPoint.Type])
     step_year: Series[pa.Int] | None = pa.Field(coerce=True, nullable=True)
-    step_datetime: Series[pa.DateTime] | None = pa.Field(coerce=True, nullable=True)
+    step_datetime: Series[pandas_engine.DateTime] | None = pa.Field(
+        coerce=True, nullable=True
+    )
     step_category: Series[pa.String] | None = pa.Field(nullable=True)
 
     time_series__id: Series[pa.Int] = pa.Field(coerce=True)
@@ -73,6 +83,12 @@ def infer_content(df: pd.DataFrame, col: str) -> str:
         raise InconsistentIamcType
 
 
+class EnumerateKwargs(abstract.iamc.datapoint.EnumerateKwargs, total=False):
+    join_parameters: bool | None
+    join_runs: bool
+    _filter: BaseFilter
+
+
 class DataPointRepository(
     base.Enumerator[DataPoint],
     base.BulkUpserter[DataPoint],
@@ -83,16 +99,16 @@ class DataPointRepository(
     timeseries: TimeSeriesRepository
     runs: RunRepository
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
         backend, *_ = args
         # A different table was used for ORACLE databases (deprecated since ixmp4 0.3.0)
         self.model_class = get_datapoint_model(backend.session)
 
-        self.timeseries = TimeSeriesRepository(*args, **kwargs)
-        self.runs = RunRepository(*args, **kwargs)
+        self.timeseries = TimeSeriesRepository(*args)
+        self.runs = RunRepository(*args)
 
         self.filter_class = DataPointFilter
-        super().__init__(*args, **kwargs)
+        super().__init__(*args)
 
     def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
         if not db.utils.is_joined(exc, TimeSeries):
@@ -106,8 +122,8 @@ class DataPointRepository(
 
         return exc
 
-    def select_joined_parameters(self, join_runs=False):
-        bundle = []
+    def select_joined_parameters(self, join_runs: bool = False) -> db.sql.Select:
+        bundle: list[db.Label | db.Bundle] = []
         if join_runs:
             bundle.extend(
                 [
@@ -164,12 +180,12 @@ class DataPointRepository(
         return super().select(_exc=exc, _filter=_filter, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[DataPoint]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[DataPoint]:
+        return super().list(**kwargs)
 
     @guard("view")
     def tabulate(
-        self, *args: Any, _raw: bool | None = False, **kwargs: Any
+        self, *args: Any, _raw: bool | None = False, **kwargs: Unpack[EnumerateKwargs]
     ) -> pd.DataFrame:
         if _raw:
             return super().tabulate(*args, **kwargs)
@@ -180,7 +196,7 @@ class DataPointRepository(
         )
         return df.dropna(axis="columns", how="all")
 
-    def check_df_access(self, df: pd.DataFrame):
+    def check_df_access(self, df: pd.DataFrame) -> None:
         if self.backend.auth_context is not None:
             ts_ids = set(df["time_series__id"].unique().tolist())
             self.timeseries.check_access(
@@ -192,29 +208,28 @@ class DataPointRepository(
     @check_types
     @guard("edit")
     def bulk_upsert(self, df: DataFrame[AddDataPointFrameSchema]) -> None:
-        return super().bulk_upsert(df)
+        super().bulk_upsert(df)
 
     @check_types
     @guard("edit")
     def bulk_insert(self, df: DataFrame[AddDataPointFrameSchema]) -> None:
         self.check_df_access(df)
-        return super().bulk_insert(df)
+        super().bulk_insert(df)
 
     @check_types
     @guard("edit")
     def bulk_update(self, df: DataFrame[UpdateDataPointFrameSchema]) -> None:
         self.check_df_access(df)
-        return super().bulk_update(df)
+        super().bulk_update(df)
 
     @check_types
     @guard("edit")
     def bulk_delete(self, df: DataFrame[RemoveDataPointFrameSchema]) -> None:
         self.check_df_access(df)
-        res = super().bulk_delete(df)
+        super().bulk_delete(df)
         self.delete_orphans()
-        return res
 
-    def delete_orphans(self):
+    def delete_orphans(self) -> None:
         exc = db.delete(TimeSeries).where(
             ~db.exists(
                 db.select(self.model_class.id).where(

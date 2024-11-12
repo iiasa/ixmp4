@@ -1,6 +1,12 @@
-from typing import Any, Iterable, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Protocol
 
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
@@ -125,7 +131,9 @@ class VariableRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Variable]:
+    def list(
+        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
+    ) -> Iterable[Variable]:
         r"""Lists Variables by specified criteria.
 
         Parameters
@@ -144,7 +152,9 @@ class VariableRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
+    ) -> pd.DataFrame:
         r"""Tabulate Variables by specified criteria.
 
         Parameters

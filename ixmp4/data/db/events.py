@@ -1,8 +1,9 @@
 import logging
+from collections.abc import Callable, Generator, Mapping, Sequence
 from contextlib import contextmanager
-from typing import TYPE_CHECKING, Any, Mapping, Sequence, cast
+from typing import TYPE_CHECKING, Any, cast
 
-from sqlalchemy import Connection, event, sql
+from sqlalchemy import Connection, Result, event, sql
 from sqlalchemy.orm import Mapper, ORMExecuteState
 
 from ixmp4 import db
@@ -21,7 +22,7 @@ class SqlaEventHandler(object):
 
     def __init__(self, backend: "SqlAlchemyBackend") -> None:
         self.backend = backend
-        self.listeners = [
+        self.listeners: list[tuple[tuple[Any, str, Callable], dict[str, bool]]] = [
             ((backend.session, "do_orm_execute", self.receive_do_orm_execute), {}),
             (
                 (base.BaseModel, "before_insert", self.receive_before_insert),
@@ -34,28 +35,30 @@ class SqlaEventHandler(object):
         ]
         self.add_listeners()
 
-    def add_listeners(self):
+    def add_listeners(self) -> None:
+        # Somehow, mypy knows how long args is, but tries to insert kwargs as argument
+        # 2 and 3
         for args, kwargs in self.listeners:
-            event.listen(*args, **kwargs)
+            event.listen(*args, **kwargs)  # type: ignore[arg-type]
 
-    def remove_listeners(self):
+    def remove_listeners(self) -> None:
         for args, kwargs in self.listeners:
             if event.contains(*args):
                 event.remove(*args)
 
     @contextmanager
-    def pause(self):
+    def pause(self) -> Generator[None, Any, None]:
         """Temporarily removes all event listeners for the enclosed scope."""
         self.remove_listeners()
         yield
         self.add_listeners()
 
-    def set_logger(self, state):
+    def set_logger(self, state: tuple[int, int, int] | ORMExecuteState) -> None:
         self.logger = logging.getLogger(__name__ + "." + str(id(state)))
 
     def receive_before_insert(
         self, mapper: Mapper, connection: Connection, target: base.BaseModel
-    ):
+    ) -> None:
         """Handles the insert event when creating data like this:
         ```
         model = Model(**kwargs)
@@ -74,7 +77,7 @@ class SqlaEventHandler(object):
 
     def receive_before_update(
         self, mapper: Mapper, connection: Connection, target: base.BaseModel
-    ):
+    ) -> None:
         """Handles the update event when changing data like this:
         ```
         model = query_model()
@@ -91,7 +94,7 @@ class SqlaEventHandler(object):
             self.logger.debug(f"Setting update info for: {target}")
             target.set_update_info(self.backend.auth_context)
 
-    def receive_do_orm_execute(self, orm_execute_state: ORMExecuteState):
+    def receive_do_orm_execute(self, orm_execute_state: ORMExecuteState) -> None:
         """Handles ORM execution events like:
         ```
         exc = select/update/delete(Model)
@@ -105,25 +108,25 @@ class SqlaEventHandler(object):
         self.set_logger(orm_execute_state)
         self.logger.debug("Received 'do_orm_execute' event.")
         if orm_execute_state.is_select:
-            return self.receive_select(orm_execute_state)
+            self.receive_select(orm_execute_state)
         else:
             if orm_execute_state.is_insert:
                 self.logger.debug("Operation: 'insert'")
-                return self.receive_insert(orm_execute_state)
+                self.receive_insert(orm_execute_state)
             if orm_execute_state.is_update:
                 self.logger.debug("Operation: 'update'")
-                return self.receive_update(orm_execute_state)
+                self.receive_update(orm_execute_state)
             if orm_execute_state.is_delete:
                 self.logger.debug("Operation: 'delete'")
-                return self.receive_delete(orm_execute_state)
+                self.receive_delete(orm_execute_state)
             else:
                 self.logger.debug(f"Ignoring operation: {orm_execute_state}")
 
-    def receive_select(self, oes: ORMExecuteState):
+    def receive_select(self, oes: ORMExecuteState) -> None:
         # select = cast(sql.Select, oes.statement)
         pass
 
-    def receive_insert(self, oes: ORMExecuteState):
+    def receive_insert(self, oes: ORMExecuteState) -> Result | None:
         insert = cast(sql.Insert, oes.statement)
         entity = insert.entity_description
         type_ = entity["type"]
@@ -135,11 +138,13 @@ class SqlaEventHandler(object):
                 "created_at": type_.get_timestamp(),
             }
 
+            assert oes.parameters is not None
             return oes.invoke_statement(
                 params=self.get_extra_params(oes.parameters, creation_info)
             )
+        return None
 
-    def receive_update(self, oes: ORMExecuteState):
+    def receive_update(self, oes: ORMExecuteState) -> Result | None:
         update = cast(sql.Update, oes.statement)
         entity = update.entity_description
         type_ = entity["type"]
@@ -159,8 +164,9 @@ class SqlaEventHandler(object):
                 return oes.invoke_statement(statement=new_statement)
             else:
                 raise ProgrammingError(f"Cannot handle update statement: {update}")
+        return None
 
-    def receive_delete(self, oes: ORMExecuteState):
+    def receive_delete(self, oes: ORMExecuteState) -> None:
         # delete = cast(sql.Delete, oes.statement)
         pass
 
@@ -172,8 +178,9 @@ class SqlaEventHandler(object):
             exc.where(wc.expression)
         return exc
 
-    def get_extra_params(self, params, extra):
-        if isinstance(params, Sequence):
-            return [extra] * len(params)
-        else:
-            return extra
+    def get_extra_params(
+        self,
+        params: Sequence[Mapping[str, Any]] | Mapping[str, Any],
+        extra: dict[str, Any],
+    ) -> list[dict[str, Any]] | dict[str, Any]:
+        return [extra] * len(params) if isinstance(params, Sequence) else extra

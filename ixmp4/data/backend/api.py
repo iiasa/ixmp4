@@ -1,6 +1,9 @@
 import logging
 from concurrent.futures import ThreadPoolExecutor
+from typing import TYPE_CHECKING
 
+if TYPE_CHECKING:
+    from .db import SqlAlchemyBackend
 import httpx
 import pandas as pd
 from fastapi.testclient import TestClient
@@ -55,7 +58,7 @@ class RestBackend(Backend):
                 logger.info("Platform notice: >\n" + info.notice)
         self.create_repositories()
 
-    def make_client(self, rest_url: str, auth: BaseAuth | None):
+    def make_client(self, rest_url: str, auth: BaseAuth | None) -> None:
         auth = self.get_auth(rest_url, auth)
 
         self.client = httpx.Client(
@@ -109,7 +112,7 @@ class RestBackend(Backend):
         else:
             return override_auth
 
-    def create_repositories(self):
+    def create_repositories(self) -> None:
         self.iamc.datapoints = DataPointRepository(self)
         self.iamc.timeseries = TimeSeriesRepository(self)
         self.iamc.variables = VariableRepository(self)
@@ -148,14 +151,12 @@ mock_manager = MockManagerConfig([test_platform], test_permissions)
 
 
 class RestTestBackend(RestBackend):
-    def __init__(self, db_backend, *args, **kwargs) -> None:
+    def __init__(self, db_backend: "SqlAlchemyBackend") -> None:
         self.db_backend = db_backend
         self.auth_params = (test_user, mock_manager, test_platform)
-        super().__init__(
-            test_platform, SelfSignedAuth(settings.secret_hs256), *args, **kwargs
-        )
+        super().__init__(test_platform, SelfSignedAuth(settings.secret_hs256))
 
-    def make_client(self, rest_url: str, auth: BaseAuth):
+    def make_client(self, rest_url: str, auth: BaseAuth) -> None:
         self.client = TestClient(
             app=app,
             base_url=rest_url,
@@ -172,12 +173,12 @@ class RestTestBackend(RestBackend):
             self.db_backend, self.auth_params
         )
 
-    def close(self):
+    def close(self) -> None:
         self.client.close()
         self.executor.shutdown(cancel_futures=True)
 
-    def setup(self):
+    def setup(self) -> None:
         pass
 
-    def teardown(self):
+    def teardown(self) -> None:
         pass

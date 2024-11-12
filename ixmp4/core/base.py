@@ -17,8 +17,10 @@ class BaseModelFacade(BaseFacade):
     backend: Backend
     _model: BaseModel
 
-    def __init__(self, *args, _model: BaseModel | None = None, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(
+        self, _model: BaseModel | None = None, **kwargs: Backend | None
+    ) -> None:
+        super().__init__(**kwargs)
 
         if _model is not None:
             self._model = _model

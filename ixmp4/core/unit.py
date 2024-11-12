@@ -29,25 +29,25 @@ class Unit(BaseModelFacade):
     def created_by(self) -> str | None:
         return self._model.created_by
 
-    def delete(self):
+    def delete(self) -> None:
         self.backend.units.delete(self._model.id)
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.units.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str) -> None:
         if description is None:
             self.backend.units.docs.delete(self.id)
         else:
             self.backend.units.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.units.docs.delete(self.id)
         # TODO: silently failing
@@ -72,7 +72,7 @@ class UnitRepository(BaseFacade):
         model = self.backend.units.create(name)
         return Unit(_backend=self.backend, _model=model)
 
-    def delete(self, x: Unit | int | str):
+    def delete(self, x: Unit | int | str) -> None:
         if isinstance(x, Unit):
             id = x.id
         elif isinstance(x, int):

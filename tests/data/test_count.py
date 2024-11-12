@@ -1,11 +1,14 @@
 from functools import reduce
+from typing import Any
 
 import pytest
 
 import ixmp4
+from ixmp4.data.backend import Backend
 
 
-def deepgetattr(obj, attr):
+# TODO How to type hint this to return Repos with .list() and .count()?
+def deepgetattr(obj: Backend, attr: str) -> Any:
     return reduce(getattr, attr.split("."), obj)
 
 
@@ -75,6 +78,13 @@ class TestDataCount:
             ],
         ],
     )
-    def test_count(self, db_platform_big: ixmp4.Platform, repo_name, filters):
+    def test_count(
+        self,
+        db_platform_big: ixmp4.Platform,
+        repo_name: str,
+        filters: dict[
+            str, bool | str | dict[str, bool | str | list[str] | dict[str, bool | str]]
+        ],
+    ) -> None:
         repo = deepgetattr(db_platform_big.backend, repo_name)
         assert len(repo.list(**filters)) == repo.count(**filters)

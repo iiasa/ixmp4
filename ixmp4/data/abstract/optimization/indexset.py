@@ -1,6 +1,12 @@
-from typing import List, Protocol
+from typing import TYPE_CHECKING, List, Protocol
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
@@ -83,7 +89,9 @@ class IndexSetRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> list[IndexSet]:
+    def list(
+        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
+    ) -> list[IndexSet]:
         r"""Lists IndexSets by specified criteria.
 
         Parameters
@@ -103,7 +111,11 @@ class IndexSetRepository(
         ...
 
     def tabulate(
-        self, *, name: str | None = None, include_data: bool = False, **kwargs
+        self,
+        *,
+        name: str | None = None,
+        include_data: bool = False,
+        **kwargs: Unpack["EnumerateKwargs"],
     ) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
@@ -133,7 +145,9 @@ class IndexSetRepository(
         ...
 
     def add_data(
-        self, indexset_id: int, data: float | int | List[float | int | str] | str
+        self,
+        indexset_id: int,
+        data: float | int | str | List[float] | List[int] | List[str],
     ) -> None:
         """Adds data to an existing IndexSet.
 
@@ -141,7 +155,7 @@ class IndexSetRepository(
         ----------
         indexset_id : int
             The id of the target IndexSet.
-        data : float | int | List[float | int | str] | str
+        data : float | int | str | List[float] | List[int] | List[str]
             The data to be added to the IndexSet.
 
         Returns

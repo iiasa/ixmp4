@@ -1,5 +1,13 @@
+from typing import TYPE_CHECKING
+
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
+
+# TODO Adapt import when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, NoDefaultRunVersion
@@ -13,6 +21,14 @@ from ..scenario import Scenario, ScenarioRepository
 from .model import Run
 
 
+class EnumerateKwargs(abstract.run.EnumerateKwargs):
+    default_only: bool
+
+
+class CreateKwargs(TypedDict, total=False):
+    scenario_name: str
+
+
 class RunRepository(
     base.Creator[Run],
     base.Retriever[Run],
@@ -24,16 +40,16 @@ class RunRepository(
     models: ModelRepository
     scenarios: ScenarioRepository
 
-    def __init__(self, *args, **kwargs) -> None:
-        self.models = ModelRepository(*args, **kwargs)
-        self.scenarios = ScenarioRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        self.models = ModelRepository(*args)
+        self.scenarios = ScenarioRepository(*args)
 
         from .filter import RunFilter
 
         self.filter_class = RunFilter
-        super().__init__(*args, **kwargs)
+        super().__init__(*args)
 
-    def join_auth(self, exc: db.sql.Select):
+    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
         if not utils.is_joined(exc, Model):
             exc = exc.join(Model, Run.model)
         return exc
@@ -72,7 +88,9 @@ class RunRepository(
         return run
 
     @guard("edit")
-    def create(self, model_name: str, *args, **kwargs) -> Run:
+    def create(
+        self, model_name: str, *args: str, **kwargs: Unpack[CreateKwargs]
+    ) -> Run:
         if self.backend.auth_context is not None:
             if not self.backend.auth_context.check_access("edit", model_name):
                 raise Forbidden(f"Access to model '{model_name}' denied.")
@@ -93,7 +111,8 @@ class RunRepository(
         )
 
         try:
-            return self.session.execute(exc).scalar_one()
+            run: Run = self.session.execute(exc).scalar_one()
+            return run
         except NoResultFound:
             raise Run.NotFound(
                 model=model_name,
@@ -122,17 +141,18 @@ class RunRepository(
         )
 
         try:
-            return self.session.execute(exc).scalar_one()
+            run: Run = self.session.execute(exc).scalar_one()
+            return run
         except NoResultFound:
             raise NoDefaultRunVersion
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[Run]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
+        return super().list(**kwargs)
 
     @guard("edit")
     def set_as_default_version(self, id: int) -> None:

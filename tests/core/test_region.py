@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import pandas as pd
 import pytest
 
@@ -9,13 +11,13 @@ from ..fixtures import SmallIamcDataset
 from ..utils import assert_unordered_equality
 
 
-def create_testcase_regions(platform):
+def create_testcase_regions(platform: ixmp4.Platform) -> tuple[Region, Region]:
     reg = platform.regions.create("Test", hierarchy="default")
     other = platform.regions.create("Test Other", hierarchy="other")
     return reg, other
 
 
-def df_from_list(regions):
+def df_from_list(regions: Iterable[Region]) -> pd.DataFrame:
     return pd.DataFrame(
         [[r.id, r.name, r.hierarchy, r.created_at, r.created_by] for r in regions],
         columns=["id", "name", "hierarchy", "created_at", "created_by"],
@@ -25,7 +27,7 @@ def df_from_list(regions):
 class TestCoreRegion:
     small = SmallIamcDataset
 
-    def test_delete_region(self, platform: ixmp4.Platform):
+    def test_delete_region(self, platform: ixmp4.Platform) -> None:
         reg1 = platform.regions.create("Test 1", hierarchy="default")
         reg2 = platform.regions.create("Test 2", hierarchy="default")
         reg3 = platform.regions.create("Test 3", hierarchy="default")
@@ -48,16 +50,17 @@ class TestCoreRegion:
         with pytest.raises(Region.DeletionPrevented):
             platform.regions.delete("Region 1")
 
-    def test_region_has_hierarchy(self, platform: ixmp4.Platform):
+    def test_region_has_hierarchy(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(TypeError):
-            platform.regions.create("Test Region")  # type:ignore
+            # We are testing exactly this: raising with missing argument.
+            platform.regions.create("Test Region")  # type: ignore[call-arg]
 
         reg1 = platform.regions.create("Test", hierarchy="default")
         reg2 = platform.regions.get("Test")
 
         assert reg1.id == reg2.id
 
-    def test_get_region(self, platform: ixmp4.Platform):
+    def test_get_region(self, platform: ixmp4.Platform) -> None:
         reg1 = platform.regions.create("Test", hierarchy="default")
         reg2 = platform.regions.get("Test")
 
@@ -66,13 +69,13 @@ class TestCoreRegion:
         with pytest.raises(Region.NotFound):
             platform.regions.get("Does not exist")
 
-    def test_region_unique(self, platform: ixmp4.Platform):
+    def test_region_unique(self, platform: ixmp4.Platform) -> None:
         platform.regions.create("Test", hierarchy="default")
 
         with pytest.raises(Region.NotUnique):
             platform.regions.create("Test", hierarchy="other")
 
-    def test_region_unknown(self, platform):
+    def test_region_unknown(self, platform: ixmp4.Platform) -> None:
         self.small.load_regions(platform)
         self.small.load_units(platform)
 
@@ -83,7 +86,7 @@ class TestCoreRegion:
         with pytest.raises(Region.NotFound):
             run.iamc.add(invalid_data, type=DataPoint.Type.ANNUAL)
 
-    def test_list_region(self, platform: ixmp4.Platform):
+    def test_list_region(self, platform: ixmp4.Platform) -> None:
         regions = create_testcase_regions(platform)
         reg, other = regions
 
@@ -95,7 +98,7 @@ class TestCoreRegion:
         b = [r.id for r in platform.regions.list(hierarchy="other")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_region(self, platform: ixmp4.Platform):
+    def test_tabulate_region(self, platform: ixmp4.Platform) -> None:
         regions = create_testcase_regions(platform)
         _, other = regions
 
@@ -107,7 +110,7 @@ class TestCoreRegion:
         b = platform.regions.tabulate(hierarchy="other")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, platform: ixmp4.Platform):
+    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
         platform.regions.create("Test Region", "Test Hierarchy")
         docs_region1 = platform.regions.set_docs(
             "Test Region", "Description of test Region"
@@ -124,7 +127,7 @@ class TestCoreRegion:
 
         assert platform.regions.get_docs("Test Region 2") == region2.docs
 
-    def test_delete_docs(self, platform: ixmp4.Platform):
+    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
         region = platform.regions.create("Test Region", "Hierarchy")
         region.docs = "Description of test region"
         region.docs = None

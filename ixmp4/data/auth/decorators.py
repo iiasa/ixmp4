@@ -1,25 +1,32 @@
+from collections.abc import Callable
 from functools import wraps
-from typing import TYPE_CHECKING, Callable, Protocol
+from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 
 from ixmp4.core.exceptions import Forbidden, ProgrammingError
 
 if TYPE_CHECKING:
-    from ..backend.db import SqlAlchemyBackend
+    from ..db.base import BaseRepository
+
+P = ParamSpec("P")
+
+ReturnT = TypeVar("ReturnT")
 
 
-class Guardable(Protocol):
-    # NOTE: Eager checking for api backends may be desirable
-    # at some point
-    backend: "SqlAlchemyBackend"
-
-
-def guard(access: str) -> Callable:
+def guard(
+    access: str,
+) -> Callable[
+    [Callable[Concatenate[Any, P], ReturnT]], Callable[Concatenate[Any, P], ReturnT]
+]:
     if access not in ["edit", "manage", "view"]:
         raise ProgrammingError("Guard access must be 'edit', 'manage' or 'view'.")
 
-    def decorator(func):
+    def decorator(
+        func: Callable[Concatenate[Any, P], ReturnT],
+    ) -> Callable[Concatenate[Any, P], ReturnT]:
         @wraps(func)
-        def guarded_func(self: Guardable, *args, **kwargs):
+        def guarded_func(
+            self: "BaseRepository", /, *args: P.args, **kwargs: P.kwargs
+        ) -> ReturnT:
             if self.backend.auth_context is not None:
                 if access == "view" and self.backend.auth_context.is_viewable:
                     return func(self, *args, **kwargs)

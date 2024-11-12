@@ -17,7 +17,7 @@ class AuthorizationContext(object):
         self.manager = manager
         self.platform = platform
 
-    def tabulate_permissions(self):
+    def tabulate_permissions(self) -> pd.DataFrame:
         df = self.manager.fetch_user_permissions(
             self.user, self.platform, jti=self.user.jti
         )
@@ -47,7 +47,7 @@ class AuthorizationContext(object):
         if utils.is_joined(exc, Model):
             perms = self.tabulate_permissions()
             if perms.empty:
-                return exc.where(False)  # type: ignore
+                return exc.where(db.false())
             if access_type == "edit":
                 perms = perms.where(perms["access_type"] == "EDIT").dropna()
             # `*` is used as wildcard in permission logic, replaced by sql-wildcard `%`

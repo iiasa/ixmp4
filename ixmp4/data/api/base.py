@@ -1,14 +1,13 @@
 import logging
 import time
+from collections.abc import Callable, Generator, Mapping
 from concurrent import futures
 from json.decoder import JSONDecodeError
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
     Generic,
-    Type,
     TypeVar,
 )
 
@@ -18,6 +17,9 @@ from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, GetCoreSchemaHandler
 from pydantic_core import CoreSchema, core_schema
 
+# TODO Import this from typing when dropping support for Python 3.11
+from typing_extensions import TypedDict, Unpack
+
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import (
     ApiEncumbered,
@@ -26,6 +28,7 @@ from ixmp4.core.exceptions import (
     UnknownApiError,
     registry,
 )
+from ixmp4.data import abstract
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.api import RestBackend
@@ -40,7 +43,7 @@ class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def df_to_dict(df: pd.DataFrame) -> dict:
+def df_to_dict(df: pd.DataFrame) -> dict[str, list]:
     columns = []
     dtypes = []
     for c in df.columns:
@@ -68,14 +71,10 @@ class DataFrame(PydanticBaseModel):
         cls, source_type: Any, handler: GetCoreSchemaHandler
     ) -> CoreSchema:
         return core_schema.no_info_before_validator_function(cls.validate, handler(cls))
-        # yield cls.validate
 
     @classmethod
-    def validate(cls, df: pd.DataFrame | dict):
-        if isinstance(df, pd.DataFrame):
-            return df_to_dict(df)
-        else:
-            return df
+    def validate(cls, df: pd.DataFrame | dict) -> dict:
+        return df_to_dict(df) if isinstance(df, pd.DataFrame) else df
 
     def to_pandas(self) -> pd.DataFrame:
         df = pd.DataFrame(
@@ -86,27 +85,40 @@ class DataFrame(PydanticBaseModel):
         if self.columns and self.dtypes:
             for c, dt in zip(self.columns, self.dtypes):
                 # there seems to be a type incompatbility between StrDtypeArg and str
-                df[c] = df[c].astype(dt)  # type: ignore
+                df[c] = df[c].astype(dt)  # type: ignore[call-overload]
         return df
+
+
+class _RequestKwargs(TypedDict, total=False):
+    params: dict | None
+    json: (
+        dict[str, int | str | Mapping | abstract.MetaValue | list[str] | float | None]
+        | None
+    )
+    max_retries: int
+
+
+class RequestKwargs(TypedDict, total=False):
+    content: str
 
 
 ModelType = TypeVar("ModelType", bound=BaseModel)
 
 
 class BaseRepository(Generic[ModelType]):
-    model_class: Type[ModelType]
+    model_class: type[ModelType]
     prefix: ClassVar[str]
     enumeration_method: str = "PATCH"
 
     backend: "RestBackend"
 
-    def __init__(self, backend: "RestBackend", *args, **kwargs) -> None:
+    def __init__(self, backend: "RestBackend") -> None:
         self.backend = backend
 
-    def sanitize_params(self, params: dict):
+    def sanitize_params(self, params: dict[str, Any]) -> dict[str, Any]:
         return {k: params[k] for k in params if params[k] is not None}
 
-    def get_remote_exception(self, res: httpx.Response, status_code: int):
+    def get_remote_exception(self, res: httpx.Response, status_code: int) -> IxmpError:
         try:
             json = res.json()
         except (ValueError, JSONDecodeError):
@@ -133,7 +145,7 @@ class BaseRepository(Generic[ModelType]):
         params: dict | None = None,
         json: dict | None = None,
         max_retries: int = settings.client_max_request_retries,
-        **kwargs,
+        **kwargs: Unpack[RequestKwargs],
     ) -> dict | list | None:
         """Sends a request and handles potential error responses.
         Re-raises a remote `IxmpError` if thrown and transferred from the backend.
@@ -142,7 +154,7 @@ class BaseRepository(Generic[ModelType]):
         but has a status code less than 300.
         """
 
-        def retry(max_retries=max_retries) -> dict | list | None:
+        def retry(max_retries: int = max_retries) -> dict | list | None:
             if max_retries == 0:
                 logger.error(f"API Encumbered: '{self.backend.info.dsn}'")
                 raise ApiEncumbered(
@@ -203,7 +215,8 @@ class BaseRepository(Generic[ModelType]):
             raise self.get_remote_exception(res, res.status_code)
         else:
             try:
-                return res.json()
+                json_decoded: dict | list = res.json()
+                return json_decoded
             except JSONDecodeError:
                 if res.status_code < 300 and res.text == "":
                     return None
@@ -211,26 +224,29 @@ class BaseRepository(Generic[ModelType]):
                 pass
             raise UnknownApiError(res.text)
 
-    def _get_by_id(self, id: int, *args, **kwargs) -> dict[str, Any]:
+    def _get_by_id(self, id: int) -> dict[str, Any]:
         # we can assume this type on create endpoints
-        return self._request("GET", self.prefix + str(id) + "/", **kwargs)  # type: ignore
+        return self._request("GET", self.prefix + str(id) + "/")  # type: ignore[return-value]
 
     def _request_enumeration(
         self,
         table: bool = False,
         params: dict | None = None,
         json: dict | None = None,
-    ):
+    ) -> dict | list:
         """Convenience method for requests to the enumeration endpoint."""
         if params is None:
             params = {}
 
+        # TODO instead of assuming this, wouldn't it be better to never return None and
+        # handle this as an exception or some such in _request()?
+        # we can assume these types on enumeration endpoints
         return self._request(
             self.enumeration_method,
             self.prefix,
             params={**params, "table": table},
             json=json,
-        )
+        )  # type: ignore[return-value]
 
     def _dispatch_pagination_requests(
         self,
@@ -289,23 +305,26 @@ class BaseRepository(Generic[ModelType]):
             return [data.pop("results")] + results
 
     def _list(
-        self, params: dict | None = None, json: dict | None = None, **kwargs
+        self, params: dict | None = None, json: dict | None = None
     ) -> list[ModelType]:
         data = self._request_enumeration(params=params, table=False, json=json)
         if isinstance(data, dict):
             # we can assume this type on list endpoints
             pages: list[list] = self._handle_pagination(
                 data, table=False, params=params, json=json
-            )  # type: ignore
+            )  # type: ignore[assignment]
             results = [i for page in pages for i in page]
         else:
             results = data
         return [self.model_class(**i) for i in results]
 
     def _tabulate(
-        self, params: dict | None = {}, json: dict | None = None, **kwargs
+        self, params: dict | None = {}, json: dict | None = None
     ) -> pd.DataFrame:
-        data = self._request_enumeration(table=True, params=params, json=json)
+        # we can assume this type on table endpoints
+        data: dict[str, Any] = self._request_enumeration(
+            table=True, params=params, json=json
+        )  # type: ignore[assignment]
         pagination = data.get("pagination", None)
         if pagination is not None:
             # we can assume this type on table endpoints
@@ -314,26 +333,46 @@ class BaseRepository(Generic[ModelType]):
                 table=True,
                 params=params,
                 json=json,
-            )  # type: ignore
+            )  # type: ignore[assignment]
             dfs = [DataFrame(**page).to_pandas() for page in pages]
             return pd.concat(dfs)
         else:
             return DataFrame(**data).to_pandas()
 
-    def _create(self, *args, **kwargs) -> dict[str, Any]:
+    def _create(
+        self,
+        *args: Unpack[tuple[str]],
+        **kwargs: Unpack[_RequestKwargs],
+    ) -> dict[str, Any]:
         # we can assume this type on create endpoints
-        return self._request("POST", *args, **kwargs)  # type: ignore
+        return self._request("POST", *args, **kwargs)  # type: ignore[return-value]
 
-    def _delete(self, id: int):
+    def _delete(self, id: int) -> None:
         self._request("DELETE", f"{self.prefix}{str(id)}/")
 
 
+class GetKwargs(TypedDict, total=False):
+    dimension_id: int
+    run_ids: list[int]
+    parameters: Mapping
+    name: str
+    run_id: int
+    key: str
+    model: dict[str, str]
+    scenario: dict[str, str]
+    version: int
+    default_only: bool
+    is_default: bool | None
+
+
 class Retriever(BaseRepository[ModelType]):
-    def get(self, **kwargs) -> ModelType:
-        if self.enumeration_method == "GET":
-            list_ = self._list(params=kwargs)
-        else:
-            list_ = self._list(json=kwargs)
+    def get(self, **kwargs: Unpack[GetKwargs]) -> ModelType:
+        _kwargs = {k: v for k, v in kwargs.items()}
+        list_ = (
+            self._list(params=_kwargs)
+            if self.enumeration_method == "GET"
+            else self._list(json=_kwargs)
+        )
 
         try:
             [obj] = list_
@@ -345,7 +384,10 @@ class Retriever(BaseRepository[ModelType]):
 
 
 class Creator(BaseRepository[ModelType]):
-    def create(self, **kwargs) -> ModelType:
+    def create(
+        self,
+        **kwargs: int | str | Mapping | abstract.MetaValue | list[str] | float | None,
+    ) -> ModelType:
         res = self._create(
             self.prefix,
             json=kwargs,
@@ -354,34 +396,42 @@ class Creator(BaseRepository[ModelType]):
 
 
 class Deleter(BaseRepository[ModelType]):
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         self._delete(id)
 
 
+class ListKwargs(TypedDict, total=False):
+    run_id: int
+    name: str
+
+
 class Lister(BaseRepository[ModelType]):
-    def list(self, *args, **kwargs) -> list[ModelType]:
-        return self._list(json=kwargs)
+    def list(self, **kwargs: Unpack[ListKwargs]) -> list[ModelType]:
+        return self._list(json=kwargs)  # type: ignore[arg-type]
 
 
 class Tabulator(BaseRepository[ModelType]):
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         return self._tabulate(json=kwargs)
 
 
 class Enumerator(Lister[ModelType], Tabulator[ModelType]):
     def enumerate(
-        self, *args, table: bool = False, **kwargs
+        self, table: bool = False, **kwargs: Any
     ) -> list[ModelType] | pd.DataFrame:
-        if table:
-            return self.tabulate(*args, **kwargs)
-        else:
-            return self.list(*args, **kwargs)
+        return self.tabulate(**kwargs) if table else self.list(**kwargs)
 
 
 class BulkOperator(BaseRepository[ModelType]):
-    def yield_chunks(self, df: pd.DataFrame, chunk_size: int):
+    def yield_chunks(
+        self, df: pd.DataFrame, chunk_size: int
+    ) -> Generator[pd.DataFrame, Any, None]:
         for _, chunk in df.groupby(df.index // chunk_size):
             yield chunk
+
+
+class BulkUpsertKwargs(TypedDict, total=False):
+    create_related: bool
 
 
 class BulkUpserter(BulkOperator[ModelType]):
@@ -389,18 +439,20 @@ class BulkUpserter(BulkOperator[ModelType]):
         self,
         df: pd.DataFrame,
         chunk_size: int = settings.client_default_upload_chunk_size,
-        **kwargs,
-    ):
+        **kwargs: Unpack[BulkUpsertKwargs],
+    ) -> None:
         for chunk in self.yield_chunks(df, chunk_size):
             self.bulk_upsert_chunk(chunk, **kwargs)
 
-    def bulk_upsert_chunk(self, df: pd.DataFrame, **kwargs) -> None:
+    def bulk_upsert_chunk(
+        self, df: pd.DataFrame, **kwargs: Unpack[BulkUpsertKwargs]
+    ) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
         self._request(
             "POST",
             self.prefix + "bulk/",
-            params=kwargs,
+            params={k: v for k, v in kwargs.items()},
             content=json_,
         )
 
@@ -410,12 +462,14 @@ class BulkDeleter(BulkOperator[ModelType]):
         self,
         df: pd.DataFrame,
         chunk_size: int = settings.client_default_upload_chunk_size,
-        **kwargs,
-    ):
+        # NOTE nothing in our code base supplies kwargs here
+        **kwargs: Any,
+    ) -> None:
         for chunk in self.yield_chunks(df, chunk_size):
             self.bulk_delete_chunk(chunk, **kwargs)
 
-    def bulk_delete_chunk(self, df: pd.DataFrame, **kwargs) -> None:
+    # NOTE this only gets kwargs from bulk_delete()
+    def bulk_delete_chunk(self, df: pd.DataFrame, **kwargs: Any) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
         self._request(

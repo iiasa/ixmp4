@@ -1,12 +1,43 @@
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .docs import RegionDocsRepository
 from .model import Region
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    name: str
+    name__in: Iterable[str]
+    name__like: str
+    name__ilike: str
+    name__notlike: str
+    name__notilike: str
+    hierarchy: str
+    hierarchy__in: Iterable[str]
+    hierarchy__like: str
+    hierarchy__ilike: str
+    hierarchy__notlike: str
+    hierarchy__notilike: str
+    _filter: BaseFilter
+
+
+class CreateKwargs(TypedDict, total=False):
+    name: str
+    hierarchy: str
 
 
 class RegionRepository(
@@ -18,13 +49,13 @@ class RegionRepository(
 ):
     model_class = Region
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
 
         from .filter import RegionFilter
 
         self.filter_class = RegionFilter
-        self.docs = RegionDocsRepository(*args, **kwargs)
+        self.docs = RegionDocsRepository(*args)
 
     def add(self, name: str, hierarchy: str) -> Region:
         region = Region(name=name, hierarchy=hierarchy)
@@ -32,25 +63,26 @@ class RegionRepository(
         return region
 
     @guard("manage")
-    def create(self, *args, **kwargs) -> Region:
+    def create(self, *args: str, **kwargs: Unpack[CreateKwargs]) -> Region:
         return super().create(*args, **kwargs)
 
     @guard("manage")
-    def delete(self, *args, **kwargs):
-        return super().delete(*args, **kwargs)
+    def delete(self, *args: int) -> None:
+        super().delete(*args)
 
     @guard("view")
     def get(self, name: str) -> Region:
         exc = self.select().where(Region.name == name)
         try:
-            return self.session.execute(exc).scalar_one()
+            region: Region = self.session.execute(exc).scalar_one()
+            return region
         except NoResultFound:
             raise Region.NotFound
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[Region]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Region]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)

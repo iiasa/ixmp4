@@ -1,6 +1,6 @@
 from typing import ClassVar
 
-from ixmp4.db import filters
+from ixmp4.db import Session, filters, sql
 
 from .. import RunMetaEntry
 
@@ -9,8 +9,8 @@ class RunMetaEntryFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     sqla_model: ClassVar[type] = RunMetaEntry
 
     id: filters.Id
-    type: filters.String
-    run__id: filters.Integer = filters.Field(None, alias="run_id")
+    dtype: filters.String
+    run__id: filters.Integer | None = filters.Field(None, alias="run_id")
 
     key: filters.String
 
@@ -19,5 +19,5 @@ class RunMetaEntryFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     value_float: filters.Float
     value_bool: filters.Boolean
 
-    def join(self, exc, **kwargs):
+    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
         return exc

@@ -2,7 +2,7 @@ from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.timeseries import TimeSeries
 from ixmp4.data.db.run.model import Run
-from ixmp4.db import filters, utils
+from ixmp4.db import filters, typing_column, utils
 
 
 class IamcRunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
@@ -10,7 +10,9 @@ class IamcRunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     variable: base.VariableFilter
     unit: base.UnitFilter
 
-    def join(self, exc, session=None):
+    def join(
+        self, exc: db.sql.Select, session: db.Session | None = None
+    ) -> db.sql.Select:
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=TimeSeries.run__id == Run.id)
         return exc
@@ -19,12 +21,20 @@ class IamcRunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
     iamc: IamcRunFilter | filters.Boolean | None = None
 
-    def join_datapoints(self, exc: db.sql.Select, session=None):
+    def join_datapoints(
+        self, exc: db.sql.Select, session: db.Session | None = None
+    ) -> db.sql.Select:
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=TimeSeries.run__id == Run.id)
         return exc
 
-    def filter_iamc(self, exc, c, v, session=None):
+    def filter_iamc(
+        self,
+        exc: db.sql.Select,
+        c: typing_column,
+        v: bool | None,
+        session: db.Session | None = None,
+    ) -> db.sql.Select:
         if v is None:
             return exc
 
@@ -35,5 +45,7 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
             exc = exc.where(~Run.id.in_(ids))
             return exc
 
-    def join(self, exc, **kwargs):
+    def join(
+        self, exc: db.sql.Select, session: db.Session | None = None
+    ) -> db.sql.Select:
         return exc

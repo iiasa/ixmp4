@@ -1,13 +1,15 @@
 from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.timeseries import TimeSeries
-from ixmp4.db import filters, utils
+from ixmp4.db import Session, filters, typing_column, utils
 
 from . import Region
 
 
 class BaseIamcFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    def join_datapoints(self, exc: db.sql.Select, session=None):
+    def join_datapoints(
+        self, exc: db.sql.Select, session: Session | None = None
+    ) -> db.sql.Select:
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=TimeSeries.region__id == Region.id)
         return exc
@@ -16,25 +18,31 @@ class BaseIamcFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 class SimpleIamcRegionFilter(
     base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta
 ):
-    def join(self, exc, session=None):
+    def join(self, exc: db.sql.Select, session: Session | None = None) -> db.sql.Select:
         return super().join_datapoints(exc, session)
 
 
 class IamcRegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    variable: base.VariableFilter
-    unit: base.UnitFilter
+    variable: base.VariableFilter | None = filters.Field(None)
+    unit: base.UnitFilter | None = filters.Field(None)
     run: base.RunFilter = filters.Field(
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
-    def join(self, exc, session=None):
+    def join(self, exc: db.sql.Select, session: Session | None = None) -> db.sql.Select:
         return super().join_datapoints(exc, session)
 
 
 class RegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: IamcRegionFilter | filters.Boolean | None
+    iamc: IamcRegionFilter | filters.Boolean | None = filters.Field(None)
 
-    def filter_iamc(self, exc, c, v, session=None):
+    def filter_iamc(
+        self,
+        exc: db.sql.Select,
+        c: typing_column,
+        v: bool | None,
+        session: Session | None = None,
+    ) -> db.sql.Select:
         if v is None:
             return exc
 
@@ -45,5 +53,5 @@ class RegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMe
             exc = exc.where(~Region.id.in_(ids))
             return exc
 
-    def join(self, exc, **kwargs):
+    def join(self, exc: db.sql.Select, session: Session | None = None) -> db.sql.Select:
         return exc

@@ -1,8 +1,14 @@
 from datetime import datetime
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 import pandas as pd
 from pydantic import Field
+
+# TODO Import this from typing when dropping support for Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 
@@ -36,8 +42,8 @@ class VariableRepository(
     model_class = Variable
     prefix = "iamc/variables/"
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: Unpack[tuple["RestBackend"]]) -> None:
+        super().__init__(*args)
         self.docs = VariableDocsRepository(self.backend)
 
     def create(
@@ -49,11 +55,23 @@ class VariableRepository(
     def get(self, name: str) -> Variable:
         return super().get(name=name)
 
-    def enumerate(self, **kwargs) -> list[Variable] | pd.DataFrame:
+    def enumerate(
+        self, **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs]
+    ) -> list[Variable] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(self, **kwargs) -> list[Variable]:
-        return super()._list(json=kwargs)
+    def list(
+        self,
+        name: str | None = None,
+        **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs],
+    ) -> list[Variable]:
+        json = {"name": name, **kwargs}
+        return super()._list(json=json)
 
-    def tabulate(self, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs)
+    def tabulate(
+        self,
+        name: str | None = None,
+        **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs],
+    ) -> pd.DataFrame:
+        json = {"name": name, **kwargs}
+        return super()._tabulate(json=json)

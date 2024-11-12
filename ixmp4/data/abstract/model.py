@@ -1,6 +1,10 @@
+from collections.abc import Iterable
 from typing import Protocol
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4.data import types
 
@@ -23,6 +27,39 @@ class Model(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Model {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    id: int
+    id__in: Iterable[int]
+    # name: str
+    name__in: Iterable[str]
+    name__like: str
+    name__ilike: str
+    name__notlike: str
+    name__notilike: str
+    iamc: (
+        dict[
+            str,
+            dict[
+                str,
+                int
+                | str
+                | Iterable[int]
+                | Iterable[str]
+                | dict[
+                    str,
+                    bool
+                    | int
+                    | str
+                    | Iterable[int]
+                    | Iterable[str]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ],
+            ],
+        ]
+        | bool
+    )
 
 
 class ModelRepository(
@@ -74,16 +111,17 @@ class ModelRepository(
         ...
 
     def list(
-        self,
-        *,
-        name: str | None = None,
+        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
     ) -> list[Model]:
-        """Lists models by specified criteria.
+        r"""Lists models by specified criteria.
 
         Parameters
         ----------
         name : str
             The name of a model. If supplied only one result will be returned.
+        \*\*kwargs: any
+            More filter parameters as specified in
+            `ixmp4.data.db.model.filter.ModelFilter`.
 
         Returns
         -------
@@ -93,17 +131,17 @@ class ModelRepository(
         ...
 
     def tabulate(
-        self,
-        *,
-        name: str | None = None,
-        **kwargs,
+        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
     ) -> pd.DataFrame:
-        """Tabulate models by specified criteria.
+        r"""Tabulate models by specified criteria.
 
         Parameters
         ----------
         name : str
             The name of a model. If supplied only one result will be returned.
+        \*\*kwargs: any
+            More filter parameters as specified in
+            `ixmp4.data.db.model.filter.ModelFilter`.
 
         Returns
         -------
@@ -115,7 +153,9 @@ class ModelRepository(
         """
         ...
 
-    def map(self, *args, **kwargs) -> dict:
+    def map(
+        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
+    ) -> dict[int, str]:
         """Return a mapping of model-id to model-name.
 
         Returns
@@ -123,4 +163,4 @@ class ModelRepository(
         :class:`dict`:
             A dictionary `id` -> `name`
         """
-        return dict([(m.id, m.name) for m in self.list(*args, **kwargs)])
+        return dict([(m.id, m.name) for m in self.list(name=name, **kwargs)])

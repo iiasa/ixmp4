@@ -1,7 +1,9 @@
 import cProfile
 import pstats
-from contextlib import contextmanager
+from collections.abc import Callable, Generator
+from contextlib import _GeneratorContextManager, contextmanager
 from pathlib import Path
+from typing import Any
 
 import pytest
 
@@ -26,7 +28,7 @@ backend_fixtures = {
 }
 
 
-def pytest_addoption(parser):
+def pytest_addoption(parser: pytest.Parser) -> None:
     """Called to set up the pytest command line parser.
     We can add our own options here."""
 
@@ -51,7 +53,7 @@ class Backends:
         self.postgres_dsn = postgres_dsn
 
     @contextmanager
-    def rest_sqlite(self):
+    def rest_sqlite(self) -> Generator[RestTestBackend, Any, None]:
         with self.sqlite() as backend:
             rest = RestTestBackend(backend)
             rest.setup()
@@ -60,7 +62,7 @@ class Backends:
             rest.teardown()
 
     @contextmanager
-    def rest_postgresql(self):
+    def rest_postgresql(self) -> Generator[RestTestBackend, Any, None]:
         with self.postgresql() as backend:
             rest = RestTestBackend(backend)
             rest.setup()
@@ -69,7 +71,7 @@ class Backends:
             rest.teardown()
 
     @contextmanager
-    def postgresql(self):
+    def postgresql(self) -> Generator[PostgresTestBackend, Any, None]:
         pgsql = PostgresTestBackend(
             PlatformInfo(
                 name="postgres-test",
@@ -82,7 +84,7 @@ class Backends:
         pgsql.teardown()
 
     @contextmanager
-    def sqlite(self):
+    def sqlite(self) -> Generator[SqliteTestBackend, Any, None]:
         sqlite = SqliteTestBackend(
             PlatformInfo(name="sqlite-test", dsn="sqlite:///:memory:")
         )
@@ -92,9 +94,20 @@ class Backends:
         sqlite.teardown()
 
 
-def get_backend_context(type, postgres_dsn):
+def get_backend_context(
+    type: str, postgres_dsn: str
+) -> (
+    _GeneratorContextManager[RestTestBackend]
+    | _GeneratorContextManager[PostgresTestBackend]
+    | _GeneratorContextManager[SqliteTestBackend]
+):
     backends = Backends(postgres_dsn)
 
+    bctx: (
+        _GeneratorContextManager[RestTestBackend]
+        | _GeneratorContextManager[PostgresTestBackend]
+        | _GeneratorContextManager[SqliteTestBackend]
+    )
     if type == "rest-sqlite":
         bctx = backends.rest_sqlite()
     elif type == "rest-postgres":
@@ -106,7 +119,7 @@ def get_backend_context(type, postgres_dsn):
     return bctx
 
 
-def platform_fixture(request):
+def platform_fixture(request: pytest.FixtureRequest) -> Generator[Platform, Any, None]:
     type = request.param
     postgres_dsn = request.config.option.postgres_dsn
     bctx = get_backend_context(type, postgres_dsn)
@@ -125,8 +138,12 @@ big = BigIamcDataset()
 medium = MediumIamcDataset()
 
 
-def td_platform_fixture(td):
-    def platform_with_td(request):
+def td_platform_fixture(
+    td: BigIamcDataset | MediumIamcDataset,
+) -> Callable[[pytest.FixtureRequest], Generator[Platform, Any, None]]:
+    def platform_with_td(
+        request: pytest.FixtureRequest,
+    ) -> Generator[Platform, Any, None]:
         type = request.param
         postgres_dsn = request.config.option.postgres_dsn
         bctx = get_backend_context(type, postgres_dsn)
@@ -153,7 +170,7 @@ rest_platform_med = pytest.fixture(
 )
 
 
-def pytest_generate_tests(metafunc):
+def pytest_generate_tests(metafunc: pytest.Metafunc) -> Any:
     # This is called for every test. Only get/set command line arguments
     # if the argument is specified in the list of test "fixturenames".
 
@@ -173,7 +190,7 @@ def pytest_generate_tests(metafunc):
 
 
 @pytest.fixture(scope="function")
-def profiled(request):
+def profiled(request: pytest.FixtureRequest) -> Generator[Callable, Any, None]:
     """Use this fixture for profiling tests:
     ```
     def test(profiled):
@@ -189,7 +206,7 @@ def profiled(request):
     pr = cProfile.Profile()
 
     @contextmanager
-    def profiled():
+    def profiled() -> Generator[None, Any, None]:
         pr.enable()
         yield
         pr.disable()

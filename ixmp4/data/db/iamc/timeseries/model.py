@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from ixmp4 import db
 from ixmp4.data import types

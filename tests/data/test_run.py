@@ -8,14 +8,14 @@ from ..utils import assert_unordered_equality
 
 
 class TestDataRun:
-    def test_create_run(self, platform: ixmp4.Platform):
+    def test_create_run(self, platform: ixmp4.Platform) -> None:
         run1 = platform.backend.runs.create("Model", "Scenario")
         assert run1.model.name == "Model"
         assert run1.scenario.name == "Scenario"
         assert run1.version == 1
         assert not run1.is_default
 
-    def test_create_run_increment_version(self, platform: ixmp4.Platform):
+    def test_create_run_increment_version(self, platform: ixmp4.Platform) -> None:
         platform.backend.runs.create("Model", "Scenario")
         run2 = platform.backend.runs.create("Model", "Scenario")
         assert run2.model.name == "Model"
@@ -23,7 +23,7 @@ class TestDataRun:
         assert run2.version == 2
         assert not run2.is_default
 
-    def test_get_run_versions(self, platform: ixmp4.Platform):
+    def test_get_run_versions(self, platform: ixmp4.Platform) -> None:
         run1a = platform.backend.runs.create("Model", "Scenario")
         run2a = platform.backend.runs.create("Model", "Scenario")
         platform.backend.runs.set_as_default_version(run2a.id)
@@ -40,11 +40,11 @@ class TestDataRun:
         run3b = platform.backend.runs.get("Model", "Scenario", 3)
         assert run3a.id == run3b.id
 
-    def test_get_run_no_default_version(self, platform: ixmp4.Platform):
+    def test_get_run_no_default_version(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(NoDefaultRunVersion):
             platform.backend.runs.get_default_version("Model", "Scenario")
 
-    def test_get_or_create_run(self, platform: ixmp4.Platform):
+    def test_get_or_create_run(self, platform: ixmp4.Platform) -> None:
         run1 = platform.backend.runs.create("Model", "Scenario")
         run2 = platform.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id != run2.id
@@ -55,7 +55,7 @@ class TestDataRun:
         run3 = platform.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id == run3.id
 
-    def test_list_run(self, platform: ixmp4.Platform):
+    def test_list_run(self, platform: ixmp4.Platform) -> None:
         run1 = platform.backend.runs.create("Model", "Scenario")
         platform.backend.runs.create("Model", "Scenario")
 
@@ -72,7 +72,7 @@ class TestDataRun:
 
         assert run1.id == run.id
 
-    def test_tabulate_run(self, platform: ixmp4.Platform):
+    def test_tabulate_run(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         platform.backend.runs.set_as_default_version(run.id)
         platform.backend.runs.create("Model", "Scenario")
@@ -105,7 +105,7 @@ class TestDataRun:
         runs = platform.backend.runs.tabulate(default_only=False, iamc=True)
         assert runs.empty
 
-    def drop_audit_info(self, df):
+    def drop_audit_info(self, df: pd.DataFrame) -> None:
         df.drop(
             inplace=True,
             columns=["created_by", "created_at", "updated_by", "updated_at"],

@@ -1,35 +1,49 @@
 import operator
-from types import UnionType
-from typing import Any, ClassVar, Optional, Union, get_args, get_origin
+from collections.abc import Callable, Iterable
+from types import GenericAlias, UnionType
+from typing import (
+    Any,
+    ClassVar,
+    Optional,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+)
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from pydantic.fields import FieldInfo
+
+# TODO Import this from typing when dropping support for 3.10
+from typing_extensions import Self
 
 from ixmp4 import db
 from ixmp4.core.exceptions import BadFilterArguments, ProgrammingError
 
 
-def in_(c, v):
+def in_(
+    c: db.typing_column, v: Iterable | db.BindParameter
+) -> db.BinaryExpression[bool]:
     return c.in_(v)
 
 
-def like(c, v):
+def like(c: db.typing_column, v: str) -> db.BinaryExpression[bool]:
     return c.like(escape_wildcard(v), escape="\\")
 
 
-def ilike(c, v):
+def ilike(c: db.typing_column, v: str) -> db.BinaryExpression[bool]:
     return c.ilike(escape_wildcard(v), escape="\\")
 
 
-def notlike(c, v):
+def notlike(c: db.typing_column, v: str) -> db.BinaryExpression[bool]:
     return c.notlike(escape_wildcard(v), escape="\\")
 
 
-def notilike(c, v):
+def notilike(c: db.typing_column, v: str) -> db.BinaryExpression[bool]:
     return c.notilike(escape_wildcard(v), escape="\\")
 
 
-def escape_wildcard(v):
+def escape_wildcard(v: str) -> str:
     return v.replace("%", "\\%").replace("*", "%")
 
 
@@ -104,22 +118,24 @@ PydanticMeta: type = type(BaseModel)
 
 
 class FilterMeta(PydanticMeta):
-    def __new__(cls, name: str, bases: tuple, namespace: dict, **kwargs):
+    def __new__(
+        cls, name: str, bases: tuple, namespace: dict, **kwargs: Any
+    ) -> type["BaseFilter"]:
         annots = namespace.get("__annotations__", {}).copy()
         for name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
             cls.process_field(namespace, name, annot)
 
-        return super().__new__(cls, name, bases, namespace, **kwargs)
+        return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
 
     @classmethod
     def build_lookups(cls, field_type: type) -> dict:
         global lookup_map
         if field_type not in lookup_map.keys():
             if get_origin(field_type) in [Union, UnionType]:
-                unified_types = get_args(field_type)
-                ut_lookup_map = {
+                unified_types: tuple[type, ...] = get_args(field_type)
+                ut_lookup_map: dict[type, dict] = {
                     type_: cls.build_lookups(type_) for type_ in unified_types
                 }
                 all_lookup_names = set()
@@ -128,23 +144,34 @@ class FilterMeta(PydanticMeta):
 
                 lookups = {}
                 for lookup_name in all_lookup_names:
-                    tuples = [
+                    tuples: list[tuple[type | GenericAlias, Callable]] = [
                         ut_lookup_map[type_][lookup_name]
                         for type_ in unified_types
                         if ut_lookup_map[type_].get(lookup_name, None) is not None
                     ]
                     types, _ = zip(*tuples)
 
-                    def lookup_func(c, v, tuples=tuples):
+                    def lookup_func(
+                        c: db.typing_column,
+                        v: Integer
+                        | Float
+                        | Id
+                        | String
+                        | Boolean
+                        | list[Integer | Float | Id | String | Boolean],
+                        tuples: list[tuple[type | GenericAlias, Callable]] = tuples,
+                    ) -> Any:
                         for t, lf in tuples:
-                            if isinstance(v, t):
+                            # NOTE can't check isinstance(..., list[int]) directly, but
+                            # all these cases call the same lf() anyway; skipping
+                            if isinstance(t, GenericAlias):
+                                return lf(c, v)
+                            elif isinstance(v, t):
                                 return lf(c, v)
                         raise ProgrammingError
 
                     lookups[lookup_name] = (
-                        # dynamic union types can't
-                        # be done according to type checkers
-                        Union[tuple(types)],  # type:ignore
+                        Union[tuple(types)],
                         lookup_func,
                     )
                 return lookups
@@ -154,7 +181,7 @@ class FilterMeta(PydanticMeta):
             return lookup_map[field_type]
 
     @classmethod
-    def process_field(cls, namespace: dict, field_name: str, field_type: type):
+    def process_field(cls, namespace: dict, field_name: str, field_type: type) -> None:
         lookups = cls.build_lookups(field_type)
         field: FieldInfo | None = namespace.get(field_name, Field(default=None))
 
@@ -195,18 +222,26 @@ class FilterMeta(PydanticMeta):
         lookups: dict,
         namespace: dict,
         base_field_alias: str | None = None,
-    ):
+    ) -> None:
         global argument_seperator
         for lookup_alias, (type_, func) in lookups.items():
-            if lookup_alias == "__root__":
-                filter_name = name
-            else:
-                filter_name = name + argument_seperator + lookup_alias
+            filter_name = (
+                name
+                if lookup_alias == "__root__"
+                else name + argument_seperator + lookup_alias
+            )
 
             namespace["__annotations__"][filter_name] = Optional[type_]
             func_name = get_filter_func_name(filter_name)
 
-            def filter_func(self, exc, f, v, func=func, session=None):
+            def filter_func(
+                self: Self,
+                exc: db.sql.Select,
+                f: str,
+                v: Integer | Float | Id | String | Boolean,
+                func: Callable = func,
+                session: db.Session | None = None,
+            ) -> db.sql.Select:
                 return exc.where(func(f, v))
 
             namespace.setdefault(func_name, filter_func)
@@ -238,7 +273,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
 
     @model_validator(mode="before")
     @classmethod
-    def expand_simple_filters(cls, v):
+    def expand_simple_filters(cls, v: str | list[str] | dict) -> dict:
         return expand_simple_filter(v)
 
     def __init__(self, **data: Any) -> None:
@@ -248,10 +283,14 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         except ValidationError as e:
             raise BadFilterArguments(model=e.title, errors=e.errors())
 
-    def join(self, exc: db.sql.Select, session=None) -> db.sql.Select:
+    def join(
+        self, exc: db.sql.Select, session: db.Session | None = None
+    ) -> db.sql.Select:
         return exc
 
-    def apply(self, exc: db.sql.Select, model, session) -> db.sql.Select:
+    def apply(
+        self, exc: db.sql.Select, model: object, session: db.Session
+    ) -> db.sql.Select:
         dict_model = dict(self)
         for name, field_info in self.model_fields.items():
             value = dict_model.get(name, field_info.get_default())
@@ -279,15 +318,14 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
                     sqla_column = jschema_col
                 else:
                     sqla_column = None
-                if sqla_column is None:
-                    column = None
-                else:
-                    column = getattr(model, sqla_column, None)
+                column = (
+                    None if sqla_column is None else getattr(model, sqla_column, None)
+                )
                 exc = filter_func(exc, column, value, session=session)
         return exc.distinct()
 
 
-def expand_simple_filter(value):
+def expand_simple_filter(value: str | list[str] | dict) -> dict:
     if isinstance(value, str):
         if "*" in value:
             return dict(name__like=value)

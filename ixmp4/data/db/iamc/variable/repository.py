@@ -1,12 +1,36 @@
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.data.abstract import iamc as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .docs import VariableDocsRepository
 from .model import Variable
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    name: str
+    name__in: Iterable[str]
+    name__like: str
+    name__ilike: str
+    name__notlike: str
+    name__notilike: str
+    _filter: BaseFilter
+
+
+class CreateKwargs(TypedDict, total=False):
+    name: str
 
 
 class VariableRepository(
@@ -17,9 +41,9 @@ class VariableRepository(
 ):
     model_class = Variable
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = VariableDocsRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = VariableDocsRepository(*args)
 
         from .filter import VariableFilter
 
@@ -39,13 +63,13 @@ class VariableRepository(
             raise Variable.NotFound
 
     @guard("edit")
-    def create(self, *args, **kwargs) -> Variable:
+    def create(self, *args: str, **kwargs: Unpack[CreateKwargs]) -> Variable:
         return super().create(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[Variable]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Variable]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)

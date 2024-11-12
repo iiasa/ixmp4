@@ -3,6 +3,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.iamc.variable.filter import VariableFilter
+from ixmp4.data.db.iamc.variable.model import Variable
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -25,7 +26,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput:
     return EnumerationOutput(
         results=backend.iamc.variables.paginate(
             _filter=filter,
@@ -43,5 +44,5 @@ def query(
 def create(
     variable: VariableInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Variable:
     return backend.iamc.variables.create(**variable.model_dump())

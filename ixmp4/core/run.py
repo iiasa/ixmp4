@@ -4,11 +4,23 @@ from typing import ClassVar
 import numpy as np
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
+
+from ixmp4.data.abstract import Model as ModelModel
 from ixmp4.data.abstract import Run as RunModel
+from ixmp4.data.abstract import Scenario as ScenarioModel
+from ixmp4.data.abstract.run import EnumerateKwargs
+from ixmp4.data.backend import Backend
 
 from .base import BaseFacade, BaseModelFacade
 from .iamc import RunIamcData
 from .optimization import OptimizationData
+
+
+class RunKwargs(TypedDict):
+    _backend: Backend
+    _model: RunModel
 
 
 class Run(BaseModelFacade):
@@ -18,7 +30,7 @@ class Run(BaseModelFacade):
     NotFound: ClassVar = RunModel.NotFound
     NotUnique: ClassVar = RunModel.NotUnique
 
-    def __init__(self, **kwargs) -> None:
+    def __init__(self, **kwargs: Unpack[RunKwargs]) -> None:
         super().__init__(**kwargs)
 
         self.version = self._model.version
@@ -28,35 +40,35 @@ class Run(BaseModelFacade):
         self.optimization = OptimizationData(_backend=self.backend, run=self._model)
 
     @property
-    def model(self):
+    def model(self) -> ModelModel:
         """Associated model."""
         return self._model.model
 
     @property
-    def scenario(self):
+    def scenario(self) -> ScenarioModel:
         """Associated scenario."""
         return self._model.scenario
 
     @property
-    def id(self):
+    def id(self) -> int:
         """Unique id."""
         return self._model.id
 
     @property
-    def meta(self):
+    def meta(self) -> "RunMetaFacade":
         "Meta indicator data (`dict`-like)."
         return self._meta
 
     @meta.setter
-    def meta(self, meta):
+    def meta(self, meta: dict) -> None:
         self._meta._set(meta)
 
-    def set_as_default(self):
+    def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
         combination."""
         self.backend.runs.set_as_default_version(self._model.id)
 
-    def unset_as_default(self):
+    def unset_as_default(self) -> None:
         """Unsets this run as the default version."""
         self.backend.runs.unset_as_default_version(self._model.id)
 
@@ -83,16 +95,29 @@ class RunRepository(BaseFacade):
             _model = self.backend.runs.get(model, scenario, version)
         return Run(_backend=self.backend, _model=_model)
 
-    def list(self, default_only: bool = True, **kwargs) -> list[Run]:
+    def list(
+        self,
+        version: int | None = None,
+        default_only: bool = True,
+        **kwargs: Unpack[EnumerateKwargs],
+    ) -> list[Run]:
         return [
             Run(_backend=self.backend, _model=r)
-            for r in self.backend.runs.list(default_only=default_only, **kwargs)
+            for r in self.backend.runs.list(
+                version=version, default_only=default_only, **kwargs
+            )
         ]
 
     def tabulate(
-        self, default_only: bool = True, audit_info: bool = False, **kwargs
+        self,
+        version: int | None = None,
+        default_only: bool = True,
+        audit_info: bool = False,
+        **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
-        runs = self.backend.runs.tabulate(default_only=default_only, **kwargs)
+        runs = self.backend.runs.tabulate(
+            version=version, default_only=default_only, **kwargs
+        )
         runs["model"] = runs["model__id"].map(self.backend.models.map())
         runs["scenario"] = runs["scenario__id"].map(self.backend.scenarios.map())
         columns = ["model", "scenario", "version", "is_default"]
@@ -104,8 +129,8 @@ class RunRepository(BaseFacade):
 class RunMetaFacade(BaseFacade, UserDict):
     run: RunModel
 
-    def __init__(self, run: RunModel, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, run: RunModel, **kwargs: Backend) -> None:
+        super().__init__(**kwargs)
         self.run = run
         self.df, self.data = self._get()
 
@@ -115,7 +140,7 @@ class RunMetaFacade(BaseFacade, UserDict):
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
 
-    def _set(self, meta: dict):
+    def _set(self, meta: dict) -> None:
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
@@ -127,28 +152,33 @@ class RunMetaFacade(BaseFacade, UserDict):
         self.backend.meta.bulk_upsert(df)
         self.df, self.data = self._get()
 
-    def __setitem__(self, key, value: int | float | str | bool):
+    def __setitem__(
+        self, key: str, value: int | float | str | bool | np.generic | None
+    ) -> None:
         try:
             del self[key]
         except KeyError:
             pass
 
-        value = numpy_to_pytype(value)
-        if value is not None:
-            self.backend.meta.create(self.run.id, key, value)
+        py_value = numpy_to_pytype(value)
+        if py_value is not None:
+            self.backend.meta.create(self.run.id, key, py_value)
         self.df, self.data = self._get()
 
-    def __delitem__(self, key):
+    def __delitem__(self, key: str) -> None:
         id = dict(zip(self.df["key"], self.df["id"]))[key]
         self.backend.meta.delete(id)
         self.df, self.data = self._get()
 
 
-def numpy_to_pytype(value):
+def numpy_to_pytype(
+    value: int | float | str | bool | np.generic | None,
+) -> int | float | str | bool | None:
     """Cast numpy-types to basic Python types"""
     if value is np.nan:  # np.nan is cast to 'float', not None
         return None
     elif isinstance(value, np.generic):
-        return value.item()
+        item: int | float | str | bool = value.item()
+        return item
     else:
         return value

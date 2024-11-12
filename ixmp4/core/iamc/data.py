@@ -2,10 +2,15 @@ from typing import Optional
 
 import pandas as pd
 import pandera as pa
+from pandera.engines import pandas_engine
 from pandera.typing import Series
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
 from ixmp4.data.abstract import Run
+from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
 from ixmp4.data.backend import Backend
 
 from ..base import BaseFacade
@@ -16,7 +21,9 @@ from .variable import VariableRepository
 class RemoveDataPointFrameSchema(pa.DataFrameModel):
     type: Optional[Series[pa.String]] = pa.Field(isin=[t for t in DataPointModel.Type])
     step_year: Optional[Series[pa.Int]] = pa.Field(coerce=True, nullable=True)
-    step_datetime: Optional[Series[pa.DateTime]] = pa.Field(coerce=True, nullable=True)
+    step_datetime: Optional[Series[pandas_engine.DateTime]] = pa.Field(
+        coerce=True, nullable=True
+    )
     step_category: Optional[Series[pa.String]] = pa.Field(nullable=True)
 
     region: Optional[Series[pa.String]] = pa.Field(coerce=True)
@@ -43,7 +50,7 @@ def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
         time_col = "year"
     else:
 
-        def map_step_column(df: pd.Series):
+        def map_step_column(df: pd.Series) -> pd.Series:
             df["time"] = df[MAP_STEP_COLUMN[df.type]]
             return df
 
@@ -78,8 +85,8 @@ class RunIamcData(BaseFacade):
 
     run: Run
 
-    def __init__(self, *args, run: Run, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, run: Run, **kwargs: Backend | None) -> None:
+        super().__init__(**kwargs)
         self.run = run
 
     def _get_or_create_ts(self, df: pd.DataFrame) -> pd.DataFrame:
@@ -108,8 +115,8 @@ class RunIamcData(BaseFacade):
         self,
         df: pd.DataFrame,
         type: Optional[DataPointModel.Type] = None,
-    ):
-        df = AddDataPointFrameSchema.validate(df)  # type:ignore
+    ) -> None:
+        df = AddDataPointFrameSchema.validate(df)  # type: ignore[assignment]
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
@@ -119,8 +126,8 @@ class RunIamcData(BaseFacade):
         self,
         df: pd.DataFrame,
         type: Optional[DataPointModel.Type] = None,
-    ):
-        df = RemoveDataPointFrameSchema.validate(df)  # type:ignore
+    ) -> None:
+        df = RemoveDataPointFrameSchema.validate(df)  # type: ignore[assignment]
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
@@ -154,7 +161,13 @@ class PlatformIamcData(BaseFacade):
         self.variables = VariableRepository(_backend=_backend)
         super().__init__(_backend=_backend)
 
-    def tabulate(self, *, join_runs: bool = True, raw: bool = False, **kwargs):
+    def tabulate(
+        self,
+        *,
+        join_runs: bool = True,
+        raw: bool = False,
+        **kwargs: Unpack[EnumerateKwargs],
+    ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(
             join_parameters=True, join_runs=join_runs, **kwargs
         ).dropna(how="all", axis="columns")

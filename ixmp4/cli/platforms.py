@@ -1,7 +1,8 @@
 import re
+from collections.abc import Generator
 from itertools import cycle
 from pathlib import Path
-from typing import Generator, Optional
+from typing import Optional
 
 import typer
 from rich.progress import Progress, track
@@ -21,7 +22,7 @@ from . import utils
 app = typer.Typer()
 
 
-def validate_name(name: str):
+def validate_name(name: str) -> str:
     match = re.match(r"^[\w\-_]*$", name)
     if match is None:
         raise typer.BadParameter("Platform name must be slug-like.")
@@ -29,7 +30,7 @@ def validate_name(name: str):
         return name
 
 
-def validate_dsn(dsn: str | None):
+def validate_dsn(dsn: str | None) -> str | None:
     if dsn is None:
         return None
     match = re.match(r"^(sqlite|postgresql\+psycopg|https|http)(\:\/\/)", dsn)
@@ -41,7 +42,7 @@ def validate_dsn(dsn: str | None):
         return dsn
 
 
-def prompt_sqlite_dsn(name: str):
+def prompt_sqlite_dsn(name: str) -> str:
     path = sqlite.get_database_path(name)
     dsn = sqlite.get_dsn(path)
     if path.exists():
@@ -75,7 +76,7 @@ def add(
         help="Data source name. Can be a http(s) URL or a database connection string.",
         callback=validate_dsn,
     ),
-):
+) -> None:
     try:
         settings.toml.get_platform(name)
         raise typer.BadParameter(
@@ -95,11 +96,11 @@ def add(
     utils.good("\nPlatform added successfully.")
 
 
-def prompt_sqlite_removal(dsn: str):
+def prompt_sqlite_removal(dsn: str) -> None:
     path = Path(dsn.replace("sqlite://", ""))
     path_str = typer.style(path, fg=typer.colors.CYAN)
     if typer.confirm(
-        "Do you want to remove the associated database file at " f"{path_str} as well?"  # type: ignore
+        "Do you want to remove the associated database file at " f"{path_str} as well?"
     ):
         path.unlink()
         utils.echo("\nDatabase file deleted.")
@@ -112,7 +113,7 @@ def remove(
     name: str = typer.Argument(
         ..., help="The string identifier of the platform to remove."
     ),
-):
+) -> None:
     try:
         platform = settings.toml.get_platform(name)
     except PlatformNotFound:
@@ -127,7 +128,7 @@ def remove(
         settings.toml.remove_platform(name)
 
 
-def tabulate_toml_platforms(platforms: list[TomlPlatformInfo]):
+def tabulate_toml_platforms(platforms: list[TomlPlatformInfo]) -> None:
     toml_path_str = typer.style(settings.toml.path, fg=typer.colors.CYAN)
     utils.echo(f"\nPlatforms registered in '{toml_path_str}'")
     if len(platforms):
@@ -140,7 +141,7 @@ def tabulate_toml_platforms(platforms: list[TomlPlatformInfo]):
 
 def tabulate_manager_platforms(
     platforms: list[ManagerPlatformInfo],
-):
+) -> None:
     manager_url_str = typer.style(settings.manager.url, fg=typer.colors.CYAN)
     utils.echo(f"\nPlatforms accessible via '{manager_url_str}'")
     utils.echo("\nName".ljust(21) + "Access".ljust(10) + "Notice")
@@ -154,7 +155,7 @@ def tabulate_manager_platforms(
 
 
 @app.command("list", help="Lists all registered platforms.")
-def list_():
+def list_() -> None:
     tabulate_toml_platforms(settings.toml.list_platforms())
     if settings.manager is not None:
         tabulate_manager_platforms(settings.manager.list_platforms())
@@ -166,7 +167,8 @@ def list_():
         "revision."
     )
 )
-def upgrade():
+def upgrade() -> None:
+    platform_list: list[ManagerPlatformInfo] | list[TomlPlatformInfo]
     if settings.managed:
         utils.echo(
             f"Establishing self-signed admin connection to '{settings.manager_url}'."
@@ -232,7 +234,7 @@ def generate(
     num_datapoints: int = typer.Option(
         30_000, "--datapoints", help="Number of mock datapoints to generate."
     ),
-):
+) -> None:
     try:
         platform = Platform(platform_name)
     except PlatformNotFound:
@@ -270,7 +272,7 @@ def generate(
         utils.good("Done!")
 
 
-def create_cycle(generator: Generator, name: str, total: int):
+def create_cycle(generator: Generator, name: str, total: int) -> cycle:
     return cycle(
         [
             m
@@ -283,7 +285,7 @@ def create_cycle(generator: Generator, name: str, total: int):
     )
 
 
-def generate_data(generator: MockDataGenerator):
+def generate_data(generator: MockDataGenerator) -> None:
     model_names = create_cycle(
         generator.yield_model_names(), "Model", generator.num_models
     )
@@ -301,7 +303,7 @@ def generate_data(generator: MockDataGenerator):
             progress.advance(task, len(df))
 
 
-def _shorten(value: str, length: int):
+def _shorten(value: str, length: int) -> str:
     """Shorten and adjust a string to a given length adding `...` if necessary"""
     if len(value) > length - 4:
         value = value[: length - 4] + "..."

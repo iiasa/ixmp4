@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.optimization.parameter.filter import OptimizationParameterFilter
+from ixmp4.data.db.optimization.parameter.model import Parameter
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -17,8 +18,8 @@ router: APIRouter = APIRouter(
 
 
 class ParameterCreateInput(BaseModel):
-    run_id: int
     name: str
+    run_id: int
     constrained_to_indexsets: list[str]
     column_names: list[str] | None
 
@@ -32,7 +33,7 @@ class DataInput(BaseModel):
 def get_by_id(
     id: int,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Parameter:
     return backend.optimization.parameters.get_by_id(id)
 
 
@@ -45,7 +46,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput:
     return EnumerationOutput(
         results=backend.optimization.parameters.paginate(
             _filter=filter,
@@ -64,8 +65,8 @@ def add_data(
     parameter_id: int,
     data: DataInput,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.optimization.parameters.add_data(
+) -> None:
+    backend.optimization.parameters.add_data(
         parameter_id=parameter_id, **data.model_dump()
     )
 
@@ -75,5 +76,5 @@ def add_data(
 def create(
     parameter: ParameterCreateInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Parameter:
     return backend.optimization.parameters.create(**parameter.model_dump())

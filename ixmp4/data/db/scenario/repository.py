@@ -1,13 +1,37 @@
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 from ixmp4 import db
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model.model import Model
+from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .docs import ScenarioDocsRepository
 from .model import Scenario
+
+
+class EnumerateKwargs(TypedDict, total=False):
+    name: str
+    name__in: Iterable[str]
+    name__like: str
+    name__ilike: str
+    name__notlike: str
+    name__notilike: str
+    _filter: BaseFilter
+
+
+class CreateKwargs(TypedDict, total=False):
+    name: str
 
 
 class ScenarioRepository(
@@ -18,9 +42,9 @@ class ScenarioRepository(
 ):
     model_class = Scenario
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = ScenarioDocsRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = ScenarioDocsRepository(*args)
 
         from .filter import ScenarioFilter
 
@@ -50,13 +74,13 @@ class ScenarioRepository(
             raise Scenario.NotFound
 
     @guard("edit")
-    def create(self, *args, **kwargs) -> Scenario:
+    def create(self, *args: str, **kwargs: Unpack[CreateKwargs]) -> Scenario:
         return super().create(*args, **kwargs)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[Scenario]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Scenario]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)

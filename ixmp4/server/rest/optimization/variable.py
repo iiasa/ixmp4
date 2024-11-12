@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.optimization.variable.filter import OptimizationVariableFilter
+from ixmp4.data.db.optimization.variable.model import OptimizationVariable
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -17,8 +18,8 @@ router: APIRouter = APIRouter(
 
 
 class VariableCreateInput(BaseModel):
-    run_id: int
     name: str
+    run_id: int
     constrained_to_indexsets: str | list[str] | None
     column_names: list[str] | None
 
@@ -32,7 +33,7 @@ class DataInput(BaseModel):
 def get_by_id(
     id: int,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> OptimizationVariable:
     return backend.optimization.variables.get_by_id(id)
 
 
@@ -45,7 +46,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput:
     return EnumerationOutput(
         results=backend.optimization.variables.paginate(
             _filter=filter,
@@ -64,8 +65,8 @@ def add_data(
     variable_id: int,
     data: DataInput,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.optimization.variables.add_data(
+) -> None:
+    backend.optimization.variables.add_data(
         variable_id=variable_id, **data.model_dump()
     )
 
@@ -75,7 +76,7 @@ def add_data(
 def remove_data(
     variable_id: int,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> None:
     backend.optimization.variables.remove_data(variable_id=variable_id)
 
 
@@ -84,5 +85,5 @@ def remove_data(
 def create(
     variable: VariableCreateInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> OptimizationVariable:
     return backend.optimization.variables.create(**variable.model_dump())
