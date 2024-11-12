@@ -1,6 +1,6 @@
 import random
 import sys
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from datetime import datetime, timedelta
 from itertools import cycle
 from typing import Any
@@ -42,7 +42,7 @@ class MockDataGenerator(object):
         for i in range(self.num_models):
             yield f"Model {i}"
 
-    def yield_runs(self, model_names: cycle[str]) -> Generator[Run, Any, None]:
+    def yield_runs(self, model_names: Iterator[str]) -> Generator[Run, Any, None]:
         scen_per_model = self.num_runs // self.num_models
         if scen_per_model == 0:
             scen_per_model = 1
@@ -81,10 +81,10 @@ class MockDataGenerator(object):
 
     def yield_datapoints(
         self,
-        runs: cycle[Run],
-        variable_names: cycle[str],
-        units: cycle[Unit],
-        regions: cycle[Region],
+        runs: Iterator[Run],
+        variable_names: Iterator[str],
+        units: Iterator[Unit],
+        regions: Iterator[Region],
     ) -> Generator[pd.DataFrame, Any, None]:
         dp_count = 0
         for run in runs:

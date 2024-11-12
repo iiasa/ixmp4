@@ -1,5 +1,5 @@
 import re
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from itertools import cycle
 from pathlib import Path
 from typing import Optional
@@ -272,7 +272,7 @@ def generate(
         utils.good("Done!")
 
 
-def create_cycle(generator: Generator, name: str, total: int) -> cycle:
+def create_cycle(generator: Generator, name: str, total: int) -> Iterator:
     return cycle(
         [
             m
