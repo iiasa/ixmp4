@@ -83,7 +83,6 @@ requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
 exclude = [
-    '^doc\/',
     '^ixmp4\/db\/migrations\/',
 ]
 disable_error_code = ['override']
