@@ -4,6 +4,7 @@ from functools import lru_cache
 from typing import Generator
 
 from sqlalchemy.engine import Engine, create_engine
+from sqlalchemy.orm import configure_mappers
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import NullPool, StaticPool
 
@@ -78,6 +79,8 @@ class SqlAlchemyBackend(Backend):
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
         logger.info(f"Creating database engine for platform '{info.name}'.")
+        configure_mappers()
+
         dsn = self.check_dsn(info.dsn)
         self.make_engine(dsn)
         self.make_repositories()

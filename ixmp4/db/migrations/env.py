@@ -2,6 +2,7 @@ from logging.config import fileConfig
 
 from alembic import context
 from sqlalchemy import create_engine
+from sqlalchemy.orm import configure_mappers
 
 from ixmp4.conf import settings
 from ixmp4.data.db import BaseModel
@@ -16,6 +17,8 @@ dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
 # This line sets up loggers basically.
 assert config.config_file_name is not None
 fileConfig(config.config_file_name)
+
+configure_mappers()
 
 target_metadata = BaseModel.metadata
 
