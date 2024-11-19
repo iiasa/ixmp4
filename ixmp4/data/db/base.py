@@ -25,6 +25,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import Identity, MetaData
+from sqlalchemy_history import make_versioned
 
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
@@ -50,7 +51,12 @@ def visit_identity(element, compiler, **kwargs):
     return text("")
 
 
+make_versioned(user_cls=None)
+
+
 class BaseModel(DeclarativeBase):
+    __versioned__: dict[str, object]
+
     NotFound: ClassVar[type[IxmpError]]
     NotUnique: ClassVar[type[IxmpError]]
     DeletionPrevented: ClassVar[type[IxmpError]]
