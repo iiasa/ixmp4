@@ -8,6 +8,8 @@ from .. import base
 
 
 class Region(base.BaseModel, mixins.HasCreationInfo):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.Region.NotFound
     NotUnique: ClassVar = abstract.Region.NotUnique
     DeletionPrevented: ClassVar = abstract.Region.DeletionPrevented

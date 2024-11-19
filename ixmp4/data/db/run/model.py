@@ -15,6 +15,8 @@ from .. import base, mixins
 
 
 class Run(base.BaseModel, mixins.HasUpdateInfo):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.Run.NotFound
     NotUnique: ClassVar = abstract.Run.NotUnique
     DeletionPrevented: ClassVar = abstract.Run.DeletionPrevented

@@ -8,6 +8,8 @@ from .. import base
 
 
 class Variable(base.BaseModel, mixins.HasCreationInfo):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.Variable.NotFound
     NotUnique: ClassVar = abstract.Variable.NotUnique
     DeletionPrevented: ClassVar = abstract.Variable.DeletionPrevented

@@ -9,6 +9,8 @@ from .. import base
 
 
 class DataPoint(base.BaseModel):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.DataPoint.NotFound
     NotUnique: ClassVar = abstract.DataPoint.NotUnique
     DeletionPrevented: ClassVar = abstract.DataPoint.DeletionPrevented

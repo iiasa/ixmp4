@@ -7,6 +7,8 @@ from .. import base
 
 
 class Model(base.BaseModel, mixins.HasCreationInfo):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.Model.NotFound
     NotUnique: ClassVar = abstract.Model.NotUnique
     DeletionPrevented: ClassVar = abstract.Model.DeletionPrevented

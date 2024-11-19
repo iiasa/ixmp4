@@ -15,6 +15,8 @@ from .variable import Variable
 
 
 class Measurand(base.BaseModel, mixins.HasCreationInfo):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.Measurand.NotFound
     NotUnique: ClassVar = abstract.Measurand.NotUnique
     DeletionPrevented: ClassVar = abstract.Measurand.DeletionPrevented
