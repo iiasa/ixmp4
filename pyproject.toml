@@ -34,6 +34,7 @@ toml = ">=0.10.2"
 psycopg = { extras = ["binary"], version = "^3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
+sqlalchemy-history = "^2.1.4"
 
 [tool.poetry.group.docs]
 optional = true
@@ -94,7 +95,7 @@ implicit_reexport = true
 plugins = ['sqlalchemy.ext.mypy.plugin']
 
 [[tool.mypy.overrides]]
-module = ["pandas", "uvicorn.workers", "sqlalchemy_utils"]
+module = ["pandas", "uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_history"]
 ignore_missing_imports = true
 
 [tool.ruff]
