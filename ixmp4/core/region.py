@@ -49,7 +49,7 @@ class Region(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.regions.docs.delete(self.id)
         else:

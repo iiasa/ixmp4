@@ -18,7 +18,7 @@ class TestBenchmarks:
     ) -> None:
         """Benchmarks a full insert of `test_data_big`."""
 
-        def setup() -> tuple[tuple[ixmp4.Platform], dict]:
+        def setup() -> tuple[tuple[ixmp4.Platform], dict[str, object]]:
             self.big.load_regions(platform)
             self.big.load_units(platform)
             self.big.load_runs(platform)
@@ -35,7 +35,7 @@ class TestBenchmarks:
     ) -> None:
         """Benchmarks a full insert of `test_data_big` on a half-filled database."""
 
-        def setup() -> tuple[tuple[ixmp4.Platform], dict]:
+        def setup() -> tuple[tuple[ixmp4.Platform], dict[str, object]]:
             self.big.load_regions(platform)
             self.big.load_units(platform)
             self.big.load_runs(platform)
@@ -54,7 +54,7 @@ class TestBenchmarks:
         """Benchmarks a full insert of `test_data_big` with changed values on a
         half-filled database."""
 
-        def setup() -> tuple[tuple[ixmp4.Platform, pd.DataFrame], dict]:
+        def setup() -> tuple[tuple[ixmp4.Platform, pd.DataFrame], dict[str, object]]:
             self.big.load_regions(platform)
             self.big.load_units(platform)
             self.big.load_runs(platform)
@@ -77,7 +77,7 @@ class TestBenchmarks:
     ) -> None:
         """Benchmarks a full removal of `test_data_big` from a filled database."""
 
-        def setup() -> tuple[tuple[ixmp4.Platform, pd.DataFrame], dict]:
+        def setup() -> tuple[tuple[ixmp4.Platform, pd.DataFrame], dict[str, object]]:
             self.big.load_regions(platform)
             self.big.load_units(platform)
             self.big.load_runs(platform)
@@ -98,7 +98,7 @@ class TestBenchmarks:
     ) -> None:
         """Benchmarks a full retrieval of `test_data_big` from a filled database."""
 
-        def setup() -> tuple[tuple[ixmp4.Platform], dict]:
+        def setup() -> tuple[tuple[ixmp4.Platform], dict[str, object]]:
             self.big.load_regions(platform)
             self.big.load_units(platform)
             self.big.load_runs(platform)

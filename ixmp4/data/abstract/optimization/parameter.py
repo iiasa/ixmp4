@@ -131,18 +131,13 @@ class ParameterRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> Iterable[Parameter]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Parameter]:
         r"""Lists Parameters by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Parameter. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.parameter.filter.OptimizationParameterFilter`.
 
         Returns
@@ -152,18 +147,13 @@ class ParameterRepository(
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Parameters by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Parameter. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.parameter.filter.OptimizationParameterFilter`.
 
         Returns

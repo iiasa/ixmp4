@@ -1,5 +1,6 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
+from ixmp4.data.db.base import SelectType
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -18,7 +19,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Region
 
-    def join(self, exc: sql.Select, session: Session) -> sql.Select:
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -32,7 +33,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Unit
 
-    def join(self, exc: sql.Select, session: Session) -> sql.Select:
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -49,7 +50,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Variable
 
-    def join(self, exc: sql.Select, session: Session) -> sql.Select:
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -65,7 +66,7 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Model
 
-    def join(self, exc: sql.Select, session: Session) -> sql.Select:
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -81,7 +82,7 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Scenario
 
-    def join(self, exc: sql.Select, session: Session) -> sql.Select:
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -98,7 +99,7 @@ class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Run
 
-    def join(self, exc: sql.Select, session: Session) -> sql.Select:
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, model.time_series__id == TimeSeries.id)
@@ -108,11 +109,11 @@ class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     def filter_default_only(
         self,
-        exc: sql.Select,
-        c: typing_column,
+        exc: sql.Select[tuple[Run]],
+        c: typing_column[Any],  # Any since it is unused
         v: bool | None,
         session: Session | None = None,
-    ) -> sql.Select:
+    ) -> sql.Select[tuple[Run]]:
         return exc.where(Run.is_default) if v else exc
 
 

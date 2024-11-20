@@ -60,7 +60,9 @@ class Run(BaseModelFacade):
         return self._meta
 
     @meta.setter
-    def meta(self, meta: dict) -> None:
+    def meta(
+        self, meta: dict[str, bool | float | int | str | np.generic | None]
+    ) -> None:
         self._meta._set(meta)
 
     def set_as_default(self) -> None:
@@ -95,29 +97,16 @@ class RunRepository(BaseFacade):
             _model = self.backend.runs.get(model, scenario, version)
         return Run(_backend=self.backend, _model=_model)
 
-    def list(
-        self,
-        version: int | None = None,
-        default_only: bool = True,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> list[Run]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
         return [
             Run(_backend=self.backend, _model=r)
-            for r in self.backend.runs.list(
-                version=version, default_only=default_only, **kwargs
-            )
+            for r in self.backend.runs.list(**kwargs)
         ]
 
     def tabulate(
-        self,
-        version: int | None = None,
-        default_only: bool = True,
-        audit_info: bool = False,
-        **kwargs: Unpack[EnumerateKwargs],
+        self, audit_info: bool = False, **kwargs: Unpack[EnumerateKwargs]
     ) -> pd.DataFrame:
-        runs = self.backend.runs.tabulate(
-            version=version, default_only=default_only, **kwargs
-        )
+        runs = self.backend.runs.tabulate(**kwargs)
         runs["model"] = runs["model__id"].map(self.backend.models.map())
         runs["scenario"] = runs["scenario__id"].map(self.backend.scenarios.map())
         columns = ["model", "scenario", "version", "is_default"]
@@ -126,7 +115,7 @@ class RunRepository(BaseFacade):
         return runs[columns]
 
 
-class RunMetaFacade(BaseFacade, UserDict):
+class RunMetaFacade(BaseFacade, UserDict[str, bool | float | int | str | None]):
     run: RunModel
 
     def __init__(self, run: RunModel, **kwargs: Backend) -> None:
@@ -134,13 +123,15 @@ class RunMetaFacade(BaseFacade, UserDict):
         self.run = run
         self.df, self.data = self._get()
 
-    def _get(self) -> tuple[pd.DataFrame, dict]:
+    def _get(self) -> tuple[pd.DataFrame, dict[str, bool | float | int | str | None]]:
         df = self.backend.meta.tabulate(run_id=self.run.id, run={"default_only": False})
         if df.empty:
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
 
-    def _set(self, meta: dict) -> None:
+    def _set(
+        self, meta: dict[str, bool | float | int | str | np.generic | None]
+    ) -> None:
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
@@ -153,7 +144,7 @@ class RunMetaFacade(BaseFacade, UserDict):
         self.df, self.data = self._get()
 
     def __setitem__(
-        self, key: str, value: int | float | str | bool | np.generic | None
+        self, key: str, value: bool | float | int | str | np.generic | None
     ) -> None:
         try:
             del self[key]
@@ -172,13 +163,13 @@ class RunMetaFacade(BaseFacade, UserDict):
 
 
 def numpy_to_pytype(
-    value: int | float | str | bool | np.generic | None,
-) -> int | float | str | bool | None:
+    value: bool | float | int | str | np.generic | None,
+) -> bool | float | int | str | None:
     """Cast numpy-types to basic Python types"""
     if value is np.nan:  # np.nan is cast to 'float', not None
         return None
     elif isinstance(value, np.generic):
-        item: int | float | str | bool = value.item()
+        item: bool | float | int | str = value.item()
         return item
     else:
         return value

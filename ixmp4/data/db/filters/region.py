@@ -12,6 +12,8 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Region
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Region]], session: Session | None = None
+    ) -> sql.Select[tuple[Region]]:
         exc = exc.join(Region, TimeSeries.region)
         return exc

@@ -85,7 +85,8 @@ class TestCoreModel:
 
         assert model.docs is None
 
-        model.docs = "Third description of test Model"
+        # Mypy doesn't recognize del properly, it seems
+        model.docs = "Third description of test Model"  # type: ignore[unreachable]
         platform.models.delete_docs("Model")
 
         assert model.docs is None

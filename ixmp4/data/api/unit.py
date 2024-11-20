@@ -1,5 +1,6 @@
+from collections.abc import Iterable
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.api import RestBackend
@@ -67,14 +68,70 @@ class UnitRepository(
     ) -> list[Unit] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(
-        self, name: str | None = None, **kwargs: Unpack[abstract.unit.EnumerateKwargs]
-    ) -> list[Unit]:
-        json = {"name": name, **kwargs}
+    def list(self, **kwargs: Unpack[abstract.unit.EnumerateKwargs]) -> list[Unit]:
+        json = cast(
+            dict[
+                str,
+                int
+                | str
+                | Iterable[int]
+                | Iterable[str]
+                | dict[
+                    str,
+                    dict[
+                        str,
+                        int
+                        | str
+                        | Iterable[int]
+                        | Iterable[str]
+                        | dict[
+                            str,
+                            bool
+                            | int
+                            | str
+                            | Iterable[int]
+                            | Iterable[str]
+                            | dict[str, int | str | Iterable[int] | Iterable[str]],
+                        ],
+                    ],
+                ]
+                | bool
+                | None,
+            ],
+            kwargs,
+        )
         return super()._list(json=json)
 
-    def tabulate(
-        self, name: str | None = None, **kwargs: Unpack[abstract.unit.EnumerateKwargs]
-    ) -> pd.DataFrame:
-        json = {"name": name, **kwargs}
+    def tabulate(self, **kwargs: Unpack[abstract.unit.EnumerateKwargs]) -> pd.DataFrame:
+        json = cast(
+            dict[
+                str,
+                int
+                | str
+                | Iterable[int]
+                | Iterable[str]
+                | dict[
+                    str,
+                    dict[
+                        str,
+                        int
+                        | str
+                        | Iterable[int]
+                        | Iterable[str]
+                        | dict[
+                            str,
+                            bool
+                            | int
+                            | str
+                            | Iterable[int]
+                            | Iterable[str]
+                            | dict[str, int | str | Iterable[int] | Iterable[str]],
+                        ],
+                    ],
+                ]
+                | bool
+                | None,
+            ],
+            kwargs,
+        )
         return super()._tabulate(json=json)

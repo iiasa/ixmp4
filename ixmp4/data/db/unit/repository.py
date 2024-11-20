@@ -66,10 +66,9 @@ class UnitRepository(
 
     @guard("view")
     def get(self, name: str) -> Unit:
-        exc: db.sql.Select = db.select(Unit).where(Unit.name == name)
+        exc = db.select(Unit).where(Unit.name == name)
         try:
-            unit: Unit = self.session.execute(exc).scalar_one()
-            return unit
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Unit.NotFound
 

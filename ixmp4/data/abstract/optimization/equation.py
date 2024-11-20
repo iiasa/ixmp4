@@ -131,18 +131,13 @@ class EquationRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> Iterable[Equation]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Equation]:
         r"""Lists Equations by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an Equation. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter Equations as specified in
+            Any filter Equations as specified in
             `ixmp4.data.db.optimization.equation.filter.OptimizationEquationFilter`.
 
         Returns
@@ -152,18 +147,13 @@ class EquationRepository(
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Equations by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an Equation. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter variables as specified in
+            Any filter variables as specified in
             `ixmp4.data.db.optimization.equation.filter.OptimizationEquationFilter`.
 
         Returns

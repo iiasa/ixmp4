@@ -12,6 +12,10 @@ class OptimizationVariableFilter(filters.BaseFilter, metaclass=filters.FilterMet
 
     sqla_model: ClassVar[type] = OptimizationVariable
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self,
+        exc: sql.Select[tuple[OptimizationVariable]],
+        session: Session | None = None,
+    ) -> sql.Select[tuple[OptimizationVariable]]:
         exc = exc.join(Run, onclause=OptimizationVariable.run__id == Run.id)
         return exc

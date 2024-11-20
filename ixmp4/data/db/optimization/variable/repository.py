@@ -78,11 +78,7 @@ class VariableRepository(
             **kwargs,
         )
 
-    def add(
-        self,
-        run_id: int,
-        name: str,
-    ) -> Variable:
+    def add(self, run_id: int, name: str) -> Variable:
         variable = Variable(name=name, run__id=run_id)
         variable.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(variable)
@@ -91,6 +87,7 @@ class VariableRepository(
 
     @guard("view")
     def get(self, run_id: int, name: str) -> Variable:
+        # TODO by avoiding super().select, don't we also miss out on filters and auth?
         exc = db.select(Variable).where(
             (Variable.name == name) & (Variable.run__id == run_id)
         )
@@ -113,12 +110,9 @@ class VariableRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: str | list[str] | None = None,
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Variable:
-        # Convert to list to avoid enumerate() splitting strings to letters
-        if isinstance(constrained_to_indexsets, str):
-            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names:
             # TODO If this is removed, need to check above that constrained_to_indexsets
             #  is not None

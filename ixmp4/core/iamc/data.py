@@ -1,4 +1,5 @@
-from typing import Optional
+from collections.abc import Iterable
+from typing import Optional, TypeVar
 
 import pandas as pd
 import pandera as pa
@@ -49,9 +50,10 @@ def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
         df.rename(columns={"step_year": "year"}, inplace=True)
         time_col = "year"
     else:
+        T = TypeVar("T", bool, float, int, str)
 
-        def map_step_column(df: pd.Series) -> pd.Series:
-            df["time"] = df[MAP_STEP_COLUMN[df.type]]
+        def map_step_column(df: pd.Series[T]) -> pd.Series[T]:
+            df["time"] = df[MAP_STEP_COLUMN[str(df.type)]]
             return df
 
         df = df.apply(map_step_column, axis=1)
@@ -137,9 +139,9 @@ class RunIamcData(BaseFacade):
     def tabulate(
         self,
         *,
-        variable: dict | None = None,
-        region: dict | None = None,
-        unit: dict | None = None,
+        variable: dict[str, str | Iterable[str]] | None = None,
+        region: dict[str, str | Iterable[str]] | None = None,
+        unit: dict[str, str | Iterable[str]] | None = None,
         raw: bool = False,
     ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(

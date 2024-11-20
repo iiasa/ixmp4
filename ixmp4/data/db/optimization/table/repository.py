@@ -113,9 +113,6 @@ class TableRepository(
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Table:
-        # Convert to list to avoid enumerate() splitting strings to letters
-        if isinstance(constrained_to_indexsets, str):
-            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
             raise self.UsageError(
                 f"While processing Table {name}: \n"

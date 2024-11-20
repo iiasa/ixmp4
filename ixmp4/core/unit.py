@@ -40,7 +40,7 @@ class Unit(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.units.docs.delete(self.id)
         else:
@@ -97,9 +97,8 @@ class UnitRepository(BaseFacade):
         return self.backend.units.tabulate(name=name)
 
     def _get_unit_id(self, unit: str) -> int | None:
-        if unit is None:
-            return None
-        elif isinstance(unit, str):
+        # TODO this check seems kind of redundant...
+        if isinstance(unit, str):
             obj = self.backend.units.get(unit)
             return obj.id
         else:

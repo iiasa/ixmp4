@@ -19,7 +19,7 @@ class TimeSeries(base.BaseModel, Protocol):
 
     run__id: types.Integer
     "Unique run id."
-    parameters: Mapping
+    parameters: Mapping[str, Any]
     "A set of parameter values for the time series."
 
     def __str__(self) -> str:
@@ -59,7 +59,7 @@ class TimeSeriesRepository(
         ----------
         run__id : int
             Unique run id.
-        parameters : Mapping
+        parameters : Mapping[str, Any]
             A set of parameter values for the time series.
 
         Raises
@@ -73,14 +73,15 @@ class TimeSeriesRepository(
         """
         ...
 
-    def get(self, run_id: int, parameters: Mapping) -> ModelType:
+    # NOTE this seems unused, so I'm guessing at the parameters type
+    def get(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
         """Retrieves a time series.
 
         Parameters
         ----------
         run_id : int
             Unique run id.
-        parameters : Mapping
+        parameters : Mapping[str, Any]
             A set of parameter values for the time series.
 
         Raises
@@ -115,14 +116,14 @@ class TimeSeriesRepository(
         """
         ...
 
-    def get_or_create(self, run_id: int, parameters: dict[str, Any]) -> ModelType:
+    def get_or_create(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
         """Tries to retrieve a time series and creates it if it was not found.
 
         Parameters
         ----------
         run_id : int
             Unique run id.
-        parameters : Mapping
+        parameters : Mapping[str, Any]
             A set of parameter values for the time series.
 
         Returns

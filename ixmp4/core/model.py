@@ -37,7 +37,7 @@ class Model(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.models.docs.delete(self.id)
         else:
@@ -75,9 +75,8 @@ class ModelRepository(BaseFacade):
         return self.backend.models.tabulate(name=name)
 
     def _get_model_id(self, model: str) -> int | None:
-        if model is None:
-            return None
-        elif isinstance(model, str):
+        # TODO this check seems kind of redundant...
+        if isinstance(model, str):
             obj = self.backend.models.get(model)
             return obj.id
         else:

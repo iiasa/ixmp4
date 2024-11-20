@@ -1,4 +1,5 @@
-from typing import ClassVar
+from collections.abc import Iterable
+from typing import ClassVar, cast
 
 import pandas as pd
 
@@ -59,7 +60,27 @@ class RunMetaEntryRepository(
         **kwargs: Unpack[abstract.meta.EnumerateKwargs],
     ) -> list[RunMetaEntry]:
         # base functions require dict, but TypedDict just inherits from Mapping
-        json = {k: v for k, v in kwargs.items()}
+        json = cast(
+            dict[
+                str,
+                bool
+                | float
+                | int
+                | str
+                | Iterable[float]
+                | Iterable[int]
+                | Iterable[str]
+                | dict[
+                    str,
+                    bool
+                    | int
+                    | Iterable[int]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ]
+                | None,
+            ],
+            kwargs,
+        )
         return super()._list(json=json, params={"join_run_index": join_run_index})
 
     def tabulate(
@@ -67,7 +88,27 @@ class RunMetaEntryRepository(
         join_run_index: bool | None = None,
         **kwargs: Unpack[abstract.meta.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = {k: v for k, v in kwargs.items()}
+        json = cast(
+            dict[
+                str,
+                bool
+                | float
+                | int
+                | str
+                | Iterable[float]
+                | Iterable[int]
+                | Iterable[str]
+                | dict[
+                    str,
+                    bool
+                    | int
+                    | Iterable[int]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ]
+                | None,
+            ],
+            kwargs,
+        )
         return super()._tabulate(json=json, params={"join_run_index": join_run_index})
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:

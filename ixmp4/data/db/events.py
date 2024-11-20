@@ -22,7 +22,9 @@ class SqlaEventHandler(object):
 
     def __init__(self, backend: "SqlAlchemyBackend") -> None:
         self.backend = backend
-        self.listeners: list[tuple[tuple[Any, str, Callable], dict[str, bool]]] = [
+        self.listeners: list[
+            tuple[tuple[Any, str, Callable[..., None]], dict[str, bool]]
+        ] = [
             ((backend.session, "do_orm_execute", self.receive_do_orm_execute), {}),
             (
                 (base.BaseModel, "before_insert", self.receive_before_insert),
@@ -57,7 +59,7 @@ class SqlaEventHandler(object):
         self.logger = logging.getLogger(__name__ + "." + str(id(state)))
 
     def receive_before_insert(
-        self, mapper: Mapper, connection: Connection, target: base.BaseModel
+        self, mapper: Mapper[Any], connection: Connection, target: base.BaseModel
     ) -> None:
         """Handles the insert event when creating data like this:
         ```
@@ -76,7 +78,7 @@ class SqlaEventHandler(object):
             target.set_creation_info(self.backend.auth_context)
 
     def receive_before_update(
-        self, mapper: Mapper, connection: Connection, target: base.BaseModel
+        self, mapper: Mapper[Any], connection: Connection, target: base.BaseModel
     ) -> None:
         """Handles the update event when changing data like this:
         ```
@@ -126,7 +128,7 @@ class SqlaEventHandler(object):
         # select = cast(sql.Select, oes.statement)
         pass
 
-    def receive_insert(self, oes: ORMExecuteState) -> Result | None:
+    def receive_insert(self, oes: ORMExecuteState) -> Result[Any] | None:
         insert = cast(sql.Insert, oes.statement)
         entity = insert.entity_description
         type_ = entity["type"]
@@ -144,7 +146,7 @@ class SqlaEventHandler(object):
             )
         return None
 
-    def receive_update(self, oes: ORMExecuteState) -> Result | None:
+    def receive_update(self, oes: ORMExecuteState) -> Result[Any] | None:
         update = cast(sql.Update, oes.statement)
         entity = update.entity_description
         type_ = entity["type"]
@@ -170,7 +172,8 @@ class SqlaEventHandler(object):
         # delete = cast(sql.Delete, oes.statement)
         pass
 
-    def select_affected(self, statement: sql.Delete | sql.Update) -> sql.Select:
+    # Can't find any reference use cases
+    def select_affected(self, statement: sql.Delete | sql.Update) -> sql.Select[Any]:
         entity = statement.entity_description
         wc = statement.whereclause
         exc = db.select(entity["entity"])

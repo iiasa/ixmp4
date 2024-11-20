@@ -110,7 +110,9 @@ class DataPointRepository(
         self.filter_class = DataPointFilter
         super().__init__(*args)
 
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    def join_auth(
+        self, exc: db.sql.Select[tuple[DataPoint]]
+    ) -> db.sql.Select[tuple[DataPoint]]:
         if not db.utils.is_joined(exc, TimeSeries):
             exc = exc.join(
                 TimeSeries, onclause=self.model_class.time_series__id == TimeSeries.id
@@ -122,8 +124,12 @@ class DataPointRepository(
 
         return exc
 
-    def select_joined_parameters(self, join_runs: bool = False) -> db.sql.Select:
-        bundle: list[db.Label | db.Bundle] = []
+    def select_joined_parameters(
+        self, join_runs: bool = False
+    ) -> db.sql.Select[tuple[DataPoint]]:
+        # NOTE Not quite sure about this bundle, seems to possibly take all types of
+        # all model classes?
+        bundle: list[db.Label[str] | db.Label[int] | db.Bundle[Any]] = []
         if join_runs:
             bundle.extend(
                 [
@@ -167,9 +173,9 @@ class DataPointRepository(
         join_parameters: bool | None = False,
         join_runs: bool = False,
         _filter: DataPointFilter | None = None,
-        _exc: db.sql.Select | None = None,
+        _exc: db.sql.Select[tuple[DataPoint]] | None = None,
         **kwargs: Any,
-    ) -> db.sql.Select:
+    ) -> db.sql.Select[tuple[DataPoint]]:
         if _exc is not None:
             exc = _exc
         elif join_parameters:

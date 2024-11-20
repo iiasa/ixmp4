@@ -19,5 +19,8 @@ class RunMetaEntryFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     value_float: filters.Float
     value_bool: filters.Boolean
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    # TODO using specific form here as this seems to only be called on RunMetaEntry
+    def join(
+        self, exc: sql.Select[tuple[RunMetaEntry]], session: Session | None = None
+    ) -> sql.Select[tuple[RunMetaEntry]]:
         return exc

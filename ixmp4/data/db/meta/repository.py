@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -118,7 +118,7 @@ class RunMetaEntryRepository(
         exc = self.select(run_id=run__id, key=key)
 
         try:
-            runmetaentry: RunMetaEntry = self.session.execute(exc).scalar_one()
+            runmetaentry = self.session.execute(exc).scalar_one()
             return runmetaentry
         except NoResultFound:
             raise RunMetaEntry.NotFound(run__id=run__id, key=key)
@@ -146,7 +146,9 @@ class RunMetaEntryRepository(
         except NoResultFound:
             raise RunMetaEntry.NotFound(id=id)
 
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    def join_auth(
+        self, exc: db.sql.Select[tuple[RunMetaEntry]]
+    ) -> db.sql.Select[tuple[RunMetaEntry]]:
         if not db.utils.is_joined(exc, Run):
             exc = exc.join(Run, RunMetaEntry.run)
         if not db.utils.is_joined(exc, Model):
@@ -154,7 +156,7 @@ class RunMetaEntryRepository(
 
         return super().join_auth(exc)
 
-    def select_with_run_index(self) -> db.sql.Select:
+    def select_with_run_index(self) -> db.sql.Select[tuple[str, str, int, Any]]:
         _exc = db.select(
             Model.name.label("model_name"),
             Scenario.name.label("scenario_name"),

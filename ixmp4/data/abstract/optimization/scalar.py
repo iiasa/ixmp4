@@ -155,18 +155,13 @@ class ScalarRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> Iterable[Scalar]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Scalar]:
         r"""Lists Scalars by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Scalar. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns
@@ -176,18 +171,13 @@ class ScalarRepository(
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Scalars by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Scalar. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns

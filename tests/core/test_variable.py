@@ -118,7 +118,8 @@ class TestCoreVariable:
 
         assert iamc_variable.docs is None
 
-        iamc_variable.docs = "Third description of test IAMC Variable"
+        # Mypy doesn't recognize del properly, it seems
+        iamc_variable.docs = "Third description of test IAMC Variable"  # type: ignore[unreachable]
         platform.iamc.variables.delete_docs("IAMC Variable")
 
         assert iamc_variable.docs is None

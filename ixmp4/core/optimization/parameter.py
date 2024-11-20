@@ -13,7 +13,7 @@ from typing_extensions import Unpack
 from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Parameter as ParameterModel
-from ixmp4.data.abstract import Run
+from ixmp4.data.abstract import Run, Unit
 from ixmp4.data.abstract.optimization import Column
 
 
@@ -48,13 +48,13 @@ class Parameter(BaseModelFacade):
         ).data
 
     @property
-    def values(self) -> list:
-        values: list = self._model.data.get("values", [])
+    def values(self) -> list[float]:
+        values: list[float] = self._model.data.get("values", [])
         return values
 
     @property
-    def units(self) -> list:
-        units: list = self._model.data.get("units", [])
+    def units(self) -> list[Unit]:
+        units: list[Unit] = self._model.data.get("units", [])
         return units
 
     @property
@@ -81,7 +81,7 @@ class Parameter(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.parameters.docs.delete(self.id)
         else:

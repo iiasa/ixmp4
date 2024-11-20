@@ -46,6 +46,7 @@ class ColumnRepository(
     @guard("edit")
     def create(  # type: ignore[no-untyped-def]
         self,
+        /,
         name: str,
         constrained_to_indexset: int,
         dtype: str,

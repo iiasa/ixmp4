@@ -2,7 +2,7 @@ import re
 from collections.abc import Generator, Iterator
 from itertools import cycle
 from pathlib import Path
-from typing import Optional
+from typing import Any, Optional, TypeVar
 
 import typer
 from rich.progress import Progress, track
@@ -272,7 +272,12 @@ def generate(
         utils.good("Done!")
 
 
-def create_cycle(generator: Generator, name: str, total: int) -> Iterator:
+T = TypeVar("T")
+
+
+def create_cycle(
+    generator: Generator[T, Any, None], name: str, total: int
+) -> Iterator[T]:
     return cycle(
         [
             m

@@ -30,7 +30,7 @@ class Scenario(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     id: int
     id__in: Iterable[int]
-    # name: str
+    name: str | None
     name__in: Iterable[str]
     name__like: str
     name__ilike: str
@@ -103,17 +103,13 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> list[Scenario]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Scenario]:
         r"""Lists scenarios by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a scenario. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.scenario.filter.ScenarioFilter`.
 
         Returns
@@ -123,17 +119,13 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate scenarios by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a scenario. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.scenario.filter.ScenarioFilter`.
 
         Returns
@@ -145,9 +137,7 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def map(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> dict[int, str]:
+    def map(self, **kwargs: Unpack[EnumerateKwargs]) -> dict[int, str]:
         """Return a mapping of scenario-id to scenario-name.
 
         Returns
@@ -155,4 +145,4 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         :class:`dict`
             A dictionary `id` -> `name`
         """
-        return dict([(s.id, s.name) for s in self.list(name=name, **kwargs)])
+        return dict([(s.id, s.name) for s in self.list(**kwargs)])

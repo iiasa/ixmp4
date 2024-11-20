@@ -1,6 +1,6 @@
 from collections.abc import Iterable
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.api import RestBackend
@@ -82,19 +82,15 @@ class TableRepository(
         return Table(**res)
 
     def list(
-        self,
-        name: str | None = None,
-        **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.optimization.EnumerateKwargs]
     ) -> Iterable[Table]:
-        json = {"name": name, **kwargs}
+        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
         return super()._list(json=json)
 
     def tabulate(
-        self,
-        name: str | None = None,
-        **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.optimization.EnumerateKwargs]
     ) -> pd.DataFrame:
-        json = {"name": name, **kwargs}
+        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
         return super()._tabulate(json=json)
 
     def enumerate(

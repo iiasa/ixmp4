@@ -1,8 +1,9 @@
 from typing import ClassVar
 
-from ixmp4.db import Session, filters, sql, utils
+from ixmp4.db import Session, filters, utils
 
 from .. import Model, Run
+from ..base import SelectType
 
 
 class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
@@ -11,7 +12,8 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Model
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    # TODO using general form here as this seems to be callable on non-Model tables
+    def join(self, exc: SelectType, session: Session | None = None) -> SelectType:
         if not utils.is_joined(exc, Model):
             exc = exc.join(Model, Run.model)
         return exc

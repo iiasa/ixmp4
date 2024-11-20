@@ -12,6 +12,8 @@ class OptimizationEquationFilter(filters.BaseFilter, metaclass=filters.FilterMet
 
     sqla_model: ClassVar[type] = Equation
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Equation]], session: Session | None = None
+    ) -> sql.Select[tuple[Equation]]:
         exc = exc.join(Run, onclause=Equation.run__id == Run.id)
         return exc

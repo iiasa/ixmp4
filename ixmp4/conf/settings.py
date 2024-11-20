@@ -82,10 +82,10 @@ class Settings(BaseSettings):
         return self._toml  # type: ignore[return-value]
 
     @property
-    def default_auth(self) -> ManagerAuth | AnonymousAuth:
+    def default_auth(self) -> ManagerAuth | AnonymousAuth | None:
         if self._default_auth is None:
             self.get_auth()
-        return self._default_auth  # type: ignore[return-value]
+        return self._default_auth
 
     @property
     def manager(self) -> ManagerConfig:

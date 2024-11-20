@@ -1,5 +1,6 @@
+from collections.abc import Iterable, Mapping
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING, ClassVar, cast
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.api import RestBackend
@@ -61,17 +62,37 @@ class VariableRepository(
         return super().enumerate(**kwargs)
 
     def list(
-        self,
-        name: str | None = None,
-        **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs]
     ) -> list[Variable]:
-        json = {"name": name, **kwargs}
+        json = cast(
+            dict[
+                str,
+                bool
+                | int
+                | str
+                | Iterable[int]
+                | Iterable[str]
+                | Mapping[str, int | str | Iterable[int] | Iterable[str]]
+                | None,
+            ],
+            kwargs,
+        )
         return super()._list(json=json)
 
     def tabulate(
-        self,
-        name: str | None = None,
-        **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs]
     ) -> pd.DataFrame:
-        json = {"name": name, **kwargs}
+        json = cast(
+            dict[
+                str,
+                bool
+                | int
+                | str
+                | Iterable[int]
+                | Iterable[str]
+                | Mapping[str, int | str | Iterable[int] | Iterable[str]]
+                | None,
+            ],
+            kwargs,
+        )
         return super()._tabulate(json=json)

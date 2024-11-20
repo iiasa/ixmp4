@@ -1,5 +1,7 @@
 from typing import ClassVar
 
+import pandas as pd
+
 from ixmp4.data import abstract
 
 from . import base
@@ -37,6 +39,11 @@ class DocsRepository(
             },
         )
         return Docs(**res)
+
+    # NOTE This is not used anywhere, but without it, mypy complains that the base
+    # definitions of enumerate() are incompatible
+    def enumerate(self, dimension_id: int | None = None) -> list[Docs] | pd.DataFrame:
+        return super().enumerate(dimension_id=dimension_id)
 
     def list(self, *, dimension_id: int | None = None) -> list[Docs]:
         return super()._list(params={"dimension_id": dimension_id})

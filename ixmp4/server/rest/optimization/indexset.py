@@ -32,7 +32,7 @@ def query(
     include_data: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[IndexSet]:
     return EnumerationOutput(
         results=backend.optimization.indexsets.paginate(
             _filter=filter,

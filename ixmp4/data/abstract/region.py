@@ -32,13 +32,13 @@ class Region(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     id: int
     id__in: Iterable[int]
-    # name: str
+    name: str | None
     name__in: Iterable[str]
     name__like: str
     name__ilike: str
     name__notlike: str
     name__notilike: str
-    # hierarchy: str
+    hierarchy: str | None
     hierarchy__in: Iterable[str]
     hierarchy__like: str
     hierarchy__ilike: str
@@ -160,21 +160,14 @@ class RegionRepository(
 
     def list(
         self,
-        *,
-        name: str | None = None,
-        hierarchy: str | None = None,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> list[Region]:
         r"""Lists regions by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a region. If supplied only one result will be returned.
-        hierarchy : str
-            The hierarchy of a region.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.region.filter.RegionFilter`.
 
         Returns
@@ -186,21 +179,14 @@ class RegionRepository(
 
     def tabulate(
         self,
-        *,
-        name: str | None = None,
-        hierarchy: str | None = None,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         r"""Tabulate regions by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a region. If supplied only one result will be returned.
-        hierarchy : str
-            The hierarchy of a region.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.region.filter.RegionFilter`.
 
         Returns

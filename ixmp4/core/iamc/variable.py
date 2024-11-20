@@ -37,7 +37,7 @@ class Variable(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.iamc.variables.docs.delete(self.id)
         else:
@@ -72,9 +72,8 @@ class VariableRepository(BaseFacade):
         return self.backend.iamc.variables.tabulate(name=name)
 
     def _get_variable_id(self, variable: str) -> int | None:
-        if variable is None:
-            return None
-        elif isinstance(variable, str):
+        # TODO this check seems kind of redundant...
+        if isinstance(variable, str):
             obj = self.backend.iamc.variables.get(variable)
             return obj.id
         else:

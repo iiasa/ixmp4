@@ -13,7 +13,9 @@ class OptimizationScalarFilter(filters.BaseFilter, metaclass=filters.FilterMeta)
 
     sqla_model: ClassVar[type] = Scalar
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Scalar]], session: Session | None = None
+    ) -> sql.Select[tuple[Scalar]]:
         exc = exc.join(Run, onclause=Scalar.run__id == Run.id)
         exc = exc.join(Unit, onclause=Scalar.unit__id == Unit.id)
         return exc

@@ -55,13 +55,13 @@ class Equation(BaseModelFacade):
         ).data
 
     @property
-    def levels(self) -> list:
-        levels: list = self._model.data.get("levels", [])
+    def levels(self) -> list[float]:
+        levels: list[float] = self._model.data.get("levels", [])
         return levels
 
     @property
-    def marginals(self) -> list:
-        marginals: list = self._model.data.get("marginals", [])
+    def marginals(self) -> list[float]:
+        marginals: list[float] = self._model.data.get("marginals", [])
         return marginals
 
     @property
@@ -88,7 +88,7 @@ class Equation(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.equations.docs.delete(self.id)
         else:

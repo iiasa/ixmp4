@@ -1,6 +1,7 @@
 from ixmp4.data.db import filters as base
+from ixmp4.data.db.base import SelectType
 from ixmp4.data.db.iamc.timeseries import TimeSeries
-from ixmp4.db import Session, filters, sql, utils
+from ixmp4.db import Session, filters, utils
 
 from ..measurand import Measurand
 from . import Variable
@@ -13,7 +14,7 @@ class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(self, exc: SelectType, session: Session | None = None) -> SelectType:
         if not utils.is_joined(exc, Measurand):
             exc = exc.join(Measurand, Measurand.variable__id == Variable.id)
 

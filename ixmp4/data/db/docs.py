@@ -1,4 +1,4 @@
-from typing import ClassVar, TypeVar, cast
+from typing import ClassVar, TypeVar
 
 from sqlalchemy.exc import NoResultFound
 
@@ -19,9 +19,9 @@ class AbstractDocs(base.BaseModel):
 
     __abstract__ = True
 
-    description: types.Mapped
+    description: types.Mapped[str]
 
-    dimension__id: types.Mapped
+    dimension__id: types.Mapped[int]
 
 
 def docs_model(model: type[base.BaseModel]) -> type[AbstractDocs]:
@@ -56,11 +56,22 @@ class BaseDocsRepository(
     dimension_model_class: ClassVar[type[base.BaseModel]]
 
     def select(
-        self, *, _exc: db.sql.Select | None = None, dimension_id: int | None = None
-    ) -> db.sql.Select:
+        self,
+        *,
+        _exc: db.sql.Select[tuple[DocsType]] | None = None,
+        dimension_id: int | None = None,
+    ) -> db.sql.Select[tuple[DocsType]]:
         if _exc is None:
             _exc = db.select(self.model_class)
 
+        if dimension_id is not None:
+            _exc = _exc.where(self.model_class.dimension__id == dimension_id)
+
+        return _exc
+
+    def select_for_count(
+        self, _exc: db.sql.Select[tuple[int]], dimension_id: int | None = None
+    ) -> db.sql.Select[tuple[int]]:
         if dimension_id is not None:
             _exc = _exc.where(self.model_class.dimension__id == dimension_id)
 
@@ -75,7 +86,7 @@ class BaseDocsRepository(
     def get(self, dimension_id: int) -> DocsType:
         exc = self.select(dimension_id=dimension_id)
         try:
-            return cast(DocsType, self.session.execute(exc).scalar_one())
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise self.model_class.NotFound
 
@@ -83,7 +94,7 @@ class BaseDocsRepository(
     def set(self, dimension_id: int, description: str) -> DocsType:
         exc = self.select(dimension_id=dimension_id)
         try:
-            docs = cast(DocsType, self.session.execute(exc).scalar_one())
+            docs = self.session.execute(exc).scalar_one()
             docs.description = description
             self.session.commit()
             return docs
@@ -93,7 +104,7 @@ class BaseDocsRepository(
 
     @guard("edit")
     def delete(self, dimension_id: int) -> None:
-        exc: db.sql.Delete = db.delete(self.model_class).where(
+        exc = db.delete(self.model_class).where(
             self.model_class.dimension__id == dimension_id
         )
 

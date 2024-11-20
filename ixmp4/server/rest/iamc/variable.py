@@ -26,7 +26,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[Variable]:
     return EnumerationOutput(
         results=backend.iamc.variables.paginate(
             _filter=filter,

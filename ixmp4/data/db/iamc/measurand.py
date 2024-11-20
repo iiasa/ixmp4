@@ -62,7 +62,7 @@ class MeasurandRepository(
 
     @guard("view")
     def get(self, variable_name: str, unit__id: int) -> Measurand:
-        exc: db.sql.Select = (
+        exc = (
             db.select(Measurand)
             .join(Measurand.variable)
             .where(Measurand.unit__id == unit__id)
@@ -70,13 +70,12 @@ class MeasurandRepository(
         )
 
         try:
-            measurand: Measurand = self.session.execute(exc).scalar_one()
-            return measurand
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Measurand.NotFound
 
     def add(self, variable_name: str, unit__id: int) -> Measurand:
-        q_exc: db.sql.Select = db.select(Variable).where(Variable.name == variable_name)
+        q_exc = db.select(Variable).where(Variable.name == variable_name)
         try:
             variable = self.session.execute(q_exc).scalar_one()
         except NoResultFound:
@@ -91,7 +90,7 @@ class MeasurandRepository(
     def create(self, *args: Unpack[tuple[str, int]]) -> Measurand:
         return super().create(*args)
 
-    def select(self) -> db.sql.Select:
+    def select(self) -> db.sql.Select[tuple[Measurand]]:
         return db.select(Measurand)
 
     @guard("view")

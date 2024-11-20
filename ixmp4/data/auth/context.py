@@ -1,4 +1,5 @@
 import re
+from typing import Any, TypeVar
 
 import pandas as pd
 
@@ -38,7 +39,9 @@ class AuthorizationContext(object):
         df["like"] = df["model"].apply(convert_to_like)
         return df
 
-    def apply(self, access_type: str, exc: db.sql.Select) -> db.sql.Select:
+    ApplyType = TypeVar("ApplyType", bound=db.sql.Select[tuple[Any]])
+
+    def apply(self, access_type: str, exc: ApplyType) -> ApplyType:
         if self.is_managed:
             return exc
         if self.user.is_superuser:

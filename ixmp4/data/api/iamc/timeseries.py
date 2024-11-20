@@ -1,5 +1,5 @@
-from collections.abc import Mapping
-from typing import ClassVar, cast
+from collections.abc import Iterable, Mapping
+from typing import Any, ClassVar, cast
 
 import pandas as pd
 
@@ -18,7 +18,7 @@ class TimeSeries(base.BaseModel):
 
     id: int
     run__id: int
-    parameters: Mapping
+    parameters: Mapping[str, Any]
 
 
 class TimeSeriesRepository(
@@ -26,15 +26,15 @@ class TimeSeriesRepository(
     base.Retriever[TimeSeries],
     base.Enumerator[TimeSeries],
     base.BulkUpserter[TimeSeries],
-    abstract.TimeSeriesRepository,
+    abstract.TimeSeriesRepository[abstract.TimeSeries],
 ):
     model_class = TimeSeries
     prefix = "iamc/timeseries/"
 
-    def create(self, run_id: int, parameters: Mapping) -> TimeSeries:
+    def create(self, run_id: int, parameters: Mapping[str, Any]) -> TimeSeries:
         return super().create(run_id=run_id, parameters=parameters)
 
-    def get(self, run_id: int, parameters: Mapping) -> TimeSeries:
+    def get(self, run_id: int, parameters: Mapping[str, Any]) -> TimeSeries:
         return super().get(run_ids=[run_id], parameters=parameters)
 
     def enumerate(
@@ -45,7 +45,23 @@ class TimeSeriesRepository(
     def list(
         self, **kwargs: Unpack[abstract.iamc.timeseries.EnumerateKwargs]
     ) -> list[TimeSeries]:
-        json = cast(dict, kwargs)
+        json = cast(
+            dict[
+                str,
+                int
+                | Iterable[int]
+                | dict[
+                    str,
+                    bool
+                    | int
+                    | str
+                    | Iterable[int]
+                    | Iterable[str]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ],
+            ],
+            kwargs,
+        )
         return super()._list(json=json)
 
     def tabulate(
@@ -53,7 +69,23 @@ class TimeSeriesRepository(
         join_parameters: bool | None = None,
         **kwargs: Unpack[abstract.iamc.timeseries.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(dict, kwargs)
+        json = cast(
+            dict[
+                str,
+                int
+                | Iterable[int]
+                | dict[
+                    str,
+                    bool
+                    | int
+                    | str
+                    | Iterable[int]
+                    | Iterable[str]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ],
+            ],
+            kwargs,
+        )
         return super()._tabulate(json=json, params={"join_parameters": join_parameters})
 
     def get_by_id(self, id: int) -> TimeSeries:

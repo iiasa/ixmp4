@@ -12,6 +12,7 @@ from ixmp4.data.abstract import (
     ScalarRepository,
     ScenarioRepository,
     TableRepository,
+    TimeSeries,
     TimeSeriesRepository,
     UnitRepository,
     VariableRepository,
@@ -20,7 +21,7 @@ from ixmp4.data.abstract import (
 
 class IamcSubobject(object):
     datapoints: DataPointRepository
-    timeseries: TimeSeriesRepository
+    timeseries: TimeSeriesRepository[TimeSeries]
     variables: VariableRepository
 
 

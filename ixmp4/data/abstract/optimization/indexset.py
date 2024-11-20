@@ -89,18 +89,13 @@ class IndexSetRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> list[IndexSet]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> list[IndexSet]:
         r"""Lists IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an IndexSet. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
 
         Returns
@@ -111,24 +106,17 @@ class IndexSetRepository(
         ...
 
     def tabulate(
-        self,
-        *,
-        name: str | None = None,
-        include_data: bool = False,
-        **kwargs: Unpack["EnumerateKwargs"],
+        self, *, include_data: bool = False, **kwargs: Unpack["EnumerateKwargs"]
     ) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str, optional
-            The name of an IndexSet. If supplied only one result will be returned.
         include_data : bool, optional
             Whether to load all IndexSet data, which reduces loading speed. Defaults to
             `False`.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
 
         Returns

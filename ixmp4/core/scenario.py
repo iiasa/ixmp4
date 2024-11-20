@@ -37,7 +37,7 @@ class Scenario(BaseModelFacade):
             return None
 
     @docs.setter
-    def docs(self, description: str) -> None:
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.scenarios.docs.delete(self.id)
         else:
@@ -75,9 +75,8 @@ class ScenarioRepository(BaseFacade):
         return self.backend.scenarios.tabulate(name=name)
 
     def _get_scenario_id(self, scenario: str) -> int | None:
-        if scenario is None:
-            return None
-        elif isinstance(scenario, str):
+        # TODO this check seems kind of redundant...
+        if isinstance(scenario, str):
             obj = self.backend.scenarios.get(scenario)
             return obj.id
         else:

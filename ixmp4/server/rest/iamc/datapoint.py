@@ -4,6 +4,7 @@ from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.iamc.datapoint.filter import DataPointFilter
+from ixmp4.data.db.iamc.datapoint.model import DataPoint
 
 from .. import deps
 from ..base import EnumerationOutput, Pagination
@@ -24,7 +25,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[DataPoint]:
     """This endpoint is used to retrieve and optionally filter data.add()
 
     Filter parameters are provided as keyword arguments.

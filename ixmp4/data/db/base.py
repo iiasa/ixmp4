@@ -2,7 +2,7 @@ from __future__ import annotations
 
 import logging
 import sqlite3
-from collections.abc import Callable, Iterable, Iterator
+from collections.abc import Callable, Iterable, Iterator, Mapping
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
 
 import numpy as np
@@ -40,7 +40,8 @@ def set_sqlite_pragma(
         cursor.close()
 
 
-@compiles(Identity, "sqlite")
+# NOTE compiles from sqlalchemy is untyped, not much we can do here
+@compiles(Identity, "sqlite")  # type: ignore[misc,no-untyped-call]
 def visit_identity(element: Any, compiler: Any, **kwargs: Any) -> TextClause:
     return text("")
 
@@ -78,6 +79,7 @@ BaseModel.metadata = MetaData(
     }
 )
 
+SelectType = TypeVar("SelectType", bound=db.sql.Select[tuple[BaseModel, ...]])
 
 ModelType = TypeVar("ModelType", bound=BaseModel)
 
@@ -86,7 +88,7 @@ class BaseRepository(Generic[ModelType]):
     backend: "SqlAlchemyBackend"
     session: Session
     dialect: Dialect
-    bundle: Bundle
+    bundle: Bundle[Any]
     model_class: type[ModelType]
 
     def __init__(self, backend: "SqlAlchemyBackend") -> None:
@@ -99,7 +101,7 @@ class BaseRepository(Generic[ModelType]):
         else:
             raise ProgrammingError("Database session is closed.")
 
-        self.bundle: Bundle = Bundle(
+        self.bundle: Bundle[Any] = Bundle(
             self.model_class.__name__, *db.utils.get_columns(self.model_class).values()
         )
         super().__init__()
@@ -120,7 +122,7 @@ class CreateKwargs(TypedDict, total=False):
     run__id: int
     key: str
     value: bool | float | int | str
-    parameters: dict[str, Any]
+    parameters: Mapping[str, Any]
     run_id: int
     unit_name: str | None
 
@@ -142,9 +144,7 @@ class Creator(BaseRepository[ModelType], abstract.Creator):
 
 class Deleter(BaseRepository[ModelType]):
     def delete(self, id: int) -> None:
-        exc: db.sql.Delete = db.delete(self.model_class).where(
-            self.model_class.id == id
-        )
+        exc = db.delete(self.model_class).where(self.model_class.id == id)
 
         try:
             self.session.execute(
@@ -163,8 +163,15 @@ class CheckAccessKwargs(TypedDict, total=False):
     default_only: bool | None
 
 
+class SelectCountKwargs(CheckAccessKwargs, total=False):
+    dimension_id: int | None
+    join_parameters: bool | None
+    join_runs: bool | None
+    id__in: set[int]
+
+
 class Selecter(BaseRepository[ModelType]):
-    filter_class: type[filters.BaseFilter]
+    filter_class: type[filters.BaseFilter] | None
 
     def check_access(
         self,
@@ -172,7 +179,7 @@ class Selecter(BaseRepository[ModelType]):
         access_type: str = "view",
         **kwargs: Unpack[CheckAccessKwargs],
     ) -> None:
-        exc = self.select(
+        exc = self.select_for_count(
             _exc=db.select(db.func.count()).select_from(self.model_class),
             id__in=ids,
             _access_type=access_type,
@@ -187,25 +194,59 @@ class Selecter(BaseRepository[ModelType]):
             )
             raise Forbidden(f"Permission check failed for access type '{access_type}'.")
 
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    SelectAuthType = TypeVar("SelectAuthType", bound=db.sql.Select[tuple[Any]])
+
+    def join_auth(self, exc: SelectAuthType) -> SelectAuthType:
         return exc
 
-    def apply_auth(self, exc: db.sql.Select, access_type: str) -> db.sql.Select:
+    def apply_auth(
+        self,
+        exc: SelectAuthType,
+        access_type: str,
+    ) -> SelectAuthType:
         if self.backend.auth_context is not None:
             if not self.backend.auth_context.is_managed:
                 exc = self.join_auth(exc)
             exc = self.backend.auth_context.apply(access_type, exc)
         return exc
 
+    def select_for_count(
+        self,
+        _exc: db.sql.Select[tuple[int]],
+        _filter: filters.BaseFilter | None = None,
+        _skip_filter: bool = False,
+        _access_type: str = "view",
+        **kwargs: Unpack[SelectCountKwargs],
+    ) -> db.sql.Select[tuple[int]]:
+        if self.filter_class is None:
+            cls_name = self.__class__.__name__
+            raise NotImplementedError(
+                f"Provide `{cls_name}.filter_class` or reimplement `{cls_name}.select`."
+            )
+
+        _exc = self.apply_auth(_exc, _access_type)
+        if _filter is not None and not _skip_filter:
+            filter_instance = _filter
+            _exc = filter_instance.join(_exc, session=self.session)
+            _exc = filter_instance.apply(_exc, self.model_class, self.session)
+        elif not _skip_filter:
+            kwarg_filter: filters.BaseFilter = self.filter_class(**kwargs)
+            _exc = kwarg_filter.join(_exc, session=self.session)
+            _exc = kwarg_filter.apply(_exc, self.model_class, self.session)
+        return _exc
+
     def select(
         self,
         _filter: filters.BaseFilter | None = None,
-        _exc: db.sql.Select | None = None,
+        _exc: db.sql.Select[tuple[ModelType]] | None = None,
         _access_type: str = "view",
-        _post_filter: Callable[[db.sql.Select], db.sql.Select] | None = None,
+        _post_filter: Callable[
+            [db.sql.Select[tuple[ModelType]]], db.sql.Select[tuple[ModelType]]
+        ]
+        | None = None,
         _skip_filter: bool = False,
         **kwargs: Any,
-    ) -> db.sql.Select:
+    ) -> db.sql.Select[tuple[ModelType]]:
         if self.filter_class is None:
             cls_name = self.__class__.__name__
             raise NotImplementedError(
@@ -218,8 +259,7 @@ class Selecter(BaseRepository[ModelType]):
         _exc = self.apply_auth(_exc, _access_type)
 
         if _filter is not None and not _skip_filter:
-            # for some reason checkers resolve the type of `_filter` to `Unknown`
-            filter_instance: filters.BaseFilter = _filter
+            filter_instance = _filter
             _exc = filter_instance.join(_exc, session=self.session)
             _exc = filter_instance.apply(_exc, self.model_class, self.session)
         elif not _skip_filter:
@@ -259,20 +299,22 @@ class Tabulator(Selecter[ModelType]):
 
 class PaginateKwargs(TypedDict):
     _filter: filters.BaseFilter
-    table: bool
+    include_data: NotRequired[bool]
     join_parameters: NotRequired[bool | None]
     join_runs: NotRequired[bool | None]
     join_run_index: NotRequired[bool | None]
-    include_data: NotRequired[bool]
+    table: bool
 
 
 class EnumerateKwargs(TypedDict):
     _filter: filters.BaseFilter
+    include_data: NotRequired[bool]
     join_parameters: NotRequired[bool | None]
     join_runs: NotRequired[bool | None]
     join_run_index: NotRequired[bool | None]
-    _post_filter: Callable[[db.sql.Select], db.sql.Select]
-    include_data: NotRequired[bool]
+    _post_filter: Callable[
+        [db.sql.Select[tuple[ModelType]]], db.sql.Select[tuple[ModelType]]
+    ]
 
 
 class CountKwargs(TypedDict, total=False):
@@ -302,12 +344,11 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
         self,
         **kwargs: Unpack[CountKwargs],
     ) -> int:
-        _exc = self.select(
+        _exc = self.select_for_count(
             _exc=db.select(db.func.count(self.model_class.id.distinct())),
             **kwargs,
         )
-        count: int = self.session.execute(_exc).scalar_one()
-        return count
+        return self.session.execute(_exc).scalar_one()
 
 
 class BulkOperator(Tabulator[ModelType]):
@@ -327,7 +368,7 @@ class BulkOperator(Tabulator[ModelType]):
                 set(existing_df.columns) & set(df.columns) & set(columns.keys())
             )  # all cols which exist in both dfs and the db model
             - set(self.model_class.updateable_columns)  # no updateable columns
-            - set(primary_key_columns)  # no pk columns
+            - set(primary_key_columns.keys())  # no pk columns
         )  # = all columns that are constant and provided during creation
 
         return df.merge(

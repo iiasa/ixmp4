@@ -1,3 +1,4 @@
+from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, _ProtocolMeta
 
 from typing_extensions import Unpack
@@ -12,7 +13,9 @@ from ixmp4.data import types
 
 
 class BaseMeta(_ProtocolMeta):
-    def __init__(self, name: str, bases: tuple, namespace: dict) -> None:
+    def __init__(
+        self, name: str, bases: tuple[object], namespace: dict[str, Any]
+    ) -> None:
         super().__init__(name, bases, namespace)
         self.NotUnique = type(
             self.__name__ + "NotUnique",
@@ -58,7 +61,7 @@ class Deleter(BaseRepository, Protocol):
 
 
 class Lister(BaseRepository, Protocol):
-    def list(self, *args: Any, **kwargs: Any) -> list: ...
+    def list(self, *args: Any, **kwargs: Any) -> Sequence[BaseModel]: ...
 
 
 class Tabulator(BaseRepository, Protocol):
@@ -68,7 +71,7 @@ class Tabulator(BaseRepository, Protocol):
 class Enumerator(Lister, Tabulator, Protocol):
     def enumerate(
         self, table: bool = False, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> list | pd.DataFrame: ...
+    ) -> Sequence[BaseModel] | pd.DataFrame: ...
 
 
 class BulkUpserter(BaseRepository, Protocol):

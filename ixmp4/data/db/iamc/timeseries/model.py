@@ -27,7 +27,7 @@ class TimeSeries(BaseTimeSeries, base.BaseModel):
     )
 
     @property
-    def parameters(self) -> Mapping:
+    def parameters(self) -> Mapping[str, str]:
         return {
             "region": self.region.name,
             "unit": self.measurand.unit.name,

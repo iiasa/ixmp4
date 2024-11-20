@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime
 from typing import ClassVar, cast
 
@@ -47,7 +48,16 @@ class DataPointRepository(
         **kwargs: Unpack[abstract.iamc.datapoint.EnumerateKwargs],
     ) -> list[DataPoint]:
         return super()._list(
-            json=cast(dict, kwargs),
+            json=cast(
+                dict[
+                    str,
+                    int
+                    | Iterable[int]
+                    | dict[str, bool | int | str | Iterable[int] | Iterable[str]]
+                    | None,
+                ],
+                kwargs,
+            ),
             params={
                 "join_parameters": join_parameters,
                 "join_runs": join_runs,
@@ -61,7 +71,16 @@ class DataPointRepository(
         **kwargs: Unpack[abstract.iamc.datapoint.EnumerateKwargs],
     ) -> pd.DataFrame:
         return super()._tabulate(
-            json=cast(dict, kwargs),
+            json=cast(
+                dict[
+                    str,
+                    int
+                    | Iterable[int]
+                    | dict[str, bool | int | str | Iterable[int] | Iterable[str]]
+                    | None,
+                ],
+                kwargs,
+            ),
             params={
                 "join_parameters": join_parameters,
                 "join_runs": join_runs,

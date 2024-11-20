@@ -12,7 +12,7 @@ class Docs(base.BaseModel, Protocol):
     "Description of the dimension object."
     dimension__id: types.Integer
     "Foreign unique integer id of the object in the dimension's table."
-    dimension: types.Mapped
+    dimension: types.Mapped[base.BaseModel]
     "The documented object."
 
     # This doesn't work since each dimension has a different self.dimension object as

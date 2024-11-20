@@ -139,7 +139,8 @@ class TestCoreRegion:
 
         assert region.docs is None
 
-        region.docs = "Third description of test region"
+        # Mypy doesn't recognize del properly, it seems
+        region.docs = "Third description of test region"  # type: ignore[unreachable]
         platform.regions.delete_docs("Test Region")
 
         assert region.docs is None

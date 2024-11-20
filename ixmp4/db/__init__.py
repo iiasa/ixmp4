@@ -38,6 +38,7 @@ from typing import Annotated
 from sqlalchemy import (
     BinaryExpression,
     BindParameter,
+    ColumnExpressionArgument,
     ForeignKey,
     Index,
     Label,
@@ -78,7 +79,9 @@ IndexSetIdType = Annotated[
     Column(Integer, ForeignKey("optimization_indexset.id"), nullable=False, index=True),
 ]
 JsonType = JSON()
-JsonType = JsonType.with_variant(JSONB(), "postgresql")
+# NOTE sqlalchemy's JSON is untyped, but we may not need it if we redesign the opt DB
+# model
+JsonType = JsonType.with_variant(JSONB(), "postgresql")  # type:ignore[no-untyped-call]
 NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
 RunIdType = Annotated[
     int,

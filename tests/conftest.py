@@ -190,7 +190,9 @@ def pytest_generate_tests(metafunc: pytest.Metafunc) -> Any:
 
 
 @pytest.fixture(scope="function")
-def profiled(request: pytest.FixtureRequest) -> Generator[Callable, Any, None]:
+def profiled(
+    request: pytest.FixtureRequest,
+) -> Generator[Callable[[], _GeneratorContextManager[None]]]:
     """Use this fixture for profiling tests:
     ```
     def test(profiled):

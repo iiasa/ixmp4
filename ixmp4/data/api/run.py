@@ -1,4 +1,5 @@
-from typing import ClassVar
+from collections.abc import Iterable
+from typing import ClassVar, cast
 
 import pandas as pd
 from pydantic import Field
@@ -60,20 +61,50 @@ class RunRepository(
 
     def list(
         self,
-        version: int | None = None,
-        default_only: bool = True,
         **kwargs: Unpack[abstract.run.EnumerateKwargs],
     ) -> list[Run]:
-        json = {"version": version, "default_only": default_only, **kwargs}
+        json = cast(
+            dict[
+                str,
+                bool
+                | int
+                | Iterable[int]
+                | dict[
+                    str,
+                    int
+                    | str
+                    | Iterable[int]
+                    | Iterable[str]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ]
+                | None,
+            ],
+            kwargs,
+        )
         return super()._list(json=json)
 
     def tabulate(
         self,
-        version: int | None = None,
-        default_only: bool = True,
         **kwargs: Unpack[abstract.run.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = {"version": version, "default_only": default_only, **kwargs}
+        json = cast(
+            dict[
+                str,
+                bool
+                | int
+                | Iterable[int]
+                | dict[
+                    str,
+                    int
+                    | str
+                    | Iterable[int]
+                    | Iterable[str]
+                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                ]
+                | None,
+            ],
+            kwargs,
+        )
         return super()._tabulate(json=json)
 
     def get_default_version(self, model_name: str, scenario_name: str) -> Run:

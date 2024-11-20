@@ -1,10 +1,12 @@
+from collections.abc import Iterable
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar, List
+from typing import TYPE_CHECKING, ClassVar, List, cast
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.api import RestBackend
 
 import pandas as pd
+from pydantic import StrictFloat, StrictInt, StrictStr
 
 # TODO Import this from typing when dropping support for Python 3.11
 from typing_extensions import Unpack
@@ -64,25 +66,28 @@ class IndexSetRepository(
 
     def list(
         self,
-        name: str | None = None,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> list[IndexSet]:
-        json = {"name": name, **kwargs}
+        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
         return super()._list(json=json)
 
     def tabulate(
         self,
         include_data: bool = False,
-        name: str | None = None,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = {"name": name, **kwargs}
+        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
         return super()._tabulate(json=json, params={"include_data": include_data})
 
     def add_data(
         self,
         indexset_id: int,
-        data: float | int | str | List[float] | List[int] | List[str],
+        data: StrictFloat
+        | StrictInt
+        | StrictStr
+        | List[StrictFloat]
+        | List[StrictInt]
+        | List[StrictStr],
     ) -> None:
         kwargs = {"indexset_id": indexset_id, "data": data}
         self._request("PATCH", self.prefix + str(indexset_id) + "/", json=kwargs)

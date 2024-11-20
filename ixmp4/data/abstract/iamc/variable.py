@@ -30,7 +30,7 @@ class Variable(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     id: int
     id__in: Iterable[int]
-    # name: str
+    name: str | None
     name__in: Iterable[str]
     name__like: str
     name__ilike: str
@@ -95,17 +95,13 @@ class VariableRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> list[Variable]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
@@ -115,17 +111,13 @@ class VariableRepository(
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns

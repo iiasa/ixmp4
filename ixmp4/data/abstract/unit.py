@@ -29,7 +29,7 @@ class Unit(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     id: int
     id__in: Iterable[int]
-    # name: str
+    name: str | None
     name__in: Iterable[str]
     name__like: str
     name__ilike: str
@@ -153,18 +153,14 @@ class UnitRepository(
 
     def list(
         self,
-        *,
-        name: str | None = None,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> list[Unit]:
         r"""Lists units by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.unit.filter.UnitFilter`.
 
         Returns
@@ -176,18 +172,14 @@ class UnitRepository(
 
     def tabulate(
         self,
-        *,
-        name: str | None = None,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         r"""Tabulate units by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.unit.filter.UnitFilter`.
 
         Returns

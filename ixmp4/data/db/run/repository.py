@@ -21,10 +21,6 @@ from ..scenario import Scenario, ScenarioRepository
 from .model import Run
 
 
-class EnumerateKwargs(abstract.run.EnumerateKwargs):
-    default_only: bool
-
-
 class CreateKwargs(TypedDict, total=False):
     scenario_name: str
 
@@ -49,7 +45,7 @@ class RunRepository(
         self.filter_class = RunFilter
         super().__init__(*args)
 
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    def join_auth(self, exc: db.sql.Select[tuple[Run]]) -> db.sql.Select[tuple[Run]]:
         if not utils.is_joined(exc, Model):
             exc = exc.join(Model, Run.model)
         return exc
@@ -57,16 +53,16 @@ class RunRepository(
     def add(self, model_name: str, scenario_name: str) -> Run:
         # Get or create model
         try:
-            exc: db.sql.Select = self.models.select(name=model_name)
-            model = self.session.execute(exc).scalar_one()
+            exc_model = self.models.select(name=model_name)
+            model = self.session.execute(exc_model).scalar_one()
         except NoResultFound:
             model = Model(name=model_name)
             self.session.add(model)
 
         # Get or create scenario
         try:
-            exc = self.scenarios.select(name=scenario_name)
-            scenario: Scenario = self.session.execute(exc).scalar_one()
+            exc_scenario = self.scenarios.select(name=scenario_name)
+            scenario = self.session.execute(exc_scenario).scalar_one()
         except NoResultFound:
             scenario = Scenario(name=scenario_name)
             self.session.add(scenario)
@@ -111,6 +107,7 @@ class RunRepository(
         )
 
         try:
+            # TODO clean up unnecessary cast such as this
             run: Run = self.session.execute(exc).scalar_one()
             return run
         except NoResultFound:
@@ -147,11 +144,11 @@ class RunRepository(
             raise NoDefaultRunVersion
 
     @guard("view")
-    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[abstract.run.EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
 
     @guard("view")
-    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
+    def list(self, **kwargs: Unpack[abstract.run.EnumerateKwargs]) -> list[Run]:
         return super().list(**kwargs)
 
     @guard("edit")

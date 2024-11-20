@@ -1,3 +1,5 @@
+from typing import Any
+
 from ixmp4 import db
 from ixmp4.data.db import filters as base
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -9,8 +11,8 @@ from .model import Scenario
 
 class BaseIamcFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     def join_datapoints(
-        self, exc: db.sql.Select, session: db.Session | None = None
-    ) -> db.sql.Select:
+        self, exc: db.sql.Select[tuple[Scenario]], session: db.Session | None = None
+    ) -> db.sql.Select[tuple[Scenario]]:
         if not utils.is_joined(exc, Run):
             exc = exc.join(Run, onclause=Run.scenario__id == Scenario.id)
 
@@ -22,9 +24,10 @@ class BaseIamcFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
     def join(
-        self, exc: db.sql.Select, session: db.Session | None = None
-    ) -> db.sql.Select:
+        self, exc: db.sql.Select[tuple[Scenario]], session: db.Session | None = None
+    ) -> db.sql.Select[tuple[Scenario]]:
         if not utils.is_joined(exc, Run):
+            # TODO should this really be Run.model?
             exc = exc.join(Run, Run.model)
         return exc
 
@@ -42,8 +45,8 @@ class IamcScenarioFilter(
     )
 
     def join(
-        self, exc: db.sql.Select, session: db.Session | None = None
-    ) -> db.sql.Select:
+        self, exc: db.sql.Select[tuple[Scenario]], session: db.Session | None = None
+    ) -> db.sql.Select[tuple[Scenario]]:
         return super().join_datapoints(exc, session)
 
 
@@ -52,11 +55,11 @@ class ScenarioFilter(base.ScenarioFilter, BaseIamcFilter, metaclass=filters.Filt
 
     def filter_iamc(
         self,
-        exc: db.sql.Select,
-        c: typing_column,
+        exc: db.sql.Select[tuple[Scenario]],
+        c: typing_column[Any],  # Any since it is unused
         v: bool | None,
         session: db.Session | None = None,
-    ) -> db.sql.Select:
+    ) -> db.sql.Select[tuple[Scenario]]:
         if v is None:
             return exc
 
@@ -68,6 +71,6 @@ class ScenarioFilter(base.ScenarioFilter, BaseIamcFilter, metaclass=filters.Filt
             return exc
 
     def join(
-        self, exc: db.sql.Select, session: db.Session | None = None
-    ) -> db.sql.Select:
+        self, exc: db.sql.Select[tuple[Scenario]], session: db.Session | None = None
+    ) -> db.sql.Select[tuple[Scenario]]:
         return exc

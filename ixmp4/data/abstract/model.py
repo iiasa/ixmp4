@@ -32,7 +32,7 @@ class Model(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     id: int
     id__in: Iterable[int]
-    # name: str
+    name: str | None
     name__in: Iterable[str]
     name__like: str
     name__ilike: str
@@ -110,17 +110,13 @@ class ModelRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> list[Model]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Model]:
         r"""Lists models by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a model. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.model.filter.ModelFilter`.
 
         Returns
@@ -130,17 +126,13 @@ class ModelRepository(
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate models by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a model. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.model.filter.ModelFilter`.
 
         Returns
@@ -153,9 +145,7 @@ class ModelRepository(
         """
         ...
 
-    def map(
-        self, *, name: str | None = None, **kwargs: Unpack[EnumerateKwargs]
-    ) -> dict[int, str]:
+    def map(self, **kwargs: Unpack[EnumerateKwargs]) -> dict[int, str]:
         """Return a mapping of model-id to model-name.
 
         Returns
@@ -163,4 +153,4 @@ class ModelRepository(
         :class:`dict`:
             A dictionary `id` -> `name`
         """
-        return dict([(m.id, m.name) for m in self.list(name=name, **kwargs)])
+        return dict([(m.id, m.name) for m in self.list(**kwargs)])

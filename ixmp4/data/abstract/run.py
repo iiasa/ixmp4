@@ -44,8 +44,8 @@ class Run(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     id: int
     id__in: Iterable[int]
-    # version: int
-    # default_only: bool
+    version: int | None
+    default_only: bool
     is_default: bool
     model: dict[str, int | str | Iterable[int] | Iterable[str]]
     scenario: dict[str, int | str | Iterable[int] | Iterable[str]]
@@ -163,21 +163,14 @@ class RunRepository(
 
     def list(
         self,
-        *,
-        version: int | None = None,
-        default_only: bool = True,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> list[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters
         ----------
-        version : int, optional
-            The run's version.
-        default_only : bool, optional
-            True by default. This function will return default runs only if true.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.run.filter.RunFilter`.
 
         Returns
@@ -189,21 +182,14 @@ class RunRepository(
 
     def tabulate(
         self,
-        *,
-        version: int | None = None,
-        default_only: bool = True,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         r"""Tabulate runs by specified criteria.
 
         Parameters
         ----------
-        version : int, optional
-            The run's version.
-        default_only : bool, optional
-            True by default. This function will return default runs only if true.
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.run.filter.RunFilter`.
 
         Returns

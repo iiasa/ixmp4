@@ -1,3 +1,4 @@
+from collections.abc import Mapping
 from typing import Any
 
 from fastapi import APIRouter, Body, Depends, Query, Response
@@ -19,7 +20,7 @@ router: APIRouter = APIRouter(
 
 class TimeSeriesInput(BaseModel):
     run__id: int
-    parameters: dict[str, Any]
+    parameters: Mapping[str, Any]
 
 
 @autodoc
@@ -30,7 +31,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[TimeSeries]:
     return EnumerationOutput(
         results=backend.iamc.timeseries.paginate(
             _filter=filter,

@@ -5,7 +5,7 @@ from typing import TYPE_CHECKING, Any, Concatenate, ParamSpec, TypeVar
 from ixmp4.core.exceptions import Forbidden, ProgrammingError
 
 if TYPE_CHECKING:
-    from ..db.base import BaseRepository
+    from ..db.base import BaseModel, BaseRepository
 
 P = ParamSpec("P")
 
@@ -25,7 +25,7 @@ def guard(
     ) -> Callable[Concatenate[Any, P], ReturnT]:
         @wraps(func)
         def guarded_func(
-            self: "BaseRepository", /, *args: P.args, **kwargs: P.kwargs
+            self: "BaseRepository[BaseModel]", /, *args: P.args, **kwargs: P.kwargs
         ) -> ReturnT:
             if self.backend.auth_context is not None:
                 if access == "view" and self.backend.auth_context.is_viewable:

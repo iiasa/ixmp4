@@ -7,14 +7,18 @@ from .model import Scalar
 
 
 class OptimizationUnitFilter(base.UnitFilter, metaclass=filters.FilterMeta):
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Scalar]], session: Session | None = None
+    ) -> sql.Select[tuple[Scalar]]:
         if not utils.is_joined(exc, Unit):
             exc = exc.join(Unit, onclause=Scalar.unit__id == Unit.id)
         return exc
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Scalar]], session: Session | None = None
+    ) -> sql.Select[tuple[Scalar]]:
         if not utils.is_joined(exc, Run):
             exc = exc.join(Run, onclause=Scalar.run__id == Run.id)
         return exc
@@ -23,5 +27,7 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
 class OptimizationScalarFilter(
     base.OptimizationScalarFilter, metaclass=filters.FilterMeta
 ):
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Scalar]], session: Session | None = None
+    ) -> sql.Select[tuple[Scalar]]:
         return exc

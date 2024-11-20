@@ -25,7 +25,7 @@ class TimeSeries(AbstractConcreteBase, base.BaseModel):
     DeletionPrevented: ClassVar = abstract.TimeSeries.DeletionPrevented
 
     __abstract__ = True
-    parameters: dict = {}
+    parameters: dict[str, Any] = {}
 
     @declared_attr
     def run__id(cls) -> db.MappedColumn[int]:
@@ -74,7 +74,7 @@ class EnumerateKwargs(TypedDict, total=False):
 
 class CreateKwargs(TypedDict):
     run__id: int
-    parameters: dict[str, Any]
+    parameters: Mapping[str, Any]
 
 
 class TimeSeriesRepository(
@@ -84,7 +84,9 @@ class TimeSeriesRepository(
     base.BulkUpserter[ModelType],
     Generic[ModelType],
 ):
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    def join_auth(
+        self, exc: db.sql.Select[tuple[ModelType]]
+    ) -> db.sql.Select[tuple[ModelType]]:
         if not db.utils.is_joined(exc, Run):
             exc = exc.join(Run, onclause=Run.id == self.model_class.run__id)
         if not db.utils.is_joined(exc, Model):
@@ -92,7 +94,7 @@ class TimeSeriesRepository(
 
         return exc
 
-    def add(self, run_id: int, parameters: Mapping) -> ModelType:
+    def add(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
         time_series = self.model_class(run_id=run_id, **parameters)
         self.session.add(time_series)
         return time_series
@@ -106,8 +108,7 @@ class TimeSeriesRepository(
         exc = self.select(run={"id": run_id}, **kwargs)
 
         try:
-            timeseries: ModelType = self.session.execute(exc).scalar_one()
-            return timeseries
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise self.model_class.NotFound
 
@@ -120,16 +121,16 @@ class TimeSeriesRepository(
 
         return obj
 
-    def select_joined_parameters(self) -> db.sql.Select:
+    def select_joined_parameters(self) -> db.sql.Select[tuple[Any, ...]]:
         raise NotImplementedError
 
     def select(
         self,
         *,
-        _exc: db.sql.Select | None = None,
+        _exc: db.sql.Select[tuple[ModelType]] | None = None,
         join_parameters: bool | None = False,
         **kwargs: Unpack[SelectKwargs],
-    ) -> db.sql.Select:
+    ) -> db.sql.Select[tuple[ModelType]]:
         if _exc is not None:
             exc = _exc
         elif join_parameters:

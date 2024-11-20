@@ -50,7 +50,9 @@ class ScenarioRepository(
 
         self.filter_class = ScenarioFilter
 
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    def join_auth(
+        self, exc: db.sql.Select[tuple[Scenario]]
+    ) -> db.sql.Select[tuple[Scenario]]:
         from ixmp4.data.db.run.model import Run
 
         if not db.utils.is_joined(exc, Run):

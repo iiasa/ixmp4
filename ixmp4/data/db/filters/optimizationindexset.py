@@ -12,6 +12,8 @@ class OptimizationIndexSetFilter(filters.BaseFilter, metaclass=filters.FilterMet
 
     sqla_model: ClassVar[type] = IndexSet
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[IndexSet]], session: Session | None = None
+    ) -> sql.Select[tuple[IndexSet]]:
         exc = exc.join(Run, onclause=IndexSet.run__id == Run.id)
         return exc

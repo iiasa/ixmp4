@@ -1,8 +1,9 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
 from ixmp4.db import Session, filters, sql, typing_column, utils
 
 from .. import Run
+from ..base import SelectType
 from ..iamc import TimeSeries
 from .model import ModelFilter
 from .scenario import ScenarioFilter
@@ -19,11 +20,15 @@ class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     sqla_model: ClassVar[type] = Run
 
     def filter_default_only(
-        self, exc: sql.Select, c: typing_column, v: bool, session: Session | None = None
-    ) -> sql.Select:
+        self,
+        exc: sql.Select[tuple[Run]],
+        c: typing_column[Any],  # Any since it is unused
+        v: bool,
+        session: Session | None = None,
+    ) -> sql.Select[tuple[Run]]:
         return exc.where(Run.is_default) if v else exc
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(self, exc: SelectType, session: Session | None = None) -> SelectType:
         if not utils.is_joined(exc, Run):
             exc = exc.join(Run, TimeSeries.run)
         return exc

@@ -28,7 +28,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[RunMetaEntry]:
     if join_run_index and not table:
         raise BadRequest("`join_run_index` can only be used with `table=true`.")
 

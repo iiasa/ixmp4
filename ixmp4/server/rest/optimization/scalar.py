@@ -45,7 +45,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[Scalar]:
     return EnumerationOutput(
         results=backend.optimization.scalars.paginate(
             _filter=filter,

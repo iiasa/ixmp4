@@ -6,7 +6,9 @@ from .model import OptimizationVariable as Variable
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Variable]], session: Session | None = None
+    ) -> sql.Select[tuple[Variable]]:
         if not utils.is_joined(exc, Run):
             exc = exc.join(Run, onclause=Variable.run__id == Run.id)
         return exc
@@ -15,5 +17,7 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
 class OptimizationVariableFilter(
     base.OptimizationVariableFilter, metaclass=filters.FilterMeta
 ):
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Variable]], session: Session | None = None
+    ) -> sql.Select[tuple[Variable]]:
         return exc

@@ -141,7 +141,8 @@ class TestCoreUnit:
 
         assert unit.docs is None
 
-        unit.docs = "Third description of test Unit"
+        # Mypy doesn't recognize del properly, it seems
+        unit.docs = "Third description of test Unit"  # type: ignore[unreachable]
         platform.units.delete_docs("Unit")
 
         assert unit.docs is None

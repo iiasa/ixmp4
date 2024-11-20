@@ -12,6 +12,8 @@ class OptimizationParameterFilter(filters.BaseFilter, metaclass=filters.FilterMe
 
     sqla_model: ClassVar[type] = Parameter
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(
+        self, exc: sql.Select[tuple[Parameter]], session: Session | None = None
+    ) -> sql.Select[tuple[Parameter]]:
         exc = exc.join(Run, onclause=Parameter.run__id == Run.id)
         return exc

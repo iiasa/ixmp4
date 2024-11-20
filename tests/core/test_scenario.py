@@ -88,7 +88,8 @@ class TestCoreScenario:
 
         assert scenario.docs is None
 
-        scenario.docs = "Third description of test Scenario"
+        # Mypy doesn't recognize del properly, it seems
+        scenario.docs = "Third description of test Scenario"  # type: ignore[unreachable]
         platform.scenarios.delete_docs("Scenario")
 
         assert scenario.docs is None

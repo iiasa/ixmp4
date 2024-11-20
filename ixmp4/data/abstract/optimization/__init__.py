@@ -15,7 +15,7 @@ from .variable import Variable, VariableRepository
 class EnumerateKwargs(TypedDict, total=False):
     id: int | None
     id__in: Iterable[int]
-    # name: str | None
+    name: str | None
     name__in: Iterable[str]
     name__like: str
     name__ilike: str

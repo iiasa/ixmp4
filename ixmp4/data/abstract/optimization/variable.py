@@ -131,18 +131,13 @@ class VariableRepository(
         """
         ...
 
-    def list(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> Iterable[Variable]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Variable]:
         r"""Lists Variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Variable. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter Variables as specified in
+            Any filter Variables as specified in
             `ixmp4.data.db.optimization.variable.filter.OptimizationVariableFilter`.
 
         Returns
@@ -152,18 +147,13 @@ class VariableRepository(
         """
         ...
 
-    def tabulate(
-        self, *, name: str | None = None, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Variable. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter variables as specified in
+            Any filter variables as specified in
             `ixmp4.data.db.optimization.variable.filter.OptimizationVariableFilter`.
 
         Returns

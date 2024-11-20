@@ -5,7 +5,7 @@ import toml
 
 
 class Credentials(object):
-    credentials: dict
+    credentials: dict[str, dict[str, str]]
 
     def __init__(self, toml_file: Path) -> None:
         self.path = toml_file

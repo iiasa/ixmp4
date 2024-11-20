@@ -10,10 +10,11 @@ from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db.base import BaseModel
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.region import Region, RegionRepository
 from ixmp4.data.db.run import RunRepository
-from ixmp4.data.db.timeseries import EnumerateKwargs, GetKwargs
+from ixmp4.data.db.timeseries import CreateKwargs, EnumerateKwargs, GetKwargs
 from ixmp4.data.db.timeseries import TimeSeriesRepository as BaseTimeSeriesRepository
 from ixmp4.data.db.unit import Unit, UnitRepository
 from ixmp4.data.db.utils import map_existing
@@ -27,7 +28,8 @@ if TYPE_CHECKING:
 
 
 class TimeSeriesRepository(
-    BaseTimeSeriesRepository[TimeSeries], abstract.TimeSeriesRepository
+    BaseTimeSeriesRepository[TimeSeries],
+    abstract.TimeSeriesRepository[abstract.TimeSeries],
 ):
     model_class = TimeSeries
 
@@ -46,12 +48,26 @@ class TimeSeriesRepository(
         self.units = UnitRepository(*args)
         super().__init__(*args)
 
+    # TODO Why do I have to essentially copy this and get_by_id() from db/timeseries?
+    # Mypy complains about incompatible definitions of create() and get_by_id().
+    @guard("edit")
+    def create(self, **kwargs: Unpack[CreateKwargs]) -> TimeSeries:
+        return super().create(**kwargs)
+
     @guard("view")
     def get(self, run_id: int, **kwargs: Unpack[GetKwargs]) -> TimeSeries:
-        timeseries: TimeSeries = super().get(run_id, **kwargs)
-        return timeseries
+        return super().get(run_id, **kwargs)
 
-    def select_joined_parameters(self) -> Select:
+    @guard("view")
+    def get_by_id(self, id: int) -> TimeSeries:
+        obj = self.session.get(self.model_class, id)
+
+        if obj is None:
+            raise self.model_class.NotFound
+
+        return obj
+
+    def select_joined_parameters(self) -> Select[tuple[BaseModel, ...]]:
         return (
             select(
                 self.bundle,

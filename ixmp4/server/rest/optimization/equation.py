@@ -44,7 +44,18 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[Equation]:
+    print("before count")
+    total = backend.optimization.equations.count(_filter=filter)
+    print(total)
+    print("before paginate")
+    results = backend.optimization.equations.paginate(
+        _filter=filter,
+        limit=pagination.limit,
+        offset=pagination.offset,
+        table=bool(table),
+    )
+    print(results)
     return EnumerationOutput(
         results=backend.optimization.equations.paginate(
             _filter=filter,

@@ -3,7 +3,7 @@ import logging
 import os
 import re
 from functools import lru_cache
-from typing import Any
+from typing import Any, cast
 
 import httpx
 import pandas as pd
@@ -21,7 +21,7 @@ from .user import User
 logger = logging.getLogger(__name__)
 
 
-class hashabledict(dict):
+class hashabledict(dict[str, Any]):
     """Hashable dict type used for caching."""
 
     def __hash__(self) -> int:
@@ -51,7 +51,7 @@ class JtiKwargs(TypedDict, total=False):
 class ManagerConfig(Config):
     template_pattern = re.compile(r"(\{env\:(\w+)\})")
 
-    def __init__(self, url: str, auth: BaseAuth, remote: bool = False) -> None:
+    def __init__(self, url: str, auth: BaseAuth | None, remote: bool = False) -> None:
         # TODO: Find the sweet-spot for `maxsize`
         # -> a trade-off between memory usage
         # and load on the management service
@@ -86,7 +86,7 @@ class ManagerConfig(Config):
         method: str,
         path: str,
         jti: str | None = None,
-    ) -> dict:
+    ) -> dict[str, Any]:
         del jti
         # `jti` is only used to affect `@lru_cache`
         # if the token id changes a new cache entry will be created
@@ -99,15 +99,16 @@ class ManagerConfig(Config):
         if res.status_code != 200:
             raise ManagerApiError(f"[{str(res.status_code)}] {res.text}")
         # TODO Can we really assume this type?
-        json: dict = res.json()
-        return json
+        return cast(dict[str, Any], res.json())
 
     def _request(
         self,
         method: str,
         path: str,
-        params: dict | None = None,
-        json: dict | list | tuple | None = None,
+        # Seems to be just that based on references
+        params: dict[str, int | None] | None = None,
+        # Seems to not be included with any references?
+        json: dict[str, Any] | list[Any] | tuple[Any] | None = None,
         **kwargs: Unpack[JtiKwargs],
     ) -> dict[str, Any]:
         if params is not None:
@@ -117,10 +118,7 @@ class ManagerConfig(Config):
             json = hashabledict(json) if isinstance(json, dict) else tuple(json)
 
         logger.debug(f"Trying cache: {method} {path} {params} {json}")
-        cached_request: dict[str, Any] = self._cached_request(
-            method, path, params=params, json=json, **kwargs
-        )
-        return cached_request
+        return self._cached_request(method, path, params=params, json=json, **kwargs)
 
     def fetch_platforms(self, **kwargs: Unpack[JtiKwargs]) -> list[ManagerPlatformInfo]:
         json = self._request("GET", "/ixmp4", params={"page_size": -1}, **kwargs)

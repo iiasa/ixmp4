@@ -1,7 +1,8 @@
 import logging
 import time
-from collections.abc import Callable, Generator, Mapping
+from collections.abc import Callable, Generator, Iterable, Mapping
 from concurrent import futures
+from datetime import datetime
 from json.decoder import JSONDecodeError
 from typing import (
     TYPE_CHECKING,
@@ -9,6 +10,7 @@ from typing import (
     ClassVar,
     Generic,
     TypeVar,
+    cast,
 )
 
 import httpx
@@ -43,26 +45,66 @@ class BaseModel(PydanticBaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-def df_to_dict(df: pd.DataFrame) -> dict[str, list]:
+class DataFrameDict(TypedDict):
+    index: list[int] | list[str]
+    columns: list[str]
+    dtypes: list[str]
+    # NOTE This is deliberately slightly out of sync with DataFrame.data below
+    # (cf positioning of int and float) to demonstrate that only the one below seems to
+    # affect our tests by causing ValidationErrors
+    data: list[
+        list[
+            bool
+            | datetime
+            | float
+            | int
+            | str
+            | dict[str, Any]
+            # TODO should be able to remove this once PR#122 is merged
+            | list[float | int | str]
+            | None
+        ]
+    ]
+
+
+def df_to_dict(df: pd.DataFrame) -> DataFrameDict:
     columns = []
     dtypes = []
     for c in df.columns:
         columns.append(c)
         dtypes.append(df[c].dtype.name)
 
-    return {
-        "index": df.index.to_list(),
-        "columns": columns,
-        "dtypes": dtypes,
-        "data": df.values.tolist(),
-    }
+    return DataFrameDict(
+        index=df.index.to_list(),
+        columns=columns,
+        dtypes=dtypes,
+        data=df.values.tolist(),
+    )
 
 
 class DataFrame(PydanticBaseModel):
-    index: list | None = Field(None)
+    index: list[int] | list[str] | None = Field(None)
     columns: list[str] | None
     dtypes: list[str] | None
-    data: list | None
+    # TODO The order is important here at the moment, in particular having int before
+    # float! This should likely not be the case, but using StrictInt and StrictFloat
+    # from pydantic only created even more errors.
+    data: (
+        list[
+            list[
+                bool
+                | datetime
+                | int
+                | float
+                | str
+                | dict[str, Any]
+                # TODO should be able to remove this once PR#122 is merged
+                | list[float | int | str]
+                | None
+            ]
+        ]
+        | None
+    )
 
     model_config = ConfigDict(json_encoders={pd.Timestamp: lambda x: x.isoformat()})
 
@@ -73,7 +115,7 @@ class DataFrame(PydanticBaseModel):
         return core_schema.no_info_before_validator_function(cls.validate, handler(cls))
 
     @classmethod
-    def validate(cls, df: pd.DataFrame | dict) -> dict:
+    def validate(cls, df: pd.DataFrame | DataFrameDict) -> DataFrameDict:
         return df_to_dict(df) if isinstance(df, pd.DataFrame) else df
 
     def to_pandas(self) -> pd.DataFrame:
@@ -89,10 +131,35 @@ class DataFrame(PydanticBaseModel):
         return df
 
 
+# TODO could do as httpx package: have PrimitiveTypes be equal to
+# bool | float | int | str to save some repetition
 class _RequestKwargs(TypedDict, total=False):
-    params: dict | None
+    params: (
+        Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[bool]
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None
+    )
     json: (
-        dict[str, int | str | Mapping | abstract.MetaValue | list[str] | float | None]
+        Mapping[
+            str,
+            Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | abstract.MetaValue
+            | None,
+        ]
         | None
     )
     max_retries: int
@@ -115,7 +182,7 @@ class BaseRepository(Generic[ModelType]):
     def __init__(self, backend: "RestBackend") -> None:
         self.backend = backend
 
-    def sanitize_params(self, params: dict[str, Any]) -> dict[str, Any]:
+    def sanitize_params(self, params: Mapping[str, Any]) -> dict[str, Any]:
         return {k: params[k] for k in params if params[k] is not None}
 
     def get_remote_exception(self, res: httpx.Response, status_code: int) -> IxmpError:
@@ -142,11 +209,33 @@ class BaseRepository(Generic[ModelType]):
         self,
         method: str,
         path: str,
-        params: dict | None = None,
-        json: dict | None = None,
+        params: Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[bool]
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None = None,
+        json: Mapping[
+            str,
+            Mapping[str, Any]
+            | abstract.MetaValue
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | None,
+        ]
+        | None = None,
         max_retries: int = settings.client_max_request_retries,
         **kwargs: Unpack[RequestKwargs],
-    ) -> dict | list | None:
+    ) -> dict[str, Any] | list[Any] | None:
         """Sends a request and handles potential error responses.
         Re-raises a remote `IxmpError` if thrown and transferred from the backend.
         Handles read timeouts and rate limiting responses via retries with backoffs.
@@ -154,7 +243,7 @@ class BaseRepository(Generic[ModelType]):
         but has a status code less than 300.
         """
 
-        def retry(max_retries: int = max_retries) -> dict | list | None:
+        def retry(max_retries: int = max_retries) -> dict[str, Any] | list[Any] | None:
             if max_retries == 0:
                 logger.error(f"API Encumbered: '{self.backend.info.dsn}'")
                 raise ApiEncumbered(
@@ -198,8 +287,8 @@ class BaseRepository(Generic[ModelType]):
     def _handle_response(
         self,
         res: httpx.Response,
-        retry: Callable[..., dict | list | None],
-    ) -> dict | list | None:
+        retry: Callable[..., dict[str, Any] | list[Any] | None],
+    ) -> dict[str, Any] | list[Any] | None:
         if res.status_code in [
             429,  # Too Many Requests
             420,  # Enhance Your Calm
@@ -215,7 +304,8 @@ class BaseRepository(Generic[ModelType]):
             raise self.get_remote_exception(res, res.status_code)
         else:
             try:
-                json_decoded: dict | list = res.json()
+                # res.json just returns Any...
+                json_decoded: dict[str, Any] | list[Any] = res.json()
                 return json_decoded
             except JSONDecodeError:
                 if res.status_code < 300 and res.text == "":
@@ -231,9 +321,22 @@ class BaseRepository(Generic[ModelType]):
     def _request_enumeration(
         self,
         table: bool = False,
-        params: dict | None = None,
-        json: dict | None = None,
-    ) -> dict | list:
+        params: Mapping[str, bool | int | str | list[int] | Mapping[str, Any] | None]
+        | None = None,
+        json: Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None = None,
+    ) -> dict[str, Any] | list[Any]:
         """Convenience method for requests to the enumeration endpoint."""
         if params is None:
             params = {}
@@ -253,20 +356,32 @@ class BaseRepository(Generic[ModelType]):
         total: int,
         start: int,
         limit: int,
-        params: dict | None,
-        json: dict | None,
-    ) -> list[list | dict]:
+        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
+        | None,
+        json: Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None,
+    ) -> list[list[Any]] | list[dict[str, Any]]:
         """Uses the backends executor to send many pagination requests concurrently."""
-        requests: list[futures.Future] = []
+        requests: list[futures.Future[dict[str, Any]]] = []
         for req_offset in range(start, total, limit):
-            if params is not None:
-                req_params = params.copy()
-            else:
-                req_params = {}
+            req_params = params.copy() if params is not None else {}
 
             req_params.update({"limit": limit, "offset": req_offset})
-            futu = self.backend.executor.submit(
-                self._request,
+            # Based on usage below, we seem to rely on self._request always returning a
+            # dict[str, Any] here
+            futu: futures.Future[dict[str, Any]] = self.backend.executor.submit(
+                self._request,  # type: ignore [arg-type]
                 self.enumeration_method,
                 self.prefix,
                 params=req_params,
@@ -275,15 +390,29 @@ class BaseRepository(Generic[ModelType]):
             requests.append(futu)
         results = futures.wait(requests)
         responses = [f.result() for f in results.done]
+        # This seems to imply that type(responses) == list[dict[str, Any]]
         return [r.pop("results") for r in responses]
 
     def _handle_pagination(
         self,
-        data: dict,
+        data: dict[str, Any],
         table: bool = False,
-        params: dict | None = None,
-        json: dict | None = None,
-    ) -> list[list] | list[dict]:
+        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
+        | None = None,
+        json: Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None = None,
+    ) -> list[list[Any]] | list[dict[str, Any]]:
         """Handles paginated response and sends subsequent requests if necessary.
         Returns aggregated pages as a list."""
 
@@ -305,12 +434,27 @@ class BaseRepository(Generic[ModelType]):
             return [data.pop("results")] + results
 
     def _list(
-        self, params: dict | None = None, json: dict | None = None
+        self,
+        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
+        | None = None,
+        json: Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None = None,
     ) -> list[ModelType]:
         data = self._request_enumeration(params=params, table=False, json=json)
         if isinstance(data, dict):
             # we can assume this type on list endpoints
-            pages: list[list] = self._handle_pagination(
+            pages: list[list[Any]] = self._handle_pagination(
                 data, table=False, params=params, json=json
             )  # type: ignore[assignment]
             results = [i for page in pages for i in page]
@@ -319,7 +463,22 @@ class BaseRepository(Generic[ModelType]):
         return [self.model_class(**i) for i in results]
 
     def _tabulate(
-        self, params: dict | None = {}, json: dict | None = None
+        self,
+        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
+        | None = {},
+        json: Mapping[
+            str,
+            bool
+            | float
+            | int
+            | str
+            | Iterable[float]
+            | Iterable[int]
+            | Iterable[str]
+            | Mapping[str, Any]
+            | None,
+        ]
+        | None = None,
     ) -> pd.DataFrame:
         # we can assume this type on table endpoints
         data: dict[str, Any] = self._request_enumeration(
@@ -328,7 +487,7 @@ class BaseRepository(Generic[ModelType]):
         pagination = data.get("pagination", None)
         if pagination is not None:
             # we can assume this type on table endpoints
-            pages: list[dict] = self._handle_pagination(
+            pages: list[dict[str, Any]] = self._handle_pagination(
                 data,
                 table=True,
                 params=params,
@@ -354,7 +513,7 @@ class BaseRepository(Generic[ModelType]):
 class GetKwargs(TypedDict, total=False):
     dimension_id: int
     run_ids: list[int]
-    parameters: Mapping
+    parameters: Mapping[str, Any]
     name: str
     run_id: int
     key: str
@@ -367,7 +526,10 @@ class GetKwargs(TypedDict, total=False):
 
 class Retriever(BaseRepository[ModelType]):
     def get(self, **kwargs: Unpack[GetKwargs]) -> ModelType:
-        _kwargs = {k: v for k, v in kwargs.items()}
+        _kwargs = cast(
+            dict[str, bool | int | str | list[int] | Mapping[str, Any] | None],
+            kwargs,
+        )
         list_ = (
             self._list(params=_kwargs)
             if self.enumeration_method == "GET"
@@ -386,7 +548,13 @@ class Retriever(BaseRepository[ModelType]):
 class Creator(BaseRepository[ModelType]):
     def create(
         self,
-        **kwargs: int | str | Mapping | abstract.MetaValue | list[str] | float | None,
+        **kwargs: int
+        | str
+        | Mapping[str, Any]
+        | abstract.MetaValue
+        | list[str]
+        | float
+        | None,
     ) -> ModelType:
         res = self._create(
             self.prefix,
@@ -452,7 +620,7 @@ class BulkUpserter(BulkOperator[ModelType]):
         self._request(
             "POST",
             self.prefix + "bulk/",
-            params={k: v for k, v in kwargs.items()},
+            params=cast(dict[str, bool | None], kwargs),
             content=json_,
         )
 

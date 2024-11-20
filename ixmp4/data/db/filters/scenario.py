@@ -1,8 +1,9 @@
 from typing import ClassVar
 
-from ixmp4.db import Session, filters, sql, utils
+from ixmp4.db import Session, filters, utils
 
 from .. import Run, Scenario
+from ..base import SelectType
 
 
 class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
@@ -11,7 +12,7 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Scenario
 
-    def join(self, exc: sql.Select, session: Session | None = None) -> sql.Select:
+    def join(self, exc: SelectType, session: Session | None = None) -> SelectType:
         if not utils.is_joined(exc, Scenario):
             exc = exc.join(Scenario, Run.scenario)
         return exc

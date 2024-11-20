@@ -12,7 +12,7 @@ from ixmp4.core.exceptions import IxmpError
 from ..fixtures import FilterIamcDataset
 
 
-def _expected_runs_table(*row_default: Unpack[tuple]) -> pd.DataFrame:
+def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.DataFrame:
     rows = []
     for i, default in enumerate(row_default, start=1):
         if default is not None:

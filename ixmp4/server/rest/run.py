@@ -26,7 +26,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[Run]:
     return EnumerationOutput(
         results=backend.runs.paginate(
             _filter=filter,

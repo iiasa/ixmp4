@@ -1,7 +1,7 @@
 import logging
 from collections.abc import Generator
 from datetime import datetime, timedelta
-from typing import Any
+from typing import Any, cast
 from uuid import uuid4
 
 import httpx
@@ -161,11 +161,13 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         self.set_user(self.access_token)
 
     def decode_token(self, token: str) -> dict[str, Any]:
-        decoded: dict = jwt.decode(
-            token,
-            options={"verify_signature": False, "verify_exp": False},
+        return cast(
+            dict[str, Any],
+            jwt.decode(
+                token,
+                options={"verify_signature": False, "verify_exp": False},
+            ),
         )
-        return decoded
 
     def set_user(self, token: str) -> None:
         token_dict = self.decode_token(token)

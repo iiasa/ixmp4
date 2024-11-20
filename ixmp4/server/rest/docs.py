@@ -4,6 +4,7 @@ from fastapi import APIRouter, Depends, Path, Query
 
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
+from ixmp4.data.db.docs import AbstractDocs
 
 from . import deps
 from .base import BaseModel, EnumerationOutput, Pagination
@@ -24,7 +25,7 @@ def list_models(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.models.docs.list(dimension_id=dimension_id),
         total=backend.models.docs.count(dimension_id=dimension_id),
@@ -53,7 +54,7 @@ def list_regions(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.regions.docs.list(dimension_id=dimension_id),
         total=backend.regions.docs.count(dimension_id=dimension_id),
@@ -82,7 +83,7 @@ def list_scenarios(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.scenarios.docs.list(dimension_id=dimension_id),
         total=backend.scenarios.docs.count(dimension_id=dimension_id),
@@ -112,7 +113,7 @@ def list_units(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.units.docs.list(dimension_id=dimension_id),
         total=backend.units.docs.count(dimension_id=dimension_id),
@@ -141,7 +142,7 @@ def list_variables(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.iamc.variables.docs.list(dimension_id=dimension_id),
         total=backend.iamc.variables.docs.count(dimension_id=dimension_id),
@@ -170,7 +171,7 @@ def list_indexsets(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.optimization.indexsets.docs.list(dimension_id=dimension_id),
         total=backend.optimization.indexsets.docs.count(dimension_id=dimension_id),
@@ -199,7 +200,7 @@ def list_scalars(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.optimization.scalars.docs.list(dimension_id=dimension_id),
         total=backend.optimization.scalars.docs.count(dimension_id=dimension_id),
@@ -228,7 +229,7 @@ def list_tables(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.optimization.tables.docs.list(dimension_id=dimension_id),
         total=backend.optimization.tables.docs.count(dimension_id=dimension_id),
@@ -257,7 +258,7 @@ def list_parameters(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.optimization.parameters.docs.list(dimension_id=dimension_id),
         total=backend.optimization.parameters.docs.count(dimension_id=dimension_id),
@@ -286,7 +287,7 @@ def list_optimization_variables(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.optimization.variables.docs.list(dimension_id=dimension_id),
         total=backend.optimization.variables.docs.count(dimension_id=dimension_id),
@@ -315,7 +316,7 @@ def list_equations(
     dimension_id: int | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-) -> EnumerationOutput:
+) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
         results=backend.optimization.equations.docs.list(dimension_id=dimension_id),
         total=backend.optimization.equations.docs.count(dimension_id=dimension_id),

@@ -1,4 +1,5 @@
 import asyncio
+from collections.abc import Iterable
 
 import pandas as pd
 import pytest
@@ -212,7 +213,7 @@ class TestCoreIamc:
     def test_run_tabulate_with_filter_raw(
         self,
         platform: ixmp4.Platform,
-        filters: dict[str, dict[str, str | list[str]]],
+        filters: dict[str, dict[str, str | Iterable[str]]],
         run: tuple[str, str, int],
         exp_len: int,
     ) -> None:

@@ -1,6 +1,6 @@
 import functools
 from collections.abc import Callable
-from typing import Any
+from typing import Any, TypeVar
 
 import pandera as pa
 from pandera.errors import SchemaError as PanderaSchemaError
@@ -13,15 +13,17 @@ from ixmp4.data.abstract.base import BaseRepository
 
 from .exceptions import SchemaError
 
+T = TypeVar("T")
+
 
 def check_types(
-    func: Callable[[BaseRepository, DataFrame], None],
-) -> Callable[[BaseRepository, DataFrame], None]:
+    func: Callable[[BaseRepository, DataFrame[T]], None],
+) -> Callable[[BaseRepository, DataFrame[T]], None]:
     checked_func = pa.check_types(func)
 
     @functools.wraps(func)
     def wrapper(
-        *args: Unpack[tuple[BaseRepository, DataFrame]],
+        *args: Unpack[tuple[BaseRepository, DataFrame[T]]],
         skip_validation: bool = False,
         **kwargs: Any,
     ) -> None:

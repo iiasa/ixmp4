@@ -68,7 +68,9 @@ class RestBackend(Backend):
             auth=auth,
         )
 
-    def get_auth(self, rest_url: str, override_auth: BaseAuth | None) -> BaseAuth:
+    def get_auth(
+        self, rest_url: str, override_auth: BaseAuth | None
+    ) -> BaseAuth | None:
         root = httpx.get(rest_url, follow_redirects=True)
         if root.status_code != 200:
             logger.error("Root API response not OK: " + root.text)
