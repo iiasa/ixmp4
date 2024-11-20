@@ -18,7 +18,11 @@ ExcMeta: type = type(Exception)
 # NOTE mypy seems to say Exception has type Any, don't see how we could change that
 class RemoteExceptionMeta(ExcMeta):  # type: ignore[misc]
     def __new__(
-        cls, name: str, bases: tuple[object], namespace: dict[str, Any], **kwargs: Any
+        cls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        **kwargs: Any,
     ) -> type["IxmpError"]:
         http_error_name = namespace.get("http_error_name", None)
         if http_error_name is not None:

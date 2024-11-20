@@ -14,7 +14,7 @@ from ixmp4.data import types
 
 class BaseMeta(_ProtocolMeta):
     def __init__(
-        self, name: str, bases: tuple[object], namespace: dict[str, Any]
+        self, name: str, bases: tuple[type, ...], namespace: dict[str, Any]
     ) -> None:
         super().__init__(name, bases, namespace)
         self.NotUnique = type(

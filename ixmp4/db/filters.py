@@ -125,7 +125,11 @@ PydanticMeta: type = type(BaseModel)
 # NOTE mypy seems to say PydanticMeta has type Any, don't see how we could change that
 class FilterMeta(PydanticMeta):  # type: ignore[misc]
     def __new__(
-        cls, name: str, bases: tuple[object], namespace: dict[str, Any], **kwargs: Any
+        cls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        **kwargs: Any,
     ) -> type["BaseFilter"]:
         annots = namespace.get("__annotations__", {}).copy()
         for name, annot in annots.items():
