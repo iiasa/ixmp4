@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4.core.exceptions import SchemaError
+from ixmp4.core.exceptions import InvalidRunMeta, SchemaError
 from ixmp4.data.abstract.meta import RunMetaEntry
 
 from ..utils import assert_unordered_equality
@@ -36,6 +36,11 @@ class TestDataMeta:
             assert entry.key == key
             assert entry.value == value
             assert entry.type == type
+
+    def test_illegal_key(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        with pytest.raises(InvalidRunMeta):
+            platform.backend.meta.create(run.id, "version", "foo")
 
     def test_entry_unique(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")

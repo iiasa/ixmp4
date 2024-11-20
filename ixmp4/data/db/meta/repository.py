@@ -7,6 +7,7 @@ from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
 from ixmp4.core.decorators import check_types
+from ixmp4.core.exceptions import InvalidRunMeta
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
@@ -15,6 +16,8 @@ from ixmp4.data.db.scenario import Scenario
 
 from .. import base
 from .model import RunMetaEntry
+
+ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
 
 class RemoveRunMetaEntryFrameSchema(pa.DataFrameModel):
@@ -60,6 +63,8 @@ class RunMetaEntryRepository(
                 default_only=False,
             )
 
+        if key in ILLEGAL_META_KEYS:
+            raise InvalidRunMeta("Illegal meta key: " + key)
         entry = RunMetaEntry(run__id=run__id, key=key, value=value)
         self.session.add(entry)
         return entry
