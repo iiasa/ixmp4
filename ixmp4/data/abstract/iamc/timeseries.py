@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
 if TYPE_CHECKING:
@@ -7,11 +7,18 @@ if TYPE_CHECKING:
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
+from ..annotations import (
+    HasIdFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 
 
 class TimeSeries(base.BaseModel, Protocol):
@@ -29,19 +36,11 @@ class TimeSeries(base.BaseModel, Protocol):
 ModelType = TypeVar("ModelType", bound=TimeSeries)
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    id: int
-    id__in: Iterable[int]
-    region: dict[str, int | str | Iterable[int] | Iterable[str]]
-    unit: dict[str, int | str | Iterable[int] | Iterable[str]]
-    variable: dict[str, int | str | Iterable[int] | Iterable[str]]
-    run: dict[
-        str,
-        bool
-        | int
-        | Iterable[int]
-        | dict[str, int | str | Iterable[int] | Iterable[str]],
-    ]
+class EnumerateKwargs(HasIdFilter, total=False):
+    region: HasRegionFilter
+    unit: HasUnitFilter
+    variable: HasVariableFilter
+    run: HasRunFilter
 
 
 class TimeSeriesRepository(

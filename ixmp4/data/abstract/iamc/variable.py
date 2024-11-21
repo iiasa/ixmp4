@@ -1,14 +1,20 @@
-from collections.abc import Iterable, Mapping
 from typing import Protocol
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
+from ..annotations import (
+    HasIdFilter,
+    HasNameFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasUnitFilter,
+)
 from ..docs import DocsRepository
 
 
@@ -27,24 +33,22 @@ class Variable(base.BaseModel, Protocol):
         return f"<Variable {self.id} name={self.name}>"
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    id: int
-    id__in: Iterable[int]
-    name: str | None
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
-    region: dict[str, int | str | Iterable[int] | Iterable[str]]
-    unit: dict[str, int | str | Iterable[int] | Iterable[str]]
-    run: dict[
-        str,
-        bool
-        | int
-        | Iterable[int]
-        | Mapping[str, int | str | Iterable[int] | Iterable[str]],
-    ]
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    region: HasRegionFilter
+    unit: HasUnitFilter
+    # TODO leaving something like this renders the type hints while typing to say
+    # `run: dict[str, bool | ...]`, from which you can immediately tell the allowed
+    # types, but won't actually know which strings to put in as the keys. Using the
+    # TypedDict, you'd know you have to look up its definition unless you know by heart
+    # what you can enter.
+    # run: dict[
+    #     str,
+    #     bool
+    #     | int
+    #     | Iterable[int]
+    #     | Mapping[str, int | str | Iterable[int] | Iterable[str]],
+    # ]
+    run: HasRunFilter
 
 
 class VariableRepository(

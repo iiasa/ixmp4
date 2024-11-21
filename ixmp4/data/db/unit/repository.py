@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -20,13 +19,7 @@ from .docs import UnitDocsRepository
 from .model import Unit
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    name: str
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
+class EnumerateKwargs(abstract.HasNameFilter, total=False):
     _filter: BaseFilter
 
 

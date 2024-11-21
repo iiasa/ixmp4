@@ -1,22 +1,12 @@
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Protocol
 
+from ..annotations import HasUnitIdFilter
+
 if TYPE_CHECKING:
     from . import EnumerateKwargs as BaseEnumerateKwargs
 
-    class EnumerateKwargs(BaseEnumerateKwargs, total=False):
-        unit_id: int | None
-        unit_id__in: Iterable[int]
-        unit_id__gt: int
-        unit_id__lt: int
-        unit_id__gte: int
-        unit_id__lte: int
-        unit__id: int | None
-        unit__id__in: Iterable[int]
-        unit__id__gt: int
-        unit__id__lt: int
-        unit__id__gte: int
-        unit__id__lte: int
+    class EnumerateKwargs(BaseEnumerateKwargs, HasUnitIdFilter, total=False): ...
 
 
 import pandas as pd

@@ -6,11 +6,12 @@ import pandas as pd
 from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasIdFilter, HasRunFilter, HasRunIdFilter
 
 # as long as all of these are `Strict` the order does not matter
 StrictMetaValue = StrictBool | StrictInt | StrictFloat | StrictStr
@@ -51,27 +52,13 @@ class RunMetaEntry(base.BaseModel, Protocol):
             key={self.key} value={self.value}"
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    id: int
-    id__in: Iterable[int]
+class EnumerateKwargs(HasIdFilter, HasRunIdFilter, total=False):
     dtype: str
     dtype__in: Iterable[str]
     dtype__like: str
     dtype__ilike: str
     dtype__notlike: str
     dtype__notilike: str
-    run_id: int | None
-    run_id__in: Iterable[int]
-    run_id__gt: int
-    run_id__lt: int
-    run_id__gte: int
-    run_id__lte: int
-    run__id: int | None
-    run__id__in: Iterable[int]
-    run__id__gt: int
-    run__id__lt: int
-    run__id__gte: int
-    run__id__lte: int
     key: str
     key__in: Iterable[str]
     key__like: str
@@ -97,13 +84,7 @@ class EnumerateKwargs(TypedDict, total=False):
     value_float_id__gte: float
     value_float_id__lte: float
     value_bool: bool
-    run: dict[
-        str,
-        bool
-        | int
-        | Iterable[int]
-        | dict[str, int | str | Iterable[int] | Iterable[str]],
-    ]
+    run: HasRunFilter
 
 
 class RunMetaEntryRepository(

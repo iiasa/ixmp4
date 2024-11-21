@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -8,6 +7,7 @@ from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.data.abstract import iamc as abstract
+from ixmp4.data.abstract.annotations import HasNameFilter
 from ixmp4.data.auth.decorators import guard
 from ixmp4.db.filters import BaseFilter
 
@@ -19,13 +19,7 @@ if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    name: str
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
+class EnumerateKwargs(HasNameFilter, total=False):
     _filter: BaseFilter
 
 

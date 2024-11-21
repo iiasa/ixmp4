@@ -1,14 +1,19 @@
-from collections.abc import Iterable
 from typing import Protocol
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from . import base
+from .annotations import (
+    HasHierarchyFilter,
+    HasIdFilter,
+    HasNameFilter,
+    IamcRegionFilter,
+)
 from .docs import DocsRepository
 
 
@@ -29,44 +34,8 @@ class Region(base.BaseModel, Protocol):
         return f"<Region {self.id} name={self.name}>"
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    id: int
-    id__in: Iterable[int]
-    name: str | None
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
-    hierarchy: str | None
-    hierarchy__in: Iterable[str]
-    hierarchy__like: str
-    hierarchy__ilike: str
-    hierarchy__notlike: str
-    hierarchy__notilike: str
-    iamc: (
-        dict[
-            str,
-            dict[
-                str,
-                int
-                | str
-                | Iterable[int]
-                | Iterable[str]
-                | dict[
-                    str,
-                    bool
-                    | int
-                    | str
-                    | Iterable[int]
-                    | Iterable[str]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
-                ],
-            ],
-        ]
-        | bool
-        | None
-    )
+class EnumerateKwargs(HasHierarchyFilter, HasIdFilter, HasNameFilter, total=False):
+    iamc: IamcRegionFilter | bool | None
 
 
 class RegionRepository(

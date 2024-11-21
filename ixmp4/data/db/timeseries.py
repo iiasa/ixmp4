@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any, ClassVar, Generic, TypeVar
 
 import pandas as pd
@@ -61,15 +61,9 @@ class SelectKwargs(TypedDict, total=False):
     run: dict[str, int]
 
 
-class EnumerateKwargs(TypedDict, total=False):
+class EnumerateKwargs(abstract.HasNameFilter, total=False):
     _filter: BaseFilter
     join_parameters: bool | None
-    name: str
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
 
 
 class CreateKwargs(TypedDict):

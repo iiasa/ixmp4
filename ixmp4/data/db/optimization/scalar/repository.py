@@ -11,6 +11,7 @@ import pandas as pd
 
 from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
+from ixmp4.data.abstract.annotations import HasUnitIdFilter
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
@@ -18,19 +19,7 @@ from .docs import ScalarDocsRepository
 from .model import Scalar
 
 
-class EnumerateKwargs(base.EnumerateKwargs, total=False):
-    unit_id: int | None
-    unit_id__in: Iterable[int]
-    unit_id__gt: int
-    unit_id__lt: int
-    unit_id__gte: int
-    unit_id__lte: int
-    unit__id: int | None
-    unit__id__in: Iterable[int]
-    unit__id__gt: int
-    unit__id__lt: int
-    unit__id__gte: int
-    unit__id__lte: int
+class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...
 
 
 class ScalarRepository(

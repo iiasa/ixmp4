@@ -1,15 +1,15 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING, ClassVar, Protocol
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
 from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasRunFilter, IamcRunFilter
 
 if TYPE_CHECKING:
     from . import Model, Scenario
@@ -41,15 +41,8 @@ class Run(base.BaseModel, Protocol):
             is_default={self.is_default}>"
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    id: int
-    id__in: Iterable[int]
-    version: int | None
-    default_only: bool
-    is_default: bool
-    model: dict[str, int | str | Iterable[int] | Iterable[str]]
-    scenario: dict[str, int | str | Iterable[int] | Iterable[str]]
-    iamc: dict[str, dict[str, int | str | Iterable[int] | Iterable[str]]] | bool | None
+class EnumerateKwargs(HasRunFilter, total=False):
+    iamc: IamcRunFilter | bool | None
 
 
 class RunRepository(

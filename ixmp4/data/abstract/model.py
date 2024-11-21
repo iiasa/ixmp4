@@ -1,14 +1,14 @@
-from collections.abc import Iterable
 from typing import Protocol
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasIdFilter, HasNameFilter, IamcModelFilter
 from .docs import DocsRepository
 
 
@@ -29,37 +29,8 @@ class Model(base.BaseModel, Protocol):
         return f"<Model {self.id} name={self.name}>"
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    id: int
-    id__in: Iterable[int]
-    name: str | None
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
-    iamc: (
-        dict[
-            str,
-            dict[
-                str,
-                int
-                | str
-                | Iterable[int]
-                | Iterable[str]
-                | dict[
-                    str,
-                    bool
-                    | int
-                    | str
-                    | Iterable[int]
-                    | Iterable[str]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
-                ],
-            ],
-        ]
-        | bool
-    )
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    iamc: IamcModelFilter | bool
 
 
 class ModelRepository(

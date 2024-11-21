@@ -19,13 +19,7 @@ from .docs import RegionDocsRepository
 from .model import Region
 
 
-class EnumerateKwargs(TypedDict, total=False):
-    name: str
-    name__in: Iterable[str]
-    name__like: str
-    name__ilike: str
-    name__notlike: str
-    name__notilike: str
+class EnumerateKwargs(abstract.HasNameFilter, total=False):
     hierarchy: str
     hierarchy__in: Iterable[str]
     hierarchy__like: str
