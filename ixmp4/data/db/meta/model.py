@@ -13,7 +13,7 @@ from .. import base
 class InitKwargs(TypedDict):
     run__id: int
     key: str
-    value: bool | float | int | str
+    value: abstract.annotations.PrimitiveTypes
 
 
 class RunMetaEntry(base.BaseModel):
@@ -72,7 +72,7 @@ class RunMetaEntry(base.BaseModel):
         return value
 
     def __init__(self, **kwargs: Unpack[InitKwargs]) -> None:
-        _kwargs = cast(dict[str, bool | float | int | str], kwargs)
+        _kwargs = cast(dict[str, abstract.annotations.PrimitiveTypes], kwargs)
         value = _kwargs.pop("value")
         value_type = type(value)
         try:

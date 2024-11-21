@@ -121,7 +121,7 @@ class CreateKwargs(TypedDict, total=False):
     hierarchy: str
     run__id: int
     key: str
-    value: bool | float | int | str
+    value: abstract.annotations.PrimitiveTypes
     parameters: Mapping[str, Any]
     run_id: int
     unit_name: str | None

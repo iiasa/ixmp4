@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import ClassVar, cast
 
 import pandas as pd
@@ -67,15 +66,11 @@ class RunRepository(
             dict[
                 str,
                 bool
-                | int
-                | Iterable[int]
+                | abstract.annotations.IntFilterAlias
                 | dict[
                     str,
-                    int
-                    | str
-                    | Iterable[int]
-                    | Iterable[str]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                    abstract.annotations.DefaultFilterAlias
+                    | dict[str, abstract.annotations.DefaultFilterAlias],
                 ]
                 | None,
             ],
@@ -91,15 +86,11 @@ class RunRepository(
             dict[
                 str,
                 bool
-                | int
-                | Iterable[int]
+                | abstract.annotations.IntFilterAlias
                 | dict[
                     str,
-                    int
-                    | str
-                    | Iterable[int]
-                    | Iterable[str]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                    abstract.annotations.DefaultFilterAlias
+                    | dict[str, abstract.annotations.DefaultFilterAlias],
                 ]
                 | None,
             ],

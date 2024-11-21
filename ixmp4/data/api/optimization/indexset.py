@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, List, cast
 
@@ -68,7 +67,7 @@ class IndexSetRepository(
         self,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> list[IndexSet]:
-        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
+        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
         return super()._list(json=json)
 
     def tabulate(
@@ -76,7 +75,7 @@ class IndexSetRepository(
         include_data: bool = False,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
+        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
         return super()._tabulate(json=json, params={"include_data": include_data})
 
     def add_data(

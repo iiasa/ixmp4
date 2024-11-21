@@ -1,5 +1,5 @@
 from collections import UserDict
-from typing import ClassVar
+from typing import ClassVar, cast
 
 import numpy as np
 import pandas as pd
@@ -10,6 +10,7 @@ from typing_extensions import TypedDict, Unpack
 from ixmp4.data.abstract import Model as ModelModel
 from ixmp4.data.abstract import Run as RunModel
 from ixmp4.data.abstract import Scenario as ScenarioModel
+from ixmp4.data.abstract.annotations import PrimitiveTypes
 from ixmp4.data.abstract.run import EnumerateKwargs
 from ixmp4.data.backend import Backend
 
@@ -60,9 +61,7 @@ class Run(BaseModelFacade):
         return self._meta
 
     @meta.setter
-    def meta(
-        self, meta: dict[str, bool | float | int | str | np.generic | None]
-    ) -> None:
+    def meta(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
         self._meta._set(meta)
 
     def set_as_default(self) -> None:
@@ -115,7 +114,7 @@ class RunRepository(BaseFacade):
         return runs[columns]
 
 
-class RunMetaFacade(BaseFacade, UserDict[str, bool | float | int | str | None]):
+class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
     run: RunModel
 
     def __init__(self, run: RunModel, **kwargs: Backend) -> None:
@@ -123,15 +122,13 @@ class RunMetaFacade(BaseFacade, UserDict[str, bool | float | int | str | None]):
         self.run = run
         self.df, self.data = self._get()
 
-    def _get(self) -> tuple[pd.DataFrame, dict[str, bool | float | int | str | None]]:
+    def _get(self) -> tuple[pd.DataFrame, dict[str, PrimitiveTypes | None]]:
         df = self.backend.meta.tabulate(run_id=self.run.id, run={"default_only": False})
         if df.empty:
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
 
-    def _set(
-        self, meta: dict[str, bool | float | int | str | np.generic | None]
-    ) -> None:
+    def _set(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
@@ -143,9 +140,7 @@ class RunMetaFacade(BaseFacade, UserDict[str, bool | float | int | str | None]):
         self.backend.meta.bulk_upsert(df)
         self.df, self.data = self._get()
 
-    def __setitem__(
-        self, key: str, value: bool | float | int | str | np.generic | None
-    ) -> None:
+    def __setitem__(self, key: str, value: PrimitiveTypes | np.generic | None) -> None:
         try:
             del self[key]
         except KeyError:
@@ -163,13 +158,12 @@ class RunMetaFacade(BaseFacade, UserDict[str, bool | float | int | str | None]):
 
 
 def numpy_to_pytype(
-    value: bool | float | int | str | np.generic | None,
-) -> bool | float | int | str | None:
+    value: PrimitiveTypes | np.generic | None,
+) -> PrimitiveTypes | None:
     """Cast numpy-types to basic Python types"""
     if value is np.nan:  # np.nan is cast to 'float', not None
         return None
     elif isinstance(value, np.generic):
-        item: bool | float | int | str = value.item()
-        return item
+        return cast(PrimitiveTypes, value.item())
     else:
         return value

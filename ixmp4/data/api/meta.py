@@ -65,17 +65,13 @@ class RunMetaEntryRepository(
                 str,
                 bool
                 | float
-                | int
-                | str
                 | Iterable[float]
-                | Iterable[int]
-                | Iterable[str]
+                | abstract.annotations.DefaultFilterAlias
                 | dict[
                     str,
                     bool
-                    | int
-                    | Iterable[int]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                    | abstract.annotations.IntFilterAlias
+                    | dict[str, abstract.annotations.DefaultFilterAlias],
                 ]
                 | None,
             ],
@@ -93,17 +89,13 @@ class RunMetaEntryRepository(
                 str,
                 bool
                 | float
-                | int
-                | str
                 | Iterable[float]
-                | Iterable[int]
-                | Iterable[str]
+                | abstract.annotations.DefaultFilterAlias
                 | dict[
                     str,
                     bool
-                    | int
-                    | Iterable[int]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                    | abstract.annotations.IntFilterAlias
+                    | dict[str, abstract.annotations.DefaultFilterAlias],
                 ]
                 | None,
             ],

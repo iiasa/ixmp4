@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from datetime import datetime
 from typing import ClassVar, cast
 
@@ -51,9 +50,8 @@ class DataPointRepository(
             json=cast(
                 dict[
                     str,
-                    int
-                    | Iterable[int]
-                    | dict[str, bool | int | str | Iterable[int] | Iterable[str]]
+                    abstract.annotations.IntFilterAlias
+                    | dict[str, bool | abstract.annotations.DefaultFilterAlias]
                     | None,
                 ],
                 kwargs,
@@ -74,9 +72,8 @@ class DataPointRepository(
             json=cast(
                 dict[
                     str,
-                    int
-                    | Iterable[int]
-                    | dict[str, bool | int | str | Iterable[int] | Iterable[str]]
+                    abstract.annotations.IntFilterAlias
+                    | dict[str, bool | abstract.annotations.DefaultFilterAlias]
                     | None,
                 ],
                 kwargs,

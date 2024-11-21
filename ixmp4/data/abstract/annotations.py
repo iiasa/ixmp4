@@ -1,7 +1,19 @@
 from collections.abc import Iterable
 
+# TODO Use `type` when dropping Python 3.11
+from typing import TypeAlias
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict
+
+PrimitiveTypes: TypeAlias = bool | float | int | str
+PrimitiveIterableTypes: TypeAlias = (
+    Iterable[bool] | Iterable[float] | Iterable[int] | Iterable[str]
+)
+
+IntFilterAlias: TypeAlias = int | Iterable[int]
+StrFilterAlias: TypeAlias = str | Iterable[str]
+DefaultFilterAlias: TypeAlias = IntFilterAlias | StrFilterAlias
 
 
 class HasIdFilter(TypedDict, total=False):

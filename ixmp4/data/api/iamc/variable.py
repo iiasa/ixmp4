@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -68,11 +68,8 @@ class VariableRepository(
             dict[
                 str,
                 bool
-                | int
-                | str
-                | Iterable[int]
-                | Iterable[str]
-                | Mapping[str, int | str | Iterable[int] | Iterable[str]]
+                | abstract.annotations.DefaultFilterAlias
+                | Mapping[str, abstract.annotations.DefaultFilterAlias]
                 | None,
             ],
             kwargs,
@@ -86,11 +83,8 @@ class VariableRepository(
             dict[
                 str,
                 bool
-                | int
-                | str
-                | Iterable[int]
-                | Iterable[str]
-                | Mapping[str, int | str | Iterable[int] | Iterable[str]]
+                | abstract.annotations.DefaultFilterAlias
+                | Mapping[str, abstract.annotations.DefaultFilterAlias]
                 | None,
             ],
             kwargs,

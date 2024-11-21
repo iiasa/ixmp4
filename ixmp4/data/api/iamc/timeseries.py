@@ -1,4 +1,4 @@
-from collections.abc import Iterable, Mapping
+from collections.abc import Mapping
 from typing import Any, ClassVar, cast
 
 import pandas as pd
@@ -48,16 +48,12 @@ class TimeSeriesRepository(
         json = cast(
             dict[
                 str,
-                int
-                | Iterable[int]
+                abstract.annotations.IntFilterAlias
                 | dict[
                     str,
                     bool
-                    | int
-                    | str
-                    | Iterable[int]
-                    | Iterable[str]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                    | abstract.annotations.DefaultFilterAlias
+                    | dict[str, abstract.annotations.DefaultFilterAlias],
                 ],
             ],
             kwargs,
@@ -72,16 +68,12 @@ class TimeSeriesRepository(
         json = cast(
             dict[
                 str,
-                int
-                | Iterable[int]
+                abstract.annotations.IntFilterAlias
                 | dict[
                     str,
                     bool
-                    | int
-                    | str
-                    | Iterable[int]
-                    | Iterable[str]
-                    | dict[str, int | str | Iterable[int] | Iterable[str]],
+                    | abstract.annotations.DefaultFilterAlias
+                    | dict[str, abstract.annotations.DefaultFilterAlias],
                 ],
             ],
             kwargs,

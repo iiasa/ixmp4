@@ -85,14 +85,14 @@ class ParameterRepository(
         self,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> Iterable[Parameter]:
-        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
+        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
         return super()._list(json=json)
 
     def tabulate(
         self,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(dict[str, int | str | Iterable[int] | Iterable[str] | None], kwargs)
+        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
         return super()._tabulate(json=json)
 
     def enumerate(

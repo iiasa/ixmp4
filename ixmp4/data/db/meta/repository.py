@@ -51,7 +51,7 @@ class EnumerateKwargs(TypedDict, total=False):
 class CreateKwargs(TypedDict, total=False):
     run__id: int
     key: str
-    value: bool | float | int | str
+    value: abstract.annotations.PrimitiveTypes
 
 
 class RunMetaEntryRepository(
@@ -71,7 +71,7 @@ class RunMetaEntryRepository(
         self.filter_class = RunMetaEntryFilter
 
     def add(
-        self, run__id: int, key: str, value: str | int | bool | float
+        self, run__id: int, key: str, value: abstract.annotations.PrimitiveTypes
     ) -> RunMetaEntry:
         if self.backend.auth_context is not None:
             self.backend.runs.check_access(
@@ -100,7 +100,7 @@ class RunMetaEntryRepository(
     @guard("edit")
     def create(
         self,
-        *args: bool | float | int | str,
+        *args: abstract.annotations.PrimitiveTypes,
         **kwargs: Unpack[CreateKwargs],
     ) -> RunMetaEntry:
         return super().create(*args, **kwargs)

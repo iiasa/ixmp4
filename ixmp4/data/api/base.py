@@ -4,14 +4,9 @@ from collections.abc import Callable, Generator, Iterable, Mapping
 from concurrent import futures
 from datetime import datetime
 from json.decoder import JSONDecodeError
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    Generic,
-    TypeVar,
-    cast,
-)
+
+# TODO Use `type` instead of TypeAlias when dropping Python 3.11
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeAlias, TypeVar, cast
 
 import httpx
 import pandas as pd
@@ -37,6 +32,26 @@ if TYPE_CHECKING:
 
 logger = logging.getLogger(__name__)
 
+JsonType: TypeAlias = Mapping[
+    str,
+    Iterable[float]
+    | Iterable[int]
+    | Iterable[str]
+    | Mapping[str, Any]
+    | abstract.annotations.PrimitiveTypes
+    | None,
+]
+ParamType: TypeAlias = dict[
+    str, bool | int | str | list[int] | Mapping[str, Any] | None
+]
+_RequestParamType: TypeAlias = Mapping[
+    str,
+    abstract.annotations.PrimitiveTypes
+    | abstract.annotations.PrimitiveIterableTypes
+    | Mapping[str, Any]
+    | None,
+]
+
 
 class BaseModel(PydanticBaseModel):
     NotFound: ClassVar[type[IxmpError]]
@@ -54,11 +69,8 @@ class DataFrameDict(TypedDict):
     # affect our tests by causing ValidationErrors
     data: list[
         list[
-            bool
+            abstract.annotations.PrimitiveTypes
             | datetime
-            | float
-            | int
-            | str
             | dict[str, Any]
             # TODO should be able to remove this once PR#122 is merged
             | list[float | int | str]
@@ -131,37 +143,9 @@ class DataFrame(PydanticBaseModel):
         return df
 
 
-# TODO could do as httpx package: have PrimitiveTypes be equal to
-# bool | float | int | str to save some repetition
 class _RequestKwargs(TypedDict, total=False):
-    params: (
-        Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[bool]
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None
-    )
-    json: (
-        Mapping[
-            str,
-            Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | abstract.MetaValue
-            | None,
-        ]
-        | None
-    )
+    params: _RequestParamType | None
+    json: JsonType | None
     max_retries: int
 
 
@@ -209,30 +193,8 @@ class BaseRepository(Generic[ModelType]):
         self,
         method: str,
         path: str,
-        params: Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[bool]
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None = None,
-        json: Mapping[
-            str,
-            Mapping[str, Any]
-            | abstract.MetaValue
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | None,
-        ]
-        | None = None,
+        params: _RequestParamType | None = None,
+        json: JsonType | None = None,
         max_retries: int = settings.client_max_request_retries,
         **kwargs: Unpack[RequestKwargs],
     ) -> dict[str, Any] | list[Any] | None:
@@ -321,21 +283,8 @@ class BaseRepository(Generic[ModelType]):
     def _request_enumeration(
         self,
         table: bool = False,
-        params: Mapping[str, bool | int | str | list[int] | Mapping[str, Any] | None]
-        | None = None,
-        json: Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None = None,
+        params: ParamType | None = None,
+        json: JsonType | None = None,
     ) -> dict[str, Any] | list[Any]:
         """Convenience method for requests to the enumeration endpoint."""
         if params is None:
@@ -356,21 +305,8 @@ class BaseRepository(Generic[ModelType]):
         total: int,
         start: int,
         limit: int,
-        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
-        | None,
-        json: Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None,
+        params: ParamType | None,
+        json: JsonType | None,
     ) -> list[list[Any]] | list[dict[str, Any]]:
         """Uses the backends executor to send many pagination requests concurrently."""
         requests: list[futures.Future[dict[str, Any]]] = []
@@ -397,21 +333,8 @@ class BaseRepository(Generic[ModelType]):
         self,
         data: dict[str, Any],
         table: bool = False,
-        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
-        | None = None,
-        json: Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None = None,
+        params: ParamType | None = None,
+        json: JsonType | None = None,
     ) -> list[list[Any]] | list[dict[str, Any]]:
         """Handles paginated response and sends subsequent requests if necessary.
         Returns aggregated pages as a list."""
@@ -435,21 +358,8 @@ class BaseRepository(Generic[ModelType]):
 
     def _list(
         self,
-        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
-        | None = None,
-        json: Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None = None,
+        params: ParamType | None = None,
+        json: JsonType | None = None,
     ) -> list[ModelType]:
         data = self._request_enumeration(params=params, table=False, json=json)
         if isinstance(data, dict):
@@ -464,21 +374,8 @@ class BaseRepository(Generic[ModelType]):
 
     def _tabulate(
         self,
-        params: dict[str, bool | int | str | list[int] | Mapping[str, Any] | None]
-        | None = {},
-        json: Mapping[
-            str,
-            bool
-            | float
-            | int
-            | str
-            | Iterable[float]
-            | Iterable[int]
-            | Iterable[str]
-            | Mapping[str, Any]
-            | None,
-        ]
-        | None = None,
+        params: ParamType | None = {},
+        json: JsonType | None = None,
     ) -> pd.DataFrame:
         # we can assume this type on table endpoints
         data: dict[str, Any] = self._request_enumeration(

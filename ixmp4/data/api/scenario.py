@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -67,26 +66,17 @@ class ScenarioRepository(
         json = cast(
             dict[
                 str,
-                int
-                | str
-                | Iterable[int]
-                | Iterable[str]
+                abstract.annotations.DefaultFilterAlias
                 | dict[
                     str,
                     dict[
                         str,
-                        int
-                        | str
-                        | Iterable[int]
-                        | Iterable[str]
+                        abstract.annotations.DefaultFilterAlias
                         | dict[
                             str,
                             bool
-                            | int
-                            | str
-                            | Iterable[int]
-                            | Iterable[str]
-                            | dict[str, int | str | Iterable[int] | Iterable[str]],
+                            | abstract.annotations.DefaultFilterAlias
+                            | dict[str, abstract.annotations.DefaultFilterAlias],
                         ],
                     ],
                 ]
@@ -104,26 +94,17 @@ class ScenarioRepository(
         json = cast(
             dict[
                 str,
-                int
-                | str
-                | Iterable[int]
-                | Iterable[str]
+                abstract.annotations.DefaultFilterAlias
                 | dict[
                     str,
                     dict[
                         str,
-                        int
-                        | str
-                        | Iterable[int]
-                        | Iterable[str]
+                        abstract.annotations.DefaultFilterAlias
                         | dict[
                             str,
                             bool
-                            | int
-                            | str
-                            | Iterable[int]
-                            | Iterable[str]
-                            | dict[str, int | str | Iterable[int] | Iterable[str]],
+                            | abstract.annotations.DefaultFilterAlias
+                            | dict[str, abstract.annotations.DefaultFilterAlias],
                         ],
                     ],
                 ]
