@@ -45,19 +45,7 @@ class TimeSeriesRepository(
     def list(
         self, **kwargs: Unpack[abstract.iamc.timeseries.EnumerateKwargs]
     ) -> list[TimeSeries]:
-        json = cast(
-            dict[
-                str,
-                abstract.annotations.IntFilterAlias
-                | dict[
-                    str,
-                    bool
-                    | abstract.annotations.DefaultFilterAlias
-                    | dict[str, abstract.annotations.DefaultFilterAlias],
-                ],
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
@@ -65,19 +53,7 @@ class TimeSeriesRepository(
         join_parameters: bool | None = None,
         **kwargs: Unpack[abstract.iamc.timeseries.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(
-            dict[
-                str,
-                abstract.annotations.IntFilterAlias
-                | dict[
-                    str,
-                    bool
-                    | abstract.annotations.DefaultFilterAlias
-                    | dict[str, abstract.annotations.DefaultFilterAlias],
-                ],
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcFilterAlias, kwargs)
         return super()._tabulate(json=json, params={"join_parameters": join_parameters})
 
     def get_by_id(self, id: int) -> TimeSeries:

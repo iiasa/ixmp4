@@ -67,7 +67,7 @@ class IndexSetRepository(
         self,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> list[IndexSet]:
-        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
+        json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
@@ -75,7 +75,7 @@ class IndexSetRepository(
         include_data: bool = False,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
+        json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
         return super()._tabulate(json=json, params={"include_data": include_data})
 
     def add_data(

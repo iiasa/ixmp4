@@ -68,51 +68,9 @@ class UnitRepository(
         return super().enumerate(**kwargs)
 
     def list(self, **kwargs: Unpack[abstract.unit.EnumerateKwargs]) -> list[Unit]:
-        json = cast(
-            dict[
-                str,
-                abstract.annotations.DefaultFilterAlias
-                | dict[
-                    str,
-                    dict[
-                        str,
-                        abstract.annotations.DefaultFilterAlias
-                        | dict[
-                            str,
-                            bool
-                            | abstract.annotations.DefaultFilterAlias
-                            | dict[str, abstract.annotations.DefaultFilterAlias],
-                        ],
-                    ],
-                ]
-                | bool
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(self, **kwargs: Unpack[abstract.unit.EnumerateKwargs]) -> pd.DataFrame:
-        json = cast(
-            dict[
-                str,
-                abstract.annotations.DefaultFilterAlias
-                | dict[
-                    str,
-                    dict[
-                        str,
-                        abstract.annotations.DefaultFilterAlias
-                        | dict[
-                            str,
-                            bool
-                            | abstract.annotations.DefaultFilterAlias
-                            | dict[str, abstract.annotations.DefaultFilterAlias],
-                        ],
-                    ],
-                ]
-                | bool
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._tabulate(json=json)

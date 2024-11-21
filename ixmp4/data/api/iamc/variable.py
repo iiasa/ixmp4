@@ -1,4 +1,3 @@
-from collections.abc import Mapping
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, cast
 
@@ -64,29 +63,11 @@ class VariableRepository(
     def list(
         self, **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs]
     ) -> list[Variable]:
-        json = cast(
-            dict[
-                str,
-                bool
-                | abstract.annotations.DefaultFilterAlias
-                | Mapping[str, abstract.annotations.DefaultFilterAlias]
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
         self, **kwargs: Unpack[abstract.iamc.variable.EnumerateKwargs]
     ) -> pd.DataFrame:
-        json = cast(
-            dict[
-                str,
-                bool
-                | abstract.annotations.DefaultFilterAlias
-                | Mapping[str, abstract.annotations.DefaultFilterAlias]
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcFilterAlias, kwargs)
         return super()._tabulate(json=json)

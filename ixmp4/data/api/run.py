@@ -1,4 +1,5 @@
-from typing import ClassVar, cast
+# TODO Use `type` instead of TypeAlias when dropping Python 3.11
+from typing import ClassVar, TypeAlias, cast
 
 import pandas as pd
 from pydantic import Field
@@ -32,6 +33,19 @@ class Run(base.BaseModel):
     is_default: bool
 
 
+JsonType: TypeAlias = dict[
+    str,
+    bool
+    | abstract.annotations.IntFilterAlias
+    | dict[
+        str,
+        abstract.annotations.DefaultFilterAlias
+        | dict[str, abstract.annotations.DefaultFilterAlias],
+    ]
+    | None,
+]
+
+
 class RunRepository(
     base.Creator[Run],
     base.Retriever[Run],
@@ -62,40 +76,14 @@ class RunRepository(
         self,
         **kwargs: Unpack[abstract.run.EnumerateKwargs],
     ) -> list[Run]:
-        json = cast(
-            dict[
-                str,
-                bool
-                | abstract.annotations.IntFilterAlias
-                | dict[
-                    str,
-                    abstract.annotations.DefaultFilterAlias
-                    | dict[str, abstract.annotations.DefaultFilterAlias],
-                ]
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(JsonType, kwargs)
         return super()._list(json=json)
 
     def tabulate(
         self,
         **kwargs: Unpack[abstract.run.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(
-            dict[
-                str,
-                bool
-                | abstract.annotations.IntFilterAlias
-                | dict[
-                    str,
-                    abstract.annotations.DefaultFilterAlias
-                    | dict[str, abstract.annotations.DefaultFilterAlias],
-                ]
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(JsonType, kwargs)
         return super()._tabulate(json=json)
 
     def get_default_version(self, model_name: str, scenario_name: str) -> Run:

@@ -88,14 +88,14 @@ class EquationRepository(
         self,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> Iterable[Equation]:
-        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
+        json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
         self,
         **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(dict[str, abstract.annotations.DefaultFilterAlias | None], kwargs)
+        json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
         return super()._tabulate(json=json)
 
     def enumerate(

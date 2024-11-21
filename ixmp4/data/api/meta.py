@@ -1,5 +1,7 @@
 from collections.abc import Iterable
-from typing import ClassVar, cast
+
+# TODO Use `type` instead of TypeAlias when dropping Python 3.11
+from typing import ClassVar, TypeAlias, cast
 
 import pandas as pd
 
@@ -21,6 +23,23 @@ class RunMetaEntry(base.BaseModel):
     key: str
     dtype: str
     value: abstract.StrictMetaValue
+
+
+# TODO This is tantalizingly close to the run JsonType, but not quite there.
+JsonType: TypeAlias = dict[
+    str,
+    bool
+    | float
+    | Iterable[float]
+    | abstract.annotations.DefaultFilterAlias
+    | dict[
+        str,
+        bool
+        | abstract.annotations.IntFilterAlias
+        | dict[str, abstract.annotations.DefaultFilterAlias],
+    ]
+    | None,
+]
 
 
 class RunMetaEntryRepository(
@@ -60,23 +79,7 @@ class RunMetaEntryRepository(
         **kwargs: Unpack[abstract.meta.EnumerateKwargs],
     ) -> list[RunMetaEntry]:
         # base functions require dict, but TypedDict just inherits from Mapping
-        json = cast(
-            dict[
-                str,
-                bool
-                | float
-                | Iterable[float]
-                | abstract.annotations.DefaultFilterAlias
-                | dict[
-                    str,
-                    bool
-                    | abstract.annotations.IntFilterAlias
-                    | dict[str, abstract.annotations.DefaultFilterAlias],
-                ]
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(JsonType, kwargs)
         return super()._list(json=json, params={"join_run_index": join_run_index})
 
     def tabulate(
@@ -84,23 +87,7 @@ class RunMetaEntryRepository(
         join_run_index: bool | None = None,
         **kwargs: Unpack[abstract.meta.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(
-            dict[
-                str,
-                bool
-                | float
-                | Iterable[float]
-                | abstract.annotations.DefaultFilterAlias
-                | dict[
-                    str,
-                    bool
-                    | abstract.annotations.IntFilterAlias
-                    | dict[str, abstract.annotations.DefaultFilterAlias],
-                ]
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(JsonType, kwargs)
         return super()._tabulate(json=json, params={"join_run_index": join_run_index})
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:

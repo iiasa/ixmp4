@@ -14,6 +14,26 @@ PrimitiveIterableTypes: TypeAlias = (
 IntFilterAlias: TypeAlias = int | Iterable[int]
 StrFilterAlias: TypeAlias = str | Iterable[str]
 DefaultFilterAlias: TypeAlias = IntFilterAlias | StrFilterAlias
+OptimizationFilterAlias: TypeAlias = dict[str, DefaultFilterAlias | None]
+
+# NOTE If you want to be nitpicky, you could argue that timeseries have an additional
+# `variable` filter, which is not clear from this Alias used for both. However,
+# `variable` only adds more of the same types and we only use this for casting, so we
+# are fine *for now*.
+IamcFilterAlias: TypeAlias = dict[
+    str,
+    bool | DefaultFilterAlias | dict[str, DefaultFilterAlias] | None,
+]
+IamcObjectFilterAlias: TypeAlias = dict[
+    str,
+    DefaultFilterAlias
+    | dict[
+        str,
+        dict[str, DefaultFilterAlias | IamcFilterAlias],
+    ]
+    | bool
+    | None,
+]
 
 
 class HasIdFilter(TypedDict, total=False):

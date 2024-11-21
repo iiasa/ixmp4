@@ -63,54 +63,12 @@ class ScenarioRepository(
         self,
         **kwargs: Unpack[abstract.scenario.EnumerateKwargs],
     ) -> list[Scenario]:
-        json = cast(
-            dict[
-                str,
-                abstract.annotations.DefaultFilterAlias
-                | dict[
-                    str,
-                    dict[
-                        str,
-                        abstract.annotations.DefaultFilterAlias
-                        | dict[
-                            str,
-                            bool
-                            | abstract.annotations.DefaultFilterAlias
-                            | dict[str, abstract.annotations.DefaultFilterAlias],
-                        ],
-                    ],
-                ]
-                | bool
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
         self,
         **kwargs: Unpack[abstract.scenario.EnumerateKwargs],
     ) -> pd.DataFrame:
-        json = cast(
-            dict[
-                str,
-                abstract.annotations.DefaultFilterAlias
-                | dict[
-                    str,
-                    dict[
-                        str,
-                        abstract.annotations.DefaultFilterAlias
-                        | dict[
-                            str,
-                            bool
-                            | abstract.annotations.DefaultFilterAlias
-                            | dict[str, abstract.annotations.DefaultFilterAlias],
-                        ],
-                    ],
-                ]
-                | bool
-                | None,
-            ],
-            kwargs,
-        )
+        json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._tabulate(json=json)

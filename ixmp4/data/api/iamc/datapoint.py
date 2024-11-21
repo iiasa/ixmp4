@@ -1,5 +1,7 @@
 from datetime import datetime
-from typing import ClassVar, cast
+
+# TODO Use `type` instead of TypeAlias when dropping Python 3.11
+from typing import ClassVar, TypeAlias, cast
 
 import pandas as pd
 
@@ -26,6 +28,14 @@ class DataPoint(base.BaseModel):
     step_datetime: datetime | None
 
 
+JsonType: TypeAlias = dict[
+    str,
+    abstract.annotations.IntFilterAlias
+    | dict[str, bool | abstract.annotations.DefaultFilterAlias]
+    | None,
+]
+
+
 class DataPointRepository(
     base.Enumerator[DataPoint],
     base.BulkUpserter[DataPoint],
@@ -47,15 +57,7 @@ class DataPointRepository(
         **kwargs: Unpack[abstract.iamc.datapoint.EnumerateKwargs],
     ) -> list[DataPoint]:
         return super()._list(
-            json=cast(
-                dict[
-                    str,
-                    abstract.annotations.IntFilterAlias
-                    | dict[str, bool | abstract.annotations.DefaultFilterAlias]
-                    | None,
-                ],
-                kwargs,
-            ),
+            json=cast(JsonType, kwargs),
             params={
                 "join_parameters": join_parameters,
                 "join_runs": join_runs,
@@ -69,15 +71,7 @@ class DataPointRepository(
         **kwargs: Unpack[abstract.iamc.datapoint.EnumerateKwargs],
     ) -> pd.DataFrame:
         return super()._tabulate(
-            json=cast(
-                dict[
-                    str,
-                    abstract.annotations.IntFilterAlias
-                    | dict[str, bool | abstract.annotations.DefaultFilterAlias]
-                    | None,
-                ],
-                kwargs,
-            ),
+            json=cast(JsonType, kwargs),
             params={
                 "join_parameters": join_parameters,
                 "join_runs": join_runs,
