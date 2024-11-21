@@ -1,4 +1,4 @@
-from typing import ClassVar
+from typing import ClassVar, cast
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
@@ -72,7 +72,7 @@ class RunMetaEntry(base.BaseModel):
         return value
 
     def __init__(self, **kwargs: Unpack[InitKwargs]) -> None:
-        _kwargs = {k: v for k, v in kwargs.items()}
+        _kwargs = cast(dict[str, bool | float | int | str], kwargs)
         value = _kwargs.pop("value")
         value_type = type(value)
         try:
