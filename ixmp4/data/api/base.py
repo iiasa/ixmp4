@@ -341,8 +341,8 @@ class BaseRepository(Generic[ModelType]):
         if params is None:
             params = {}
 
-        # TODO instead of assuming this, wouldn't it be better to never return None and
-        # handle this as an exception or some such in _request()?
+        # See https://github.com/iiasa/ixmp4/pull/129#discussion_r1841829519 for why we
+        # are keeping this assumption
         # we can assume these types on enumeration endpoints
         return self._request(
             self.enumeration_method,
