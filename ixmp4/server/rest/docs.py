@@ -96,7 +96,6 @@ def set_scenarios(
     docs: DocsInput,
     backend: Backend = Depends(deps.get_backend),
 ) -> api.Docs:
-    # TODO is this faster or explicit casting (storing a variable)?
     return cast(api.Docs, backend.scenarios.docs.set(**docs.model_dump()))
 
 

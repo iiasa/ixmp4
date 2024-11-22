@@ -74,10 +74,7 @@ class APIInfo(BaseModel):
 
 
 @v1.get("/", response_model=APIInfo)
-def root(
-    platform: str = Path(),
-    version: str = Depends(deps.get_version),
-) -> APIInfo:
+def root(platform: str = Path(), version: str = Depends(deps.get_version)) -> APIInfo:
     return APIInfo(
         name=platform,
         version=version,

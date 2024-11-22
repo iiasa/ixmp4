@@ -51,13 +51,7 @@ class ScalarRepository(
         super().__init__(*args)
         self.docs = ScalarDocsRepository(self.backend)
 
-    def create(
-        self,
-        name: str,
-        value: float,
-        unit_name: str,
-        run_id: int,
-    ) -> Scalar:
+    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
         return super().create(
             name=name, value=value, unit_name=unit_name, run_id=run_id
         )

@@ -72,17 +72,11 @@ class RunRepository(
     ) -> list[Run] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(
-        self,
-        **kwargs: Unpack[abstract.run.EnumerateKwargs],
-    ) -> list[Run]:
+    def list(self, **kwargs: Unpack[abstract.run.EnumerateKwargs]) -> list[Run]:
         json = cast(JsonType, kwargs)
         return super()._list(json=json)
 
-    def tabulate(
-        self,
-        **kwargs: Unpack[abstract.run.EnumerateKwargs],
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[abstract.run.EnumerateKwargs]) -> pd.DataFrame:
         json = cast(JsonType, kwargs)
         return super()._tabulate(json=json)
 

@@ -72,8 +72,9 @@ class DataFrameDict(TypedDict):
             abstract.annotations.PrimitiveTypes
             | datetime
             | dict[str, Any]
-            # TODO should be able to remove this once PR#122 is merged
-            | list[float | int | str]
+            | list[float]
+            | list[int]
+            | list[str]
             | None
         ]
     ]
@@ -110,8 +111,9 @@ class DataFrame(PydanticBaseModel):
                 | float
                 | str
                 | dict[str, Any]
-                # TODO should be able to remove this once PR#122 is merged
-                | list[float | int | str]
+                | list[float]
+                | list[int]
+                | list[str]
                 | None
             ]
         ]

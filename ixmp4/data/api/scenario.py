@@ -45,10 +45,7 @@ class ScenarioRepository(
         super().__init__(*args)
         self.docs = ScenarioDocsRepository(self.backend)
 
-    def create(
-        self,
-        name: str,
-    ) -> Scenario:
+    def create(self, name: str) -> Scenario:
         return super().create(name=name)
 
     def get(self, name: str) -> Scenario:
@@ -60,15 +57,13 @@ class ScenarioRepository(
         return super().enumerate(**kwargs)
 
     def list(
-        self,
-        **kwargs: Unpack[abstract.scenario.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.scenario.EnumerateKwargs]
     ) -> list[Scenario]:
         json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
-        self,
-        **kwargs: Unpack[abstract.scenario.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.scenario.EnumerateKwargs]
     ) -> pd.DataFrame:
         json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._tabulate(json=json)

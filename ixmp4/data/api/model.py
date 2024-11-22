@@ -41,10 +41,7 @@ class ModelRepository(
         super().__init__(*args)
         self.docs = ModelDocsRepository(self.backend)
 
-    def create(
-        self,
-        name: str,
-    ) -> Model:
+    def create(self, name: str) -> Model:
         return super().create(name=name)
 
     def get(self, name: str) -> Model:

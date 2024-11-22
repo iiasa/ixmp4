@@ -61,7 +61,7 @@ class SelectKwargs(TypedDict, total=False):
     run: dict[str, int]
 
 
-class EnumerateKwargs(abstract.HasNameFilter, total=False):
+class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
     _filter: BaseFilter
     join_parameters: bool | None
 

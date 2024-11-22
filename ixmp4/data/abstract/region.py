@@ -107,11 +107,7 @@ class RegionRepository(
         """
         ...
 
-    def get_or_create(
-        self,
-        name: str,
-        hierarchy: str | None = None,
-    ) -> Region:
+    def get_or_create(self, name: str, hierarchy: str | None = None) -> Region:
         try:
             region = self.get(name)
         except Region.NotFound:
@@ -127,10 +123,7 @@ class RegionRepository(
         else:
             return region
 
-    def list(
-        self,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> list[Region]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Region]:
         r"""Lists regions by specified criteria.
 
         Parameters
@@ -146,10 +139,7 @@ class RegionRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate regions by specified criteria.
 
         Parameters

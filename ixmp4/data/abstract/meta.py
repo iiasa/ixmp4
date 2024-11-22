@@ -96,12 +96,7 @@ class RunMetaEntryRepository(
     base.BulkDeleter,
     Protocol,
 ):
-    def create(
-        self,
-        run__id: int,
-        key: str,
-        value: MetaValue,
-    ) -> RunMetaEntry:
+    def create(self, run__id: int, key: str, value: MetaValue) -> RunMetaEntry:
         """Creates a meta indicator entry for a run.
 
         Parameters
@@ -165,9 +160,7 @@ class RunMetaEntryRepository(
         ...
 
     def list(
-        self,
-        join_run_index: bool = False,
-        **kwargs: Unpack[EnumerateKwargs],
+        self, join_run_index: bool = False, **kwargs: Unpack[EnumerateKwargs]
     ) -> list[RunMetaEntry]:
         r"""Lists run's meta indicator entries by specified criteria.
 
@@ -187,9 +180,7 @@ class RunMetaEntryRepository(
         ...
 
     def tabulate(
-        self,
-        join_run_index: bool = False,
-        **kwargs: Unpack[EnumerateKwargs],
+        self, join_run_index: bool = False, **kwargs: Unpack[EnumerateKwargs]
     ) -> pd.DataFrame:
         r"""Tabulates run's meta indicator entries by specified criteria.
 

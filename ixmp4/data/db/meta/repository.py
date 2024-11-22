@@ -99,9 +99,7 @@ class RunMetaEntryRepository(
 
     @guard("edit")
     def create(
-        self,
-        *args: abstract.annotations.PrimitiveTypes,
-        **kwargs: Unpack[CreateKwargs],
+        self, *args: abstract.annotations.PrimitiveTypes, **kwargs: Unpack[CreateKwargs]
     ) -> RunMetaEntry:
         return super().create(*args, **kwargs)
 

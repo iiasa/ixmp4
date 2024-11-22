@@ -23,12 +23,7 @@ class Docs(base.BaseModel, Protocol):
     #    )
 
 
-class DocsRepository(
-    base.Retriever,
-    base.Deleter,
-    base.Enumerator,
-    Protocol,
-):
+class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
     def get(self, dimension_id: int) -> Docs:
         """Retrieve the documentation of an object of any dimension.
 
@@ -84,11 +79,7 @@ class DocsRepository(
         """
         ...
 
-    def list(
-        self,
-        *,
-        dimension_id: int | None = None,
-    ) -> list[Docs]:
+    def list(self, *, dimension_id: int | None = None) -> list[Docs]:
         """Lists documentations.
 
         Parameters

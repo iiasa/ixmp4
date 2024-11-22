@@ -23,7 +23,7 @@ class IndexSet(base.BaseModel):
 
     id: int
     name: str
-    data: float | int | str | list[int | float | str] | None
+    data: float | int | str | list[int] | list[float] | list[str] | None
     run__id: int
 
     created_at: datetime | None
@@ -48,11 +48,7 @@ class IndexSetRepository(
         super().__init__(*args)
         self.docs = IndexSetDocsRepository(self.backend)
 
-    def create(
-        self,
-        run_id: int,
-        name: str,
-    ) -> IndexSet:
+    def create(self, run_id: int, name: str) -> IndexSet:
         return super().create(run_id=run_id, name=name)
 
     def get(self, run_id: int, name: str) -> IndexSet:
@@ -64,8 +60,7 @@ class IndexSetRepository(
         return super().enumerate(**kwargs)
 
     def list(
-        self,
-        **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.optimization.EnumerateKwargs]
     ) -> list[IndexSet]:
         json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
         return super()._list(json=json)

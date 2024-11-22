@@ -19,7 +19,7 @@ from .docs import ModelDocsRepository
 from .model import Model
 
 
-class EnumerateKwargs(abstract.HasNameFilter, total=False):
+class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
     _filter: BaseFilter
 
 

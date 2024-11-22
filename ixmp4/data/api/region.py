@@ -54,11 +54,7 @@ class RegionRepository(
         super().__init__(*args)
         self.docs = RegionDocsRepository(self.backend)
 
-    def create(
-        self,
-        name: str,
-        hierarchy: str,
-    ) -> Region:
+    def create(self, name: str, hierarchy: str) -> Region:
         return super().create(name=name, hierarchy=hierarchy)
 
     def delete(self, id: int) -> None:
@@ -72,16 +68,12 @@ class RegionRepository(
     ) -> list[Region] | pd.DataFrame:
         return super().enumerate(**kwargs)
 
-    def list(
-        self,
-        **kwargs: Unpack[abstract.region.EnumerateKwargs],
-    ) -> list[Region]:
+    def list(self, **kwargs: Unpack[abstract.region.EnumerateKwargs]) -> list[Region]:
         json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._list(json=json)
 
     def tabulate(
-        self,
-        **kwargs: Unpack[abstract.region.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.region.EnumerateKwargs]
     ) -> pd.DataFrame:
         json = cast(abstract.annotations.IamcObjectFilterAlias, kwargs)
         return super()._tabulate(json=json)

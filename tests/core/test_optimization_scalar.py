@@ -53,7 +53,8 @@ class TestCoreScalar:
             )
 
         with pytest.raises(TypeError):
-            _ = run.optimization.scalars.create("Scalar 2")  # type: ignore
+            # Testing a missing parameter on purpose
+            _ = run.optimization.scalars.create("Scalar 2")  # type: ignore[call-arg]
 
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=20, unit=unit)
         assert scalar_1.id != scalar_2.id

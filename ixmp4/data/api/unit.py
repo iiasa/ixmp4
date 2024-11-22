@@ -46,10 +46,7 @@ class UnitRepository(
         super().__init__(*args)
         self.docs = UnitDocsRepository(self.backend)
 
-    def create(
-        self,
-        name: str,
-    ) -> Unit:
+    def create(self, name: str) -> Unit:
         return super().create(name=name)
 
     def delete(self, id: int) -> None:

@@ -54,12 +54,7 @@ class RunMetaEntryRepository(
     model_class = RunMetaEntry
     prefix = "meta/"
 
-    def create(
-        self,
-        run__id: int,
-        key: str,
-        value: abstract.MetaValue,
-    ) -> RunMetaEntry:
+    def create(self, run__id: int, key: str, value: abstract.MetaValue) -> RunMetaEntry:
         return super().create(run__id=run__id, key=key, value=value)
 
     def get(self, run__id: int, key: str) -> RunMetaEntry:

@@ -11,7 +11,6 @@ from ixmp4.core.exceptions import ProgrammingError
 if TYPE_CHECKING:
     from ixmp4.data.db.base import BaseModel
 
-# TODO cannot use covariant typevar
 JoinType = TypeVar("JoinType", bound=sql.Select[tuple["BaseModel", ...]])
 
 

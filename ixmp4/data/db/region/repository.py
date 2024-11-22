@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -19,13 +18,11 @@ from .docs import RegionDocsRepository
 from .model import Region
 
 
-class EnumerateKwargs(abstract.HasNameFilter, total=False):
-    hierarchy: str
-    hierarchy__in: Iterable[str]
-    hierarchy__like: str
-    hierarchy__ilike: str
-    hierarchy__notlike: str
-    hierarchy__notilike: str
+class EnumerateKwargs(
+    abstract.annotations.HasNameFilter,
+    abstract.annotations.HasHierarchyFilter,
+    total=False,
+):
     _filter: BaseFilter
 
 

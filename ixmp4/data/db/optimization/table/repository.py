@@ -78,11 +78,7 @@ class TableRepository(
             **kwargs,
         )
 
-    def add(
-        self,
-        run_id: int,
-        name: str,
-    ) -> Table:
+    def add(self, run_id: int, name: str) -> Table:
         table = Table(name=name, run__id=run_id)
         self.session.add(table)
 

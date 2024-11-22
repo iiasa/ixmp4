@@ -51,11 +51,7 @@ class RunRepository(
     base.Enumerator,
     Protocol,
 ):
-    def create(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def create(self, model_name: str, scenario_name: str) -> Run:
         """Creates a run with an incremented version number or version=1 if no versions
         exist. Will automatically create the models and scenarios if they don't exist
         yet.
@@ -74,12 +70,7 @@ class RunRepository(
         """
         ...
 
-    def get(
-        self,
-        model_name: str,
-        scenario_name: str,
-        version: int,
-    ) -> Run:
+    def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         """Retrieves a run.
 
         Parameters
@@ -103,11 +94,7 @@ class RunRepository(
         """
         ...
 
-    def get_or_create(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def get_or_create(self, model_name: str, scenario_name: str) -> Run:
         """Tries to retrieve a run's default version
         and creates it if it was not found.
 
@@ -128,11 +115,7 @@ class RunRepository(
         except Run.NoDefaultVersion:
             return self.create(model_name, scenario_name)
 
-    def get_default_version(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         """Retrieves a run's default version.
 
         Parameters
@@ -154,10 +137,7 @@ class RunRepository(
         """
         ...
 
-    def list(
-        self,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> list[Run]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters
@@ -173,10 +153,7 @@ class RunRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate runs by specified criteria.
 
         Parameters

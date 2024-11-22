@@ -55,7 +55,6 @@ class TestApi:
         filters: dict[str, dict[str, bool]] | None = None,
         no_of_rows: int | None = None,
     ) -> None:
-        # total, offset, limit = None, None, None
         total: int | None = None
         offset: int | None = None
         limit: int | None = None

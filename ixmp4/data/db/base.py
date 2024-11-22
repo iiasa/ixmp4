@@ -199,11 +199,7 @@ class Selecter(BaseRepository[ModelType]):
     def join_auth(self, exc: SelectAuthType) -> SelectAuthType:
         return exc
 
-    def apply_auth(
-        self,
-        exc: SelectAuthType,
-        access_type: str,
-    ) -> SelectAuthType:
+    def apply_auth(self, exc: SelectAuthType, access_type: str) -> SelectAuthType:
         if self.backend.auth_context is not None:
             if not self.backend.auth_context.is_managed:
                 exc = self.join_auth(exc)
@@ -281,12 +277,7 @@ class Lister(Selecter[ModelType]):
 
 
 class Tabulator(Selecter[ModelType]):
-    def tabulate(
-        self,
-        *args: Any,
-        _raw: bool = False,
-        **kwargs: Any,
-    ) -> pd.DataFrame:
+    def tabulate(self, *args: Any, _raw: bool = False, **kwargs: Any) -> pd.DataFrame:
         _exc = self.select(*args, **kwargs)
         _exc = _exc.order_by(self.model_class.id.asc())
 
@@ -331,19 +322,13 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
         return self.tabulate(**kwargs) if table else self.list(**kwargs)
 
     def paginate(
-        self,
-        limit: int = 1000,
-        offset: int = 0,
-        **kwargs: Unpack[PaginateKwargs],
+        self, limit: int = 1000, offset: int = 0, **kwargs: Unpack[PaginateKwargs]
     ) -> list[ModelType] | pd.DataFrame:
         return self.enumerate(
             **kwargs, _post_filter=lambda e: e.offset(offset).limit(limit)
         )
 
-    def count(
-        self,
-        **kwargs: Unpack[CountKwargs],
-    ) -> int:
+    def count(self, **kwargs: Unpack[CountKwargs]) -> int:
         _exc = self.select_for_count(
             _exc=db.select(db.func.count(self.model_class.id.distinct())),
             **kwargs,

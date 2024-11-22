@@ -122,10 +122,7 @@ class UnitRepository(
         """
         ...
 
-    def list(
-        self,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> list[Unit]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Unit]:
         r"""Lists units by specified criteria.
 
         Parameters
@@ -141,10 +138,7 @@ class UnitRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        **kwargs: Unpack[EnumerateKwargs],
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate units by specified criteria.
 
         Parameters

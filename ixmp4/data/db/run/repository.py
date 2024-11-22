@@ -93,12 +93,7 @@ class RunRepository(
         return super().create(model_name, *args, **kwargs)
 
     @guard("view")
-    def get(
-        self,
-        model_name: str,
-        scenario_name: str,
-        version: int,
-    ) -> Run:
+    def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         exc = self.select(
             model={"name": model_name},
             scenario={"name": scenario_name},
@@ -127,11 +122,7 @@ class RunRepository(
         return obj
 
     @guard("view")
-    def get_default_version(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         exc = self.select(
             model={"name": model_name},
             scenario={"name": scenario_name},

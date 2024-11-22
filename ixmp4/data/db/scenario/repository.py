@@ -19,7 +19,7 @@ from .docs import ScenarioDocsRepository
 from .model import Scenario
 
 
-class EnumerateKwargs(abstract.HasNameFilter, total=False):
+class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
     _filter: BaseFilter
 
 
