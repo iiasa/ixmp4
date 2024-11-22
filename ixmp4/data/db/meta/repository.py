@@ -210,7 +210,6 @@ class RunMetaEntryRepository(
     @check_types
     @guard("edit")
     def bulk_upsert(self, df: DataFrame[AddRunMetaEntryFrameSchema]) -> None:
-
         if illegal_keys := (set(df.key.values) & ILLEGAL_META_KEYS):
             raise InvalidRunMeta("Illegal meta key(s): " + ", ".join(illegal_keys))
 
