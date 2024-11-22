@@ -2,7 +2,7 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4.core.exceptions import SchemaError
+from ixmp4.core.exceptions import InvalidRunMeta, SchemaError
 from ixmp4.data.abstract.meta import RunMetaEntry
 
 from ..utils import assert_unordered_equality
@@ -18,6 +18,8 @@ TEST_ENTRIES_DF = pd.DataFrame(
     [[id, key, type, value] for id, (key, value, type) in enumerate(TEST_ENTRIES, 1)],
     columns=["id", "key", "type", "value"],
 )
+
+TEST_ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
 
 class TestDataMeta:
@@ -36,6 +38,18 @@ class TestDataMeta:
             assert entry.key == key
             assert entry.value == value
             assert entry.type == type
+
+    def test_illegal_key(self, platform: ixmp4.Platform):
+        run = platform.runs.create("Model", "Scenario")
+        for key in TEST_ILLEGAL_META_KEYS:
+            with pytest.raises(InvalidRunMeta, match="Illegal meta key: " + key):
+                platform.backend.meta.create(run.id, key, "foo")
+
+            df = pd.DataFrame(
+                {"run__id": [run.id] * 2, "key": [key, "foo"], "value": ["bar", "baz"]},
+            )
+            with pytest.raises(InvalidRunMeta, match=r"Illegal meta key\(s\): " + key):
+                platform.backend.meta.bulk_upsert(df)
 
     def test_entry_unique(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")

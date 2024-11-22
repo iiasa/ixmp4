@@ -7,6 +7,7 @@ from sqlalchemy.exc import NoResultFound
 
 from ixmp4 import db
 from ixmp4.core.decorators import check_types
+from ixmp4.core.exceptions import InvalidRunMeta
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
@@ -15,6 +16,8 @@ from ixmp4.data.db.scenario import Scenario
 
 from .. import base
 from .model import RunMetaEntry
+
+ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
 
 class RemoveRunMetaEntryFrameSchema(pa.DataFrameModel):
@@ -60,6 +63,8 @@ class RunMetaEntryRepository(
                 default_only=False,
             )
 
+        if key in ILLEGAL_META_KEYS:
+            raise InvalidRunMeta("Illegal meta key: " + key)
         entry = RunMetaEntry(run__id=run__id, key=key, value=value)
         self.session.add(entry)
         return entry
@@ -205,6 +210,9 @@ class RunMetaEntryRepository(
     @check_types
     @guard("edit")
     def bulk_upsert(self, df: DataFrame[AddRunMetaEntryFrameSchema]) -> None:
+        if illegal_keys := (set(df.key.values) & ILLEGAL_META_KEYS):
+            raise InvalidRunMeta("Illegal meta key(s): " + ", ".join(illegal_keys))
+
         self.check_df_access(df)
         df["type"] = df["value"].map(type).map(RunMetaEntry.Type.from_pytype)
 
