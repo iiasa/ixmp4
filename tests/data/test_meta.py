@@ -19,6 +19,8 @@ TEST_ENTRIES_DF = pd.DataFrame(
     columns=["id", "key", "type", "value"],
 )
 
+TEST_ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
+
 
 class TestDataMeta:
     def test_create_get_entry(self, platform: ixmp4.Platform):
@@ -39,8 +41,15 @@ class TestDataMeta:
 
     def test_illegal_key(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
-        with pytest.raises(InvalidRunMeta):
-            platform.backend.meta.create(run.id, "version", "foo")
+        for key in TEST_ILLEGAL_META_KEYS:
+            with pytest.raises(InvalidRunMeta, match="Illegal meta key: " + key):
+                platform.backend.meta.create(run.id, key, "foo")
+
+            df = pd.DataFrame(
+                {"run__id": [run.id] * 2, "key": [key, "foo"], "value": ["bar", "baz"]},
+            )
+            with pytest.raises(InvalidRunMeta, match=r"Illegal meta key\(s\): " + key):
+                platform.backend.meta.bulk_upsert(df)
 
     def test_entry_unique(self, platform: ixmp4.Platform):
         run = platform.runs.create("Model", "Scenario")
