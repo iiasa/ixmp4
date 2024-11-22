@@ -153,6 +153,12 @@ ignore = ["B008"]
 [tool.ruff.lint.mccabe]
 max-complexity = 10
 
+[tool.coverage.report]
+exclude_also = [
+    # Imports only used by type checkers
+    "if TYPE_CHECKING:",
+]
+
 [tool.poetry-dynamic-versioning]
 enable = true
 style = "pep440"
