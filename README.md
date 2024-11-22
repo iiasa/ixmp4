@@ -3,7 +3,7 @@
 Copyright (c) 2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/iiasa/ixmp4/blob/main/LICENSE)
-[![python](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12-blue?logo=python&logoColor=white)](https://github.com/iiasa/ixmp4)
+[![python](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13-blue?logo=python&logoColor=white)](https://github.com/iiasa/ixmp4)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 
 ## Overview
