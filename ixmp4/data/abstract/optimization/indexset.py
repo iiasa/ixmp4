@@ -17,8 +17,8 @@ class IndexSet(base.BaseModel, Protocol):
     """The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
     defined. """
 
-    elements: types.JsonList
-    """Unique list of str or int."""
+    data: types.OptimizationDataList
+    """Unique list of str, int, or float."""
 
     created_at: types.DateTime
     "Creation date/time. TODO"
@@ -102,13 +102,18 @@ class IndexSetRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, *, name: str | None = None, include_data: bool = False, **kwargs
+    ) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str
+        name : str, optional
             The name of an IndexSet. If supplied only one result will be returned.
+        include_data : bool, optional
+            Whether to load all IndexSet data, which reduces loading speed. Defaults to
+            `False`.
         # TODO: Update kwargs
         \*\*kwargs: any
             More filter parameters as specified in
@@ -120,24 +125,24 @@ class IndexSetRepository(
             A data frame with the columns:
                 - id
                 - name
-                - elements
+                - data
                 - run__id
                 - created_at
                 - created_by
         """
         ...
 
-    def add_elements(
-        self, indexset_id: int, elements: float | int | List[float | int | str] | str
+    def add_data(
+        self, indexset_id: int, data: float | int | List[float | int | str] | str
     ) -> None:
-        """Adds elements to an existing IndexSet.
+        """Adds data to an existing IndexSet.
 
         Parameters
         ----------
         indexset_id : int
             The id of the target IndexSet.
-        elements : float | int | List[float | int | str] | str
-            The elements to be added to the IndexSet.
+        data : float | int | List[float | int | str] | str
+            The data to be added to the IndexSet.
 
         Returns
         -------

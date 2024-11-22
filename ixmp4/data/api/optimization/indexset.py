@@ -2,7 +2,6 @@ from datetime import datetime
 from typing import ClassVar, List
 
 import pandas as pd
-from pydantic import StrictFloat, StrictInt, StrictStr
 
 from ixmp4.data import abstract
 
@@ -17,13 +16,7 @@ class IndexSet(base.BaseModel):
 
     id: int
     name: str
-    elements: (
-        StrictFloat
-        | StrictInt
-        | StrictStr
-        | list[StrictFloat | StrictInt | StrictStr]
-        | None
-    )
+    data: float | int | str | list[int | float | str] | None
     run__id: int
 
     created_at: datetime | None
@@ -64,16 +57,13 @@ class IndexSetRepository(
     def list(self, **kwargs) -> list[IndexSet]:
         return super()._list(json=kwargs)
 
-    def tabulate(self, **kwargs) -> pd.DataFrame:
-        return super()._tabulate(json=kwargs)
+    def tabulate(self, include_data: bool = False, **kwargs) -> pd.DataFrame:
+        return super()._tabulate(json=kwargs, params={"include_data": include_data})
 
-    def add_elements(
+    def add_data(
         self,
         indexset_id: int,
-        elements: StrictFloat
-        | StrictInt
-        | List[StrictFloat | StrictInt | StrictStr]
-        | StrictStr,
+        data: float | int | str | List[float | int | str],
     ) -> None:
-        kwargs = {"indexset_id": indexset_id, "elements": elements}
+        kwargs = {"indexset_id": indexset_id, "data": data}
         self._request("PATCH", self.prefix + str(indexset_id) + "/", json=kwargs)

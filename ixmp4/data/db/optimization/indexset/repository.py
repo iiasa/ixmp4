@@ -8,7 +8,7 @@ from ixmp4.data.auth.decorators import guard
 
 from .. import base
 from .docs import IndexSetDocsRepository
-from .model import IndexSet
+from .model import IndexSet, IndexSetData
 
 
 class IndexSetRepository(
@@ -60,22 +60,45 @@ class IndexSetRepository(
         return super().list(*args, **kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, *args, include_data: bool = False, **kwargs) -> pd.DataFrame:
+        if not include_data:
+            return (
+                super()
+                .tabulate(*args, **kwargs)
+                .rename(columns={"_data_type": "data_type"})
+            )
+        else:
+            result = super().tabulate(*args, **kwargs).drop(labels="_data_type", axis=1)
+            result.insert(
+                loc=0,
+                column="data",
+                value=[indexset.data for indexset in self.list(**kwargs)],
+            )
+            return result
 
     @guard("edit")
-    def add_elements(
+    def add_data(
         self,
         indexset_id: int,
-        elements: float | int | List[float | int | str] | str,
+        data: float | int | List[float | int | str] | str,
     ) -> None:
         indexset = self.get_by_id(id=indexset_id)
-        if not isinstance(elements, list):
-            elements = [elements]
-        if indexset.elements is None:
-            indexset.elements = elements
-        else:
-            indexset.elements = indexset.elements + elements
+        if not isinstance(data, list):
+            data = [data]
+
+        bulk_insert_enabled_data: list[dict[str, str]] = [
+            {"value": str(d)} for d in data
+        ]
+        try:
+            self.session.execute(
+                db.insert(IndexSetData).values(indexset__id=indexset_id),
+                bulk_insert_enabled_data,
+            )
+        except db.IntegrityError as e:
+            self.session.rollback()
+            raise indexset.DataInvalid from e
+
+        indexset._data_type = type(data[0]).__name__
 
         self.session.add(indexset)
         self.session.commit()

@@ -65,7 +65,7 @@ class TableRepository(
         self.columns.create(
             name=column_name,
             constrained_to_indexset=indexset.id,
-            dtype=pd.Series(indexset.elements).dtype.name,
+            dtype=pd.Series(indexset.data).dtype.name,
             table_id=table_id,
             unique=True,
             **kwargs,

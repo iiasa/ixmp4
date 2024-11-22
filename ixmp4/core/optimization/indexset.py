@@ -23,17 +23,17 @@ class IndexSet(BaseModelFacade):
         return self._model.name
 
     @property
-    def elements(self) -> list[float | int | str]:
-        return self._model.elements
+    def data(self) -> list[float | int | str]:
+        return self._model.data
 
-    def add(self, elements: float | int | list[float | int | str] | str) -> None:
-        """Adds elements to an existing IndexSet."""
-        self.backend.optimization.indexsets.add_elements(
-            indexset_id=self._model.id, elements=elements
+    def add(self, data: float | int | list[float | int | str] | str) -> None:
+        """Adds data to an existing IndexSet."""
+        self.backend.optimization.indexsets.add_data(
+            indexset_id=self._model.id, data=data
         )
-        self._model.elements = self.backend.optimization.indexsets.get(
+        self._model.data = self.backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
-        ).elements
+        ).data
 
     @property
     def run_id(self) -> int:
@@ -48,21 +48,21 @@ class IndexSet(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.optimization.indexsets.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.indexsets.docs.delete(self.id)
         else:
             self.backend.optimization.indexsets.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.optimization.indexsets.docs.delete(self.id)
         # TODO: silently failing
@@ -105,7 +105,9 @@ class IndexSetRepository(BaseFacade):
             for i in indexsets
         ]
 
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
+    def tabulate(
+        self, name: str | None = None, include_data: bool = False
+    ) -> pd.DataFrame:
         return self.backend.optimization.indexsets.tabulate(
-            run_id=self._run.id, name=name
+            run_id=self._run.id, name=name, include_data=include_data
         )

@@ -179,7 +179,7 @@ class VariableRepository(
         The data will be validated with the linked constrained
         :class:`ixmp4.data.abstract.optimization.IndexSet`s. For that, `data.keys()`
         must correspond to the names of the Variable's columns. Each column can only
-        contain values that are in the linked `IndexSet.elements`. Each row of entries
+        contain values that are in the linked `IndexSet.data`. Each row of entries
         must be unique. No values can be missing, `None`, or `NaN`. If `data.keys()`
         contains names already present in `Variable.data`, existing values will be
         overwritten.
