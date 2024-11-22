@@ -45,13 +45,6 @@ jobs:
             postgres-version: "16"
             pandas-version: false
             backend: "sqlite,rest-sqlite"
-          # pgsql 15
-          - python-version: "3.12"
-            with-pyarrow: false
-            postgres-version: "15"
-            pandas-version: false
-            backend: "postgres,rest-postgres"
-
           # pandas 2.1.3
           - python-version: "3.11"
             with-pyarrow: true
