@@ -91,3 +91,6 @@ class IndexSetRepository(
         super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.indexsets
         self._model_type = IndexSet
+
+    def create(self, name: str) -> IndexSet:
+        return super().create(name=name)

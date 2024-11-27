@@ -98,3 +98,15 @@ class TableRepository(
         super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.tables
         self._model_type = Table
+
+    def create(
+        self,
+        name: str,
+        constrained_to_indexsets: list[str],
+        column_names: list[str] | None = None,
+    ) -> Table:
+        return super().create(
+            name=name,
+            constrained_to_indexsets=constrained_to_indexsets,
+            column_names=column_names,
+        )
