@@ -20,8 +20,7 @@ BackendModelType = TypeVar("BackendModelType", bound=base.BaseModel, covariant=T
 class CreateKwargs(TypedDict, total=False):
     value: float
     unit: str | Unit | None
-    # TODO But how do we now show in core layer that e.g. Table needs these?
-    constrained_to_indexsets: list[str]
+    constrained_to_indexsets: str | list[str] | None
     column_names: list[str] | None
 
 
