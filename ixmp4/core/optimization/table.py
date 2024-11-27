@@ -2,13 +2,16 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
-    pass
+    from . import InitKwargs
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
+from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Table as TableModel
 from ixmp4.data.abstract.optimization import Column
 
@@ -86,9 +89,12 @@ class Table(BaseModelFacade):
 
 
 class TableRepository(
-    Creator[Table], Retriever[Table], Lister[Table], Tabulator[Table]
+    Creator[Table, TableModel],
+    Retriever[Table, TableModel],
+    Lister[Table, TableModel],
+    Tabulator[Table, TableModel],
 ):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+        super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.tables
         self._model_type = Table

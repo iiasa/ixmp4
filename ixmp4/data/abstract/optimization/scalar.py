@@ -19,6 +19,7 @@ from ixmp4.data import types
 from .. import base
 from ..docs import DocsRepository
 from ..unit import Unit
+from .base import BackendBaseRepository
 
 
 class Scalar(base.BaseModel, Protocol):
@@ -45,6 +46,7 @@ class Scalar(base.BaseModel, Protocol):
 
 
 class ScalarRepository(
+    BackendBaseRepository[Scalar],
     base.Creator,
     base.Retriever,
     base.Enumerator,

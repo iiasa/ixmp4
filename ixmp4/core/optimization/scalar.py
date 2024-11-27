@@ -2,14 +2,15 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
-    pass
-
+    from . import InitKwargs
 
 # TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.core.base import BaseModelFacade
 from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
+from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
 
@@ -97,9 +98,13 @@ class Scalar(BaseModelFacade):
         return f"<Scalar {self.id} name={self.name}>"
 
 
-class ScalarRepository(Retriever[Scalar], Lister[Scalar], Tabulator[Scalar]):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+class ScalarRepository(
+    Retriever[Scalar, ScalarModel],
+    Lister[Scalar, ScalarModel],
+    Tabulator[Scalar, ScalarModel],
+):
+    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+        super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.scalars
         self._model_type = Scalar
 
