@@ -1,26 +1,28 @@
-from typing import Generic, Iterable, Protocol, TypeVar
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 import pandas as pd
 
-# from ixmp4.data import types
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
+
+from ixmp4.data.abstract.unit import Unit
+
 from .. import base
 from ..docs import DocsRepository
 
-# from .column import Column
-
-
-# TODO Currently not in use
-# class OptimizationBaseModel(base.BaseModel, Protocol):
-#     id: types.Integer
-#     name: types.String
-#     data: types.JsonDict
-#     columns: types.Mapped[list[Column]]
-#     run__id: types.Integer
-#     created_at: types.DateTime
-#     created_by: types.String
-
-
 BackendModelType = TypeVar("BackendModelType", bound=base.BaseModel, covariant=True)
+
+
+class CreateKwargs(TypedDict, total=False):
+    value: float
+    unit: str | Unit | None
+    # TODO But how do we now show in core layer that e.g. Table needs these?
+    constrained_to_indexsets: list[str]
+    column_names: list[str] | None
 
 
 class BackendBaseRepository(
@@ -33,26 +35,13 @@ class BackendBaseRepository(
     docs: DocsRepository
 
     def create(
-        self,
-        run_id: int,
-        name: str,
-        # constrained_to_indexsets: list[str],
-        # column_names: list[str] | None = None,
-        *args,
-        **kwargs,
+        self, run_id: int, name: str, **kwargs: Unpack["CreateKwargs"]
     ) -> BackendModelType: ...
 
     def get(self, run_id: int, name: str) -> BackendModelType: ...
 
     def list(
-        self, *, name: str | None = None, **kwargs
+        self, **kwargs: Unpack["EnumerateKwargs"]
     ) -> Iterable[BackendModelType]: ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame: ...
-
-    # TODO Not needed as type hint in core layer:
-    # def get_by_id(self, id: int) -> BackendModelType: ...
-
-    # def add_data(
-    #     self, table_id: int, data: dict[str, Any] | pd.DataFrame
-    # ) -> None: ...
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame: ...
