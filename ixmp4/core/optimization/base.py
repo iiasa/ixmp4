@@ -1,39 +1,9 @@
-# from typing import Any, ClassVar, Generic, TypeVar
 from typing import Generic, TypeVar
 
 import pandas as pd
 
 from ixmp4.core.base import BaseFacade, BaseModelFacade
-
-# from ixmp4.core.exceptions import IxmpError
 from ixmp4.data import abstract
-
-# class OptimizationBaseModel(BaseModelFacade):
-#     _model: abstract.OptimizationBaseModel
-#     NotFound: ClassVar[type[IxmpError]]
-#     NotUnique: ClassVar[type[IxmpError]]
-
-#     @property
-#     def id(self) -> int:
-#         return self._model.id
-
-#     @property
-#     def name(self) -> str:
-#         return self._model.name
-
-#     @property
-#     def run_id(self) -> int:
-#         return self._model.run__id
-
-#     @property
-#     def data(self) -> dict[str, Any]:
-#         return self._model.data
-
-#     # TODO Stopping here since I'm not convinced of the usefulness. The only benefit I
-#     # see is that we'd separate functional code from placeholders so that if we need
-#     # to change functionality for e.g. getting 'data', we only need to do so in one
-#     # place. Still this feels like a lot of repetition.
-
 
 OptimizationModelType = TypeVar("OptimizationModelType", bound=BaseModelFacade)
 
@@ -52,7 +22,7 @@ class Creator(OptimizationBaseRepository[OptimizationModelType], abstract.Creato
     def create(
         self,
         name: str,
-        # TODO But how do we know show in core layer that e.g. Table needs these?
+        # TODO But how do we now show in core layer that e.g. Table needs these?
         # constrained_to_indexsets: list[str],
         # column_names: list[str] | None = None,
         *args,
@@ -88,7 +58,4 @@ class Enumerator(
     def enumerate(
         self, *args, table: bool = False, **kwargs
     ) -> list[OptimizationModelType] | pd.DataFrame:
-        if table:
-            return self.tabulate(*args, **kwargs)
-        else:
-            return self.list(*args, **kwargs)
+        return self.tabulate(*args, **kwargs) if table else self.list(*args, **kwargs)
