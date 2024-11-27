@@ -49,7 +49,7 @@ class Lister(OptimizationBaseRepository[OptimizationModelType], abstract.Lister)
 
 class Tabulator(OptimizationBaseRepository[OptimizationModelType], abstract.Tabulator):
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self._backend_repository.tabulate(name=name)
+        return self._backend_repository.tabulate(run_id=self._run.id, name=name)
 
 
 class Enumerator(
