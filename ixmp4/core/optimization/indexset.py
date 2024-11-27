@@ -7,6 +7,8 @@ if TYPE_CHECKING:
 
 # TODO Import this from typing when dropping Python 3.11
 
+import pandas as pd
+
 from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import IndexSet as IndexSetModel
@@ -87,3 +89,10 @@ class IndexSetRepository(
         super().__init__(*args, **kwargs)
         self._backend_repository = self.backend.optimization.indexsets
         self._model_type = IndexSet
+
+    def tabulate(
+        self, name: str | None = None, include_data: bool = False
+    ) -> pd.DataFrame:
+        return self._backend_repository.tabulate(
+            run_id=self._run.id, name=name, include_data=include_data
+        )
