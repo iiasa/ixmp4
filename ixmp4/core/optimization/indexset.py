@@ -4,15 +4,15 @@ from typing import TYPE_CHECKING, ClassVar
 if TYPE_CHECKING:
     from . import InitKwargs
 
-import pandas as pd
-
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import IndexSet as IndexSetModel
 from ixmp4.data.abstract import Run
+
+from .base import Creator, Lister, Retriever, Tabulator
 
 
 class IndexSet(BaseModelFacade):
@@ -81,39 +81,16 @@ class IndexSet(BaseModelFacade):
         return f"<IndexSet {self.id} name={self.name}>"
 
 
-class IndexSetRepository(BaseFacade):
-    _run: Run
-
+class IndexSetRepository(
+    Creator[IndexSet, IndexSetModel],
+    Retriever[IndexSet, IndexSetModel],
+    Lister[IndexSet, IndexSetModel],
+    Tabulator[IndexSet, IndexSetModel],
+):
     def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
-        super().__init__(**kwargs)
-        self._run = _run
+        super().__init__(_run=_run, **kwargs)
+        self._backend_repository = self.backend.optimization.indexsets
+        self._model_type = IndexSet
 
     def create(self, name: str) -> IndexSet:
-        indexset = self.backend.optimization.indexsets.create(
-            run_id=self._run.id,
-            name=name,
-        )
-        return IndexSet(_backend=self.backend, _model=indexset)
-
-    def get(self, name: str) -> IndexSet:
-        indexset = self.backend.optimization.indexsets.get(
-            run_id=self._run.id, name=name
-        )
-        return IndexSet(_backend=self.backend, _model=indexset)
-
-    def list(self, name: str | None = None) -> list[IndexSet]:
-        indexsets = self.backend.optimization.indexsets.list(
-            run_id=self._run.id, name=name
-        )
-        return [
-            IndexSet(
-                _backend=self.backend,
-                _model=i,
-            )
-            for i in indexsets
-        ]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.indexsets.tabulate(
-            run_id=self._run.id, name=name
-        )
+        return super().create(name=name)

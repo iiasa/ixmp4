@@ -19,6 +19,7 @@ from ixmp4.data import types
 from .. import base
 from ..docs import DocsRepository
 from ..unit import Unit
+from .base import BackendBaseRepository
 
 
 class Scalar(base.BaseModel, Protocol):
@@ -45,6 +46,7 @@ class Scalar(base.BaseModel, Protocol):
 
 
 class ScalarRepository(
+    BackendBaseRepository[Scalar],
     base.Creator,
     base.Retriever,
     base.Enumerator,
@@ -52,20 +54,20 @@ class ScalarRepository(
 ):
     docs: DocsRepository
 
-    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
+    def create(self, run_id: int, name: str, value: float, unit_name: str) -> Scalar:
         """Creates a Scalar.
 
         Parameters
         ----------
+        run_id : int
+            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is
+            defined.
         name : str
             The name of the Scalar.
         value : float
             The value of the Scalar.
         unit_name : str
             The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is
-            defined.
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is
             defined.
 
         Raises

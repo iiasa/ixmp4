@@ -12,6 +12,7 @@ from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from .base import BackendBaseRepository
 
 
 class IndexSet(base.BaseModel, Protocol):
@@ -36,6 +37,7 @@ class IndexSet(base.BaseModel, Protocol):
 
 
 class IndexSetRepository(
+    BackendBaseRepository[IndexSet],
     base.Creator,
     base.Retriever,
     base.Enumerator,
