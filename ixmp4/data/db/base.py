@@ -299,7 +299,6 @@ class Tabulator(Selecter[ModelType]):
 
 class PaginateKwargs(TypedDict):
     _filter: filters.BaseFilter
-    include_data: NotRequired[bool]
     join_parameters: NotRequired[bool | None]
     join_runs: NotRequired[bool | None]
     join_run_index: NotRequired[bool | None]
@@ -308,7 +307,6 @@ class PaginateKwargs(TypedDict):
 
 class EnumerateKwargs(TypedDict):
     _filter: filters.BaseFilter
-    include_data: NotRequired[bool]
     join_parameters: NotRequired[bool | None]
     join_runs: NotRequired[bool | None]
     join_run_index: NotRequired[bool | None]
