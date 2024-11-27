@@ -113,9 +113,7 @@ class IndexSetRepository(BaseFacade):
             for i in indexsets
         ]
 
-    def tabulate(
-        self, name: str | None = None, include_data: bool = False
-    ) -> pd.DataFrame:
+    def tabulate(self, name: str | None = None) -> pd.DataFrame:
         return self.backend.optimization.indexsets.tabulate(
-            run_id=self._run.id, name=name, include_data=include_data
+            run_id=self._run.id, name=name
         )
