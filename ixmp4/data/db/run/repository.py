@@ -102,9 +102,7 @@ class RunRepository(
         )
 
         try:
-            # TODO clean up unnecessary cast such as this
-            run: Run = self.session.execute(exc).scalar_one()
-            return run
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Run.NotFound(
                 model=model_name,
@@ -129,8 +127,7 @@ class RunRepository(
         )
 
         try:
-            run: Run = self.session.execute(exc).scalar_one()
-            return run
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise NoDefaultRunVersion
 

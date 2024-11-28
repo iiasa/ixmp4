@@ -45,8 +45,7 @@ class TimeSeries(AbstractConcreteBase, base.BaseModel):
 
     @property
     def run_id(self) -> int:
-        run_id: int = self.run__id
-        return run_id
+        return self.run__id
 
 
 ModelType = TypeVar("ModelType", bound=TimeSeries)

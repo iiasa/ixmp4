@@ -116,8 +116,7 @@ class RunMetaEntryRepository(
         exc = self.select(run_id=run__id, key=key)
 
         try:
-            runmetaentry = self.session.execute(exc).scalar_one()
-            return runmetaentry
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise RunMetaEntry.NotFound(run__id=run__id, key=key)
 
