@@ -273,6 +273,14 @@ class TestCoreVariable:
         )
         assert_unordered_equality(expected, pd.DataFrame(variable_4.data))
 
+        # Test adding to scalar variable raises
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="Trying to add data to unknown Columns!",
+        ):
+            variable_5 = run.optimization.variables.create("Variable 5")
+            variable_5.add(data={"foo": ["bar"], "levels": [1], "marginals": [0]})
+
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
