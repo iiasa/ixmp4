@@ -40,7 +40,7 @@ class Equation(BaseModelFacade):
         return self._model.data
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to an existing Equation."""
+        """Adds data to the Equation."""
         self.backend.optimization.equations.add_data(
             equation_id=self._model.id, data=data
         )
@@ -49,7 +49,7 @@ class Equation(BaseModelFacade):
         ).data
 
     def remove_data(self) -> None:
-        """Removes data from an existing Equation."""
+        """Removes all data from the Equation."""
         self.backend.optimization.equations.remove_data(equation_id=self._model.id)
         self._model.data = self.backend.optimization.equations.get(
             run_id=self._model.run__id, name=self._model.name
