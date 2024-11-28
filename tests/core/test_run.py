@@ -181,3 +181,29 @@ class TestCoreRun:
             run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
         if not datetime.empty:
             run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+
+    def test_run_remove_solution(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset.add(["foo", "bar"])
+        test_data = {
+            "Indexset": ["bar", "foo"],
+            "levels": [2.0, 1],
+            "marginals": [0, "test"],
+        }
+        run.optimization.equations.create(
+            "Equation",
+            constrained_to_indexsets=[indexset.name],
+        ).add(test_data)
+        run.optimization.variables.create(
+            "Variable",
+            constrained_to_indexsets=[indexset.name],
+        ).add(test_data)
+
+        run.optimization.remove_solution()
+        # Need to fetch them here even if fetched before because API layer might not
+        # forward changes automatically
+        equation = run.optimization.equations.get("Equation")
+        variable = run.optimization.variables.get("Variable")
+        assert equation.data == {}
+        assert variable.data == {}
