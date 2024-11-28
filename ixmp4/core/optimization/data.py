@@ -29,3 +29,9 @@ class OptimizationData(BaseFacade):
         self.scalars = ScalarRepository(_backend=self.backend, _run=run)
         self.tables = TableRepository(_backend=self.backend, _run=run)
         self.variables = VariableRepository(_backend=self.backend, _run=run)
+
+    def remove_solution(self) -> None:
+        for equation in self.equations.list():
+            equation.remove_data()
+        for variable in self.variables.list():
+            variable.remove_data()
