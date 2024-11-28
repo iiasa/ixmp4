@@ -178,11 +178,14 @@ class VariableRepository(
 
         index_list = [column.name for column in variable.columns]
         existing_data = pd.DataFrame(variable.data)
-        if not existing_data.empty:
-            existing_data.set_index(index_list, inplace=True)
-        variable.data = (
-            data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")  # type: ignore[assignment]
+        if index_list:
+            data = data.set_index(index_list)
+            if not existing_data.empty:
+                existing_data.set_index(index_list, inplace=True)
+        data = data.combine_first(existing_data)
+        if index_list:
+            data = data.reset_index()
+        variable.data = data.to_dict(orient="list")  # type: ignore[assignment]
 
         self.session.commit()
 
