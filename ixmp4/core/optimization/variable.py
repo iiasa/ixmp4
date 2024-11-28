@@ -40,7 +40,7 @@ class Variable(BaseModelFacade):
         return self._model.data
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to an existing Variable."""
+        """Adds data to the Variable."""
         self.backend.optimization.variables.add_data(
             variable_id=self._model.id, data=data
         )
@@ -49,7 +49,7 @@ class Variable(BaseModelFacade):
         )
 
     def remove_data(self) -> None:
-        """Removes data from an existing Variable."""
+        """Removes all data from the Variable."""
         self.backend.optimization.variables.remove_data(variable_id=self._model.id)
         self._model = self.backend.optimization.variables.get(
             run_id=self._model.run__id, name=self._model.name
