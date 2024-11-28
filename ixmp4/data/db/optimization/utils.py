@@ -10,13 +10,10 @@ if TYPE_CHECKING:
 
 def collect_indexsets_to_check(
     columns: list["Column"],
-) -> dict[str, Any]:
+) -> dict[str, list[float] | list[int] | list[str]]:
     """Creates a {key:value} dict from linked Column.names and their
     IndexSet.data."""
-    collection: dict[str, Any] = {}
-    for column in columns:
-        collection[column.name] = column.indexset.data
-    return collection
+    return {column.name: column.indexset.data for column in columns}
 
 
 def validate_data(
