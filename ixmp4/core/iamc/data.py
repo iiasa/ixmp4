@@ -9,7 +9,7 @@ from ixmp4.data.abstract import DataPoint as DataPointModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
 from ixmp4.data.backend import Backend
-from ixmp4.data.db.iamc.data import (
+from ixmp4.data.db.iamc.utils import (
     AddDataPointFrameSchema,
     RemoveDataPointFrameSchema,
     normalize_df,

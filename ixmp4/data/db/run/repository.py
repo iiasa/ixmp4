@@ -14,7 +14,7 @@ from ixmp4.core.exceptions import Forbidden, IxmpError, NoDefaultRunVersion
 from ixmp4.core.utils import substitute_type
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
-from ixmp4.data.db.iamc.data import normalize_df
+from ixmp4.data.db.iamc.utils import normalize_df
 from ixmp4.db import utils
 
 from .. import base
