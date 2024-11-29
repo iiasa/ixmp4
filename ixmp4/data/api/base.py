@@ -401,9 +401,7 @@ class BaseRepository(Generic[ModelType]):
             return DataFrame(**data).to_pandas()
 
     def _create(
-        self,
-        *args: Unpack[tuple[str]],
-        **kwargs: Unpack[_RequestKwargs],
+        self, *args: Unpack[tuple[str]], **kwargs: Unpack[_RequestKwargs]
     ) -> dict[str, Any]:
         # we can assume this type on create endpoints
         return self._request("POST", *args, **kwargs)  # type: ignore[return-value]
@@ -458,10 +456,7 @@ class Creator(BaseRepository[ModelType]):
         | float
         | None,
     ) -> ModelType:
-        res = self._create(
-            self.prefix,
-            json=kwargs,
-        )
+        res = self._create(self.prefix, json=kwargs)
         return self.model_class(**res)
 
 
