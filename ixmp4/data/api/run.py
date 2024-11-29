@@ -1,5 +1,5 @@
 # TODO Use `type` instead of TypeAlias when dropping Python 3.11
-from typing import ClassVar, TypeAlias, cast
+from typing import Any, ClassVar, TypeAlias, cast
 
 import pandas as pd
 from pydantic import Field
@@ -105,3 +105,26 @@ class RunRepository(
             "POST",
             self.prefix + "/".join([str(id), "unset-as-default-version/"]),
         )
+
+    def clone(
+        self,
+        run_id: int,
+        model_name: str | None = None,
+        scenario_name: str | None = None,
+        keep_solution: bool = True,
+    ) -> Run:
+        # Can expect this endpoint, so cast should always be fine
+        res = cast(
+            dict[str, Any],
+            self._request(
+                "POST",
+                self.prefix + "clone/",
+                json={
+                    "run_id": run_id,
+                    "model_name": model_name,
+                    "scenario_name": scenario_name,
+                    "keep_solution": keep_solution,
+                },
+            ),
+        )
+        return Run(**res)
