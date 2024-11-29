@@ -85,6 +85,8 @@ class ManagerConfig(Config):
         self,
         method: str,
         path: str,
+        params: dict[str, int | None] | None = None,
+        json: dict[str, Any] | list[Any] | tuple[Any] | None = None,
         jti: str | None = None,
     ) -> dict[str, Any]:
         del jti
@@ -95,7 +97,7 @@ class ManagerConfig(Config):
         # NOTE: since this cache is not shared amongst processes, it's efficacy
         # declines with the scale of the whole infrastructure unless counteracted
         # with increased cache size / memory usage
-        res = self.client.request(method, path)
+        res = self.client.request(method, path, params=params, json=json)
         if res.status_code != 200:
             raise ManagerApiError(f"[{str(res.status_code)}] {res.text}")
         # TODO Can we really assume this type?
