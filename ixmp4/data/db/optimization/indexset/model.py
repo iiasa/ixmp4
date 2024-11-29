@@ -19,7 +19,7 @@ class IndexSet(base.BaseModel):
     _data_type: types.OptimizationDataType
 
     _data: types.Mapped[list["IndexSetData"]] = db.relationship(
-        back_populates="indexset"
+        back_populates="indexset", order_by="IndexSetData.id"
     )
 
     @property
