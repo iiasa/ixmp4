@@ -20,6 +20,13 @@ class RunInput(BaseModel):
     scenario_name: str
 
 
+class CloneInput(BaseModel):
+    run_id: int
+    name_of_model: str | None = Field(None, alias="model_name")
+    scenario_name: str | None = Field(None)
+    keep_solution: bool = Field(True)
+
+
 @router.patch("/", response_model=EnumerationOutput[api.Run])
 def query(
     filter: RunFilter = Body(RunFilter()),
@@ -69,3 +76,11 @@ def get_by_id(
     backend: Backend = Depends(deps.get_backend),
 ) -> Run:
     return backend.runs.get_by_id(id)
+
+
+@router.post("/clone/", response_model=api.Run)
+def clone(
+    run: CloneInput,
+    backend: Backend = Depends(deps.get_backend),
+) -> Run:
+    return backend.runs.clone(**run.model_dump(by_alias=True))
