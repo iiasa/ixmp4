@@ -5,7 +5,7 @@ from typing import ClassVar, Generator, cast
 import numpy as np
 import pandas as pd
 
-# TODO Import this from typing when dropping Python 3.11
+# TODO Import this from typing when dropping Python 3.11 and 3.10 (Self)
 from typing_extensions import TypedDict, Unpack
 
 from ixmp4.data.abstract import Model as ModelModel
