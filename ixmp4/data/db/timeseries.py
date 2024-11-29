@@ -60,7 +60,11 @@ class SelectKwargs(TypedDict, total=False):
     run: dict[str, int]
 
 
-class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
+class EnumerateKwargs(
+    abstract.annotations.HasNameFilter,
+    abstract.iamc.timeseries.EnumerateKwargs,
+    total=False,
+):
     _filter: BaseFilter
     join_parameters: bool | None
 
