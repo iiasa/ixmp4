@@ -3,6 +3,7 @@ This module holds a shared datastructure and interface for normalization
 between the database and api data models and repositories.
 """
 
+from .annotations import HasNameFilter
 from .base import (
     BaseMeta,
     BaseModel,

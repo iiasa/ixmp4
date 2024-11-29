@@ -11,19 +11,19 @@ from ..utils import assert_unordered_equality
 class TestDataUnit:
     filter = FilterIamcDataset()
 
-    def test_create_get_unit(self, platform: ixmp4.Platform):
+    def test_create_get_unit(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.backend.units.create("Unit")
         assert unit1.name == "Unit"
 
         unit2 = platform.backend.units.get("Unit")
         assert unit1.id == unit2.id
 
-    def test_delete_unit(self, platform: ixmp4.Platform):
+    def test_delete_unit(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.backend.units.create("Unit")
         platform.backend.units.delete(unit1.id)
         assert platform.backend.units.tabulate().empty
 
-    def test_get_or_create_unit(self, platform: ixmp4.Platform):
+    def test_get_or_create_unit(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.backend.units.create("Unit")
         unit2 = platform.backend.units.get_or_create("Unit")
         assert unit1.id == unit2.id
@@ -32,17 +32,17 @@ class TestDataUnit:
         assert unit3.name == "Another Unit"
         assert unit1.id != unit3.id
 
-    def test_unit_unique(self, platform: ixmp4.Platform):
+    def test_unit_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.units.create("Unit")
 
         with pytest.raises(Unit.NotUnique):
             platform.backend.units.create("Unit")
 
-    def test_unit_not_found(self, platform: ixmp4.Platform):
+    def test_unit_not_found(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(Unit.NotFound):
             platform.backend.units.get("Unit")
 
-    def test_list_unit(self, platform: ixmp4.Platform):
+    def test_list_unit(self, platform: ixmp4.Platform) -> None:
         platform.backend.units.create("Unit 1")
         platform.backend.units.create("Unit 2")
 
@@ -54,7 +54,7 @@ class TestDataUnit:
         assert units[1].id == 2
         assert units[1].name == "Unit 2"
 
-    def test_tabulate_unit(self, platform: ixmp4.Platform):
+    def test_tabulate_unit(self, platform: ixmp4.Platform) -> None:
         platform.backend.units.create("Unit 1")
         platform.backend.units.create("Unit 2")
 
@@ -71,7 +71,7 @@ class TestDataUnit:
             units.drop(columns=["created_at", "created_by"]), true_units
         )
 
-    def test_filter_unit(self, platform: ixmp4.Platform):
+    def test_filter_unit(self, platform: ixmp4.Platform) -> None:
         run1, run2 = self.filter.load_dataset(platform)
         res = platform.backend.units.tabulate(
             iamc={

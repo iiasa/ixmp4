@@ -1,14 +1,25 @@
-from typing import Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 import pandas as pd
 
 from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
+from ixmp4.data.abstract.annotations import HasUnitIdFilter
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
 from .docs import ScalarDocsRepository
 from .model import Scalar
+
+
+class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...
 
 
 class ScalarRepository(
@@ -19,9 +30,9 @@ class ScalarRepository(
 ):
     model_class = Scalar
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = ScalarDocsRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = ScalarDocsRepository(*args)
 
         from .filter import OptimizationScalarFilter
 
@@ -58,11 +69,9 @@ class ScalarRepository(
         return obj
 
     @guard("edit")
-    def create(
-        self, name: str, value: float, unit_name: str, run_id: int, **kwargs
-    ) -> Scalar:
+    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
         return super().create(
-            name=name, value=value, unit_name=unit_name, run_id=run_id, **kwargs
+            name=name, value=value, unit_name=unit_name, run_id=run_id
         )
 
     @guard("edit")
@@ -80,12 +89,13 @@ class ScalarRepository(
 
         self.session.execute(exc)
         self.session.commit()
-        return self.get_by_id(id)
+        scalar: Scalar = self.get_by_id(id)
+        return scalar
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Scalar]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> Iterable[Scalar]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)

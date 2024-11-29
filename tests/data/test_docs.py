@@ -5,14 +5,14 @@ from ixmp4.data.abstract import Docs
 
 
 class TestDataDocs:
-    def test_get_and_set_modeldocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_modeldocs(self, platform: ixmp4.Platform) -> None:
         model = platform.backend.models.create("Model")
 
         docs_model = platform.backend.models.docs.set(model.id, "Description of Model")
         docs_model1 = platform.backend.models.docs.get(model.id)
         assert docs_model == docs_model1
 
-    def test_change_empty_modeldocs(self, platform: ixmp4.Platform):
+    def test_change_empty_modeldocs(self, platform: ixmp4.Platform) -> None:
         model = platform.backend.models.create("Model")
 
         with pytest.raises(Docs.NotFound):
@@ -30,7 +30,7 @@ class TestDataDocs:
 
         assert platform.backend.models.docs.get(model.id) == docs_model2
 
-    def test_delete_modeldocs(self, platform: ixmp4.Platform):
+    def test_delete_modeldocs(self, platform: ixmp4.Platform) -> None:
         model = platform.backend.models.create("Model")
         docs_model = platform.backend.models.docs.set(
             model.id, "Description of test Model"
@@ -43,7 +43,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.models.docs.get(model.id)
 
-    def test_get_and_set_regiondocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_regiondocs(self, platform: ixmp4.Platform) -> None:
         region = platform.backend.regions.create("Region", "Hierarchy")
         docs_region = platform.backend.regions.docs.set(
             region.id, "Description of test Region"
@@ -52,7 +52,7 @@ class TestDataDocs:
 
         assert docs_region == docs_region1
 
-    def test_change_empty_regiondocs(self, platform: ixmp4.Platform):
+    def test_change_empty_regiondocs(self, platform: ixmp4.Platform) -> None:
         region = platform.backend.regions.create("Region", "Hierarchy")
 
         with pytest.raises(Docs.NotFound):
@@ -70,7 +70,7 @@ class TestDataDocs:
 
         assert platform.backend.regions.docs.get(region.id) == docs_region2
 
-    def test_delete_regiondocs(self, platform: ixmp4.Platform):
+    def test_delete_regiondocs(self, platform: ixmp4.Platform) -> None:
         region = platform.backend.regions.create("Region", "Hierarchy")
         docs_region = platform.backend.regions.docs.set(
             region.id, "Description of test region"
@@ -83,7 +83,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.regions.docs.get(region.id)
 
-    def test_get_and_set_scenariodocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_scenariodocs(self, platform: ixmp4.Platform) -> None:
         scenario = platform.backend.scenarios.create("Scenario")
         docs_scenario = platform.backend.scenarios.docs.set(
             scenario.id, "Description of Scenario"
@@ -91,7 +91,7 @@ class TestDataDocs:
         docs_scenario1 = platform.backend.scenarios.docs.get(scenario.id)
         assert docs_scenario == docs_scenario1
 
-    def test_change_empty_scenariodocs(self, platform: ixmp4.Platform):
+    def test_change_empty_scenariodocs(self, platform: ixmp4.Platform) -> None:
         scenario = platform.backend.scenarios.create("Scenario")
 
         with pytest.raises(Docs.NotFound):
@@ -109,7 +109,7 @@ class TestDataDocs:
 
         assert platform.backend.scenarios.docs.get(scenario.id) == docs_scenario2
 
-    def test_delete_scenariodocs(self, platform: ixmp4.Platform):
+    def test_delete_scenariodocs(self, platform: ixmp4.Platform) -> None:
         scenario = platform.backend.scenarios.create("Scenario")
         docs_scenario = platform.backend.scenarios.docs.set(
             scenario.id, "Description of test Scenario"
@@ -122,14 +122,14 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.scenarios.docs.get(scenario.id)
 
-    def test_get_and_set_unitdocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_unitdocs(self, platform: ixmp4.Platform) -> None:
         unit = platform.backend.units.create("Unit")
         docs_unit = platform.backend.units.docs.set(unit.id, "Description of test Unit")
         docs_unit1 = platform.backend.units.docs.get(unit.id)
 
         assert docs_unit == docs_unit1
 
-    def test_change_empty_unitdocs(self, platform: ixmp4.Platform):
+    def test_change_empty_unitdocs(self, platform: ixmp4.Platform) -> None:
         unit = platform.backend.units.create("Unit")
 
         with pytest.raises(Docs.NotFound):
@@ -147,7 +147,7 @@ class TestDataDocs:
 
         assert platform.backend.units.docs.get(unit.id) == docs_unit2
 
-    def test_delete_unitdocs(self, platform: ixmp4.Platform):
+    def test_delete_unitdocs(self, platform: ixmp4.Platform) -> None:
         unit = platform.backend.units.create("Unit")
         docs_unit = platform.backend.units.docs.set(unit.id, "Description of test Unit")
 
@@ -158,7 +158,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.units.docs.get(unit.id)
 
-    def test_get_and_set_variabledocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_variabledocs(self, platform: ixmp4.Platform) -> None:
         variable = platform.backend.iamc.variables.create("Variable")
         docs_variable = platform.backend.iamc.variables.docs.set(
             variable.id, "Description of test Variable"
@@ -167,7 +167,7 @@ class TestDataDocs:
 
         assert docs_variable == docs_variables1
 
-    def test_change_empty_variabledocs(self, platform: ixmp4.Platform):
+    def test_change_empty_variabledocs(self, platform: ixmp4.Platform) -> None:
         variable = platform.backend.iamc.variables.create("Variable")
 
         with pytest.raises(Docs.NotFound):
@@ -185,7 +185,7 @@ class TestDataDocs:
 
         assert platform.backend.iamc.variables.docs.get(variable.id) == docs_variable2
 
-    def test_delete_variabledocs(self, platform: ixmp4.Platform):
+    def test_delete_variabledocs(self, platform: ixmp4.Platform) -> None:
         variable = platform.backend.iamc.variables.create("Variable")
         docs_variable = platform.backend.iamc.variables.docs.set(
             variable.id, "Description of test Variable"
@@ -198,7 +198,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.iamc.variables.docs.get(variable.id)
 
-    def test_get_and_set_indexsetdocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_indexsetdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet"
@@ -210,7 +210,7 @@ class TestDataDocs:
 
         assert docs_indexset == docs_indexset1
 
-    def test_change_empty_indexsetdocs(self, platform: ixmp4.Platform):
+    def test_change_empty_indexsetdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet"
@@ -237,7 +237,7 @@ class TestDataDocs:
             == docs_indexset2
         )
 
-    def test_delete_indexsetdocs(self, platform: ixmp4.Platform):
+    def test_delete_indexsetdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="IndexSet"
@@ -256,7 +256,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.indexsets.docs.get(indexset.id)
 
-    def test_get_and_set_scalardocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_scalardocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         scalar = platform.backend.optimization.scalars.create(
@@ -269,7 +269,7 @@ class TestDataDocs:
 
         assert docs_scalar == docs_scalar1
 
-    def test_change_empty_scalardocs(self, platform: ixmp4.Platform):
+    def test_change_empty_scalardocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         scalar = platform.backend.optimization.scalars.create(
@@ -291,7 +291,7 @@ class TestDataDocs:
 
         assert platform.backend.optimization.scalars.docs.get(scalar.id) == docs_scalar2
 
-    def test_delete_scalardocs(self, platform: ixmp4.Platform):
+    def test_delete_scalardocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         scalar = platform.backend.optimization.scalars.create(
@@ -308,7 +308,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.scalars.docs.get(scalar.id)
 
-    def test_get_and_set_tabledocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_tabledocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -323,7 +323,7 @@ class TestDataDocs:
 
         assert docs_table == docs_table1
 
-    def test_change_empty_tabledocs(self, platform: ixmp4.Platform):
+    def test_change_empty_tabledocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -347,7 +347,7 @@ class TestDataDocs:
 
         assert platform.backend.optimization.tables.docs.get(table.id) == docs_table2
 
-    def test_delete_tabledocs(self, platform: ixmp4.Platform):
+    def test_delete_tabledocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -366,7 +366,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.tables.docs.get(table.id)
 
-    def test_get_and_set_parameterdocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_parameterdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -383,7 +383,7 @@ class TestDataDocs:
 
         assert docs_parameter == docs_parameter1
 
-    def test_change_empty_parameterdocs(self, platform: ixmp4.Platform):
+    def test_change_empty_parameterdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -413,7 +413,7 @@ class TestDataDocs:
             == docs_parameter2
         )
 
-    def test_delete_parameterdocs(self, platform: ixmp4.Platform):
+    def test_delete_parameterdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -435,7 +435,9 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.parameters.docs.get(parameter.id)
 
-    def test_get_and_set_optimizationvariabledocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_optimizationvariabledocs(
+        self, platform: ixmp4.Platform
+    ) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -450,7 +452,9 @@ class TestDataDocs:
 
         assert docs_variable == docs_variable1
 
-    def test_change_empty_optimizationvariabledocs(self, platform: ixmp4.Platform):
+    def test_change_empty_optimizationvariabledocs(
+        self, platform: ixmp4.Platform
+    ) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -480,7 +484,7 @@ class TestDataDocs:
             == docs_variable2
         )
 
-    def test_delete_optimizationvariabledocs(self, platform: ixmp4.Platform):
+    def test_delete_optimizationvariabledocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -502,7 +506,7 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.variables.docs.get(variable.id)
 
-    def test_get_and_set_equationdocs(self, platform: ixmp4.Platform):
+    def test_get_and_set_equationdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -517,7 +521,7 @@ class TestDataDocs:
 
         assert docs_equation == docs_equation1
 
-    def test_change_empty_equationdocs(self, platform: ixmp4.Platform):
+    def test_change_empty_equationdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -547,7 +551,7 @@ class TestDataDocs:
             == docs_equation2
         )
 
-    def test_delete_optimizationequationdocs(self, platform: ixmp4.Platform):
+    def test_delete_optimizationequationdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"

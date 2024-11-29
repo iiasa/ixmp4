@@ -2,9 +2,13 @@ from typing import Protocol
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasIdFilter, HasNameFilter, IamcScenarioFilter
 from .docs import DocsRepository
 
 
@@ -21,6 +25,10 @@ class Scenario(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Scenario {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    iamc: IamcScenarioFilter | bool
 
 
 class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol):
@@ -66,17 +74,14 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def list(
-        self,
-        *,
-        name: str | None = None,
-    ) -> list[Scenario]:
-        """Lists scenarios by specified criteria.
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Scenario]:
+        r"""Lists scenarios by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a scenario. If supplied only one result will be returned.
+        \*\*kwargs: any
+            Any filter parameters as specified in
+            `ixmp4.data.db.scenario.filter.ScenarioFilter`.
 
         Returns
         -------
@@ -85,13 +90,14 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
-        """Tabulate scenarios by specified criteria.
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        r"""Tabulate scenarios by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a scenario. If supplied only one result will be returned.
+        \*\*kwargs: any
+            Any filter parameters as specified in
+            `ixmp4.data.db.scenario.filter.ScenarioFilter`.
 
         Returns
         -------
@@ -102,7 +108,7 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         """
         ...
 
-    def map(self, *args, **kwargs) -> dict:
+    def map(self, **kwargs: Unpack[EnumerateKwargs]) -> dict[int, str]:
         """Return a mapping of scenario-id to scenario-name.
 
         Returns
@@ -110,4 +116,4 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         :class:`dict`
             A dictionary `id` -> `name`
         """
-        return dict([(s.id, s.name) for s in self.list(*args, **kwargs)])
+        return dict([(s.id, s.name) for s in self.list(**kwargs)])

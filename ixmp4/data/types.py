@@ -10,6 +10,7 @@ DateTime = Mapped[datetime]
 Float = Mapped[float]
 IndexSetId = Mapped[db.IndexSetIdType]
 Integer = Mapped[int]
+# NOTE only one type will ever be in list, but not sure if we can map a union of lists
 OptimizationDataList = Mapped[list[float | int | str]]
 JsonDict = Mapped[dict[str, Any]]
 OptimizationDataType = Mapped[Literal["float", "int", "str"] | None]

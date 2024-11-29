@@ -1,5 +1,6 @@
-from typing import ClassVar
+from typing import Any, ClassVar
 
+from ixmp4.data.db.base import SelectType
 from ixmp4.data.db.iamc.datapoint import get_datapoint_model
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.timeseries import TimeSeries
@@ -9,7 +10,7 @@ from ixmp4.data.db.region import Region
 from ixmp4.data.db.run import Run
 from ixmp4.data.db.scenario import Scenario
 from ixmp4.data.db.unit import Unit
-from ixmp4.db import filters, utils
+from ixmp4.db import Session, filters, sql, typing_column, utils
 
 
 class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
@@ -18,7 +19,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Region
 
-    def join(self, exc, session):
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -32,7 +33,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Unit
 
-    def join(self, exc, session):
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -49,7 +50,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Variable
 
-    def join(self, exc, session):
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -65,7 +66,7 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Model
 
-    def join(self, exc, session):
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -81,7 +82,7 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
     sqla_model: ClassVar[type] = Scenario
 
-    def join(self, exc, session):
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=model.time_series__id == TimeSeries.id)
@@ -93,12 +94,12 @@ class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    id: filters.Id
+    id: filters.Id | None = filters.Field(None)
     default_only: filters.Boolean = filters.Field(True)
 
     sqla_model: ClassVar[type] = Run
 
-    def join(self, exc, session):
+    def join(self, exc: SelectType, session: Session) -> SelectType:
         model = get_datapoint_model(session)
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, model.time_series__id == TimeSeries.id)
@@ -106,15 +107,18 @@ class RunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
             exc = exc.join(Run, TimeSeries.run)
         return exc
 
-    def filter_default_only(self, exc, c, v, **kwargs):
-        if v:
-            return exc.where(Run.is_default)
-        else:
-            return exc
+    def filter_default_only(
+        self,
+        exc: sql.Select[tuple[Run]],
+        c: typing_column[Any],  # Any since it is unused
+        v: bool | None,
+        session: Session | None = None,
+    ) -> sql.Select[tuple[Run]]:
+        return exc.where(Run.is_default) if v else exc
 
 
 class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
-    """This class is used for filtering data points
+    """This class is used for filtering data points.
 
     All parameters are optional. Use the field name (or the field alias)
     directly for equality comparisons. For performing an SQL IN operation
@@ -161,11 +165,11 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     >>> iamc.tabulate(**filter)
     """
 
-    step_year: filters.Integer = filters.Field(None, alias="year")
-    time_series__id: filters.Id = filters.Field(None, alias="time_series_id")
-    region: RegionFilter
-    unit: UnitFilter
-    variable: VariableFilter
-    model: ModelFilter
-    scenario: ScenarioFilter
+    step_year: filters.Integer | None = filters.Field(None, alias="year")
+    time_series__id: filters.Id | None = filters.Field(None, alias="time_series_id")
+    region: RegionFilter | None = filters.Field(None)
+    unit: UnitFilter | None = filters.Field(None)
+    variable: VariableFilter | None = filters.Field(None)
+    model: ModelFilter | None = filters.Field(None)
+    scenario: ScenarioFilter | None = filters.Field(None)
     run: RunFilter = filters.Field(RunFilter())

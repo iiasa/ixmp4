@@ -1,4 +1,12 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 
 import pandas as pd
 
@@ -23,16 +31,16 @@ class ParameterRepository(
 
     UsageError = OptimizationItemUsageError
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = ParameterDocsRepository(*args, **kwargs)
-        self.columns = ColumnRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = ParameterDocsRepository(*args)
+        self.columns = ColumnRepository(*args)
 
         from .filter import OptimizationParameterFilter
 
         self.filter_class = OptimizationParameterFilter
 
-    def _add_column(
+    def _add_column(  # type: ignore[no-untyped-def]
         self,
         run_id: int,
         parameter_id: int,
@@ -72,11 +80,7 @@ class ParameterRepository(
             **kwargs,
         )
 
-    def add(
-        self,
-        run_id: int,
-        name: str,
-    ) -> Parameter:
+    def add(self, run_id: int, name: str) -> Parameter:
         parameter = Parameter(name=name, run__id=run_id)
         parameter.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(parameter)
@@ -109,11 +113,7 @@ class ParameterRepository(
         name: str,
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
-        **kwargs,
     ) -> Parameter:
-        # Convert to list to avoid enumerate() splitting strings to letters
-        if isinstance(constrained_to_indexsets, str):
-            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
             raise self.UsageError(
                 f"While processing Parameter {name}: \n"
@@ -130,11 +130,7 @@ class ParameterRepository(
                 "The given `column_names` are not unique!"
             )
 
-        parameter = super().create(
-            run_id=run_id,
-            name=name,
-            **kwargs,
-        )
+        parameter = super().create(run_id=run_id, name=name)
         for i, name in enumerate(constrained_to_indexsets):
             self._add_column(
                 run_id=run_id,
@@ -146,12 +142,12 @@ class ParameterRepository(
         return parameter
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Parameter]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Parameter]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)
 
     @guard("edit")
     def add_data(self, parameter_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -184,8 +180,10 @@ class ParameterRepository(
         existing_data = pd.DataFrame(parameter.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
+        # TODO Ignoring this for now since I'll likely refactor this soon, anyway
+        # Same applies to equation, table, and variable.
         parameter.data = (
             data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")
+        ).to_dict(orient="list")  # type: ignore[assignment]
 
         self.session.commit()

@@ -11,7 +11,7 @@ from ixmp4.core.exceptions import (
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
 
-def df_from_list(variables: list):
+def df_from_list(variables: list[OptimizationVariable]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -36,7 +36,7 @@ def df_from_list(variables: list):
 
 
 class TestCoreVariable:
-    def test_create_variable(self, platform: ixmp4.Platform):
+    def test_create_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
 
         # Test creation without indexset
@@ -123,7 +123,7 @@ class TestCoreVariable:
         assert variable_4.columns[0].dtype == "object"
         assert variable_4.columns[1].dtype == "int64"
 
-    def test_get_variable(self, platform: ixmp4.Platform):
+    def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
@@ -145,7 +145,7 @@ class TestCoreVariable:
         with pytest.raises(OptimizationVariable.NotFound):
             _ = run.optimization.variables.get("Variable 2")
 
-    def test_variable_add_data(self, platform: ixmp4.Platform):
+    def test_variable_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
@@ -273,7 +273,7 @@ class TestCoreVariable:
         )
         assert_unordered_equality(expected, pd.DataFrame(variable_4.data))
 
-    def test_variable_remove_data(self, platform: ixmp4.Platform):
+    def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(data=["foo", "bar"])
@@ -292,7 +292,7 @@ class TestCoreVariable:
         variable.remove_data()
         assert variable.data == {}
 
-    def test_list_variable(self, platform: ixmp4.Platform):
+    def test_list_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -322,7 +322,7 @@ class TestCoreVariable:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_variable(self, platform: ixmp4.Platform):
+    def test_tabulate_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
@@ -371,7 +371,7 @@ class TestCoreVariable:
             run.optimization.variables.tabulate(),
         )
 
-    def test_variable_docs(self, platform: ixmp4.Platform):
+    def test_variable_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1

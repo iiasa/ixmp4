@@ -11,7 +11,7 @@ from ixmp4.data.abstract import Parameter
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
 
-def df_from_list(parameters: list):
+def df_from_list(parameters: list[Parameter]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -36,7 +36,7 @@ def df_from_list(parameters: list):
 
 
 class TestDataOptimizationParameter:
-    def test_create_parameter(self, platform: ixmp4.Platform):
+    def test_create_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
 
         # Test normal creation
@@ -106,7 +106,7 @@ class TestDataOptimizationParameter:
         assert parameter_3.columns[0].dtype == "object"
         assert parameter_3.columns[1].dtype == "int64"
 
-    def test_get_parameter(self, platform: ixmp4.Platform):
+    def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
         parameter = platform.backend.optimization.parameters.create(
@@ -121,7 +121,7 @@ class TestDataOptimizationParameter:
                 run_id=run.id, name="Parameter 2"
             )
 
-    def test_parameter_add_data(self, platform: ixmp4.Platform):
+    def test_parameter_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
         indexset, indexset_2 = create_indexsets_for_run(
@@ -283,7 +283,7 @@ class TestDataOptimizationParameter:
         )
         assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
-    def test_list_parameter(self, platform: ixmp4.Platform):
+    def test_list_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -324,7 +324,7 @@ class TestDataOptimizationParameter:
             parameter_4,
         ] == platform.backend.optimization.parameters.list(run_id=run_2.id)
 
-    def test_tabulate_parameter(self, platform: ixmp4.Platform):
+    def test_tabulate_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id

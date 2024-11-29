@@ -11,7 +11,7 @@ class ColumnRepository(
 ):
     model_class = Column
 
-    def __init__(self, *args, **kwargs) -> None:
+    def __init__(self, *args, **kwargs) -> None:  # type: ignore[no-untyped-def]
         super().__init__(*args, **kwargs)
         self.docs = ColumnDocsRepository(*args, **kwargs)
 
@@ -44,8 +44,9 @@ class ColumnRepository(
         return column
 
     @guard("edit")
-    def create(
+    def create(  # type: ignore[no-untyped-def]
         self,
+        /,
         name: str,
         constrained_to_indexset: int,
         dtype: str,
@@ -96,7 +97,7 @@ class ColumnRepository(
         :class:`ixmp4.data.abstract.optimization.Column`:
             The created Column.
         """
-        return super().create(
+        return super().create(  # type: ignore[call-arg]
             name=name,
             constrained_to_indexset=constrained_to_indexset,
             dtype=dtype,

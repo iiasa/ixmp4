@@ -2,7 +2,7 @@ import json
 from typing import Optional
 
 import typer
-import uvicorn  # type: ignore[import]
+import uvicorn
 from fastapi.openapi.utils import get_openapi
 
 from ixmp4.conf import settings
@@ -33,7 +33,9 @@ def start(
 
 
 @app.command()
-def dump_schema(output_file: Optional[typer.FileTextWrite] = typer.Option(None, "-o")):
+def dump_schema(
+    output_file: Optional[typer.FileTextWrite] = typer.Option(None, "-o"),
+) -> None:
     schema = get_openapi(
         title=v1.title,
         version=v1.version,

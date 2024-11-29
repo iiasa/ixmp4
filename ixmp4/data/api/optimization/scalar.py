@@ -1,7 +1,14 @@
+from collections.abc import Iterable, Mapping
 from datetime import datetime
-from typing import Any, ClassVar, Iterable, Mapping
+from typing import TYPE_CHECKING, Any, ClassVar, cast
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 import pandas as pd
+
+# TODO Import this from typing when dropping support for Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 
@@ -40,17 +47,11 @@ class ScalarRepository(
     model_class = Scalar
     prefix = "optimization/scalars/"
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: Unpack[tuple["RestBackend"]]) -> None:
+        super().__init__(*args)
         self.docs = ScalarDocsRepository(self.backend)
 
-    def create(
-        self,
-        name: str,
-        value: float,
-        unit_name: str,
-        run_id: int,
-    ) -> Scalar:
+    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
         return super().create(
             name=name, value=value, unit_name=unit_name, run_id=run_id
         )
@@ -66,7 +67,7 @@ class ScalarRepository(
                 "value": value,
                 "unit_id": unit_id,
             },
-        )  # type: ignore
+        )  # type: ignore[assignment]
         return self.model_class(**res)
 
     def get(self, run_id: int, name: str) -> Scalar:
@@ -76,11 +77,19 @@ class ScalarRepository(
         res = self._get_by_id(id)
         return Scalar(**res)
 
-    def list(self, *args, **kwargs) -> Iterable[Scalar]:
-        return super().list(*args, **kwargs)
+    def list(
+        self, **kwargs: Unpack["abstract.optimization.scalar.EnumerateKwargs"]
+    ) -> Iterable[Scalar]:
+        json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
+        return super()._list(json=json)
 
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(
+        self, **kwargs: Unpack["abstract.optimization.scalar.EnumerateKwargs"]
+    ) -> pd.DataFrame:
+        json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
+        return super()._tabulate(json=json)
 
-    def enumerate(self, *args, **kwargs) -> Iterable[Scalar] | pd.DataFrame:
-        return super().enumerate(*args, **kwargs)
+    def enumerate(
+        self, **kwargs: Unpack["abstract.optimization.scalar.EnumerateKwargs"]
+    ) -> Iterable[Scalar] | pd.DataFrame:
+        return super().enumerate(**kwargs)

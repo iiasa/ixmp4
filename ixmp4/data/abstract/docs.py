@@ -12,7 +12,7 @@ class Docs(base.BaseModel, Protocol):
     "Description of the dimension object."
     dimension__id: types.Integer
     "Foreign unique integer id of the object in the dimension's table."
-    dimension: types.Mapped
+    dimension: types.Mapped[base.BaseModel]
     "The documented object."
 
     # This doesn't work since each dimension has a different self.dimension object as
@@ -23,13 +23,7 @@ class Docs(base.BaseModel, Protocol):
     #    )
 
 
-# TODO: adjust all type hints once things work
-class DocsRepository(
-    base.Retriever,
-    base.Deleter,
-    base.Enumerator,
-    Protocol,
-):
+class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
     def get(self, dimension_id: int) -> Docs:
         """Retrieve the documentation of an object of any dimension.
 
@@ -85,11 +79,7 @@ class DocsRepository(
         """
         ...
 
-    def list(
-        self,
-        *,
-        dimension_id: int | None = None,
-    ) -> list[Docs]:
+    def list(self, *, dimension_id: int | None = None) -> list[Docs]:
         """Lists documentations.
 
         Parameters

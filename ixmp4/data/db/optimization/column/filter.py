@@ -10,7 +10,7 @@ from .model import Column
 class OptimizationTableFilter(
     base.OptimizationTableFilter, metaclass=filters.FilterMeta
 ):
-    def join(self, exc, session=None):
+    def join(self, exc, session=None):  # type: ignore[no-untyped-def]
         if not utils.is_joined(exc, Table):
             exc = exc.join(Table, onclause=Column.table__id == Table.id)
         return exc
@@ -19,5 +19,5 @@ class OptimizationTableFilter(
 class OptimizationColumnFilter(
     base.OptimizationColumnFilter, metaclass=filters.FilterMeta
 ):
-    def join(self, exc, session=None):
+    def join(self, exc, session=None):  # type: ignore[no-untyped-def]
         return exc

@@ -2,9 +2,19 @@ from typing import Protocol
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import types
 
 from .. import base
+from ..annotations import (
+    HasIdFilter,
+    HasNameFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasUnitFilter,
+)
 from ..docs import DocsRepository
 
 
@@ -21,6 +31,24 @@ class Variable(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Variable {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    region: HasRegionFilter
+    unit: HasUnitFilter
+    # TODO leaving something like this renders the type hints while typing to say
+    # `run: dict[str, bool | ...]`, from which you can immediately tell the allowed
+    # types, but won't actually know which strings to put in as the keys. Using the
+    # TypedDict, you'd know you have to look up its definition unless you know by heart
+    # what you can enter.
+    # run: dict[
+    #     str,
+    #     bool
+    #     | int
+    #     | Iterable[int]
+    #     | Mapping[str, int | str | Iterable[int] | Iterable[str]],
+    # ]
+    run: HasRunFilter
 
 
 class VariableRepository(
@@ -71,16 +99,14 @@ class VariableRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> list[Variable]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
         -------
@@ -89,16 +115,14 @@ class VariableRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
         -------

@@ -1,13 +1,21 @@
+from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from . import InitKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
+from ixmp4.data.abstract import Unit as UnitModel
 
 
 class Scalar(BaseModelFacade):
@@ -29,7 +37,7 @@ class Scalar(BaseModelFacade):
         return self._model.value
 
     @value.setter
-    def value(self, value: float):
+    def value(self, value: float) -> None:
         self._model.value = value
         self.backend.optimization.scalars.update(
             id=self._model.id,
@@ -38,21 +46,19 @@ class Scalar(BaseModelFacade):
         )
 
     @property
-    def unit(self):
+    def unit(self) -> UnitModel:
         """Associated unit."""
         return self._model.unit
 
     @unit.setter
-    def unit(self, unit: str | Unit):
-        if isinstance(unit, Unit):
-            unit = unit
-        else:
-            unit_model = self.backend.units.get(unit)
-            unit = Unit(_backend=self.backend, _model=unit_model)
+    def unit(self, value: str | Unit) -> None:
+        if isinstance(value, str):
+            unit_model = self.backend.units.get(value)
+            value = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
             id=self._model.id,
             value=self._model.value,
-            unit_id=unit.id,
+            unit_id=value.id,
         )
 
     @property
@@ -68,21 +74,21 @@ class Scalar(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.optimization.scalars.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.scalars.docs.delete(self.id)
         else:
             self.backend.optimization.scalars.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.optimization.scalars.docs.delete(self.id)
         # TODO: silently failing
@@ -96,8 +102,8 @@ class Scalar(BaseModelFacade):
 class ScalarRepository(BaseFacade):
     _run: Run
 
-    def __init__(self, _run: Run, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+        super().__init__(**kwargs)
         self._run = _run
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:

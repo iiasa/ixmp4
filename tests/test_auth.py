@@ -142,7 +142,12 @@ class TestAuthContext:
             ),
         ],
     )
-    def test_guards(self, sqlite_platform: ixmp4.Platform, user, truths):
+    def test_guards(
+        self,
+        sqlite_platform: ixmp4.Platform,
+        user: User,
+        truths: dict[str, dict[str, bool]],
+    ) -> None:
         mp = sqlite_platform
         backend = cast(SqlAlchemyBackend, mp.backend)
         self.small.load_dataset(mp)
@@ -226,9 +231,11 @@ class TestAuthContext:
                         )
 
                     with pytest.raises(Forbidden):
-                        run.meta = {"meta": "test"}
+                        # NOTE mypy doesn't support setters taking a different type than
+                        # their property https://github.com/python/mypy/issues/3004
+                        run.meta = {"meta": "test"}  # type: ignore[assignment]
 
-    def test_run_audit_info(self, db_platform: ixmp4.Platform):
+    def test_run_audit_info(self, db_platform: ixmp4.Platform) -> None:
         backend = cast(SqlAlchemyBackend, db_platform.backend)
 
         test_user = User(username="test_audit", is_verified=True, is_superuser=True)
@@ -273,10 +280,10 @@ class TestAuthContext:
     def test_filters(
         self,
         db_platform: ixmp4.Platform,
-        model,
-        platform_info,
-        access,
-    ):
+        model: str,
+        platform_info: ManagerPlatformInfo,
+        access: str | None,
+    ) -> None:
         mp = db_platform
         backend = cast(SqlAlchemyBackend, mp.backend)
         user = User(username="User Carina", is_verified=True, groups=[6, 7])
@@ -287,7 +294,7 @@ class TestAuthContext:
         run = mp.runs.create(model, "Scenario")
         annual_dps = self.small.annual.copy()
         run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
-        run.meta = {"meta": "test"}
+        run.meta = {"meta": "test"}  # type: ignore[assignment]
         run.set_as_default()
 
         with backend.auth(user, self.mock_manager, platform_info):
@@ -303,7 +310,7 @@ class TestAuthContext:
                         annual_dps.drop(columns=["value"]),
                         type=ixmp4.DataPoint.Type.ANNUAL,
                     )
-                    run.meta = {"meta": "test"}
+                    run.meta = {"meta": "test"}  # type: ignore[assignment]
 
                 else:
                     with pytest.raises(Forbidden):
@@ -319,7 +326,7 @@ class TestAuthContext:
                         )
 
                     with pytest.raises(Forbidden):
-                        run.meta = {"meta": "test"}
+                        run.meta = {"meta": "test"}  # type: ignore[assignment]
             else:
                 with pytest.raises((ixmp4.Run.NotFound, ixmp4.Run.NoDefaultVersion)):
                     mp.runs.get(model, "Scenario")
@@ -330,7 +337,7 @@ class TestAuthContext:
                 assert mp.scenarios.tabulate().empty
 
 
-def test_invalid_credentials():
+def test_invalid_credentials() -> None:
     # TODO: Use testing instance once available.
     # Using dev for now to reduce load on production environment.
     # @wronguser cannot exist ("@" is not allowed) and will therefore always be invalid.

@@ -1,5 +1,7 @@
 import asyncio
+from collections.abc import Iterable
 
+import pandas as pd
 import pytest
 
 import ixmp4
@@ -17,12 +19,12 @@ class TestCoreIamc:
     small = SmallIamcDataset()
     filter = FilterIamcDataset()
 
-    def test_run_annual_datapoints_raw(self, platform: ixmp4.Platform):
+    def test_run_annual_datapoints_raw(self, platform: ixmp4.Platform) -> None:
         self.do_run_datapoints(
             platform, self.small.annual.copy(), True, DataPoint.Type.ANNUAL
         )
 
-    def test_run_annual_datapoints_iamc(self, platform: ixmp4.Platform):
+    def test_run_annual_datapoints_iamc(self, platform: ixmp4.Platform) -> None:
         # convert to test data to standard IAMC format
         df = self.small.annual.copy().rename(columns={"step_year": "year"})
         self.do_run_datapoints(platform, df, False)
@@ -31,14 +33,14 @@ class TestCoreIamc:
         "invalid_type", (DataPoint.Type.CATEGORICAL, DataPoint.Type.DATETIME)
     )
     def test_run_inconsistent_annual_raises(
-        self, platform: ixmp4.Platform, invalid_type
-    ):
+        self, platform: ixmp4.Platform, invalid_type: DataPoint.Type
+    ) -> None:
         with pytest.raises(SchemaError):
             self.do_run_datapoints(
                 platform, self.small.annual.copy(), True, invalid_type
             )
 
-    def test_run_categorical_datapoints_raw(self, platform: ixmp4.Platform):
+    def test_run_categorical_datapoints_raw(self, platform: ixmp4.Platform) -> None:
         self.do_run_datapoints(
             platform, self.small.categorical.copy(), True, DataPoint.Type.CATEGORICAL
         )
@@ -47,14 +49,14 @@ class TestCoreIamc:
         "invalid_type", (DataPoint.Type.ANNUAL, DataPoint.Type.DATETIME)
     )
     def test_run_inconsistent_categorical_raises(
-        self, platform: ixmp4.Platform, invalid_type
-    ):
+        self, platform: ixmp4.Platform, invalid_type: DataPoint.Type
+    ) -> None:
         with pytest.raises(SchemaError):
             self.do_run_datapoints(
                 platform, self.small.categorical.copy(), True, invalid_type
             )
 
-    def test_run_datetime_datapoints_raw(self, platform: ixmp4.Platform):
+    def test_run_datetime_datapoints_raw(self, platform: ixmp4.Platform) -> None:
         self.do_run_datapoints(
             platform, self.small.datetime.copy(), True, DataPoint.Type.DATETIME
         )
@@ -63,20 +65,26 @@ class TestCoreIamc:
         "invalid_type", (DataPoint.Type.ANNUAL, DataPoint.Type.CATEGORICAL)
     )
     def test_run_inconsistent_datetime_type_raises(
-        self, platform: ixmp4.Platform, invalid_type
-    ):
+        self, platform: ixmp4.Platform, invalid_type: DataPoint.Type
+    ) -> None:
         with pytest.raises(SchemaError):
             self.do_run_datapoints(
                 platform, self.small.datetime.copy(), True, invalid_type
             )
 
-    def test_unit_dimensionless_raw(self, platform: ixmp4.Platform):
+    def test_unit_dimensionless_raw(self, platform: ixmp4.Platform) -> None:
         test_data = self.small.annual.copy()
         test_data.loc[0, "unit"] = ""
         platform.units.create("")
         self.do_run_datapoints(platform, test_data, True, DataPoint.Type.ANNUAL)
 
-    def do_run_datapoints(self, platform: ixmp4.Platform, data, raw=True, _type=None):
+    def do_run_datapoints(
+        self,
+        platform: ixmp4.Platform,
+        data: pd.DataFrame,
+        raw: bool = True,
+        _type: DataPoint.Type | None = None,
+    ) -> None:
         # Test adding, updating, removing data to a run
         # either as ixmp4-database format (columns `step_[year/datetime/categorical]`)
         # or as standard iamc format  (column names 'year' or 'time')
@@ -203,24 +211,28 @@ class TestCoreIamc:
         ),
     )
     def test_run_tabulate_with_filter_raw(
-        self, platform: ixmp4.Platform, filters, run, exp_len
-    ):
+        self,
+        platform: ixmp4.Platform,
+        filters: dict[str, dict[str, str | Iterable[str]]],
+        run: tuple[str, str, int],
+        exp_len: int,
+    ) -> None:
         self.filter.load_dataset(platform)
-        run = platform.runs.get(*run)
-        obs = run.iamc.tabulate(raw=True, **filters)
+        _run = platform.runs.get(*run)
+        obs = _run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
 
 
 class TestCoreIamcReadOnly:
-    def test_mp_tabulate_big_async(self, platform_med: ixmp4.Platform):
+    def test_mp_tabulate_big_async(self, platform_med: ixmp4.Platform) -> None:
         """Tests if big tabulations work in async contexts."""
 
-        async def tabulate():
+        async def tabulate() -> pd.DataFrame:
             return platform_med.iamc.tabulate(raw=True, run={"default_only": False})
 
         res = asyncio.run(tabulate())
         assert len(res) > settings.default_page_size
 
-    def test_mp_tabulate_big(self, platform_med: ixmp4.Platform):
+    def test_mp_tabulate_big(self, platform_med: ixmp4.Platform) -> None:
         res = platform_med.iamc.tabulate(raw=True, run={"default_only": False})
         assert len(res) > settings.default_page_size

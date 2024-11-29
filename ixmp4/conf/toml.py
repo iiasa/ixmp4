@@ -27,7 +27,7 @@ class TomlConfig(Config):
         list_: list[dict[str, Any]] = [{"name": k, **v} for k, v in dict_.items()]
         self.platforms = {x["name"]: TomlPlatformInfo(**x) for x in list_}
 
-    def dump(self):
+    def dump(self) -> None:
         obj = {}
         for c in self.platforms.values():
             dict_ = json.loads(c.model_dump_json())
@@ -47,7 +47,7 @@ class TomlConfig(Config):
         except KeyError as e:
             raise PlatformNotFound(f"Platform '{key}' was not found.") from e
 
-    def add_platform(self, name: str, dsn: str):
+    def add_platform(self, name: str, dsn: str) -> None:
         try:
             self.get_platform(name)
         except PlatformNotFound:
@@ -56,7 +56,7 @@ class TomlConfig(Config):
             return
         raise PlatformNotUnique(f"Platform '{name}' already exists, remove it first.")
 
-    def remove_platform(self, key: str):
+    def remove_platform(self, key: str) -> None:
         try:
             del self.platforms[key]
         except KeyError as e:

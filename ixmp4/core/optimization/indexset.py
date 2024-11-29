@@ -1,7 +1,13 @@
 from datetime import datetime
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
+
+if TYPE_CHECKING:
+    from . import InitKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
@@ -26,7 +32,9 @@ class IndexSet(BaseModelFacade):
     def data(self) -> list[float | int | str]:
         return self._model.data
 
-    def add(self, data: float | int | list[float | int | str] | str) -> None:
+    def add(
+        self, data: float | int | str | list[float] | list[int] | list[str]
+    ) -> None:
         """Adds data to an existing IndexSet."""
         self.backend.optimization.indexsets.add_data(
             indexset_id=self._model.id, data=data
@@ -76,8 +84,8 @@ class IndexSet(BaseModelFacade):
 class IndexSetRepository(BaseFacade):
     _run: Run
 
-    def __init__(self, _run: Run, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+        super().__init__(**kwargs)
         self._run = _run
 
     def create(self, name: str) -> IndexSet:

@@ -1,11 +1,24 @@
-from typing import Iterable, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Protocol
+
+from ..annotations import HasUnitIdFilter
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs as BaseEnumerateKwargs
+
+    class EnumerateKwargs(BaseEnumerateKwargs, HasUnitIdFilter, total=False): ...
+
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from ..unit import Unit
 
 
 class Scalar(base.BaseModel, Protocol):
@@ -17,7 +30,7 @@ class Scalar(base.BaseModel, Protocol):
     """Value of the Scalar."""
     unit__id: types.Integer
     "Foreign unique integer id of a unit."
-    unit: types.Mapped
+    unit: types.Mapped[Unit]
     "Associated unit."
     run__id: types.Integer
     "Foreign unique integer id of a run."
@@ -132,16 +145,13 @@ class ScalarRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Scalar]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Scalar]:
         r"""Lists Scalars by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Scalar. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns
@@ -151,16 +161,13 @@ class ScalarRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Scalars by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Scalar. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns

@@ -1,4 +1,11 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 import pandas as pd
 
@@ -22,16 +29,16 @@ class TableRepository(
 
     UsageError = OptimizationItemUsageError
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = TableDocsRepository(*args, **kwargs)
-        self.columns = ColumnRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = TableDocsRepository(*args)
+        self.columns = ColumnRepository(*args)
 
         from .filter import OptimizationTableFilter
 
         self.filter_class = OptimizationTableFilter
 
-    def _add_column(
+    def _add_column(  # type: ignore[no-untyped-def]
         self,
         run_id: int,
         table_id: int,
@@ -71,11 +78,7 @@ class TableRepository(
             **kwargs,
         )
 
-    def add(
-        self,
-        run_id: int,
-        name: str,
-    ) -> Table:
+    def add(self, run_id: int, name: str) -> Table:
         table = Table(name=name, run__id=run_id)
         self.session.add(table)
 
@@ -105,11 +108,7 @@ class TableRepository(
         name: str,
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
-        **kwargs,
     ) -> Table:
-        # Convert to list to avoid enumerate() splitting strings to letters
-        if isinstance(constrained_to_indexsets, str):
-            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
             raise self.UsageError(
                 f"While processing Table {name}: \n"
@@ -126,11 +125,7 @@ class TableRepository(
                 "The given `column_names` are not unique!"
             )
 
-        table = super().create(
-            run_id=run_id,
-            name=name,
-            **kwargs,
-        )
+        table = super().create(run_id=run_id, name=name)
         for i, name in enumerate(constrained_to_indexsets):
             self._add_column(
                 run_id=run_id,
@@ -142,12 +137,12 @@ class TableRepository(
         return table
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Table]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Table]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)
 
     @guard("edit")
     def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -157,7 +152,7 @@ class TableRepository(
 
         table.data = pd.concat([pd.DataFrame.from_dict(table.data), data]).to_dict(
             orient="list"
-        )
+        )  # type: ignore[assignment]
 
         self.session.add(table)
         self.session.commit()

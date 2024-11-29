@@ -1,19 +1,20 @@
 from ixmp4.data.db import filters as base
+from ixmp4.data.db.base import SelectType
 from ixmp4.data.db.iamc.timeseries import TimeSeries
-from ixmp4.db import filters, utils
+from ixmp4.db import Session, filters, utils
 
 from ..measurand import Measurand
 from . import Variable
 
 
 class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
-    region: base.RegionFilter | None
-    unit: base.UnitFilter | None
+    region: base.RegionFilter | None = filters.Field(None)
+    unit: base.UnitFilter | None = filters.Field(None)
     run: base.RunFilter = filters.Field(
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
-    def join(self, exc, session=None):
+    def join(self, exc: SelectType, session: Session | None = None) -> SelectType:
         if not utils.is_joined(exc, Measurand):
             exc = exc.join(Measurand, Measurand.variable__id == Variable.id)
 

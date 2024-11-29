@@ -1,5 +1,7 @@
 import logging
+from collections.abc import Generator
 from datetime import datetime, timedelta
+from typing import Any, cast
 from uuid import uuid4
 
 import httpx
@@ -13,10 +15,11 @@ logger = logging.getLogger(__name__)
 
 
 class BaseAuth(object):
-    def __call__(self, *args, **kwargs):
+    # This should never be called
+    def __call__(self, *args: Any, **kwargs: Any) -> httpx.Request:
         raise NotImplementedError
 
-    def auth_flow(self, request):
+    def auth_flow(self, request: httpx.Request) -> Generator[httpx.Request, Any, None]:
         yield self(request)
 
     def get_user(self) -> User:
@@ -39,7 +42,7 @@ class SelfSignedAuth(BaseAuth, httpx.Auth):
         )
         self.token = self.get_local_jwt()
 
-    def __call__(self, r):
+    def __call__(self, r: httpx.Request) -> httpx.Request:
         try:
             jwt.decode(self.token, self.secret, algorithms=["HS256"])
         except (jwt.InvalidTokenError, jwt.ExpiredSignatureError):
@@ -48,7 +51,7 @@ class SelfSignedAuth(BaseAuth, httpx.Auth):
         r.headers["Authorization"] = "Bearer " + self.token
         return r
 
-    def get_local_jwt(self):
+    def get_local_jwt(self) -> str:
         self.jti = uuid4().hex
         return jwt.encode(
             {
@@ -63,7 +66,7 @@ class SelfSignedAuth(BaseAuth, httpx.Auth):
             algorithm="HS256",
         )
 
-    def get_expiration_timestamp(self):
+    def get_expiration_timestamp(self) -> int:
         return int((datetime.now() + timedelta(minutes=15)).timestamp())
 
     def get_user(self) -> User:
@@ -72,11 +75,11 @@ class SelfSignedAuth(BaseAuth, httpx.Auth):
 
 
 class AnonymousAuth(BaseAuth, httpx.Auth):
-    def __init__(self):
+    def __init__(self) -> None:
         self.user = anonymous_user
         logger.info("Connecting to service anonymously and without credentials.")
 
-    def __call__(self, r):
+    def __call__(self, r: httpx.Request) -> httpx.Request:
         return r
 
     def get_user(self) -> User:
@@ -97,7 +100,7 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         self.password = password
         self.obtain_jwt()
 
-    def __call__(self, r):
+    def __call__(self, r: httpx.Request) -> httpx.Request:
         try:
             jwt.decode(
                 self.access_token,
@@ -109,7 +112,7 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         r.headers["Authorization"] = "Bearer " + self.access_token
         return r
 
-    def obtain_jwt(self):
+    def obtain_jwt(self) -> None:
         res = self.client.post(
             "/token/obtain/",
             json={
@@ -133,7 +136,7 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         self.set_user(self.access_token)
         self.refresh_token = json["refresh"]
 
-    def refresh_or_reobtain_jwt(self):
+    def refresh_or_reobtain_jwt(self) -> None:
         try:
             jwt.decode(
                 self.refresh_token,
@@ -143,7 +146,7 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         except jwt.ExpiredSignatureError:
             self.obtain_jwt()
 
-    def refresh_jwt(self):
+    def refresh_jwt(self) -> None:
         res = self.client.post(
             "/token/refresh/",
             json={
@@ -157,13 +160,16 @@ class ManagerAuth(BaseAuth, httpx.Auth):
         self.access_token = res.json()["access"]
         self.set_user(self.access_token)
 
-    def decode_token(self, token: str):
-        return jwt.decode(
-            token,
-            options={"verify_signature": False, "verify_exp": False},
+    def decode_token(self, token: str) -> dict[str, Any]:
+        return cast(
+            dict[str, Any],
+            jwt.decode(
+                token,
+                options={"verify_signature": False, "verify_exp": False},
+            ),
         )
 
-    def set_user(self, token: str):
+    def set_user(self, token: str) -> None:
         token_dict = self.decode_token(token)
         user_dict = token_dict["user"]
         self.user = User(**user_dict, jti=token_dict.get("jti"))

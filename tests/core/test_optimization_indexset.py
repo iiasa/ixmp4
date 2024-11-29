@@ -48,7 +48,7 @@ def df_from_list(indexsets: list[IndexSet], include_data: bool = False) -> pd.Da
 
 
 class TestCoreIndexset:
-    def test_create_indexset(self, platform: ixmp4.Platform):
+    def test_create_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
         assert indexset_1.id == 1
@@ -60,7 +60,7 @@ class TestCoreIndexset:
         with pytest.raises(IndexSet.NotUnique):
             _ = run.optimization.indexsets.create("Indexset 1")
 
-    def test_get_indexset(self, platform: ixmp4.Platform):
+    def test_get_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
         indexset = run.optimization.indexsets.get("Indexset 1")
@@ -70,12 +70,12 @@ class TestCoreIndexset:
         with pytest.raises(IndexSet.NotFound):
             _ = run.optimization.indexsets.get("Foo")
 
-    def test_add_data(self, platform: ixmp4.Platform):
+    def test_add_elements(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         test_data = ["foo", "bar"]
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
-        indexset_1.add(test_data)  # type: ignore
-        run.optimization.indexsets.create("Indexset 2").add(test_data)  # type: ignore
+        indexset_1.add(test_data)
+        run.optimization.indexsets.create("Indexset 2").add(test_data)
         indexset_2 = run.optimization.indexsets.get("Indexset 2")
 
         assert indexset_1.data == indexset_2.data
@@ -88,20 +88,20 @@ class TestCoreIndexset:
 
         # Test data types are conserved
         indexset_3 = run.optimization.indexsets.create("Indexset 3")
-        test_data_2: list[float | int | str] = [1.2, 3.4, 5.6]
+        test_data_2 = [1.2, 3.4, 5.6]
         indexset_3.add(data=test_data_2)
 
         assert indexset_3.data == test_data_2
         assert type(indexset_3.data[0]).__name__ == "float"
 
         indexset_4 = run.optimization.indexsets.create("Indexset 4")
-        test_data_3: list[float | int | str] = [0, 1, 2]
+        test_data_3 = [0, 1, 2]
         indexset_4.add(data=test_data_3)
 
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
 
-    def test_list_indexsets(self, platform: ixmp4.Platform):
+    def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -122,7 +122,7 @@ class TestCoreIndexset:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_indexsets(self, platform: ixmp4.Platform):
+    def test_tabulate_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
@@ -152,7 +152,7 @@ class TestCoreIndexset:
             ),
         )
 
-    def test_indexset_docs(self, platform: ixmp4.Platform):
+    def test_indexset_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset_1,) = tuple(
             IndexSet(_backend=platform.backend, _model=model)

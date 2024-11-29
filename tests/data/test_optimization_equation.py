@@ -11,7 +11,7 @@ from ixmp4.data.abstract import Equation
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
 
-def df_from_list(equations: list):
+def df_from_list(equations: list[Equation]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -36,7 +36,7 @@ def df_from_list(equations: list):
 
 
 class TestDataOptimizationEquation:
-    def test_create_equation(self, platform: ixmp4.Platform):
+    def test_create_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
 
         # Test normal creation
@@ -104,7 +104,7 @@ class TestDataOptimizationEquation:
         assert equation_3.columns[0].dtype == "object"
         assert equation_3.columns[1].dtype == "int64"
 
-    def test_get_equation(self, platform: ixmp4.Platform):
+    def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
@@ -121,7 +121,7 @@ class TestDataOptimizationEquation:
                 run_id=run.id, name="Equation 2"
             )
 
-    def test_equation_add_data(self, platform: ixmp4.Platform):
+    def test_equation_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -273,7 +273,7 @@ class TestDataOptimizationEquation:
         )
         assert_unordered_equality(expected, pd.DataFrame(equation_4.data))
 
-    def test_equation_remove_data(self, platform: ixmp4.Platform):
+    def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
@@ -303,7 +303,7 @@ class TestDataOptimizationEquation:
         )
         assert equation.data == {}
 
-    def test_list_equation(self, platform: ixmp4.Platform):
+    def test_list_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         # Per default, list() lists scalars for `default` version runs:
         platform.backend.runs.set_as_default_version(run.id)
@@ -341,7 +341,7 @@ class TestDataOptimizationEquation:
             equation_4,
         ] == platform.backend.optimization.equations.list(run_id=run_2.id)
 
-    def test_tabulate_equation(self, platform: ixmp4.Platform):
+    def test_tabulate_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id

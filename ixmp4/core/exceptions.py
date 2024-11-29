@@ -1,6 +1,9 @@
-from typing import ClassVar, Dict
+from typing import Any, ClassVar
 
-registry: dict = dict()
+# TODO Import this from typing when dropping support for 3.10
+from typing_extensions import Self
+
+registry: dict[str, type["IxmpError"]] = dict()
 
 
 class ProgrammingError(Exception):
@@ -10,8 +13,17 @@ class ProgrammingError(Exception):
 ExcMeta: type = type(Exception)
 
 
-class RemoteExceptionMeta(ExcMeta):
-    def __new__(cls, name, bases, namespace, **kwargs):
+# TODO can't find a similar open issues, should I open one?
+# For reference, this occurred after adding disallow_subclassing_any
+# NOTE mypy seems to say Exception has type Any, don't see how we could change that
+class RemoteExceptionMeta(ExcMeta):  # type: ignore[misc]
+    def __new__(
+        cls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        **kwargs: Any,
+    ) -> type["IxmpError"]:
         http_error_name = namespace.get("http_error_name", None)
         if http_error_name is not None:
             try:
@@ -29,14 +41,14 @@ class IxmpError(Exception, metaclass=RemoteExceptionMeta):
     _message: str = ""
     http_status_code: int = 500
     http_error_name: ClassVar[str] = "ixmp_error"
-    kwargs: Dict
+    kwargs: dict[str, Any]
 
     def __init__(
         self,
-        *args,
+        *args: str,
         message: str | None = None,
         status_code: int | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         if len(args) > 0:
             self._message = args[0]
@@ -64,7 +76,7 @@ class IxmpError(Exception, metaclass=RemoteExceptionMeta):
         return message
 
     @classmethod
-    def from_dict(cls, dict_):
+    def from_dict(cls, dict_: dict[str, Any]) -> Self:
         return cls(message=dict_["message"], **dict_["kwargs"])
 
 

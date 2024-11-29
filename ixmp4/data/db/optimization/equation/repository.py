@@ -1,4 +1,12 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 
 import pandas as pd
 
@@ -22,16 +30,16 @@ class EquationRepository(
 
     UsageError = OptimizationItemUsageError
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = EquationDocsRepository(*args, **kwargs)
-        self.columns = ColumnRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = EquationDocsRepository(*args)
+        self.columns = ColumnRepository(*args)
 
         from .filter import EquationFilter
 
         self.filter_class = EquationFilter
 
-    def _add_column(
+    def _add_column(  # type: ignore[no-untyped-def]
         self,
         run_id: int,
         equation_id: int,
@@ -104,15 +112,11 @@ class EquationRepository(
     @guard("edit")
     def create(
         self,
-        run_id: int,
         name: str,
+        run_id: int,
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
-        **kwargs,
     ) -> Equation:
-        # Convert to list to avoid enumerate() splitting strings to letters
-        if isinstance(constrained_to_indexsets, str):
-            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names and len(column_names) != len(constrained_to_indexsets):
             raise OptimizationItemUsageError(
                 f"While processing Equation {name}: \n"
@@ -129,11 +133,7 @@ class EquationRepository(
                 "The given `column_names` are not unique!"
             )
 
-        equation = super().create(
-            run_id=run_id,
-            name=name,
-            **kwargs,
-        )
+        equation = super().create(run_id=run_id, name=name)
         for i, name in enumerate(constrained_to_indexsets):
             self._add_column(
                 run_id=run_id,
@@ -145,12 +145,12 @@ class EquationRepository(
         return equation
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Equation]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Equation]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)
 
     @guard("edit")
     def add_data(self, equation_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -174,7 +174,7 @@ class EquationRepository(
             existing_data.set_index(index_list, inplace=True)
         equation.data = (
             data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")
+        ).to_dict(orient="list")  # type: ignore[assignment]
 
         self.session.commit()
 

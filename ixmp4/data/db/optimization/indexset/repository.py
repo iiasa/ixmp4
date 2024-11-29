@@ -1,4 +1,10 @@
-from typing import List
+from typing import TYPE_CHECKING, List, Literal, cast
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 import pandas as pd
 
@@ -19,9 +25,9 @@ class IndexSetRepository(
 ):
     model_class = IndexSet
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = IndexSetDocsRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = IndexSetDocsRepository(*args)
 
         from .filter import OptimizationIndexSetFilter
 
@@ -52,23 +58,23 @@ class IndexSetRepository(
         return obj
 
     @guard("edit")
-    def create(self, run_id: int, name: str, **kwargs) -> IndexSet:
-        return super().create(run_id=run_id, name=name, **kwargs)
+    def create(self, run_id: int, name: str) -> IndexSet:
+        return super().create(run_id=run_id, name=name)
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[IndexSet]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> list[IndexSet]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, include_data: bool = False, **kwargs) -> pd.DataFrame:
+    def tabulate(
+        self, *, include_data: bool = False, **kwargs: Unpack["base.EnumerateKwargs"]
+    ) -> pd.DataFrame:
         if not include_data:
             return (
-                super()
-                .tabulate(*args, **kwargs)
-                .rename(columns={"_data_type": "data_type"})
+                super().tabulate(**kwargs).rename(columns={"_data_type": "data_type"})
             )
         else:
-            result = super().tabulate(*args, **kwargs).drop(labels="_data_type", axis=1)
+            result = super().tabulate(**kwargs).drop(labels="_data_type", axis=1)
             result.insert(
                 loc=0,
                 column="data",
@@ -80,14 +86,13 @@ class IndexSetRepository(
     def add_data(
         self,
         indexset_id: int,
-        data: float | int | List[float | int | str] | str,
+        data: float | int | str | List[float] | List[int] | List[str],
     ) -> None:
         indexset = self.get_by_id(id=indexset_id)
-        if not isinstance(data, list):
-            data = [data]
+        _data = data if isinstance(data, list) else [data]
 
         bulk_insert_enabled_data: list[dict[str, str]] = [
-            {"value": str(d)} for d in data
+            {"value": str(d)} for d in _data
         ]
         try:
             self.session.execute(
@@ -98,7 +103,10 @@ class IndexSetRepository(
             self.session.rollback()
             raise indexset.DataInvalid from e
 
-        indexset._data_type = type(data[0]).__name__
+        # Due to _data's limitation above, __name__ will always be that
+        indexset._data_type = cast(
+            Literal["float", "int", "str"], type(_data[0]).__name__
+        )
 
         self.session.add(indexset)
         self.session.commit()

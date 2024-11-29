@@ -12,7 +12,7 @@ class TestApi:
     small = SmallIamcDataset()
     medium = MediumIamcDataset()
 
-    def assert_res(self, res: httpx.Response, is_success=True):
+    def assert_res(self, res: httpx.Response, is_success: bool = True) -> None:
         assert res.is_success == is_success
 
     def assert_table_res(
@@ -20,8 +20,8 @@ class TestApi:
         res: httpx.Response,
         no_of_rows: int | None = None,
         has_columns: list[str] | None = None,
-        has_data_for_columns: dict[str, list] | None = None,
-    ):
+        has_data_for_columns: dict[str, list[str] | list[int]] | None = None,
+    ) -> None:
         self.assert_res(res)
         page = res.json()
         table = page["results"]
@@ -50,36 +50,47 @@ class TestApi:
 
     def assert_paginated_res(
         self,
-        client,
-        endpoint,
-        filters: dict | None = None,
+        client: httpx.Client,
+        endpoint: str,
+        filters: dict[str, dict[str, bool]] | None = None,
         no_of_rows: int | None = None,
-    ):
-        total, offset, limit = None, None, None
+    ) -> None:
+        total: int | None = None
+        offset: int | None = None
+        limit: int | None = None
         ret_no_of_rows = 0
 
-        while offset is None or offset + limit < total:
+        while (
+            offset is None or limit is None or total is None
+        ) or offset + limit < total:
             url = endpoint + "?table=true"
-            if offset is not None:
+            if offset is not None and limit is not None:
                 offset += limit
                 url += f"&offset={offset}&limit={limit}"
             res = client.patch(url, json=filters)
             self.assert_res(res)
             page = res.json()
             pagination = page.pop("pagination")
-            offset, limit = pagination["offset"], pagination["limit"]
-            total = page.pop("total")
+            offset, limit = (
+                cast(int, pagination["offset"]),
+                cast(int, pagination["limit"]),
+            )
+            total = cast(int, page.pop("total"))
             table = page["results"]
             data = table["data"]
             page_no_of_rows = len(data)
             ret_no_of_rows += page_no_of_rows
-            num_expected = min(total - offset, limit)
+            num_expected = (
+                0
+                if offset is None or limit is None or total is None
+                else min(total - offset, limit)
+            )
             assert page_no_of_rows == num_expected
 
         if no_of_rows is not None:
             assert no_of_rows == ret_no_of_rows
 
-    def test_index_meta(self, rest_platform: ixmp4.Platform):
+    def test_index_meta(self, rest_platform: ixmp4.Platform) -> None:
         self.small.load_dataset(rest_platform)
         backend = cast(RestBackend, rest_platform.backend)
 
@@ -87,7 +98,7 @@ class TestApi:
         self.assert_table_res(
             res,
             no_of_rows=6,
-            has_columns=["run__id", "key", "type"],
+            has_columns=["run__id", "key", "dtype"],
         )
 
         res = backend.client.patch("meta/?table=true&join_run_index=true")
@@ -100,7 +111,7 @@ class TestApi:
         res = backend.client.patch("meta/?table=false&join_run_index=true")
         assert res.status_code == 400
 
-    def test_index_model(self, rest_platform: ixmp4.Platform):
+    def test_index_model(self, rest_platform: ixmp4.Platform) -> None:
         self.small.load_dataset(rest_platform)
         backend = cast(RestBackend, rest_platform.backend)
         table_endpoint = "iamc/models/?table=True"
@@ -134,7 +145,7 @@ class TestApi:
             has_data_for_columns={"name": ["Model 1"]},
         )
 
-    def test_index_scenario(self, rest_platform: ixmp4.Platform):
+    def test_index_scenario(self, rest_platform: ixmp4.Platform) -> None:
         self.small.load_dataset(rest_platform)
         backend = cast(RestBackend, rest_platform.backend)
         table_endpoint = "iamc/scenarios/?table=True"
@@ -170,7 +181,7 @@ class TestApi:
             has_data_for_columns={"name": ["Scenario 1", "Scenario 2"]},
         )
 
-    def test_index_region(self, rest_platform: ixmp4.Platform):
+    def test_index_region(self, rest_platform: ixmp4.Platform) -> None:
         self.small.load_dataset(rest_platform)
         backend = cast(RestBackend, rest_platform.backend)
         table_endpoint = "iamc/regions/?table=True"
@@ -209,7 +220,7 @@ class TestApi:
             has_data_for_columns={"id": [1]},
         )
 
-    def test_index_unit(self, rest_platform: ixmp4.Platform):
+    def test_index_unit(self, rest_platform: ixmp4.Platform) -> None:
         self.small.load_dataset(rest_platform)
         backend = cast(RestBackend, rest_platform.backend)
         table_endpoint = "iamc/units/?table=True"
@@ -250,7 +261,7 @@ class TestApi:
             has_data_for_columns={"id": [1, 2]},
         )
 
-    def test_paginate_datapoints(self, rest_platform_med: ixmp4.Platform):
+    def test_paginate_datapoints(self, rest_platform_med: ixmp4.Platform) -> None:
         client = cast(RestBackend, rest_platform_med.backend).client
         endpoint = "iamc/datapoints/"
         filters = {"run": {"default_only": False}}

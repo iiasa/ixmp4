@@ -11,7 +11,7 @@ from ixmp4.core.exceptions import (
 from ..utils import create_indexsets_for_run
 
 
-def df_from_list(tables: list[Table]):
+def df_from_list(tables: list[Table]) -> pd.DataFrame:
     return pd.DataFrame(
         # Order is important here to avoid utils.assert_unordered_equality,
         # which doesn't like lists
@@ -38,12 +38,12 @@ def df_from_list(tables: list[Table]):
 
 
 class TestCoreTable:
-    def test_create_table(self, platform: ixmp4.Platform):
+    def test_create_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         table = run.optimization.tables.create(
@@ -99,7 +99,7 @@ class TestCoreTable:
         assert table_3.columns[0].dtype == "object"
         assert table_3.columns[1].dtype == "int64"
 
-    def test_get_table(self, platform: ixmp4.Platform):
+    def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
@@ -118,10 +118,10 @@ class TestCoreTable:
         with pytest.raises(Table.NotFound):
             _ = run.optimization.tables.get(name="Table 2")
 
-    def test_table_add_data(self, platform: ixmp4.Platform):
+    def test_table_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         indexset.add(data=["foo", "bar", ""])
@@ -238,7 +238,7 @@ class TestCoreTable:
         table_5.add(data={})
         assert table_5.data == test_data_5
 
-    def test_list_tables(self, platform: ixmp4.Platform):
+    def test_list_tables(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)
         table = run.optimization.tables.create(
@@ -263,10 +263,10 @@ class TestCoreTable:
         list_id = [table.id for table in run.optimization.tables.list(name="Table")]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_table(self, platform: ixmp4.Platform):
+    def test_tabulate_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         table = run.optimization.tables.create(
@@ -300,7 +300,7 @@ class TestCoreTable:
             run.optimization.tables.tabulate(),
         )
 
-    def test_table_docs(self, platform: ixmp4.Platform):
+    def test_table_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1

@@ -17,17 +17,17 @@ class SmallIamcDataset:
     datetime["step_datetime"] = pd.to_datetime(datetime["step_datetime"])
 
     @classmethod
-    def load_regions(cls, platform: ixmp4.Platform):
+    def load_regions(cls, platform: ixmp4.Platform) -> None:
         for _, name, hierarchy in cls.regions.itertuples():
             platform.regions.create(name, hierarchy)
 
     @classmethod
-    def load_units(cls, platform: ixmp4.Platform):
+    def load_units(cls, platform: ixmp4.Platform) -> None:
         for _, name in cls.units.itertuples():
             platform.units.create(name)
 
     @classmethod
-    def load_dataset(cls, platform: ixmp4.Platform):
+    def load_dataset(cls, platform: ixmp4.Platform) -> tuple[ixmp4.Run, ixmp4.Run]:
         cls.load_regions(platform)
         cls.load_units(platform)
 
@@ -39,11 +39,13 @@ class SmallIamcDataset:
 
         datapoints = cls.annual.copy()
         run1.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
-        run1.meta = {"run": 1, "test": 0.1293, "bool": True}
+        # NOTE mypy doesn't support setters taking a different type than their property
+        # https://github.com/python/mypy/issues/3004
+        run1.meta = {"run": 1, "test": 0.1293, "bool": True}  # type: ignore[assignment]
 
         datapoints["variable"] = "Variable 4"
         run2.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
-        run2.meta = {"run": 2, "test": "string", "bool": False}
+        run2.meta = {"run": 2, "test": "string", "bool": False}  # type: ignore[assignment]
         return run1, run2
 
 
@@ -53,17 +55,17 @@ class FilterIamcDataset:
     datapoints = pd.read_csv(here / "filters/datapoints.csv")
 
     @classmethod
-    def load_regions(cls, platform: ixmp4.Platform):
+    def load_regions(cls, platform: ixmp4.Platform) -> None:
         for _, name, hierarchy in cls.regions.itertuples():
             platform.regions.create(name, hierarchy)
 
     @classmethod
-    def load_units(cls, platform: ixmp4.Platform):
+    def load_units(cls, platform: ixmp4.Platform) -> None:
         for _, name in cls.units.itertuples():
             platform.units.create(name)
 
     @classmethod
-    def load_dataset(cls, platform: ixmp4.Platform):
+    def load_dataset(cls, platform: ixmp4.Platform) -> tuple[ixmp4.Run, ixmp4.Run]:
         cls.load_regions(platform)
         cls.load_units(platform)
 
@@ -86,17 +88,17 @@ class MediumIamcDataset:
     run_cols = ["model", "scenario", "version"]
 
     @classmethod
-    def load_regions(cls, platform: ixmp4.Platform):
+    def load_regions(cls, platform: ixmp4.Platform) -> None:
         for _, name, hierarchy in cls.regions.itertuples():
             platform.regions.create(name, hierarchy)
 
     @classmethod
-    def load_units(cls, platform: ixmp4.Platform):
+    def load_units(cls, platform: ixmp4.Platform) -> None:
         for _, name in cls.units.itertuples():
             platform.units.create(name)
 
     @classmethod
-    def load_runs(cls, platform: ixmp4.Platform):
+    def load_runs(cls, platform: ixmp4.Platform) -> None:
         for _, model, scenario, version, is_default in cls.runs.itertuples():
             run = platform.runs.create(model, scenario)
             if run.version != version:
@@ -108,7 +110,7 @@ class MediumIamcDataset:
     @classmethod
     def load_run_datapoints(
         cls, platform: ixmp4.Platform, run_tup: tuple[str, str, int], dps: pd.DataFrame
-    ):
+    ) -> None:
         run = platform.runs.get(*run_tup)
 
         annual = dps[dps["type"] == "ANNUAL"].dropna(how="all", axis="columns")
@@ -124,7 +126,9 @@ class MediumIamcDataset:
             run.iamc.add(datetime, type=ixmp4.DataPoint.Type.DATETIME)
 
     @classmethod
-    def get_run_dps(cls, df: pd.DataFrame, model, scenario, version):
+    def get_run_dps(
+        cls, df: pd.DataFrame, model: str, scenario: str, version: int
+    ) -> pd.DataFrame:
         dps = df.copy()
         dps = dps[dps["model"] == model]
         dps = dps[dps["scenario"] == scenario]
@@ -133,7 +137,7 @@ class MediumIamcDataset:
         return dps
 
     @classmethod
-    def load_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame):
+    def load_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame) -> None:
         runs = df[cls.run_cols].copy()
         runs.drop_duplicates(inplace=True)
         for _, model, scenario, version in runs.itertuples():
@@ -141,11 +145,11 @@ class MediumIamcDataset:
             cls.load_run_datapoints(platform, (model, scenario, version), dps)
 
     @classmethod
-    def load_datapoints(cls, platform: ixmp4.Platform):
+    def load_datapoints(cls, platform: ixmp4.Platform) -> None:
         cls.load_dp_df(platform, cls.datapoints)
 
     @classmethod
-    def load_dataset(cls, platform: ixmp4.Platform):
+    def load_dataset(cls, platform: ixmp4.Platform) -> None:
         cls.load_regions(platform)
         cls.load_units(platform)
         cls.load_runs(platform)
@@ -160,17 +164,17 @@ class BigIamcDataset:
     run_cols = ["model", "scenario", "version"]
 
     @classmethod
-    def load_regions(cls, platform: ixmp4.Platform):
+    def load_regions(cls, platform: ixmp4.Platform) -> None:
         for _, name, hierarchy in cls.regions.itertuples():
             platform.regions.create(name, hierarchy)
 
     @classmethod
-    def load_units(cls, platform: ixmp4.Platform):
+    def load_units(cls, platform: ixmp4.Platform) -> None:
         for _, name in cls.units.itertuples():
             platform.units.create(name)
 
     @classmethod
-    def load_runs(cls, platform: ixmp4.Platform):
+    def load_runs(cls, platform: ixmp4.Platform) -> None:
         for _, model, scenario, version, is_default in cls.runs.itertuples():
             run = platform.runs.create(model, scenario)
             if run.version != version:
@@ -180,7 +184,7 @@ class BigIamcDataset:
                 run.set_as_default()
 
     @classmethod
-    def load_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame):
+    def load_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame) -> None:
         runs = df[cls.run_cols].copy()
         runs.drop_duplicates(inplace=True)
         for _, model, scenario, version in runs.itertuples():
@@ -188,7 +192,9 @@ class BigIamcDataset:
             cls.load_run_datapoints(platform, (model, scenario, version), dps)
 
     @classmethod
-    def get_run_dps(cls, df: pd.DataFrame, model, scenario, version):
+    def get_run_dps(
+        cls, df: pd.DataFrame, model: str, scenario: str, version: int
+    ) -> pd.DataFrame:
         dps = df.copy()
         dps = dps[dps["model"] == model]
         dps = dps[dps["scenario"] == scenario]
@@ -197,7 +203,7 @@ class BigIamcDataset:
         return dps
 
     @classmethod
-    def rm_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame):
+    def rm_dp_df(cls, platform: ixmp4.Platform, df: pd.DataFrame) -> None:
         runs = df[cls.run_cols].copy()
         runs.drop_duplicates(inplace=True)
         for _, model, scenario, version in runs.itertuples():
@@ -205,11 +211,11 @@ class BigIamcDataset:
             cls.rm_run_datapoints(platform, (model, scenario, version), dps)
 
     @classmethod
-    def load_datapoints(cls, platform: ixmp4.Platform):
+    def load_datapoints(cls, platform: ixmp4.Platform) -> None:
         cls.load_dp_df(platform, cls.datapoints)
 
     @classmethod
-    def load_datapoints_half(cls, platform: ixmp4.Platform):
+    def load_datapoints_half(cls, platform: ixmp4.Platform) -> None:
         scrambled_dps = cls.datapoints.sample(frac=1)
         half_dps = scrambled_dps.head(len(scrambled_dps) // 2)
         half_dps = half_dps.sort_values(by=cls.run_cols)
@@ -218,7 +224,7 @@ class BigIamcDataset:
     @classmethod
     def load_run_datapoints(
         cls, platform: ixmp4.Platform, run_tup: tuple[str, str, int], dps: pd.DataFrame
-    ):
+    ) -> None:
         run = platform.runs.get(*run_tup)
 
         annual = dps[dps["type"] == "ANNUAL"].dropna(how="all", axis="columns")
@@ -233,7 +239,7 @@ class BigIamcDataset:
     @classmethod
     def rm_run_datapoints(
         cls, platform: ixmp4.Platform, run_tup: tuple[str, str, int], dps: pd.DataFrame
-    ):
+    ) -> None:
         run = platform.runs.get(*run_tup)
 
         annual = dps[dps["type"] == "ANNUAL"].dropna(how="all", axis="columns")
@@ -246,7 +252,7 @@ class BigIamcDataset:
         run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
 
     @classmethod
-    def load_dataset(cls, platform: ixmp4.Platform):
+    def load_dataset(cls, platform: ixmp4.Platform) -> None:
         cls.load_regions(platform)
         cls.load_units(platform)
         cls.load_runs(platform)

@@ -2,9 +2,18 @@ from typing import Protocol
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import types
 
 from . import base
+from .annotations import (
+    HasHierarchyFilter,
+    HasIdFilter,
+    HasNameFilter,
+    IamcRegionFilter,
+)
 from .docs import DocsRepository
 
 
@@ -23,6 +32,10 @@ class Region(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Region {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(HasHierarchyFilter, HasIdFilter, HasNameFilter, total=False):
+    iamc: IamcRegionFilter | bool | None
 
 
 class RegionRepository(
@@ -57,7 +70,7 @@ class RegionRepository(
         """
         ...
 
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Deletes a region.
 
         Parameters
@@ -94,11 +107,7 @@ class RegionRepository(
         """
         ...
 
-    def get_or_create(
-        self,
-        name: str,
-        hierarchy: str | None = None,
-    ) -> Region:
+    def get_or_create(self, name: str, hierarchy: str | None = None) -> Region:
         try:
             region = self.get(name)
         except Region.NotFound:
@@ -114,24 +123,14 @@ class RegionRepository(
         else:
             return region
 
-    def list(
-        self,
-        *,
-        name: str | None = None,
-        hierarchy: str | None = None,
-        **kwargs,
-    ) -> list[Region]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Region]:
         r"""Lists regions by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a region. If supplied only one result will be returned.
-        hierarchy : str
-            The hierarchy of a region.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.region.filters.RegionFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.region.filter.RegionFilter`.
 
         Returns
         -------
@@ -140,24 +139,14 @@ class RegionRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        *,
-        name: str | None = None,
-        hierarchy: str | None = None,
-        **kwargs,
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate regions by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a region. If supplied only one result will be returned.
-        hierarchy : str
-            The hierarchy of a region.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.region.filters.RegionFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.region.filter.RegionFilter`.
 
         Returns
         -------
