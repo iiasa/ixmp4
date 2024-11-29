@@ -5,7 +5,7 @@ from typing import ClassVar, Generator, cast
 import numpy as np
 import pandas as pd
 
-# TODO Import this from typing when dropping Python 3.11
+# TODO Import this from typing when dropping Python 3.11 and 3.10 (Self)
 from typing_extensions import TypedDict, Unpack
 
 from ixmp4.data.abstract import Model as ModelModel
@@ -120,27 +120,35 @@ class Run(BaseModelFacade):
         self.checkpoints.create(message)
         self._unlock()
 
+    def clone(
+        self,
+        model: str | None = None,
+        scenario: str | None = None,
+        keep_solution: bool = True,
+    ) -> "Run":
+        return Run(
+            _backend=self.backend,
+            _model=self.backend.runs.clone(
+                run_id=self.id,
+                model_name=model,
+                scenario_name=scenario,
+                keep_solution=keep_solution,
+            ),
+        )
+
 
 class RunRepository(BaseFacade):
-    def create(
-        self,
-        model: str,
-        scenario: str,
-    ) -> Run:
+    def create(self, model: str, scenario: str) -> Run:
         return Run(
             _backend=self.backend, _model=self.backend.runs.create(model, scenario)
         )
 
-    def get(
-        self,
-        model: str,
-        scenario: str,
-        version: int | None = None,
-    ) -> Run:
-        if version is None:
-            _model = self.backend.runs.get_default_version(model, scenario)
-        else:
-            _model = self.backend.runs.get(model, scenario, version)
+    def get(self, model: str, scenario: str, version: int | None = None) -> Run:
+        _model = (
+            self.backend.runs.get_default_version(model, scenario)
+            if version is None
+            else self.backend.runs.get(model, scenario, version)
+        )
         return Run(_backend=self.backend, _model=_model)
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:

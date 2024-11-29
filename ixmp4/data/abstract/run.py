@@ -294,3 +294,31 @@ class RunRepository(
         ...
 
     def tabulate_transactions(self) -> pd.DataFrame: ...
+
+    def clone(
+        self,
+        run_id: int,
+        model_name: str | None = None,
+        scenario_name: str | None = None,
+        keep_solution: bool = True,
+    ) -> Run:
+        """Clone all data from one run to a new one.
+
+        Parameters
+        ----------
+        run_id: int
+            The unique integer id of the base run.
+        model_name: str | None
+            The new name of the model used in the new run, optional.
+        scenario_name: str | None
+            The new name of the scenario used in the new run, optional.
+        keep_solution: bool
+            Whether to keep the solution data from the base run. Optional, defaults to
+            `True`.
+
+        Returns
+        -------
+        :class:`ixmp4.data.abstract.Run`:
+            The clone of the base run.
+        """
+        ...

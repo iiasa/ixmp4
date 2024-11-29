@@ -142,3 +142,26 @@ class RunRepository(
 
     def tabulate_transactions(self, /, run__id: int | None = None) -> pd.DataFrame:
         return self._tabulate(path="transactions/", json={"run__id": run__id})
+
+    def clone(
+        self,
+        run_id: int,
+        model_name: str | None = None,
+        scenario_name: str | None = None,
+        keep_solution: bool = True,
+    ) -> Run:
+        # Can expect this endpoint, so cast should always be fine
+        res = cast(
+            dict[str, Any],
+            self._request(
+                "POST",
+                self.prefix + "clone/",
+                json={
+                    "run_id": run_id,
+                    "model_name": model_name,
+                    "scenario_name": scenario_name,
+                    "keep_solution": keep_solution,
+                },
+            ),
+        )
+        return Run(**res)
