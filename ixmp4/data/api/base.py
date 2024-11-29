@@ -359,9 +359,7 @@ class BaseRepository(Generic[ModelType]):
             return [data.pop("results")] + results
 
     def _list(
-        self,
-        params: ParamType | None = None,
-        json: JsonType | None = None,
+        self, params: ParamType | None = None, json: JsonType | None = None
     ) -> list[ModelType]:
         data = self._request_enumeration(params=params, table=False, json=json)
         if isinstance(data, dict):
@@ -375,9 +373,7 @@ class BaseRepository(Generic[ModelType]):
         return [self.model_class(**i) for i in results]
 
     def _tabulate(
-        self,
-        params: ParamType | None = {},
-        json: JsonType | None = None,
+        self, params: ParamType | None = {}, json: JsonType | None = None
     ) -> pd.DataFrame:
         # we can assume this type on table endpoints
         data: dict[str, Any] = self._request_enumeration(
@@ -398,9 +394,7 @@ class BaseRepository(Generic[ModelType]):
             return DataFrame(**data).to_pandas()
 
     def _create(
-        self,
-        *args: Unpack[tuple[str]],
-        **kwargs: Unpack[_RequestKwargs],
+        self, *args: Unpack[tuple[str]], **kwargs: Unpack[_RequestKwargs]
     ) -> dict[str, Any]:
         # we can assume this type on create endpoints
         return self._request("POST", *args, **kwargs)  # type: ignore[return-value]
@@ -455,10 +449,7 @@ class Creator(BaseRepository[ModelType]):
         | float
         | None,
     ) -> ModelType:
-        res = self._create(
-            self.prefix,
-            json=kwargs,
-        )
+        res = self._create(self.prefix, json=kwargs)
         return self.model_class(**res)
 
 
@@ -539,9 +530,4 @@ class BulkDeleter(BulkOperator[ModelType]):
     def bulk_delete_chunk(self, df: pd.DataFrame, **kwargs: Any) -> None:
         dict_ = df_to_dict(df)
         json_ = DataFrame(**dict_).model_dump_json()
-        self._request(
-            "PATCH",
-            self.prefix + "bulk/",
-            params=kwargs,
-            content=json_,
-        )
+        self._request("PATCH", self.prefix + "bulk/", params=kwargs, content=json_)
