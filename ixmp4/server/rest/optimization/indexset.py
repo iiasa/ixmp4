@@ -29,7 +29,6 @@ class DataInput(BaseModel):
 def query(
     filter: OptimizationIndexSetFilter = Body(OptimizationIndexSetFilter()),
     table: bool = Query(False),
-    include_data: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[IndexSet]:
@@ -39,7 +38,6 @@ def query(
             limit=pagination.limit,
             offset=pagination.offset,
             table=bool(table),
-            include_data=bool(include_data),
         ),
         total=backend.optimization.indexsets.count(_filter=filter),
         pagination=pagination,

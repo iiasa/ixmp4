@@ -66,21 +66,8 @@ class IndexSetRepository(
         return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(
-        self, *, include_data: bool = False, **kwargs: Unpack["base.EnumerateKwargs"]
-    ) -> pd.DataFrame:
-        if not include_data:
-            return (
-                super().tabulate(**kwargs).rename(columns={"_data_type": "data_type"})
-            )
-        else:
-            result = super().tabulate(**kwargs).drop(labels="_data_type", axis=1)
-            result.insert(
-                loc=0,
-                column="data",
-                value=[indexset.data for indexset in self.list(**kwargs)],
-            )
-            return result
+    def tabulate(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> pd.DataFrame:
+        return super().tabulate(**kwargs).rename(columns={"_data_type": "data_type"})
 
     @guard("edit")
     def add_data(
