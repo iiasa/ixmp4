@@ -29,7 +29,7 @@ class IndexSet(BaseModelFacade):
         return self._model.name
 
     @property
-    def data(self) -> list[float | int | str]:
+    def data(self) -> list[float] | list[int] | list[str]:
         return self._model.data
 
     def add(
