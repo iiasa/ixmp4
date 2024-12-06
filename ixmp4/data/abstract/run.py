@@ -68,7 +68,6 @@ class RunRepository(
         :class:`ixmp4.data.abstract.Run`:
             The created run.
         """
-        ...
 
     def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         """Retrieves a run.
@@ -92,7 +91,6 @@ class RunRepository(
         :class:`ixmp4.data.abstract.Run`:
             The retrieved run.
         """
-        ...
 
     def get_or_create(self, model_name: str, scenario_name: str) -> Run:
         """Tries to retrieve a run's default version
@@ -135,7 +133,6 @@ class RunRepository(
         :class:`ixmp4.data.abstract.Run`:
             The retrieved run.
         """
-        ...
 
     def get_by_id(self, id: int) -> Run:
         """Retrieves a Run by its id.
@@ -155,7 +152,6 @@ class RunRepository(
         :class:`ixmp4.data.abstract.Run`:
             The retrieved Run.
         """
-        ...
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
         r"""Lists runs by specified criteria.
@@ -171,7 +167,6 @@ class RunRepository(
         Iterable[:class:`ixmp4.data.abstract.Run`]:
             List of runs.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate runs by specified criteria.
@@ -190,7 +185,6 @@ class RunRepository(
                 - model__id
                 - scenario__id
         """
-        ...
 
     def set_as_default_version(self, id: int) -> None:
         """Sets a run as the default version for a (model, scenario) combination.
@@ -206,7 +200,6 @@ class RunRepository(
             If no run with the `id` exists.
 
         """
-        ...
 
     def unset_as_default_version(self, id: int) -> None:
         """Unsets a run as the default version leaving no
@@ -225,7 +218,6 @@ class RunRepository(
             If the run is not set as a default version.
 
         """
-        ...
 
     def clone(
         self,
@@ -253,4 +245,3 @@ class RunRepository(
         :class:`ixmp4.data.abstract.Run`:
             The clone of the base run.
         """
-        ...

@@ -118,7 +118,6 @@ class RunMetaEntryRepository(
         :class:`ixmp4.data.base.RunMetaEntry`:
             The created entry.
         """
-        ...
 
     def get(self, run__id: int, key: str) -> RunMetaEntry:
         """Retrieves a run's meta indicator entry.
@@ -140,7 +139,6 @@ class RunMetaEntryRepository(
         :class:`ixmp4.data.base.Run`:
             The retrieved entry.
         """
-        ...
 
     def delete(self, id: int) -> None:
         """Deletes a run's meta indicator entry.
@@ -157,7 +155,6 @@ class RunMetaEntryRepository(
         :class:`ixmp4.data.abstract.RunMetaEntry.NotFound`:
             If the entry with `id` does not exist.
         """
-        ...
 
     def list(
         self, join_run_index: bool = False, **kwargs: Unpack[EnumerateKwargs]
@@ -177,7 +174,6 @@ class RunMetaEntryRepository(
         Iterable[:class:`ixmp4.data.abstract.RunMetaEntry`]:
             List of run meta indicator entries.
         """
-        ...
 
     def tabulate(
         self, join_run_index: bool = False, **kwargs: Unpack[EnumerateKwargs]
@@ -202,7 +198,6 @@ class RunMetaEntryRepository(
                 - type
                 - value
         """
-        ...
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         """Upserts a dataframe of run meta indicator entries.
@@ -216,7 +211,6 @@ class RunMetaEntryRepository(
                 - value
                 - type
         """
-        ...
 
     def bulk_delete(self, df: pd.DataFrame) -> None:
         """Deletes run meta indicator entries as specified per dataframe.
@@ -231,4 +225,3 @@ class RunMetaEntryRepository(
                 - key
 
         """
-        ...
