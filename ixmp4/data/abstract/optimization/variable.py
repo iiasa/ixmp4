@@ -86,7 +86,6 @@ class VariableRepository(
         :class:`ixmp4.data.abstract.optimization.Variable`:
             The created Variable.
         """
-        ...
 
     def get(self, run_id: int, name: str) -> Variable:
         """Retrieves a Variable.
@@ -109,7 +108,6 @@ class VariableRepository(
         :class:`ixmp4.data.abstract.optimization.Variable`:
             The retrieved Variable.
         """
-        ...
 
     def get_by_id(self, id: int) -> Variable:
         """Retrieves a Variable by its id.
@@ -129,7 +127,6 @@ class VariableRepository(
         :class:`ixmp4.data.abstract.optimization.Variable`:
             The retrieved Variable.
         """
-        ...
 
     def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Variable]:
         r"""Lists Variables by specified criteria.
@@ -145,7 +142,6 @@ class VariableRepository(
         Iterable[:class:`ixmp4.data.abstract.optimization.Variable`]:
             List of Variables.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Variables by specified criteria.
@@ -167,7 +163,6 @@ class VariableRepository(
                 - created_at
                 - created_by
         """
-        ...
 
     # TODO Question for Daniel: do variables need to allow adding data manually?
     # TODO Once present, state how to check which IndexSets are linked and which values
@@ -202,7 +197,6 @@ class VariableRepository(
         -------
         None
         """
-        ...
 
     def remove_data(self, variable_id: int) -> None:
         """Removes data from a Variable.
@@ -216,4 +210,3 @@ class VariableRepository(
         -------
         None
         """
-        ...

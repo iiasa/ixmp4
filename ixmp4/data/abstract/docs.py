@@ -42,7 +42,6 @@ class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
         :class:`ixmp4.data.abstract.Docs`
             The object's documentation.
         """
-        ...
 
     def set(self, dimension_id: int, description: str) -> Docs:
         """Sets the documentation for an object of any dimension.
@@ -59,7 +58,6 @@ class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
         :class:`ixmp4.data.abstract.Docs`
             The object's documentation.
         """
-        ...
 
     def delete(self, dimension_id: int) -> None:
         """Deletes a dimension object's documentation.
@@ -77,7 +75,6 @@ class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
         :class:`ixmp4.data.abstract.Docs.NotFound`:
             If the documentation for the object with `dimension_id` does not exist.
         """
-        ...
 
     def list(self, *, dimension_id: int | None = None) -> list[Docs]:
         """Lists documentations.
@@ -92,4 +89,3 @@ class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
         -------
             Iterable[:class:`ixmp4.data.abstract.Docs`] : List of documentations.
         """
-        ...

@@ -57,7 +57,6 @@ class UnitRepository(
         :class:`ixmp4.data.abstract.Unit`:
             The created unit.
         """
-        ...
 
     def get(self, name: str) -> Unit:
         """Retrieves a unit.
@@ -77,7 +76,6 @@ class UnitRepository(
         :class:`ixmp4.data.abstract.Unit`:
             The retrieved unit.
         """
-        ...
 
     def get_by_id(self, id: int) -> Unit:
         """Retrieves a Unit by it's id.
@@ -97,7 +95,6 @@ class UnitRepository(
         :class:`ixmp4.data.abstract.Unit`:
             The retrieved Unit.
         """
-        ...
 
     def get_or_create(self, name: str) -> Unit:
         try:
@@ -120,7 +117,6 @@ class UnitRepository(
         :class:`ixmp4.data.abstract.Unit.DeletionPrevented`:
             If the unit with `id` is used in the database, preventing it's deletion.
         """
-        ...
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Unit]:
         r"""Lists units by specified criteria.
@@ -136,7 +132,6 @@ class UnitRepository(
         Iterable[:class:`ixmp4.data.base.iamc.Unit`]:
             List of units.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate units by specified criteria.
@@ -154,4 +149,3 @@ class UnitRepository(
                 - id
                 - name
         """
-        ...

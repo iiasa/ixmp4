@@ -59,7 +59,6 @@ class ModelRepository(
         :class:`ixmp4.data.abstract.Model`:
             The created model.
         """
-        ...
 
     def get(self, name: str) -> Model:
         """Retrieves a model.
@@ -79,7 +78,6 @@ class ModelRepository(
         :class:`ixmp4.data.abstract.Model`:
             The retrieved model.
         """
-        ...
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Model]:
         r"""Lists models by specified criteria.
@@ -95,7 +93,6 @@ class ModelRepository(
         Iterable[:class:`ixmp4.data.abstract.Model`]:
             List of Model.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate models by specified criteria.
@@ -114,7 +111,6 @@ class ModelRepository(
                 - name
 
         """
-        ...
 
     def map(self, **kwargs: Unpack[EnumerateKwargs]) -> dict[int, str]:
         """Return a mapping of model-id to model-name.

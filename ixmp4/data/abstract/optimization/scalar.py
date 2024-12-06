@@ -78,7 +78,6 @@ class ScalarRepository(
         :class:`ixmp4.data.abstract.optimization.Scalar`:
             The created Scalar.
         """
-        ...
 
     def update(
         self, id: int, value: float | None = None, unit_id: int | None = None
@@ -100,7 +99,6 @@ class ScalarRepository(
         :class:`ixmp4.data.abstract.optimization.Scalar`:
             The updated Scalar.
         """
-        ...
 
     def get(self, run_id: int, name: str) -> Scalar:
         """Retrieves a Scalar.
@@ -123,7 +121,6 @@ class ScalarRepository(
         :class:`ixmp4.data.abstract.optimization.Scalar`:
             The retrieved Scalar.
         """
-        ...
 
     def get_by_id(self, id: int) -> Scalar:
         """Retrieves a Scalar by its id.
@@ -143,7 +140,6 @@ class ScalarRepository(
         :class:`ixmp4.data.abstract.optimization.Scalar`:
             The retrieved Scalar.
         """
-        ...
 
     def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Scalar]:
         r"""Lists Scalars by specified criteria.
@@ -159,7 +155,6 @@ class ScalarRepository(
         Iterable[:class:`ixmp4.data.abstract.optimization.Scalar`]:
             List of Scalars.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Scalars by specified criteria.
@@ -182,4 +177,3 @@ class ScalarRepository(
                 - created_at
                 - created_by
         """
-        ...

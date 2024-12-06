@@ -86,7 +86,6 @@ class ParameterRepository(
         :class:`ixmp4.data.abstract.optimization.Parameter`:
             The created Parameter.
         """
-        ...
 
     def get(self, run_id: int, name: str) -> Parameter:
         """Retrieves a Parameter.
@@ -109,7 +108,6 @@ class ParameterRepository(
         :class:`ixmp4.data.abstract.optimization.Parameter`:
             The retrieved Parameter.
         """
-        ...
 
     def get_by_id(self, id: int) -> Parameter:
         """Retrieves a Parameter by its id.
@@ -129,7 +127,6 @@ class ParameterRepository(
         :class:`ixmp4.data.abstract.optimization.Parameter`:
             The retrieved Parameter.
         """
-        ...
 
     def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Parameter]:
         r"""Lists Parameters by specified criteria.
@@ -145,7 +142,6 @@ class ParameterRepository(
         Iterable[:class:`ixmp4.data.abstract.optimization.Parameter`]:
             List of Parameters.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Parameters by specified criteria.
@@ -167,7 +163,6 @@ class ParameterRepository(
                 - created_at
                 - created_by
         """
-        ...
 
     # TODO Once present, state how to check which IndexSets are linked and which values
     # they permit
@@ -200,4 +195,3 @@ class ParameterRepository(
         -------
         None
         """
-        ...
