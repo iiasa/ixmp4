@@ -68,7 +68,6 @@ class RegionRepository(
         :class:`ixmp4.ata.base.iamc.Region`:
             The created region.
         """
-        ...
 
     def delete(self, id: int) -> None:
         """Deletes a region.
@@ -85,7 +84,6 @@ class RegionRepository(
         :class:`ixmp4.data.abstract.Region.DeletionPrevented`:
             If the region with `id` is used in the database, preventing it's deletion.
         """
-        ...
 
     def get(self, name: str) -> Region:
         """Retrieves a region.
@@ -105,7 +103,6 @@ class RegionRepository(
         :class:`ixmp4.data.base.iamc.Region`:
             The retrieved region.
         """
-        ...
 
     def get_or_create(self, name: str, hierarchy: str | None = None) -> Region:
         try:
@@ -137,7 +134,6 @@ class RegionRepository(
         Iterable[:class:`ixmp4.data.abstract.Region`]:
             List of regions.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate regions by specified criteria.
@@ -155,4 +151,3 @@ class RegionRepository(
                 - id
                 - name
         """
-        ...

@@ -86,7 +86,6 @@ class EquationRepository(
         :class:`ixmp4.data.abstract.optimization.Equation`:
             The created Equation.
         """
-        ...
 
     def get(self, run_id: int, name: str) -> Equation:
         """Retrieves an Equation.
@@ -109,7 +108,6 @@ class EquationRepository(
         :class:`ixmp4.data.abstract.optimization.Equation`:
             The retrieved Equation.
         """
-        ...
 
     def get_by_id(self, id: int) -> Equation:
         """Retrieves an Equation by its id.
@@ -129,7 +127,6 @@ class EquationRepository(
         :class:`ixmp4.data.abstract.optimization.Equation`:
             The retrieved Equation.
         """
-        ...
 
     def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Equation]:
         r"""Lists Equations by specified criteria.
@@ -145,7 +142,6 @@ class EquationRepository(
         Iterable[:class:`ixmp4.data.abstract.optimization.Equation`]:
             List of Equations.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Equations by specified criteria.
@@ -167,7 +163,6 @@ class EquationRepository(
                 - created_at
                 - created_by
         """
-        ...
 
     # TODO Question for Daniel: do equations need to allow adding data manually?
     # TODO Once present, state how to check which IndexSets are linked and which values
@@ -201,7 +196,6 @@ class EquationRepository(
         -------
         None
         """
-        ...
 
     def remove_data(self, equation_id: int) -> None:
         """Removes data from an Equation.
@@ -215,4 +209,3 @@ class EquationRepository(
         -------
         None
         """
-        ...

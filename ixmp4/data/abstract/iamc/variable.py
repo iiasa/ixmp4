@@ -77,7 +77,6 @@ class VariableRepository(
         :class:`ixmp4.data.abstract.Variable`:
             The created variable.
         """
-        ...
 
     def get(self, name: str) -> Variable:
         """Retrieves a variable.
@@ -97,7 +96,6 @@ class VariableRepository(
         :class:`ixmp4.data.abstract.Variable`:
             The retrieved variable.
         """
-        ...
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Variable]:
         r"""Lists variables by specified criteria.
@@ -113,7 +111,6 @@ class VariableRepository(
         Iterable[:class:`ixmp4.data.abstract.Variable`]:
             List of variables.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate variables by specified criteria.
@@ -131,4 +128,3 @@ class VariableRepository(
                 - id
                 - name
         """
-        ...

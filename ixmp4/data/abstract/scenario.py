@@ -52,7 +52,6 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         :class:`ixmp4.data.abstract.Scenario`:
             The created scenario.
         """
-        ...
 
     def get(self, name: str) -> Scenario:
         """Retrieves a scenario.
@@ -72,7 +71,6 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         :class:`ixmp4.data.abstract.Scenario`:
             The retrieved scenario.
         """
-        ...
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Scenario]:
         r"""Lists scenarios by specified criteria.
@@ -88,7 +86,6 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
         Iterable[:class:`ixmp4.data.abstract.Scenario`]:
             List of scenarios.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate scenarios by specified criteria.
@@ -106,7 +103,6 @@ class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol
                 - id
                 - name
         """
-        ...
 
     def map(self, **kwargs: Unpack[EnumerateKwargs]) -> dict[int, str]:
         """Return a mapping of scenario-id to scenario-name.
