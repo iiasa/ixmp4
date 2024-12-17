@@ -52,7 +52,7 @@ def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
     else:
         T = TypeVar("T", bool, float, int, str)
 
-        def map_step_column(df: pd.Series[T]) -> pd.Series[T]:
+        def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
             df["time"] = df[MAP_STEP_COLUMN[str(df.type)]]
             return df
 
