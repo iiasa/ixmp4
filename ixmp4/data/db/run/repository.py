@@ -258,10 +258,8 @@ class RunRepository(
             new_table = self.backend.optimization.tables.create(
                 run_id=run.id,
                 name=table.name,
-                constrained_to_indexsets=[
-                    column.indexset.name for column in table.columns
-                ],
-                column_names=[column.name for column in table.columns],
+                constrained_to_indexsets=table.indexsets,
+                column_names=table.column_names,
             )
             self.backend.optimization.tables.add_data(
                 table_id=new_table.id, data=table.data

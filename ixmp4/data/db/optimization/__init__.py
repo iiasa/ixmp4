@@ -1,6 +1,6 @@
 from .column import Column, ColumnRepository
 from .equation import Equation, EquationRepository
-from .indexset import IndexSet, IndexSetRepository
+from .indexset import IndexSet, IndexSetData, IndexSetRepository
 from .parameter import Parameter, ParameterRepository
 from .scalar import Scalar, ScalarRepository
 from .table import Table, TableRepository
