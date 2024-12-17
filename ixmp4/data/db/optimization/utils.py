@@ -6,6 +6,7 @@ from . import base
 
 if TYPE_CHECKING:
     from .column import Column
+    from .indexset import IndexSet
 
 
 def collect_indexsets_to_check(
@@ -17,9 +18,14 @@ def collect_indexsets_to_check(
 
 
 def validate_data(
-    host: base.BaseModel, data: dict[str, Any], columns: list["Column"]
+    host: base.BaseModel,
+    data: dict[str, Any] | pd.DataFrame,
+    columns: list["Column"] | list["IndexSet"],
+    column_names: list[str] | None = None,
 ) -> dict[str, Any]:
-    data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
+    data_frame = (
+        data if isinstance(data, pd.DataFrame) else pd.DataFrame.from_dict(data)
+    )
     # TODO for all of the following, we might want to create unique exceptions
     # Could me make both more specific by specifiying missing/extra columns?
     if len(data_frame.columns) < len(columns):
@@ -51,7 +57,18 @@ def validate_data(
 
     # Can we make this more specific? Iterating over columns; if any is False,
     # return its name or something?
-    limited_to_indexsets = collect_indexsets_to_check(columns=columns)
+    # TODO adapt once we remove Columns as a class
+    # No way to properly type check generics
+    try:
+        # columns are indexsets
+        limited_to_indexsets = (
+            {column.name: column.data for column in columns}  # type: ignore[union-attr]
+            if not column_names
+            else {column_names[i]: columns[i].data for i in range(len(columns))}  # type: ignore[union-attr]
+        )
+    except AttributeError:
+        # columns are columns
+        limited_to_indexsets = collect_indexsets_to_check(columns=columns)  # type: ignore[arg-type]
     if not data_frame.isin(limited_to_indexsets).all(axis=None):
         raise host.DataInvalid(
             f"While handling {host.__str__()}: \n"
