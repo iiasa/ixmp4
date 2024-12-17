@@ -50,7 +50,7 @@ class TableRepository(
     ) -> Table:
         table = Table(name=name, run__id=run_id)
         indexsets = self.backend.optimization.indexsets.list(
-            name__in=constrained_to_indexsets
+            name__in=constrained_to_indexsets, run_id=run_id
         )
 
         for i in range(len(indexsets)):
