@@ -14,7 +14,6 @@ from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Table as TableModel
-from ixmp4.data.abstract.optimization import Column
 
 
 class Table(BaseModelFacade):
@@ -35,7 +34,7 @@ class Table(BaseModelFacade):
         return self._model.run__id
 
     @property
-    def data(self) -> dict[str, Any]:
+    def data(self) -> dict[str, list[float] | list[int] | list[str]]:
         return self._model.data
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -46,12 +45,12 @@ class Table(BaseModelFacade):
         ).data
 
     @property
-    def constrained_to_indexsets(self) -> list[str]:
-        return [column.indexset.name for column in self._model.columns]
+    def indexsets(self) -> list[str]:
+        return self._model.indexsets
 
     @property
-    def columns(self) -> list[Column]:
-        return self._model.columns
+    def column_names(self) -> list[str] | None:
+        return self._model.column_names
 
     @property
     def created_at(self) -> datetime | None:
