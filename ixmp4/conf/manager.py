@@ -100,7 +100,7 @@ class ManagerConfig(Config):
         res = self.client.request(method, path, params=params, json=json)
         if res.status_code != 200:
             raise ManagerApiError(f"[{str(res.status_code)}] {res.text}")
-        # TODO Can we really assume this type?
+        # NOTE we can assume this type, might get replaced with scse-toolkit
         return cast(dict[str, Any], res.json())
 
     def _request(

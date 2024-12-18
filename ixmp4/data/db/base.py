@@ -158,16 +158,25 @@ class Deleter(BaseRepository[ModelType]):
 
 
 class CheckAccessKwargs(TypedDict, total=False):
-    run: dict[str, bool | None]
+    run: abstract.annotations.HasRunFilter
     is_default: bool | None
     default_only: bool | None
 
 
-class SelectCountKwargs(CheckAccessKwargs, total=False):
+class SelectCountKwargs(abstract.HasNameFilter, total=False):
+    default_only: bool | None
     dimension_id: int | None
+    id__in: set[int]
+    is_default: bool | None
     join_parameters: bool | None
     join_runs: bool | None
-    id__in: set[int]
+    iamc: abstract.annotations.IamcFilterAlias
+    model: abstract.annotations.HasModelFilter
+    region: abstract.annotations.HasRegionFilter
+    run: abstract.annotations.HasRunFilter
+    scenario: abstract.annotations.HasScenarioFilter
+    unit: abstract.annotations.HasUnitFilter
+    variable: abstract.annotations.HasVariableFilter
 
 
 class Selecter(BaseRepository[ModelType]):
@@ -308,11 +317,18 @@ class EnumerateKwargs(TypedDict):
     ]
 
 
-class CountKwargs(TypedDict, total=False):
+class CountKwargs(abstract.HasNameFilter, total=False):
     dimension_id: int | None
     _filter: filters.BaseFilter
     join_parameters: bool | None
     join_runs: bool | None
+    iamc: abstract.annotations.IamcFilterAlias
+    model: abstract.annotations.HasModelFilter
+    region: abstract.annotations.HasRegionFilter
+    run: abstract.annotations.HasRunFilter
+    scenario: abstract.annotations.HasScenarioFilter
+    unit: abstract.annotations.HasUnitFilter
+    variable: abstract.annotations.HasVariableFilter
 
 
 class Enumerator(Lister[ModelType], Tabulator[ModelType]):

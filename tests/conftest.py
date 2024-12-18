@@ -3,7 +3,7 @@ import pstats
 from collections.abc import Callable, Generator
 from contextlib import _GeneratorContextManager, contextmanager
 from pathlib import Path
-from typing import Any
+from typing import Any, TypeAlias
 
 import pytest
 
@@ -217,3 +217,6 @@ def profiled(
     ps = pstats.Stats(pr)
     Path(".profiles").mkdir(parents=True, exist_ok=True)
     ps.dump_stats(f".profiles/{testname}.prof")
+
+
+Profiled: TypeAlias = Callable[[], _GeneratorContextManager[None]]

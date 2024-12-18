@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -230,10 +230,8 @@ class RunMetaEntryRepository(
         df["dtype"] = df["value"].map(type).map(RunMetaEntry.Type.from_pytype)
 
         for type_, type_df in df.groupby("dtype"):
-            # TODO this should always be true, so better to avoid the check, but then
-            # mypy complains that we use a Scalar to access _column_map
-            assert isinstance(type_, str)
-            col = RunMetaEntry._column_map[type_]
+            # This cast should always be a no-op
+            col = RunMetaEntry._column_map[cast(str, type_)]
             null_cols = set(RunMetaEntry._column_map.values()) - set([col])
             type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)
             type_df = type_df.rename(columns={"value": col})

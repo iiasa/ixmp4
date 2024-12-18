@@ -7,6 +7,7 @@ import pandas as pd
 
 import ixmp4
 
+from .conftest import Profiled
 from .fixtures import BigIamcDataset
 
 
@@ -14,7 +15,7 @@ class TestBenchmarks:
     big = BigIamcDataset()
 
     def test_add_datapoints_full_benchmark(
-        self, platform: ixmp4.Platform, profiled: Any, benchmark: Any
+        self, platform: ixmp4.Platform, profiled: Profiled, benchmark: Any
     ) -> None:
         """Benchmarks a full insert of `test_data_big`."""
 
@@ -31,7 +32,7 @@ class TestBenchmarks:
         benchmark.pedantic(run, setup=setup)
 
     def test_add_datapoints_half_unchanged_benchmark(
-        self, platform: ixmp4.Platform, profiled: Any, benchmark: Any
+        self, platform: ixmp4.Platform, profiled: Profiled, benchmark: Any
     ) -> None:
         """Benchmarks a full insert of `test_data_big` on a half-filled database."""
 
@@ -49,7 +50,7 @@ class TestBenchmarks:
         benchmark.pedantic(run, setup=setup)
 
     def test_add_datapoints_half_insert_half_update_benchmark(
-        self, platform: ixmp4.Platform, profiled: Any, benchmark: Any
+        self, platform: ixmp4.Platform, profiled: Profiled, benchmark: Any
     ) -> None:
         """Benchmarks a full insert of `test_data_big` with changed values on a
         half-filled database."""
@@ -73,7 +74,7 @@ class TestBenchmarks:
         assert ret["value"].unique() == [-9999]
 
     def test_remove_datapoints_benchmark(
-        self, platform: ixmp4.Platform, profiled: Any, benchmark: Any
+        self, platform: ixmp4.Platform, profiled: Profiled, benchmark: Any
     ) -> None:
         """Benchmarks a full removal of `test_data_big` from a filled database."""
 
@@ -94,7 +95,7 @@ class TestBenchmarks:
         assert ret.empty
 
     def test_tabulate_datapoints_benchmark(
-        self, platform: ixmp4.Platform, profiled: Any, benchmark: Any
+        self, platform: ixmp4.Platform, profiled: Profiled, benchmark: Any
     ) -> None:
         """Benchmarks a full retrieval of `test_data_big` from a filled database."""
 

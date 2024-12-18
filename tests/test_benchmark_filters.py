@@ -5,6 +5,7 @@ import pytest
 
 import ixmp4
 
+from .conftest import Profiled
 from .fixtures import BigIamcDataset
 
 big = BigIamcDataset()
@@ -38,12 +39,13 @@ big = BigIamcDataset()
 )
 def test_filter_datapoints_benchmark(
     platform: ixmp4.Platform,
-    # TODO: improve type hints for fixtures
-    profiled: Any,
+    profiled: Profiled,
+    # NOTE can be specified once https://github.com/ionelmc/pytest-benchmark/issues/212
+    # is closed
     benchmark: Any,
     filters: dict[str, dict[str, bool | str | list[str]]],
 ) -> None:
-    """Benchmarks a the filtration of `test_data_big`."""
+    """Benchmarks the filtration of `test_data_big`."""
 
     big.load_regions(platform)
     big.load_units(platform)

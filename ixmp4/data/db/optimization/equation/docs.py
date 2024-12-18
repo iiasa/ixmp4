@@ -7,7 +7,7 @@ from .model import Equation
 EquationDocs = docs_model(Equation)
 
 
-# TODO Mypy is a static type checker, but we create the class(es) that would need to go
+# NOTE Mypy is a static type checker, but we create the class(es) that would need to go
 # in BaseDocsRepository[...] dynamically, so I don't know if there's any way to type
 # hint them properly. TypeVar, TypeAlias, type(), type[], and NewType all did not work.
 class EquationDocsRepository(BaseDocsRepository[Any]):

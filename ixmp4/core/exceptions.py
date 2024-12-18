@@ -10,13 +10,7 @@ class ProgrammingError(Exception):
     pass
 
 
-ExcMeta: type = type(Exception)
-
-
-# TODO can't find a similar open issues, should I open one?
-# For reference, this occurred after adding disallow_subclassing_any
-# NOTE mypy seems to say Exception has type Any, don't see how we could change that
-class RemoteExceptionMeta(ExcMeta):  # type: ignore[misc]
+class RemoteExceptionMeta(type):
     def __new__(
         cls,
         name: str,
@@ -29,7 +23,9 @@ class RemoteExceptionMeta(ExcMeta):  # type: ignore[misc]
             try:
                 return registry[http_error_name]
             except KeyError:
-                registry[http_error_name] = super().__new__(
+                # NOTE Since this is a meta class, super().__new__() won't ever return
+                # this type, but the IxmpError instead
+                registry[http_error_name] = super().__new__(  # type: ignore[assignment]
                     cls, name, bases, namespace, **kwargs
                 )
                 return registry[http_error_name]

@@ -72,7 +72,7 @@ class VariableRepository(BaseFacade):
         return self.backend.iamc.variables.tabulate(name=name)
 
     def _get_variable_id(self, variable: str) -> int | None:
-        # TODO this check seems kind of redundant...
+        # NOTE leaving this check for users without mypy
         if isinstance(variable, str):
             obj = self.backend.iamc.variables.get(variable)
             return obj.id

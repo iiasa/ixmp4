@@ -35,20 +35,8 @@ class Variable(base.BaseModel, Protocol):
 
 class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
     region: HasRegionFilter
-    unit: HasUnitFilter
-    # TODO leaving something like this renders the type hints while typing to say
-    # `run: dict[str, bool | ...]`, from which you can immediately tell the allowed
-    # types, but won't actually know which strings to put in as the keys. Using the
-    # TypedDict, you'd know you have to look up its definition unless you know by heart
-    # what you can enter.
-    # run: dict[
-    #     str,
-    #     bool
-    #     | int
-    #     | Iterable[int]
-    #     | Mapping[str, int | str | Iterable[int] | Iterable[str]],
-    # ]
     run: HasRunFilter
+    unit: HasUnitFilter
 
 
 class VariableRepository(

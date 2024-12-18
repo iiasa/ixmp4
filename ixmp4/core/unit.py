@@ -59,10 +59,7 @@ class Unit(BaseModelFacade):
 
 
 class UnitRepository(BaseFacade):
-    def create(
-        self,
-        name: str,
-    ) -> Unit:
+    def create(self, name: str) -> Unit:
         if name != "" and name.strip() == "":
             raise ValueError("Using a space-only unit name is not allowed.")
         if name == "dimensionless":
@@ -97,7 +94,7 @@ class UnitRepository(BaseFacade):
         return self.backend.units.tabulate(name=name)
 
     def _get_unit_id(self, unit: str) -> int | None:
-        # TODO this check seems kind of redundant...
+        # NOTE leaving this check for users without mypy
         if isinstance(unit, str):
             obj = self.backend.units.get(unit)
             return obj.id

@@ -208,17 +208,9 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         override_lookups: list[str] | None = None
         if isinstance(field.json_schema_extra, dict):
             jschema_lookups = field.json_schema_extra.get("lookups", None)
-            # TODO this very much feels like we should be able to type check it properly
-            # However, type(jschema_lookups) is list[int, str, JsonDict, some more] and
-            # we can't `isinstance` parametrized generics. There should be a better way
-            # than this iteration, though nothing seems to utilize `lookups` for now, so
-            # this should not worsen performance, either.
+            # NOTE We can't `isinstance` parametrized generics. Nothing seems to utilize
+            # `lookups`, though, so this should not worsen performance.
             if isinstance(jschema_lookups, list):
-                #     override_lookups = jschema_lookups
-                # else:
-                #     raise ProgrammingError(
-                #         "Field argument `lookups` must be `list` of `str`."
-                #     )
                 override_lookups = _ensure_str_list(jschema_lookups)
         else:
             override_lookups = None

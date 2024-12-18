@@ -19,7 +19,7 @@ class RunMetaEntryFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     value_float: filters.Float
     value_bool: filters.Boolean
 
-    # TODO using specific form here as this seems to only be called on RunMetaEntry
+    # NOTE specific type hint here is based on usage; adapt accordingly
     def join(
         self, exc: sql.Select[tuple[RunMetaEntry]], session: Session | None = None
     ) -> sql.Select[tuple[RunMetaEntry]]:

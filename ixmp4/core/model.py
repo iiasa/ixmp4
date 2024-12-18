@@ -75,7 +75,7 @@ class ModelRepository(BaseFacade):
         return self.backend.models.tabulate(name=name)
 
     def _get_model_id(self, model: str) -> int | None:
-        # TODO this check seems kind of redundant...
+        # NOTE leaving this check for users without mypy
         if isinstance(model, str):
             obj = self.backend.models.get(model)
             return obj.id

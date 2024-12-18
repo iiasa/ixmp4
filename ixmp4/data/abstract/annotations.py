@@ -16,7 +16,7 @@ StrFilterAlias: TypeAlias = str | Iterable[str]
 DefaultFilterAlias: TypeAlias = IntFilterAlias | StrFilterAlias
 OptimizationFilterAlias: TypeAlias = dict[str, DefaultFilterAlias | None]
 
-# NOTE If you want to be nitpicky, you could argue that timeseries have an additional
+# NOTE If you want to be nitpicky, you could argue that `timeseries` have an additional
 # `variable` filter, which is not clear from this Alias used for both. However,
 # `variable` only adds more of the same types and we only use this for casting, so we
 # are fine *for now*.

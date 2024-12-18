@@ -75,7 +75,7 @@ class ScenarioRepository(BaseFacade):
         return self.backend.scenarios.tabulate(name=name)
 
     def _get_scenario_id(self, scenario: str) -> int | None:
-        # TODO this check seems kind of redundant...
+        # NOTE leaving this check for users without mypy
         if isinstance(scenario, str):
             obj = self.backend.scenarios.get(scenario)
             return obj.id
