@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -10,11 +9,13 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import OptimizationVariable as VariableModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract.optimization import Column
+
+from .base import Lister, Retriever, Tabulator
 
 
 class Variable(BaseModelFacade):
@@ -110,12 +111,15 @@ class Variable(BaseModelFacade):
         return f"<Variable {self.id} name={self.name}>"
 
 
-class VariableRepository(BaseFacade):
-    _run: Run
-
+class VariableRepository(
+    Retriever[Variable, VariableModel],
+    Lister[Variable, VariableModel],
+    Tabulator[Variable, VariableModel],
+):
     def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
-        super().__init__(**kwargs)
-        self._run = _run
+        super().__init__(_run=_run, **kwargs)
+        self._backend_repository = self.backend.optimization.variables
+        self._model_type = Variable
 
     def create(
         self,
@@ -130,24 +134,3 @@ class VariableRepository(BaseFacade):
             column_names=column_names,
         )
         return Variable(_backend=self.backend, _model=model)
-
-    def get(self, name: str) -> Variable:
-        model = self.backend.optimization.variables.get(run_id=self._run.id, name=name)
-        return Variable(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> Iterable[Variable]:
-        variables = self.backend.optimization.variables.list(
-            run_id=self._run.id, name=name
-        )
-        return [
-            Variable(
-                _backend=self.backend,
-                _model=i,
-            )
-            for i in variables
-        ]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.variables.tabulate(
-            run_id=self._run.id, name=name
-        )

@@ -12,6 +12,7 @@ from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from .base import BackendBaseRepository
 from .column import Column
 
 
@@ -38,6 +39,7 @@ class Variable(base.BaseModel, Protocol):
 
 
 class VariableRepository(
+    BackendBaseRepository[Variable],
     base.Creator,
     base.Retriever,
     base.Enumerator,

@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
@@ -10,11 +9,13 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Table as TableModel
 from ixmp4.data.abstract.optimization import Column
+
+from .base import Creator, Lister, Retriever, Tabulator
 
 
 class Table(BaseModelFacade):
@@ -87,12 +88,16 @@ class Table(BaseModelFacade):
         return f"<Table {self.id} name={self.name}>"
 
 
-class TableRepository(BaseFacade):
-    _run: Run
-
+class TableRepository(
+    Creator[Table, TableModel],
+    Retriever[Table, TableModel],
+    Lister[Table, TableModel],
+    Tabulator[Table, TableModel],
+):
     def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
-        super().__init__(**kwargs)
-        self._run = _run
+        super().__init__(_run=_run, **kwargs)
+        self._backend_repository = self.backend.optimization.tables
+        self._model_type = Table
 
     def create(
         self,
@@ -100,27 +105,8 @@ class TableRepository(BaseFacade):
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Table:
-        model = self.backend.optimization.tables.create(
+        return super().create(
             name=name,
-            run_id=self._run.id,
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
-        return Table(_backend=self.backend, _model=model)
-
-    def get(self, name: str) -> Table:
-        model = self.backend.optimization.tables.get(run_id=self._run.id, name=name)
-        return Table(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> Iterable[Table]:
-        tables = self.backend.optimization.tables.list(run_id=self._run.id, name=name)
-        return [
-            Table(
-                _backend=self.backend,
-                _model=i,
-            )
-            for i in tables
-        ]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.tables.tabulate(run_id=self._run.id, name=name)

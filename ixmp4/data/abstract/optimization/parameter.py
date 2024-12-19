@@ -13,6 +13,7 @@ from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from .base import BackendBaseRepository
 from .column import Column
 
 
@@ -39,6 +40,7 @@ class Parameter(base.BaseModel, Protocol):
 
 
 class ParameterRepository(
+    BackendBaseRepository[Parameter],
     base.Creator,
     base.Retriever,
     base.Enumerator,
