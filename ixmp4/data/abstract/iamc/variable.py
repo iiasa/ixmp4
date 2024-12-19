@@ -2,9 +2,19 @@ from typing import Protocol
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import types
 
 from .. import base
+from ..annotations import (
+    HasIdFilter,
+    HasNameFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasUnitFilter,
+)
 from ..docs import DocsRepository
 
 
@@ -21,6 +31,12 @@ class Variable(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Variable {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    region: HasRegionFilter
+    run: HasRunFilter
+    unit: HasUnitFilter
 
 
 class VariableRepository(
@@ -71,16 +87,14 @@ class VariableRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> list[Variable]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
         -------
@@ -89,16 +103,14 @@ class VariableRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate variables by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a variable. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.iamc.variable.filters.VariableFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.iamc.variable.filter.VariableFilter`.
 
         Returns
         -------

@@ -17,8 +17,8 @@ class Scalar(base.BaseModel):
 
     value: types.Float = db.Column(db.Float, nullable=True, unique=False)
 
-    unit: types.Mapped[Unit | None] = db.relationship()
-    unit__id: types.Mapped[int | None] = db.Column(
+    unit: types.Mapped[Unit] = db.relationship()
+    unit__id: types.Mapped[int] = db.Column(
         db.Integer, db.ForeignKey("unit.id"), index=True
     )
 

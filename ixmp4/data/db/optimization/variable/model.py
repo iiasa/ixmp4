@@ -26,7 +26,7 @@ class OptimizationVariable(base.BaseModel):
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @validates("data")
-    def validate_data(self, key, data: dict[str, Any]):
+    def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
         if data == {}:
             return data
         data_to_validate = copy.deepcopy(data)

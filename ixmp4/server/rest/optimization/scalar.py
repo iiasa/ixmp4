@@ -3,6 +3,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.optimization.scalar.filter import OptimizationScalarFilter
+from ixmp4.data.db.optimization.scalar.model import Scalar
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -31,7 +32,7 @@ class ScalarUpdateInput(BaseModel):
 def get_by_id(
     id: int,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Scalar:
     return backend.optimization.scalars.get_by_id(id)
 
 
@@ -44,7 +45,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[Scalar]:
     return EnumerationOutput(
         results=backend.optimization.scalars.paginate(
             _filter=filter,
@@ -63,7 +64,7 @@ def update(
     id: int,
     scalar: ScalarUpdateInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Scalar:
     return backend.optimization.scalars.update(id, **scalar.model_dump())
 
 
@@ -72,5 +73,5 @@ def update(
 def create(
     scalar: ScalarCreateInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Scalar:
     return backend.optimization.scalars.create(**scalar.model_dump())

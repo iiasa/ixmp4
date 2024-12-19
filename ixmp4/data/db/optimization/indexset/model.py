@@ -19,11 +19,11 @@ class IndexSet(base.BaseModel):
     _data_type: types.OptimizationDataType
 
     _data: types.Mapped[list["IndexSetData"]] = db.relationship(
-        back_populates="indexset"
+        back_populates="indexset", order_by="IndexSetData.id"
     )
 
     @property
-    def data(self) -> list[float | int | str]:
+    def data(self) -> list[float] | list[int] | list[str]:
         return (
             []
             if self._data_type is None
@@ -31,7 +31,7 @@ class IndexSet(base.BaseModel):
         )
 
     @data.setter
-    def data(self, value: list[float | int | str]) -> None:
+    def data(self, value: list[float] | list[int] | list[str]) -> None:
         return None
 
     run__id: types.RunId

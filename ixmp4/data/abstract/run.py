@@ -1,11 +1,18 @@
-from typing import ClassVar, Protocol
+from typing import TYPE_CHECKING, ClassVar, Protocol
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasRunFilter, IamcRunFilter
+
+if TYPE_CHECKING:
+    from . import Model, Scenario
 
 
 class Run(base.BaseModel, Protocol):
@@ -15,12 +22,12 @@ class Run(base.BaseModel, Protocol):
 
     model__id: types.Integer
     "Foreign unique integer id of the model."
-    model: types.Mapped
+    model: types.Mapped["Model"]
     "Associated model."
 
     scenario__id: types.Integer
     "Foreign unique integer id of the scenario."
-    scenario: types.Mapped
+    scenario: types.Mapped["Scenario"]
     "Associated scenario."
 
     version: types.Integer
@@ -34,17 +41,17 @@ class Run(base.BaseModel, Protocol):
             is_default={self.is_default}>"
 
 
+class EnumerateKwargs(HasRunFilter, total=False):
+    iamc: IamcRunFilter | bool | None
+
+
 class RunRepository(
     base.Creator,
     base.Retriever,
     base.Enumerator,
     Protocol,
 ):
-    def create(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def create(self, model_name: str, scenario_name: str) -> Run:
         """Creates a run with an incremented version number or version=1 if no versions
         exist. Will automatically create the models and scenarios if they don't exist
         yet.
@@ -63,12 +70,7 @@ class RunRepository(
         """
         ...
 
-    def get(
-        self,
-        model_name: str,
-        scenario_name: str,
-        version: int,
-    ) -> Run:
+    def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         """Retrieves a run.
 
         Parameters
@@ -92,11 +94,7 @@ class RunRepository(
         """
         ...
 
-    def get_or_create(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def get_or_create(self, model_name: str, scenario_name: str) -> Run:
         """Tries to retrieve a run's default version
         and creates it if it was not found.
 
@@ -117,11 +115,7 @@ class RunRepository(
         except Run.NoDefaultVersion:
             return self.create(model_name, scenario_name)
 
-    def get_default_version(
-        self,
-        model_name: str,
-        scenario_name: str,
-    ) -> Run:
+    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         """Retrieves a run's default version.
 
         Parameters
@@ -143,23 +137,14 @@ class RunRepository(
         """
         ...
 
-    def list(
-        self,
-        *,
-        version: int | None = None,
-        **kwargs,
-    ) -> list[Run]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters
         ----------
-        version : int
-            The run's version.
-        default_only : bool
-            True by default. This function will return default runs only if true.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.run.filters.RunFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.run.filter.RunFilter`.
 
         Returns
         -------
@@ -168,23 +153,14 @@ class RunRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        *,
-        version: int | None = None,
-        **kwargs,
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate runs by specified criteria.
 
         Parameters
         ----------
-        version : int
-            The run's version.
-        default_only : bool
-            True by default. This function will return default runs only if true.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.run.filters.RunFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.run.filter.RunFilter`.
 
         Returns
         -------

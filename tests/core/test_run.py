@@ -2,6 +2,9 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+# Import this from typing when dropping 3.11
+from typing_extensions import Unpack
+
 import ixmp4
 from ixmp4.core import Run
 from ixmp4.core.exceptions import IxmpError
@@ -9,7 +12,7 @@ from ixmp4.core.exceptions import IxmpError
 from ..fixtures import FilterIamcDataset
 
 
-def _expected_runs_table(*row_default):
+def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.DataFrame:
     rows = []
     for i, default in enumerate(row_default, start=1):
         if default is not None:
@@ -21,12 +24,12 @@ def _expected_runs_table(*row_default):
 class TestCoreRun:
     filter = FilterIamcDataset()
 
-    def test_run_notfound(self, platform: ixmp4.Platform):
+    def test_run_notfound(self, platform: ixmp4.Platform) -> None:
         # no Run with that model and scenario name exists
         with pytest.raises(Run.NotFound):
             _ = platform.runs.get("Unknown Model", "Unknown Scenario", version=1)
 
-    def test_run_versions(self, platform: ixmp4.Platform):
+    def test_run_versions(self, platform: ixmp4.Platform) -> None:
         run1 = platform.runs.create("Model", "Scenario")
         run2 = platform.runs.create("Model", "Scenario")
 
@@ -159,7 +162,7 @@ class TestCoreRun:
         assert sorted(res["model"].tolist()) == []
         assert sorted(res["scenario"].tolist()) == []
 
-    def delete_all_datapoints(self, run: ixmp4.Run):
+    def delete_all_datapoints(self, run: ixmp4.Run) -> None:
         remove_data = run.iamc.tabulate(raw=True)
         annual = remove_data[remove_data["type"] == "ANNUAL"].dropna(
             how="all", axis="columns"

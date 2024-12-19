@@ -42,7 +42,7 @@ def login(
         prompt=True,
         hide_input=True,
     ),
-):
+) -> None:
     try:
         auth = ManagerAuth(username, password, str(settings.manager_url))
         user = auth.get_user()
@@ -62,7 +62,7 @@ def login(
 
 
 @app.command()
-def logout():
+def logout() -> None:
     if typer.confirm(
         "Are you sure you want to log out and delete locally saved credentials?"
     ):
@@ -80,7 +80,7 @@ try:
         with_backend: Optional[bool] = False,
         with_benchmarks: Optional[bool] = False,
         dry: Optional[bool] = False,
-    ):
+    ) -> None:
         opts = [
             "--cov-report",
             "xml:.coverage.xml",

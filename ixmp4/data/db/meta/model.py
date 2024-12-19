@@ -1,10 +1,19 @@
-from typing import ClassVar
+from typing import ClassVar, cast
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.core.exceptions import InvalidRunMeta
 from ixmp4.data import abstract, types
 
 from .. import base
+
+
+class InitKwargs(TypedDict):
+    run__id: int
+    key: str
+    value: abstract.annotations.PrimitiveTypes
 
 
 class RunMetaEntry(base.BaseModel):
@@ -14,7 +23,7 @@ class RunMetaEntry(base.BaseModel):
 
     Type: ClassVar = abstract.RunMetaEntry.Type
 
-    _column_map = {
+    _column_map: dict[str, str] = {
         abstract.RunMetaEntry.Type.INT: "value_int",
         abstract.RunMetaEntry.Type.STR: "value_str",
         abstract.RunMetaEntry.Type.FLOAT: "value_float",
@@ -28,7 +37,7 @@ class RunMetaEntry(base.BaseModel):
         ),
     )
     updateable_columns = [
-        "type",
+        "dtype",
         "value_int",
         "value_str",
         "value_float",
@@ -48,7 +57,7 @@ class RunMetaEntry(base.BaseModel):
     )
 
     key: types.String = db.Column(db.String(1023), nullable=False)
-    type: types.String = db.Column(db.String(20), nullable=False)
+    dtype: types.String = db.Column(db.String(20), nullable=False)
 
     value_int: types.Integer = db.Column(db.Integer, nullable=True)
     value_str: types.String = db.Column(db.String(1023), nullable=True)
@@ -57,12 +66,14 @@ class RunMetaEntry(base.BaseModel):
 
     @property
     def value(self) -> abstract.MetaValue:
-        type_ = RunMetaEntry.Type(self.type)
+        type_ = RunMetaEntry.Type(self.dtype)
         col = self._column_map[type_]
-        return getattr(self, col)
+        value: abstract.MetaValue = getattr(self, col)
+        return value
 
-    def __init__(self, *args, **kwargs) -> None:
-        value = kwargs.pop("value")
+    def __init__(self, **kwargs: Unpack[InitKwargs]) -> None:
+        _kwargs = cast(dict[str, abstract.annotations.PrimitiveTypes], kwargs)
+        value = _kwargs.pop("value")
         value_type = type(value)
         try:
             type_ = RunMetaEntry.Type.from_pytype(value_type)
@@ -71,6 +82,6 @@ class RunMetaEntry(base.BaseModel):
             raise InvalidRunMeta(
                 f"Invalid type `{value_type}` for value of `RunMetaEntry`."
             )
-        kwargs["type"] = type_
-        kwargs[col] = value
-        super().__init__(*args, **kwargs)
+        _kwargs["dtype"] = type_
+        _kwargs[col] = value
+        super().__init__(**_kwargs)

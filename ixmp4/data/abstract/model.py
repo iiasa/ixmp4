@@ -2,9 +2,13 @@ from typing import Protocol
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasIdFilter, HasNameFilter, IamcModelFilter
 from .docs import DocsRepository
 
 
@@ -23,6 +27,10 @@ class Model(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Model {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    iamc: IamcModelFilter | bool
 
 
 class ModelRepository(
@@ -73,17 +81,14 @@ class ModelRepository(
         """
         ...
 
-    def list(
-        self,
-        *,
-        name: str | None = None,
-    ) -> list[Model]:
-        """Lists models by specified criteria.
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Model]:
+        r"""Lists models by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a model. If supplied only one result will be returned.
+        \*\*kwargs: any
+            Any filter parameters as specified in
+            `ixmp4.data.db.model.filter.ModelFilter`.
 
         Returns
         -------
@@ -92,18 +97,14 @@ class ModelRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        *,
-        name: str | None = None,
-        **kwargs,
-    ) -> pd.DataFrame:
-        """Tabulate models by specified criteria.
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
+        r"""Tabulate models by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a model. If supplied only one result will be returned.
+        \*\*kwargs: any
+            Any filter parameters as specified in
+            `ixmp4.data.db.model.filter.ModelFilter`.
 
         Returns
         -------
@@ -115,7 +116,7 @@ class ModelRepository(
         """
         ...
 
-    def map(self, *args, **kwargs) -> dict:
+    def map(self, **kwargs: Unpack[EnumerateKwargs]) -> dict[int, str]:
         """Return a mapping of model-id to model-name.
 
         Returns
@@ -123,4 +124,4 @@ class ModelRepository(
         :class:`dict`:
             A dictionary `id` -> `name`
         """
-        return dict([(m.id, m.name) for m in self.list(*args, **kwargs)])
+        return dict([(m.id, m.name) for m in self.list(**kwargs)])

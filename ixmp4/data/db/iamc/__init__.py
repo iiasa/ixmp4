@@ -1,4 +1,3 @@
-# flake8: noqa
 from .datapoint import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint
     DataPoint,
     DataPointRepository,

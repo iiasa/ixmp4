@@ -1,11 +1,14 @@
 from functools import reduce
+from typing import Any
 
 import pytest
 
 import ixmp4
+from ixmp4.data.backend import Backend
+from ixmp4.data.db.base import CountKwargs, Enumerator
 
 
-def deepgetattr(obj, attr):
+def deepgetattr(obj: Backend, attr: str) -> Any:
     return reduce(getattr, attr.split("."), obj)
 
 
@@ -75,6 +78,11 @@ class TestDataCount:
             ],
         ],
     )
-    def test_count(self, db_platform_big: ixmp4.Platform, repo_name, filters):
+    def test_count(
+        self, db_platform_big: ixmp4.Platform, repo_name: str, filters: CountKwargs
+    ) -> None:
         repo = deepgetattr(db_platform_big.backend, repo_name)
+        # NOTE this check would not be necessary if db.platform_big.backend was typed as
+        # a DB backend and deepgetattr() to return DB-layer Enumerator
+        assert isinstance(repo, Enumerator)
         assert len(repo.list(**filters)) == repo.count(**filters)

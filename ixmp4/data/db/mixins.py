@@ -18,14 +18,11 @@ class HasCreationInfo:
     created_by: types.Username
 
     @staticmethod
-    def get_username(auth_context: "AuthorizationContext | None"):
-        if auth_context is not None:
-            return auth_context.user.username
-        else:
-            return "@unknown"
+    def get_username(auth_context: "AuthorizationContext | None") -> str:
+        return auth_context.user.username if auth_context is not None else "@unknown"
 
     @staticmethod
-    def get_timestamp():
+    def get_timestamp() -> datetime:
         return datetime.now(tz=timezone.utc)
 
     def set_creation_info(self, auth_context: "AuthorizationContext | None") -> None:

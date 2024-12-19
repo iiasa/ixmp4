@@ -11,7 +11,7 @@ from ixmp4.data.abstract import OptimizationVariable
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
 
-def df_from_list(variables: list):
+def df_from_list(variables: list[OptimizationVariable]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -36,7 +36,7 @@ def df_from_list(variables: list):
 
 
 class TestDataOptimizationVariable:
-    def test_create_variable(self, platform: ixmp4.Platform):
+    def test_create_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
 
         # Test creation without indexset
@@ -128,7 +128,7 @@ class TestDataOptimizationVariable:
         assert variable_4.columns[0].dtype == "object"
         assert variable_4.columns[1].dtype == "int64"
 
-    def test_get_variable(self, platform: ixmp4.Platform):
+    def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
@@ -145,7 +145,7 @@ class TestDataOptimizationVariable:
                 run_id=run.id, name="Variable 2"
             )
 
-    def test_variable_add_data(self, platform: ixmp4.Platform):
+    def test_variable_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -297,7 +297,7 @@ class TestDataOptimizationVariable:
         )
         assert_unordered_equality(expected, pd.DataFrame(variable_4.data))
 
-    def test_variable_remove_data(self, platform: ixmp4.Platform):
+    def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")
         platform.backend.optimization.indexsets.add_data(
@@ -325,7 +325,7 @@ class TestDataOptimizationVariable:
         )
         assert variable.data == {}
 
-    def test_list_variable(self, platform: ixmp4.Platform):
+    def test_list_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -361,7 +361,7 @@ class TestDataOptimizationVariable:
             variable_4,
         ] == platform.backend.optimization.variables.list(run_id=run_2.id)
 
-    def test_tabulate_variable(self, platform: ixmp4.Platform):
+    def test_tabulate_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id

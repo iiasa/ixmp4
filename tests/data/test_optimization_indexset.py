@@ -48,7 +48,7 @@ def df_from_list(indexsets: list[IndexSet], include_data: bool = False) -> pd.Da
 
 
 class TestDataOptimizationIndexSet:
-    def test_create_indexset(self, platform: ixmp4.Platform):
+    def test_create_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1 = platform.backend.optimization.indexsets.create(
             run_id=run.id, name="Indexset"
@@ -62,7 +62,7 @@ class TestDataOptimizationIndexSet:
                 run_id=run.id, name="Indexset"
             )
 
-    def test_get_indexset(self, platform: ixmp4.Platform):
+    def test_get_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
         indexset = platform.backend.optimization.indexsets.get(
@@ -77,7 +77,7 @@ class TestDataOptimizationIndexSet:
                 run_id=run.id, name="Indexset 2"
             )
 
-    def test_list_indexsets(self, platform: ixmp4.Platform):
+    def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -99,7 +99,7 @@ class TestDataOptimizationIndexSet:
             run_id=run_2.id
         )
 
-    def test_tabulate_indexsets(self, platform: ixmp4.Platform):
+    def test_tabulate_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -147,23 +147,21 @@ class TestDataOptimizationIndexSet:
             ),
         )
 
-    def test_add_data(self, platform: ixmp4.Platform):
+    def test_add_data(self, platform: ixmp4.Platform) -> None:
         test_data = ["foo", "bar"]
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_1.id,
-            data=test_data,  # type: ignore
+            indexset_id=indexset_1.id, data=test_data
         )
         indexset_1 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_1.name
         )
 
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id,
-            data=test_data,  # type: ignore
+            indexset_id=indexset_2.id, data=test_data
         )
 
         assert (
@@ -188,7 +186,7 @@ class TestDataOptimizationIndexSet:
             platform=platform, run_id=run.id, offset=3
         )
 
-        test_data_2: list[float | int | str] = [1.2, 3.4, 5.6]
+        test_data_2 = [1.2, 3.4, 5.6]
         platform.backend.optimization.indexsets.add_data(
             indexset_id=indexset_3.id, data=test_data_2
         )
@@ -199,7 +197,7 @@ class TestDataOptimizationIndexSet:
         assert indexset_3.data == test_data_2
         assert type(indexset_3.data[0]).__name__ == "float"
 
-        test_data_3: list[float | int | str] = [0, 1, 2]
+        test_data_3 = [0, 1, 2]
         platform.backend.optimization.indexsets.add_data(
             indexset_id=indexset_4.id, data=test_data_3
         )

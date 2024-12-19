@@ -2,9 +2,13 @@ from typing import Protocol
 
 import pandas as pd
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
 from ixmp4.data import types
 
 from . import base
+from .annotations import HasIdFilter, HasNameFilter, IamcUnitFilter
 from .docs import DocsRepository
 
 
@@ -20,6 +24,10 @@ class Unit(base.BaseModel, Protocol):
 
     def __str__(self) -> str:
         return f"<Unit {self.id} name={self.name}>"
+
+
+class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
+    iamc: IamcUnitFilter | bool
 
 
 class UnitRepository(
@@ -97,7 +105,7 @@ class UnitRepository(
         except Unit.NotFound:
             return self.create(name)
 
-    def delete(self, id: int):
+    def delete(self, id: int) -> None:
         """Deletes a unit.
 
         Parameters
@@ -114,21 +122,14 @@ class UnitRepository(
         """
         ...
 
-    def list(
-        self,
-        *,
-        name: str | None = None,
-        **kwargs,
-    ) -> list[Unit]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Unit]:
         r"""Lists units by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.unit.filters.UnitFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.unit.filter.UnitFilter`.
 
         Returns
         -------
@@ -137,21 +138,14 @@ class UnitRepository(
         """
         ...
 
-    def tabulate(
-        self,
-        *,
-        name: str | None = None,
-        **kwargs,
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         r"""Tabulate units by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a unit. If supplied only one result will be returned.
         \*\*kwargs: any
-            More filter parameters as specified in
-            `ixmp4.data.db.unit.filters.UnitFilter`.
+            Any filter parameters as specified in
+            `ixmp4.data.db.unit.filter.UnitFilter`.
 
         Returns
         -------
