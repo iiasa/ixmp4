@@ -1,4 +1,4 @@
-# Variable tests are currently disabled
+from collections.abc import Iterable
 
 import pandas as pd
 import pytest
@@ -9,7 +9,9 @@ from ixmp4.core import Variable
 from ..utils import assert_unordered_equality
 
 
-def create_testcase_iamc_variables(platform):
+def create_testcase_iamc_variables(
+    platform: ixmp4.Platform,
+) -> tuple[Variable, Variable]:
     platform.regions.create("Region", "default")
     platform.units.create("Unit")
 
@@ -30,7 +32,7 @@ def create_testcase_iamc_variables(platform):
     return iamc_variable, iamc_variable2
 
 
-def df_from_list(iamc_variables):
+def df_from_list(iamc_variables: Iterable[Variable]) -> pd.DataFrame:
     return pd.DataFrame(
         [[v.id, v.name, v.created_at, v.created_by] for v in iamc_variables],
         columns=["id", "name", "created_at", "created_by"],
@@ -38,7 +40,7 @@ def df_from_list(iamc_variables):
 
 
 class TestCoreVariable:
-    def test_retrieve_iamc_variable(self, platform: ixmp4.Platform):
+    def test_retrieve_iamc_variable(self, platform: ixmp4.Platform) -> None:
         iamc_variable1 = platform.iamc.variables.create("IAMC Variable")
         platform.regions.create("Region", "default")
         platform.units.create("Unit")
@@ -57,13 +59,13 @@ class TestCoreVariable:
 
         assert iamc_variable1.id == iamc_variable2.id
 
-    def test_iamc_variable_unqiue(self, platform: ixmp4.Platform):
+    def test_iamc_variable_unqiue(self, platform: ixmp4.Platform) -> None:
         platform.iamc.variables.create("IAMC Variable")
 
         with pytest.raises(Variable.NotUnique):
             platform.iamc.variables.create("IAMC Variable")
 
-    def test_list_iamc_variable(self, platform: ixmp4.Platform):
+    def test_list_iamc_variable(self, platform: ixmp4.Platform) -> None:
         iamc_variables = create_testcase_iamc_variables(platform)
         iamc_variable, _ = iamc_variables
 
@@ -75,7 +77,7 @@ class TestCoreVariable:
         b = [v.id for v in platform.iamc.variables.list(name="IAMC Variable")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_iamc_variable(self, platform: ixmp4.Platform):
+    def test_tabulate_iamc_variable(self, platform: ixmp4.Platform) -> None:
         iamc_variables = create_testcase_iamc_variables(platform)
         iamc_variable, _ = iamc_variables
 
@@ -87,7 +89,7 @@ class TestCoreVariable:
         b = platform.iamc.variables.tabulate(name="IAMC Variable")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, platform: ixmp4.Platform):
+    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
         _, iamc_variable2 = create_testcase_iamc_variables(platform)
         docs_iamc_variable1 = platform.iamc.variables.set_docs(
             "IAMC Variable", "Description of test IAMC Variable"
@@ -104,7 +106,7 @@ class TestCoreVariable:
             platform.iamc.variables.get_docs("IAMC Variable 2") == iamc_variable2.docs
         )
 
-    def test_delete_docs(self, platform: ixmp4.Platform):
+    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
         iamc_variable, _ = create_testcase_iamc_variables(platform)
         iamc_variable.docs = "Description of test IAMC Variable"
         iamc_variable.docs = None
@@ -116,7 +118,8 @@ class TestCoreVariable:
 
         assert iamc_variable.docs is None
 
-        iamc_variable.docs = "Third description of test IAMC Variable"
+        # Mypy doesn't recognize del properly, it seems
+        iamc_variable.docs = "Third description of test IAMC Variable"  # type: ignore[unreachable]
         platform.iamc.variables.delete_docs("IAMC Variable")
 
         assert iamc_variable.docs is None

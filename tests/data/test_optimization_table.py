@@ -2,16 +2,16 @@ import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import Table
 from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
 )
+from ixmp4.data.abstract import Table
 
 from ..utils import create_indexsets_for_run
 
 
-def df_from_list(tables: list):
+def df_from_list(tables: list[Table]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -36,7 +36,7 @@ def df_from_list(tables: list):
 
 
 class TestDataOptimizationTable:
-    def test_create_table(self, platform: ixmp4.Platform):
+    def test_create_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
 
         # Test normal creation
@@ -102,7 +102,7 @@ class TestDataOptimizationTable:
         assert table_3.columns[0].dtype == "object"
         assert table_3.columns[1].dtype == "int64"
 
-    def test_get_table(self, platform: ixmp4.Platform):
+    def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _, _ = create_indexsets_for_run(platform=platform, run_id=run.id)
         table = platform.backend.optimization.tables.create(
@@ -115,7 +115,7 @@ class TestDataOptimizationTable:
         with pytest.raises(Table.NotFound):
             _ = platform.backend.optimization.tables.get(run_id=run.id, name="Table 2")
 
-    def test_table_add_data(self, platform: ixmp4.Platform):
+    def test_table_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
@@ -292,7 +292,7 @@ class TestDataOptimizationTable:
         )
         assert table_5.data == test_data_5
 
-    def test_list_table(self, platform: ixmp4.Platform):
+    def test_list_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)
         table = platform.backend.optimization.tables.create(
@@ -319,7 +319,7 @@ class TestDataOptimizationTable:
             run_id=run_2.id
         )
 
-    def test_tabulate_table(self, platform: ixmp4.Platform):
+    def test_tabulate_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id, offset=2

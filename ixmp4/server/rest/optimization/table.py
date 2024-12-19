@@ -5,6 +5,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.optimization.table.filter import OptimizationTableFilter
+from ixmp4.data.db.optimization.table.model import Table
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -17,8 +18,8 @@ router: APIRouter = APIRouter(
 
 
 class TableCreateInput(BaseModel):
-    run_id: int
     name: str
+    run_id: int
     constrained_to_indexsets: list[str]
     column_names: list[str] | None
 
@@ -32,7 +33,7 @@ class DataInput(BaseModel):
 def get_by_id(
     id: int,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Table:
     return backend.optimization.tables.get_by_id(id)
 
 
@@ -43,7 +44,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[Table]:
     return EnumerationOutput(
         results=backend.optimization.tables.paginate(
             _filter=filter,
@@ -62,8 +63,8 @@ def add_data(
     table_id: int,
     data: DataInput,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.optimization.tables.add_data(table_id=table_id, **data.model_dump())
+) -> None:
+    backend.optimization.tables.add_data(table_id=table_id, **data.model_dump())
 
 
 @autodoc
@@ -71,5 +72,5 @@ def add_data(
 def create(
     table: TableCreateInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Table:
     return backend.optimization.tables.create(**table.model_dump())

@@ -1,4 +1,5 @@
 from ixmp4.data.abstract import Run
+from ixmp4.data.backend import Backend
 
 from ..base import BaseFacade
 from .equation import EquationRepository
@@ -20,8 +21,8 @@ class OptimizationData(BaseFacade):
     tables: TableRepository
     variables: VariableRepository
 
-    def __init__(self, *args, run: Run, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, run: Run, **kwargs: Backend) -> None:
+        super().__init__(**kwargs)
         self.equations = EquationRepository(_backend=self.backend, _run=run)
         self.indexsets = IndexSetRepository(_backend=self.backend, _run=run)
         self.parameters = ParameterRepository(_backend=self.backend, _run=run)

@@ -3,6 +3,7 @@ from fastapi import APIRouter, Body, Depends, Path, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.region.filter import RegionFilter
+from ixmp4.data.db.region.model import Region
 
 from . import deps
 from .base import BaseModel, EnumerationOutput, Pagination
@@ -26,7 +27,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[Region]:
     return EnumerationOutput(
         results=backend.regions.paginate(
             _filter=filter,
@@ -44,7 +45,7 @@ def query(
 def create(
     region: RegionInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Region:
     return backend.regions.create(**region.model_dump())
 
 
@@ -52,5 +53,5 @@ def create(
 def delete(
     id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> None:
     backend.regions.delete(id)

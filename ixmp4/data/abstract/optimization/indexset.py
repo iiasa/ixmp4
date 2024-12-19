@@ -1,6 +1,12 @@
-from typing import List, Protocol
+from typing import TYPE_CHECKING, List, Protocol
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
@@ -83,16 +89,13 @@ class IndexSetRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> list[IndexSet]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> list[IndexSet]:
         r"""Lists IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an IndexSet. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
 
         Returns
@@ -103,20 +106,17 @@ class IndexSetRepository(
         ...
 
     def tabulate(
-        self, *, name: str | None = None, include_data: bool = False, **kwargs
+        self, *, include_data: bool = False, **kwargs: Unpack["EnumerateKwargs"]
     ) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str, optional
-            The name of an IndexSet. If supplied only one result will be returned.
         include_data : bool, optional
             Whether to load all IndexSet data, which reduces loading speed. Defaults to
             `False`.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
 
         Returns
@@ -133,7 +133,9 @@ class IndexSetRepository(
         ...
 
     def add_data(
-        self, indexset_id: int, data: float | int | List[float | int | str] | str
+        self,
+        indexset_id: int,
+        data: float | int | str | List[float] | List[int] | List[str],
     ) -> None:
         """Adds data to an existing IndexSet.
 
@@ -141,7 +143,7 @@ class IndexSetRepository(
         ----------
         indexset_id : int
             The id of the target IndexSet.
-        data : float | int | List[float | int | str] | str
+        data : float | int | str | List[float] | List[int] | List[str]
             The data to be added to the IndexSet.
 
         Returns

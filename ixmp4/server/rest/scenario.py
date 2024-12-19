@@ -3,6 +3,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.scenario.filter import ScenarioFilter
+from ixmp4.data.db.scenario.model import Scenario
 
 from . import deps
 from .base import BaseModel, EnumerationOutput, Pagination
@@ -25,7 +26,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[Scenario]:
     return EnumerationOutput(
         results=backend.scenarios.paginate(
             _filter=filter,
@@ -43,5 +44,5 @@ def query(
 def create(
     scenario: ScenarioInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> Scenario:
     return backend.scenarios.create(**scenario.model_dump())

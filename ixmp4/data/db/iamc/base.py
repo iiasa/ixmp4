@@ -1,4 +1,3 @@
-# flake8: noqa
 from ..base import BaseModel as RootBaseModel
 from ..base import (
     BulkDeleter,

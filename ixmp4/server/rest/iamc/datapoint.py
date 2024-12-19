@@ -4,6 +4,7 @@ from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.iamc.datapoint.filter import DataPointFilter
+from ixmp4.data.db.iamc.datapoint.model import DataPoint
 
 from .. import deps
 from ..base import EnumerationOutput, Pagination
@@ -24,7 +25,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[DataPoint]:
     """This endpoint is used to retrieve and optionally filter data.add()
 
     Filter parameters are provided as keyword arguments.
@@ -83,8 +84,11 @@ def query(
 def bulk_upsert(
     df: api.DataFrame,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.iamc.datapoints.bulk_upsert(df.to_pandas())
+) -> None:
+    # A pandera.DataFrame is a subclass of pd.DataFrame, so this is fine. Mypy likely
+    # complains because our decorators change the type hint in some incompatible way.
+    # Might be about covariance again.
+    backend.iamc.datapoints.bulk_upsert(df.to_pandas())  # type: ignore[arg-type]
 
 
 @autodoc
@@ -92,5 +96,5 @@ def bulk_upsert(
 def bulk_delete(
     df: api.DataFrame,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.iamc.datapoints.bulk_delete(df.to_pandas())
+) -> None:
+    backend.iamc.datapoints.bulk_delete(df.to_pandas())  # type: ignore[arg-type]

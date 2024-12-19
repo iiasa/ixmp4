@@ -27,6 +27,7 @@ In development mode additional commands are available:
 
 from ixmp4.conf import settings
 from ixmp4.conf.auth import BaseAuth
+from ixmp4.conf.base import PlatformInfo
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.data.backend import Backend, RestBackend, SqlAlchemyBackend
 
@@ -63,7 +64,7 @@ class Platform(object):
     ) -> None:
         if name is not None:
             if name in settings.toml.platforms:
-                config = settings.toml.get_platform(name)
+                config: PlatformInfo = settings.toml.get_platform(name)
             else:
                 settings.check_credentials()
                 if settings.manager is not None:
@@ -71,10 +72,11 @@ class Platform(object):
                 else:
                     raise PlatformNotFound(f"Platform '{name}' was not found.")
 
-            if config.dsn.startswith("http"):
-                self.backend = RestBackend(config, auth=_auth)
-            else:
-                self.backend = SqlAlchemyBackend(config)  # type: ignore
+            self.backend = (
+                RestBackend(config, auth=_auth)
+                if config.dsn.startswith("http")
+                else SqlAlchemyBackend(config)
+            )
         elif _backend is not None:
             self.backend = _backend
         else:

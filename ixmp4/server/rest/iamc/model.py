@@ -3,6 +3,7 @@ from fastapi import APIRouter, Body, Depends, Query
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.model.filter import IamcModelFilter
+from ixmp4.data.db.model.model import Model
 
 from .. import deps
 from ..base import EnumerationOutput, Pagination
@@ -19,7 +20,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[Model]:
     return EnumerationOutput(
         results=backend.models.paginate(
             _filter=filter,

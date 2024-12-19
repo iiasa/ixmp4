@@ -1,9 +1,15 @@
-from typing import Union
+from typing import TYPE_CHECKING, Any, cast
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 import pandas as pd
 import pandera as pa
 from pandera.typing import DataFrame, Series
 from sqlalchemy.exc import NoResultFound
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.core.decorators import check_types
@@ -13,6 +19,7 @@ from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
 from ixmp4.data.db.scenario import Scenario
+from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .model import RunMetaEntry
@@ -37,6 +44,16 @@ class UpdateRunMetaEntryFrameSchema(AddRunMetaEntryFrameSchema):
     id: Series[pa.Int] = pa.Field(coerce=True)
 
 
+class EnumerateKwargs(TypedDict, total=False):
+    _filter: BaseFilter
+
+
+class CreateKwargs(TypedDict, total=False):
+    run__id: int
+    key: str
+    value: abstract.annotations.PrimitiveTypes
+
+
 class RunMetaEntryRepository(
     base.Creator[RunMetaEntry],
     base.Enumerator[RunMetaEntry],
@@ -46,14 +63,15 @@ class RunMetaEntryRepository(
 ):
     model_class = RunMetaEntry
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+
         from .filter import RunMetaEntryFilter
 
         self.filter_class = RunMetaEntryFilter
 
     def add(
-        self, run__id: int, key: str, value: Union[str, int, bool, float]
+        self, run__id: int, key: str, value: abstract.annotations.PrimitiveTypes
     ) -> RunMetaEntry:
         if self.backend.auth_context is not None:
             self.backend.runs.check_access(
@@ -69,7 +87,7 @@ class RunMetaEntryRepository(
         self.session.add(entry)
         return entry
 
-    def check_df_access(self, df: pd.DataFrame):
+    def check_df_access(self, df: pd.DataFrame) -> None:
         if self.backend.auth_context is not None:
             ts_ids = set(df["run__id"].unique().tolist())
             self.backend.runs.check_access(
@@ -80,7 +98,9 @@ class RunMetaEntryRepository(
             )
 
     @guard("edit")
-    def create(self, *args, **kwargs) -> RunMetaEntry:
+    def create(
+        self, *args: abstract.annotations.PrimitiveTypes, **kwargs: Unpack[CreateKwargs]
+    ) -> RunMetaEntry:
         return super().create(*args, **kwargs)
 
     @guard("view")
@@ -93,18 +113,13 @@ class RunMetaEntryRepository(
                 default_only=False,
             )
 
-        exc = self.select(
-            run_id=run__id,
-            key=key,
-        )
+        exc = self.select(run_id=run__id, key=key)
 
         try:
-            return self.session.execute(exc).scalar_one()
+            runmetaentry = self.session.execute(exc).scalar_one()
+            return runmetaentry
         except NoResultFound:
-            raise RunMetaEntry.NotFound(
-                run__id=run__id,
-                key=key,
-            )
+            raise RunMetaEntry.NotFound(run__id=run__id, key=key)
 
     @guard("edit")
     def delete(self, id: int) -> None:
@@ -113,9 +128,7 @@ class RunMetaEntryRepository(
                 pre_exc = db.select(RunMetaEntry).where(RunMetaEntry.id == id)
                 meta = self.session.execute(pre_exc).scalar_one()
             except NoResultFound:
-                raise RunMetaEntry.NotFound(
-                    id=id,
-                )
+                raise RunMetaEntry.NotFound(id=id)
             self.backend.runs.check_access(
                 {meta.run__id},
                 access_type="edit",
@@ -129,11 +142,11 @@ class RunMetaEntryRepository(
             self.session.execute(exc)
             self.session.commit()
         except NoResultFound:
-            raise RunMetaEntry.NotFound(
-                id=id,
-            )
+            raise RunMetaEntry.NotFound(id=id)
 
-    def join_auth(self, exc: db.sql.Select) -> db.sql.Select:
+    def join_auth(
+        self, exc: db.sql.Select[tuple[RunMetaEntry]]
+    ) -> db.sql.Select[tuple[RunMetaEntry]]:
         if not db.utils.is_joined(exc, Run):
             exc = exc.join(Run, RunMetaEntry.run)
         if not db.utils.is_joined(exc, Model):
@@ -141,7 +154,7 @@ class RunMetaEntryRepository(
 
         return super().join_auth(exc)
 
-    def select_with_run_index(self) -> db.sql.Select:
+    def select_with_run_index(self) -> db.sql.Select[tuple[str, str, int, Any]]:
         _exc = db.select(
             Model.name.label("model_name"),
             Scenario.name.label("scenario_name"),
@@ -156,23 +169,22 @@ class RunMetaEntryRepository(
         )
 
     @guard("view")
-    def list(self, *args, **kwargs) -> list[RunMetaEntry]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[RunMetaEntry]:
+        return super().list(**kwargs)
 
     @guard("view")
     def tabulate(
         self,
-        *args,
         join_run_index: bool = False,
         _raw: bool | None = False,
-        **kwargs,
+        **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         if _raw:
-            return super().tabulate(*args, **kwargs)
+            return super().tabulate(**kwargs)
 
         if join_run_index:
             _exc = self.select_with_run_index()
-            df = super().tabulate(*args, _exc=_exc, **kwargs)
+            df = super().tabulate(_exc=_exc, **kwargs)
             df.drop(columns="run__id", inplace=True)
             df.rename(
                 columns={"model_name": "model", "scenario_name": "scenario"},
@@ -180,30 +192,31 @@ class RunMetaEntryRepository(
             )
             index_columns = ["model", "scenario", "version"]
         else:
-            df = super().tabulate(*args, **kwargs)
+            df = super().tabulate(**kwargs)
             index_columns = ["run__id"]
 
         if df.empty:
             return pd.DataFrame(
-                [], columns=index_columns + ["id", "type", "key", "value"]
+                [], columns=index_columns + ["id", "dtype", "key", "value"]
             )
 
-        def map_value_column(df: pd.DataFrame):
+        def map_value_column(df: pd.DataFrame) -> pd.DataFrame:
             type_str = df.name
             type_ = RunMetaEntry.Type(type_str)
             col = RunMetaEntry._column_map[type_]
             df["value"] = df[col]
-            df["type"] = type_str
+            df["dtype"] = type_str
             return df.drop(columns=RunMetaEntry._column_map.values())
 
         # ensure compatibility with pandas y 2.2
         # TODO remove legacy-handling when dropping support for pandas < 2.2
-        if pd.__version__[0:3] in ["2.0", "2.1"]:
-            apply_args = dict()
-        else:
-            apply_args = dict(include_groups=False)
+        apply_args = (
+            dict()
+            if pd.__version__[0:3] in ["2.0", "2.1"]
+            else dict(include_groups=False)
+        )
 
-        return df.groupby("type", group_keys=False).apply(
+        return df.groupby("dtype", group_keys=False).apply(
             map_value_column, **apply_args
         )
 
@@ -214,13 +227,13 @@ class RunMetaEntryRepository(
             raise InvalidRunMeta("Illegal meta key(s): " + ", ".join(illegal_keys))
 
         self.check_df_access(df)
-        df["type"] = df["value"].map(type).map(RunMetaEntry.Type.from_pytype)
+        df["dtype"] = df["value"].map(type).map(RunMetaEntry.Type.from_pytype)
 
-        type_: RunMetaEntry.Type
-        for type_, type_df in df.groupby("type"):
-            col = RunMetaEntry._column_map[type_]
+        for type_, type_df in df.groupby("dtype"):
+            # This cast should always be a no-op
+            col = RunMetaEntry._column_map[cast(str, type_)]
             null_cols = set(RunMetaEntry._column_map.values()) - set([col])
-            type_df["type"] = type_df["type"].map(lambda x: x.value)
+            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)
             type_df = type_df.rename(columns={"value": col})
 
             # ensure all other columns are overwritten
@@ -233,4 +246,4 @@ class RunMetaEntryRepository(
     @guard("edit")
     def bulk_delete(self, df: DataFrame[RemoveRunMetaEntryFrameSchema]) -> None:
         self.check_df_access(df)
-        return super().bulk_delete(df)
+        super().bulk_delete(df)

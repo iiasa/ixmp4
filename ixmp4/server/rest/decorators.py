@@ -1,6 +1,7 @@
-def autodoc(f):
+from collections.abc import Callable
+from typing import Any
+
+
+def autodoc(f: Callable[..., Any]) -> None:
     funcname = f""":func:`{f.__module__}.{f.__qualname__}`\n\n"""
-    if f.__doc__ is not None:
-        f.__doc__ = funcname + f.__doc__
-    else:
-        f.__doc__ = funcname
+    f.__doc__ = funcname + f.__doc__ if f.__doc__ is not None else funcname

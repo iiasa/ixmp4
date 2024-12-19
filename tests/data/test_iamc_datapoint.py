@@ -34,10 +34,15 @@ filter_dataset = FilterIamcDataset()
         ({"scenario": {"name": "Scenario 2"}}, ("scenario", "__eq__", "Scenario 2")),
     ],
 )
-def test_filtering(platform: ixmp4.Platform, filter, exp_filter):
+def test_filtering(
+    platform: ixmp4.Platform,
+    filter: dict[str, int | list[int] | dict[str, str | list[str]]],
+    exp_filter: tuple[str, str, int | str | list[int] | list[str]],
+) -> None:
     run1, run2 = filter_dataset.load_dataset(platform)
     run2.set_as_default()
-    obs = platform.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)
+    # Not sure why mypy complains here, maybe about covariance?
+    obs = platform.backend.iamc.datapoints.tabulate(join_parameters=True, **filter)  # type: ignore[arg-type]
 
     exp = filter_dataset.datapoints.copy()
     if exp_filter is not None:
@@ -61,8 +66,12 @@ def test_filtering(platform: ixmp4.Platform, filter, exp_filter):
         {"run": {"default_only": "test"}},
     ],
 )
-def test_invalid_filters(platform: ixmp4.Platform, filter, request):
+def test_invalid_filters(
+    platform: ixmp4.Platform,
+    filter: dict[str, dict[str, str | bool]],
+    request: pytest.FixtureRequest,
+) -> None:
     with pytest.raises(BadFilterArguments):
-        platform.backend.iamc.datapoints.tabulate(**filter)
+        platform.backend.iamc.datapoints.tabulate(**filter)  # type: ignore[arg-type]
     with pytest.raises(BadFilterArguments):
-        platform.backend.iamc.datapoints.list(**filter)
+        platform.backend.iamc.datapoints.list(**filter)  # type: ignore[arg-type]

@@ -1,23 +1,31 @@
-from typing import ClassVar, Dict
+from typing import Any, ClassVar
 
-registry: dict = dict()
+# TODO Import this from typing when dropping support for 3.10
+from typing_extensions import Self
+
+registry: dict[str, type["IxmpError"]] = dict()
 
 
 class ProgrammingError(Exception):
     pass
 
 
-ExcMeta: type = type(Exception)
-
-
-class RemoteExceptionMeta(ExcMeta):
-    def __new__(cls, name, bases, namespace, **kwargs):
+class RemoteExceptionMeta(type):
+    def __new__(
+        cls,
+        name: str,
+        bases: tuple[type, ...],
+        namespace: dict[str, Any],
+        **kwargs: Any,
+    ) -> type["IxmpError"]:
         http_error_name = namespace.get("http_error_name", None)
         if http_error_name is not None:
             try:
                 return registry[http_error_name]
             except KeyError:
-                registry[http_error_name] = super().__new__(
+                # NOTE Since this is a meta class, super().__new__() won't ever return
+                # this type, but the IxmpError instead
+                registry[http_error_name] = super().__new__(  # type: ignore[assignment]
                     cls, name, bases, namespace, **kwargs
                 )
                 return registry[http_error_name]
@@ -29,14 +37,14 @@ class IxmpError(Exception, metaclass=RemoteExceptionMeta):
     _message: str = ""
     http_status_code: int = 500
     http_error_name: ClassVar[str] = "ixmp_error"
-    kwargs: Dict
+    kwargs: dict[str, Any]
 
     def __init__(
         self,
-        *args,
+        *args: str,
         message: str | None = None,
         status_code: int | None = None,
-        **kwargs,
+        **kwargs: Any,
     ) -> None:
         if len(args) > 0:
             self._message = args[0]
@@ -64,7 +72,7 @@ class IxmpError(Exception, metaclass=RemoteExceptionMeta):
         return message
 
     @classmethod
-    def from_dict(cls, dict_):
+    def from_dict(cls, dict_: dict[str, Any]) -> Self:
         return cls(message=dict_["message"], **dict_["kwargs"])
 
 

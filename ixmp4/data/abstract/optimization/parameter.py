@@ -1,6 +1,13 @@
-from typing import Any, Iterable, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
@@ -124,16 +131,13 @@ class ParameterRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Parameter]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Parameter]:
         r"""Lists Parameters by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Parameter. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.parameter.filter.OptimizationParameterFilter`.
 
         Returns
@@ -143,16 +147,13 @@ class ParameterRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Parameters by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Parameter. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.parameter.filter.OptimizationParameterFilter`.
 
         Returns

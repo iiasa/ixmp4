@@ -1,12 +1,13 @@
 import logging
-from typing import AsyncGenerator, Callable
+from collections.abc import AsyncGenerator, Callable
+from typing import Any
 
 import jwt
 from fastapi import Depends, Header, Path
 
 from ixmp4.conf import settings
 from ixmp4.conf.auth import SelfSignedAuth
-from ixmp4.conf.manager import ManagerConfig
+from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
 from ixmp4.conf.user import User, anonymous_user, local_user
 from ixmp4.core.exceptions import Forbidden, InvalidToken, PlatformNotFound
 from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -17,7 +18,9 @@ manager = ManagerConfig(
 )
 
 
-async def validate_token(authorization: str = Header(None)) -> dict | None:
+async def validate_token(
+    authorization: str | None = Header(None),
+) -> dict[str, Any] | None:
     """Validates a JSON Web Token with the secret supplied in the
     `IXMP4_SECRET_HS256` environment variable."""
 
@@ -26,19 +29,23 @@ async def validate_token(authorization: str = Header(None)) -> dict | None:
 
     encoded_jwt = authorization.split(" ")[1]
     try:
-        return jwt.decode(
+        # jwt.decode just returns Any, so this is already assuming
+        decoded_jwt: dict[str, Any] = jwt.decode(
             encoded_jwt, settings.secret_hs256, leeway=300, algorithms=["HS256"]
         )
+        return decoded_jwt
     except jwt.InvalidTokenError as e:
         raise InvalidToken("The supplied token is expired or invalid.") from e
 
 
-async def do_not_validate_token(authorization: str = Header(None)) -> dict | None:
+async def do_not_validate_token(
+    authorization: str = Header(None),
+) -> dict[str, dict[str, Any]] | None:
     """Override dependency used for skipping authentication while testing."""
     return {"user": local_user.model_dump()}
 
 
-async def get_user(token: dict | None = Depends(validate_token)) -> User:
+async def get_user(token: dict[str, Any] | None = Depends(validate_token)) -> User:
     """Returns a user object for permission checks."""
     if token is None:
         return anonymous_user
@@ -52,7 +59,7 @@ async def get_user(token: dict | None = Depends(validate_token)) -> User:
     return User(**user_dict)
 
 
-async def get_version():
+async def get_version() -> str:
     from ixmp4 import __version__
 
     return __version__
@@ -63,7 +70,8 @@ async def get_managed_backend(
 ) -> AsyncGenerator[SqlAlchemyBackend, None]:
     """Returns a platform backend for a platform name as a path parameter.
     Also checks user access permissions if in managed mode."""
-    info = manager.get_platform(platform, jti=manager.auth.get_user().jti)
+    jti = manager.auth.get_user().jti if manager.auth else None
+    info = manager.get_platform(platform, jti=jti)
 
     if info.dsn.startswith("http"):
         raise PlatformNotFound(f"Platform '{platform}' was not found.")
@@ -93,13 +101,13 @@ async def get_toml_backend(
         backend.close()
 
 
-if settings.managed:
-    get_backend = get_managed_backend
-else:
-    get_backend = get_toml_backend
+get_backend = get_managed_backend if settings.managed else get_toml_backend
 
 
-def get_test_backend_dependency(backend, auth_params) -> Callable:
+def get_test_backend_dependency(
+    backend: SqlAlchemyBackend,
+    auth_params: tuple[User, ManagerConfig, ManagerPlatformInfo],
+) -> Callable[[str, User], AsyncGenerator[SqlAlchemyBackend, None]]:
     async def get_memory_backend(
         platform: str = Path(), user: User = Depends(get_user)
     ) -> AsyncGenerator[SqlAlchemyBackend, None]:

@@ -1,4 +1,5 @@
 import re
+from typing import Any, TypeVar
 
 import pandas as pd
 
@@ -17,7 +18,7 @@ class AuthorizationContext(object):
         self.manager = manager
         self.platform = platform
 
-    def tabulate_permissions(self):
+    def tabulate_permissions(self) -> pd.DataFrame:
         df = self.manager.fetch_user_permissions(
             self.user, self.platform, jti=self.user.jti
         )
@@ -38,7 +39,9 @@ class AuthorizationContext(object):
         df["like"] = df["model"].apply(convert_to_like)
         return df
 
-    def apply(self, access_type: str, exc: db.sql.Select) -> db.sql.Select:
+    ApplyType = TypeVar("ApplyType", bound=db.sql.Select[tuple[Any]])
+
+    def apply(self, access_type: str, exc: ApplyType) -> ApplyType:
         if self.is_managed:
             return exc
         if self.user.is_superuser:
@@ -47,7 +50,7 @@ class AuthorizationContext(object):
         if utils.is_joined(exc, Model):
             perms = self.tabulate_permissions()
             if perms.empty:
-                return exc.where(False)  # type: ignore
+                return exc.where(db.false())
             if access_type == "edit":
                 perms = perms.where(perms["access_type"] == "EDIT").dropna()
             # `*` is used as wildcard in permission logic, replaced by sql-wildcard `%`

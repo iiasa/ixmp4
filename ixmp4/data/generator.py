@@ -1,8 +1,9 @@
 import random
 import sys
+from collections.abc import Generator, Iterator
 from datetime import datetime, timedelta
 from itertools import cycle
-from typing import Generator
+from typing import Any
 
 import numpy as np
 import pandas as pd
@@ -37,11 +38,11 @@ class MockDataGenerator(object):
         self.num_units = num_units
         self.num_datapoints = num_datapoints
 
-    def yield_model_names(self):
+    def yield_model_names(self) -> Generator[str, Any, None]:
         for i in range(self.num_models):
             yield f"Model {i}"
 
-    def yield_runs(self, model_names: Generator[str, None, None]):
+    def yield_runs(self, model_names: Iterator[str]) -> Generator[Run, Any, None]:
         scen_per_model = self.num_runs // self.num_models
         if scen_per_model == 0:
             scen_per_model = 1
@@ -58,7 +59,7 @@ class MockDataGenerator(object):
                 model_name = next(model_names)
                 scenario_index = 0
 
-    def yield_regions(self):
+    def yield_regions(self) -> Generator[Region, Any, None]:
         for i in range(self.num_regions):
             name = f"Region {i}"
             try:
@@ -66,7 +67,7 @@ class MockDataGenerator(object):
             except Region.NotUnique:
                 yield self.platform.regions.get(name)
 
-    def yield_units(self):
+    def yield_units(self) -> Generator[Unit, Any, None]:
         for i in range(self.num_units):
             name = f"Unit {i}"
             try:
@@ -74,17 +75,17 @@ class MockDataGenerator(object):
             except Unit.NotUnique:
                 yield self.platform.units.get(name)
 
-    def yield_variable_names(self):
+    def yield_variable_names(self) -> Generator[str, Any, None]:
         for i in range(self.num_variables):
             yield f"Variable {i}"
 
     def yield_datapoints(
         self,
-        runs: Generator[Run, None, None],
-        variable_names: Generator[str, None, None],
-        units: Generator[Unit, None, None],
-        regions: Generator[Region, None, None],
-    ):
+        runs: Iterator[Run],
+        variable_names: Iterator[str],
+        units: Iterator[Unit],
+        regions: Iterator[Region],
+    ) -> Generator[pd.DataFrame, Any, None]:
         dp_count = 0
         for run in runs:
             region_name = next(regions).name
@@ -110,7 +111,9 @@ class MockDataGenerator(object):
             if self.num_datapoints == dp_count:
                 break
 
-    def get_datapoints(self, type: DataPoint.Type, max: int = sys.maxsize):
+    def get_datapoints(
+        self, type: DataPoint.Type, max: int = sys.maxsize
+    ) -> pd.DataFrame:
         df = pd.DataFrame(
             columns=[
                 "region",
@@ -153,7 +156,7 @@ class MockDataGenerator(object):
         df["value"] = values
         return df
 
-    def generate(self):
+    def generate(self) -> None:
         model_names = cycle([n for n in self.yield_model_names()])
         runs = cycle([r for r in self.yield_runs(model_names=model_names)])
         regions = cycle([r for r in self.yield_regions()])

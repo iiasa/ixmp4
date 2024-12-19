@@ -1,4 +1,11 @@
-from typing import Any, Iterable
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 import pandas as pd
 
@@ -22,16 +29,16 @@ class VariableRepository(
 
     UsageError = OptimizationItemUsageError
 
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self.docs = OptimizationVariableDocsRepository(*args, **kwargs)
-        self.columns = ColumnRepository(*args, **kwargs)
+    def __init__(self, *args: "SqlAlchemyBackend") -> None:
+        super().__init__(*args)
+        self.docs = OptimizationVariableDocsRepository(*args)
+        self.columns = ColumnRepository(*args)
 
         from .filter import OptimizationVariableFilter
 
         self.filter_class = OptimizationVariableFilter
 
-    def _add_column(
+    def _add_column(  # type: ignore[no-untyped-def]
         self,
         run_id: int,
         variable_id: int,
@@ -71,11 +78,7 @@ class VariableRepository(
             **kwargs,
         )
 
-    def add(
-        self,
-        run_id: int,
-        name: str,
-    ) -> Variable:
+    def add(self, run_id: int, name: str) -> Variable:
         variable = Variable(name=name, run__id=run_id)
         variable.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(variable)
@@ -84,6 +87,7 @@ class VariableRepository(
 
     @guard("view")
     def get(self, run_id: int, name: str) -> Variable:
+        # TODO by avoiding super().select, don't we also miss out on filters and auth?
         exc = db.select(Variable).where(
             (Variable.name == name) & (Variable.run__id == run_id)
         )
@@ -106,13 +110,9 @@ class VariableRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: str | list[str] | None = None,
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
-        **kwargs,
     ) -> Variable:
-        # Convert to list to avoid enumerate() splitting strings to letters
-        if isinstance(constrained_to_indexsets, str):
-            constrained_to_indexsets = list(constrained_to_indexsets)
         if column_names:
             # TODO If this is removed, need to check above that constrained_to_indexsets
             #  is not None
@@ -140,11 +140,7 @@ class VariableRepository(
                     "The given `column_names` are not unique!"
                 )
 
-        variable = super().create(
-            run_id=run_id,
-            name=name,
-            **kwargs,
-        )
+        variable = super().create(run_id=run_id, name=name)
         if constrained_to_indexsets:
             for i, name in enumerate(constrained_to_indexsets):
                 self._add_column(
@@ -157,12 +153,12 @@ class VariableRepository(
         return variable
 
     @guard("view")
-    def list(self, *args, **kwargs) -> Iterable[Variable]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Variable]:
+        return super().list(**kwargs)
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
+    def tabulate(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> pd.DataFrame:
+        return super().tabulate(**kwargs)
 
     @guard("edit")
     def add_data(self, variable_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -186,7 +182,7 @@ class VariableRepository(
             existing_data.set_index(index_list, inplace=True)
         variable.data = (
             data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")
+        ).to_dict(orient="list")  # type: ignore[assignment]
 
         self.session.commit()
 

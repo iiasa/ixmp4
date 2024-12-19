@@ -1,20 +1,21 @@
-from ixmp4.data import abstract
+from typing import Any
+
 from ixmp4.data.auth.decorators import guard
 
 from .. import base
-from ..docs import BaseDocsRepository, docs_model
+from ..docs import AbstractDocs, BaseDocsRepository, docs_model
 from .model import Unit
 
 UnitDocs = docs_model(Unit)
 
 
 class UnitDocsRepository(
-    BaseDocsRepository,
-    base.BaseRepository,
+    BaseDocsRepository[Any],
+    base.BaseRepository[Unit],
 ):
     model_class = UnitDocs
     dimension_model_class = Unit
 
     @guard("view")
-    def list(self, *, dimension_id: int | None = None) -> list[abstract.Docs]:
+    def list(self, *, dimension_id: int | None = None) -> list[AbstractDocs]:
         return super().list(dimension_id=dimension_id)

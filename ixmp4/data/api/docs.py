@@ -1,4 +1,6 @@
-from typing import ClassVar, Type
+from typing import ClassVar
+
+import pandas as pd
 
 from ixmp4.data import abstract
 
@@ -22,7 +24,7 @@ class DocsRepository(
     base.Enumerator[Docs],
     abstract.DocsRepository,
 ):
-    model_class: Type[Docs]
+    model_class: type[Docs]
     enumeration_method = "GET"
 
     def get(self, dimension_id: int) -> Docs:
@@ -37,6 +39,11 @@ class DocsRepository(
             },
         )
         return Docs(**res)
+
+    # NOTE This is not used anywhere, but without it, mypy complains that the base
+    # definitions of enumerate() are incompatible
+    def enumerate(self, dimension_id: int | None = None) -> list[Docs] | pd.DataFrame:
+        return super().enumerate(dimension_id=dimension_id)
 
     def list(self, *, dimension_id: int | None = None) -> list[Docs]:
         return super()._list(params={"dimension_id": dimension_id})

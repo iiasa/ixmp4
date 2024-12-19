@@ -8,12 +8,14 @@ import ixmp4
 EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
 
 
-def test_run_meta(platform: ixmp4.Platform):
+def test_run_meta(platform: ixmp4.Platform) -> None:
     run1 = platform.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
 
     # set and update different types of meta indicators
-    run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
+    # NOTE mypy doesn't support setters taking a different type than their property
+    # https://github.com/python/mypy/issues/3004
+    run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
     run1.meta["mfloat"] = -1.9
 
     run2 = platform.runs.get("Model 1", "Scenario 1")
@@ -34,7 +36,7 @@ def test_run_meta(platform: ixmp4.Platform):
     pdt.assert_frame_equal(platform.meta.tabulate(run_id=1), exp)
 
     # remove all meta indicators and set a new indicator
-    run1.meta = {"mnew": "bar"}
+    run1.meta = {"mnew": "bar"}  # type: ignore[assignment]
 
     run2 = platform.runs.get("Model 1", "Scenario 1")
 
@@ -60,8 +62,8 @@ def test_run_meta(platform: ixmp4.Platform):
     pdt.assert_frame_equal(platform.meta.tabulate(run_id=1), exp, check_dtype=False)
 
     run2 = platform.runs.create("Model 2", "Scenario 2")
-    run1.meta = {"mstr": "baz"}
-    run2.meta = {"mfloat": 3.1415926535897}
+    run1.meta = {"mstr": "baz"}  # type: ignore[assignment]
+    run2.meta = {"mfloat": 3.1415926535897}  # type: ignore[assignment]
 
     # test default_only run filter
     exp = pd.DataFrame(
@@ -94,7 +96,7 @@ def test_run_meta(platform: ixmp4.Platform):
     )
 
     # test filter by key
-    run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
+    run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}  # type: ignore[assignment]
     exp = pd.DataFrame(
         [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
     )
@@ -109,18 +111,22 @@ def test_run_meta(platform: ixmp4.Platform):
     ],
 )
 def test_run_meta_numpy(
-    platform: ixmp4.Platform, npvalue1, pyvalue1, npvalue2, pyvalue2
-):
+    platform: ixmp4.Platform,
+    npvalue1: np.int64 | np.float64,
+    pyvalue1: int | float,
+    npvalue2: np.int64 | np.float64,
+    pyvalue2: int | float,
+) -> None:
     """Test that numpy types are cast to simple types"""
     run1 = platform.runs.create("Model", "Scenario")
     run1.set_as_default()
 
     # set multiple meta indicators of same type ("value"-column of numpy-type)
-    run1.meta = {"key": npvalue1, "other key": npvalue1}
+    run1.meta = {"key": npvalue1, "other key": npvalue1}  # type: ignore[assignment]
     assert run1.meta["key"] == pyvalue1
 
     # set meta indicators of different types ("value"-column of type `object`)
-    run1.meta = {"key": npvalue1, "other key": "some value"}
+    run1.meta = {"key": npvalue1, "other key": "some value"}  # type: ignore[assignment]
     assert run1.meta["key"] == pyvalue1
 
     # set meta via setter
@@ -133,13 +139,13 @@ def test_run_meta_numpy(
 
 
 @pytest.mark.parametrize("nonevalue", (None, np.nan))
-def test_run_meta_none(platform, nonevalue):
+def test_run_meta_none(platform: ixmp4.Platform, nonevalue: float | None) -> None:
     """Test that None-values are handled correctly"""
     run1 = platform.runs.create("Model", "Scenario")
     run1.set_as_default()
 
     # set multiple indicators where one value is None
-    run1.meta = {"mint": 13, "mnone": nonevalue}
+    run1.meta = {"mint": 13, "mnone": nonevalue}  # type: ignore[assignment]
     assert run1.meta["mint"] == 13
     with pytest.raises(KeyError, match="'mnone'"):
         run1.meta["mnone"]
@@ -154,7 +160,7 @@ def test_run_meta_none(platform, nonevalue):
     assert not dict(platform.runs.get("Model", "Scenario").meta)
 
 
-def test_platform_meta_empty(platform: ixmp4.Platform):
+def test_platform_meta_empty(platform: ixmp4.Platform) -> None:
     """Test that an empty dataframe is returned if there are no scenarios"""
     exp = pd.DataFrame([], columns=["model", "scenario", "version", "key", "value"])
     pdt.assert_frame_equal(platform.meta.tabulate(), exp)
