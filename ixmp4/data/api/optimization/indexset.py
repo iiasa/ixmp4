@@ -66,12 +66,10 @@ class IndexSetRepository(
         return super()._list(json=json)
 
     def tabulate(
-        self,
-        include_data: bool = False,
-        **kwargs: Unpack[abstract.optimization.EnumerateKwargs],
+        self, **kwargs: Unpack[abstract.optimization.EnumerateKwargs]
     ) -> pd.DataFrame:
         json = cast(abstract.annotations.OptimizationFilterAlias, kwargs)
-        return super()._tabulate(json=json, params={"include_data": include_data})
+        return super()._tabulate(json=json)
 
     def add_data(
         self,

@@ -105,16 +105,11 @@ class IndexSetRepository(
         """
         ...
 
-    def tabulate(
-        self, *, include_data: bool = False, **kwargs: Unpack["EnumerateKwargs"]
-    ) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
-        include_data : bool, optional
-            Whether to load all IndexSet data, which reduces loading speed. Defaults to
-            `False`.
         \*\*kwargs: any
             Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
