@@ -79,11 +79,7 @@ class EquationRepository(
             **kwargs,
         )
 
-    def add(
-        self,
-        run_id: int,
-        name: str,
-    ) -> Equation:
+    def add(self, run_id: int, name: str) -> Equation:
         equation = Equation(name=name, run__id=run_id)
         equation.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(equation)

@@ -95,5 +95,4 @@ class IndexSetRepository(
             Literal["float", "int", "str"], type(_data[0]).__name__
         )
 
-        self.session.add(indexset)
         self.session.commit()
