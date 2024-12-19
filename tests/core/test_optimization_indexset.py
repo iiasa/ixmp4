@@ -9,7 +9,7 @@ from ixmp4.core.exceptions import OptimizationDataValidationError
 from ..utils import create_indexsets_for_run
 
 
-def df_from_list(indexsets: list[IndexSet], include_data: bool = False) -> pd.DataFrame:
+def df_from_list(indexsets: list[IndexSet]) -> pd.DataFrame:
     result = pd.DataFrame(
         # Order is important here to avoid utils.assert_unordered_equality,
         # which doesn't like lists
@@ -31,19 +31,14 @@ def df_from_list(indexsets: list[IndexSet], include_data: bool = False) -> pd.Da
             "created_by",
         ],
     )
-    if include_data:
-        result.insert(
-            loc=0, column="data", value=[indexset.data for indexset in indexsets]
-        )
-    else:
-        result.insert(
-            loc=0,
-            column="data_type",
-            value=[
-                type(indexset.data[0]).__name__ if indexset.data != [] else None
-                for indexset in indexsets
-            ],
-        )
+    result.insert(
+        loc=0,
+        column="data_type",
+        value=[
+            type(indexset.data[0]).__name__ if indexset.data != [] else None
+            for indexset in indexsets
+        ],
+    )
     return result
 
 
@@ -142,15 +137,6 @@ class TestCoreIndexset:
         expected = df_from_list(indexsets=[indexset_2])
         result = run.optimization.indexsets.tabulate(name="Indexset 2")
         pdt.assert_frame_equal(expected, result)
-
-        # Test tabulating including the data
-        expected = df_from_list(indexsets=[indexset_2], include_data=True)
-        pdt.assert_frame_equal(
-            expected,
-            run.optimization.indexsets.tabulate(
-                name=indexset_2.name, include_data=True
-            ),
-        )
 
     def test_indexset_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
