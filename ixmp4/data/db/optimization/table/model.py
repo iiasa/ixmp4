@@ -81,23 +81,7 @@ class Table(base.BaseModel):
                 dict[str, list[float] | list[int] | list[str]],
                 pd.DataFrame.from_records(
                     [
-                        {
-                            "Column 0": td.value_0,
-                            "Column 1": td.value_1,
-                            "Column 2": td.value_2,
-                            "Column 3": td.value_3,
-                            "Column 4": td.value_4,
-                            "Column 5": td.value_5,
-                            "Column 6": td.value_6,
-                            "Column 7": td.value_7,
-                            "Column 8": td.value_8,
-                            "Column 9": td.value_9,
-                            "Column 10": td.value_10,
-                            "Column 11": td.value_11,
-                            "Column 12": td.value_12,
-                            "Column 13": td.value_13,
-                            "Column 14": td.value_14,
-                        }
+                        {f"Column {i}": getattr(td, f"value_{i}") for i in range(15)}
                         for td in self._data
                     ]
                 )
