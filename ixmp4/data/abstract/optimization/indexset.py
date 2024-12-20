@@ -66,7 +66,6 @@ class IndexSetRepository(
         :class:`ixmp4.data.abstract.IndexSet`:
             The created IndexSet.
         """
-        ...
 
     def get(self, run_id: int, name: str) -> IndexSet:
         """Retrieves an IndexSet.
@@ -89,7 +88,6 @@ class IndexSetRepository(
         :class:`ixmp4.data.abstract.IndexSet`:
             The retrieved IndexSet.
         """
-        ...
 
     def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> list[IndexSet]:
         r"""Lists IndexSets by specified criteria.
@@ -105,7 +103,6 @@ class IndexSetRepository(
         Iterable[:class:`ixmp4.data.abstract.IndexSet`]:
             List of IndexSets.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
@@ -127,7 +124,6 @@ class IndexSetRepository(
                 - created_at
                 - created_by
         """
-        ...
 
     def add_data(
         self,
@@ -148,4 +144,3 @@ class IndexSetRepository(
         None:
             Due to compatibility with ixmp.
         """
-        ...

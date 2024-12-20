@@ -88,7 +88,6 @@ class TableRepository(
         :class:`ixmp4.data.abstract.optimization.Table`:
             The created Table.
         """
-        ...
 
     def get(self, run_id: int, name: str) -> Table:
         """Retrieves a Table.
@@ -111,7 +110,6 @@ class TableRepository(
         :class:`ixmp4.data.abstract.optimization.Table`:
             The retrieved Table.
         """
-        ...
 
     def get_by_id(self, id: int) -> Table:
         """Retrieves a Table by its id.
@@ -131,7 +129,6 @@ class TableRepository(
         :class:`ixmp4.data.abstract.optimization.Table`:
             The retrieved Table.
         """
-        ...
 
     def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Table]:
         r"""Lists Tables by specified criteria.
@@ -147,7 +144,6 @@ class TableRepository(
         Iterable[:class:`ixmp4.data.abstract.optimization.Table`]:
             List of Tables.
         """
-        ...
 
     def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Tables by specified criteria.
@@ -169,7 +165,6 @@ class TableRepository(
                 - created_at
                 - created_by
         """
-        ...
 
     # TODO Once present, state how to check which IndexSets are linked and which values
     # they permit
@@ -202,4 +197,3 @@ class TableRepository(
         -------
         None
         """
-        ...

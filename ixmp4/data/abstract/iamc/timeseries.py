@@ -70,7 +70,6 @@ class TimeSeriesRepository(
         :class:`ixmp4.data.abstract.iamc.timeseries.TimeSeries`:
             The retrieved time series.
         """
-        ...
 
     # NOTE this seems unused, so I'm guessing at the parameters type
     def get(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
@@ -93,7 +92,6 @@ class TimeSeriesRepository(
         :class:`ixmp4.data.base.TimeSeries`:
             The retrieved time series.
         """
-        ...
 
     def get_by_id(self, id: int) -> ModelType:
         """Retrieves a time series by it's id.
@@ -113,7 +111,6 @@ class TimeSeriesRepository(
         :class:`ixmp4.data.base.TimeSeries`:
             The retrieved time series.
         """
-        ...
 
     def get_or_create(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
         """Tries to retrieve a time series and creates it if it was not found.
@@ -149,7 +146,6 @@ class TimeSeriesRepository(
         Iterable[:class:`ixmp4.data.base.TimeSeries`]:
             List of time series.
         """
-        ...
 
     def tabulate(
         self, *, join_parameters: bool | None = False, **kwargs: Unpack[EnumerateKwargs]
@@ -175,7 +171,6 @@ class TimeSeriesRepository(
                   Or:
                 - ... parameter value columns
         """
-        ...
 
     def bulk_upsert(
         self, df: pd.DataFrame, create_related: bool | None = False
@@ -200,4 +195,3 @@ class TimeSeriesRepository(
         create_related : bool
             Creates related database entries with value data supplied in `df`.
         """
-        ...

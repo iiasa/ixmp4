@@ -104,7 +104,6 @@ class DataPointRepository(
         Iterable[:class:`ixmp4.data.abstract.iamc.datapoint.DataPoint`]:
             List of data points.
         """
-        ...
 
     def tabulate(
         self,
@@ -142,7 +141,6 @@ class DataPointRepository(
                     if it contains data points of type `DATETIME`
                 - ... misc parameter columns if `join_parameters` is set to `True`
         """
-        ...
 
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         """Looks which data points in the supplied data frame already exists,
@@ -162,7 +160,6 @@ class DataPointRepository(
                 - step_datetime
                     if it contains data points of type `DATETIME`
         """
-        ...
 
     def bulk_delete(self, df: pd.DataFrame) -> None:
         """Deletes data points which match criteria in the supplied data frame.
@@ -180,4 +177,3 @@ class DataPointRepository(
                 - step_datetime
                     if it contains data points of type `DATETIME`
         """
-        ...
