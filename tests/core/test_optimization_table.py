@@ -18,7 +18,6 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
         [
             [
                 table.run_id,
-                table.data,
                 table.name,
                 table.id,
                 table.created_at,
@@ -28,7 +27,6 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
         ],
         columns=[
             "run__id",
-            "data",
             "name",
             "id",
             "created_at",
@@ -54,8 +52,8 @@ class TestCoreTable:
         assert table.id == 1
         assert table.name == "Table 1"
         assert table.data == {}
-        assert table.columns[0].name == indexset.name
-        assert table.constrained_to_indexsets == [indexset.name]
+        assert table.indexsets == [indexset.name]
+        assert table.column_names is None
 
         # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
@@ -77,7 +75,7 @@ class TestCoreTable:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert table_2.columns[0].name == "Column 1"
+        assert table_2.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -88,16 +86,6 @@ class TestCoreTable:
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        indexset_2.add(data=2024)
-        table_3 = run.optimization.tables.create(
-            "Table 5",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert table_3.columns[0].dtype == "object"
-        assert table_3.columns[1].dtype == "int64"
 
     def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -112,8 +100,7 @@ class TestCoreTable:
         assert table.id == 1
         assert table.name == "Table"
         assert table.data == {}
-        assert table.columns[0].name == indexset.name
-        assert table.constrained_to_indexsets == [indexset.name]
+        assert table.indexsets == [indexset.name]
 
         with pytest.raises(Table.NotFound):
             _ = run.optimization.tables.get(name="Table 2")
@@ -170,6 +157,7 @@ class TestCoreTable:
         table_2.add(data=test_data_2)
         assert table_2.data == test_data_2
 
+        # Test overwriting column names
         table_3 = run.optimization.tables.create(
             name="Table 3",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
@@ -195,21 +183,19 @@ class TestCoreTable:
             OptimizationDataValidationError,
             match="Trying to add data to unknown Columns!",
         ):
-            table_3.add({"Column 3": [1]})
+            table_3.add({"Column 1": ["not there"], "Column 2": [2], "Column 3": [1]})
 
         # Test that order is not important...
         table_4 = run.optimization.tables.create(
-            name="Table 4",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-            column_names=["Column 1", "Column 2"],
+            name="Table 4", constrained_to_indexsets=[indexset.name, indexset_2.name]
         )
-        test_data_4 = {"Column 2": [2], "Column 1": ["bar"]}
+        test_data_4 = {indexset_2.name: [2], indexset.name: ["bar"]}
         table_4.add(data=test_data_4)
         assert table_4.data == test_data_4
 
         # ...even for expanding
-        table_4.add(data={"Column 1": ["foo"], "Column 2": [1]})
-        assert table_4.data == {"Column 2": [2, 1], "Column 1": ["bar", "foo"]}
+        table_4.add(data={indexset.name: ["foo"], indexset_2.name: [1]})
+        assert table_4.data == {indexset_2.name: [2, 1], indexset.name: ["bar", "foo"]}
 
         # This doesn't seem to test a distinct case compared to the above
         with pytest.raises(
@@ -217,7 +203,11 @@ class TestCoreTable:
             match="Trying to add data to unknown Columns!",
         ):
             table_4.add(
-                data={"Column 1": ["bar"], "Column 2": [3], indexset.name: ["foo"]},
+                data={
+                    indexset.name: ["bar"],
+                    indexset_2.name: [3],
+                    "Indexset": ["foo"],
+                },
             )
 
         # Test various data types
@@ -234,9 +224,11 @@ class TestCoreTable:
         table_5.add(test_data_5)
         assert table_5.data == test_data_5
 
-        # This doesn't raise since the union of existing and new data is validated
-        table_5.add(data={})
-        assert table_5.data == test_data_5
+        # This raises since only the new data are validated
+        with pytest.raises(
+            OptimizationDataValidationError, match="Data is missing for some Columns!"
+        ):
+            table_5.add(data={})
 
     def test_list_tables(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
