@@ -2,6 +2,8 @@ import pandas as pd
 import pytest
 
 import ixmp4
+import ixmp4.data
+import ixmp4.data.abstract
 from ixmp4.core.exceptions import NoDefaultRunVersion
 
 from ..utils import assert_unordered_equality
@@ -54,6 +56,14 @@ class TestDataRun:
 
         run3 = platform.backend.runs.get_or_create("Model", "Scenario")
         assert run1.id == run3.id
+
+    def test_get_run_by_id(self, platform: ixmp4.Platform) -> None:
+        expected = platform.backend.runs.create("Model", "Scenario")
+        result = platform.backend.runs.get_by_id(id=expected.id)
+        assert expected.id == result.id
+
+        with pytest.raises(ixmp4.data.abstract.Run.NotFound):
+            _ = platform.backend.runs.get_by_id(id=expected.id + 1)
 
     def test_list_run(self, platform: ixmp4.Platform) -> None:
         run1 = platform.backend.runs.create("Model", "Scenario")
