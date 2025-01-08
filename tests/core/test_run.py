@@ -22,33 +22,47 @@ def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.Da
 
 
 def assert_cloned_run(original: Run, clone: Run, kept_solution: bool) -> None:
+    """Asserts that a Run and its clone contain the same data."""
+    # Assert IAMC data are equal
     pdt.assert_frame_equal(original.iamc.tabulate(), clone.iamc.tabulate())
+
+    # Assert indexset names and data are equal
     for original_indexset, cloned_indexset in zip(
         original.optimization.indexsets.list(), clone.optimization.indexsets.list()
     ):
         assert original_indexset.name == cloned_indexset.name
         assert original_indexset.data == cloned_indexset.data
+
+    # Assert scalar names and data are equal
     for original_scalar, cloned_scalar in zip(
         original.optimization.scalars.list(), clone.optimization.scalars.list()
     ):
         assert original_scalar.name == cloned_scalar.name
         assert original_scalar.value == cloned_scalar.value
         assert original_scalar.unit.name == cloned_scalar.unit.name
+
+    # Assert table names and data are equal
     for original_table, cloned_table in zip(
         original.optimization.tables.list(), clone.optimization.tables.list()
     ):
         assert original_table.name == cloned_table.name
         assert original_table.data == cloned_table.data
+
+    # Assert parameter names and data are equal
     for original_parameter, cloned_parameter in zip(
         original.optimization.parameters.list(), clone.optimization.parameters.list()
     ):
         assert original_parameter.name == cloned_parameter.name
         assert original_parameter.data == cloned_parameter.data
+
+    # Assert equation names are equal and the solution is either equal or empty
     for original_equation, cloned_equation in zip(
         original.optimization.equations.list(), clone.optimization.equations.list()
     ):
         assert original_equation.name == cloned_equation.name
         assert cloned_equation.data == (original_equation.data if kept_solution else {})
+
+    # Assert variable names are equal and the solution is either equal or empty
     for original_variable, cloned_variable in zip(
         original.optimization.variables.list(), clone.optimization.variables.list()
     ):
@@ -256,19 +270,27 @@ class TestCoreRun:
 
         # Prepare original run
         run = platform.runs.create("Model", "Scenario")
+        # Add IAMC data
         run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
+
+        # Create optimization items and add some data
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(["foo", "bar"])
+
         run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
+
         run.optimization.tables.create(
             "Table", constrained_to_indexsets=[indexset.name]
         ).add({"Indexset": ["bar"]})
+
         run.optimization.parameters.create(
             "Parameter", constrained_to_indexsets=[indexset.name]
         ).add(test_data)
+
         run.optimization.variables.create(
             "Variable", constrained_to_indexsets=[indexset.name]
         ).add(test_solution)
+
         run.optimization.equations.create(
             "Equation", constrained_to_indexsets=[indexset.name]
         ).add(test_solution)
