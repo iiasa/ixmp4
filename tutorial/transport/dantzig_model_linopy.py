@@ -5,8 +5,10 @@ from ixmp4.core import Parameter, Run
 
 
 def create_parameter(
-    parameter: Parameter, index: pd.Index | list[pd.Index], name: str
-) -> pd.Series:
+    parameter: Parameter,
+    index: "pd.Index[str]" | list["pd.Index[str]"],
+    name: str,
+) -> "pd.Series[float]":
     if isinstance(index, list):
         index = pd.MultiIndex.from_product(index)
 
@@ -16,8 +18,12 @@ def create_parameter(
 def create_dantzig_model(run: Run) -> linopy.Model:
     """Creates new linopy.Model for Dantzig's problem based on ixmp4.Run."""
     m = linopy.Model()
-    i = pd.Index(run.optimization.indexsets.get("i").elements, name="Canning Plants")
-    j = pd.Index(run.optimization.indexsets.get("j").elements, name="Markets")
+    i = pd.Index(
+        run.optimization.indexsets.get("i").data, name="Canning Plants"
+    ).astype("string")
+    j = pd.Index(run.optimization.indexsets.get("j").data, name="Markets").astype(
+        "string"
+    )
     a = create_parameter(
         parameter=run.optimization.parameters.get("a"),
         index=i,
@@ -71,7 +77,7 @@ def read_dantzig_solution(model: linopy.Model, run: Run) -> None:
     )
 
     # Handle shipment quantities
-    x_data: pd.DataFrame = model.solution.to_dataframe()
+    x_data = model.solution.to_dataframe()
     x_data.reset_index(inplace=True)
     x_data.rename(
         columns={
@@ -89,16 +95,16 @@ def read_dantzig_solution(model: linopy.Model, run: Run) -> None:
     # The following don't seem to be typed correctly by linopy
     # Add supply data
     supply_data = {
-        "i": run.optimization.indexsets.get("i").elements,
-        "levels": model.constraints["Observe supply limit at plant i"].data.rhs,  # type: ignore
-        "marginals": model.constraints["Observe supply limit at plant i"].data.dual,  # type: ignore
+        "i": run.optimization.indexsets.get("i").data,
+        "levels": model.constraints["Observe supply limit at plant i"].data.rhs,
+        "marginals": model.constraints["Observe supply limit at plant i"].data.dual,
     }
     run.optimization.equations.get("supply").add(data=supply_data)
 
     # Add demand data
     demand_data = {
-        "j": run.optimization.indexsets.get("j").elements,
-        "levels": model.constraints["Satisfy demand at market j"].data.rhs,  # type: ignore
-        "marginals": model.constraints["Satisfy demand at market j"].data.dual,  # type: ignore
+        "j": run.optimization.indexsets.get("j").data,
+        "levels": model.constraints["Satisfy demand at market j"].data.rhs,
+        "marginals": model.constraints["Satisfy demand at market j"].data.dual,
     }
     run.optimization.equations.get("demand").add(data=demand_data)
