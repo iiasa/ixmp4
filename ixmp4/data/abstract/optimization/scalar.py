@@ -1,11 +1,25 @@
-from typing import Iterable, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Protocol
+
+from ..annotations import HasUnitIdFilter
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs as BaseEnumerateKwargs
+
+    class EnumerateKwargs(BaseEnumerateKwargs, HasUnitIdFilter, total=False): ...
+
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from ..unit import Unit
+from .base import BackendBaseRepository
 
 
 class Scalar(base.BaseModel, Protocol):
@@ -17,7 +31,7 @@ class Scalar(base.BaseModel, Protocol):
     """Value of the Scalar."""
     unit__id: types.Integer
     "Foreign unique integer id of a unit."
-    unit: types.Mapped
+    unit: types.Mapped[Unit]
     "Associated unit."
     run__id: types.Integer
     "Foreign unique integer id of a run."
@@ -32,6 +46,7 @@ class Scalar(base.BaseModel, Protocol):
 
 
 class ScalarRepository(
+    BackendBaseRepository[Scalar],
     base.Creator,
     base.Retriever,
     base.Enumerator,
@@ -39,20 +54,20 @@ class ScalarRepository(
 ):
     docs: DocsRepository
 
-    def create(self, name: str, value: float, unit_name: str, run_id: int) -> Scalar:
+    def create(self, run_id: int, name: str, value: float, unit_name: str) -> Scalar:
         """Creates a Scalar.
 
         Parameters
         ----------
+        run_id : int
+            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is
+            defined.
         name : str
             The name of the Scalar.
         value : float
             The value of the Scalar.
         unit_name : str
             The name of the :class:`ixmp4.data.abstract.Unit` for which this Scalar is
-            defined.
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Scalar is
             defined.
 
         Raises
@@ -132,16 +147,13 @@ class ScalarRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Scalar]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Scalar]:
         r"""Lists Scalars by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Scalar. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns
@@ -151,16 +163,13 @@ class ScalarRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Scalars by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of a Scalar. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.scalar.filter.OptimizationScalarFilter`.
 
         Returns

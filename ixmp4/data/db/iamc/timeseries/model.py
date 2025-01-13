@@ -1,4 +1,4 @@
-from typing import Mapping
+from collections.abc import Mapping
 
 from ixmp4 import db
 from ixmp4.data import types
@@ -29,7 +29,7 @@ class TimeSeries(BaseTimeSeries, base.BaseModel):
     )
 
     @property
-    def parameters(self) -> Mapping:
+    def parameters(self) -> Mapping[str, str]:
         return {
             "region": self.region.name,
             "unit": self.measurand.unit.name,

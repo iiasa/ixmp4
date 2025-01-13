@@ -1,12 +1,15 @@
 import logging
+from collections.abc import Generator
 from contextlib import contextmanager
 from functools import lru_cache
-from typing import Generator
 
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import NullPool, StaticPool
+
+# TODO Import this from typing when dropping support for Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
@@ -86,7 +89,7 @@ class SqlAlchemyBackend(Backend):
         self.make_repositories()
         self.event_handler = SqlaEventHandler(self)
 
-    def check_dsn(self, dsn: str):
+    def check_dsn(self, dsn: str) -> str:
         if dsn.startswith("postgresql://"):
             logger.debug(
                 "Replacing the platform dsn prefix to use the new `psycopg` driver."
@@ -94,11 +97,11 @@ class SqlAlchemyBackend(Backend):
             dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
         return dsn
 
-    def make_engine(self, dsn: str):
+    def make_engine(self, dsn: str) -> None:
         self.engine = cached_create_engine(dsn)
         self.session = self.Session(bind=self.engine)
 
-    def make_repositories(self):
+    def make_repositories(self) -> None:
         self.iamc.datapoints = DataPointRepository(self)
         self.iamc.timeseries = TimeSeriesRepository(self)
         self.iamc.variables = VariableRepository(self)
@@ -130,34 +133,29 @@ class SqlAlchemyBackend(Backend):
         yield self.auth_context
         self.auth_context = None
 
-    def _create_all(self):
+    def _create_all(self) -> None:
         BaseModel.metadata.create_all(bind=self.engine)
 
-    def _drop_all(self):
+    def _drop_all(self) -> None:
         BaseModel.metadata.drop_all(bind=self.engine, checkfirst=True)
 
-    def setup(self):
+    def setup(self) -> None:
         self._create_all()
 
-    def teardown(self):
+    def teardown(self) -> None:
         self.session.rollback()
         self._drop_all()
-        self.engine = None
-        self.session = None
 
-    def close(self):
+    def close(self) -> None:
         self.session.close()
         self.engine.dispose()
 
 
 class SqliteTestBackend(SqlAlchemyBackend):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(
-            *args,
-            **kwargs,
-        )
+    def __init__(self, *args: Unpack[tuple[PlatformInfo]]) -> None:
+        super().__init__(*args)
 
-    def make_engine(self, dsn: str):
+    def make_engine(self, dsn: str) -> None:
         self.engine = create_engine(
             dsn,
             connect_args={"check_same_thread": False},
@@ -167,12 +165,9 @@ class SqliteTestBackend(SqlAlchemyBackend):
 
 
 class PostgresTestBackend(SqlAlchemyBackend):
-    def __init__(self, *args, **kwargs) -> None:
-        super().__init__(
-            *args,
-            **kwargs,
-        )
+    def __init__(self, *args: Unpack[tuple[PlatformInfo]]) -> None:
+        super().__init__(*args)
 
-    def make_engine(self, dsn: str):
+    def make_engine(self, dsn: str) -> None:
         self.engine = create_engine(dsn, poolclass=NullPool)
         self.session = self.Session(bind=self.engine)

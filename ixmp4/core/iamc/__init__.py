@@ -1,3 +1,1 @@
-# flake8: noqa
-
-from .data import RunIamcData, PlatformIamcData
+from .data import PlatformIamcData, RunIamcData

@@ -30,21 +30,21 @@ class Model(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.models.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.models.docs.delete(self.id)
         else:
             self.backend.models.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.models.docs.delete(self.id)
         # TODO: silently failing
@@ -75,9 +75,8 @@ class ModelRepository(BaseFacade):
         return self.backend.models.tabulate(name=name)
 
     def _get_model_id(self, model: str) -> int | None:
-        if model is None:
-            return None
-        elif isinstance(model, str):
+        # NOTE leaving this check for users without mypy
+        if isinstance(model, str):
             obj = self.backend.models.get(model)
             return obj.id
         else:

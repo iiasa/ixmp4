@@ -1,9 +1,9 @@
 from fastapi import APIRouter, Body, Depends, Query
-from pydantic import StrictFloat, StrictInt, StrictStr
 
 from ixmp4.data import api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.optimization.indexset.filter import OptimizationIndexSetFilter
+from ixmp4.data.db.optimization.indexset.model import IndexSet
 
 from .. import deps
 from ..base import BaseModel, EnumerationOutput, Pagination
@@ -20,10 +20,8 @@ class IndexSetInput(BaseModel):
     name: str
 
 
-class ElementsInput(BaseModel):
-    elements: (
-        StrictFloat | StrictInt | StrictStr | list[StrictFloat | StrictInt | StrictStr]
-    )
+class DataInput(BaseModel):
+    data: float | int | str | list[float] | list[int] | list[str]
 
 
 @autodoc
@@ -33,7 +31,7 @@ def query(
     table: bool = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[IndexSet]:
     return EnumerationOutput(
         results=backend.optimization.indexsets.paginate(
             _filter=filter,
@@ -51,17 +49,17 @@ def query(
 def create(
     indexset: IndexSetInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> IndexSet:
     return backend.optimization.indexsets.create(**indexset.model_dump())
 
 
 @autodoc
 @router.patch("/{indexset_id}/")
-def add_elements(
+def add_data(
     indexset_id: int,
-    elements: ElementsInput,
+    data: DataInput,
     backend: Backend = Depends(deps.get_backend),
-):
-    backend.optimization.indexsets.add_elements(
-        indexset_id=indexset_id, **elements.model_dump()
+) -> None:
+    backend.optimization.indexsets.add_data(
+        indexset_id=indexset_id, **data.model_dump()
     )

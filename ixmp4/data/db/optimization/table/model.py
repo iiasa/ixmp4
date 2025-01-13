@@ -27,7 +27,7 @@ class Table(base.BaseModel):
     # TODO: should we pass self to validate_data to raise more specific errors?
 
     @validates("data")
-    def validate_data(self, key, data: dict[str, Any]):
+    def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
         return utils.validate_data(
             host=self,
             data=data,

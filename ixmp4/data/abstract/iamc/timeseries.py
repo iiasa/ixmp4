@@ -1,10 +1,24 @@
-from typing import Generic, Mapping, Protocol, TypeVar
+from collections.abc import Mapping
+from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
+
+if TYPE_CHECKING:
+    from ixmp4.data.db.timeseries import CreateKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
+from ..annotations import (
+    HasIdFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 
 
 class TimeSeries(base.BaseModel, Protocol):
@@ -12,7 +26,7 @@ class TimeSeries(base.BaseModel, Protocol):
 
     run__id: types.Integer
     "Unique run id."
-    parameters: Mapping
+    parameters: Mapping[str, Any]
     "A set of parameter values for the time series."
 
     def __str__(self) -> str:
@@ -20,6 +34,13 @@ class TimeSeries(base.BaseModel, Protocol):
 
 
 ModelType = TypeVar("ModelType", bound=TimeSeries)
+
+
+class EnumerateKwargs(HasIdFilter, total=False):
+    region: HasRegionFilter
+    unit: HasUnitFilter
+    variable: HasVariableFilter
+    run: HasRunFilter
 
 
 class TimeSeriesRepository(
@@ -30,35 +51,36 @@ class TimeSeriesRepository(
     Protocol,
     Generic[ModelType],
 ):
-    def create(self, run_id: int, parameters: Mapping) -> ModelType:
+    def create(self, **kwargs: Unpack["CreateKwargs"]) -> ModelType:
         """Retrieves a time series.
 
         Parameters
         ----------
-        run_id : int
+        run__id : int
             Unique run id.
-        parameters : Mapping
+        parameters : Mapping[str, Any]
             A set of parameter values for the time series.
 
         Raises
         ------
-        :class:`ixmp4.data.abstract.TimeSeries.NotUnique`.
+        :class:`ixmp4.data.abstract.iamc.timeseries.TimeSeries.NotUnique`.
 
         Returns
         -------
-        :class:`ixmp4.data.base.TimeSeries`:
+        :class:`ixmp4.data.abstract.iamc.timeseries.TimeSeries`:
             The retrieved time series.
         """
         ...
 
-    def get(self, run_id: int, parameters: Mapping) -> ModelType:
+    # NOTE this seems unused, so I'm guessing at the parameters type
+    def get(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
         """Retrieves a time series.
 
         Parameters
         ----------
         run_id : int
             Unique run id.
-        parameters : Mapping
+        parameters : Mapping[str, Any]
             A set of parameter values for the time series.
 
         Raises
@@ -93,14 +115,14 @@ class TimeSeriesRepository(
         """
         ...
 
-    def get_or_create(self, run_id: int, parameters: Mapping) -> ModelType:
+    def get_or_create(self, run_id: int, parameters: Mapping[str, Any]) -> ModelType:
         """Tries to retrieve a time series and creates it if it was not found.
 
         Parameters
         ----------
         run_id : int
             Unique run id.
-        parameters : Mapping
+        parameters : Mapping[str, Any]
             A set of parameter values for the time series.
 
         Returns
@@ -111,12 +133,9 @@ class TimeSeriesRepository(
         try:
             return self.get(run_id, parameters)
         except TimeSeries.NotFound:
-            return self.create(run_id, parameters)
+            return self.create(run__id=run_id, parameters=parameters)
 
-    def list(
-        self,
-        **kwargs,
-    ) -> list[ModelType]:
+    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[ModelType]:
         r"""Lists time series by specified criteria.
 
         Parameters
@@ -133,7 +152,7 @@ class TimeSeriesRepository(
         ...
 
     def tabulate(
-        self, *, join_parameters: bool | None = False, **kwargs
+        self, *, join_parameters: bool | None = False, **kwargs: Unpack[EnumerateKwargs]
     ) -> pd.DataFrame:
         r"""Tabulate time series by specified criteria.
 

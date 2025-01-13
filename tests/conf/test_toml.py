@@ -23,13 +23,13 @@ class HasPath(Protocol):
 
 
 class TomlTest:
-    def assert_toml_file(self, toml_config: HasPath, expected_toml: str):
+    def assert_toml_file(self, toml_config: HasPath, expected_toml: str) -> None:
         with toml_config.path.open() as f:
             assert f.read() == expected_toml
 
 
 class TestTomlPlatforms(TomlTest):
-    def test_add_platform(self, toml_config: TomlConfig):
+    def test_add_platform(self, toml_config: TomlConfig) -> None:
         toml_config.add_platform("test", "test://test/")
 
         expected_toml = '[test]\ndsn = "test://test/"\n'
@@ -42,11 +42,11 @@ class TestTomlPlatforms(TomlTest):
         )
         self.assert_toml_file(toml_config, expected_toml)
 
-    def test_platform_unique(self, toml_config: TomlConfig):
+    def test_platform_unique(self, toml_config: TomlConfig) -> None:
         with pytest.raises(PlatformNotUnique):
             toml_config.add_platform("test", "test://test/")
 
-    def test_remove_platform(self, toml_config: TomlConfig):
+    def test_remove_platform(self, toml_config: TomlConfig) -> None:
         toml_config.remove_platform("test")
         expected_toml = '[test2]\ndsn = "test2://test2/"\n'
 
@@ -59,7 +59,7 @@ class TestTomlPlatforms(TomlTest):
         with toml_config.path.open() as f:
             assert f.read() == expected_toml
 
-    def test_remove_missing_platform(self, toml_config: TomlConfig):
+    def test_remove_missing_platform(self, toml_config: TomlConfig) -> None:
         with pytest.raises(PlatformNotFound):
             toml_config.remove_platform("test")
 
@@ -73,16 +73,16 @@ def credentials() -> Credentials:
 
 
 class TestTomlCredentials(TomlTest):
-    def test_set_credentials(self, credentials):
+    def test_set_credentials(self, credentials: Credentials) -> None:
         credentials.set("test", "user", "password")
         expected_toml = '[test]\nusername = "user"\npassword = "password"\n'
         self.assert_toml_file(credentials, expected_toml)
 
-    def test_get_credentials(self, credentials):
+    def test_get_credentials(self, credentials: Credentials) -> None:
         ret = credentials.get("test")
         assert ret == ("user", "password")
 
-    def test_clear_credentials(self, credentials):
+    def test_clear_credentials(self, credentials: Credentials) -> None:
         credentials.clear("test")
         expected_toml = ""
         self.assert_toml_file(credentials, expected_toml)
@@ -90,7 +90,7 @@ class TestTomlCredentials(TomlTest):
         # clearing non-exsistent credentials is fine
         credentials.clear("test")
 
-    def test_add_credentials(self, credentials):
+    def test_add_credentials(self, credentials: Credentials) -> None:
         credentials.set("test", "user", "password")
         expected_toml = '[test]\nusername = "user"\npassword = "password"\n'
         self.assert_toml_file(credentials, expected_toml)

@@ -3,7 +3,7 @@ import pandas as pd
 from ixmp4.data.abstract import DataPoint as DataPointModel
 
 
-def substitute_type(df: pd.DataFrame, type: DataPointModel.Type | None = None):
+def substitute_type(df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
     if "type" not in df.columns:
         # `type` given explicitly
         if type is not None:

@@ -27,11 +27,11 @@ openpyxl = ">=3.0.9"
 pandas = ">=2.1.0"
 pandera = ">=0.17.0"
 pydantic = ">=2.3.0"
-python = ">=3.10, <3.13"
+python = ">=3.10, <3.14"
 python-dotenv = ">=1.0.1"
 typer = ">=0.9.0"
 toml = ">=0.10.2"
-psycopg = { extras = ["binary"], version = "^3.1.12" }
+psycopg = { extras = ["binary"], version = ">=3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
 sqlalchemy-history = "^2.1.4"
@@ -58,7 +58,7 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 build = ">=1.0.3"
-mypy = ">=1.0.0"
+mypy = ">=1.13.0"
 pandas-stubs = ">=2.0.0.230412"
 pre-commit = ">=3.3.3"
 ptvsd = ">=4.3.2"
@@ -83,20 +83,47 @@ build-backend = "poetry_dynamic_versioning.backend"
 requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
-exclude = [
-    '^example\.py$',
-    '^import\.py$',
-    '^tests\/',
-    '^doc\/',
-    '^ixmp4\/db\/migrations\/',
-]
+exclude = ['^ixmp4\/db\/migrations\/']
 disable_error_code = ['override']
-implicit_reexport = true
-plugins = ['sqlalchemy.ext.mypy.plugin']
+show_error_codes = true
+plugins = [
+    'numpy.typing.mypy_plugin',
+    'pandera.mypy',
+    'pydantic.mypy',
+    'sqlalchemy.ext.mypy.plugin',
+]
+# The following are equivalent to --strict mypy as seen in 
+# https://mypy.readthedocs.io/en/stable/existing_code.html#introduce-stricter-options
+warn_unused_configs = true
+warn_redundant_casts = true
+warn_unused_ignores = true
+strict_equality = true
+extra_checks = true
+check_untyped_defs = true
+disallow_subclassing_any = true
+disallow_untyped_decorators = true
+disallow_any_generics = true
+disallow_untyped_calls = true
+disallow_incomplete_defs = true
+disallow_untyped_defs = true
+#TODO enable this in a follow-up PR to satisfy --strict
+# no_implicit_reexport = true
+warn_return_any = true
+# These are bonus, it seems:
+disallow_any_unimported = true
+no_implicit_optional = true
+warn_unreachable = true
 
 [[tool.mypy.overrides]]
-module = ["pandas", "uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_history"]
+# Removing this introduces several errors
+module = ["uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_history"]
+# Without this, mypy is still fine, but pyproject.toml complains
 ignore_missing_imports = true
+
+[tool.pydantic-mypy]
+init_forbid_extra = true
+init_typed = true
+warn_required_dynamic_aliases = true
 
 [tool.ruff]
 exclude = [
@@ -123,11 +150,18 @@ ignore = ["B008"]
 # Ignore unused imports:
 "__init__.py" = ["F401"]
 "ixmp4/data/db/optimization/base.py" = ["F401"]
+"ixmp4/data/db/iamc/base.py" = ["F401"]
 # Ignore importing * and resulting possibly missing imports:
 "ixmp4/db/__init__.py" = ["F403", "F405"]
 
 [tool.ruff.lint.mccabe]
 max-complexity = 10
+
+[tool.coverage.report]
+exclude_also = [
+    # Imports only used by type checkers
+    "if TYPE_CHECKING:",
+]
 
 [tool.poetry-dynamic-versioning]
 enable = true

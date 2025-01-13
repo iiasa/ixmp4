@@ -3,6 +3,7 @@ This module holds a shared datastructure and interface for normalization
 between the database and api data models and repositories.
 """
 
+from .annotations import HasNameFilter
 from .base import (
     BaseMeta,
     BaseModel,
@@ -29,6 +30,7 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 from .meta import MetaValue, RunMetaEntry, RunMetaEntryRepository, StrictMetaValue
 from .model import Model, ModelRepository
 from .optimization import (
+    BackendBaseRepository,
     Equation,
     EquationRepository,
     IndexSet,

@@ -1,7 +1,11 @@
+from typing import Any
+
+import pandas as pd
 import pytest
 
 import ixmp4
 
+from .conftest import Profiled
 from .fixtures import BigIamcDataset
 
 big = BigIamcDataset()
@@ -34,18 +38,24 @@ big = BigIamcDataset()
     ],
 )
 def test_filter_datapoints_benchmark(
-    platform: ixmp4.Platform, profiled, benchmark, filters
-):
-    """Benchmarks a the filtration of `test_data_big`."""
+    platform: ixmp4.Platform,
+    profiled: Profiled,
+    # NOTE can be specified once https://github.com/ionelmc/pytest-benchmark/issues/212
+    # is closed
+    benchmark: Any,
+    filters: dict[str, dict[str, bool | str | list[str]]],
+) -> None:
+    """Benchmarks the filtration of `test_data_big`."""
 
     big.load_regions(platform)
     big.load_units(platform)
     big.load_runs(platform)
     big.load_datapoints(platform)
 
-    def run():
+    def run() -> pd.DataFrame:
         with profiled():
-            return platform.iamc.tabulate(**filters)
+            # Not sure why mypy complains here, maybe about covariance?
+            return platform.iamc.tabulate(**filters)  # type: ignore[arg-type]
 
     df = benchmark.pedantic(run, warmup_rounds=5, rounds=10)
     assert not df.empty

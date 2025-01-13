@@ -11,7 +11,7 @@ from ixmp4.core.exceptions import (
 from ..utils import create_indexsets_for_run
 
 
-def df_from_list(tables: list[Table]):
+def df_from_list(tables: list[Table]) -> pd.DataFrame:
     return pd.DataFrame(
         # Order is important here to avoid utils.assert_unordered_equality,
         # which doesn't like lists
@@ -38,12 +38,12 @@ def df_from_list(tables: list[Table]):
 
 
 class TestCoreTable:
-    def test_create_table(self, platform: ixmp4.Platform):
+    def test_create_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         table = run.optimization.tables.create(
@@ -90,16 +90,16 @@ class TestCoreTable:
             )
 
         # Test column.dtype is registered correctly
-        indexset_2.add(elements=2024)
+        indexset_2.add(data=2024)
         table_3 = run.optimization.tables.create(
             "Table 5",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
-        # If indexset doesn't have elements, a generic dtype is registered
+        # If indexset doesn't have data, a generic dtype is registered
         assert table_3.columns[0].dtype == "object"
         assert table_3.columns[1].dtype == "int64"
 
-    def test_get_table(self, platform: ixmp4.Platform):
+    def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
@@ -118,13 +118,13 @@ class TestCoreTable:
         with pytest.raises(Table.NotFound):
             _ = run.optimization.tables.get(name="Table 2")
 
-    def test_table_add_data(self, platform: ixmp4.Platform):
+    def test_table_add_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        indexset.add(elements=["foo", "bar", ""])
+        indexset.add(data=["foo", "bar", ""])
         indexset_2.add([1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -224,9 +224,9 @@ class TestCoreTable:
         indexset_3 = run.optimization.indexsets.create(name="Indexset 3")
         test_data_5 = {
             indexset.name: ["foo", "foo", "bar"],
-            indexset_3.name: [1, "2", 3.14],
+            indexset_3.name: [1.0, 2.2, 3.14],
         }
-        indexset_3.add(elements=[1, "2", 3.14])
+        indexset_3.add(data=[1.0, 2.2, 3.14])
         table_5 = run.optimization.tables.create(
             name="Table 5",
             constrained_to_indexsets=[indexset.name, indexset_3.name],
@@ -238,7 +238,7 @@ class TestCoreTable:
         table_5.add(data={})
         assert table_5.data == test_data_5
 
-    def test_list_tables(self, platform: ixmp4.Platform):
+    def test_list_tables(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)
         table = run.optimization.tables.create(
@@ -263,10 +263,10 @@ class TestCoreTable:
         list_id = [table.id for table in run.optimization.tables.list(name="Table")]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_table(self, platform: ixmp4.Platform):
+    def test_tabulate_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)  # type: ignore
+            IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         table = run.optimization.tables.create(
@@ -300,7 +300,7 @@ class TestCoreTable:
             run.optimization.tables.tabulate(),
         )
 
-    def test_table_docs(self, platform: ixmp4.Platform):
+    def test_table_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1

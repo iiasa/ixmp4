@@ -4,6 +4,9 @@ import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field
 
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
+
 from ixmp4.conf import settings
 from ixmp4.data import api
 
@@ -24,6 +27,11 @@ class Pagination(BaseModel):
     offset: int = Field(default=0, ge=0)
 
 
+class InitKwargs(TypedDict):
+    total: int
+    pagination: Pagination
+
+
 class EnumerationOutput(BaseModel, Generic[EnumeratedT]):
     pagination: Pagination
     total: int
@@ -31,12 +39,13 @@ class EnumerationOutput(BaseModel, Generic[EnumeratedT]):
 
     def __init__(
         __pydantic_self__,
-        *args,
         results: pd.DataFrame | api.DataFrame | list[EnumeratedT],
-        **kwargs,
-    ):
-        if isinstance(results, pd.DataFrame):
-            kwargs["results"] = api.DataFrame.model_validate(results)
-        else:
-            kwargs["results"] = results
-        super().__init__(**kwargs)
+        **kwargs: Unpack[InitKwargs],
+    ) -> None:
+        _kwargs = {"results": results, **kwargs}
+        _kwargs["results"] = (
+            api.DataFrame.model_validate(results)
+            if isinstance(results, pd.DataFrame)
+            else results
+        )
+        super().__init__(**_kwargs)

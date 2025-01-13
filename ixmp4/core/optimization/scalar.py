@@ -1,13 +1,20 @@
 from datetime import datetime
-from typing import ClassVar, Iterable
+from typing import TYPE_CHECKING, ClassVar
 
-import pandas as pd
+if TYPE_CHECKING:
+    from . import InitKwargs
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+from ixmp4.core.base import BaseModelFacade
 from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
+from ixmp4.data.abstract import Unit as UnitModel
+
+from .base import Lister, Retriever, Tabulator
 
 
 class Scalar(BaseModelFacade):
@@ -29,7 +36,7 @@ class Scalar(BaseModelFacade):
         return self._model.value
 
     @value.setter
-    def value(self, value: float):
+    def value(self, value: float) -> None:
         self._model.value = value
         self.backend.optimization.scalars.update(
             id=self._model.id,
@@ -38,21 +45,19 @@ class Scalar(BaseModelFacade):
         )
 
     @property
-    def unit(self):
+    def unit(self) -> UnitModel:
         """Associated unit."""
         return self._model.unit
 
     @unit.setter
-    def unit(self, unit: str | Unit):
-        if isinstance(unit, Unit):
-            unit = unit
-        else:
-            unit_model = self.backend.units.get(unit)
-            unit = Unit(_backend=self.backend, _model=unit_model)
+    def unit(self, value: str | Unit) -> None:
+        if isinstance(value, str):
+            unit_model = self.backend.units.get(value)
+            value = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
             id=self._model.id,
             value=self._model.value,
-            unit_id=unit.id,
+            unit_id=value.id,
         )
 
     @property
@@ -68,21 +73,21 @@ class Scalar(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.optimization.scalars.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.scalars.docs.delete(self.id)
         else:
             self.backend.optimization.scalars.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.optimization.scalars.docs.delete(self.id)
         # TODO: silently failing
@@ -93,12 +98,15 @@ class Scalar(BaseModelFacade):
         return f"<Scalar {self.id} name={self.name}>"
 
 
-class ScalarRepository(BaseFacade):
-    _run: Run
-
-    def __init__(self, _run: Run, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._run = _run
+class ScalarRepository(
+    Retriever[Scalar, ScalarModel],
+    Lister[Scalar, ScalarModel],
+    Tabulator[Scalar, ScalarModel],
+):
+    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+        super().__init__(_run=_run, **kwargs)
+        self._backend_repository = self.backend.optimization.scalars
+        self._model_type = Scalar
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
         if isinstance(unit, Unit):
@@ -121,22 +129,3 @@ class ScalarRepository(BaseFacade):
                 "run.optimization.scalars.update()?"
             ) from e
         return Scalar(_backend=self.backend, _model=model)
-
-    def get(self, name: str) -> Scalar:
-        model = self.backend.optimization.scalars.get(run_id=self._run.id, name=name)
-        return Scalar(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> Iterable[Scalar]:
-        scalars = self.backend.optimization.scalars.list(run_id=self._run.id, name=name)
-        return [
-            Scalar(
-                _backend=self.backend,
-                _model=i,
-            )
-            for i in scalars
-        ]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.scalars.tabulate(
-            run_id=self._run.id, name=name
-        )

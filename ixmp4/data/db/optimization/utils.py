@@ -12,14 +12,16 @@ def collect_indexsets_to_check(
     columns: list["Column"],
 ) -> dict[str, Any]:
     """Creates a {key:value} dict from linked Column.names and their
-    IndexSet.elements."""
+    IndexSet.data."""
     collection: dict[str, Any] = {}
     for column in columns:
-        collection[column.name] = column.indexset.elements
+        collection[column.name] = column.indexset.data
     return collection
 
 
-def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Column"]):
+def validate_data(
+    host: base.BaseModel, data: dict[str, Any], columns: list["Column"]
+) -> dict[str, Any]:
     data_frame: pd.DataFrame = pd.DataFrame.from_dict(data)
     # TODO for all of the following, we might want to create unique exceptions
     # Could me make both more specific by specifiying missing/extra columns?
@@ -60,4 +62,6 @@ def validate_data(host: base.BaseModel, data: dict[str, Any], columns: list["Col
             "and Columns it is constrained to!"
         )
 
-    return data_frame.to_dict(orient="list")
+    # we can assume the keys are always str
+    dict_data: dict[str, Any] = data_frame.to_dict(orient="list")  # type: ignore[assignment]
+    return dict_data

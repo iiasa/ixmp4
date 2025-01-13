@@ -7,7 +7,7 @@ from ixmp4.core import Scalar
 from ..utils import assert_unordered_equality
 
 
-def df_from_list(scalars: list[Scalar]):
+def df_from_list(scalars: list[Scalar]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
@@ -34,7 +34,7 @@ def df_from_list(scalars: list[Scalar]):
 
 
 class TestCoreScalar:
-    def test_create_scalar(self, platform: ixmp4.Platform):
+    def test_create_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create(
@@ -53,7 +53,8 @@ class TestCoreScalar:
             )
 
         with pytest.raises(TypeError):
-            _ = run.optimization.scalars.create("Scalar 2")  # type: ignore
+            # Testing a missing parameter on purpose
+            _ = run.optimization.scalars.create("Scalar 2")  # type: ignore[call-arg]
 
         scalar_2 = run.optimization.scalars.create("Scalar 2", value=20, unit=unit)
         assert scalar_1.id != scalar_2.id
@@ -61,7 +62,7 @@ class TestCoreScalar:
         scalar_3 = run.optimization.scalars.create("Scalar 3", value=1)
         assert scalar_3.unit.name == ""
 
-    def test_get_scalar(self, platform: ixmp4.Platform):
+    def test_get_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
         scalar = run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
@@ -74,7 +75,7 @@ class TestCoreScalar:
         with pytest.raises(Scalar.NotFound):
             _ = run.optimization.scalars.get("Foo")
 
-    def test_update_scalar(self, platform: ixmp4.Platform):
+    def test_update_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
         unit2 = platform.units.create("Test Unit 2")
@@ -86,7 +87,9 @@ class TestCoreScalar:
             _ = run.optimization.scalars.create("Scalar", value=20, unit=unit2.name)
 
         scalar.value = 30
-        scalar.unit = "Test Unit"
+        # NOTE mypy doesn't support setters taking a different type than their property
+        # https://github.com/python/mypy/issues/3004
+        scalar.unit = "Test Unit"  # type: ignore[assignment]
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
         result = run.optimization.scalars.get("Scalar")
@@ -94,9 +97,9 @@ class TestCoreScalar:
         assert scalar.id == result.id
         assert scalar.name == result.name
         assert scalar.value == result.value == 30
-        assert scalar.unit.id == result.unit.id == 1  # type: ignore
+        assert scalar.unit.id == result.unit.id == 1
 
-    def test_list_scalars(self, platform: ixmp4.Platform):
+    def test_list_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create(
@@ -119,7 +122,7 @@ class TestCoreScalar:
         ]
         assert not (set(expected_id) ^ set(list_id))
 
-    def test_tabulate_scalars(self, platform: ixmp4.Platform):
+    def test_tabulate_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
         scalar_1 = run.optimization.scalars.create("Scalar 1", value=1, unit=unit.name)
@@ -137,7 +140,7 @@ class TestCoreScalar:
         result = run.optimization.scalars.tabulate(name="Scalar 2")
         assert_unordered_equality(expected, result, check_dtype=False)
 
-    def test_scalar_docs(self, platform: ixmp4.Platform):
+    def test_scalar_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
         scalar = run.optimization.scalars.create("Scalar 1", value=4, unit=unit.name)

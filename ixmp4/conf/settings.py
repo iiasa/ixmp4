@@ -2,7 +2,7 @@ import json
 import logging
 import logging.config
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from httpx import ConnectError
 from pydantic import Field, HttpUrl, field_validator
@@ -25,10 +25,10 @@ class Settings(BaseSettings):
     mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
         "production"
     )
-    storage_directory: Path = Field("~/.local/share/ixmp4/")
+    storage_directory: Path = Field(Path("~/.local/share/ixmp4/"))
     secret_hs256: str = "default_secret_hs256"
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
-    manager_url: HttpUrl = Field("https://api.manager.ece.iiasa.ac.at/v1")
+    manager_url: HttpUrl = Field(HttpUrl("https://api.manager.ece.iiasa.ac.at/v1"))
     managed: bool = True
     max_page_size: int = 10_000
     default_page_size: int = 5_000
@@ -39,7 +39,8 @@ class Settings(BaseSettings):
     client_timeout: int = Field(30)
     model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
-    def __init__(self, *args, **kwargs) -> None:
+    # We don't pass any args or kwargs, so allow all to flow through
+    def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
         self.storage_directory.mkdir(parents=True, exist_ok=True)
@@ -52,50 +53,52 @@ class Settings(BaseSettings):
 
         self.configure_logging(self.mode)
 
-        self._credentials = None
-        self._toml = None
-        self._default_auth = None
-        self._manager = None
+        self._credentials: Credentials | None = None
+        self._toml: TomlConfig | None = None
+        self._default_auth: ManagerAuth | AnonymousAuth | None = None
+        self._manager: ManagerConfig | None = None
 
         logger.debug(f"Settings loaded: {self}")
 
     @property
-    def credentials(self):
+    def credentials(self) -> Credentials:
         if self._credentials is None:
             self.load_credentials()
-        return self._credentials
+        # For this and similar below, mypy doesn't realize that the attribute will not
+        # be None after the load() call
+        return self._credentials  # type: ignore[return-value]
 
     @property
-    def default_credentials(self):
+    def default_credentials(self) -> tuple[str, str] | None:
         try:
             return self.credentials.get("default")
         except KeyError:
-            pass
+            return None
 
     @property
-    def toml(self):
+    def toml(self) -> TomlConfig:
         if self._toml is None:
             self.load_toml_config()
-        return self._toml
+        return self._toml  # type: ignore[return-value]
 
     @property
-    def default_auth(self):
+    def default_auth(self) -> ManagerAuth | AnonymousAuth | None:
         if self._default_auth is None:
             self.get_auth()
         return self._default_auth
 
     @property
-    def manager(self):
+    def manager(self) -> ManagerConfig:
         if self._manager is None:
             self.load_manager_config()
-        return self._manager
+        return self._manager  # type: ignore[return-value]
 
-    def load_credentials(self):
+    def load_credentials(self) -> None:
         credentials_config = self.storage_directory / "credentials.toml"
         credentials_config.touch()
         self._credentials = Credentials(credentials_config)
 
-    def get_auth(self):
+    def get_auth(self) -> None:
         if self.default_credentials is not None:
             try:
                 self._default_auth = ManagerAuth(
@@ -112,12 +115,12 @@ class Settings(BaseSettings):
         else:
             self._default_auth = AnonymousAuth()
 
-    def load_manager_config(self):
+    def load_manager_config(self) -> None:
         self._manager = ManagerConfig(
             str(self.manager_url), self.default_auth, remote=True
         )
 
-    def load_toml_config(self):
+    def load_toml_config(self) -> None:
         if self.default_auth is not None:
             toml_user = self.default_auth.get_user()
             if not toml_user.is_authenticated:
@@ -130,14 +133,14 @@ class Settings(BaseSettings):
         self._toml = TomlConfig(toml_config, toml_user)
 
     @field_validator("storage_directory")
-    def expand_user(cls, v):
+    def expand_user(cls, v: Path) -> Path:
         # translate ~/asdf into /home/user/asdf
         return Path.expanduser(v)
 
-    def get_server_logconf(self):
+    def get_server_logconf(self) -> Path:
         return here / "./logging/server.json"
 
-    def configure_logging(self, config: str):
+    def configure_logging(self, config: str) -> None:
         self.access_file = str((self.log_dir / "access.log").absolute())
         self.debug_file = str((self.log_dir / "debug.log").absolute())
         self.error_file = str((self.log_dir / "error.log").absolute())
@@ -147,7 +150,7 @@ class Settings(BaseSettings):
             config_dict = json.load(file)
         logging.config.dictConfig(config_dict)
 
-    def check_credentials(self):
+    def check_credentials(self) -> None:
         if self.default_credentials is not None:
             username, password = self.default_credentials
             ManagerAuth(username, password, str(self.manager_url))

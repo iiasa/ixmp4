@@ -22,7 +22,7 @@ class DataPoint(base.BaseModel):
     updateable_columns = ["value"]
 
     @declared_attr
-    def time_series__id(cls):
+    def time_series__id(cls) -> db.MappedColumn[int]:
         return db.Column(
             db.Integer,
             db.ForeignKey("iamc_timeseries.id"),
@@ -50,5 +50,5 @@ class UniversalDataPoint(DataPoint):
     )
 
 
-def get_datapoint_model(session) -> type[DataPoint]:
+def get_datapoint_model(session: db.Session) -> type[DataPoint]:
     return UniversalDataPoint

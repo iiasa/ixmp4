@@ -1,13 +1,21 @@
 from datetime import datetime
-from typing import Any, ClassVar, Iterable
+from typing import TYPE_CHECKING, Any, ClassVar
+
+if TYPE_CHECKING:
+    from . import InitKwargs
 
 import pandas as pd
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
+
+from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import OptimizationVariable as VariableModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract.optimization import Column
+
+from .base import Lister, Retriever, Tabulator
 
 
 class Variable(BaseModelFacade):
@@ -48,12 +56,14 @@ class Variable(BaseModelFacade):
         ).data
 
     @property
-    def levels(self) -> list:
-        return self._model.data.get("levels", [])
+    def levels(self) -> list[float]:
+        levels: list[float] = self._model.data.get("levels", [])
+        return levels
 
     @property
-    def marginals(self) -> list:
-        return self._model.data.get("marginals", [])
+    def marginals(self) -> list[float]:
+        marginals: list[float] = self._model.data.get("marginals", [])
+        return marginals
 
     @property
     def constrained_to_indexsets(self) -> list[str]:
@@ -76,21 +86,21 @@ class Variable(BaseModelFacade):
         return self._model.created_by
 
     @property
-    def docs(self):
+    def docs(self) -> str | None:
         try:
             return self.backend.optimization.variables.docs.get(self.id).description
         except DocsModel.NotFound:
             return None
 
     @docs.setter
-    def docs(self, description):
+    def docs(self, description: str | None) -> None:
         if description is None:
             self.backend.optimization.variables.docs.delete(self.id)
         else:
             self.backend.optimization.variables.docs.set(self.id, description)
 
     @docs.deleter
-    def docs(self):
+    def docs(self) -> None:
         try:
             self.backend.optimization.variables.docs.delete(self.id)
         # TODO: silently failing
@@ -101,12 +111,15 @@ class Variable(BaseModelFacade):
         return f"<Variable {self.id} name={self.name}>"
 
 
-class VariableRepository(BaseFacade):
-    _run: Run
-
-    def __init__(self, _run: Run, *args, **kwargs) -> None:
-        super().__init__(*args, **kwargs)
-        self._run = _run
+class VariableRepository(
+    Retriever[Variable, VariableModel],
+    Lister[Variable, VariableModel],
+    Tabulator[Variable, VariableModel],
+):
+    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+        super().__init__(_run=_run, **kwargs)
+        self._backend_repository = self.backend.optimization.variables
+        self._model_type = Variable
 
     def create(
         self,
@@ -121,24 +134,3 @@ class VariableRepository(BaseFacade):
             column_names=column_names,
         )
         return Variable(_backend=self.backend, _model=model)
-
-    def get(self, name: str) -> Variable:
-        model = self.backend.optimization.variables.get(run_id=self._run.id, name=name)
-        return Variable(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> Iterable[Variable]:
-        variables = self.backend.optimization.variables.list(
-            run_id=self._run.id, name=name
-        )
-        return [
-            Variable(
-                _backend=self.backend,
-                _model=i,
-            )
-            for i in variables
-        ]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.optimization.variables.tabulate(
-            run_id=self._run.id, name=name
-        )

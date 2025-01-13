@@ -1,5 +1,5 @@
+from collections.abc import Generator
 from pathlib import Path
-from typing import Generator
 
 from ixmp4.conf import settings
 
@@ -31,7 +31,4 @@ def search_databases(name: str) -> str | None:
     """Returns a database URI if the desired database exists, otherwise `None`."""
 
     database_path = get_database_path(name)
-    if database_path.exists():
-        return get_dsn(database_path)
-    else:
-        return None
+    return get_dsn(database_path) if database_path.exists() else None

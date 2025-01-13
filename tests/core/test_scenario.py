@@ -1,3 +1,5 @@
+from collections.abc import Iterable
+
 import pandas as pd
 import pytest
 
@@ -7,13 +9,13 @@ from ixmp4.core import Scenario
 from ..utils import assert_unordered_equality
 
 
-def create_testcase_scenarios(platform):
+def create_testcase_scenarios(platform: ixmp4.Platform) -> tuple[Scenario, Scenario]:
     scenario = platform.scenarios.create("Scenario")
     scenario2 = platform.scenarios.create("Scenario 2")
     return scenario, scenario2
 
 
-def df_from_list(scenarios):
+def df_from_list(scenarios: Iterable[Scenario]) -> pd.DataFrame:
     return pd.DataFrame(
         [[s.id, s.name, s.created_at, s.created_by] for s in scenarios],
         columns=["id", "name", "created_at", "created_by"],
@@ -21,19 +23,19 @@ def df_from_list(scenarios):
 
 
 class TestCoreScenario:
-    def test_retrieve_scenario(self, platform: ixmp4.Platform):
+    def test_retrieve_scenario(self, platform: ixmp4.Platform) -> None:
         scenario1 = platform.scenarios.create("Scenario")
         scenario2 = platform.scenarios.get("Scenario")
 
         assert scenario1.id == scenario2.id
 
-    def test_scenario_unqiue(self, platform: ixmp4.Platform):
+    def test_scenario_unqiue(self, platform: ixmp4.Platform) -> None:
         platform.scenarios.create("Scenario")
 
         with pytest.raises(Scenario.NotUnique):
             platform.scenarios.create("Scenario")
 
-    def test_list_scenario(self, platform: ixmp4.Platform):
+    def test_list_scenario(self, platform: ixmp4.Platform) -> None:
         scenarios = create_testcase_scenarios(platform)
         scenario, _ = scenarios
 
@@ -45,7 +47,7 @@ class TestCoreScenario:
         b = [s.id for s in platform.scenarios.list(name="Scenario")]
         assert not (set(a) ^ set(b))
 
-    def test_tabulate_scenario(self, platform: ixmp4.Platform):
+    def test_tabulate_scenario(self, platform: ixmp4.Platform) -> None:
         scenarios = create_testcase_scenarios(platform)
         scenario, _ = scenarios
 
@@ -57,7 +59,7 @@ class TestCoreScenario:
         b = platform.scenarios.tabulate(name="Scenario")
         assert_unordered_equality(a, b, check_dtype=False)
 
-    def test_retrieve_docs(self, platform: ixmp4.Platform):
+    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
         platform.scenarios.create("Scenario")
         docs_scenario1 = platform.scenarios.set_docs(
             "Scenario", "Description of test Scenario"
@@ -74,7 +76,7 @@ class TestCoreScenario:
 
         assert platform.scenarios.get_docs("Scenario2") == scenario2.docs
 
-    def test_delete_docs(self, platform: ixmp4.Platform):
+    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
         scenario = platform.scenarios.create("Scenario")
         scenario.docs = "Description of test Scenario"
         scenario.docs = None
@@ -86,7 +88,8 @@ class TestCoreScenario:
 
         assert scenario.docs is None
 
-        scenario.docs = "Third description of test Scenario"
+        # Mypy doesn't recognize del properly, it seems
+        scenario.docs = "Third description of test Scenario"  # type: ignore[unreachable]
         platform.scenarios.delete_docs("Scenario")
 
         assert scenario.docs is None

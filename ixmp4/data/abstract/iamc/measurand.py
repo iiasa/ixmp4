@@ -1,4 +1,7 @@
-from typing import Protocol
+from typing import TYPE_CHECKING, Protocol
+
+if TYPE_CHECKING:
+    from .. import Unit, Variable
 
 import pandas as pd
 
@@ -12,12 +15,12 @@ class Measurand(base.BaseModel, Protocol):
 
     variable__id: types.Integer
     "Foreign unique integer id of a variable."
-    variable: types.Mapped
+    variable: types.Mapped["Variable"]
     "Associated variable."
 
     unit__id: types.Integer
     "Foreign unique integer id of a unit."
-    unit: types.Mapped
+    unit: types.Mapped["Unit"]
     "Associated unit."
 
     def __str__(self) -> str:
@@ -40,10 +43,6 @@ class MeasurandRepository(
         except Measurand.NotFound:
             return self.create(variable_name, unit__id)
 
-    def list(
-        self,
-    ) -> list[Measurand]: ...
+    def list(self) -> list[Measurand]: ...
 
-    def tabulate(
-        self,
-    ) -> pd.DataFrame: ...
+    def tabulate(self) -> pd.DataFrame: ...

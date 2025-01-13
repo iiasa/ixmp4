@@ -1,7 +1,9 @@
 from typing import ClassVar, TypeVar
 
-import pandas as pd
 from sqlalchemy.exc import NoResultFound
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.data import abstract, types
@@ -17,9 +19,9 @@ class AbstractDocs(base.BaseModel):
 
     __abstract__ = True
 
-    description: types.Mapped
+    description: types.Mapped[str]
 
-    dimension__id: types.Mapped
+    dimension__id: types.Mapped[int]
 
 
 def docs_model(model: type[base.BaseModel]) -> type[AbstractDocs]:
@@ -40,6 +42,10 @@ def docs_model(model: type[base.BaseModel]) -> type[AbstractDocs]:
 DocsType = TypeVar("DocsType", bound=AbstractDocs)
 
 
+class ListKwargs(TypedDict, total=False):
+    dimension_id: int | None
+
+
 class BaseDocsRepository(
     base.Creator[DocsType],
     base.Retriever[DocsType],
@@ -50,11 +56,22 @@ class BaseDocsRepository(
     dimension_model_class: ClassVar[type[base.BaseModel]]
 
     def select(
-        self, *, _exc: db.sql.Select | None = None, dimension_id: int | None = None
-    ) -> db.sql.Select:
+        self,
+        *,
+        _exc: db.sql.Select[tuple[DocsType]] | None = None,
+        dimension_id: int | None = None,
+    ) -> db.sql.Select[tuple[DocsType]]:
         if _exc is None:
             _exc = db.select(self.model_class)
 
+        if dimension_id is not None:
+            _exc = _exc.where(self.model_class.dimension__id == dimension_id)
+
+        return _exc
+
+    def select_for_count(
+        self, _exc: db.sql.Select[tuple[int]], dimension_id: int | None = None
+    ) -> db.sql.Select[tuple[int]]:
         if dimension_id is not None:
             _exc = _exc.where(self.model_class.dimension__id == dimension_id)
 
@@ -69,8 +86,7 @@ class BaseDocsRepository(
     def get(self, dimension_id: int) -> DocsType:
         exc = self.select(dimension_id=dimension_id)
         try:
-            docs = self.session.execute(exc).scalar_one()
-            return docs
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise self.model_class.NotFound
 
@@ -88,7 +104,7 @@ class BaseDocsRepository(
 
     @guard("edit")
     def delete(self, dimension_id: int) -> None:
-        exc: db.sql.Delete = db.delete(self.model_class).where(
+        exc = db.delete(self.model_class).where(
             self.model_class.dimension__id == dimension_id
         )
 
@@ -104,9 +120,5 @@ class BaseDocsRepository(
             raise self.model_class.NotFound
 
     @guard("view")
-    def tabulate(self, *args, **kwargs) -> pd.DataFrame:
-        return super().tabulate(*args, **kwargs)
-
-    @guard("view")
-    def list(self, *args, **kwargs) -> list[DocsType]:
-        return super().list(*args, **kwargs)
+    def list(self, **kwargs: Unpack[ListKwargs]) -> list[DocsType]:
+        return super().list(**kwargs)

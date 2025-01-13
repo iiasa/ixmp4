@@ -36,12 +36,17 @@ migrations before committing them!
 from typing import Annotated
 
 from sqlalchemy import (
+    BinaryExpression,
+    BindParameter,
+    ColumnExpressionArgument,
     ForeignKey,
     Index,
+    Label,
     Sequence,
     UniqueConstraint,
     delete,
     exists,
+    false,
     func,
     insert,
     or_,
@@ -49,9 +54,13 @@ from sqlalchemy import (
     sql,
     update,
 )
+from sqlalchemy import Column as typing_column
 from sqlalchemy.dialects.postgresql import JSONB
-from sqlalchemy.exc import MultipleResultsFound
+from sqlalchemy.exc import IntegrityError, MultipleResultsFound
+from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
+    Bundle,
+    MappedColumn,
     Relationship,
     Session,
     aliased,
@@ -65,17 +74,18 @@ from sqlalchemy.types import *
 from . import utils
 
 Column = mapped_column
+IndexSetIdType = Annotated[
+    int,
+    Column(Integer, ForeignKey("optimization_indexset.id"), nullable=False, index=True),
+]
 JsonType = JSON()
-JsonType = JsonType.with_variant(JSONB(), "postgresql")
+# NOTE sqlalchemy's JSON is untyped, but we may not need it if we redesign the opt DB
+# model
+JsonType = JsonType.with_variant(JSONB(), "postgresql")  # type:ignore[no-untyped-call]
 NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
 RunIdType = Annotated[
     int,
-    Column(
-        Integer,
-        ForeignKey("run.id"),
-        nullable=False,
-        index=True,
-    ),
+    Column(Integer, ForeignKey("run.id"), nullable=False, index=True),
 ]
 UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
 UsernameType = Annotated[str, Column(String(255), nullable=True)]

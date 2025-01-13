@@ -4,6 +4,7 @@ from ixmp4.core.exceptions import BadRequest
 from ixmp4.data import abstract, api
 from ixmp4.data.backend.db import SqlAlchemyBackend as Backend
 from ixmp4.data.db.meta.filter import RunMetaEntryFilter
+from ixmp4.data.db.meta.model import RunMetaEntry
 
 from . import deps
 from .base import BaseModel, EnumerationOutput, Pagination
@@ -27,7 +28,7 @@ def query(
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> EnumerationOutput[RunMetaEntry]:
     if join_run_index and not table:
         raise BadRequest("`join_run_index` can only be used with `table=true`.")
 
@@ -48,7 +49,7 @@ def query(
 def create(
     runmeta: RunMetaEntryInput,
     backend: Backend = Depends(deps.get_backend),
-):
+) -> RunMetaEntry:
     return backend.meta.create(**runmeta.model_dump())
 
 
@@ -56,7 +57,7 @@ def create(
 def delete(
     id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
-):
+) -> None:
     backend.meta.delete(id)
 
 
@@ -64,13 +65,16 @@ def delete(
 def bulk_upsert(
     df: api.DataFrame,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.meta.bulk_upsert(df.to_pandas())
+) -> None:
+    # A pandera.DataFrame is a subclass of pd.DataFrame, so this is fine. Mypy likely
+    # complains because our decorators change the type hint in some incompatible way.
+    # Might be about covariance again.
+    backend.meta.bulk_upsert(df.to_pandas())  # type: ignore[arg-type]
 
 
 @router.patch("/bulk/")
 def bulk_delete(
     df: api.DataFrame,
     backend: Backend = Depends(deps.get_backend),
-):
-    return backend.meta.bulk_delete(df.to_pandas())
+) -> None:
+    backend.meta.bulk_delete(df.to_pandas())  # type: ignore[arg-type]

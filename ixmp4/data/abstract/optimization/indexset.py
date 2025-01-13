@@ -1,11 +1,18 @@
-from typing import List, Protocol
+from typing import TYPE_CHECKING, List, Protocol
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from .base import BackendBaseRepository
 
 
 class IndexSet(base.BaseModel, Protocol):
@@ -17,8 +24,8 @@ class IndexSet(base.BaseModel, Protocol):
     """The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
     defined. """
 
-    elements: types.JsonList
-    """Unique list of str or int."""
+    data: types.OptimizationDataList
+    """Unique list of str, int, or float."""
 
     created_at: types.DateTime
     "Creation date/time. TODO"
@@ -30,6 +37,7 @@ class IndexSet(base.BaseModel, Protocol):
 
 
 class IndexSetRepository(
+    BackendBaseRepository[IndexSet],
     base.Creator,
     base.Retriever,
     base.Enumerator,
@@ -83,16 +91,13 @@ class IndexSetRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> list[IndexSet]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> list[IndexSet]:
         r"""Lists IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an IndexSet. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
 
         Returns
@@ -102,16 +107,13 @@ class IndexSetRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate IndexSets by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an IndexSet. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter parameters as specified in
+            Any filter parameters as specified in
             `ixmp4.data.db.optimization.indexset.filter.OptimizationIndexSetFilter`.
 
         Returns
@@ -120,24 +122,26 @@ class IndexSetRepository(
             A data frame with the columns:
                 - id
                 - name
-                - elements
+                - data
                 - run__id
                 - created_at
                 - created_by
         """
         ...
 
-    def add_elements(
-        self, indexset_id: int, elements: float | int | List[float | int | str] | str
+    def add_data(
+        self,
+        indexset_id: int,
+        data: float | int | str | List[float] | List[int] | List[str],
     ) -> None:
-        """Adds elements to an existing IndexSet.
+        """Adds data to an existing IndexSet.
 
         Parameters
         ----------
         indexset_id : int
             The id of the target IndexSet.
-        elements : float | int | List[float | int | str] | str
-            The elements to be added to the IndexSet.
+        data : float | int | str | List[float] | List[int] | List[str]
+            The data to be added to the IndexSet.
 
         Returns
         -------

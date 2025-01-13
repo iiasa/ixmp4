@@ -1,11 +1,19 @@
-from typing import Any, Iterable, Protocol
+from collections.abc import Iterable
+from typing import TYPE_CHECKING, Any, Protocol
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 import pandas as pd
+
+# TODO Import this from typing when dropping Python 3.11
+from typing_extensions import Unpack
 
 from ixmp4.data import types
 
 from .. import base
 from ..docs import DocsRepository
+from .base import BackendBaseRepository
 from .column import Column
 
 
@@ -32,6 +40,7 @@ class Equation(base.BaseModel, Protocol):
 
 
 class EquationRepository(
+    BackendBaseRepository[Equation],
     base.Creator,
     base.Retriever,
     base.Enumerator,
@@ -124,16 +133,13 @@ class EquationRepository(
         """
         ...
 
-    def list(self, *, name: str | None = None, **kwargs) -> Iterable[Equation]:
+    def list(self, **kwargs: Unpack["EnumerateKwargs"]) -> Iterable[Equation]:
         r"""Lists Equations by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an Equation. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter Equations as specified in
+            Any filter Equations as specified in
             `ixmp4.data.db.optimization.equation.filter.OptimizationEquationFilter`.
 
         Returns
@@ -143,16 +149,13 @@ class EquationRepository(
         """
         ...
 
-    def tabulate(self, *, name: str | None = None, **kwargs) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack["EnumerateKwargs"]) -> pd.DataFrame:
         r"""Tabulate Equations by specified criteria.
 
         Parameters
         ----------
-        name : str
-            The name of an Equation. If supplied only one result will be returned.
-        # TODO: Update kwargs
         \*\*kwargs: any
-            More filter variables as specified in
+            Any filter variables as specified in
             `ixmp4.data.db.optimization.equation.filter.OptimizationEquationFilter`.
 
         Returns
@@ -177,7 +180,7 @@ class EquationRepository(
         The data will be validated with the linked constrained
         :class:`ixmp4.data.abstract.optimization.IndexSet`s. For that, `data.keys()`
         must correspond to the names of the Equation's columns. Each column can only
-        contain values that are in the linked `IndexSet.elements`. Each row of entries
+        contain values that are in the linked `IndexSet.data`. Each row of entries
         must be unique. No values can be missing, `None`, or `NaN`. If `data.keys()`
         contains names already present in `Equation.data`, existing values will be
         overwritten.
