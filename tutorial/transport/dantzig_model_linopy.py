@@ -6,13 +6,19 @@ from ixmp4.core import Parameter, Run
 
 def create_parameter(
     parameter: Parameter,
-    index: "pd.Index[str]" | list["pd.Index[str]"],
+    index: "pd.Index[str] | list[pd.Index[str]]",
+    index_name: str | list[str],
     name: str,
 ) -> "pd.Series[float]":
     if isinstance(index, list):
         index = pd.MultiIndex.from_product(index)
 
-    return pd.Series(data=parameter.values, index=index, name=name)
+    # Ensure parameter.data are aligned with the index
+    sorted_values = (
+        pd.DataFrame(parameter.data).set_index(index_name).loc[index.values]["values"]
+    )
+
+    return pd.Series(data=sorted_values, index=index, name=name)
 
 
 def create_dantzig_model(run: Run) -> linopy.Model:
@@ -27,16 +33,19 @@ def create_dantzig_model(run: Run) -> linopy.Model:
     a = create_parameter(
         parameter=run.optimization.parameters.get("a"),
         index=i,
+        index_name="i",
         name="capacity of plant i in cases",
     )
     b = create_parameter(
         parameter=run.optimization.parameters.get("b"),
         index=j,
+        index_name="j",
         name="demand at market j in cases",
     )
     d = create_parameter(
         parameter=run.optimization.parameters.get("d"),
         index=[i, j],
+        index_name=["i", "j"],
         name="distance in thousands of miles",
     )
     f = run.optimization.scalars.get("f").value
