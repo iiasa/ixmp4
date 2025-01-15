@@ -194,7 +194,7 @@ class TableRepository(
 
         Raises
         ------
-        ValueError:
+        :class:`ixmp4.core.exceptions.OptimizationDataValidationError`:
             - If values are missing, `None`, or `NaN`
             - If values are not allowed based on constraints to `Indexset`s
             - If rows are not unique
