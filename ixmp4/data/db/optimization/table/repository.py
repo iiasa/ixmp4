@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
@@ -10,13 +10,16 @@ if TYPE_CHECKING:
 import pandas as pd
 
 from ixmp4 import db
-from ixmp4.core.exceptions import OptimizationItemUsageError
+from ixmp4.core.exceptions import (
+    OptimizationDataValidationError,
+    OptimizationItemUsageError,
+)
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 
-from .. import ColumnRepository, base
+from .. import ColumnRepository, base, utils
 from .docs import TableDocsRepository
-from .model import Table
+from .model import Table, TableData, TableIndexsetAssociation
 
 
 class TableRepository(
@@ -38,48 +41,25 @@ class TableRepository(
 
         self.filter_class = OptimizationTableFilter
 
-    def _add_column(  # type: ignore[no-untyped-def]
+    def add(
         self,
         run_id: int,
-        table_id: int,
-        column_name: str,
-        indexset_name: str,
-        **kwargs,
-    ) -> None:
-        r"""Adds a Column to a Table.
-
-        Parameters
-        ----------
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which the
-            :class:`ixmp4.data.abstract.optimization.Table` is defined.
-        table_id : int
-            The id of the :class:`ixmp4.data.abstract.optimization.Table`.
-        column_name : str
-            The name of the Column, which must be unique in connection with the names of
-            :class:`ixmp4.data.abstract.Run` and
-            :class:`ixmp4.data.abstract.optimization.Table`.
-        indexset_name : str
-            The name of the :class:`ixmp4.data.abstract.optimization.IndexSet` the
-            Column will be linked to.
-        \*\*kwargs: any
-            Keyword arguments to be passed to
-            :func:`ixmp4.data.abstract.optimization.Column.create`.
-        """
-        indexset = self.backend.optimization.indexsets.get(
-            run_id=run_id, name=indexset_name
-        )
-        self.columns.create(
-            name=column_name,
-            constrained_to_indexset=indexset.id,
-            dtype=pd.Series(indexset.data).dtype.name,
-            table_id=table_id,
-            unique=True,
-            **kwargs,
-        )
-
-    def add(self, run_id: int, name: str) -> Table:
+        name: str,
+        constrained_to_indexsets: list[str],
+        column_names: list[str] | None = None,
+    ) -> Table:
         table = Table(name=name, run__id=run_id)
+        indexsets = self.backend.optimization.indexsets.list(
+            name__in=constrained_to_indexsets, run_id=run_id
+        )
+
+        for i in range(len(indexsets)):
+            _ = TableIndexsetAssociation(
+                table=table,
+                indexset=indexsets[i],
+                column_name=column_names[i] if column_names else None,
+            )
+
         self.session.add(table)
 
         return table
@@ -125,15 +105,12 @@ class TableRepository(
                 "The given `column_names` are not unique!"
             )
 
-        table = super().create(run_id=run_id, name=name)
-        for i, name in enumerate(constrained_to_indexsets):
-            self._add_column(
-                run_id=run_id,
-                table_id=table.id,
-                column_name=column_names[i] if column_names else name,
-                indexset_name=name,
-            )
-
+        table = super().create(
+            run_id=run_id,
+            name=name,
+            constrained_to_indexsets=constrained_to_indexsets,
+            column_names=column_names,
+        )
         return table
 
     @guard("view")
@@ -146,12 +123,35 @@ class TableRepository(
 
     @guard("edit")
     def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
-        if isinstance(data, dict):
-            data = pd.DataFrame.from_dict(data=data)
         table = self.get_by_id(id=table_id)
 
-        table.data = pd.concat([pd.DataFrame.from_dict(table.data), data]).to_dict(
-            orient="list"
-        )  # type: ignore[assignment]
+        data = pd.DataFrame.from_dict(
+            data=utils.validate_data(
+                host=table,
+                data=data,
+                columns=table._indexsets,
+                column_names=table.column_names,
+            )
+        )
+
+        column_names = table.column_names if table.column_names else table.indexsets
+
+        # Ensure column order is the same as table.indexsets
+        data = data[column_names]
+        renames = {name: f"value_{i}" for i, name in enumerate(column_names)}
+        data.rename(renames, axis="columns", inplace=True)
+
+        bulk_insert_enabled_data = cast(
+            list[dict[str, str]], data.to_dict(orient="records")
+        )
+
+        try:
+            self.session.execute(
+                db.insert(TableData).values(table__id=table_id),
+                bulk_insert_enabled_data,
+            )
+        except db.IntegrityError as e:
+            self.session.rollback()
+            raise OptimizationDataValidationError from e
 
         self.session.commit()

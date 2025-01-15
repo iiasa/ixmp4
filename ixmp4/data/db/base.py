@@ -125,6 +125,8 @@ class CreateKwargs(TypedDict, total=False):
     parameters: Mapping[str, Any]
     run_id: int
     unit_name: str | None
+    column_names: list[str] | None
+    constrained_to_indexsets: list[str]
 
 
 class Creator(BaseRepository[ModelType], abstract.Creator):
