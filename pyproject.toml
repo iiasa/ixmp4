@@ -116,7 +116,7 @@ warn_unreachable = true
 
 [[tool.mypy.overrides]]
 # Removing this introduces several errors
-module = ["uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_history"]
+module = ["uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_history.*"]
 # Without this, mypy is still fine, but pyproject.toml complains
 ignore_missing_imports = true
 
