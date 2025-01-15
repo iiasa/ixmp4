@@ -3,7 +3,8 @@ from __future__ import annotations
 import logging
 import sqlite3
 from collections.abc import Callable, Iterable, Iterator, Mapping
-from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeVar, cast
+from datetime import datetime
+from typing import TYPE_CHECKING, Any, ClassVar, Generic, Protocol, TypeVar, cast
 
 import numpy as np
 import pandas as pd
@@ -15,7 +16,13 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import Identity, MetaData
-from sqlalchemy_history import make_versioned
+from sqlalchemy_history import make_versioned, version_class
+from sqlalchemy_history.operation import Operation
+from sqlalchemy_history.utils import (
+    get_versioning_manager,
+    is_versioned,
+    tx_column_name,
+)
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import NotRequired, TypedDict, Unpack
@@ -41,8 +48,7 @@ def set_sqlite_pragma(
         cursor.close()
 
 
-# NOTE compiles from sqlalchemy is untyped, not much we can do here
-@compiles(Identity, "sqlite")  # type: ignore[misc,no-untyped-call]
+@compiles(Identity, "sqlite")
 def visit_identity(element: Any, compiler: Any, **kwargs: Any) -> TextClause:
     return text("")
 
@@ -356,6 +362,13 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
         return self.session.execute(_exc).scalar_one()
 
 
+class TransactionProtocol(Protocol):
+    """Protocol class to mock the type of sqlalchemy_historys"""
+
+    id: int
+    issued_at: datetime
+
+
 class BulkOperator(Tabulator[ModelType]):
     merge_suffix: str = "_y"
 
@@ -440,6 +453,11 @@ class BulkOperator(Tabulator[ModelType]):
             )
             yield pd.DataFrame(chunk_df)
 
+    def get_transaction(self) -> TransactionProtocol:
+        mgr = get_versioning_manager(self.model_class)
+        uow = mgr.unit_of_work(self.session)
+        return cast(TransactionProtocol, uow.create_transaction(self.session))
+
 
 class BulkUpserter(BulkOperator[ModelType]):
     def bulk_upsert(self, df: pd.DataFrame) -> None:
@@ -493,9 +511,10 @@ class BulkUpserter(BulkOperator[ModelType]):
         self.session.commit()
 
     def bulk_insert(self, df: pd.DataFrame, **kwargs: Any) -> None:
-        # to_dict returns a more general list[Mapping[Hashable, Unknown]]
         if "id" in df.columns:
             raise ProgrammingError("You may not insert the 'id' column.")
+
+        # to_dict returns a more general list[Mapping[Hashable, Unknown]]
         m = cast(list[dict[str, Any]], df.to_dict("records"))
 
         try:
@@ -507,14 +526,51 @@ class BulkUpserter(BulkOperator[ModelType]):
         except IntegrityError as e:
             raise self.model_class.NotUnique(*e.args)
 
+        if is_versioned(self.model_class):
+            transaction = self.get_transaction()
+
+            vdf = df.copy()
+            vdf[tx_column_name()] = transaction.id
+            vdf["operation_type"] = Operation.INSERT
+
+            vclass = version_class(self.model_class)
+            vm = cast(list[dict[str, Any]], vdf.to_dict("records"))
+            self.session.execute(db.insert(vclass), vm)
+
     def bulk_update(self, df: pd.DataFrame, **kwargs: Any) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
         m = cast(list[dict[str, Any]], df.to_dict("records"))
+
         self.session.execute(
             db.update(self.model_class),
             m,
             execution_options={"synchronize_session": False},
         )
+
+        if is_versioned(self.model_class):
+            transaction = self.get_transaction()
+            vclass = version_class(self.model_class)
+
+            vdf = df.copy()
+            vdf[tx_column_name()] = transaction.id
+            vdf["operation_type"] = Operation.UPDATE
+
+            for _, sdf in vdf.groupby(vdf.index // self.max_list_length):
+                exc = (
+                    db.update(vclass)
+                    .where(
+                        vclass.id.in_(sdf["id"])
+                        and vclass.end_transaction_id == db.null()
+                    )
+                    .values(end_transaction_id=transaction.id)
+                )
+
+                self.session.execute(
+                    exc, execution_options={"synchronize_session": False}
+                )
+
+            vm = cast(list[dict[str, Any]], vdf.to_dict("records"))
+            self.session.execute(db.insert(vclass), vm)
 
 
 class BulkDeleter(BulkOperator[ModelType]):
@@ -530,13 +586,39 @@ class BulkDeleter(BulkOperator[ModelType]):
         df = self.merge_existing(df, existing_df)
         df["exists"] = np.where(pd.notnull(df["id"]), True, False)
         delete_df = df.where(df["exists"])
-        delete_df = df[["id"]]
+        id_df = delete_df[["id"]]
+
         excs = []
-        for _, sdf in delete_df.groupby(delete_df.index // self.max_list_length):
-            exc = db.delete(self.model_class).where(self.model_class.id.in_(sdf["id"]))
-            excs.append(exc)
+        for _, sdf in id_df.groupby(id_df.index // self.max_list_length):
+            dexc = db.delete(self.model_class).where(self.model_class.id.in_(sdf["id"]))
+            excs.append(dexc)
 
         for exc in excs:
             self.session.execute(exc, execution_options={"synchronize_session": False})
 
         self.session.commit()
+
+        if is_versioned(self.model_class):
+            transaction = self.get_transaction()
+            vclass = version_class(self.model_class)
+
+            vdf = df.copy()
+            vdf[tx_column_name()] = transaction.id
+            vdf["operation_type"] = Operation.DELETE
+
+            for _, sdf in vdf.groupby(vdf.index // self.max_list_length):
+                uexc = (
+                    db.update(vclass)
+                    .where(
+                        vclass.id.in_(sdf["id"])
+                        and vclass.end_transaction_id == db.null()
+                    )
+                    .values(end_transaction_id=transaction.id)
+                )
+
+                self.session.execute(
+                    uexc, execution_options={"synchronize_session": False}
+                )
+
+            vm = cast(list[dict[str, Any]], vdf.to_dict("records"))
+            self.session.execute(db.insert(vclass), vm)
