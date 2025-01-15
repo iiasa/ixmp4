@@ -57,8 +57,7 @@ class TestOptimizationParameter:
             fixture_path / f"optimization/{size}/parameterdata.csv"
         ).iloc[:, :12]
 
-        # Load and pick random units
-        cls.load_units(platform)
+        # Pick random units
         parameterdata["units"] = random.choices(
             [unit.name for unit in platform.units.list()], k=len(parameterdata)
         )
@@ -140,6 +139,8 @@ class TestOptimizationParameter:
     ) -> None:
         """Benchmarks adding data to parameters when data is empty before."""
 
+        self.load_units(db_platform)
+
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
             indexsets = self.load_indexsets(run, with_data=True, size=size)
@@ -154,7 +155,7 @@ class TestOptimizationParameter:
             with profiled():
                 parameter.add(parameterdata)
 
-        benchmark.pedantic(run, setup=setup)
+        benchmark.pedantic(run, setup=setup, warmup_rounds=5, rounds=10)
 
     @pytest.mark.parametrize("size", ["small", "medium"])
     def test_parameter_add_data_upsert_half(
@@ -167,6 +168,8 @@ class TestOptimizationParameter:
         size: str,
     ) -> None:
         """Benchmarks adding data to parameters when half the keys are present."""
+
+        self.load_units(db_platform)
 
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
@@ -201,7 +204,7 @@ class TestOptimizationParameter:
             with profiled():
                 parameter.add(parameterdata)
 
-        benchmark.pedantic(run, setup=setup)
+        benchmark.pedantic(run, setup=setup, warmup_rounds=5, rounds=10)
 
     @pytest.mark.parametrize("size", ["small", "medium"])
     def test_parameter_add_data_upsert_all(
@@ -214,6 +217,8 @@ class TestOptimizationParameter:
         size: str,
     ) -> None:
         """Benchmarks adding data to parameters when all keys are already present."""
+
+        self.load_units(db_platform)
 
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
@@ -236,4 +241,4 @@ class TestOptimizationParameter:
             with profiled():
                 parameter.add(parameterdata)
 
-        benchmark.pedantic(run, setup=setup)
+        benchmark.pedantic(run, setup=setup, warmup_rounds=5, rounds=10)
