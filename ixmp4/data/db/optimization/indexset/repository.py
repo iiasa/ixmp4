@@ -78,9 +78,7 @@ class IndexSetRepository(
         indexset = self.get_by_id(id=indexset_id)
         _data = data if isinstance(data, list) else [data]
 
-        bulk_insert_enabled_data: list[dict[str, str]] = [
-            {"value": str(d)} for d in _data
-        ]
+        bulk_insert_enabled_data = [{"value": str(d)} for d in _data]
         try:
             self.session.execute(
                 db.insert(IndexSetData).values(indexset__id=indexset_id),

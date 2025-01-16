@@ -18,7 +18,7 @@ from ixmp4.data.db.unit import Unit
 
 from .. import ColumnRepository, base
 from .docs import ParameterDocsRepository
-from .model import Parameter
+from .model import Parameter, ParameterIndexsetAssociation
 
 
 class ParameterRepository(
@@ -40,49 +40,25 @@ class ParameterRepository(
 
         self.filter_class = OptimizationParameterFilter
 
-    def _add_column(  # type: ignore[no-untyped-def]
+    def add(
         self,
         run_id: int,
-        parameter_id: int,
-        column_name: str,
-        indexset_name: str,
-        **kwargs,
-    ) -> None:
-        r"""Adds a Column to a Parameter.
-
-        Parameters
-        ----------
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which the
-            :class:`ixmp4.data.abstract.optimization.Parameter` is defined.
-        parameter_id : int
-            The id of the :class:`ixmp4.data.abstract.optimization.Parameter`.
-        column_name : str
-            The name of the Column, which must be unique in connection with the names of
-            :class:`ixmp4.data.abstract.Run` and
-            :class:`ixmp4.data.abstract.optimization.Parameter`.
-        indexset_name : str
-            The name of the :class:`ixmp4.data.abstract.optimization.IndexSet` the
-            Column will be linked to.
-        \*\*kwargs: any
-            Keyword arguments to be passed to
-            :func:`ixmp4.data.abstract.optimization.Column.create`.
-        """
-        indexset = self.backend.optimization.indexsets.get(
-            run_id=run_id, name=indexset_name
-        )
-        self.columns.create(
-            name=column_name,
-            constrained_to_indexset=indexset.id,
-            dtype=pd.Series(indexset.data).dtype.name,
-            parameter_id=parameter_id,
-            unique=True,
-            **kwargs,
-        )
-
-    def add(self, run_id: int, name: str) -> Parameter:
+        name: str,
+        constrained_to_indexsets: list[str],
+        column_names: list[str] | None = None,
+    ) -> Parameter:
         parameter = Parameter(name=name, run__id=run_id)
         parameter.set_creation_info(auth_context=self.backend.auth_context)
+        indexsets = self.backend.optimization.indexsets.list(
+            name__in=constrained_to_indexsets, run_id=run_id
+        )
+
+        for i in range(len(indexsets)):
+            _ = ParameterIndexsetAssociation(
+                parameter=parameter,
+                indexset=indexsets[i],
+                column_name=column_names[i] if column_names else None,
+            )
         self.session.add(parameter)
 
         return parameter
@@ -130,16 +106,12 @@ class ParameterRepository(
                 "The given `column_names` are not unique!"
             )
 
-        parameter = super().create(run_id=run_id, name=name)
-        for i, name in enumerate(constrained_to_indexsets):
-            self._add_column(
-                run_id=run_id,
-                parameter_id=parameter.id,
-                column_name=column_names[i] if column_names else name,
-                indexset_name=name,
-            )
-
-        return parameter
+        return super().create(
+            run_id=run_id,
+            name=name,
+            constrained_to_indexsets=constrained_to_indexsets,
+            column_names=column_names,
+        )
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Parameter]:
@@ -176,7 +148,9 @@ class ParameterRepository(
                     message=f"'{unit_name}' is not defined for this Platform!"
                 ) from e
 
-        index_list = [column.name for column in parameter.columns]
+        index_list = (
+            parameter.column_names if parameter.column_names else parameter.indexsets
+        )
         existing_data = pd.DataFrame(parameter.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
