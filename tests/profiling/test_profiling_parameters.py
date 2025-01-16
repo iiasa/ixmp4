@@ -12,6 +12,17 @@ from ..conftest import Profiled
 fixture_path = Path(__file__).parent.parent / "fixtures"
 
 
+def create_parameterdata_big() -> None:
+    """Creates big parameterdata dynamically to save storage cost."""
+    indexsets = [f"Indexset {i}" for i in range(15)]
+    parameter_data = [random.sample(range(100), len(indexsets)) for x in range(1000000)]
+    path = fixture_path / "optimization/big/parameterdata.csv"
+    if not path.exists():
+        pd.DataFrame(parameter_data, columns=indexsets).drop_duplicates().to_csv(
+            path, index=False
+        )
+
+
 class TestOptimizationParameter:
     units = pd.read_csv(fixture_path / "small/units.csv")
 
@@ -142,6 +153,9 @@ class TestOptimizationParameter:
 
         self.load_units(db_platform)
 
+        if size == "big":
+            create_parameterdata_big()
+
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
             indexsets = self.load_indexsets(run, with_data=True)
@@ -172,6 +186,9 @@ class TestOptimizationParameter:
         """Benchmarks adding data to parameters when half the keys are present."""
 
         self.load_units(db_platform)
+
+        if size == "big":
+            create_parameterdata_big()
 
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
