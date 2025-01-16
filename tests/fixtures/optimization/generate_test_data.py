@@ -69,7 +69,4 @@ pd.DataFrame(parameter_data, columns=indexsets).drop_duplicates().to_csv(
 )
 
 # big
-# parameter_data = [random.sample(range(100), len(indexsets)) for x in range(1000000)]
-# pd.DataFrame(parameter_data, columns=indexsets).drop_duplicates().to_csv(
-#     here / "big/parameterdata.csv", index=False
-# )
+# created dynamically to save storage cost
