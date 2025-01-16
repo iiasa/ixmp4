@@ -59,6 +59,7 @@ from sqlalchemy import (
 from sqlalchemy import Column as typing_column
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.exc import IntegrityError, MultipleResultsFound
+from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.ext.hybrid import hybrid_property
 from sqlalchemy.orm import (
     Bundle,
@@ -85,6 +86,12 @@ JsonType = JSON()
 # model
 JsonType = JsonType.with_variant(JSONB(), "postgresql")  # type:ignore[no-untyped-call]
 NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
+ParameterIdType = Annotated[
+    int,
+    Column(
+        Integer, ForeignKey("optimization_parameter.id"), nullable=False, index=True
+    ),
+]
 RunIdType = Annotated[
     int,
     Column(Integer, ForeignKey("run.id"), nullable=False, index=True),

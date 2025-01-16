@@ -13,7 +13,6 @@ from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Parameter as ParameterModel
 from ixmp4.data.abstract import Run, Unit
-from ixmp4.data.abstract.optimization import Column
 
 from .base import Creator, Lister, Retriever, Tabulator
 
@@ -59,12 +58,12 @@ class Parameter(BaseModelFacade):
         return units
 
     @property
-    def constrained_to_indexsets(self) -> list[str]:
-        return [column.indexset.name for column in self._model.columns]
+    def indexsets(self) -> list[str]:
+        return self._model.indexsets
 
     @property
-    def columns(self) -> list[Column]:
-        return self._model.columns
+    def column_names(self) -> list[str] | None:
+        return self._model.column_names
 
     @property
     def created_at(self) -> datetime | None:
