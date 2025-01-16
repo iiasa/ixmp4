@@ -1,4 +1,3 @@
-import copy
 from typing import Any, ClassVar
 
 from sqlalchemy.orm import validates
@@ -26,14 +25,7 @@ class Parameter(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        data_to_validate = copy.deepcopy(data)
-        del data_to_validate["values"]
-        del data_to_validate["units"]
-        _ = utils.validate_data(
-            host=self,
-            data=data_to_validate,
-            columns=self.columns,
-        )
+        utils.validate_data(host=self, data=data, columns=self.columns)
         return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
