@@ -24,11 +24,14 @@ def validate_data(
     data: dict[str, Any],
     columns: list["Column"],
     column_names: list[str] | None = None,
+    has_values_and_units: bool = True,
 ) -> None:
     data_frame = pd.DataFrame.from_dict(data)
 
-    # We don't want to validate "values" and "units"
-    number_columns = len(data_frame.columns) - 2
+    # We don't want to validate "values" and "units" when they are present
+    number_columns = (
+        len(data_frame.columns) - 2 if has_values_and_units else len(data_frame.columns)
+    )
 
     # TODO for all of the following, we might want to create unique exceptions
     # Could me make both more specific by specifiying missing/extra columns?

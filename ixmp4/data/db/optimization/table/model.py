@@ -26,7 +26,9 @@ class Table(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        utils.validate_data(host=self, data=data, columns=self.columns)
+        utils.validate_data(
+            host=self, data=data, columns=self.columns, has_values_and_units=False
+        )
         return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
