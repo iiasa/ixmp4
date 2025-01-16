@@ -52,8 +52,8 @@ class TestDataOptimizationParameter:
         assert parameter.run__id == run.id
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
-        assert parameter.columns[0].name == indexset.name
-        assert parameter.columns[0].constrained_to_indexset == indexset.id
+        assert parameter.column_names is None
+        assert parameter.indexsets == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(Parameter.NotUnique):
@@ -79,7 +79,7 @@ class TestDataOptimizationParameter:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert parameter_2.columns[0].name == "Column 1"
+        assert parameter_2.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -91,20 +91,6 @@ class TestDataOptimizationParameter:
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        platform.backend.optimization.indexsets.add_data(indexset_2.id, data=2024)
-        indexset_2 = platform.backend.optimization.indexsets.get(
-            run.id, indexset_2.name
-        )
-        parameter_3 = platform.backend.optimization.parameters.create(
-            run_id=run.id,
-            name="Parameter 5",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert parameter_3.columns[0].dtype == "object"
-        assert parameter_3.columns[1].dtype == "int64"
 
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")

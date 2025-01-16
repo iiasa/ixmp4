@@ -6,6 +6,7 @@ from . import base
 
 if TYPE_CHECKING:
     from .column import Column
+    from .indexset import IndexSet
 
 
 def collect_indexsets_to_check(
@@ -22,7 +23,7 @@ def collect_indexsets_to_check(
 def validate_data(
     host: base.BaseModel,
     data: dict[str, Any],
-    columns: list["Column"],
+    columns: list["Column"] | list["IndexSet"],
     column_names: list[str] | None = None,
     has_values_and_units: bool = True,
 ) -> None:
@@ -56,7 +57,18 @@ def validate_data(
             "does not contain None or NaN, either!"
         )
 
-    limited_to_indexsets = collect_indexsets_to_check(columns=columns)
+    # TODO adapt once we remove Columns as a class
+    # No way to properly type check generics
+    try:
+        # columns are indexsets
+        limited_to_indexsets = (
+            {column.name: column.data for column in columns}  # type: ignore[union-attr]
+            if not column_names
+            else {column_names[i]: columns[i].data for i in range(len(columns))}  # type: ignore[union-attr]
+        )
+    except AttributeError:
+        # columns are columns
+        limited_to_indexsets = collect_indexsets_to_check(columns=columns)  # type: ignore[arg-type]
 
     # We can make this more specific e.g. highlighting all duplicate rows via
     # pd.DataFrame.duplicated(keep="False")
