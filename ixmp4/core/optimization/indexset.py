@@ -39,9 +39,9 @@ class IndexSet(BaseModelFacade):
         self.backend.optimization.indexsets.add_data(
             indexset_id=self._model.id, data=data
         )
-        self._model.data = self.backend.optimization.indexsets.get(
+        self._model = self.backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
-        ).data
+        )
 
     @property
     def run_id(self) -> int:

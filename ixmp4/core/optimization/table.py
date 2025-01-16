@@ -42,9 +42,9 @@ class Table(BaseModelFacade):
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to an existing Table."""
         self.backend.optimization.tables.add_data(table_id=self._model.id, data=data)
-        self._model.data = self.backend.optimization.tables.get(
+        self._model = self.backend.optimization.tables.get(
             run_id=self._model.run__id, name=self._model.name
-        ).data
+        )
 
     @property
     def constrained_to_indexsets(self) -> list[str]:
