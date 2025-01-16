@@ -127,6 +127,7 @@ class TestOptimizationParameter:
 
         benchmark.pedantic(run, setup=setup)
 
+    # "big" works, but may take a few minutes with multiple rounds
     @pytest.mark.parametrize("size", ["small", "medium"])
     def test_parameter_add_data_insert(
         self,
@@ -143,7 +144,7 @@ class TestOptimizationParameter:
 
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
-            indexsets = self.load_indexsets(run, with_data=True, size=size)
+            indexsets = self.load_indexsets(run, with_data=True)
 
             parameter, parameterdata = self.load_parameter_with_data(
                 platform=db_platform, run=run, indexsets=indexsets, size=size
@@ -157,6 +158,7 @@ class TestOptimizationParameter:
 
         benchmark.pedantic(run, setup=setup, warmup_rounds=5, rounds=10)
 
+    # "big" works, but may take a few minutes with multiple rounds
     @pytest.mark.parametrize("size", ["small", "medium"])
     def test_parameter_add_data_upsert_half(
         self,
@@ -173,7 +175,7 @@ class TestOptimizationParameter:
 
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
-            indexsets = self.load_indexsets(run, with_data=True, size=size)
+            indexsets = self.load_indexsets(run, with_data=True)
 
             parameter, parameterdata = self.load_parameter_with_data(
                 platform=db_platform, run=run, indexsets=indexsets, size=size
@@ -206,6 +208,7 @@ class TestOptimizationParameter:
 
         benchmark.pedantic(run, setup=setup, warmup_rounds=5, rounds=10)
 
+    # "big" works, but may take a few minutes with multiple rounds
     @pytest.mark.parametrize("size", ["small", "medium"])
     def test_parameter_add_data_upsert_all(
         self,
@@ -222,7 +225,7 @@ class TestOptimizationParameter:
 
         def setup() -> tuple[tuple[()], dict[str, object]]:
             run = db_platform.runs.create("Model", "Scenario")
-            indexsets = self.load_indexsets(run, with_data=True, size=size)
+            indexsets = self.load_indexsets(run, with_data=True)
 
             parameter, parameterdata = self.load_parameter_with_data(
                 platform=db_platform, run=run, indexsets=indexsets, size=size
