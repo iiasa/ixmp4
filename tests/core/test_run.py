@@ -319,3 +319,13 @@ class TestCoreRun:
         run = platform.runs.create("Model", "Scenario")
         clone_without_iamc = run.clone()
         assert clone_without_iamc.iamc.tabulate().empty
+
+    def test_run_is_default(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        assert run.is_default() is False
+
+        run.set_as_default()
+        assert run.is_default()
+
+        run.unset_as_default()
+        assert not run.is_default()
