@@ -26,16 +26,17 @@ class Equation(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        if data == {}:
+        if not bool(data):
             return data
         data_to_validate = copy.deepcopy(data)
         del data_to_validate["levels"]
         del data_to_validate["marginals"]
-        _ = utils.validate_data(
-            host=self,
-            data=data_to_validate,
-            columns=self.columns,
-        )
+        if bool(data_to_validate):
+            _ = utils.validate_data(
+                host=self,
+                data=data_to_validate,
+                columns=self.columns,
+            )
         return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)

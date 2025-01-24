@@ -89,8 +89,7 @@ class ScalarRepository(
 
         self.session.execute(exc)
         self.session.commit()
-        scalar: Scalar = self.get_by_id(id)
-        return scalar
+        return self.get_by_id(id)
 
     @guard("view")
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> Iterable[Scalar]:
