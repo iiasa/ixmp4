@@ -27,12 +27,12 @@ class OptimizationVariable(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        if data == {}:
+        if not bool(data):
             return data
         data_to_validate = copy.deepcopy(data)
         del data_to_validate["levels"]
         del data_to_validate["marginals"]
-        if data_to_validate != {}:
+        if bool(data_to_validate):
             _ = utils.validate_data(
                 host=self,
                 data=data_to_validate,
