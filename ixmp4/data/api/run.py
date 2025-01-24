@@ -67,6 +67,10 @@ class RunRepository(
             is_default=None,
         )
 
+    def get_by_id(self, id: int) -> Run:
+        res = self._get_by_id(id)
+        return Run(**res)
+
     def enumerate(
         self, **kwargs: Unpack[abstract.run.EnumerateKwargs]
     ) -> list[Run] | pd.DataFrame:
