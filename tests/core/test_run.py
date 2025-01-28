@@ -328,3 +328,27 @@ class TestCoreRun:
 
         run.unset_as_default()
         assert not run.is_default()
+
+    def test_run_has_solution(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+
+        # Set up an equation and a variable
+        indexset = run.optimization.indexsets.create("Indexset")
+        indexset.add(["foo"])
+        equation = run.optimization.equations.create(
+            name="Equation",
+            constrained_to_indexsets=[indexset.name],
+        )
+        variable = run.optimization.variables.create("Variable")
+
+        # Without data in them, the run has no solution
+        assert not run.optimization.has_solution()
+
+        # Add data to equation to simulate having a solution
+        equation.add({indexset.name: ["foo"], "levels": [1], "marginals": [0]})
+        assert run.optimization.has_solution()
+
+        # Check this also works for having data just in the variable
+        equation.remove_data()
+        variable.add({"levels": [2025], "marginals": [1.5]})
+        assert run.optimization.has_solution()
