@@ -35,3 +35,15 @@ class OptimizationData(BaseFacade):
             equation.remove_data()
         for variable in self.variables.list():
             variable.remove_data()
+
+    def has_solution(self) -> bool:
+        """Check whether this Run contains a solution."""
+        for variable in self.variables.list():
+            if variable.levels:
+                return True
+        for equation in self.equations.list():
+            if equation.levels:
+                return True
+
+        # If neither variables nor equations contain data, it doesn't
+        return False
