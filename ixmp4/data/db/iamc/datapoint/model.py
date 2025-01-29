@@ -9,8 +9,6 @@ from .. import base
 
 
 class DataPoint(base.BaseModel):
-    __versioned__ = {}
-
     NotFound: ClassVar = abstract.DataPoint.NotFound
     NotUnique: ClassVar = abstract.DataPoint.NotUnique
     DeletionPrevented: ClassVar = abstract.DataPoint.DeletionPrevented
@@ -40,6 +38,8 @@ class DataPoint(base.BaseModel):
 
 
 class UniversalDataPoint(DataPoint):
+    __versioned__ = {}
+
     @declared_attr.directive
     def __tablename__(cls) -> str:
         return "iamc_datapoint_universal"
