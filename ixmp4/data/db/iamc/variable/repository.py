@@ -31,6 +31,7 @@ class VariableRepository(
     base.Creator[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
+    base.VersionManager[Variable],
     abstract.VariableRepository,
 ):
     model_class = Variable
