@@ -4,6 +4,7 @@ import logging
 import sqlite3
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import datetime
+from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Protocol, TypeVar, cast
 
 import numpy as np
@@ -16,7 +17,7 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import Identity, MetaData
-from sqlalchemy_history import make_versioned, version_class
+from sqlalchemy_history import make_versioned, transaction_class, version_class
 from sqlalchemy_history.operation import Operation
 from sqlalchemy_history.utils import (
     get_versioning_manager,
@@ -289,24 +290,32 @@ class Selecter(BaseRepository[ModelType]):
         return _exc
 
 
-class Lister(Selecter[ModelType]):
-    def list(self, *args: Any, **kwargs: Any) -> list[ModelType]:
-        _exc = self.select(*args, **kwargs)
-        _exc = _exc.order_by(self.model_class.id.asc())
-        result = self.session.execute(_exc).scalars().all()
+class QueryMixin(BaseRepository[ModelType]):
+    def tabulate_query(self, exc: db.sql.Select[Any]) -> pd.DataFrame:
+        if self.session.bind is not None:
+            with self.engine.connect() as con:
+                return pd.read_sql(exc, con=con).replace([np.nan], [None])
+        else:
+            raise ProgrammingError("Database session is closed.")
+
+    def list_query(self, exc: db.sql.Select[Any]) -> list[Any]:
+        result = self.session.execute(exc).scalars().all()
         return list(result)
 
 
-class Tabulator(Selecter[ModelType]):
+class Lister(QueryMixin[ModelType], Selecter[ModelType]):
+    def list(self, *args: Any, **kwargs: Any) -> list[ModelType]:
+        _exc = self.select(*args, **kwargs)
+        _exc = _exc.order_by(self.model_class.id.asc())
+        return self.list_query(_exc)
+
+
+class Tabulator(QueryMixin[ModelType], Selecter[ModelType]):
     def tabulate(self, *args: Any, _raw: bool = False, **kwargs: Any) -> pd.DataFrame:
         _exc = self.select(*args, **kwargs)
         _exc = _exc.order_by(self.model_class.id.asc())
 
-        if self.session.bind is not None:
-            with self.engine.connect() as con:
-                return pd.read_sql(_exc, con=con).replace([np.nan], [None])
-        else:
-            raise ProgrammingError("Database session is closed.")
+        return self.tabulate_query(_exc)
 
 
 class PaginateKwargs(TypedDict):
@@ -622,3 +631,43 @@ class BulkDeleter(BulkOperator[ModelType]):
 
             vm = cast(list[dict[str, Any]], vdf.to_dict("records"))
             self.session.execute(db.insert(vclass), vm)
+
+
+class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
+    @cached_property
+    def version_class(self) -> Any:
+        return version_class(self.model_class)
+
+    @cached_property
+    def transaction_class(self) -> Any:
+        return transaction_class(self.model_class)
+
+    def select_transactions(self) -> db.sql.Select[Any]:
+        exc = db.select(self.transaction_class)
+        exc = exc.where(
+            db.or_(
+                self.transaction_class.id.in_(
+                    db.select(self.version_class.transaction_id)
+                ),
+                self.transaction_class.id.in_(
+                    db.select(self.version_class.end_transaction_id)
+                ),
+            )
+        )
+        return exc
+
+    def select_versions(self) -> db.sql.Select[Any]:
+        exc = db.select(self.version_class)
+        return exc
+
+    def tabulate_versions(self, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        _exc = self.select_versions(*args, **kwargs)
+        _exc = _exc.order_by(self.version_class.transaction_id.asc())
+
+        return self.tabulate_query(_exc)
+
+    def tabulate_transactions(self, *args: Any, **kwargs: Any) -> pd.DataFrame:
+        _exc = self.select_transactions(*args, **kwargs)
+        _exc = _exc.order_by(self.transaction_class.id.asc())
+
+        return self.tabulate_query(_exc)
