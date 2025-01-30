@@ -44,6 +44,7 @@ from sqlalchemy import (
     Label,
     Sequence,
     UniqueConstraint,
+    and_,
     delete,
     exists,
     false,
