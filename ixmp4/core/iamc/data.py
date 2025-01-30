@@ -73,8 +73,6 @@ def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool) -> pd.DataFrame:
             return convert_to_std_format(df, join_runs)
     return df
 
-class RunIamcDataVersions(BaseFacade):
-    def
 
 class RunIamcData(BaseFacade):
     """IAMC data.
