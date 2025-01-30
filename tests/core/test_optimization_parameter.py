@@ -52,8 +52,8 @@ class TestCoreParameter:
         assert parameter.run_id == run.id
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
-        assert parameter.columns[0].name == indexset.name
-        assert parameter.constrained_to_indexsets == [indexset.name]
+        assert parameter.column_names is None
+        assert parameter.indexsets == [indexset.name]
         assert parameter.values == []
         assert parameter.units == []
 
@@ -77,7 +77,7 @@ class TestCoreParameter:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert parameter_2.columns[0].name == "Column 1"
+        assert parameter_2.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -88,16 +88,6 @@ class TestCoreParameter:
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        indexset_2.add(data=2024)
-        parameter_3 = run.optimization.parameters.create(
-            "Parameter 5",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert parameter_3.columns[0].dtype == "object"
-        assert parameter_3.columns[1].dtype == "int64"
 
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -114,8 +104,7 @@ class TestCoreParameter:
         assert parameter.data == {}
         assert parameter.values == []
         assert parameter.units == []
-        assert parameter.columns[0].name == indexset.name
-        assert parameter.constrained_to_indexsets == [indexset.name]
+        assert parameter.indexsets == [indexset.name]
 
         with pytest.raises(Parameter.NotFound):
             _ = run.optimization.parameters.get("Parameter 2")
