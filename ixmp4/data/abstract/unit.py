@@ -35,6 +35,7 @@ class UnitRepository(
     base.Deleter,
     base.Retriever,
     base.Enumerator,
+    base.VersionManager,
     Protocol,
 ):
     docs: DocsRepository

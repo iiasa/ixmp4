@@ -31,7 +31,13 @@ class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
     iamc: IamcScenarioFilter | bool
 
 
-class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol):
+class ScenarioRepository(
+    base.Creator,
+    base.Retriever,
+    base.Enumerator,
+    base.VersionManager,
+    Protocol,
+):
     docs: DocsRepository
 
     def create(self, name: str) -> Scenario:

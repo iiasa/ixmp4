@@ -49,6 +49,7 @@ class RunRepository(
     base.Creator,
     base.Retriever,
     base.Enumerator,
+    base.VersionManager,
     Protocol,
 ):
     def create(self, model_name: str, scenario_name: str) -> Run:
