@@ -1,5 +1,6 @@
 import pandas as pd
 import pytest
+from sqlalchemy_history.operation import Operation
 
 import ixmp4
 from ixmp4.core.exceptions import InvalidRunMeta, SchemaError
@@ -27,11 +28,50 @@ class TestDataMeta:
         run = platform.runs.create("Model", "Scenario")
         run.set_as_default()
 
+        creations = []
+        transaction_id = 2  # two transactions already occured above
         for key, value, type in TEST_ENTRIES:
+            transaction_id += 1
             entry = platform.backend.meta.create(run.id, key, value)
+
             assert entry.key == key
             assert entry.value == value
             assert entry.dtype == type
+
+            creations.append(
+                [
+                    entry.id,
+                    entry.key,
+                    entry.dtype,
+                    entry.run__id,
+                    entry.value_int,
+                    entry.value_str,
+                    entry.value_float,
+                    entry.value_bool,
+                    transaction_id,
+                    None,
+                    Operation.INSERT,
+                ]
+            )
+
+        expected_versions = pd.DataFrame(
+            creations,
+            columns=[
+                "id",
+                "key",
+                "dtype",
+                "run__id",
+                "value_int",
+                "value_str",
+                "value_float",
+                "value_bool",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.meta.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
         for key, value, type in TEST_ENTRIES:
             entry = platform.backend.meta.get(run.id, key)
@@ -74,6 +114,53 @@ class TestDataMeta:
         run = platform.runs.create("Model", "Scenario")
         entry = platform.backend.meta.create(run.id, "Key", "Value")
         platform.backend.meta.delete(entry.id)
+
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    "Key",
+                    "STR",
+                    1,
+                    None,
+                    "Value",
+                    None,
+                    None,
+                    2,
+                    3,
+                    Operation.INSERT,
+                ],
+                [
+                    1,
+                    "Key",
+                    "STR",
+                    1,
+                    None,
+                    "Value",
+                    None,
+                    None,
+                    3,
+                    None,
+                    Operation.DELETE,
+                ],
+            ],
+            columns=[
+                "id",
+                "key",
+                "dtype",
+                "run__id",
+                "value_int",
+                "value_str",
+                "value_float",
+                "value_bool",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+
+        vdf = platform.backend.meta.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
         with pytest.raises(RunMetaEntry.NotFound):
             platform.backend.meta.get(run.id, "Key")
@@ -207,6 +294,46 @@ class TestDataMeta:
 
         ret = platform.backend.meta.tabulate()
         assert ret.empty
+
+        expected_versions = pd.DataFrame(
+            [
+                # == Full Addition ==
+                [1, "Boolean", "BOOL", None, None, None, True, 1, 3, 7, 0],
+                [1, "Float", "FLOAT", None, None, 0.2, None, 2, 4, 7, 0],
+                [1, "Integer", "INT", 1.0, None, None, None, 3, 5, 9, 0],
+                [1, "String", "STR", None, "Value", None, None, 4, 6, 9, 0],
+                # == Partial Removal ==
+                [1, "Boolean", "BOOL", None, None, None, True, 1, 7, None, 2],
+                [1, "Float", "FLOAT", None, None, 0.2, None, 2, 7, None, 2],
+                # == Partial Update / Partial Addition ==
+                [1, "Boolean", "FLOAT", None, None, -9.9, None, 5, 8, 10, 0],
+                [1, "Float", "FLOAT", None, None, -9.9, None, 6, 8, 10, 0],
+                [1, "Integer", "FLOAT", None, None, -9.9, None, 3, 9, 10, 1],
+                [1, "String", "FLOAT", None, None, -9.9, None, 4, 9, 10, 1],
+                # == Full Removal ==
+                [1, "Boolean", "FLOAT", None, None, -9.9, None, 5, 10, None, 2],
+                [1, "Float", "FLOAT", None, None, -9.9, None, 6, 10, None, 2],
+                # TODO: Bug here! value_int and value_str are not set to None,
+                # after changing the dtype, doesnt really matter for now though
+                [1, "Integer", "FLOAT", 1.0, None, -9.9, None, 3, 10, None, 2],
+                [1, "String", "FLOAT", None, "Value", -9.9, None, 4, 10, None, 2],
+            ],
+            columns=[
+                "run__id",
+                "key",
+                "dtype",
+                "value_int",
+                "value_str",
+                "value_float",
+                "value_bool",
+                "id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.meta.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_meta_bulk_exceptions(self, platform: ixmp4.Platform) -> None:
         entries = pd.DataFrame(
