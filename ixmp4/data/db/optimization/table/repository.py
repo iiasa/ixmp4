@@ -154,5 +154,4 @@ class TableRepository(
             orient="list"
         )  # type: ignore[assignment]
 
-        self.session.add(table)
         self.session.commit()

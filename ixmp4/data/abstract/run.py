@@ -138,6 +138,26 @@ class RunRepository(
         """
         ...
 
+    def get_by_id(self, id: int) -> Run:
+        """Retrieves a Run by its id.
+
+        Parameters
+        ----------
+        id : int
+            Unique integer id.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Run.NotFound`.
+            If the Run with `id` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.data.abstract.Run`:
+            The retrieved Run.
+        """
+        ...
+
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
         r"""Lists runs by specified criteria.
 
