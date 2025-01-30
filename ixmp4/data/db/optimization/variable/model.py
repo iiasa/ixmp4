@@ -26,7 +26,9 @@ class OptimizationVariable(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        if not bool(data):
+        # Only validate data that doesn't have the mininum required keys
+        KEYS = ("levels", "marginals")
+        if not bool(data.keys() - KEYS):
             return data
         utils.validate_data(host=self, data=data, columns=self.columns)
         return data
