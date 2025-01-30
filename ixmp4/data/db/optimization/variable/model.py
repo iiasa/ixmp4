@@ -1,4 +1,3 @@
-import copy
 from typing import Any, ClassVar
 
 from sqlalchemy.orm import validates
@@ -29,15 +28,7 @@ class OptimizationVariable(base.BaseModel):
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
         if not bool(data):
             return data
-        data_to_validate = copy.deepcopy(data)
-        del data_to_validate["levels"]
-        del data_to_validate["marginals"]
-        if bool(data_to_validate):
-            _ = utils.validate_data(
-                host=self,
-                data=data_to_validate,
-                columns=self.columns,
-            )
+        utils.validate_data(host=self, data=data, columns=self.columns)
         return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
