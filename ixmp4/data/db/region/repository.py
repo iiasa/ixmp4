@@ -36,6 +36,7 @@ class RegionRepository(
     base.Deleter[Region],
     base.Retriever[Region],
     base.Enumerator[Region],
+    base.VersionManager[Region],
     abstract.RegionRepository,
 ):
     model_class = Region
@@ -77,3 +78,11 @@ class RegionRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
+
+    @guard("view")
+    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_transactions(*args, **kwargs)
+
+    @guard("view")
+    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_versions(*args, **kwargs)

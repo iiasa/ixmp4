@@ -76,6 +76,7 @@ class TimeSeriesRepository(
     base.Retriever[ModelType],
     base.Enumerator[ModelType],
     base.BulkUpserter[ModelType],
+    base.VersionManager[ModelType],
     Generic[ModelType],
 ):
     def join_auth(
@@ -145,3 +146,11 @@ class TimeSeriesRepository(
     @guard("edit")
     def bulk_upsert(self, df: pd.DataFrame) -> None:
         return super().bulk_upsert(df)
+
+    @guard("view")
+    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_transactions(*args, **kwargs)
+
+    @guard("view")
+    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_versions(*args, **kwargs)

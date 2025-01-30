@@ -29,6 +29,7 @@ class RunRepository(
     base.Creator[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
+    base.VersionManager[Run],
     abstract.RunRepository,
 ):
     model_class = Run
@@ -186,3 +187,11 @@ class RunRepository(
 
         run.is_default = False
         self.session.commit()
+
+    @guard("view")
+    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_transactions(*args, **kwargs)
+
+    @guard("view")
+    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_versions(*args, **kwargs)

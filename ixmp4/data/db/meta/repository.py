@@ -59,6 +59,7 @@ class RunMetaEntryRepository(
     base.Enumerator[RunMetaEntry],
     base.BulkUpserter[RunMetaEntry],
     base.BulkDeleter[RunMetaEntry],
+    base.VersionManager[RunMetaEntry],
     abstract.RunMetaEntryRepository,
 ):
     model_class = RunMetaEntry
@@ -89,7 +90,7 @@ class RunMetaEntryRepository(
 
     def check_df_access(self, df: pd.DataFrame) -> None:
         if self.backend.auth_context is not None:
-            ts_ids = set(df["run__id"].unique().tolist())
+            ts_ids = cast(set[int], set(df["run__id"].unique().tolist()))
             self.backend.runs.check_access(
                 ts_ids,
                 access_type="edit",
@@ -123,12 +124,14 @@ class RunMetaEntryRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        exc = db.select(RunMetaEntry).where(RunMetaEntry.id == id)
+
+        try:
+            meta = self.session.execute(exc).scalar_one()
+        except NoResultFound:
+            raise RunMetaEntry.NotFound(id=id)
+
         if self.backend.auth_context is not None:
-            try:
-                pre_exc = db.select(RunMetaEntry).where(RunMetaEntry.id == id)
-                meta = self.session.execute(pre_exc).scalar_one()
-            except NoResultFound:
-                raise RunMetaEntry.NotFound(id=id)
             self.backend.runs.check_access(
                 {meta.run__id},
                 access_type="edit",
@@ -136,13 +139,8 @@ class RunMetaEntryRepository(
                 default_only=False,
             )
 
-        exc = db.delete(RunMetaEntry).where(RunMetaEntry.id == id)
-
-        try:
-            self.session.execute(exc)
-            self.session.commit()
-        except NoResultFound:
-            raise RunMetaEntry.NotFound(id=id)
+        self.session.delete(meta)
+        self.session.commit()
 
     def join_auth(
         self, exc: db.sql.Select[tuple[RunMetaEntry]]

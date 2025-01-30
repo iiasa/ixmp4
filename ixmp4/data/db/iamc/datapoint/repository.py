@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pandas as pd
@@ -93,6 +93,7 @@ class DataPointRepository(
     base.Enumerator[DataPoint],
     base.BulkUpserter[DataPoint],
     base.BulkDeleter[DataPoint],
+    base.VersionManager[DataPoint],
     abstract.DataPointRepository,
 ):
     model_class = DataPoint
@@ -204,7 +205,7 @@ class DataPointRepository(
 
     def check_df_access(self, df: pd.DataFrame) -> None:
         if self.backend.auth_context is not None:
-            ts_ids = set(df["time_series__id"].unique().tolist())
+            ts_ids = cast(set[int], set(df["time_series__id"].unique().tolist()))
             self.timeseries.check_access(
                 ts_ids,
                 access_type="edit",
@@ -245,3 +246,11 @@ class DataPointRepository(
         )
         self.session.execute(exc, execution_options={"synchronize_session": False})
         self.session.commit()
+
+    @guard("view")
+    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_transactions(*args, **kwargs)
+
+    @guard("view")
+    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_versions(*args, **kwargs)

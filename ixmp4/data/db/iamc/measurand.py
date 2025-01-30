@@ -55,6 +55,7 @@ class MeasurandRepository(
     base.Creator[Measurand],
     base.Retriever[Measurand],
     base.Enumerator[Measurand],
+    base.VersionManager[Measurand],
     abstract.MeasurandRepository,
 ):
     model_class = Measurand
@@ -102,3 +103,11 @@ class MeasurandRepository(
     @guard("view")
     def tabulate(self) -> pd.DataFrame:
         return super().tabulate()
+
+    @guard("view")
+    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_transactions(*args, **kwargs)
+
+    @guard("view")
+    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
+        return super().tabulate_versions(*args, **kwargs)
