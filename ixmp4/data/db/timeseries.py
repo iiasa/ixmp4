@@ -45,8 +45,7 @@ class TimeSeries(AbstractConcreteBase, base.BaseModel):
 
     @property
     def run_id(self) -> int:
-        run_id: int = self.run__id
-        return run_id
+        return self.run__id
 
 
 ModelType = TypeVar("ModelType", bound=TimeSeries)
@@ -61,7 +60,11 @@ class SelectKwargs(TypedDict, total=False):
     run: dict[str, int]
 
 
-class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
+class EnumerateKwargs(
+    abstract.annotations.HasNameFilter,
+    abstract.iamc.timeseries.EnumerateKwargs,
+    total=False,
+):
     _filter: BaseFilter
     join_parameters: bool | None
 
