@@ -527,11 +527,12 @@ class BulkUpserter(BulkOperator[ModelType]):
         m = cast(list[dict[str, Any]], df.to_dict("records"))
 
         try:
-            self.session.execute(
-                db.insert(self.model_class),
+            result = self.session.execute(
+                db.insert(self.model_class).returning(self.model_class.id),
                 m,
                 execution_options={"synchronize_session": False},
-            )
+            ).scalars()
+            ids = list(result)
         except IntegrityError as e:
             raise self.model_class.NotUnique(*e.args)
 
@@ -539,7 +540,8 @@ class BulkUpserter(BulkOperator[ModelType]):
             transaction = self.get_transaction()
 
             vdf = df.copy()
-            vdf[tx_column_name()] = transaction.id
+            vdf[tx_column_name(self.model_class)] = transaction.id
+            vdf["id"] = ids
             vdf["operation_type"] = Operation.INSERT
 
             vclass = version_class(self.model_class)
@@ -561,15 +563,17 @@ class BulkUpserter(BulkOperator[ModelType]):
             vclass = version_class(self.model_class)
 
             vdf = df.copy()
-            vdf[tx_column_name()] = transaction.id
+            vdf[tx_column_name(self.model_class)] = transaction.id
             vdf["operation_type"] = Operation.UPDATE
 
             for _, sdf in vdf.groupby(vdf.index // self.max_list_length):
                 exc = (
                     db.update(vclass)
                     .where(
-                        vclass.id.in_(sdf["id"])
-                        and vclass.end_transaction_id == db.null()
+                        db.and_(
+                            vclass.id.in_(sdf["id"]),
+                            vclass.end_transaction_id == db.null(),
+                        )
                     )
                     .values(end_transaction_id=transaction.id)
                 )
@@ -605,22 +609,22 @@ class BulkDeleter(BulkOperator[ModelType]):
         for exc in excs:
             self.session.execute(exc, execution_options={"synchronize_session": False})
 
-        self.session.commit()
-
         if is_versioned(self.model_class):
             transaction = self.get_transaction()
             vclass = version_class(self.model_class)
 
             vdf = df.copy()
-            vdf[tx_column_name()] = transaction.id
+            vdf[tx_column_name(self.model_class)] = transaction.id
             vdf["operation_type"] = Operation.DELETE
 
             for _, sdf in vdf.groupby(vdf.index // self.max_list_length):
                 uexc = (
                     db.update(vclass)
                     .where(
-                        vclass.id.in_(sdf["id"])
-                        and vclass.end_transaction_id == db.null()
+                        db.and_(
+                            vclass.id.in_(sdf["id"]),
+                            vclass.end_transaction_id == db.null(),
+                        )
                     )
                     .values(end_transaction_id=transaction.id)
                 )
@@ -631,6 +635,8 @@ class BulkDeleter(BulkOperator[ModelType]):
 
             vm = cast(list[dict[str, Any]], vdf.to_dict("records"))
             self.session.execute(db.insert(vclass), vm)
+
+        self.session.commit()
 
 
 class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
