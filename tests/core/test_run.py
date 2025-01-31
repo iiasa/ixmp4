@@ -238,8 +238,8 @@ class TestCoreRun:
         indexset.add(["foo", "bar"])
         test_data = {
             "Indexset": ["bar", "foo"],
-            "levels": [2.0, 1],
-            "marginals": [0, "test"],
+            "levels": [2.5, 1],
+            "marginals": [0, 6.9],
         }
         run.optimization.equations.create(
             "Equation",

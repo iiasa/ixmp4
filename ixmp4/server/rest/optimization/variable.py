@@ -1,5 +1,3 @@
-from typing import Any
-
 from fastapi import APIRouter, Body, Depends, Query
 
 from ixmp4.data import api
@@ -25,7 +23,7 @@ class VariableCreateInput(BaseModel):
 
 
 class DataInput(BaseModel):
-    data: dict[str, Any]
+    data: dict[str, list[float] | list[int] | list[str]]
 
 
 @autodoc

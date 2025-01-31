@@ -1,4 +1,3 @@
-from .column import Column, ColumnRepository
 from .equation import Equation, EquationRepository
 from .indexset import IndexSet, IndexSetRepository
 from .parameter import Parameter, ParameterRepository

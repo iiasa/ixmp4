@@ -2,7 +2,6 @@ from collections.abc import Iterable
 
 from ..annotations import HasIdFilter, HasNameFilter, HasRunIdFilter
 from .base import BackendBaseRepository
-from .column import Column
 from .equation import Equation, EquationRepository
 from .indexset import IndexSet, IndexSetRepository
 from .parameter import Parameter, ParameterRepository

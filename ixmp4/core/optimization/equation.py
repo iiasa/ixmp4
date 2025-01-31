@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 if TYPE_CHECKING:
     from . import InitKwargs
@@ -13,7 +13,6 @@ from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Equation as EquationModel
 from ixmp4.data.abstract import Run
-from ixmp4.data.abstract.optimization import Column
 
 from .base import Creator, Lister, Retriever, Tabulator
 
@@ -36,7 +35,7 @@ class Equation(BaseModelFacade):
         return self._model.run__id
 
     @property
-    def data(self) -> dict[str, Any]:
+    def data(self) -> dict[str, list[float] | list[int] | list[str]]:
         return self._model.data
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -57,21 +56,19 @@ class Equation(BaseModelFacade):
 
     @property
     def levels(self) -> list[float]:
-        levels: list[float] = self._model.data.get("levels", [])
-        return levels
+        return cast(list[float], self._model.data.get("levels", []))
 
     @property
     def marginals(self) -> list[float]:
-        marginals: list[float] = self._model.data.get("marginals", [])
-        return marginals
+        return cast(list[float], self._model.data.get("marginals", []))
 
     @property
-    def constrained_to_indexsets(self) -> list[str]:
-        return [column.indexset.name for column in self._model.columns]
+    def indexsets(self) -> list[str]:
+        return self._model.indexsets
 
     @property
-    def columns(self) -> list[Column]:
-        return self._model.columns
+    def column_names(self) -> list[str] | None:
+        return self._model.column_names
 
     @property
     def created_at(self) -> datetime | None:
