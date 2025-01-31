@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
@@ -12,12 +12,13 @@ import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
+from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 
-from .. import ColumnRepository, base
+from .. import base
 from .docs import EquationDocsRepository
-from .model import Equation
+from .model import Equation, EquationIndexsetAssociation
 
 
 class EquationRepository(
@@ -33,54 +34,31 @@ class EquationRepository(
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
         self.docs = EquationDocsRepository(*args)
-        self.columns = ColumnRepository(*args)
 
         from .filter import EquationFilter
 
         self.filter_class = EquationFilter
 
-    def _add_column(  # type: ignore[no-untyped-def]
+    def add(
         self,
         run_id: int,
-        equation_id: int,
-        column_name: str,
-        indexset_name: str,
-        **kwargs,
-    ) -> None:
-        r"""Adds a Column to an Equation.
-
-        Parameters
-        ----------
-        run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which the
-            :class:`ixmp4.data.abstract.optimization.Equation` is defined.
-        equation_id : int
-            The id of the :class:`ixmp4.data.abstract.optimization.Equation`.
-        column_name : str
-            The name of the Column, which must be unique in connection with the names of
-            :class:`ixmp4.data.abstract.Run` and
-            :class:`ixmp4.data.abstract.optimization.Equation`.
-        indexset_name : str
-            The name of the :class:`ixmp4.data.abstract.optimization.IndexSet` the
-            Column will be linked to.
-        \*\*kwargs: any
-            Keyword arguments to be passed to
-            :func:`ixmp4.data.abstract.optimization.Column.create`.
-        """
-        indexset = self.backend.optimization.indexsets.get(
-            run_id=run_id, name=indexset_name
-        )
-        self.columns.create(
-            name=column_name,
-            constrained_to_indexset=indexset.id,
-            dtype=pd.Series(indexset.data).dtype.name,
-            equation_id=equation_id,
-            unique=True,
-            **kwargs,
-        )
-
-    def add(self, run_id: int, name: str) -> Equation:
+        name: str,
+        constrained_to_indexsets: list[str],
+        column_names: list[str] | None = None,
+    ) -> Equation:
         equation = Equation(name=name, run__id=run_id)
+
+        indexsets = self.backend.optimization.indexsets.list(
+            name__in=constrained_to_indexsets, run_id=run_id
+        )
+
+        for i in range(len(indexsets)):
+            _ = EquationIndexsetAssociation(
+                equation=equation,
+                indexset=indexsets[i],
+                column_name=column_names[i] if column_names else None,
+            )
+
         equation.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(equation)
 
@@ -119,26 +97,19 @@ class EquationRepository(
                 "`constrained_to_indexsets` and `column_names` not equal in length! "
                 "Please provide the same number of entries for both!"
             )
-        # TODO: activate something like this if each column must be indexed by a unique
-        # indexset
-        # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
-        #     raise ValueError("Each dimension must be constrained to a unique indexset!") # noqa
+
         if column_names and len(column_names) != len(set(column_names)):
             raise OptimizationItemUsageError(
                 f"While processing Equation {name}: \n"
                 "The given `column_names` are not unique!"
             )
 
-        equation = super().create(run_id=run_id, name=name)
-        for i, name in enumerate(constrained_to_indexsets):
-            self._add_column(
-                run_id=run_id,
-                equation_id=equation.id,
-                column_name=column_names[i] if column_names else name,
-                indexset_name=name,
-            )
-
-        return equation
+        return super().create(
+            run_id=run_id,
+            name=name,
+            constrained_to_indexsets=constrained_to_indexsets,
+            column_names=column_names,
+        )
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Equation]:
@@ -164,13 +135,19 @@ class EquationRepository(
                 f"{', '.join(missing_columns)}!"
             )
 
-        index_list = [column.name for column in equation.columns]
+        index_list = (
+            equation.column_names if equation.column_names else equation.indexsets
+        )
         existing_data = pd.DataFrame(equation.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
-        equation.data = (
-            data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")  # type: ignore[assignment]
+
+        equation.data = cast(
+            types.JsonDict,
+            (
+                data.set_index(index_list).combine_first(existing_data).reset_index()
+            ).to_dict(orient="list"),
+        )
 
         self.session.commit()
 

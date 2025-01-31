@@ -14,7 +14,6 @@ from ixmp4.data import abstract
 
 from .. import base
 from ..docs import Docs, DocsRepository
-from .column import Column
 
 
 class Table(base.BaseModel):
@@ -24,8 +23,9 @@ class Table(base.BaseModel):
 
     id: int
     name: str
-    data: dict[str, Any]
-    columns: list["Column"]
+    data: dict[str, list[float] | list[int] | list[str]]
+    indexsets: list[str]
+    column_names: list[str] | None
     run__id: int
 
     created_at: datetime | None

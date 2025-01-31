@@ -5,45 +5,39 @@ import pandas as pd
 from . import base
 
 if TYPE_CHECKING:
-    from .column import Column
     from .indexset import IndexSet
-
-
-def collect_indexsets_to_check(
-    columns: list["Column"],
-) -> dict[str, list[float] | list[int] | list[str]]:
-    """Creates a {key:value} dict from linked Column.names and their
-    IndexSet.data."""
-    return {column.name: column.indexset.data for column in columns}
 
 
 def validate_data(
     host: base.BaseModel,
     data: dict[str, Any],
-    columns: list["Column"] | list["IndexSet"],
+    indexsets: list["IndexSet"],
     column_names: list[str] | None = None,
-    has_values_and_units: bool = True,
+    has_extra_columns: bool = True,
 ) -> None:
     data_frame = pd.DataFrame.from_dict(data)
 
-    # We don't want to validate "values" and "units" when they are present
+    # Can't validate ("values","units") or ("levels", "marginals") when they are present
     number_columns = (
-        len(data_frame.columns) - 2 if has_values_and_units else len(data_frame.columns)
+        len(data_frame.columns) - 2 if has_extra_columns else len(data_frame.columns)
+    )
+    columns = (
+        column_names if column_names else [indexset.name for indexset in indexsets]
     )
 
     # TODO for all of the following, we might want to create unique exceptions
     # Could me make both more specific by specifiying missing/extra columns?
-    if number_columns < len(columns):
+    if number_columns < len(indexsets):
         raise host.DataInvalid(
             f"While handling {host.__str__()}: \n"
-            f"Data is missing for some Columns! \n Data: {data} \n "
-            f"Columns: {[column.name for column in columns]}"
+            f"Data is missing for some columns! \n Data: {data} \n "
+            f"Columns: {columns}"
         )
-    elif number_columns > len(columns):
+    elif number_columns > len(indexsets):
         raise host.DataInvalid(
             f"While handling {host.__str__()}: \n"
-            f"Trying to add data to unknown Columns! \n Data: {data} \n "
-            f"Columns: {[column.name for column in columns]}"
+            f"Trying to add data to unknown columns! \n Data: {data} \n "
+            f"Columns: {columns}"
         )
 
     # We could make this more specific maybe by pointing to the missing values
@@ -54,18 +48,9 @@ def validate_data(
             "does not contain None or NaN, either!"
         )
 
-    # TODO adapt once we remove Columns as a class
-    # No way to properly type check generics
-    try:
-        # columns are indexsets
-        limited_to_indexsets = (
-            {column.name: column.data for column in columns}  # type: ignore[union-attr]
-            if not column_names
-            else {column_names[i]: columns[i].data for i in range(len(columns))}  # type: ignore[union-attr]
-        )
-    except AttributeError:
-        # columns are columns
-        limited_to_indexsets = collect_indexsets_to_check(columns=columns)  # type: ignore[arg-type]
+    limited_to_indexsets = {
+        columns[i]: indexsets[i].data for i in range(len(indexsets))
+    }
 
     # We can make this more specific e.g. highlighting all duplicate rows via
     # pd.DataFrame.duplicated(keep="False")
@@ -84,5 +69,5 @@ def validate_data(
         raise host.DataInvalid(
             f"While handling {host.__str__()}: \n"
             "The data contains values that are not allowed as per the IndexSets "
-            "and Columns it is constrained to!"
+            "it is constrained to!"
         )

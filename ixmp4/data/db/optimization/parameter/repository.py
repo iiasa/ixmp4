@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, cast
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
@@ -12,11 +12,12 @@ import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
+from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.unit import Unit
 
-from .. import ColumnRepository, base
+from .. import base
 from .docs import ParameterDocsRepository
 from .model import Parameter, ParameterIndexsetAssociation
 
@@ -34,7 +35,6 @@ class ParameterRepository(
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
         self.docs = ParameterDocsRepository(*args)
-        self.columns = ColumnRepository(*args)
 
         from .filter import OptimizationParameterFilter
 
@@ -48,17 +48,18 @@ class ParameterRepository(
         column_names: list[str] | None = None,
     ) -> Parameter:
         parameter = Parameter(name=name, run__id=run_id)
-        parameter.set_creation_info(auth_context=self.backend.auth_context)
+
         indexsets = self.backend.optimization.indexsets.list(
             name__in=constrained_to_indexsets, run_id=run_id
         )
-
         for i in range(len(indexsets)):
             _ = ParameterIndexsetAssociation(
                 parameter=parameter,
                 indexset=indexsets[i],
                 column_name=column_names[i] if column_names else None,
             )
+
+        parameter.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(parameter)
 
         return parameter
@@ -96,10 +97,7 @@ class ParameterRepository(
                 "`constrained_to_indexsets` and `column_names` not equal in length! "
                 "Please provide the same number of entries for both!"
             )
-        # TODO: activate something like this if each column must be indexed by a unique
-        # indexset
-        # if len(constrained_to_indexsets) != len(set(constrained_to_indexsets)):
-        #     raise self.UsageError("Each dimension must be constrained to a unique indexset!") # noqa
+
         if column_names and len(column_names) != len(set(column_names)):
             raise self.UsageError(
                 f"While processing Parameter {name}: \n"
@@ -156,10 +154,12 @@ class ParameterRepository(
         existing_data = pd.DataFrame(parameter.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
-        # TODO Ignoring this for now since I'll likely refactor this soon, anyway
-        # Same applies to equation, table, and variable.
-        parameter.data = (
-            data.set_index(index_list).combine_first(existing_data).reset_index()
-        ).to_dict(orient="list")  # type: ignore[assignment]
+
+        parameter.data = cast(
+            types.JsonDict,
+            (
+                data.set_index(index_list).combine_first(existing_data).reset_index()
+            ).to_dict(orient="list"),
+        )
 
         self.session.commit()
