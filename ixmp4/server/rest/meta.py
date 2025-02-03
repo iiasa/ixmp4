@@ -78,3 +78,25 @@ def bulk_delete(
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
     backend.meta.bulk_delete(df.to_pandas())  # type: ignore[arg-type]
+
+
+@router.patch("/versions/", response_model=api.DataFrame)
+def tabulate_versions(
+    pagination: Pagination = Depends(),
+    backend: Backend = Depends(deps.get_backend),
+) -> api.DataFrame:
+    return api.DataFrame.model_validate(
+        backend.meta.tabulate_versions(limit=pagination.limit, offset=pagination.offset)
+    )
+
+
+@router.patch("/transactions/", response_model=api.DataFrame)
+def tabulate_transactions(
+    pagination: Pagination = Depends(),
+    backend: Backend = Depends(deps.get_backend),
+) -> api.DataFrame:
+    return api.DataFrame.model_validate(
+        backend.meta.tabulate_transactions(
+            limit=pagination.limit, offset=pagination.offset
+        )
+    )

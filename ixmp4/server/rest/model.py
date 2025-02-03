@@ -46,3 +46,27 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Model:
     return backend.models.create(**model.model_dump())
+
+
+@router.patch("/versions/", response_model=api.DataFrame)
+def tabulate_versions(
+    pagination: Pagination = Depends(),
+    backend: Backend = Depends(deps.get_backend),
+) -> api.DataFrame:
+    return api.DataFrame.model_validate(
+        backend.models.tabulate_versions(
+            limit=pagination.limit, offset=pagination.offset
+        )
+    )
+
+
+@router.patch("/transactions/", response_model=api.DataFrame)
+def tabulate_transactions(
+    pagination: Pagination = Depends(),
+    backend: Backend = Depends(deps.get_backend),
+) -> api.DataFrame:
+    return api.DataFrame.model_validate(
+        backend.models.tabulate_transactions(
+            limit=pagination.limit, offset=pagination.offset
+        )
+    )
