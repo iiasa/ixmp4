@@ -117,32 +117,8 @@ class TestDataMeta:
 
         expected_versions = pd.DataFrame(
             [
-                [
-                    1,
-                    "Key",
-                    "STR",
-                    1,
-                    None,
-                    "Value",
-                    None,
-                    None,
-                    2,
-                    3,
-                    Operation.INSERT,
-                ],
-                [
-                    1,
-                    "Key",
-                    "STR",
-                    1,
-                    None,
-                    "Value",
-                    None,
-                    None,
-                    3,
-                    None,
-                    Operation.DELETE,
-                ],
+                [1, "Key", "STR", 1, None, "Value", None, None, 2, 3, 0],
+                [1, "Key", "STR", 1, None, "Value", None, None, 3, None, 2],
             ],
             columns=[
                 "id",
