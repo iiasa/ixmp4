@@ -149,3 +149,24 @@ class IndexSetRepository(
             Due to compatibility with ixmp.
         """
         ...
+
+    def remove_data(
+        self,
+        indexset_id: int,
+        data: float | int | str | List[float] | List[int] | List[str],
+    ) -> None:
+        """Removes data from an existing IndexSet.
+
+        Parameters
+        ----------
+        indexset_id : int
+            The id of the target IndexSet.
+        data : float | int | str | List[float] | List[int] | List[str]
+            The data to be removed from the IndexSet.
+
+        Returns
+        -------
+        None:
+            Due to compatibility with ixmp.
+        """
+        ...

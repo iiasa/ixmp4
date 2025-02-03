@@ -96,6 +96,30 @@ class TestCoreIndexset:
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
 
+    def test_remove_elements(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
+        indexset_1 = run.optimization.indexsets.create("Indexset 1")
+        indexset_1.add(test_data)
+
+        # Test removing multiple arbitrary known data
+        remove_data = ["do", "mi", "la", "ti"]
+        expected = [data for data in test_data if data not in remove_data]
+        indexset_1.remove(data=remove_data)
+
+        assert indexset_1.data == expected
+
+        # Test removing single item
+        expected.remove("fa")
+        indexset_1.remove(data="fa")
+
+        assert indexset_1.data == expected
+
+        # Test removing all remaining data
+        indexset_1.remove(data=["so", "re"])
+
+        assert indexset_1.data == []
+
     def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = create_indexsets_for_run(
