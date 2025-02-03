@@ -43,6 +43,17 @@ class IndexSet(BaseModelFacade):
             run_id=self._model.run__id, name=self._model.name
         )
 
+    def remove(
+        self, data: float | int | str | list[float] | list[int] | list[str]
+    ) -> None:
+        """Removes data from an existing IndexSet."""
+        self.backend.optimization.indexsets.remove_data(
+            indexset_id=self._model.id, data=data
+        )
+        self._model = self.backend.optimization.indexsets.get(
+            run_id=self._model.run__id, name=self._model.name
+        )
+
     @property
     def run_id(self) -> int:
         return self._model.run__id

@@ -63,3 +63,15 @@ def add_data(
     backend.optimization.indexsets.add_data(
         indexset_id=indexset_id, **data.model_dump()
     )
+
+
+@autodoc
+@router.delete("/{indexset_id}/")
+def remove_data(
+    indexset_id: int,
+    data: DataInput,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.indexsets.remove_data(
+        indexset_id=indexset_id, **data.model_dump()
+    )
