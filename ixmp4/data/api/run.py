@@ -50,6 +50,7 @@ class RunRepository(
     base.Creator[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
+    base.VersionManager[Run],
     abstract.RunRepository,
 ):
     model_class = Run

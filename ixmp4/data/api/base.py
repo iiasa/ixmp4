@@ -91,7 +91,8 @@ def df_to_dict(df: pd.DataFrame) -> DataFrameDict:
         index=df.index.to_list(),
         columns=columns,
         dtypes=dtypes,
-        data=df.values.tolist(),
+        # https://github.com/numpy/numpy/issues/27944
+        data=df.values.tolist(),  # type: ignore
     )
 
 
@@ -287,6 +288,7 @@ class BaseRepository(Generic[ModelType]):
         table: bool = False,
         params: ParamType | None = None,
         json: JsonType | None = None,
+        path: str = "",
     ) -> dict[str, Any] | list[Any]:
         """Convenience method for requests to the enumeration endpoint."""
         if params is None:
@@ -297,7 +299,7 @@ class BaseRepository(Generic[ModelType]):
         # we can assume these types on enumeration endpoints
         return self._request(
             self.enumeration_method,
-            self.prefix,
+            self.prefix + path,
             params={**params, "table": table},
             json=json,
         )  # type: ignore[return-value]
@@ -309,6 +311,7 @@ class BaseRepository(Generic[ModelType]):
         limit: int,
         params: ParamType | None,
         json: JsonType | None,
+        path: str = "",
     ) -> list[list[Any]] | list[dict[str, Any]]:
         """Uses the backends executor to send many pagination requests concurrently."""
         requests: list[futures.Future[dict[str, Any]]] = []
@@ -321,7 +324,7 @@ class BaseRepository(Generic[ModelType]):
             futu: futures.Future[dict[str, Any]] = self.backend.executor.submit(
                 self._request,  # type: ignore [arg-type]
                 self.enumeration_method,
-                self.prefix,
+                self.prefix + path,
                 params=req_params,
                 json=json,
             )
@@ -337,6 +340,7 @@ class BaseRepository(Generic[ModelType]):
         table: bool = False,
         params: ParamType | None = None,
         json: JsonType | None = None,
+        path: str = "",
     ) -> list[list[Any]] | list[dict[str, Any]]:
         """Handles paginated response and sends subsequent requests if necessary.
         Returns aggregated pages as a list."""
@@ -354,7 +358,7 @@ class BaseRepository(Generic[ModelType]):
             return [data.pop("results")]
         else:
             results = self._dispatch_pagination_requests(
-                total, offset + limit, limit, params, json
+                total, offset + limit, limit, params, json, path=path
             )
             return [data.pop("results")] + results
 
@@ -362,6 +366,7 @@ class BaseRepository(Generic[ModelType]):
         self,
         params: ParamType | None = None,
         json: JsonType | None = None,
+        path: str = "",
     ) -> list[ModelType]:
         data = self._request_enumeration(params=params, table=False, json=json)
         if isinstance(data, dict):
@@ -378,19 +383,17 @@ class BaseRepository(Generic[ModelType]):
         self,
         params: ParamType | None = {},
         json: JsonType | None = None,
+        path: str = "",
     ) -> pd.DataFrame:
         # we can assume this type on table endpoints
         data: dict[str, Any] = self._request_enumeration(
-            table=True, params=params, json=json
+            table=True, params=params, json=json, path=path
         )  # type: ignore[assignment]
         pagination = data.get("pagination", None)
         if pagination is not None:
             # we can assume this type on table endpoints
             pages: list[dict[str, Any]] = self._handle_pagination(
-                data,
-                table=True,
-                params=params,
-                json=json,
+                data, table=True, params=params, json=json, path=path
             )  # type: ignore[assignment]
             dfs = [DataFrame(**page).to_pandas() for page in pages]
             return pd.concat(dfs)
@@ -545,3 +548,11 @@ class BulkDeleter(BulkOperator[ModelType]):
             params=kwargs,
             content=json_,
         )
+
+
+class VersionManager(BaseRepository[ModelType]):
+    def tabulate_versions(self) -> pd.DataFrame:
+        return self._tabulate(path="versions/")
+
+    def tabulate_transactions(self) -> pd.DataFrame:
+        return self._tabulate(path="transactions/")
