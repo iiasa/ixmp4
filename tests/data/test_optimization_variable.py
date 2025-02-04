@@ -51,25 +51,27 @@ class TestDataOptimizationVariable:
         assert variable.indexset_names is None
 
         # Test creation with indexset
-        indexset, indexset_2 = create_indexsets_for_run(
+        indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
         variable_2 = platform.backend.optimization.variables.create(
             run_id=run.id,
             name="Variable 2",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
         )
 
         assert variable_2.run__id == run.id
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
         assert variable_2.column_names is None
-        assert variable_2.indexset_names == [indexset.name]
+        assert variable_2.indexset_names == [indexset_1.name]
 
         # Test duplicate name raises
         with pytest.raises(OptimizationVariable.NotUnique):
             _ = platform.backend.optimization.variables.create(
-                run_id=run.id, name="Variable", constrained_to_indexsets=[indexset.name]
+                run_id=run.id,
+                name="Variable",
+                constrained_to_indexsets=[indexset_1.name],
             )
 
         # Test that giving column_names, but not constrained_to_indexsets raises
@@ -89,7 +91,7 @@ class TestDataOptimizationVariable:
             _ = platform.backend.optimization.variables.create(
                 run_id=run.id,
                 name="Variable 0",
-                constrained_to_indexsets=[indexset.name],
+                constrained_to_indexsets=[indexset_1.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
@@ -97,10 +99,10 @@ class TestDataOptimizationVariable:
         variable_3 = platform.backend.optimization.variables.create(
             run_id=run.id,
             name="Variable 3",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
-        assert variable_3.indexset_names == [indexset.name]
+        assert variable_3.indexset_names == [indexset_1.name]
         assert variable_3.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
@@ -110,9 +112,20 @@ class TestDataOptimizationVariable:
             _ = platform.backend.optimization.variables.create(
                 run_id=run.id,
                 name="Variable 0",
-                constrained_to_indexsets=[indexset.name, indexset.name],
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test using different column names for same indexset
+        variable_4 = platform.backend.optimization.variables.create(
+            run_id=run.id,
+            name="Variable 4",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+
+        assert variable_4.column_names == ["Column 1", "Column 2"]
+        assert variable_4.indexset_names == [indexset_1.name, indexset_1.name]
 
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")

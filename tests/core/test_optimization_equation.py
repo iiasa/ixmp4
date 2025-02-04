@@ -41,31 +41,31 @@ class TestCoreEquation:
         run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset, indexset_2 = tuple(
+        indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         equation = run.optimization.equations.create(
             name="Equation",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
         )
 
         assert equation.run_id == run.id
         assert equation.name == "Equation"
         assert equation.data == {}  # JsonDict type currently requires a dict, not None
         assert equation.column_names is None
-        assert equation.indexset_names == [indexset.name]
+        assert equation.indexset_names == [indexset_1.name]
         assert equation.levels == []
         assert equation.marginals == []
 
         # Test duplicate name raises
         with pytest.raises(Equation.NotUnique):
             _ = run.optimization.equations.create(
-                "Equation", constrained_to_indexsets=[indexset.name]
+                "Equation", constrained_to_indexsets=[indexset_1.name]
             )
             _ = run.optimization.equations.create(
                 "Equation",
-                constrained_to_indexsets=[indexset.name],
+                constrained_to_indexsets=[indexset_1.name],
                 column_names=["Column 1"],
             )
 
@@ -73,14 +73,14 @@ class TestCoreEquation:
         with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = run.optimization.equations.create(
                 "Equation 2",
-                constrained_to_indexsets=[indexset.name],
+                constrained_to_indexsets=[indexset_1.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
         equation_2 = run.optimization.equations.create(
             "Equation 2",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
         assert equation_2.column_names == ["Column 1"]
@@ -91,9 +91,19 @@ class TestCoreEquation:
         ):
             _ = run.optimization.equations.create(
                 name="Equation 3",
-                constrained_to_indexsets=[indexset.name, indexset.name],
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test using different column names for same indexset
+        equation_3 = run.optimization.equations.create(
+            name="Equation 3",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+
+        assert equation_3.column_names == ["Column 1", "Column 2"]
+        assert equation_3.indexset_names == [indexset_1.name, indexset_1.name]
 
     def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

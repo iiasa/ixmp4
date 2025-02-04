@@ -51,27 +51,27 @@ class TestCoreVariable:
         assert variable.marginals == []
 
         # Test creation with indexset
-        indexset, indexset_2 = tuple(
+        indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         variable_2 = run.optimization.variables.create(
             name="Variable 2",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
         )
 
         assert variable_2.run_id == run.id
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
         assert variable_2.column_names is None
-        assert variable_2.indexset_names == [indexset.name]
+        assert variable_2.indexset_names == [indexset_1.name]
         assert variable_2.levels == []
         assert variable_2.marginals == []
 
         # Test duplicate name raises
         with pytest.raises(OptimizationVariable.NotUnique):
             _ = run.optimization.variables.create(
-                "Variable", constrained_to_indexsets=[indexset.name]
+                "Variable", constrained_to_indexsets=[indexset_1.name]
             )
 
         # Test that giving column_names, but not constrained_to_indexsets raises
@@ -89,14 +89,14 @@ class TestCoreVariable:
         with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = run.optimization.variables.create(
                 "Variable 0",
-                constrained_to_indexsets=[indexset.name],
+                constrained_to_indexsets=[indexset_1.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
         variable_3 = run.optimization.variables.create(
             "Variable 3",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
         assert variable_3.column_names == ["Column 1"]
@@ -107,9 +107,19 @@ class TestCoreVariable:
         ):
             _ = run.optimization.variables.create(
                 name="Variable 0",
-                constrained_to_indexsets=[indexset.name, indexset.name],
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test using different column names for same indexset
+        variable_4 = run.optimization.variables.create(
+            name="Variable 4",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+
+        assert variable_4.column_names == ["Column 1", "Column 2"]
+        assert variable_4.indexset_names == [indexset_1.name, indexset_1.name]
 
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
