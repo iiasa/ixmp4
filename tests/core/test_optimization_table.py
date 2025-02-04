@@ -232,6 +232,55 @@ class TestCoreTable:
         table_5.add(data={})
         assert table_5.data == test_data_5
 
+    def test_table_remove_data(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
+        indexset_1.add(data=["foo", "bar", ""])
+        indexset_2.add(data=[1, 2, 3])
+        test_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 1, 2, 3],
+        }
+        table = run.optimization.tables.create(
+            name="Table",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+        )
+        table.add(data=test_data_1)
+
+        # Test removing one row
+        remove_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo"],
+            indexset_2.name: [1],
+        }
+        # You can confirm manually that only the correct types are removed
+        for key in remove_data_1.keys():
+            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+        table.remove(data=remove_data_1)
+
+        assert table.data == test_data_1
+
+        # Test removing multiple rows
+        index_list = [indexset_1.name, indexset_2.name]
+        remove_data_2 = pd.DataFrame(
+            {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
+        )
+        test_data_2 = pd.DataFrame(test_data_1).set_index(index_list)
+        expected = test_data_2[
+            ~test_data_2.index.isin(remove_data_2.set_index(index_list).index)
+        ].reset_index()
+        table.remove(data=remove_data_2)
+
+        assert table.data == expected.to_dict(orient="list")
+
+        # Test removing all remaining data
+        remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
+        table.remove(data=remove_data_3)
+
+        assert table.data == {}
+
     def test_list_tables(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)

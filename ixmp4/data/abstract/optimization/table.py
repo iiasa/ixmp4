@@ -204,3 +204,19 @@ class TableRepository(
         None
         """
         ...
+
+    def remove_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+        r"""Removes data from a Table.
+
+        Parameters
+        ----------
+        table_id : int
+            The id of the :class:`ixmp4.data.abstract.optimization.Table`.
+        data : dict[str, Any] | pandas.DataFrame
+            The data to be removed.
+
+        Returns
+        -------
+        None
+        """
+        ...
