@@ -129,3 +129,21 @@ class TableRepository(
         )
 
         self.session.commit()
+
+    @guard("edit")
+    def remove_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+        if isinstance(data, dict):
+            data = pd.DataFrame.from_dict(data=data)
+
+        table = self.get_by_id(id=table_id)
+        index_list = table.column_names if table.column_names else table.indexsets
+        existing_data = pd.DataFrame(table.data)
+        if not existing_data.empty:
+            existing_data.set_index(index_list, inplace=True)
+        data.set_index(index_list, inplace=True)
+
+        remaining_data = existing_data[~existing_data.index.isin(data.index)]
+        if not remaining_data.index.empty:
+            remaining_data.reset_index(inplace=True)
+
+        table.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
