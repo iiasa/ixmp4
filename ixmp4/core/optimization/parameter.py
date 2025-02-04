@@ -45,6 +45,13 @@ class Parameter(BaseModelFacade):
             run_id=self._model.run__id, name=self._model.name
         )
 
+    def remove(self, data: dict[str, Any] | pd.DataFrame) -> None:
+        """Removes data from the Parameter."""
+        self.backend.optimization.parameters.remove_data(id=self._model.id, data=data)
+        self._model = self.backend.optimization.parameters.get(
+            run_id=self._model.run__id, name=self._model.name
+        )
+
     @property
     def values(self) -> list[float]:
         return cast(list[float], self._model.data.get("values", []))

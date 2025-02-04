@@ -163,3 +163,25 @@ class ParameterRepository(
         )
 
         self.session.commit()
+
+    @guard("edit")
+    def remove_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+        if isinstance(data, dict):
+            data = pd.DataFrame.from_dict(data=data)
+
+        parameter = self.get_by_id(id=id)
+        index_list = (
+            parameter.column_names
+            if parameter.column_names
+            else parameter.indexset_names
+        )
+        existing_data = pd.DataFrame(parameter.data)
+        if not existing_data.empty:
+            existing_data.set_index(index_list, inplace=True)
+        data.set_index(index_list, inplace=True)
+
+        remaining_data = existing_data[~existing_data.index.isin(data.index)]
+        if not remaining_data.index.empty:
+            remaining_data.reset_index(inplace=True)
+
+        parameter.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))

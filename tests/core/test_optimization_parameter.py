@@ -255,6 +255,65 @@ class TestCoreParameter:
 
         assert parameter_5.data == test_data_8
 
+    def test_parameter_remove_data(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        unit = platform.units.create("Unit")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
+        indexset_1.add(data=["foo", "bar", ""])
+        indexset_2.add(data=[1, 2, 3])
+        test_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 1, 2, 3],
+            "values": [1, 2, 3, 4, 5, 6],
+            "units": [unit.name] * 6,
+        }
+        parameter = run.optimization.parameters.create(
+            name="Parameter",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+        )
+        parameter.add(data=test_data_1)
+
+        # Test removing one row
+        remove_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo"],
+            indexset_2.name: [1],
+        }
+        parameter.remove(data=remove_data_1)
+
+        # Prepare the expectation from the original test data
+        # You can confirm manually that only the correct types are removed
+        for key in remove_data_1.keys():
+            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+        test_data_1["values"].remove(1)  # type: ignore[arg-type]
+        test_data_1["units"].remove(unit.name)  # type: ignore[arg-type]
+
+        assert parameter.data == test_data_1
+
+        # Test removing multiple rows
+        remove_data_2 = pd.DataFrame(
+            {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
+        )
+        parameter.remove(data=remove_data_2)
+
+        # Prepare the expectation
+        expected = {
+            indexset_1.name: ["foo", "bar"],
+            indexset_2.name: [2, 2],
+            "values": [2, 5],
+            "units": [unit.name] * 2,
+        }
+
+        assert parameter.data == expected
+
+        # Test removing all remaining data
+        remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
+        parameter.remove(data=remove_data_3)
+
+        assert parameter.data == {}
+
     def test_list_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)
