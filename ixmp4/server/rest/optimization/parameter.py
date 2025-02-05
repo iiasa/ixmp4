@@ -72,6 +72,18 @@ def add_data(
 
 
 @autodoc
+@router.delete("/{parameter_id}/data/")
+def remove_data(
+    parameter_id: int,
+    data: DataInput,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.parameters.remove_data(
+        parameter_id=parameter_id, **data.model_dump()
+    )
+
+
+@autodoc
 @router.post("/", response_model=api.Parameter)
 def create(
     parameter: ParameterCreateInput,

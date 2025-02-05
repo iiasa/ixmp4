@@ -66,12 +66,26 @@ class ParameterRepository(
 
     def add_data(self, parameter_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, pd.DataFrame):
-            # data will always contains str, not only Hashable
-            dict_data: dict[str, Any] = data.to_dict(orient="list")  # type: ignore[assignment]
+            # data will always contain str, not only Hashable
+            dict_data = cast(dict[str, Any], data.to_dict(orient="list"))
             data = dict_data
         kwargs = {"data": data}
         self._request(
             method="PATCH", path=self.prefix + str(parameter_id) + "/data/", json=kwargs
+        )
+
+    def remove_data(
+        self, parameter_id: int, data: dict[str, Any] | pd.DataFrame
+    ) -> None:
+        if isinstance(data, pd.DataFrame):
+            # data will always contain str, not only Hashable
+            dict_data = cast(dict[str, Any], data.to_dict(orient="list"))
+            data = dict_data
+        kwargs = {"data": data}
+        self._request(
+            method="DELETE",
+            path=self.prefix + str(parameter_id) + "/data/",
+            json=kwargs,
         )
 
     def get(self, run_id: int, name: str) -> Parameter:
