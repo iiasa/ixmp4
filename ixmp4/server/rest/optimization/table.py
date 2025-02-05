@@ -68,6 +68,16 @@ def add_data(
 
 
 @autodoc
+@router.delete("/{table_id}/data/")
+def remove_data(
+    table_id: int,
+    data: DataInput,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.tables.remove_data(table_id=table_id, **data.model_dump())
+
+
+@autodoc
 @router.post("/", response_model=api.Table)
 def create(
     table: TableCreateInput,
