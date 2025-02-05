@@ -83,3 +83,16 @@ class IndexSetRepository(
     ) -> None:
         kwargs = {"indexset_id": indexset_id, "data": data}
         self._request("PATCH", self.prefix + str(indexset_id) + "/", json=kwargs)
+
+    def remove_data(
+        self,
+        indexset_id: int,
+        data: StrictFloat
+        | StrictInt
+        | StrictStr
+        | List[StrictFloat]
+        | List[StrictInt]
+        | List[StrictStr],
+    ) -> None:
+        kwargs = {"indexset_id": indexset_id, "data": data}
+        self._request("DELETE", self.prefix + str(indexset_id) + "/", json=kwargs)
