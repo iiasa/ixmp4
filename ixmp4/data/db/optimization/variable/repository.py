@@ -49,14 +49,16 @@ class VariableRepository(
         variable = Variable(name=name, run__id=run_id)
 
         if constrained_to_indexsets:
-            indexsets = self.backend.optimization.indexsets.list(
-                name__in=constrained_to_indexsets, run_id=run_id
-            )
-
-            for i in range(len(indexsets)):
+            indexsets = {
+                indexset: self.backend.optimization.indexsets.get(
+                    run_id=run_id, name=indexset
+                )
+                for indexset in set(constrained_to_indexsets)
+            }
+            for i in range(len(constrained_to_indexsets)):
                 _ = VariableIndexsetAssociation(
                     variable=variable,
-                    indexset=indexsets[i],
+                    indexset=indexsets[constrained_to_indexsets[i]],
                     column_name=column_names[i] if column_names else None,
                 )
 
