@@ -292,6 +292,28 @@ class TestDataOptimizationVariable:
             expected, pd.DataFrame(variable_4.data), check_dtype=False
         )
 
+        # Test adding with column_names
+        variable_5 = platform.backend.optimization.variables.create(
+            run_id=run.id,
+            name="Variable 5",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        platform.backend.optimization.variables.add_data(
+            variable_id=variable_5.id, data=test_data_8
+        )
+        variable_5 = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable 5"
+        )
+
+        assert variable_5.data == test_data_8
+
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")

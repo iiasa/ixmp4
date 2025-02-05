@@ -269,6 +269,28 @@ class TestDataOptimizationEquation:
             expected, pd.DataFrame(equation_4.data), check_dtype=False
         )
 
+        # Test adding with column_names
+        equation_5 = platform.backend.optimization.equations.create(
+            run_id=run.id,
+            name="Equation 5",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        platform.backend.optimization.equations.add_data(
+            equation_id=equation_5.id, data=test_data_8
+        )
+        equation_5 = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation 5"
+        )
+
+        assert equation_5.data == test_data_8
+
     def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
