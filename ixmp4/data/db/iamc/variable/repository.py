@@ -6,7 +6,7 @@ import pandas as pd
 from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
-from ixmp4.data.abstract import iamc as abstract
+from ixmp4.data import abstract
 from ixmp4.data.abstract.annotations import HasNameFilter
 from ixmp4.data.auth.decorators import guard
 from ixmp4.db.filters import BaseFilter
@@ -70,9 +70,13 @@ class VariableRepository(
         return super().tabulate(**kwargs)
 
     @guard("view")
-    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
-        return super().tabulate_transactions(*args, **kwargs)
+    def tabulate_transactions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_transactions(**kwargs)
 
     @guard("view")
-    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
-        return super().tabulate_versions(*args, **kwargs)
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

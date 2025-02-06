@@ -72,9 +72,9 @@ class ModelRepository(
         return super().tabulate(**kwargs)
 
     @guard("view")
-    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
-        return super().tabulate_transactions(*args, **kwargs)
+    def tabulate_transactions(self) -> pd.DataFrame:
+        return super().tabulate_transactions()
 
     @guard("view")
-    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
-        return super().tabulate_versions(*args, **kwargs)
+    def tabulate_versions(self) -> pd.DataFrame:
+        return super().tabulate_versions()

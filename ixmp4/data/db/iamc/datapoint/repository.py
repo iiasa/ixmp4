@@ -248,9 +248,13 @@ class DataPointRepository(
         self.session.commit()
 
     @guard("view")
-    def tabulate_transactions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
-        return super().tabulate_transactions(*args, **kwargs)
+    def tabulate_transactions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_transactions(**kwargs)
 
     @guard("view")
-    def tabulate_versions(self, /, *args: object, **kwargs: object) -> pd.DataFrame:
-        return super().tabulate_versions(*args, **kwargs)
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

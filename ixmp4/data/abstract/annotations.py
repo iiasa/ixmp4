@@ -142,3 +142,8 @@ class IamcModelFilter(TypedDict, total=False):
     variable: HasVariableFilter | None
     unit: HasUnitFilter | None
     run: HasRunFilter
+
+
+class HasPaginationArgs(TypedDict, total=False):
+    limit: int | None
+    offset: int | None
