@@ -17,6 +17,31 @@ class TestDataScenario:
         assert scenario.created_at is not None
         assert scenario.created_by == "@unknown"
 
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    "Scenario",
+                    scenario.created_at,
+                    "@unknown",
+                    1,
+                    None,
+                    0,
+                ],
+            ],
+            columns=[
+                "id",
+                "name",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.scenarios.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
     def test_scenario_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.scenarios.create("Scenario")
 
