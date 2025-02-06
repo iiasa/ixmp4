@@ -173,15 +173,16 @@ class Creator(BaseRepository[ModelType], abstract.Creator):
 
 class Deleter(BaseRepository[ModelType]):
     def delete(self, id: int) -> None:
-        exc = db.delete(self.model_class).where(self.model_class.id == id)
+        exc = db.select(self.model_class).where(self.model_class.id == id)
 
         try:
-            self.session.execute(
-                exc, execution_options={"synchronize_session": "fetch"}
-            )
-            self.session.commit()
+            obj = self.session.execute(exc).scalar_one()
         except NoResultFound:
-            raise self.model_class.NotFound
+            raise self.model_class.NotFound(id=id)
+
+        try:
+            self.session.delete(obj)
+            self.session.commit()
         except IntegrityError:
             raise self.model_class.DeletionPrevented
 
