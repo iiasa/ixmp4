@@ -1,4 +1,5 @@
 # TODO Use `type` instead of TypeAlias when dropping Python 3.11
+from datetime import datetime
 from typing import ClassVar, TypeAlias, cast
 
 import pandas as pd
@@ -31,6 +32,12 @@ class Run(base.BaseModel):
 
     version: int
     is_default: bool
+
+    created_at: datetime | None
+    created_by: str
+
+    updated_at: datetime | None
+    updated_by: str | None
 
 
 JsonType: TypeAlias = dict[

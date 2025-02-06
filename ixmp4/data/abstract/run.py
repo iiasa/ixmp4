@@ -35,6 +35,12 @@ class Run(base.BaseModel, Protocol):
     is_default: types.Boolean
     "`True` if this is the default run version."
 
+    created_at: types.DateTime
+    created_by: types.String
+
+    updated_at: types.DateTime
+    updated_by: types.String
+
     def __str__(self) -> str:
         return f"<Run {self.id} model={self.model.name} \
             scenario={self.scenario.name} version={self.version} \
