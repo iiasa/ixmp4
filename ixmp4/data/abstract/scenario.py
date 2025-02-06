@@ -19,9 +19,9 @@ class Scenario(base.BaseModel, Protocol):
     "Unique name of the scenario."
 
     created_at: types.DateTime
-    "Creation date/time. TODO"
+    "Creation date/time."
     created_by: types.String
-    "Creator. TODO"
+    "Creator."
 
     def __str__(self) -> str:
         return f"<Scenario {self.id} name={self.name}>"
