@@ -43,6 +43,7 @@ class Table(base.BaseModel, Protocol):
 class TableRepository(
     BackendBaseRepository[Table],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -88,6 +89,23 @@ class TableRepository(
         -------
         :class:`ixmp4.data.abstract.optimization.Table`:
             The created Table.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes a Table.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the Table.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Table.NotFound`:
+            If the Table with `id` does not exist.
+        :class:`ixmp4.data.abstract.Table.DeletionPrevented`:
+            If the Table with `id` is used in the database, preventing it's deletion.
         """
         ...
 

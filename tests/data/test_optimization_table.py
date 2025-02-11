@@ -99,6 +99,32 @@ class TestDataOptimizationTable:
         assert table_3.column_names == ["Column 1", "Column 2"]
         assert table_3.indexset_names == [indexset_1.name, indexset_1.name]
 
+    def test_delete_table(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1, _ = create_indexsets_for_run(platform=platform, run_id=run.id)
+        table = platform.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        # TODO How to check that DeletionPrevented is raised? No other object uses
+        # Table.id, so nothing could prevent the deletion.
+
+        # Test unknown id raises
+        with pytest.raises(Table.NotFound):
+            platform.backend.optimization.tables.delete(id=(table.id + 1))
+
+        # Test normal deletion
+        platform.backend.optimization.tables.delete(id=table.id)
+
+        assert platform.backend.optimization.tables.tabulate().empty
+
+        # Confirm that IndexSet has not been deleted
+        assert not platform.backend.optimization.indexsets.tabulate().empty
+
+        # Test that association table rows are deleted
+        # If they haven't, this would raise DeletionPrevented
+        platform.backend.optimization.indexsets.delete(id=indexset_1.id)
+
     def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _, _ = create_indexsets_for_run(platform=platform, run_id=run.id)

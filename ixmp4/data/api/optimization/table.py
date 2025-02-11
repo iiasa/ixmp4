@@ -39,6 +39,7 @@ class TableDocsRepository(DocsRepository):
 
 class TableRepository(
     base.Creator[Table],
+    base.Deleter[Table],
     base.Retriever[Table],
     base.Enumerator[Table],
     abstract.TableRepository,
@@ -63,6 +64,9 @@ class TableRepository(
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
+
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, pd.DataFrame):
