@@ -84,3 +84,12 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Table:
     return backend.optimization.tables.create(**table.model_dump())
+
+
+@autodoc
+@router.delete("/{table_id}/")
+def delete(
+    table_id: int,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.tables.delete(id=table_id)
