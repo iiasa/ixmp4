@@ -80,11 +80,28 @@ from . import utils
 Column = mapped_column
 EquationIdType = Annotated[
     int,
-    Column(Integer, ForeignKey("optimization_equation.id"), nullable=False, index=True),
+    Column(
+        Integer,
+        ForeignKey("optimization_equation.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    ),
 ]
+# NOTE By using two IndexSetIdTypes, one with ondelete="CASCADE" and one without, we
+# enable deletion even when the IndexSet is used in IndexSetData, but prevent it when
+# it's used anywhere else
 IndexSetIdType = Annotated[
     int,
     Column(Integer, ForeignKey("optimization_indexset.id"), nullable=False, index=True),
+]
+IndexSet__IdType = Annotated[
+    int,
+    Column(
+        Integer,
+        ForeignKey("optimization_indexset.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    ),
 ]
 JsonType = JSON()
 # NOTE sqlalchemy's JSON is untyped, but we may not need it if we redesign the opt DB
@@ -95,7 +112,7 @@ OptimizationVariableIdType = Annotated[
     int,
     Column(
         Integer,
-        ForeignKey("optimization_optimizationvariable.id"),
+        ForeignKey("optimization_optimizationvariable.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     ),
@@ -103,7 +120,10 @@ OptimizationVariableIdType = Annotated[
 ParameterIdType = Annotated[
     int,
     Column(
-        Integer, ForeignKey("optimization_parameter.id"), nullable=False, index=True
+        Integer,
+        ForeignKey("optimization_parameter.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     ),
 ]
 RunIdType = Annotated[
@@ -112,7 +132,12 @@ RunIdType = Annotated[
 ]
 TableIdType = Annotated[
     int,
-    Column(Integer, ForeignKey("optimization_table.id"), nullable=False, index=True),
+    Column(
+        Integer,
+        ForeignKey("optimization_table.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
+    ),
 ]
 UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
 UsernameType = Annotated[str, Column(String(255), nullable=True)]
