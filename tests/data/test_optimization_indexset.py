@@ -57,6 +57,34 @@ class TestDataOptimizationIndexSet:
                 run_id=run.id, name="Indexset"
             )
 
+    def test_delete_indexset(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1 = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        platform.backend.optimization.indexsets.delete(id=indexset_1.id)
+
+        # Test normal deletion
+        assert platform.backend.optimization.indexsets.tabulate().empty
+
+        (indexset_2,) = create_indexsets_for_run(
+            platform=platform, run_id=run.id, amount=1
+        )
+
+        # Test unknown id raises
+        with pytest.raises(IndexSet.NotFound):
+            platform.backend.optimization.indexsets.delete(id=(indexset_2.id + 1))
+
+        # NOTE to check DeletionPrevented, one option is that the object is foreignkeyed
+        # from another table, thus preventing the deletion.
+        with pytest.raises(IndexSet.DeletionPrevented):
+            _ = platform.backend.optimization.tables.create(
+                run_id=run.id,
+                name="Table 1",
+                constrained_to_indexsets=[indexset_2.name],
+            )
+            platform.backend.optimization.indexsets.delete(id=indexset_2.id)
+
     def test_get_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)

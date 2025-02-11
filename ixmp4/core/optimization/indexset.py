@@ -12,7 +12,7 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import IndexSet as IndexSetModel
 from ixmp4.data.abstract import Run
 
-from .base import Creator, Lister, Retriever, Tabulator
+from .base import Creator, Deleter, Lister, Retriever, Tabulator
 
 
 class IndexSet(BaseModelFacade):
@@ -90,6 +90,7 @@ class IndexSet(BaseModelFacade):
 
 class IndexSetRepository(
     Creator[IndexSet, IndexSetModel],
+    Deleter[IndexSet, IndexSetModel],
     Retriever[IndexSet, IndexSetModel],
     Lister[IndexSet, IndexSetModel],
     Tabulator[IndexSet, IndexSetModel],

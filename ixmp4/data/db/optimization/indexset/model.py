@@ -19,7 +19,10 @@ class IndexSet(base.BaseModel):
     _data_type: types.OptimizationDataType
 
     _data: types.Mapped[list["IndexSetData"]] = db.relationship(
-        back_populates="indexset", order_by="IndexSetData.id"
+        back_populates="indexset",
+        order_by="IndexSetData.id",
+        cascade="all, delete",
+        passive_deletes=True,
     )
 
     @property
@@ -43,7 +46,7 @@ class IndexSetData(base.RootBaseModel):
     table_prefix = "optimization_"
 
     indexset: types.Mapped["IndexSet"] = db.relationship(back_populates="_data")
-    indexset__id: types.IndexSetId
+    indexset__id: types.IndexSet__Id
     value: types.String = db.Column(db.String, nullable=False)
 
     __table_args__ = (db.UniqueConstraint("indexset__id", "value"),)
