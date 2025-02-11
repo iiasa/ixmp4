@@ -75,3 +75,12 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Scalar:
     return backend.optimization.scalars.create(**scalar.model_dump())
+
+
+@autodoc
+@router.delete("/{scalar_id}/")
+def delete(
+    scalar_id: int,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.scalars.delete(id=scalar_id)

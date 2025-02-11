@@ -50,6 +50,24 @@ class TestDataOptimizationScalar:
                 run_id=run.id, name="Scalar", value=2, unit_name=unit2.name
             )
 
+    def test_delete_scalar(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        scalar_1 = platform.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar", value=3.14, unit_name=unit.name
+        )
+
+        # Test unknown id raises
+        with pytest.raises(Scalar.NotFound):
+            platform.backend.optimization.scalars.delete(id=(scalar_1.id + 1))
+
+        # TODO How to check that DeletionPrevented is raised?
+
+        # Test normal deletion
+        platform.backend.optimization.scalars.delete(id=scalar_1.id)
+
+        assert platform.backend.optimization.scalars.tabulate().empty
+
     def test_get_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
