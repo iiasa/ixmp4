@@ -40,6 +40,7 @@ class ScalarDocsRepository(DocsRepository):
 
 class ScalarRepository(
     base.Creator[Scalar],
+    base.Deleter[Scalar],
     base.Retriever[Scalar],
     base.Enumerator[Scalar],
     abstract.ScalarRepository,
@@ -55,6 +56,9 @@ class ScalarRepository(
         return super().create(
             name=name, value=value, unit_name=unit_name, run_id=run_id
         )
+
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     def update(
         self, id: int, value: float | None = None, unit_id: int | None = None

@@ -48,6 +48,7 @@ class Scalar(base.BaseModel, Protocol):
 class ScalarRepository(
     BackendBaseRepository[Scalar],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -79,6 +80,23 @@ class ScalarRepository(
         -------
         :class:`ixmp4.data.abstract.optimization.Scalar`:
             The created Scalar.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes a Scalar.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the Scalar.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Scalar.NotFound`:
+            If the Scalar with `id` does not exist.
+        :class:`ixmp4.data.abstract.Scalar.DeletionPrevented`:
+            If the Scalar with `id` is used in the database, preventing it's deletion.
         """
         ...
 
