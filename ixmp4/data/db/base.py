@@ -157,6 +157,7 @@ class Deleter(BaseRepository[ModelType]):
             self.session.delete(obj)
             self.session.commit()
         except IntegrityError:
+            self.session.rollback()
             raise self.model_class.DeletionPrevented
 
 

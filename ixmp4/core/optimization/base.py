@@ -47,6 +47,24 @@ class Creator(
         return self._model_type(_backend=self.backend, _model=model)
 
 
+class Deleter(
+    OptimizationBaseRepository[
+        FacadeOptimizationModelType, AbstractOptimizationModelType
+    ],
+    abstract.Deleter,
+):
+    def delete(self, item: int | str) -> None:
+        if isinstance(item, int):
+            id = item
+        elif isinstance(item, str):
+            model = self._backend_repository.get(run_id=self._run.id, name=item)
+            id = model.id
+        else:
+            raise TypeError("Invalid argument: `id` must be `int` or `str`.")
+
+        self._backend_repository.delete(id=id)
+
+
 class Retriever(
     OptimizationBaseRepository[
         FacadeOptimizationModelType, AbstractOptimizationModelType
