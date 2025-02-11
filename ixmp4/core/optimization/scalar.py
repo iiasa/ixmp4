@@ -14,7 +14,7 @@ from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
 
-from .base import Lister, Retriever, Tabulator
+from .base import Deleter, Lister, Retriever, Tabulator
 
 
 class Scalar(BaseModelFacade):
@@ -99,6 +99,7 @@ class Scalar(BaseModelFacade):
 
 
 class ScalarRepository(
+    Deleter[Scalar, ScalarModel],
     Retriever[Scalar, ScalarModel],
     Lister[Scalar, ScalarModel],
     Tabulator[Scalar, ScalarModel],

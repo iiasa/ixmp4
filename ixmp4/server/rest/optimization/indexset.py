@@ -54,6 +54,15 @@ def create(
 
 
 @autodoc
+@router.delete("/{indexset_id}/")
+def delete(
+    indexset_id: int,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.indexsets.delete(id=indexset_id)
+
+
+@autodoc
 @router.patch("/{indexset_id}/")
 def add_data(
     indexset_id: int,
@@ -66,7 +75,7 @@ def add_data(
 
 
 @autodoc
-@router.delete("/{indexset_id}/")
+@router.delete("/{indexset_id}/data/")
 def remove_data(
     indexset_id: int,
     data: DataInput,

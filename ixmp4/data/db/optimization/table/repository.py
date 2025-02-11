@@ -22,6 +22,7 @@ from .model import Table, TableIndexsetAssociation
 
 class TableRepository(
     base.Creator[Table],
+    base.Deleter[Table],
     base.Retriever[Table],
     base.Enumerator[Table],
     abstract.TableRepository,
@@ -110,6 +111,10 @@ class TableRepository(
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
+
+    @guard("edit")
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Table]:

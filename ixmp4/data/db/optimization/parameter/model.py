@@ -48,7 +48,9 @@ class Parameter(base.BaseModel):
 
     _parameter_indexset_associations: types.Mapped[
         list[ParameterIndexsetAssociation]
-    ] = db.relationship(back_populates="parameter", cascade="all, delete-orphan")
+    ] = db.relationship(
+        back_populates="parameter", cascade="all, delete-orphan", passive_deletes=True
+    )
 
     _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(
         "_parameter_indexset_associations", "indexset"

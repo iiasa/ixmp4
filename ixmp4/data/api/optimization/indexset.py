@@ -37,6 +37,7 @@ class IndexSetDocsRepository(DocsRepository):
 
 class IndexSetRepository(
     base.Creator[IndexSet],
+    base.Deleter[IndexSet],
     base.Retriever[IndexSet],
     base.Enumerator[IndexSet],
     abstract.IndexSetRepository,
@@ -50,6 +51,9 @@ class IndexSetRepository(
 
     def create(self, run_id: int, name: str) -> IndexSet:
         return super().create(run_id=run_id, name=name)
+
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     def get(self, run_id: int, name: str) -> IndexSet:
         return super().get(name=name, run_id=run_id)
@@ -95,4 +99,4 @@ class IndexSetRepository(
         | List[StrictStr],
     ) -> None:
         kwargs = {"indexset_id": indexset_id, "data": data}
-        self._request("DELETE", self.prefix + str(indexset_id) + "/", json=kwargs)
+        self._request("DELETE", self.prefix + str(indexset_id) + "/data/", json=kwargs)

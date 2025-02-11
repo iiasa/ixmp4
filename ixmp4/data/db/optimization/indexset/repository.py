@@ -23,6 +23,7 @@ log = logging.getLogger(__name__)
 
 class IndexSetRepository(
     base.Creator[IndexSet],
+    base.Deleter[IndexSet],
     base.Retriever[IndexSet],
     base.Enumerator[IndexSet],
     abstract.IndexSetRepository,
@@ -64,6 +65,10 @@ class IndexSetRepository(
     @guard("edit")
     def create(self, run_id: int, name: str) -> IndexSet:
         return super().create(run_id=run_id, name=name)
+
+    @guard("edit")
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> list[IndexSet]:

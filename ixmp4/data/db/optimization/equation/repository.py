@@ -23,6 +23,7 @@ from .model import Equation, EquationIndexsetAssociation
 
 class EquationRepository(
     base.Creator[Equation],
+    base.Deleter[Equation],
     base.Retriever[Equation],
     base.Enumerator[Equation],
     abstract.EquationRepository,
@@ -112,6 +113,10 @@ class EquationRepository(
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
+
+    @guard("edit")
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Equation]:
