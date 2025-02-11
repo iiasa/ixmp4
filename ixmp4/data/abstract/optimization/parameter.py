@@ -43,6 +43,7 @@ class Parameter(base.BaseModel, Protocol):
 class ParameterRepository(
     BackendBaseRepository[Parameter],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -88,6 +89,24 @@ class ParameterRepository(
         -------
         :class:`ixmp4.data.abstract.optimization.Parameter`:
             The created Parameter.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes a Parameter.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the Parameter.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Parameter.NotFound`:
+            If the Parameter with `id` does not exist.
+        :class:`ixmp4.data.abstract.Parameter.DeletionPrevented`:
+            If the Parameter with `id` is used in the database, preventing it's
+            deletion.
         """
         ...
 
