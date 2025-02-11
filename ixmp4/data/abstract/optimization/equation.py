@@ -43,6 +43,7 @@ class Equation(base.BaseModel, Protocol):
 class EquationRepository(
     BackendBaseRepository[Equation],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -88,6 +89,23 @@ class EquationRepository(
         -------
         :class:`ixmp4.data.abstract.optimization.Equation`:
             The created Equation.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes an Equation.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the Equation.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Equation.NotFound`:
+            If the Equation with `id` does not exist.
+        :class:`ixmp4.data.abstract.Equation.DeletionPrevented`:
+            If the Equation with `id` is used in the database, preventing it's deletion.
         """
         ...
 

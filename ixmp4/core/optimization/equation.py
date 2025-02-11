@@ -14,7 +14,7 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Equation as EquationModel
 from ixmp4.data.abstract import Run
 
-from .base import Creator, Lister, Retriever, Tabulator
+from .base import Creator, Deleter, Lister, Retriever, Tabulator
 
 
 class Equation(BaseModelFacade):
@@ -104,6 +104,7 @@ class Equation(BaseModelFacade):
 
 class EquationRepository(
     Creator[Equation, EquationModel],
+    Deleter[Equation, EquationModel],
     Retriever[Equation, EquationModel],
     Lister[Equation, EquationModel],
     Tabulator[Equation, EquationModel],

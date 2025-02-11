@@ -53,6 +53,7 @@ class Equation(base.BaseModel):
             back_populates="equation",
             cascade="all, delete-orphan",
             order_by="EquationIndexsetAssociation.id",
+            passive_deletes=True,
         )
     )
 
