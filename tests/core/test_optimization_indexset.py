@@ -4,7 +4,7 @@ import pytest
 
 import ixmp4
 from ixmp4.core import IndexSet
-from ixmp4.core.exceptions import OptimizationDataValidationError
+from ixmp4.core.exceptions import DeletionPrevented, OptimizationDataValidationError
 
 from ..utils import create_indexsets_for_run
 
@@ -54,6 +54,31 @@ class TestCoreIndexset:
 
         with pytest.raises(IndexSet.NotUnique):
             _ = run.optimization.indexsets.create("Indexset 1")
+
+    def test_delete_indexset(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        indexset_1 = run.optimization.indexsets.create(name="Indexset")
+        run.optimization.indexsets.delete(item=indexset_1.name)
+
+        # Test normal deletion
+        assert run.optimization.indexsets.tabulate().empty
+
+        # Test unknown id raises
+        with pytest.raises(IndexSet.NotFound):
+            run.optimization.indexsets.delete(item="does not exist")
+
+        # Test DeletionPrevented is raised when IndexSet is used somewhere
+        (indexset_2,) = tuple(
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(
+                platform=platform, run_id=run.id, amount=1
+            )
+        )
+        with pytest.raises(DeletionPrevented):
+            _ = run.optimization.tables.create(
+                name="Table 1", constrained_to_indexsets=[indexset_2.name]
+            )
+            run.optimization.indexsets.delete(item=indexset_2.id)
 
     def test_get_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
