@@ -52,6 +52,7 @@ class Parameter(base.BaseModel):
         back_populates="parameter",
         cascade="all, delete-orphan",
         order_by="ParameterIndexsetAssociation.id",
+        passive_deletes=True,
     )
 
     _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(

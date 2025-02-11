@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 class ParameterRepository(
     base.Creator[Parameter],
+    base.Deleter[Parameter],
     base.Retriever[Parameter],
     base.Enumerator[Parameter],
     abstract.ParameterRepository,
@@ -117,6 +118,10 @@ class ParameterRepository(
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
+
+    @guard("edit")
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Parameter]:
