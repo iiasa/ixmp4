@@ -23,6 +23,7 @@ from .model import VariableIndexsetAssociation
 
 class VariableRepository(
     base.Creator[Variable],
+    base.Deleter[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
     abstract.VariableRepository,
@@ -124,6 +125,10 @@ class VariableRepository(
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
+
+    @guard("edit")
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     @guard("view")
     def list(self, **kwargs: Unpack["base.EnumerateKwargs"]) -> Iterable[Variable]:

@@ -14,7 +14,7 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import OptimizationVariable as VariableModel
 from ixmp4.data.abstract import Run
 
-from .base import Lister, Retriever, Tabulator
+from .base import Deleter, Lister, Retriever, Tabulator
 
 
 class Variable(BaseModelFacade):
@@ -103,6 +103,7 @@ class Variable(BaseModelFacade):
 
 
 class VariableRepository(
+    Deleter[Variable, VariableModel],
     Retriever[Variable, VariableModel],
     Lister[Variable, VariableModel],
     Tabulator[Variable, VariableModel],

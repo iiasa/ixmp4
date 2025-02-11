@@ -127,6 +127,41 @@ class TestDataOptimizationVariable:
         assert variable_4.column_names == ["Column 1", "Column 2"]
         assert variable_4.indexset_names == [indexset_1.name, indexset_1.name]
 
+    def test_delete_variable(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+
+        # Test deletion without linked IndexSets
+        variable_1 = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable 1"
+        )
+        platform.backend.optimization.variables.delete(id=variable_1.id)
+
+        assert platform.backend.optimization.variables.tabulate().empty
+
+        indexset_1, _ = create_indexsets_for_run(platform=platform, run_id=run.id)
+        variable_2 = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable 2", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        # TODO How to check that DeletionPrevented is raised? No other object uses
+        # Variable.id, so nothing could prevent the deletion.
+
+        # Test unknown id raises
+        with pytest.raises(OptimizationVariable.NotFound):
+            platform.backend.optimization.variables.delete(id=(variable_2.id + 1))
+
+        # Test normal deletion
+        platform.backend.optimization.variables.delete(id=variable_2.id)
+
+        assert platform.backend.optimization.variables.tabulate().empty
+
+        # Confirm that IndexSet has not been deleted
+        assert not platform.backend.optimization.indexsets.tabulate().empty
+
+        # Test that association table rows are deleted
+        # If they haven't, this would raise DeletionPrevented
+        platform.backend.optimization.indexsets.delete(id=indexset_1.id)
+
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(

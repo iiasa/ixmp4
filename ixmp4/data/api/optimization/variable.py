@@ -39,6 +39,7 @@ class VariableDocsRepository(DocsRepository):
 
 class VariableRepository(
     base.Creator[Variable],
+    base.Deleter[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
     abstract.OptimizationVariableRepository,
@@ -63,6 +64,9 @@ class VariableRepository(
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
+
+    def delete(self, id: int) -> None:
+        super().delete(id=id)
 
     def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, pd.DataFrame):
