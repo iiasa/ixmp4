@@ -73,6 +73,12 @@ class TestCoreVariable:
             _ = run.optimization.variables.create(
                 "Variable", constrained_to_indexsets=[indexset_1.name]
             )
+        with pytest.raises(OptimizationVariable.NotUnique):
+            _ = run.optimization.variables.create(
+                "Variable",
+                constrained_to_indexsets=[indexset_1.name],
+                column_names=["Column 1"],
+            )
 
         # Test that giving column_names, but not constrained_to_indexsets raises
         with pytest.raises(

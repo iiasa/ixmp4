@@ -63,7 +63,7 @@ class Equation(BaseModelFacade):
         return cast(list[float], self._model.data.get("marginals", []))
 
     @property
-    def indexsets(self) -> list[str]:
+    def indexsets(self) -> list[str] | None:
         return self._model.indexsets
 
     @property
@@ -119,7 +119,7 @@ class EquationRepository(
     def create(
         self,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Equation:
         return super().create(

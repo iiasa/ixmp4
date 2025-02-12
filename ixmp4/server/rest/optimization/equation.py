@@ -20,7 +20,7 @@ router: APIRouter = APIRouter(
 class EquationCreateInput(BaseModel):
     name: str
     run_id: int
-    constrained_to_indexsets: list[str]
+    constrained_to_indexsets: list[str] | None
     column_names: list[str] | None
 
 

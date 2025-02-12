@@ -145,7 +145,7 @@ class TableRepository(
             data = pd.DataFrame.from_dict(data=data)
 
         table = self.get_by_id(id=table_id)
-        index_list = table.column_names if table.column_names else table.indexsets
+        index_list = table.column_names or table.indexsets
         existing_data = pd.DataFrame(table.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
