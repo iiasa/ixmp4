@@ -44,23 +44,24 @@ class EquationRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Equation:
         equation = Equation(name=name, run__id=run_id)
 
-        indexsets = {
-            indexset: self.backend.optimization.indexsets.get(
-                run_id=run_id, name=indexset
-            )
-            for indexset in set(constrained_to_indexsets)
-        }
-        for i in range(len(constrained_to_indexsets)):
-            _ = EquationIndexsetAssociation(
-                equation=equation,
-                indexset=indexsets[constrained_to_indexsets[i]],
-                column_name=column_names[i] if column_names else None,
-            )
+        if constrained_to_indexsets:
+            indexsets = {
+                indexset: self.backend.optimization.indexsets.get(
+                    run_id=run_id, name=indexset
+                )
+                for indexset in set(constrained_to_indexsets)
+            }
+            for i in range(len(constrained_to_indexsets)):
+                _ = EquationIndexsetAssociation(
+                    equation=equation,
+                    indexset=indexsets[constrained_to_indexsets[i]],
+                    column_name=column_names[i] if column_names else None,
+                )
 
         equation.set_creation_info(auth_context=self.backend.auth_context)
         self.session.add(equation)
@@ -91,21 +92,31 @@ class EquationRepository(
         self,
         name: str,
         run_id: int,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Equation:
-        if column_names and len(column_names) != len(constrained_to_indexsets):
-            raise OptimizationItemUsageError(
-                f"While processing Equation {name}: \n"
-                "`constrained_to_indexsets` and `column_names` not equal in length! "
-                "Please provide the same number of entries for both!"
-            )
-
-        if column_names and len(column_names) != len(set(column_names)):
-            raise OptimizationItemUsageError(
-                f"While processing Equation {name}: \n"
-                "The given `column_names` are not unique!"
-            )
+        if column_names:
+            # TODO If this is removed, need to check above that constrained_to_indexsets
+            #  is not None
+            if constrained_to_indexsets is None:
+                raise self.UsageError(
+                    f"While processing Variable {name}: \n"
+                    "Received `column_names` to name columns, but no "
+                    "`constrained_to_indexsets` to indicate which IndexSets to use for "
+                    "these columns. Please provide `constrained_to_indexsets` or "
+                    "remove `column_names`!"
+                )
+            elif len(column_names) != len(constrained_to_indexsets):
+                raise OptimizationItemUsageError(
+                    f"While processing Equation {name}: \n"
+                    "`constrained_to_indexsets` and `column_names` not equal in length!"
+                    "Please provide the same number of entries for both!"
+                )
+            elif len(column_names) != len(set(column_names)):
+                raise OptimizationItemUsageError(
+                    f"While processing Equation {name}: \n"
+                    "The given `column_names` are not unique!"
+                )
 
         return super().create(
             run_id=run_id,
@@ -142,19 +153,17 @@ class EquationRepository(
                 f"{', '.join(missing_columns)}!"
             )
 
-        index_list = (
-            equation.column_names if equation.column_names else equation.indexset_names
-        )
+        index_list = equation.column_names or equation.indexset_names
         existing_data = pd.DataFrame(equation.data)
-        if not existing_data.empty:
-            existing_data.set_index(index_list, inplace=True)
+        if index_list:
+            data = data.set_index(index_list)
+            if not existing_data.empty:
+                existing_data.set_index(index_list, inplace=True)
+        data = data.combine_first(existing_data)
+        if index_list:
+            data = data.reset_index()
 
-        equation.data = cast(
-            types.JsonDict,
-            (
-                data.set_index(index_list).combine_first(existing_data).reset_index()
-            ).to_dict(orient="list"),
-        )
+        equation.data = cast(types.JsonDict, data.to_dict(orient="list"))
 
         self.session.commit()
 

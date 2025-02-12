@@ -40,33 +40,55 @@ class TestCoreEquation:
     def test_create_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
 
-        # Test normal creation
-        indexset_1, indexset_2 = tuple(
+        # Test creation without indexset
+        equation_1 = run.optimization.equations.create("Equation 1")
+        assert equation_1.run_id == run.id
+        assert equation_1.name == "Equation 1"
+        assert equation_1.data == {}
+        assert equation_1.indexset_names is None
+        assert equation_1.column_names is None
+        assert equation_1.levels == []
+        assert equation_1.marginals == []
+
+        # Test creation with indexset
+        indexset_1, _ = tuple(
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        equation = run.optimization.equations.create(
-            name="Equation",
+        equation_2 = run.optimization.equations.create(
+            name="Equation 2",
             constrained_to_indexsets=[indexset_1.name],
         )
 
-        assert equation.run_id == run.id
-        assert equation.name == "Equation"
-        assert equation.data == {}  # JsonDict type currently requires a dict, not None
-        assert equation.column_names is None
-        assert equation.indexset_names == [indexset_1.name]
-        assert equation.levels == []
-        assert equation.marginals == []
+        assert equation_2.run_id == run.id
+        assert equation_2.name == "Equation 2"
+        assert equation_2.data == {}  # JsonDict type requires a dict, not None
+        assert equation_2.column_names is None
+        assert equation_2.indexset_names == [indexset_1.name]
+        assert equation_2.levels == []
+        assert equation_2.marginals == []
 
         # Test duplicate name raises
         with pytest.raises(Equation.NotUnique):
             _ = run.optimization.equations.create(
-                "Equation", constrained_to_indexsets=[indexset_1.name]
+                "Equation 1", constrained_to_indexsets=[indexset_1.name]
             )
+        with pytest.raises(Equation.NotUnique):
             _ = run.optimization.equations.create(
-                "Equation",
+                "Equation 1",
                 constrained_to_indexsets=[indexset_1.name],
                 column_names=["Column 1"],
+            )
+
+        # Test that giving column_names, but not constrained_to_indexsets raises
+        with pytest.raises(
+            OptimizationItemUsageError,
+            match="Received `column_names` to name columns, but no "
+            "`constrained_to_indexsets`",
+        ):
+            _ = run.optimization.equations.create(
+                "Equation 0",
+                column_names=["Dimension 1"],
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
@@ -78,40 +100,48 @@ class TestCoreEquation:
             )
 
         # Test columns_names are used for names if given
-        equation_2 = run.optimization.equations.create(
-            "Equation 2",
+        equation_3 = run.optimization.equations.create(
+            "Equation 3",
             constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
-        assert equation_2.column_names == ["Column 1"]
+        assert equation_3.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
             OptimizationItemUsageError, match="`column_names` are not unique"
         ):
             _ = run.optimization.equations.create(
-                name="Equation 3",
+                name="Equation 4",
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
 
         # Test using different column names for same indexset
-        equation_3 = run.optimization.equations.create(
-            name="Equation 3",
+        equation_4 = run.optimization.equations.create(
+            name="Equation 4",
             constrained_to_indexsets=[indexset_1.name, indexset_1.name],
             column_names=["Column 1", "Column 2"],
         )
 
-        assert equation_3.column_names == ["Column 1", "Column 2"]
-        assert equation_3.indexset_names == [indexset_1.name, indexset_1.name]
+        assert equation_4.column_names == ["Column 1", "Column 2"]
+        assert equation_4.indexset_names == [indexset_1.name, indexset_1.name]
 
     def test_delete_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
+
+        equation_1 = run.optimization.equations.create(name="Equation 1")
+
+        # Test deletion without linked IndexSets
+        run.optimization.equations.delete(item=equation_1.name)
+
+        assert run.optimization.equations.tabulate().empty
+
         (indexset_1,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
-        equation = run.optimization.equations.create(
-            name="Equation", constrained_to_indexsets=[indexset_1.name]
+        equation_2 = run.optimization.equations.create(
+            name="Equation 2", constrained_to_indexsets=[indexset_1.name]
         )
 
         # TODO How to check that DeletionPrevented is raised? No other object uses
@@ -122,7 +152,7 @@ class TestCoreEquation:
             run.optimization.equations.delete(item="does not exist")
 
         # Test normal deletion
-        run.optimization.equations.delete(item=equation.name)
+        run.optimization.equations.delete(item=equation_2.name)
 
         assert run.optimization.equations.tabulate().empty
 
@@ -291,9 +321,17 @@ class TestCoreEquation:
             expected, pd.DataFrame(equation_4.data), check_dtype=False
         )
 
+        # Test adding to scalar equation raises
+        with pytest.raises(
+            OptimizationDataValidationError,
+            match="Trying to add data to unknown columns!",
+        ):
+            equation_5 = run.optimization.equations.create("Equation 5")
+            equation_5.add(data={"foo": ["bar"], "levels": [1], "marginals": [0]})
+
         # Test adding with column_names
-        equation_5 = run.optimization.equations.create(
-            name="Equation 5",
+        equation_6 = run.optimization.equations.create(
+            name="Equation 6",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
             column_names=["Column 1", "Column 2"],
         )
@@ -303,9 +341,9 @@ class TestCoreEquation:
             "levels": [6, 5, 4, 3, 2, 1],
             "marginals": [0.5] * 6,
         }
-        equation_5.add(data=test_data_8)
+        equation_6.add(data=test_data_8)
 
-        assert equation_5.data == test_data_8
+        assert equation_6.data == test_data_8
 
     def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

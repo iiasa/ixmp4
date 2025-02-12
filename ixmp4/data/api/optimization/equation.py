@@ -24,7 +24,7 @@ class Equation(base.BaseModel):
     id: int
     name: str
     data: dict[str, list[float] | list[int] | list[str]]
-    indexset_names: list[str]
+    indexset_names: list[str] | None
     column_names: list[str] | None
     run__id: int
 
@@ -55,7 +55,7 @@ class EquationRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Equation:
         return super().create(
