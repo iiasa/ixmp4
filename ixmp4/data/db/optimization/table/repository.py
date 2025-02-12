@@ -151,7 +151,7 @@ class TableRepository(
             return
 
         table = self.get_by_id(id=id)
-        index_list = table.column_names if table.column_names else table.indexset_names
+        index_list = table.column_names or table.indexset_names
         existing_data = pd.DataFrame(table.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)

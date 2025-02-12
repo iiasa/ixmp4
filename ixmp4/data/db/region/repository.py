@@ -66,8 +66,7 @@ class RegionRepository(
     def get(self, name: str) -> Region:
         exc = self.select().where(Region.name == name)
         try:
-            region: Region = self.session.execute(exc).scalar_one()
-            return region
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Region.NotFound
 
