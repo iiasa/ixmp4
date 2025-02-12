@@ -154,9 +154,7 @@ class ParameterRepository(
                     message=f"'{unit_name}' is not defined for this Platform!"
                 ) from e
 
-        index_list = (
-            parameter.column_names if parameter.column_names else parameter.indexsets
-        )
+        index_list = parameter.column_names or parameter.indexsets
         existing_data = pd.DataFrame(parameter.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
@@ -178,9 +176,7 @@ class ParameterRepository(
             data = pd.DataFrame.from_dict(data=data)
 
         parameter = self.get_by_id(id=parameter_id)
-        index_list = (
-            parameter.column_names if parameter.column_names else parameter.indexsets
-        )
+        index_list = parameter.column_names or parameter.indexsets
         existing_data = pd.DataFrame(parameter.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
