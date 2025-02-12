@@ -65,8 +65,12 @@ class Equation(base.BaseModel):
     )
 
     @property
-    def indexsets(self) -> list[str]:
-        return [indexset.name for indexset in self._indexsets]
+    def indexsets(self) -> list[str] | None:
+        return (
+            [indexset.name for indexset in self._indexsets]
+            if len(self._indexsets) > 0
+            else None
+        )
 
     @property
     def column_names(self) -> list[str] | None:
