@@ -368,6 +368,16 @@ git push upstream v<release version>rc<N>
    (without the rc<N>).
 1. Check that the "Publish to PyPI and TestPyPI" GitHub action passed and that the
    distributions are published on https://pypi.org/project/ixmp4/ .
+1. Update on [conda-forge](https://github.com/conda-forge/ixmp4-feedstock). 
+   A PR should automatically be opened by a bot after the GitHub release (sometimes this 
+   takes from 30 minutes to several hours).
+
+   1. Confirm that any new dependencies are added. The minimum versions in meta.yaml 
+      should match the versions in pyproject.toml.
+   1. Ensure that tests pass and complete any other checklist items.
+   1. Merge the PR.
+   1. Check that the new package version appears on conda-forge. This may take up to 
+      several hours.
 
 ## Contributing
 
