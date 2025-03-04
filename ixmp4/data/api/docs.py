@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import ClassVar
 
 import pandas as pd
@@ -45,8 +46,15 @@ class DocsRepository(
     def enumerate(self, dimension_id: int | None = None) -> list[Docs] | pd.DataFrame:
         return super().enumerate(dimension_id=dimension_id)
 
-    def list(self, *, dimension_id: int | None = None) -> list[Docs]:
-        return super()._list(params={"dimension_id": dimension_id})
+    def list(
+        self,
+        *,
+        dimension_id: int | None = None,
+        dimension_id__in: Iterable[int] | None = None,
+    ) -> list[Docs]:
+        return super()._list(
+            params={"dimension_id": dimension_id, "dimension_id__in": dimension_id__in}
+        )
 
     def delete(self, dimension_id: int) -> None:
         super().delete(dimension_id)
