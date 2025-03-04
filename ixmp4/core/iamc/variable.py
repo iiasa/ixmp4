@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime
 from typing import ClassVar
 
@@ -111,3 +112,13 @@ class VariableRepository(BaseFacade):
             return None
         except DocsModel.NotFound:
             return None
+
+    def list_docs(
+        self, id: int | None = None, id__in: Iterable[int] | None = None
+    ) -> Iterable[str]:
+        return [
+            item.description
+            for item in self.backend.iamc.variables.docs.list(
+                dimension_id=id, dimension_id__in=id__in
+            )
+        ]
