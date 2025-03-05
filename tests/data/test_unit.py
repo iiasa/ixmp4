@@ -15,6 +15,23 @@ class TestDataUnit:
         unit1 = platform.backend.units.create("Unit")
         assert unit1.name == "Unit"
 
+        expected_versions = pd.DataFrame(
+            [
+                [1, "Scenario", unit1.created_at, "@unknown", 1, None, 0],
+            ],
+            columns=[
+                "id",
+                "name",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.units.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
         unit2 = platform.backend.units.get("Unit")
         assert unit1.id == unit2.id
 

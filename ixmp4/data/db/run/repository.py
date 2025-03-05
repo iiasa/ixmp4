@@ -29,6 +29,7 @@ class RunRepository(
     base.Creator[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
+    base.VersionManager[Run],
     abstract.RunRepository,
 ):
     model_class = Run
@@ -186,3 +187,15 @@ class RunRepository(
 
         run.is_default = False
         self.session.commit()
+
+    @guard("view")
+    def tabulate_transactions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_transactions(**kwargs)
+
+    @guard("view")
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

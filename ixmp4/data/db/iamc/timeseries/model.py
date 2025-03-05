@@ -10,6 +10,8 @@ from .. import base
 
 
 class TimeSeries(BaseTimeSeries, base.BaseModel):
+    __versioned__ = {}
+
     __table_args__ = (db.UniqueConstraint("run__id", "region__id", "measurand__id"),)
 
     region__id: types.Integer = db.Column(

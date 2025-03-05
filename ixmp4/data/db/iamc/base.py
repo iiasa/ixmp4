@@ -9,6 +9,7 @@ from ..base import (
     Retriever,
     Selecter,
     Tabulator,
+    VersionManager,
 )
 
 

@@ -31,6 +31,7 @@ class ScenarioRepository(
     base.Creator[Scenario],
     base.Retriever[Scenario],
     base.Enumerator[Scenario],
+    base.VersionManager[Scenario],
     abstract.ScenarioRepository,
 ):
     model_class = Scenario
@@ -79,3 +80,15 @@ class ScenarioRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
+
+    @guard("view")
+    def tabulate_transactions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_transactions(**kwargs)
+
+    @guard("view")
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

@@ -18,10 +18,47 @@ class TestDataRegion:
         assert region1.created_at is not None
         assert region1.created_by == "@unknown"
 
+        expected_versions = pd.DataFrame(
+            [
+                [1, "Region", "Hierarchy", region1.created_at, "@unknown", 1, None, 0],
+            ],
+            columns=[
+                "id",
+                "name",
+                "hierarchy",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.regions.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
     def test_delete_region(self, platform: ixmp4.Platform) -> None:
         region1 = platform.backend.regions.create("Region", "Hierarchy")
         platform.backend.regions.delete(region1.id)
         assert platform.backend.regions.tabulate().empty
+
+        expected_versions = pd.DataFrame(
+            [
+                [1, "Region", "Hierarchy", region1.created_at, "@unknown", 1, 2, 0],
+                [1, "Region", "Hierarchy", region1.created_at, "@unknown", 2, None, 2],
+            ],
+            columns=[
+                "id",
+                "name",
+                "hierarchy",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.regions.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_region_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.regions.create("Region", "Hierarchy")
@@ -46,10 +83,40 @@ class TestDataRegion:
         region2 = platform.backend.regions.get_or_create("Region")
         assert region1.id == region2.id
 
-        platform.backend.regions.get_or_create("Other", hierarchy="Hierarchy")
+        other_region = platform.backend.regions.get_or_create(
+            "Other", hierarchy="Hierarchy"
+        )
 
         with pytest.raises(Region.NotUnique):
             platform.backend.regions.get_or_create("Other", hierarchy="Other Hierarchy")
+
+        expected_versions = pd.DataFrame(
+            [
+                [1, "Region", "Hierarchy", region1.created_at, "@unknown", 1, None, 0],
+                [
+                    2,
+                    "Other",
+                    "Hierarchy",
+                    other_region.created_at,
+                    "@unknown",
+                    2,
+                    None,
+                    0,
+                ],
+            ],
+            columns=[
+                "id",
+                "name",
+                "hierarchy",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = platform.backend.regions.tabulate_versions()
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_list_region(self, platform: ixmp4.Platform) -> None:
         platform.backend.regions.create("Region 1", "Hierarchy")

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import numpy as np
 import pandas as pd
@@ -103,7 +103,7 @@ class TimeSeriesRepository(
     @guard("edit")
     def bulk_upsert(self, df: pd.DataFrame, create_related: bool = False) -> None:
         if self.backend.auth_context is not None:
-            run_ids = set(df["run__id"].unique().tolist())
+            run_ids = cast(set[int], set(df["run__id"].unique().tolist()))
             self.runs.check_access(
                 run_ids,
                 access_type="edit",

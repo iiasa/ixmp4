@@ -6,7 +6,7 @@ import pandas as pd
 from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import db
-from ixmp4.data.abstract import iamc as abstract
+from ixmp4.data import abstract
 from ixmp4.data.abstract.annotations import HasNameFilter
 from ixmp4.data.auth.decorators import guard
 from ixmp4.db.filters import BaseFilter
@@ -31,6 +31,7 @@ class VariableRepository(
     base.Creator[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
+    base.VersionManager[Variable],
     abstract.VariableRepository,
 ):
     model_class = Variable
@@ -67,3 +68,15 @@ class VariableRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
+
+    @guard("view")
+    def tabulate_transactions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_transactions(**kwargs)
+
+    @guard("view")
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

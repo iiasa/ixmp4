@@ -17,6 +17,8 @@ class InitKwargs(TypedDict):
 
 
 class RunMetaEntry(base.BaseModel):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.RunMetaEntry.NotFound
     NotUnique: ClassVar = abstract.RunMetaEntry.NotUnique
     DeletionPrevented: ClassVar = abstract.RunMetaEntry.DeletionPrevented

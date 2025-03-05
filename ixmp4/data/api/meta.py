@@ -23,6 +23,10 @@ class RunMetaEntry(base.BaseModel):
     key: str
     dtype: str
     value: abstract.StrictMetaValue
+    value_int: int | None
+    value_str: str | None
+    value_float: float | None
+    value_bool: bool | None
 
 
 # TODO This is tantalizingly close to the run JsonType, but not quite there.
@@ -49,6 +53,7 @@ class RunMetaEntryRepository(
     base.Enumerator[RunMetaEntry],
     base.BulkUpserter[RunMetaEntry],
     base.BulkDeleter[RunMetaEntry],
+    base.VersionManager[RunMetaEntry],
     abstract.RunMetaEntryRepository,
 ):
     model_class = RunMetaEntry

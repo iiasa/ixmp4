@@ -17,13 +17,99 @@ class TestDataRun:
         assert run1.version == 1
         assert not run1.is_default
 
+        expected_run_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    1,
+                    1,
+                    1,
+                    False,
+                    run1.created_at,
+                    "@unknown",
+                    None,
+                    None,
+                    1,
+                    None,
+                    0,
+                ],
+            ],
+            columns=[
+                "id",
+                "model__id",
+                "scenario__id",
+                "version",
+                "is_default",
+                "created_at",
+                "created_by",
+                "updated_at",
+                "updated_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+
+        vdf = platform.backend.runs.tabulate_versions()
+        assert_unordered_equality(expected_run_versions, vdf, check_dtype=False)
+
     def test_create_run_increment_version(self, platform: ixmp4.Platform) -> None:
-        platform.backend.runs.create("Model", "Scenario")
+        run1 = platform.backend.runs.create("Model", "Scenario")
         run2 = platform.backend.runs.create("Model", "Scenario")
         assert run2.model.name == "Model"
         assert run2.scenario.name == "Scenario"
         assert run2.version == 2
         assert not run2.is_default
+
+        expected_run_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    1,
+                    1,
+                    1,
+                    False,
+                    run1.created_at,
+                    "@unknown",
+                    None,
+                    None,
+                    1,
+                    None,
+                    0,
+                ],
+                [
+                    2,
+                    1,
+                    1,
+                    2,
+                    False,
+                    run2.created_at,
+                    "@unknown",
+                    None,
+                    None,
+                    2,
+                    None,
+                    0,
+                ],
+            ],
+            columns=[
+                "id",
+                "model__id",
+                "scenario__id",
+                "version",
+                "is_default",
+                "created_at",
+                "created_by",
+                "updated_at",
+                "updated_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+
+        vdf = platform.backend.runs.tabulate_versions()
+        assert_unordered_equality(expected_run_versions, vdf, check_dtype=False)
 
     def test_get_run_versions(self, platform: ixmp4.Platform) -> None:
         run1a = platform.backend.runs.create("Model", "Scenario")
@@ -41,6 +127,30 @@ class TestDataRun:
 
         run3b = platform.backend.runs.get("Model", "Scenario", 3)
         assert run3a.id == run3b.id
+
+        expected_run_versions = pd.DataFrame(
+            [
+                [1, 1, 1, 1, False, 1, None, 0],
+                [2, 1, 1, 2, False, 2, 3, 0],
+                [2, 1, 1, 2, True, 3, None, 1],
+                [3, 1, 1, 3, False, 4, None, 0],
+            ],
+            columns=[
+                "id",
+                "model__id",
+                "scenario__id",
+                "version",
+                "is_default",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+
+        vdf = platform.backend.runs.tabulate_versions()
+        self.drop_audit_info(vdf)
+
+        assert_unordered_equality(expected_run_versions, vdf, check_dtype=False)
 
     def test_get_run_no_default_version(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(NoDefaultRunVersion):
