@@ -89,11 +89,15 @@ a Pull Request, add your name to the "authors" section in the `pyproject.toml` f
 This project mainly targets postgres version 16 but we test version 15 continously also. Tests with pyarrow installed alongside are also run due to its effect on pandas etc.
 | python | postgres | with pyarrow |
 |--------|----------|--------------|
+| 3.10 | 16 | true |
 | 3.10 | 16 | false |
+| 3.11 | 16 | true |
 | 3.11 | 16 | false |
-| 3.12 | 16 | false |
 | 3.12 | 16 | true |
-| 3.12 | 15 | false |
+| 3.12 | 16 | false |
+| 3.13 | 16 | true |
+| 3.13 | 16 | false |
+| 3.13 | 15 | false |
 
 ## Funding ackownledgement
 
