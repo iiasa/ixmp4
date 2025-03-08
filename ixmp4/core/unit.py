@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from datetime import datetime
 
 import pandas as pd
@@ -131,3 +132,13 @@ class UnitRepository(BaseFacade):
             return None
         except DocsModel.NotFound:
             return None
+
+    def list_docs(
+        self, id: int | None = None, id__in: Iterable[int] | None = None
+    ) -> Iterable[str]:
+        return [
+            item.description
+            for item in self.backend.units.docs.list(
+                dimension_id=id, dimension_id__in=id__in
+            )
+        ]

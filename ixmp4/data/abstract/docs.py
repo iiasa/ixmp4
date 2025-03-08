@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import Protocol
 
 from ixmp4.data import types
@@ -79,14 +80,22 @@ class DocsRepository(base.Retriever, base.Deleter, base.Enumerator, Protocol):
         """
         ...
 
-    def list(self, *, dimension_id: int | None = None) -> list[Docs]:
+    def list(
+        self,
+        *,
+        dimension_id: int | None = None,
+        dimension_id__in: Iterable[int] | None = None,
+    ) -> list[Docs]:
         """Lists documentations.
 
         Parameters
         ----------
-        dimension_id : int
+        dimension_id : int or None
             The id of an object in any dimension. If supplied only one result will be
             returned.
+        dimension_id__in : list[int] or None
+            A list of ids of objects in any one dimension. If supplied, only these
+            objects will be returned.
 
         Returns
         -------
