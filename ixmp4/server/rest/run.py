@@ -7,7 +7,7 @@ from ixmp4.data.db.run.filter import RunFilter
 from ixmp4.data.db.run.model import Run
 
 from . import deps
-from .base import BaseModel, EnumerationOutput, Pagination
+from .base import BaseModel, EnumerationOutput, Pagination, TabulateVersionArgs
 
 router: APIRouter = APIRouter(
     prefix="/runs",
@@ -65,19 +65,53 @@ def unset_as_default_version(
 
 @router.get("/{id}/", response_model=api.Run)
 def get_by_id(
-    id: int,
+    id: int = Path(),
     backend: Backend = Depends(deps.get_backend),
 ) -> Run:
     return backend.runs.get_by_id(id)
 
 
+class RevertInput(BaseModel):
+    transaction__id: int
+
+
+@router.post("/{id}/revert/")
+def revert(
+    id: int = Path(),
+    input: RevertInput = Body(),
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.runs.revert(id, input.transaction__id)
+
+
+@router.post("/{id}/lock/", response_model=api.Run)
+def lock(
+    id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+) -> Run:
+    return backend.runs.lock(id)
+
+
+@router.post("/{id}/unlock/", response_model=api.Run)
+def unlock(
+    id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+) -> Run:
+    return backend.runs.unlock(id)
+
+
 @router.patch("/versions/", response_model=api.DataFrame)
 def tabulate_versions(
+    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> api.DataFrame:
     return api.DataFrame.model_validate(
-        backend.runs.tabulate_versions(limit=pagination.limit, offset=pagination.offset)
+        backend.runs.tabulate_versions(
+            limit=pagination.limit,
+            offset=pagination.offset,
+            **filter.model_dump(),
+        )
     )
 
 

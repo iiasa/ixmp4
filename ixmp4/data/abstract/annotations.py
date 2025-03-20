@@ -119,6 +119,13 @@ class IamcScenarioFilter(TypedDict, total=False):
     run: HasRunFilter
 
 
+class IamcTimeseriesFilter(TypedDict, total=False):
+    region: HasRegionFilter | None
+    variable: HasVariableFilter | None
+    unit: HasUnitFilter | None
+    run: HasRunFilter
+
+
 class IamcUnitFilter(TypedDict, total=False):
     region: HasRegionFilter | None
     variable: HasVariableFilter | None
@@ -147,3 +154,18 @@ class IamcModelFilter(TypedDict, total=False):
 class HasPaginationArgs(TypedDict, total=False):
     limit: int | None
     offset: int | None
+
+
+class HasTransactionIdFilter(TypedDict, total=False):
+    transaction_id: int | None
+    transaction_id__in: Iterable[int]
+    transaction_id__gt: int
+    transaction_id__lt: int
+    transaction_id__gte: int
+    transaction_id__lte: int
+    transaction__id: int | None
+    transaction__id__in: Iterable[int]
+    transaction__id__gt: int
+    transaction__id__lt: int
+    transaction__id__gte: int
+    transaction__id__lte: int

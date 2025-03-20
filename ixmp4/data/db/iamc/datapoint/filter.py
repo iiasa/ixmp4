@@ -1,7 +1,7 @@
 from typing import Any, ClassVar
 
 from ixmp4.data.db.base import SelectType
-from ixmp4.data.db.iamc.datapoint import get_datapoint_model
+from ixmp4.data.db.iamc.datapoint import UniversalDataPoint, get_datapoint_model
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.iamc.timeseries import TimeSeries
 from ixmp4.data.db.iamc.variable import Variable
@@ -164,6 +164,8 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     >>> filter = {"variable": {"name": "variable 1"}, "year": 2020}
     >>> iamc.tabulate(**filter)
     """
+
+    sqla_model: ClassVar[type] = UniversalDataPoint
 
     step_year: filters.Integer | None = filters.Field(None, alias="year")
     time_series__id: filters.Id | None = filters.Field(None, alias="time_series_id")

@@ -20,6 +20,7 @@ from sqlalchemy.sql.schema import Identity, MetaData
 from sqlalchemy_history import make_versioned, transaction_class, version_class
 from sqlalchemy_history.operation import Operation
 from sqlalchemy_history.utils import (
+    end_tx_column_name,
     get_versioning_manager,
     is_versioned,
     tx_column_name,
@@ -119,6 +120,10 @@ class BaseRepository(Generic[ModelType]):
     @cached_property
     def tx_column_name(self) -> Any:
         return tx_column_name(self.model_class)
+
+    @cached_property
+    def end_tx_column_name(self) -> Any:
+        return end_tx_column_name(self.model_class)
 
     def __init__(self, backend: "SqlAlchemyBackend") -> None:
         self.backend = backend
@@ -415,6 +420,9 @@ class BulkOperator(Tabulator[ModelType]):
             - set(primary_key_columns.keys())  # no pk columns
         )  # = all columns that are constant and provided during creation
 
+        for x in existing_df.select_dtypes(include=["datetime64"]).columns.tolist():
+            existing_df[x] = existing_df[x].astype(object)
+
         return df.merge(
             existing_df,
             how="left",
@@ -470,8 +478,7 @@ class BulkOperator(Tabulator[ModelType]):
             meet the condition.
         """
 
-        df_len = len(df.index)
-        chunk_size = df_len
+        chunk_size = len(df.index)
         remaining_df = pd.DataFrame()
 
         if chunk_size <= mu:
@@ -569,7 +576,7 @@ class BulkUpserter(BulkOperator[ModelType]):
     def bulk_insert_versions(self, df: pd.DataFrame) -> None:
         transaction = self.get_transaction()
 
-        df[tx_column_name(self.model_class)] = transaction.id
+        df[self.tx_column_name] = transaction.id
         df["operation_type"] = Operation.INSERT
 
         vclass = version_class(self.model_class)
@@ -606,7 +613,7 @@ class BulkUpserter(BulkOperator[ModelType]):
 
     def bulk_update_versions(self, df: pd.DataFrame) -> None:
         transaction = self.get_transaction()
-        df[tx_column_name(self.model_class)] = transaction.id
+        df[self.tx_column_name] = transaction.id
         df["operation_type"] = Operation.UPDATE
 
         exc = (
@@ -647,7 +654,7 @@ class BulkDeleter(BulkOperator[ModelType]):
         transaction = self.get_transaction()
         vclass = version_class(self.model_class)
 
-        df[tx_column_name(self.model_class)] = transaction.id
+        df[self.tx_column_name] = transaction.id
         df["operation_type"] = Operation.DELETE
 
         for _, sdf in df.groupby(df.index // self.max_list_length):
@@ -691,23 +698,41 @@ class BulkDeleter(BulkOperator[ModelType]):
         self.session.commit()
 
 
+class TabulateTransactionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
+    pass
+
+
+class TabulateVersionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
+    transaction__id: NotRequired[int]
+
+
 class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
     def select_transactions(self) -> db.sql.Select[Any]:
         exc = db.select(self.transaction_class)
-        exc = exc.where(
-            db.or_(
-                self.transaction_class.id.in_(
-                    db.select(self.version_class.transaction_id)
-                ),
-                self.transaction_class.id.in_(
-                    db.select(self.version_class.end_transaction_id)
-                ),
-            )
-        )
         return exc
 
-    def select_versions(self) -> db.sql.Select[Any]:
+    def select_versions(
+        self, transaction__id: int | None = None, **kwargs: Any
+    ) -> db.sql.Select[Any]:
         exc = db.select(self.version_class)
+
+        if transaction__id is not None:
+            exc = exc.where(
+                db.and_(
+                    self.version_class.transaction_id <= transaction__id,
+                    self.version_class.operation_type != Operation.DELETE,
+                    db.or_(
+                        self.version_class.end_transaction_id > transaction__id,
+                        self.version_class.end_transaction_id == db.null(),
+                    ),
+                )
+            )
+
+        for key in kwargs:
+            columns = db.utils.get_columns(self.version_class)
+            if key in columns:
+                exc = exc.where(columns[key] == kwargs[key])
+
         return exc
 
     def apply_pagination(
@@ -721,12 +746,12 @@ class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
 
     def tabulate_versions(
         self,
-        *args: Any,
         limit: int | None = None,
         offset: int | None = None,
+        transaction__id: int | None = None,
         **kwargs: Any,
     ) -> pd.DataFrame:
-        exc = self.select_versions(*args, **kwargs)
+        exc = self.select_versions(transaction__id=transaction__id, **kwargs)
         exc = exc.order_by(self.version_class.transaction_id.asc())
         exc = self.apply_pagination(exc, limit, offset)
 
@@ -734,13 +759,11 @@ class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
 
     def tabulate_transactions(
         self,
-        *args: Any,
         limit: int | None = None,
         offset: int | None = None,
-        **kwargs: Any,
     ) -> pd.DataFrame:
-        exc = self.select_transactions(*args, **kwargs)
-        exc = exc.order_by(self.transaction_class.id.asc())
+        exc = self.select_transactions()
+        exc = exc.order_by(self.transaction_class.issued_at.desc())
         exc = self.apply_pagination(exc, limit, offset)
 
         return self.tabulate_query(exc)

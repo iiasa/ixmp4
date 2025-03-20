@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
@@ -91,7 +91,9 @@ class RunRepository(
         if self.backend.auth_context is not None:
             if not self.backend.auth_context.check_access("edit", model_name):
                 raise Forbidden(f"Access to model '{model_name}' denied.")
-        return super().create(model_name, *args, **kwargs)
+        run = super().create(model_name, *args, **kwargs)
+        self.backend.checkpoints.create(run.id, "Run created")
+        return run
 
     @guard("view")
     def get(self, model_name: str, scenario_name: str, version: int) -> Run:
@@ -114,10 +116,14 @@ class RunRepository(
             )
 
     @guard("view")
-    def get_by_id(self, id: int) -> Run:
-        obj = self.session.get(self.model_class, id)
+    def get_by_id(self, id: int, _access_type: str = "view") -> Run:
+        exc = self.select(_access_type=_access_type, _skip_filter=True).where(
+            self.model_class.id == id
+        )
 
-        if obj is None:
+        try:
+            obj: Run = self.session.execute(exc).scalar_one()
+        except NoResultFound:
             raise Run.NotFound(id=id)
 
         return obj
@@ -145,13 +151,7 @@ class RunRepository(
 
     @guard("edit")
     def set_as_default_version(self, id: int) -> None:
-        try:
-            run = self.session.get(Run, id)
-        except NoResultFound:
-            raise Run.NotFound(id=id)
-
-        if run is None:
-            raise Run.NotFound
+        run = self.get_by_id(id, _access_type="edit")
 
         exc = (
             db.update(Run)
@@ -174,13 +174,7 @@ class RunRepository(
 
     @guard("edit")
     def unset_as_default_version(self, id: int) -> None:
-        try:
-            run = self.session.get(Run, id)
-        except NoResultFound:
-            raise Run.NotFound(id=id)
-
-        if run is None:
-            raise Run.NotFound
+        run = self.get_by_id(id, _access_type="edit")
 
         if not run.is_default:
             raise IxmpError(f"Run with id={id} is not set as the default version.")
@@ -188,14 +182,82 @@ class RunRepository(
         run.is_default = False
         self.session.commit()
 
+    def revert_iamc_data(self, run: Run, transaction__id: int) -> None:
+        # revert timeseries
+        current_ts = self.backend.iamc.timeseries.tabulate(run={"id": run.id})
+        current_dps = self.backend.iamc.datapoints.tabulate(run={"id": run.id})
+
+        if not current_dps.empty:
+            self.backend.iamc.datapoints.bulk_delete(current_dps)  # type: ignore[arg-type]
+
+        if not current_ts.empty:
+            self.backend.iamc.timeseries.bulk_delete(current_ts)
+
+        version_ts = self.backend.iamc.timeseries.tabulate_versions(
+            transaction__id=transaction__id
+        )
+        if version_ts.empty:
+            return
+        version_ts = version_ts.drop(columns=["id"])
+        self.backend.iamc.timeseries.bulk_upsert(version_ts)
+
+        # revert datapoints
+        version_dps = self.backend.iamc.datapoints.tabulate_versions(
+            transaction__id=transaction__id
+        )
+        version_dps = version_dps.drop(columns=["id"])
+        self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
+
+    @guard("edit")
+    def revert(self, id: int, transaction__id: int) -> None:
+        run = self.get_by_id(id, _access_type="edit")
+
+        if self.get_latest_transaction().id == transaction__id:
+            # we are already at the right transaction
+            return
+
+        self.revert_iamc_data(run, transaction__id)
+        self.backend.checkpoints.create(
+            run.id, "Run reverted to transaction " + str(transaction__id)
+        )
+
     @guard("view")
     def tabulate_transactions(
-        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+        self, /, **kwargs: Unpack[base.TabulateTransactionsKwargs]
     ) -> pd.DataFrame:
         return super().tabulate_transactions(**kwargs)
 
     @guard("view")
     def tabulate_versions(
-        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
     ) -> pd.DataFrame:
         return super().tabulate_versions(**kwargs)
+
+    def get_latest_transaction(self) -> base.TransactionProtocol:
+        exc = self.select_transactions()
+        exc = exc.order_by(self.transaction_class.issued_at.desc())
+        transaction = cast(
+            base.TransactionProtocol, self.session.execute(exc).scalars().first()
+        )
+        return transaction
+
+    @guard("edit")
+    def lock(self, id: int) -> Run:
+        try:
+            run = self.get_by_id(id, _access_type="edit")
+        except Run.NotFound:
+            self.get_by_id(id, _access_type="view")
+            raise Forbidden("You may not lock this run.")
+
+        if run.lock_transaction is not None:
+            raise Run.IsLocked()
+        run.lock_transaction = self.get_latest_transaction().id
+        self.session.commit()
+        return run
+
+    @guard("edit")
+    def unlock(self, id: int) -> Run:
+        run = self.get_by_id(id, _access_type="edit")
+        run.lock_transaction = None
+        self.session.commit()
+        return run

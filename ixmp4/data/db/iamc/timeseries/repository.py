@@ -19,6 +19,7 @@ from ixmp4.data.db.timeseries import TimeSeriesRepository as BaseTimeSeriesRepos
 from ixmp4.data.db.unit import Unit, UnitRepository
 from ixmp4.data.db.utils import map_existing
 
+from .. import base
 from ..measurand import MeasurandRepository
 from ..variable import Variable
 from .model import TimeSeries
@@ -169,3 +170,15 @@ class TimeSeriesRepository(
         df = self.map_regions(df)
         df = self.map_measurands(df)
         return df
+
+    @guard("view")
+    def tabulate_transactions(
+        self, /, **kwargs: Unpack[base.TabulateTransactionsKwargs]
+    ) -> pd.DataFrame:
+        return super().tabulate_transactions(**kwargs)
+
+    @guard("view")
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

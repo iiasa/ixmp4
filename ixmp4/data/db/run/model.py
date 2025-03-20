@@ -17,6 +17,7 @@ from .. import base, mixins
 class Run(base.BaseModel, mixins.HasUpdateInfo):
     __versioned__ = {}
 
+    IsLocked: ClassVar = abstract.Run.IsLocked
     NotFound: ClassVar = abstract.Run.NotFound
     NotUnique: ClassVar = abstract.Run.NotUnique
     DeletionPrevented: ClassVar = abstract.Run.DeletionPrevented
@@ -54,3 +55,4 @@ class Run(base.BaseModel, mixins.HasUpdateInfo):
 
     version: types.Integer = db.Column(db.Integer, nullable=False)
     is_default: types.Boolean = db.Column(db.Boolean, default=False, nullable=False)
+    lock_transaction: types.Mapped[int | None] = db.Column(nullable=True, index=True)

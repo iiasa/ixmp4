@@ -14,3 +14,10 @@ class TimeSeriesFilter(base.TimeSeriesFilter, metaclass=filters.FilterMeta):
         self, exc: sql.Select[tuple[TimeSeries]], session: Session | None = None
     ) -> sql.Select[tuple[TimeSeries]]:
         return exc
+
+
+class TimeSeriesVersionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
+    id: filters.Id | None = filters.Field(None)
+    run__id: filters.Id | None = filters.Field(None)
+    transaction_id: filters.Id | None = filters.Field(None)
+    end_transaction_id: filters.Id | None = filters.Field(None)

@@ -5,7 +5,12 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.exceptions import IxmpError, NoDefaultRunVersion
+from ixmp4.core.exceptions import (
+    IxmpError,
+    NoDefaultRunVersion,
+    RunIsLocked,
+    RunLockRequired,
+)
 from ixmp4.data import types
 
 from . import base
@@ -19,6 +24,8 @@ class Run(base.BaseModel, Protocol):
     """Model run data model."""
 
     NoDefaultVersion: ClassVar[type[IxmpError]] = NoDefaultRunVersion
+    IsLocked: ClassVar[type[IxmpError]] = RunIsLocked
+    LockRequired: ClassVar[type[IxmpError]] = RunLockRequired
 
     model__id: types.Integer
     "Foreign unique integer id of the model."
@@ -40,6 +47,8 @@ class Run(base.BaseModel, Protocol):
 
     updated_at: types.DateTime
     updated_by: types.String
+
+    lock_transaction: types.Mapped[int | None]
 
     def __str__(self) -> str:
         return f"<Run {self.id} model={self.model.name} \
@@ -231,5 +240,55 @@ class RunRepository(
         :class:`ixmp4.core.exceptions.IxmpError`:
             If the run is not set as a default version.
 
+        """
+        ...
+
+    def revert(self, id: int, transaction__id: int) -> None:
+        """Reverts run data to a specific `transaction__id`.
+
+        Parameters
+        ----------
+        id : int
+            Unique integer id.
+        transaction__id : int
+            Id of the transaction to revert to.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Run.NotFound`:
+            If no run with the `id` exists.
+        """
+        ...
+
+    def lock(self, id: int) -> Run:
+        """Locks a run at the current transaction (via `transaction__id`).
+
+        Parameters
+        ----------
+        id : int
+            Unique integer id.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Run.NotFound`:
+            If no run with the `id` exists.
+        :class:`ixmp4.data.abstract.Run.IsLocked`:
+            If the run is already locked.
+
+        """
+        ...
+
+    def unlock(self, id: int) -> Run:
+        """Locks a run at the current transaction (via `transaction__id`).
+
+        Parameters
+        ----------
+        id : int
+            Unique integer id.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Run.NotFound`:
+            If no run with the `id` exists.
         """
         ...
