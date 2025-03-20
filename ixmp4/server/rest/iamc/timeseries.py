@@ -9,7 +9,7 @@ from ixmp4.data.db.iamc.timeseries.filter import TimeSeriesFilter
 from ixmp4.data.db.iamc.timeseries.model import TimeSeries
 
 from .. import deps
-from ..base import BaseModel, EnumerationOutput, Pagination
+from ..base import BaseModel, EnumerationOutput, Pagination, TabulateVersionArgs
 from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -73,12 +73,15 @@ def bulk_upsert(
 
 @router.patch("/versions/", response_model=api.DataFrame)
 def tabulate_versions(
+    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> api.DataFrame:
     return api.DataFrame.model_validate(
         backend.iamc.timeseries.tabulate_versions(
-            limit=pagination.limit, offset=pagination.offset
+            limit=pagination.limit,
+            offset=pagination.offset,
+            **filter.model_dump(),
         )
     )
 
