@@ -8,7 +8,7 @@ from fastapi.responses import JSONResponse
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import IxmpError
 
-from . import deps, docs, meta, model, region, run, scenario, unit
+from . import checkpoint, deps, docs, meta, model, region, run, scenario, unit
 from .base import BaseModel
 from .iamc import datapoint, timeseries
 from .iamc import model as iamc_model
@@ -63,6 +63,7 @@ v1.include_router(run.router)
 v1.include_router(scenario.router)
 v1.include_router(timeseries.router, prefix="/iamc")
 v1.include_router(unit.router)
+v1.include_router(checkpoint.router)
 
 
 class APIInfo(BaseModel):
