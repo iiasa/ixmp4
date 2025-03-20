@@ -551,8 +551,12 @@ class BulkDeleter(BulkOperator[ModelType]):
 
 
 class VersionManager(BaseRepository[ModelType]):
-    def tabulate_versions(self) -> pd.DataFrame:
-        return self._tabulate(path="versions/")
+    def tabulate_versions(
+        self, transaction__id: int | None = None, **kwargs: Any
+    ) -> pd.DataFrame:
+        return self._tabulate(
+            path="versions/", json={"transaction__id": transaction__id, **kwargs}
+        )
 
-    def tabulate_transactions(self) -> pd.DataFrame:
-        return self._tabulate(path="transactions/")
+    def tabulate_transactions(self, **kwargs: Any) -> pd.DataFrame:
+        return self._tabulate(path="transactions/", json=kwargs)
