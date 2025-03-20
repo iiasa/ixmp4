@@ -38,13 +38,17 @@ class SmallIamcDataset:
         run2.set_as_default()
 
         datapoints = cls.annual.copy()
-        run1.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
+        with run1.transact():
+            run1.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
+            run1.checkpoints.create("Add iamc data")
         # NOTE mypy doesn't support setters taking a different type than their property
         # https://github.com/python/mypy/issues/3004
         run1.meta = {"run": 1, "test": 0.1293, "bool": True}  # type: ignore[assignment]
 
         datapoints["variable"] = "Variable 4"
-        run2.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
+        with run2.transact():
+            run2.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
+            run2.checkpoints.create("Add iamc data")
         run2.meta = {"run": 2, "test": "string", "bool": False}  # type: ignore[assignment]
         return run1, run2
 
@@ -75,8 +79,17 @@ class FilterIamcDataset:
         run2 = platform.runs.create("Model 2", "Scenario 2")
 
         dps = cls.datapoints.copy()
-        run1.iamc.add(dps[dps["model"] == "Model 1"], type=ixmp4.DataPoint.Type.ANNUAL)
-        run2.iamc.add(dps[dps["model"] == "Model 2"], type=ixmp4.DataPoint.Type.ANNUAL)
+        with run1.transact():
+            run1.iamc.add(
+                dps[dps["model"] == "Model 1"], type=ixmp4.DataPoint.Type.ANNUAL
+            )
+            run1.checkpoints.create("Add iamc data")
+
+        with run2.transact():
+            run2.iamc.add(
+                dps[dps["model"] == "Model 2"], type=ixmp4.DataPoint.Type.ANNUAL
+            )
+            run2.checkpoints.create("Add iamc data")
         return run1, run2
 
 
@@ -118,12 +131,14 @@ class MediumIamcDataset:
             how="all", axis="columns"
         )
         datetime = dps[dps["type"] == "DATETIME"].dropna(how="all", axis="columns")
-        if not annual.empty:
-            run.iamc.add(annual, type=ixmp4.DataPoint.Type.ANNUAL)
-        if not categorical.empty:
-            run.iamc.add(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
-        if not datetime.empty:
-            run.iamc.add(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+        with run.transact():
+            if not annual.empty:
+                run.iamc.add(annual, type=ixmp4.DataPoint.Type.ANNUAL)
+            if not categorical.empty:
+                run.iamc.add(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
+            if not datetime.empty:
+                run.iamc.add(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+            run.checkpoints.create("Add iamc data")
 
     @classmethod
     def get_run_dps(
@@ -227,14 +242,16 @@ class BigIamcDataset:
     ) -> None:
         run = platform.runs.get(*run_tup)
 
-        annual = dps[dps["type"] == "ANNUAL"].dropna(how="all", axis="columns")
-        categorical = dps[dps["type"] == "CATEGORICAL"].dropna(
-            how="all", axis="columns"
-        )
-        datetime = dps[dps["type"] == "DATETIME"].dropna(how="all", axis="columns")
-        run.iamc.add(annual, type=ixmp4.DataPoint.Type.ANNUAL)
-        run.iamc.add(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
-        run.iamc.add(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+        with run.transact():
+            annual = dps[dps["type"] == "ANNUAL"].dropna(how="all", axis="columns")
+            categorical = dps[dps["type"] == "CATEGORICAL"].dropna(
+                how="all", axis="columns"
+            )
+            datetime = dps[dps["type"] == "DATETIME"].dropna(how="all", axis="columns")
+            run.iamc.add(annual, type=ixmp4.DataPoint.Type.ANNUAL)
+            run.iamc.add(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
+            run.iamc.add(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+            run.checkpoints.create("Add iamc data")
 
     @classmethod
     def rm_run_datapoints(
@@ -247,9 +264,11 @@ class BigIamcDataset:
             how="all", axis="columns"
         )
         datetime = dps[dps["type"] == "DATETIME"].dropna(how="all", axis="columns")
-        run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
-        run.iamc.remove(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
-        run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+        with run.transact():
+            run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
+            run.iamc.remove(categorical, type=ixmp4.DataPoint.Type.CATEGORICAL)
+            run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+            run.checkpoints.create("Remove iamc data")
 
     @classmethod
     def load_dataset(cls, platform: ixmp4.Platform) -> None:

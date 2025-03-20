@@ -174,13 +174,14 @@ class TestCoreRun:
         datetime = remove_data[remove_data["type"] == "DATETIME"].dropna(
             how="all", axis="columns"
         )
-
-        if not annual.empty:
-            run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
-        if not cat.empty:
-            run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
-        if not datetime.empty:
-            run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+        with run.transact():
+            if not annual.empty:
+                run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
+            if not cat.empty:
+                run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
+            if not datetime.empty:
+                run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
+            run.checkpoints.create("Remove iamc data")
 
     def test_run_remove_solution(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

@@ -29,6 +29,7 @@ class TestDataRun:
                     "@unknown",
                     None,
                     None,
+                    None,
                     1,
                     None,
                     0,
@@ -44,6 +45,7 @@ class TestDataRun:
                 "created_by",
                 "updated_at",
                 "updated_by",
+                "lock_transaction",
                 "transaction_id",
                 "end_transaction_id",
                 "operation_type",
@@ -73,6 +75,7 @@ class TestDataRun:
                     "@unknown",
                     None,
                     None,
+                    None,
                     1,
                     None,
                     0,
@@ -85,6 +88,7 @@ class TestDataRun:
                     False,
                     run2.created_at,
                     "@unknown",
+                    None,
                     None,
                     None,
                     2,
@@ -102,6 +106,7 @@ class TestDataRun:
                 "created_by",
                 "updated_at",
                 "updated_by",
+                "lock_transaction",
                 "transaction_id",
                 "end_transaction_id",
                 "operation_type",
@@ -130,10 +135,10 @@ class TestDataRun:
 
         expected_run_versions = pd.DataFrame(
             [
-                [1, 1, 1, 1, False, 1, None, 0],
-                [2, 1, 1, 2, False, 2, 3, 0],
-                [2, 1, 1, 2, True, 3, None, 1],
-                [3, 1, 1, 3, False, 4, None, 0],
+                [1, 1, 1, 1, False, None, 1, None, 0],
+                [2, 1, 1, 2, False, None, 2, 3, 0],
+                [2, 1, 1, 2, True, None, 3, None, 1],
+                [3, 1, 1, 3, False, None, 4, None, 0],
             ],
             columns=[
                 "id",
@@ -141,6 +146,7 @@ class TestDataRun:
                 "scenario__id",
                 "version",
                 "is_default",
+                "lock_transaction",
                 "transaction_id",
                 "end_transaction_id",
                 "operation_type",
@@ -199,8 +205,8 @@ class TestDataRun:
 
         true_runs = pd.DataFrame(
             [
-                [1, True, 1, 1, 1],
-                [2, False, 1, 1, 2],
+                [1, True, 1, 1, 1, None],
+                [2, False, 1, 1, 2, None],
             ],
             columns=[
                 "id",
@@ -208,6 +214,7 @@ class TestDataRun:
                 "model__id",
                 "scenario__id",
                 "version",
+                "lock_transaction",
             ],
         )
 

@@ -17,7 +17,7 @@ class TestDataUnit:
 
         expected_versions = pd.DataFrame(
             [
-                [1, "Scenario", unit1.created_at, "@unknown", 1, None, 0],
+                [1, "Unit", unit1.created_at, "@unknown", 1, None, 0],
             ],
             columns=[
                 "id",
