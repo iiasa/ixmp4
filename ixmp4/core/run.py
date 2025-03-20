@@ -1,5 +1,6 @@
 from collections import UserDict
-from typing import ClassVar, cast
+from contextlib import contextmanager
+from typing import Any, ClassVar, Generator, cast
 
 import numpy as np
 import pandas as pd
@@ -15,6 +16,8 @@ from ixmp4.data.abstract.run import EnumerateKwargs
 from ixmp4.data.backend import Backend
 
 from .base import BaseFacade, BaseModelFacade
+from .checkpoints import RunCheckpoints
+from .exceptions import RunLockRequired
 from .iamc import RunIamcData
 from .optimization import OptimizationData
 
@@ -31,14 +34,19 @@ class Run(BaseModelFacade):
     NotFound: ClassVar = RunModel.NotFound
     NotUnique: ClassVar = RunModel.NotUnique
 
+    checkpoints: RunCheckpoints
+
+    owns_lock = False
+
     def __init__(self, **kwargs: Unpack[RunKwargs]) -> None:
         super().__init__(**kwargs)
 
         self.version = self._model.version
 
-        self.iamc = RunIamcData(_backend=self.backend, run=self._model)
+        self.iamc = RunIamcData(_backend=self.backend, run=self)
         self._meta = RunMetaFacade(_backend=self.backend, run=self._model)
         self.optimization = OptimizationData(_backend=self.backend, run=self._model)
+        self.checkpoints = RunCheckpoints(_backend=self.backend, run=self)
 
     @property
     def model(self) -> ModelModel:
@@ -72,6 +80,30 @@ class Run(BaseModelFacade):
     def unset_as_default(self) -> None:
         """Unsets this run as the default version."""
         self.backend.runs.unset_as_default_version(self._model.id)
+
+    def require_lock(self) -> None:
+        if not self.owns_lock:
+            raise RunLockRequired()
+
+    @contextmanager
+    def transact(self) -> Generator[Any, Any, Any]:
+        self._model = self.backend.runs.lock(self._model.id)
+        self.owns_lock = True
+
+        yield
+
+        checkpoint_df = self.checkpoints.tabulate()
+        checkpoint_transaction = int(checkpoint_df["transaction__id"].max())
+
+        assert self._model.lock_transaction is not None
+
+        if checkpoint_transaction > self._model.lock_transaction:
+            self.backend.runs.revert(self._model.id, checkpoint_transaction)
+        else:
+            self.backend.runs.revert(self._model.id, self._model.lock_transaction)
+
+        self._model = self.backend.runs.unlock(self._model.id)
+        self.owns_lock = False
 
 
 class RunRepository(BaseFacade):

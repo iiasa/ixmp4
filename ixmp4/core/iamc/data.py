@@ -1,5 +1,5 @@
 from collections.abc import Iterable
-from typing import Optional, TypeVar
+from typing import TYPE_CHECKING, Optional, TypeVar
 
 import pandas as pd
 import pandera as pa
@@ -10,13 +10,15 @@ from pandera.typing import Series
 from typing_extensions import Unpack
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
-from ixmp4.data.abstract import Run
 from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
 from ixmp4.data.backend import Backend
 
 from ..base import BaseFacade
 from ..utils import substitute_type
 from .variable import VariableRepository
+
+if TYPE_CHECKING:
+    from ..run import Run
 
 
 class RemoveDataPointFrameSchema(pa.DataFrameModel):
@@ -85,9 +87,9 @@ class RunIamcData(BaseFacade):
         Model run.
     """
 
-    run: Run
+    run: "Run"
 
-    def __init__(self, run: Run, **kwargs: Backend | None) -> None:
+    def __init__(self, run: "Run", **kwargs: Backend | None) -> None:
         super().__init__(**kwargs)
         self.run = run
 
@@ -118,6 +120,7 @@ class RunIamcData(BaseFacade):
         df: pd.DataFrame,
         type: Optional[DataPointModel.Type] = None,
     ) -> None:
+        self.run.require_lock()
         df = AddDataPointFrameSchema.validate(df)  # type: ignore[assignment]
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
@@ -129,6 +132,7 @@ class RunIamcData(BaseFacade):
         df: pd.DataFrame,
         type: Optional[DataPointModel.Type] = None,
     ) -> None:
+        self.run.require_lock()
         df = RemoveDataPointFrameSchema.validate(df)  # type: ignore[assignment]
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
