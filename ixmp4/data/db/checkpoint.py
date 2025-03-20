@@ -1,6 +1,5 @@
-from typing import Unpack
-
 import pandas as pd
+from typing_extensions import Unpack
 
 from ixmp4 import db
 from ixmp4.data.auth.decorators import guard
