@@ -16,6 +16,7 @@ from .base import (
     Retriever,
     Tabulator,
 )
+from .checkpoint import Checkpoint, CheckpointRepository
 from .docs import Docs, DocsRepository
 from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint,
     DataPoint,

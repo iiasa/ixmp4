@@ -1,4 +1,5 @@
 from .base import BaseModel, DataFrame
+from .checkpoint import Checkpoint, CheckpointRepository
 from .docs import Docs, DocsRepository
 from .iamc import (  # Measurand,; MeasurandRepository,; AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint, # noqa: E501
     DataPoint,

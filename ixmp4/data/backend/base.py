@@ -1,5 +1,6 @@
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.data.abstract import (
+    CheckpointRepository,
     DataPointRepository,
     EquationRepository,
     IndexSetRepository,
@@ -44,6 +45,7 @@ class Backend(object):
     runs: RunRepository
     scenarios: ScenarioRepository
     units: UnitRepository
+    checkpoints: CheckpointRepository
 
     def __init__(self, info: PlatformInfo) -> None:
         self.info = info

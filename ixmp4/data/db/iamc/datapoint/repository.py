@@ -237,24 +237,24 @@ class DataPointRepository(
         self.delete_orphans()
 
     def delete_orphans(self) -> None:
-        exc = db.delete(TimeSeries).where(
+        exc = db.select(TimeSeries).where(
             ~db.exists(
                 db.select(self.model_class.id).where(
                     TimeSeries.id == self.model_class.time_series__id
                 )
             )
         )
-        self.session.execute(exc, execution_options={"synchronize_session": False})
-        self.session.commit()
+        orphan_ts = self.timeseries.tabulate_query(exc)
+        self.timeseries.bulk_delete(orphan_ts)
 
     @guard("view")
     def tabulate_transactions(
-        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+        self, /, **kwargs: Unpack[base.TabulateTransactionsKwargs]
     ) -> pd.DataFrame:
         return super().tabulate_transactions(**kwargs)
 
     @guard("view")
     def tabulate_versions(
-        self, /, **kwargs: Unpack[abstract.annotations.HasPaginationArgs]
+        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
     ) -> pd.DataFrame:
         return super().tabulate_versions(**kwargs)

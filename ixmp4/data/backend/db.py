@@ -17,6 +17,7 @@ from ixmp4.conf.user import User
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.db import (
     BaseModel,
+    CheckpointRepository,
     DataPointRepository,
     EquationRepository,
     IndexSetRepository,
@@ -75,6 +76,8 @@ class SqlAlchemyBackend(Backend):
     runs: RunRepository
     scenarios: ScenarioRepository
     units: UnitRepository
+    checkpoints: CheckpointRepository
+
     Session = sessionmaker(autocommit=False, autoflush=False, future=True)
     auth_context: AuthorizationContext | None = None
     event_handler: SqlaEventHandler
@@ -117,6 +120,7 @@ class SqlAlchemyBackend(Backend):
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)
         self.units = UnitRepository(self)
+        self.checkpoints = CheckpointRepository(self)
 
     @contextmanager
     def auth(
