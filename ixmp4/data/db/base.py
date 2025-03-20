@@ -423,6 +423,9 @@ class BulkOperator(Tabulator[ModelType]):
         for x in existing_df.select_dtypes(include=["datetime64"]).columns.tolist():
             existing_df[x] = existing_df[x].astype(object)
 
+        for x in df.select_dtypes(include=["datetime64"]).columns.tolist():
+            df[x] = df[x].astype(object)
+
         return df.merge(
             existing_df,
             how="left",
