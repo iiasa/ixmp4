@@ -131,6 +131,10 @@ class TableRepository(
     def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
             data = pd.DataFrame.from_dict(data=data)
+
+        if data.empty:
+            return  # nothing to do
+
         table = self.get_by_id(id=id)
 
         table.data = cast(

@@ -144,6 +144,10 @@ class EquationRepository(
                 data = pd.DataFrame.from_dict(data=data)
             except ValueError as e:
                 raise Equation.DataInvalid(str(e)) from e
+
+        if data.empty:
+            return  # nothing to do
+
         equation = self.get_by_id(id=id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)

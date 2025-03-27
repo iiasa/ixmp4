@@ -82,8 +82,12 @@ class IndexSetRepository(
     def add_data(
         self, id: int, data: float | int | str | List[float] | List[int] | List[str]
     ) -> None:
-        indexset = self.get_by_id(id=id)
         _data = data if isinstance(data, list) else [data]
+
+        if len(_data) == 0:
+            return  # nothing to be done
+
+        indexset = self.get_by_id(id=id)
 
         bulk_insert_enabled_data = [{"value": str(d)} for d in _data]
         try:

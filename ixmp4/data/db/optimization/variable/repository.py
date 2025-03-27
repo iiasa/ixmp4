@@ -145,6 +145,10 @@ class VariableRepository(
                 data = pd.DataFrame.from_dict(data=data)
             except ValueError as e:
                 raise Variable.DataInvalid(str(e)) from e
+
+        if data.empty:
+            return  # nothing to do
+
         variable = self.get_by_id(id=id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)
