@@ -161,6 +161,15 @@ class TestDataOptimizationIndexSet:
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
 
+        # Test adding empty data works
+        platform.backend.optimization.indexsets.add_data(id=indexset_4.id, data=[])
+
+        indexset_4 = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset_4.name
+        )
+
+        assert indexset_4.data == test_data_3
+
     def test_remove_data(
         self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
     ) -> None:
