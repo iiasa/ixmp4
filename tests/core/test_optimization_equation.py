@@ -345,6 +345,11 @@ class TestCoreEquation:
 
         assert equation_6.data == test_data_8
 
+        # Test adding empty data works
+        equation_6.add(pd.DataFrame())
+
+        assert equation_6.data == test_data_8
+
     def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")

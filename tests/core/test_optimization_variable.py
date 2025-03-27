@@ -345,6 +345,11 @@ class TestCoreVariable:
 
         assert variable_6.data == test_data_8
 
+        # Test adding empty data works
+        variable_6.add(pd.DataFrame())
+
+        assert variable_6.data == test_data_8
+
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")

@@ -379,6 +379,14 @@ class TestDataOptimizationEquation:
 
         assert equation_6.data == test_data_8
 
+        # Test adding empty data works
+        platform.backend.optimization.equations.add_data(id=equation_6.id, data={})
+        equation_6 = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation 6"
+        )
+
+        assert equation_6.data == test_data_8
+
     def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(

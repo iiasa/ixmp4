@@ -293,6 +293,11 @@ class TestCoreParameter:
 
         assert parameter_5.data == test_data_8
 
+        # Test adding empty data works
+        parameter_5.add(pd.DataFrame())
+
+        assert parameter_5.data == test_data_8
+
     def test_parameter_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Unit")
