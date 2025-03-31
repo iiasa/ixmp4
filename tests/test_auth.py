@@ -234,8 +234,9 @@ class TestAuthContext:
 
                     with pytest.raises(Forbidden):
                         with run.transact("Add meta data"):
-                            # NOTE mypy doesn't support setters taking a different type than
-                            # their property https://github.com/python/mypy/issues/3004
+                            # NOTE mypy doesn't support setters taking a different
+                            # type than their property
+                            # https://github.com/python/mypy/issues/3004
                             run.meta = {"meta": "test"}  # type: ignore[assignment]
 
     def test_run_audit_info(self, db_platform: ixmp4.Platform) -> None:

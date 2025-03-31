@@ -87,8 +87,8 @@ class TestCoreScalar:
             _ = run.optimization.scalars.create("Scalar", value=20, unit=unit2.name)
 
         scalar.value = 30
-        # NOTE mypy doesn't support setters taking a different type than their property
-        # https://github.com/python/mypy/issues/3004
+        # NOTE mypy doesn't support setters taking a different type than
+        # their property https://github.com/python/mypy/issues/3004
         scalar.unit = "Test Unit"  # type: ignore[assignment]
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")

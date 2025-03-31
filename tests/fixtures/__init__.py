@@ -40,8 +40,8 @@ class SmallIamcDataset:
         datapoints = cls.annual.copy()
         with run1.transact("Add iamc data"):
             run1.iamc.add(datapoints, type=ixmp4.DataPoint.Type.ANNUAL)
-        # NOTE mypy doesn't support setters taking a different type than their property
-        # https://github.com/python/mypy/issues/3004
+        # NOTE mypy doesn't support setters taking a different type than
+        # their property https://github.com/python/mypy/issues/3004
         with run1.transact("Add meta data"):
             run1.meta = {"run": 1, "test": 0.1293, "bool": True}  # type: ignore[assignment]
 
