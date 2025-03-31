@@ -46,9 +46,8 @@ class TestCoreRegion:
 
         run = platform.runs.create("Model", "Scenario")
 
-        with run.transact():
+        with run.transact("Add iamc data"):
             run.iamc.add(self.small.annual.copy(), type=DataPoint.Type.ANNUAL)
-            run.checkpoints.create("Add iamc data")
 
         with pytest.raises(Region.DeletionPrevented):
             platform.regions.delete("Region 1")
@@ -87,7 +86,7 @@ class TestCoreRegion:
 
         run = platform.runs.create("Model", "Scenario")
         with pytest.raises(Region.NotFound):
-            with run.transact():
+            with run.transact("Add invalid data"):
                 run.iamc.add(invalid_data, type=DataPoint.Type.ANNUAL)
 
     def test_list_region(self, platform: ixmp4.Platform) -> None:

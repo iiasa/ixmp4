@@ -1,6 +1,6 @@
 from collections import UserDict
 from contextlib import contextmanager
-from typing import Any, ClassVar, Generator, cast
+from typing import ClassVar, Generator, cast
 
 import numpy as np
 import pandas as pd
@@ -44,7 +44,7 @@ class Run(BaseModelFacade):
         self.version = self._model.version
 
         self.iamc = RunIamcData(_backend=self.backend, run=self)
-        self._meta = RunMetaFacade(_backend=self.backend, run=self._model)
+        self._meta = RunMetaFacade(_backend=self.backend, run=self)
         self.optimization = OptimizationData(_backend=self.backend, run=self._model)
         self.checkpoints = RunCheckpoints(_backend=self.backend, run=self)
 
@@ -85,25 +85,35 @@ class Run(BaseModelFacade):
         if not self.owns_lock:
             raise RunLockRequired()
 
-    @contextmanager
-    def transact(self) -> Generator[Any, Any, Any]:
+    def _lock(self) -> None:
         self._model = self.backend.runs.lock(self._model.id)
         self.owns_lock = True
 
-        yield
-
-        checkpoint_df = self.checkpoints.tabulate()
-        checkpoint_transaction = int(checkpoint_df["transaction__id"].max())
-
-        assert self._model.lock_transaction is not None
-
-        if checkpoint_transaction > self._model.lock_transaction:
-            self.backend.runs.revert(self._model.id, checkpoint_transaction)
-        else:
-            self.backend.runs.revert(self._model.id, self._model.lock_transaction)
-
+    def _unlock(self) -> None:
         self._model = self.backend.runs.unlock(self._model.id)
         self.owns_lock = False
+
+    @contextmanager
+    def transact(self, message: str) -> Generator[None, None, None]:
+        self._lock()
+
+        try:
+            yield
+        except Exception as e:
+            checkpoint_df = self.checkpoints.tabulate()
+            checkpoint_transaction = int(checkpoint_df["transaction__id"].max())
+
+            assert self._model.lock_transaction is not None
+
+            if checkpoint_transaction > self._model.lock_transaction:
+                self.backend.runs.revert(self._model.id, checkpoint_transaction)
+            else:
+                self.backend.runs.revert(self._model.id, self._model.lock_transaction)
+            self._unlock()
+            raise e
+
+        self.checkpoints.create(message)
+        self._unlock()
 
 
 class RunRepository(BaseFacade):
@@ -147,9 +157,9 @@ class RunRepository(BaseFacade):
 
 
 class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
-    run: RunModel
+    run: Run
 
-    def __init__(self, run: RunModel, **kwargs: Backend) -> None:
+    def __init__(self, run: Run, **kwargs: Backend) -> None:
         super().__init__(**kwargs)
         self.run = run
         self.df, self.data = self._get()
@@ -161,6 +171,8 @@ class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
         return df, dict(zip(df["key"], df["value"]))
 
     def _set(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
+        self.run.require_lock()
+
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
         self.backend.meta.bulk_delete(df)
@@ -173,6 +185,8 @@ class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
         self.df, self.data = self._get()
 
     def __setitem__(self, key: str, value: PrimitiveTypes | np.generic | None) -> None:
+        self.run.require_lock()
+
         try:
             del self[key]
         except KeyError:
@@ -184,6 +198,7 @@ class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
+        self.run.require_lock()
         id = dict(zip(self.df["key"], self.df["id"]))[key]
         self.backend.meta.delete(id)
         self.df, self.data = self._get()

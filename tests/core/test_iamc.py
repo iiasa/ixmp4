@@ -96,9 +96,8 @@ class TestCoreIamc:
         run = platform.runs.create("Model", "Scenario")
         # == Full Addition ==
         # Save to database
-        with run.transact():
+        with run.transact("Full Addition"):
             run.iamc.add(data, type=_type)
-            run.checkpoints.create("Full Addition")
 
         # Retrieve from database via Run
         ret = run.iamc.tabulate(raw=raw)
@@ -135,9 +134,8 @@ class TestCoreIamc:
         # Remove half the data
         remove_data = data.head(len(data) // 2).drop(columns=["value"])
         remaining_data = data.tail(len(data) // 2).reset_index(drop=True)
-        with run.transact():
+        with run.transact("Partial Removal"):
             run.iamc.remove(remove_data, type=_type)
-            run.checkpoints.create("Partial Removal")
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -157,10 +155,9 @@ class TestCoreIamc:
         # Update all data values
         data["value"] = -9.9
 
-        with run.transact():
+        with run.transact("Partial Update / Partial Addition"):
             # Results in a half insert / half update
             run.iamc.add(data, type=_type)
-            run.checkpoints.create("Partial Update / Partial Addition")
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -171,10 +168,9 @@ class TestCoreIamc:
         # == Full Removal ==
         # Remove all data
         remove_data = data.drop(columns=["value"])
-        with run.transact():
+        with run.transact("Full Removal"):
             # Results in a half insert / half update
             run.iamc.remove(remove_data, type=_type)
-            run.checkpoints.create("Full Removal")
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
