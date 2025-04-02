@@ -17,9 +17,9 @@ from sqlalchemy.ext.compiler import compiles
 from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import Identity, MetaData
-from sqlalchemy_history import make_versioned, transaction_class, version_class
-from sqlalchemy_history.operation import Operation
-from sqlalchemy_history.utils import (
+from sqlalchemy_continuum import make_versioned, transaction_class, version_class
+from sqlalchemy_continuum.operation import Operation
+from sqlalchemy_continuum.utils import (
     end_tx_column_name,
     get_versioning_manager,
     is_versioned,
@@ -394,7 +394,7 @@ class Enumerator(Lister[ModelType], Tabulator[ModelType]):
 
 
 class TransactionProtocol(Protocol):
-    """Protocol class to mock the type of sqlalchemy_historys"""
+    """Protocol class to mock the type of sqlalchemy_continuums"""
 
     id: int
     issued_at: datetime

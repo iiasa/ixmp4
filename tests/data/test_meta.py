@@ -1,6 +1,6 @@
 import pandas as pd
 import pytest
-from sqlalchemy_history.operation import Operation
+from sqlalchemy_continuum.operation import Operation
 
 import ixmp4
 from ixmp4.core.exceptions import InvalidRunMeta, SchemaError

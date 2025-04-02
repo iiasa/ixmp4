@@ -148,17 +148,6 @@ uv = ["uv (>=0.1.18)"]
 virtualenv = ["virtualenv (>=20.0.35)"]
 
 [[package]]
-name = "cached-property"
-version = "2.0.1"
-description = "A decorator for caching properties in classes."
-optional = false
-python-versions = ">=3.8"
-files = [
-    {file = "cached_property-2.0.1-py3-none-any.whl", hash = "sha256:f617d70ab1100b7bcf6e42228f9ddcb78c676ffa167278d9f730d1c2fba69ccb"},
-    {file = "cached_property-2.0.1.tar.gz", hash = "sha256:484d617105e3ee0e4f1f58725e72a8ef9e93deee462222dbd51cd91230897641"},
-]
-
-[[package]]
 name = "certifi"
 version = "2025.1.31"
 description = "Python package for providing Mozilla's CA Bundle."
@@ -3079,20 +3068,26 @@ pymysql = ["pymysql"]
 sqlcipher = ["sqlcipher3_binary"]
 
 [[package]]
-name = "sqlalchemy-history"
-version = "2.1.4"
-description = "History tracking extension for SQLAlchemy."
+name = "sqlalchemy-continuum"
+version = "1.4.2"
+description = "Versioning and auditing extension for SQLAlchemy."
 optional = false
-python-versions = ">=3.7,<4.0"
+python-versions = "*"
 files = [
-    {file = "sqlalchemy_history-2.1.4-py3-none-any.whl", hash = "sha256:adeee6e5a9a1e89126fec29fd4f5dfef83b86000d3cc0cca3b921533309a2633"},
-    {file = "sqlalchemy_history-2.1.4.tar.gz", hash = "sha256:39a2fe5f1c26099de58ece95db0d5cd22f4e1049b300c6be7680ee8118f9a157"},
+    {file = "SQLAlchemy_Continuum-1.4.2-py3-none-any.whl", hash = "sha256:154588d79deb8b1683b5f39c130e6f0ad793c0b2f27e8c210565c23fb6fe74de"},
+    {file = "sqlalchemy_continuum-1.4.2.tar.gz", hash = "sha256:0fd2be79f718eda47c2206879d92ec4ebf1889364637b3caf3ee5d34bd19c8e3"},
 ]
 
 [package.dependencies]
-cached-property = "*"
-SQLAlchemy = ">=1.4"
-SQLAlchemy-Utils = ">=0.30.12"
+SQLAlchemy = ">=1.4.0"
+SQLAlchemy-Utils = ">=0.41.2"
+
+[package.extras]
+flask = ["Flask (>=0.9)"]
+flask-login = ["Flask-Login (>=0.2.9)"]
+flask-sqlalchemy = ["Flask-SQLAlchemy (>=1.0)"]
+i18n = ["SQLAlchemy-i18n (>=0.8.4,!=1.1.0)"]
+test = ["Flask (>=0.9)", "Flask-Login (>=0.2.9)", "Flask-SQLAlchemy (>=1.0)", "PyMySQL (>=0.8.0)", "SQLAlchemy-i18n (>=0.8.4,!=1.1.0)", "psycopg2 (>=2.4.6)", "pytest (>=2.3.5)"]
 
 [[package]]
 name = "sqlalchemy-utils"
@@ -3647,4 +3642,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.0"
 python-versions = ">=3.10, <3.14"
-content-hash = "9cbe993239b2e3a21c117a03754dce3d93c86d238c4cee1a47ddf4f4fedb1ed4"
+content-hash = "ca395abf44a92fa6118326a045b8564ce6b99ae3999d942db9314aee62ec39fc"
