@@ -1,3 +1,17 @@
+"""
+When making schema migrations for versioned tables
+you need to remember to call `sync_trigger` in order
+to keep the version trigger up-to-date.
+
+```
+from alembic import context
+
+if not context.is_offline_mode():
+    conn = context.get_bind()
+    sync_trigger(conn, "my_table_version")
+```
+"""
+
 from logging.config import fileConfig
 from typing import Literal
 

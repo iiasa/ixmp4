@@ -231,7 +231,7 @@ class RunMetaEntryRepository(
             # This cast should always be a no-op
             col = RunMetaEntry._column_map[cast(str, type_)]
             null_cols = set(RunMetaEntry._column_map.values()) - set([col])
-            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)
+            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)  # type: ignore[union-attr]
             type_df = type_df.rename(columns={"value": col})
 
             # ensure all other columns are overwritten
@@ -245,12 +245,6 @@ class RunMetaEntryRepository(
     def bulk_delete(self, df: DataFrame[RemoveRunMetaEntryFrameSchema]) -> None:
         self.check_df_access(df)
         super().bulk_delete(df)
-
-    @guard("view")
-    def tabulate_transactions(
-        self, /, **kwargs: Unpack[base.TabulateTransactionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_transactions(**kwargs)
 
     @guard("view")
     def tabulate_versions(

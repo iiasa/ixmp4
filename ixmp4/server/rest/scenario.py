@@ -61,15 +61,3 @@ def tabulate_versions(
             **filter.model_dump(),
         )
     )
-
-
-@router.patch("/transactions/", response_model=api.DataFrame)
-def tabulate_transactions(
-    pagination: Pagination = Depends(),
-    backend: Backend = Depends(deps.get_backend),
-) -> api.DataFrame:
-    return api.DataFrame.model_validate(
-        backend.scenarios.tabulate_transactions(
-            limit=pagination.limit, offset=pagination.offset
-        )
-    )

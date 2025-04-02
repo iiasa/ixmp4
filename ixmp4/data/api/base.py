@@ -557,6 +557,3 @@ class VersionManager(BaseRepository[ModelType]):
         return self._tabulate(
             path="versions/", json={"transaction__id": transaction__id, **kwargs}
         )
-
-    def tabulate_transactions(self, **kwargs: Any) -> pd.DataFrame:
-        return self._tabulate(path="transactions/", json=kwargs)

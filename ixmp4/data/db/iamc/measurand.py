@@ -104,12 +104,6 @@ class MeasurandRepository(
         return super().tabulate()
 
     @guard("view")
-    def tabulate_transactions(
-        self, /, **kwargs: Unpack[base.TabulateTransactionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_transactions(**kwargs)
-
-    @guard("view")
     def tabulate_versions(
         self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
     ) -> pd.DataFrame:
