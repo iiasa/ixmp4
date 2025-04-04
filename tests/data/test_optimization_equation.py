@@ -395,7 +395,7 @@ class TestDataOptimizationEquation:
         platform.backend.optimization.indexsets.add_data(
             id=indexset.id, data=["foo", "bar"]
         )
-        test_data = {
+        test_data: dict[str, list[float | int | str]] = {
             indexset.name: ["bar", "foo"],
             "levels": [2.3, 1],
             "marginals": [0, 4.2],
@@ -411,6 +411,53 @@ class TestDataOptimizationEquation:
         )
         assert equation.data == test_data
 
+        # Test removing empty data removes nothing
+        platform.backend.optimization.equations.remove_data(
+            id=equation.id, data=pd.DataFrame()
+        )
+        equation = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
+
+        assert equation.data == test_data
+
+        # Test incomplete index raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.equations.remove_data(
+                id=equation.id, data={"foo": ["bar"]}
+            )
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.equations.remove_data(
+                id=equation.id, data={"levels": [2.3]}
+            )
+
+        # Test removing one row
+        remove_data = {indexset.name: [test_data[indexset.name][0]]}
+        test_data_2 = {k: [v[1]] for k, v in test_data.items()}
+        platform.backend.optimization.equations.remove_data(
+            id=equation.id, data=remove_data
+        )
+        equation = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
+        assert equation.data == test_data_2
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data["levels"] = [1]
+        platform.backend.optimization.equations.remove_data(
+            id=equation.id, data=remove_data
+        )
+
+        assert equation.data == test_data_2
+
+        # Test removing all rows
         platform.backend.optimization.equations.remove_data(id=equation.id)
         equation = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation"

@@ -45,9 +45,14 @@ class Equation(BaseModelFacade):
             run_id=self._model.run__id, name=self._model.name
         )
 
-    def remove_data(self) -> None:
-        """Removes all data from the Equation."""
-        self.backend.optimization.equations.remove_data(id=self._model.id)
+    # TODO Make name of these functions consistent across items
+    def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
+        """Removes data from the Equation.
+
+        If `data` is `None` (the default), remove all data. Otherwise, data must specify
+        all indexed columns. All other keys/columns are ignored.
+        """
+        self.backend.optimization.equations.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.equations.get(
             run_id=self._model.run__id, name=self._model.name
         )

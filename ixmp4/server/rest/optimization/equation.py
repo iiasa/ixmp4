@@ -25,7 +25,7 @@ class EquationCreateInput(BaseModel):
 
 
 class DataInput(BaseModel):
-    data: dict[str, Any]
+    data: dict[str, Any] | None
 
 
 @autodoc
@@ -71,9 +71,10 @@ def add_data(
 @router.delete("/{id}/data/")
 def remove_data(
     id: int,
+    data: DataInput,
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.optimization.equations.remove_data(id=id)
+    backend.optimization.equations.remove_data(id=id, **data.model_dump())
 
 
 @autodoc
