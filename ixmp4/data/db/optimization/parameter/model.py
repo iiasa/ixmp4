@@ -1,11 +1,14 @@
-from typing import Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
-from .. import IndexSet, base, utils
+from .. import base, utils
+
+if TYPE_CHECKING:
+    from .. import IndexSet
 
 
 class ParameterIndexsetAssociation(base.RootBaseModel):
@@ -16,7 +19,7 @@ class ParameterIndexsetAssociation(base.RootBaseModel):
         back_populates="_parameter_indexset_associations"
     )
     indexset__id: types.IndexSetId
-    indexset: types.Mapped[IndexSet] = db.relationship()
+    indexset: types.Mapped["IndexSet"] = db.relationship()
 
     column_name: types.String = db.Column(db.String(255), nullable=True)
 
@@ -55,7 +58,7 @@ class Parameter(base.BaseModel):
         passive_deletes=True,
     )
 
-    _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(
+    _indexsets: db.AssociationProxy[list["IndexSet"]] = db.association_proxy(
         "_parameter_indexset_associations", "indexset"
     )
     _column_names: db.AssociationProxy[list[str | None]] = db.association_proxy(
