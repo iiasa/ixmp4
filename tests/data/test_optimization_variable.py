@@ -383,7 +383,7 @@ class TestDataOptimizationVariable:
         platform.backend.optimization.indexsets.add_data(
             id=indexset.id, data=["foo", "bar"]
         )
-        test_data = {
+        test_data: dict[str, list[float | int | str]] = {
             "Indexset": ["bar", "foo"],
             "levels": [2.0, 1],
             "marginals": [0, 4.2],
@@ -399,6 +399,56 @@ class TestDataOptimizationVariable:
         )
         assert variable.data == test_data
 
+        # Test removing empty data removes nothing
+        platform.backend.optimization.variables.remove_data(
+            id=variable.id, data=pd.DataFrame()
+        )
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+
+        assert variable.data == test_data
+
+        # Test incomplete index raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.variables.remove_data(
+                id=variable.id, data={"foo": ["bar"]}
+            )
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.variables.remove_data(
+                id=variable.id, data={"levels": [2.3]}
+            )
+
+        # Test removing one row
+        remove_data = {indexset.name: [test_data[indexset.name][0]]}
+        test_data_2 = {k: [v[1]] for k, v in test_data.items()}
+        platform.backend.optimization.variables.remove_data(
+            id=variable.id, data=remove_data
+        )
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.data == test_data_2
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data["levels"] = [1]
+        platform.backend.optimization.variables.remove_data(
+            id=variable.id, data=remove_data
+        )
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+
+        assert variable.data == test_data_2
+
+        # Test removing all rows
         platform.backend.optimization.variables.remove_data(id=variable.id)
         variable = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable"

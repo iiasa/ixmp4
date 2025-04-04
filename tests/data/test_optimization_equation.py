@@ -454,6 +454,9 @@ class TestDataOptimizationEquation:
         platform.backend.optimization.equations.remove_data(
             id=equation.id, data=remove_data
         )
+        equation = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation"
+        )
 
         assert equation.data == test_data_2
 
