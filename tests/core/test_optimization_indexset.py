@@ -5,6 +5,7 @@ import pytest
 import ixmp4
 from ixmp4.core import IndexSet
 from ixmp4.core.exceptions import DeletionPrevented, OptimizationDataValidationError
+from ixmp4.data.backend.api import RestBackend
 
 from ..utils import create_indexsets_for_run
 
@@ -136,17 +137,104 @@ class TestCoreIndexset:
         indexset_1.remove(data=[])
 
         assert indexset_1.data == test_data
+        # Define additional items affected by `remove_data`
+        # Define a basic affected Table
+        table = run.optimization.tables.create(
+            "Table", constrained_to_indexsets=[indexset_1.name]
+        )
+        table.add({indexset_1.name: ["do", "re", "mi"]})
+
+        # Define an affected Table without data
+        table_2 = run.optimization.tables.create(
+            "Table 2", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        # Define a basic affected Parameter
+        unit = platform.units.create("Unit")
+        parameter = run.optimization.parameters.create(
+            "Parameter", constrained_to_indexsets=[indexset_1.name]
+        )
+        parameter.add(
+            {
+                indexset_1.name: ["mi", "fa", "so"],
+                "values": [1, 2, 3],
+                "units": [unit.name] * 3,
+            }
+        )
+
+        # Define a Parameter where only 1 dimension is affected
+        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        indexset_2.add(["foo", "bar", "baz"])
+        parameter_2 = run.optimization.parameters.create(
+            "Parameter 2", constrained_to_indexsets=[indexset_1.name, indexset_2.name]
+        )
+        parameter_2.add(
+            {
+                indexset_1.name: ["do", "do", "la", "ti"],
+                indexset_2.name: ["foo", "bar", "baz", "foo"],
+                "values": [1, 2, 3, 4],
+                "units": [unit.name] * 4,
+            }
+        )
+
+        # Define a Parameter with 2 affected dimensions
+        parameter_3 = run.optimization.parameters.create(
+            "Parameter 3",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        parameter_3.add(
+            {
+                "Column 1": ["la", "la", "do", "ti"],
+                "Column 2": ["re", "fa", "mi", "do"],
+                "values": [1, 2, 3, 4],
+                "units": [unit.name, unit.name, unit.name, unit.name],
+            }
+        )
 
         # Test removing multiple arbitrary known data
-        remove_data = ["do", "mi", "la", "ti"]
+        remove_data = ["fa", "mi", "la", "ti"]
         expected = [data for data in test_data if data not in remove_data]
+        expected_table = [
+            data for data in table.data[indexset_1.name] if data not in remove_data
+        ]
+        expected_parameter = {
+            k: [
+                v[i]
+                for i in range(len(v))
+                if parameter.data[indexset_1.name][i] not in remove_data
+            ]
+            for k, v in parameter.data.items()
+        }
+        expected_parameter_2 = {
+            k: [
+                v[i]
+                for i in range(len(v))
+                if parameter_2.data[indexset_1.name][i] not in remove_data
+            ]
+            for k, v in parameter_2.data.items()
+        }
         indexset_1.remove(data=remove_data)
 
         assert indexset_1.data == expected
 
-        # Test removing single item
-        expected.remove("fa")
-        indexset_1.remove(data="fa")
+        # TODO Why do we need to reload items when using the rest API?
+        if isinstance(platform.backend, RestBackend):
+            table = run.optimization.tables.get(table.name)
+            parameter = run.optimization.parameters.get(parameter.name)
+            parameter_2 = run.optimization.parameters.get(parameter_2.name)
+            parameter_3 = run.optimization.parameters.get(parameter_3.name)
+
+        # Test effect on linked items
+        assert table.data[indexset_1.name] == expected_table
+        assert parameter.data == expected_parameter
+        assert parameter_2.data == expected_parameter_2
+        assert parameter_3.data == {}
+
+        # Test removing a single item
+        expected.remove("do")
+        expected_table.remove("do")
+        indexset_1.remove(data="do")
 
         assert indexset_1.data == expected
 
@@ -160,11 +248,28 @@ class TestCoreIndexset:
         indexset_1.remove(data=True)
 
         assert indexset_1.data == expected
+        if isinstance(platform.backend, RestBackend):
+            table = run.optimization.tables.get(table.name)
+            parameter_2 = run.optimization.parameters.get(parameter_2.name)
+
+        assert table.data[indexset_1.name] == expected_table
+        assert parameter_2.data == {}
 
         # Test removing all remaining data
-        indexset_1.remove(data=["so", "re"])
+        indexset_1.remove(data=["so", "re"], remove_dependent_data=False)
 
         assert indexset_1.data == []
+
+        if isinstance(platform.backend, RestBackend):
+            table = run.optimization.tables.get(table.name)
+            table_2 = run.optimization.tables.get(table_2.name)
+            parameter = run.optimization.parameters.get(parameter.name)
+
+        assert table_2.data == {}
+
+        # Test dependent items were not changed
+        assert table.data[indexset_1.name] == expected_table
+        assert parameter.data == expected_parameter
 
     def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

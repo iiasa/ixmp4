@@ -97,6 +97,12 @@ class IndexSetRepository(
         | List[StrictFloat]
         | List[StrictInt]
         | List[StrictStr],
+        remove_dependent_data: bool = True,
     ) -> None:
         kwargs = {"id": id, "data": data}
-        self._request("DELETE", self.prefix + str(id) + "/data/", json=kwargs)
+        self._request(
+            "DELETE",
+            self.prefix + str(id) + "/data/",
+            params={"remove_dependent_data": remove_dependent_data},
+            json=kwargs,
+        )
