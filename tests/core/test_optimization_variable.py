@@ -354,7 +354,7 @@ class TestCoreVariable:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(data=["foo", "bar"])
-        test_data = {
+        test_data: dict[str, list[float | int | str]] = {
             "Indexset": ["bar", "foo"],
             "levels": [2.3, 1],
             "marginals": [0, 4.2],
@@ -366,6 +366,37 @@ class TestCoreVariable:
         variable.add(test_data)
         assert variable.data == test_data
 
+        # Test removing empty data removes nothing
+        variable.remove_data(data={})
+
+        assert variable.data == test_data
+
+        # Test incomplete index raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            variable.remove_data(data={"foo": ["bar"]})
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            variable.remove_data(data={"levels": [2.3]})
+
+        # Test removing one row
+        remove_data = {indexset.name: [test_data[indexset.name][0]]}
+        test_data_2 = {k: [v[1]] for k, v in test_data.items()}
+        variable.remove_data(data=remove_data)
+        assert variable.data == test_data_2
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data["levels"] = [1]
+        variable.remove_data(data=remove_data)
+
+        assert variable.data == test_data_2
+
+        # Test removing all rows
         variable.remove_data()
         assert variable.data == {}
 

@@ -185,9 +185,6 @@ class EquationRepository(
             # TODO Is there a better way to reset .data?
             equation.data = {}
         else:
-            # # TODO Why is this necessary? Could bool(None) ever be True?
-            # assert data
-
             if isinstance(data, dict):
                 data = pd.DataFrame.from_dict(data=data)
 
