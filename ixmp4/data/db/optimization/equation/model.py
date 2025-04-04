@@ -1,15 +1,14 @@
 from typing import TYPE_CHECKING, Any, ClassVar
 
-# TODO Why do we need this only for Equations?
-if TYPE_CHECKING:
-    from .. import IndexSet
-
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
 from .. import base, utils
+
+if TYPE_CHECKING:
+    from .. import IndexSet
 
 
 class EquationIndexsetAssociation(base.RootBaseModel):
