@@ -226,6 +226,43 @@ class TestCoreIamc:
         obs = _run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
 
+    def test_iamc_versioning(self, platform: ixmp4.Platform) -> None:
+        self.do_run_datapoints(
+            platform, self.small.annual.copy(), True, DataPoint.Type.ANNUAL
+        )
+        vdf = platform.backend.iamc.datapoints.tabulate_versions()
+        expected_versions = pd.DataFrame(
+            [
+                [0.5, "ANNUAL", None, 2000, None, 1, 1, 22, 26.0, 0],
+                [1.0, "ANNUAL", None, 2010, None, 2, 2, 22, 26.0, 0],
+                [1.5, "ANNUAL", None, 2020, None, 3, 3, 22, 32.0, 0],
+                [1.7, "ANNUAL", None, 2020, None, 4, 4, 22, 32.0, 0],
+                [0.5, "ANNUAL", None, 2000, None, 1, 1, 26, None, 2],
+                [1.0, "ANNUAL", None, 2010, None, 2, 2, 26, None, 2],
+                [-9.9, "ANNUAL", None, 2000, None, 5, 5, 31, 35.0, 0],
+                [-9.9, "ANNUAL", None, 2010, None, 6, 6, 31, 35.0, 0],
+                [-9.9, "ANNUAL", None, 2020, None, 3, 3, 32, 35.0, 1],
+                [-9.9, "ANNUAL", None, 2020, None, 4, 4, 32, 35.0, 1],
+                [-9.9, "ANNUAL", None, 2020, None, 3, 3, 35, None, 2],
+                [-9.9, "ANNUAL", None, 2020, None, 4, 4, 35, None, 2],
+                [-9.9, "ANNUAL", None, 2000, None, 5, 5, 35, None, 2],
+                [-9.9, "ANNUAL", None, 2010, None, 6, 6, 35, None, 2],
+            ],
+            columns=[
+                "value",
+                "type",
+                "step_category",
+                "step_year",
+                "step_datetime",
+                "time_series__id",
+                "id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
 
 class TestCoreIamcReadOnly:
     def test_mp_tabulate_big_async(self, platform_med: ixmp4.Platform) -> None:
