@@ -138,6 +138,7 @@ class BaseRepository(Generic[ModelType]):
         self.bundle: Bundle[Any] = Bundle(
             self.model_class.__name__, *db.utils.get_columns(self.model_class).values()
         )
+
         super().__init__()
 
 
@@ -710,6 +711,14 @@ class TabulateVersionsKwargs(abstract.annotations.HasPaginationArgs, total=False
 
 
 class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.version_bundle: Bundle[Any] = Bundle(
+            self.version_class.__name__,
+            *db.utils.get_columns(self.version_class).values(),
+        )
+
     def select_transactions(self) -> db.sql.Select[Any]:
         exc = db.select(self.transaction_class)
         return exc

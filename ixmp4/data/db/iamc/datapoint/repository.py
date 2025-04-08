@@ -5,6 +5,8 @@ import pandas as pd
 import pandera as pa
 from pandera.engines import pandas_engine
 from pandera.typing import DataFrame, Series
+from sqlalchemy_continuum import version_class
+from sqlalchemy_continuum.operation import Operation
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
@@ -246,6 +248,70 @@ class DataPointRepository(
         )
         orphan_ts = self.timeseries.tabulate_query(exc)
         self.timeseries.bulk_delete(orphan_ts)
+
+    def select_versions(
+        self, transaction__id: int | None = None, **kwargs: Any
+    ) -> db.sql.Select[Any]:
+        exc = db.select(
+            self.version_bundle,
+            self.backend.regions.version_class.name.label("region"),
+            self.backend.units.version_class.name.label("unit"),
+            self.backend.iamc.variables.version_class.name.label("variable"),
+        ).select_from(self.version_class)
+
+        exc = (
+            exc.join(
+                self.backend.iamc.timeseries.version_class,
+                onclause=self.version_class.time_series__id
+                == self.backend.iamc.timeseries.version_class.id,
+            )
+            .join(
+                self.backend.regions.version_class,
+                onclause=self.backend.iamc.timeseries.version_class.region__id
+                == self.backend.regions.version_class.id,
+            )
+            .join(
+                version_class(Measurand),
+                onclause=self.backend.iamc.timeseries.version_class.measurand__id
+                == version_class(Measurand).id,
+            )
+            .join(
+                self.backend.units.version_class,
+                onclause=version_class(Measurand).unit__id
+                == self.backend.units.version_class.id,
+            )
+            .join(
+                self.backend.iamc.variables.version_class,
+                onclause=version_class(Measurand).variable__id
+                == self.backend.iamc.variables.version_class.id,
+            )
+        )
+
+        if transaction__id is not None:
+            for vclass in [
+                self.version_class,
+                self.backend.regions.version_class,
+                version_class(Measurand),
+                self.backend.units.version_class,
+                self.backend.iamc.variables.version_class,
+            ]:
+                exc = exc.where(
+                    db.and_(
+                        vclass.transaction_id <= transaction__id,
+                        vclass.operation_type != Operation.DELETE,
+                        db.or_(
+                            vclass.end_transaction_id > transaction__id,
+                            vclass.end_transaction_id == db.null(),
+                        ),
+                    )
+                )
+
+        for key in kwargs:
+            columns = db.utils.get_columns(self.version_class)
+            if key in columns:
+                exc = exc.where(columns[key] == kwargs[key])
+
+        return exc.distinct()
 
     @guard("view")
     def tabulate_versions(

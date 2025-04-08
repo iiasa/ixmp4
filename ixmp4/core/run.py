@@ -109,6 +109,7 @@ class Run(BaseModelFacade):
                 self.backend.runs.revert(self._model.id, checkpoint_transaction)
             else:
                 self.backend.runs.revert(self._model.id, self._model.lock_transaction)
+
             self._unlock()
             raise e
 

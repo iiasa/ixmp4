@@ -182,6 +182,29 @@ class RunRepository(
         run.is_default = False
         self.session.commit()
 
+    def _get_or_create_ts(self, run__id: int, df: pd.DataFrame) -> pd.DataFrame:
+        df["run__id"] = run__id
+        id_cols = ["region", "variable", "unit", "run__id"]
+        # create set of unqiue timeseries (if missing)
+        ts_df = df[id_cols].drop_duplicates()
+        self.backend.iamc.timeseries.bulk_upsert(ts_df, create_related=True)
+
+        # retrieve them again to get database ids
+        ts_df = self.backend.iamc.timeseries.tabulate(
+            join_parameters=True,
+            run={"id": run__id, "default_only": False},
+        )
+        ts_df = ts_df.rename(columns={"id": "time_series__id"})
+
+        # merge on the identity columns
+        return pd.merge(
+            df,
+            ts_df,
+            how="left",
+            on=id_cols,
+            suffixes=(None, "_y"),
+        )
+
     def revert_iamc_data(self, run: Run, transaction__id: int) -> None:
         # revert timeseries
         current_ts = self.backend.iamc.timeseries.tabulate(run={"id": run.id})
@@ -193,19 +216,23 @@ class RunRepository(
         if not current_ts.empty:
             self.backend.iamc.timeseries.bulk_delete(current_ts)
 
-        version_ts = self.backend.iamc.timeseries.tabulate_versions(
-            transaction__id=transaction__id
-        )
-        if version_ts.empty:
-            return
-        version_ts = version_ts.drop(columns=["id"])
-        self.backend.iamc.timeseries.bulk_upsert(version_ts)
-
         # revert datapoints
         version_dps = self.backend.iamc.datapoints.tabulate_versions(
             transaction__id=transaction__id
         )
-        version_dps = version_dps.drop(columns=["id"])
+        if version_dps.empty:
+            return
+
+        version_dps = version_dps.drop(
+            columns=[
+                "id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+                "time_series__id",
+            ]
+        )
+        version_dps = self._get_or_create_ts(run.id, version_dps)
         self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
 
     @guard("edit")
@@ -217,9 +244,6 @@ class RunRepository(
             return
 
         self.revert_iamc_data(run, transaction__id)
-        self.backend.checkpoints.create(
-            run.id, "Run reverted to transaction " + str(transaction__id)
-        )
 
     @guard("view")
     def tabulate_transactions(
