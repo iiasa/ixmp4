@@ -1,6 +1,7 @@
 import asyncio
 from collections.abc import Iterable
 
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -13,6 +14,10 @@ from ..fixtures import FilterIamcDataset, SmallIamcDataset
 from ..utils import (
     assert_unordered_equality,
 )
+
+
+class CustomException(Exception):
+    pass
 
 
 class TestCoreIamc:
@@ -233,20 +238,216 @@ class TestCoreIamc:
         vdf = platform.backend.iamc.datapoints.tabulate_versions()
         expected_versions = pd.DataFrame(
             [
-                [0.5, "ANNUAL", None, 2000, None, 1, 1, 22, 26.0, 0],
-                [1.0, "ANNUAL", None, 2010, None, 2, 2, 22, 26.0, 0],
-                [1.5, "ANNUAL", None, 2020, None, 3, 3, 22, 32.0, 0],
-                [1.7, "ANNUAL", None, 2020, None, 4, 4, 22, 32.0, 0],
-                [0.5, "ANNUAL", None, 2000, None, 1, 1, 26, None, 2],
-                [1.0, "ANNUAL", None, 2010, None, 2, 2, 26, None, 2],
-                [-9.9, "ANNUAL", None, 2000, None, 5, 5, 31, 35.0, 0],
-                [-9.9, "ANNUAL", None, 2010, None, 6, 6, 31, 35.0, 0],
-                [-9.9, "ANNUAL", None, 2020, None, 3, 3, 32, 35.0, 1],
-                [-9.9, "ANNUAL", None, 2020, None, 4, 4, 32, 35.0, 1],
-                [-9.9, "ANNUAL", None, 2020, None, 3, 3, 35, None, 2],
-                [-9.9, "ANNUAL", None, 2020, None, 4, 4, 35, None, 2],
-                [-9.9, "ANNUAL", None, 2000, None, 5, 5, 35, None, 2],
-                [-9.9, "ANNUAL", None, 2010, None, 6, 6, 35, None, 2],
+                [
+                    0.5,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    1,
+                    1,
+                    22,
+                    26.0,
+                    0,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    1.0,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    2,
+                    2,
+                    22,
+                    26.0,
+                    0,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    1.5,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    3,
+                    3,
+                    22,
+                    32.0,
+                    0,
+                    "Region 3",
+                    "Unit 3",
+                    "Variable 3",
+                ],
+                [
+                    1.7,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    4,
+                    4,
+                    22,
+                    32.0,
+                    0,
+                    "Region 3",
+                    "Unit 2",
+                    "Variable 4",
+                ],
+                [
+                    0.5,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    1,
+                    1,
+                    26,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    1.0,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    2,
+                    2,
+                    26,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    5,
+                    5,
+                    31,
+                    35.0,
+                    0,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    6,
+                    6,
+                    31,
+                    35.0,
+                    0,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    3,
+                    3,
+                    32,
+                    35.0,
+                    1,
+                    "Region 3",
+                    "Unit 3",
+                    "Variable 3",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    4,
+                    4,
+                    32,
+                    35.0,
+                    1,
+                    "Region 3",
+                    "Unit 2",
+                    "Variable 4",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    5,
+                    5,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    6,
+                    6,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    3,
+                    3,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 3",
+                    "Unit 3",
+                    "Variable 3",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    4,
+                    4,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 3",
+                    "Unit 2",
+                    "Variable 4",
+                ],
             ],
             columns=[
                 "value",
@@ -262,6 +463,32 @@ class TestCoreIamc:
             ],
         )
         assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
+    def test_iamc_rollback(self, platform: ixmp4.Platform) -> None:
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+        data = self.small.annual.copy().rename(columns={"step_year": "year"})
+
+        run = platform.runs.create("Model", "Scenario")
+
+        # == Full Addition ==
+        # Save to database
+        with run.transact("Full Addition"):
+            run.iamc.add(data)
+
+        # == Partial Removal ==
+        # Remove half the data
+        remove_data = data.head(len(data) // 2).drop(columns=["value"])
+        try:
+            with run.transact("Partial Removal"):
+                run.iamc.remove(remove_data)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        ret = run.iamc.tabulate()
+
+        assert_unordered_equality(data, ret, check_like=True)
 
 
 class TestCoreIamcReadOnly:
