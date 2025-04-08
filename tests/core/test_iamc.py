@@ -460,6 +460,9 @@ class TestCoreIamc:
                 "transaction_id",
                 "end_transaction_id",
                 "operation_type",
+                "region",
+                "unit",
+                "variable",
             ],
         )
         assert_unordered_equality(expected_versions, vdf, check_dtype=False)
