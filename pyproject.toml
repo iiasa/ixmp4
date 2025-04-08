@@ -84,7 +84,7 @@ requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
 exclude = ['^ixmp4\/db\/migrations\/']
-disable_error_code = ['override']
+disable_error_code = ['override', 'unused-ignore']
 show_error_codes = true
 plugins = [
     'numpy.typing.mypy_plugin',

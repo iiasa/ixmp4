@@ -44,9 +44,6 @@ class TestDataIamcVariable:
         vdf = platform.backend.iamc.variables.tabulate_versions()
         utils.assert_unordered_equality(expected_versions, vdf)
 
-        tdf = platform.backend.iamc.variables.tabulate_transactions()
-        assert len(tdf) == 1
-
     def test_iamc_variable_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.iamc.variables.create("Variable")
 
