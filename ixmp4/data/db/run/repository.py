@@ -206,17 +206,13 @@ class RunRepository(
         )
 
     def revert_iamc_data(self, run: Run, transaction__id: int) -> None:
-        # revert timeseries
-        current_ts = self.backend.iamc.timeseries.tabulate(run={"id": run.id})
-        current_dps = self.backend.iamc.datapoints.tabulate(run={"id": run.id})
+        current_dps = self.backend.iamc.datapoints.tabulate(
+            run={"id": run.id, "default_only": False}
+        )
 
         if not current_dps.empty:
             self.backend.iamc.datapoints.bulk_delete(current_dps)  # type: ignore[arg-type]
 
-        if not current_ts.empty:
-            self.backend.iamc.timeseries.bulk_delete(current_ts)
-
-        # revert datapoints
         version_dps = self.backend.iamc.datapoints.tabulate_versions(
             transaction__id=transaction__id
         )
@@ -232,7 +228,9 @@ class RunRepository(
                 "time_series__id",
             ]
         )
-        version_dps = self._get_or_create_ts(run.id, version_dps)
+        version_dps = self._get_or_create_ts(run.id, version_dps).dropna(
+            how="all", axis="columns"
+        )
         self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
 
     @guard("edit")

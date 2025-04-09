@@ -483,15 +483,31 @@ class TestCoreIamc:
         # Remove half the data
         remove_data = data.head(len(data) // 2).drop(columns=["value"])
         try:
-            with run.transact("Partial Removal"):
+            with run.transact("Partial Removal Failure"):
                 run.iamc.remove(remove_data)
                 raise CustomException("Whoops!!!")
         except CustomException:
             pass
 
         ret = run.iamc.tabulate()
-
         assert_unordered_equality(data, ret, check_like=True)
+
+        with run.transact("Partial Removal"):
+            run.iamc.remove(remove_data)
+
+        update_data = data.copy()
+        update_data["value"] = -9.9
+
+        try:
+            with run.transact("Partial Update / Partial Addition Failure"):
+                run.iamc.add(update_data)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        remaining_data = data.tail(len(data) // 2)
+        ret = run.iamc.tabulate()
+        assert_unordered_equality(remaining_data, ret, check_like=True)
 
 
 class TestCoreIamcReadOnly:
