@@ -4,6 +4,7 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
+from ixmp4.core.exceptions import RunLockRequired
 
 EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
 
@@ -147,6 +148,64 @@ def test_run_meta_numpy(
     # assert that meta values were saved and updated correctly
     run2 = platform.runs.get("Model", "Scenario")
     assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
+
+
+class CustomException(Exception):
+    pass
+
+
+def test_run_meta_rollback(platform: ixmp4.Platform) -> None:
+    run = platform.runs.create("Model 1", "Scenario 1")
+
+    with run.transact("Add meta data"):
+        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+        run.meta["mfloat"] = -1.9
+
+    try:
+        with run.transact("Update meta data failure"):
+            run.meta["mfloat"] = 3.14
+            raise CustomException("Whoops!!!")
+    except CustomException:
+        pass
+
+    # assert that meta values were rolled back correctly
+    assert run.meta == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
+    assert run.meta["mfloat"] == -1.9
+
+    with run.transact("Remove metadata"):
+        del run.meta["mfloat"]
+        run.meta["mint"] = None
+
+    try:
+        with run.transact("Update meta data failure"):
+            run.meta["mfloat"] = 3.14
+            raise CustomException("Whoops!!!")
+    except CustomException:
+        pass
+
+    assert run.meta == {"mstr": "foo"}
+    assert run.meta["mstr"] == "foo"
+
+    with pytest.raises(KeyError, match="'mint'"):
+        run.meta["mint"]
+
+
+def test_meta_requires_lock(platform: ixmp4.Platform) -> None:
+    run = platform.runs.create("Model", "Scenario")
+    # Attempt to add data without owning a lock
+    with pytest.raises(RunLockRequired):
+        run.meta["mint"] = 13
+
+    with pytest.raises(RunLockRequired):
+        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+
+    with run.transact("Add meta data"):
+        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+
+    # Attempt to remove data without owning a lock
+    with pytest.raises(RunLockRequired):
+        del run.meta["mfloat"]
+        run.meta["mstr"] = None
 
 
 @pytest.mark.parametrize("nonevalue", (None, np.nan))

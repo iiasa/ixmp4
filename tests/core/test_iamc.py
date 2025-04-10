@@ -510,9 +510,8 @@ class TestCoreIamc:
         assert_unordered_equality(remaining_data, ret, check_like=True)
 
     def test_iamc_requires_lock(self, platform: ixmp4.Platform) -> None:
-        # Create a run and set it as default
+        # Create a run
         run = platform.runs.create("Model", "Scenario")
-        run.set_as_default()
 
         # Attempt to add data without owning a lock
         with pytest.raises(RunLockRequired):
