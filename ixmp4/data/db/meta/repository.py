@@ -15,6 +15,7 @@ from ixmp4 import db
 from ixmp4.core.decorators import check_types
 from ixmp4.core.exceptions import InvalidRunMeta
 from ixmp4.data import abstract
+from ixmp4.data.abstract.meta import EnumerateKwargs as AbstractEnumerateKwargs
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
@@ -44,7 +45,7 @@ class UpdateRunMetaEntryFrameSchema(AddRunMetaEntryFrameSchema):
     id: Series[pa.Int] = pa.Field(coerce=True)
 
 
-class EnumerateKwargs(TypedDict, total=False):
+class EnumerateKwargs(AbstractEnumerateKwargs, total=False):
     _filter: BaseFilter
 
 
@@ -198,6 +199,9 @@ class RunMetaEntryRepository(
                 [], columns=index_columns + ["id", "dtype", "key", "value"]
             )
 
+        return self.merge_value_columns(df)
+
+    def merge_value_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         def map_value_column(df: pd.DataFrame) -> pd.DataFrame:
             type_str = df.name
             type_ = RunMetaEntry.Type(type_str)

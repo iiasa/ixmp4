@@ -110,6 +110,7 @@ class Run(BaseModelFacade):
             else:
                 self.backend.runs.revert(self._model.id, self._model.lock_transaction)
 
+            self._meta.refetch_data()
             self._unlock()
             raise e
 
@@ -163,6 +164,9 @@ class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
     def __init__(self, run: Run, **kwargs: Backend) -> None:
         super().__init__(**kwargs)
         self.run = run
+        self.refetch_data()
+
+    def refetch_data(self) -> None:
         self.df, self.data = self._get()
 
     def _get(self) -> tuple[pd.DataFrame, dict[str, PrimitiveTypes | None]]:

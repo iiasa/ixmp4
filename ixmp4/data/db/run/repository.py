@@ -233,6 +233,28 @@ class RunRepository(
         )
         self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
 
+    def revert_meta(self, run: Run, transaction__id: int) -> None:
+        current_meta = self.backend.meta.tabulate(
+            run={"id": run.id, "default_only": False}
+        ).drop(columns=["id", "value", "dtype"])
+
+        if not current_meta.empty:
+            self.backend.meta.bulk_delete(current_meta)  # type: ignore[arg-type]
+
+        version_meta = self.backend.meta.tabulate_versions(
+            transaction__id=transaction__id
+        )
+        if version_meta.empty:
+            return
+
+        # remove the transaction_id column
+        version_meta = version_meta.drop(
+            columns=["transaction_id", "end_transaction_id", "operation_type"]
+        )
+        version_meta = self.backend.meta.merge_value_columns(version_meta)
+        version_meta = version_meta.drop(columns=["dtype", "id"])
+        self.backend.meta.bulk_upsert(version_meta)  # type: ignore[arg-type]
+
     @guard("edit")
     def revert(self, id: int, transaction__id: int) -> None:
         run = self.get_by_id(id, _access_type="edit")
@@ -242,6 +264,7 @@ class RunRepository(
             return
 
         self.revert_iamc_data(run, transaction__id)
+        self.revert_meta(run, transaction__id)
 
     @guard("view")
     def tabulate_transactions(
