@@ -8,7 +8,7 @@ import pytest
 import ixmp4
 from ixmp4 import DataPoint
 from ixmp4.conf import settings
-from ixmp4.core.exceptions import SchemaError
+from ixmp4.core.exceptions import RunLockRequired, SchemaError
 
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
 from ..utils import (
@@ -508,6 +508,19 @@ class TestCoreIamc:
         remaining_data = data.tail(len(data) // 2)
         ret = run.iamc.tabulate()
         assert_unordered_equality(remaining_data, ret, check_like=True)
+
+    def test_iamc_requires_lock(self, platform: ixmp4.Platform) -> None:
+        # Create a run and set it as default
+        run = platform.runs.create("Model", "Scenario")
+        run.set_as_default()
+
+        # Attempt to add data without owning a lock
+        with pytest.raises(RunLockRequired):
+            run.iamc.add(self.small.annual.copy())
+
+        # Attempt to remove data without owning a lock
+        with pytest.raises(RunLockRequired):
+            run.iamc.remove(self.small.annual.copy())
 
 
 class TestCoreIamcReadOnly:
