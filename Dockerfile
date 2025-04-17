@@ -29,14 +29,18 @@ COPY . /opt/ixmp4
 
 WORKDIR /opt/ixmp4
 
+RUN pip install poetry~=2.0
 
 RUN mkdir -p run/logs && \
     touch .env
 
-RUN poetry self add "poetry-dynamic-versioning[plugin]"  && \
+RUN poetry self add "poetry-dynamic-versioning[plugin]" && \
     poetry dynamic-versioning
+
 RUN poetry build --format wheel && \
+    poetry self add poetry-plugin-export>=1.8 && \
     poetry export ${POETRY_OPTS} --format requirements.txt --output constraints.txt --without-hashes
+
 RUN pip install ./dist/*.whl  && \
     pip install -r constraints.txt 
 
