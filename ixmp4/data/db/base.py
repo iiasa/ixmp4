@@ -720,8 +720,7 @@ class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
         )
 
     def select_transactions(self) -> db.sql.Select[Any]:
-        exc = db.select(self.transaction_class)
-        return exc
+        return db.select(self.transaction_class)
 
     def select_versions(
         self, transaction__id: int | None = None, **kwargs: Any
