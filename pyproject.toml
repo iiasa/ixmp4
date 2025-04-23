@@ -34,7 +34,7 @@ toml = ">=0.10.2"
 psycopg = { extras = ["binary"], version = ">=3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
-sqlalchemy-continuum = "^1.4.2"
+sqlalchemy-continuum = ">=1.4.2"
 
 [tool.poetry.group.docs]
 optional = true
