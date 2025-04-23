@@ -1,7 +1,4 @@
-from typing import TYPE_CHECKING, Any, ClassVar, cast
-
-if TYPE_CHECKING:
-    pass
+from typing import Any, ClassVar, cast
 
 import pandas as pd
 
