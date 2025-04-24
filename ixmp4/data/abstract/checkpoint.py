@@ -20,7 +20,9 @@ class EnumerateKwargs(
 
 
 class Checkpoint(base.BaseModel, Protocol):
-    """ """
+    """Run checkpoint model.
+    Represents a run's state (the data it holds) at a particular transaction.
+    Used to roll back to a previous state of the run."""
 
     run__id: types.Integer
     "Id of associated run."
