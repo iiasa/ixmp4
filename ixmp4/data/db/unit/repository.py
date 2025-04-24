@@ -32,6 +32,7 @@ class UnitRepository(
     base.Deleter[Unit],
     base.Retriever[Unit],
     base.Enumerator[Unit],
+    base.VersionManager[Unit],
     abstract.UnitRepository,
 ):
     model_class = Unit
@@ -81,3 +82,9 @@ class UnitRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
+
+    @guard("view")
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

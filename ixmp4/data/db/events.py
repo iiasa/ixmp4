@@ -41,7 +41,8 @@ class SqlaEventHandler(object):
         # Somehow, mypy knows how long args is, but tries to insert kwargs as argument
         # 2 and 3
         for args, kwargs in self.listeners:
-            event.listen(*args, **kwargs)  # type: ignore[arg-type]
+            if not event.contains(*args):
+                event.listen(*args, **kwargs)  # type: ignore[arg-type]
 
     def remove_listeners(self) -> None:
         for args, kwargs in self.listeners:

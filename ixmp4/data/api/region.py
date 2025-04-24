@@ -45,6 +45,7 @@ class RegionRepository(
     base.Deleter[Region],
     base.Retriever[Region],
     base.Enumerator[Region],
+    base.VersionManager[Region],
     abstract.RegionRepository,
 ):
     model_class = Region

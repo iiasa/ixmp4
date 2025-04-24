@@ -13,6 +13,7 @@ from ixmp4.conf.auth import BaseAuth, SelfSignedAuth, User
 from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig, PlatformInfo
 from ixmp4.core.exceptions import ImproperlyConfigured, UnknownApiError
 from ixmp4.data.api import (
+    CheckpointRepository,
     DataPointRepository,
     EquationRepository,
     IndexSetRepository,
@@ -130,6 +131,7 @@ class RestBackend(Backend):
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)
         self.units = UnitRepository(self)
+        self.checkpoints = CheckpointRepository(self)
 
 
 test_platform = ManagerPlatformInfo(

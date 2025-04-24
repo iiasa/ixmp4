@@ -34,6 +34,7 @@ toml = ">=0.10.2"
 psycopg = { extras = ["binary"], version = ">=3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
+sqlalchemy-continuum = ">=1.4.2"
 
 [tool.poetry.group.docs]
 optional = true
@@ -82,12 +83,15 @@ build-backend = "poetry_dynamic_versioning.backend"
 requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
-exclude = [
-    '^ixmp4\/db\/migrations\/',
-]
-disable_error_code = ['override']
+exclude = ['^ixmp4\/db\/migrations\/']
+disable_error_code = ['override', 'unused-ignore']
 show_error_codes = true
-plugins = ['numpy.typing.mypy_plugin', 'pandera.mypy', 'pydantic.mypy', 'sqlalchemy.ext.mypy.plugin']
+plugins = [
+    'numpy.typing.mypy_plugin',
+    'pandera.mypy',
+    'pydantic.mypy',
+    'sqlalchemy.ext.mypy.plugin',
+]
 # The following are equivalent to --strict mypy as seen in 
 # https://mypy.readthedocs.io/en/stable/existing_code.html#introduce-stricter-options
 warn_unused_configs = true
@@ -112,7 +116,7 @@ warn_unreachable = true
 
 [[tool.mypy.overrides]]
 # Removing this introduces several errors
-module = ["uvicorn.workers"]
+module = ["uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_continuum.*"]
 # Without this, mypy is still fine, but pyproject.toml complains
 ignore_missing_imports = true
 
@@ -146,7 +150,7 @@ ignore = ["B008"]
 # Ignore unused imports:
 "__init__.py" = ["F401"]
 "ixmp4/data/db/optimization/base.py" = ["F401"]
-"ixmp4/data/db/iamc/base.py"= ["F401"]
+"ixmp4/data/db/iamc/base.py" = ["F401"]
 # Ignore importing * and resulting possibly missing imports:
 "ixmp4/db/__init__.py" = ["F403", "F405"]
 

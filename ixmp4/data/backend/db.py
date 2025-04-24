@@ -4,6 +4,7 @@ from contextlib import contextmanager
 from functools import lru_cache
 
 from sqlalchemy.engine import Engine, create_engine
+from sqlalchemy.orm import configure_mappers
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import NullPool, StaticPool
 
@@ -16,6 +17,7 @@ from ixmp4.conf.user import User
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.db import (
     BaseModel,
+    CheckpointRepository,
     DataPointRepository,
     EquationRepository,
     IndexSetRepository,
@@ -74,6 +76,8 @@ class SqlAlchemyBackend(Backend):
     runs: RunRepository
     scenarios: ScenarioRepository
     units: UnitRepository
+    checkpoints: CheckpointRepository
+
     Session = sessionmaker(autocommit=False, autoflush=False, future=True)
     auth_context: AuthorizationContext | None = None
     event_handler: SqlaEventHandler
@@ -81,6 +85,8 @@ class SqlAlchemyBackend(Backend):
     def __init__(self, info: PlatformInfo) -> None:
         super().__init__(info)
         logger.info(f"Creating database engine for platform '{info.name}'.")
+        configure_mappers()
+
         dsn = self.check_dsn(info.dsn)
         self.make_engine(dsn)
         self.make_repositories()
@@ -114,6 +120,7 @@ class SqlAlchemyBackend(Backend):
         self.runs = RunRepository(self)
         self.scenarios = ScenarioRepository(self)
         self.units = UnitRepository(self)
+        self.checkpoints = CheckpointRepository(self)
 
     @contextmanager
     def auth(

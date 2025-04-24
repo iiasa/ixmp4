@@ -37,6 +37,7 @@ class UnitRepository(
     base.Deleter[Unit],
     base.Retriever[Unit],
     base.Enumerator[Unit],
+    base.VersionManager[Unit],
     abstract.UnitRepository,
 ):
     model_class = Unit

@@ -8,7 +8,10 @@ from ..base import (
     Lister,
     Retriever,
     Selecter,
+    TabulateTransactionsKwargs,
+    TabulateVersionsKwargs,
     Tabulator,
+    VersionManager,
 )
 
 

@@ -18,9 +18,9 @@ class Unit(base.BaseModel, Protocol):
     name: types.String
     "Unique name of the unit."
     created_at: types.DateTime
-    "Creation date/time. TODO"
+    "Creation date/time."
     created_by: types.String
-    "Creator. TODO"
+    "Creator."
 
     def __str__(self) -> str:
         return f"<Unit {self.id} name={self.name}>"
@@ -35,6 +35,7 @@ class UnitRepository(
     base.Deleter,
     base.Retriever,
     base.Enumerator,
+    base.VersionManager,
     Protocol,
 ):
     docs: DocsRepository

@@ -40,6 +40,7 @@ class DataPointRepository(
     base.Enumerator[DataPoint],
     base.BulkUpserter[DataPoint],
     base.BulkDeleter[DataPoint],
+    base.VersionManager[DataPoint],
     abstract.DataPointRepository,
 ):
     model_class = DataPoint

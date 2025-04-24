@@ -220,20 +220,24 @@ class TestAuthContext:
                     run = mp.runs.get("Model 1", "Scenario 1")
 
                     with pytest.raises(Forbidden):
-                        run.iamc.add(
-                            self.small.annual.copy(),
-                            type=ixmp4.DataPoint.Type.ANNUAL,
-                        )
+                        with run.transact("Add iamc data"):
+                            run.iamc.add(
+                                self.small.annual.copy(),
+                                type=ixmp4.DataPoint.Type.ANNUAL,
+                            )
 
                     with pytest.raises(Forbidden):
-                        run.iamc.remove(
-                            self.small.annual.copy().drop(columns=["value"])
-                        )
+                        with run.transact("Remove iamc data"):
+                            run.iamc.remove(
+                                self.small.annual.copy().drop(columns=["value"])
+                            )
 
                     with pytest.raises(Forbidden):
-                        # NOTE mypy doesn't support setters taking a different type than
-                        # their property https://github.com/python/mypy/issues/3004
-                        run.meta = {"meta": "test"}  # type: ignore[assignment]
+                        with run.transact("Add meta data"):
+                            # NOTE mypy doesn't support setters taking a different
+                            # type than their property
+                            # https://github.com/python/mypy/issues/3004
+                            run.meta = {"meta": "test"}  # type: ignore[assignment]
 
     def test_run_audit_info(self, db_platform: ixmp4.Platform) -> None:
         backend = cast(SqlAlchemyBackend, db_platform.backend)
@@ -293,8 +297,10 @@ class TestAuthContext:
 
         run = mp.runs.create(model, "Scenario")
         annual_dps = self.small.annual.copy()
-        run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
-        run.meta = {"meta": "test"}  # type: ignore[assignment]
+        with run.transact("Add iamc data"):
+            run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
+        with run.transact("Add meta data"):
+            run.meta = {"meta": "test"}  # type: ignore[assignment]
         run.set_as_default()
 
         with backend.auth(user, self.mock_manager, platform_info):
@@ -305,28 +311,33 @@ class TestAuthContext:
                 assert mp.models.list()[0].name == model
 
                 if access == "edit":
-                    run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
-                    run.iamc.remove(
-                        annual_dps.drop(columns=["value"]),
-                        type=ixmp4.DataPoint.Type.ANNUAL,
-                    )
-                    run.meta = {"meta": "test"}  # type: ignore[assignment]
+                    with run.transact("Add and remove iamc data"):
+                        run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
+                        run.iamc.remove(
+                            annual_dps.drop(columns=["value"]),
+                            type=ixmp4.DataPoint.Type.ANNUAL,
+                        )
+                    with run.transact("Add meta data"):
+                        run.meta = {"meta": "test"}  # type: ignore[assignment]
 
                 else:
                     with pytest.raises(Forbidden):
                         _ = mp.runs.create(model, "Scenario")
 
                     with pytest.raises(Forbidden):
-                        run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
+                        with run.transact("Add iamc data"):
+                            run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
 
                     with pytest.raises(Forbidden):
-                        run.iamc.remove(
-                            annual_dps.drop(columns=["value"]),
-                            type=ixmp4.DataPoint.Type.ANNUAL,
-                        )
+                        with run.transact("Remove iamc data"):
+                            run.iamc.remove(
+                                annual_dps.drop(columns=["value"]),
+                                type=ixmp4.DataPoint.Type.ANNUAL,
+                            )
 
                     with pytest.raises(Forbidden):
-                        run.meta = {"meta": "test"}  # type: ignore[assignment]
+                        with run.transact("Add meta data"):
+                            run.meta = {"meta": "test"}  # type: ignore[assignment]
             else:
                 with pytest.raises((ixmp4.Run.NotFound, ixmp4.Run.NoDefaultVersion)):
                     mp.runs.get(model, "Scenario")

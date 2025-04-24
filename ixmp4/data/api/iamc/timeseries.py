@@ -26,6 +26,7 @@ class TimeSeriesRepository(
     base.Retriever[TimeSeries],
     base.Enumerator[TimeSeries],
     base.BulkUpserter[TimeSeries],
+    base.VersionManager[TimeSeries],
     abstract.TimeSeriesRepository[abstract.TimeSeries],
 ):
     model_class = TimeSeries

@@ -80,3 +80,9 @@ class BulkUpserter(BaseRepository, Protocol):
 
 class BulkDeleter(BaseRepository, Protocol):
     def bulk_delete(self, *args: Any, **kwargs: Any) -> None: ...
+
+
+class VersionManager(Lister, Tabulator, Protocol):
+    def tabulate_versions(
+        self, transaction__id: int | None = None, **kwargs: Any
+    ) -> pd.DataFrame: ...

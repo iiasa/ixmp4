@@ -1,7 +1,24 @@
+"""
+When making schema migrations for versioned tables
+you need to remember to call `sync_trigger` in order
+to keep the version trigger up-to-date.
+
+```
+from alembic import context
+
+if not context.is_offline_mode():
+    conn = context.get_bind()
+    sync_trigger(conn, "my_table_version")
+```
+"""
+
 from logging.config import fileConfig
+from typing import Literal
 
 from alembic import context
 from sqlalchemy import create_engine
+from sqlalchemy.orm import configure_mappers
+from sqlalchemy.schema import SchemaItem
 
 from ixmp4.conf import settings
 from ixmp4.data.db import BaseModel
@@ -17,6 +34,8 @@ dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
 assert config.config_file_name is not None
 fileConfig(config.config_file_name)
 
+configure_mappers()
+
 target_metadata = BaseModel.metadata
 
 # other values from the config, defined by the needs of env.py,
@@ -25,18 +44,27 @@ target_metadata = BaseModel.metadata
 # ... etc.
 
 
-def include_object(object, name, type_, reflected, compare_to):
-    if (
-        type_ == "column"
-        and not reflected
-        and object.info.get("skip_autogenerate", False)
-    ):
+def include_object(
+    obj: SchemaItem,
+    name: str | None,
+    type_: Literal[
+        "schema",
+        "table",
+        "column",
+        "index",
+        "unique_constraint",
+        "foreign_key_constraint",
+    ],
+    reflected: bool,
+    compare_to: SchemaItem | None,
+) -> bool:
+    if type_ == "column" and not reflected and obj.info.get("skip_autogenerate", False):
         return False
     else:
         return True
 
 
-def run_migrations_offline():
+def run_migrations_offline() -> None:
     """Run migrations in 'offline' mode.
 
     This configures the context with just a URL
@@ -62,7 +90,7 @@ def run_migrations_offline():
         context.run_migrations()
 
 
-def run_migrations_online():
+def run_migrations_online() -> None:
     """Run migrations in 'online' mode.
 
     In this scenario we need to create an Engine

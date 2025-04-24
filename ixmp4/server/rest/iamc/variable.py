@@ -6,7 +6,7 @@ from ixmp4.data.db.iamc.variable.filter import VariableFilter
 from ixmp4.data.db.iamc.variable.model import Variable
 
 from .. import deps
-from ..base import BaseModel, EnumerationOutput, Pagination
+from ..base import BaseModel, EnumerationOutput, Pagination, TabulateVersionArgs
 from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -46,3 +46,18 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Variable:
     return backend.iamc.variables.create(**variable.model_dump())
+
+
+@router.patch("/versions/", response_model=api.DataFrame)
+def tabulate_versions(
+    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
+    pagination: Pagination = Depends(),
+    backend: Backend = Depends(deps.get_backend),
+) -> api.DataFrame:
+    return api.DataFrame.model_validate(
+        backend.iamc.variables.tabulate_versions(
+            limit=pagination.limit,
+            offset=pagination.offset,
+            **filter.model_dump(),
+        )
+    )
