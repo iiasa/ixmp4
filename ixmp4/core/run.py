@@ -101,7 +101,10 @@ class Run(BaseModelFacade):
             yield
         except Exception as e:
             checkpoint_df = self.checkpoints.tabulate()
-            checkpoint_transaction = int(checkpoint_df["transaction__id"].max())
+            if checkpoint_df.empty:
+                checkpoint_transaction = -1
+            else:
+                checkpoint_transaction = int(checkpoint_df["transaction__id"].max())
 
             assert self._model.lock_transaction is not None
 

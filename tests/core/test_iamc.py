@@ -509,6 +509,29 @@ class TestCoreIamc:
         ret = run.iamc.tabulate()
         assert_unordered_equality(remaining_data, ret, check_like=True)
 
+    def test_iamc_rollback_to_checkpoint(self, platform: ixmp4.Platform) -> None:
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+
+        data = self.small.annual.copy().rename(columns={"step_year": "year"})
+        remove_data = data.head(len(data) // 2).drop(columns=["value"])
+
+        run = platform.runs.create("Model", "Scenario")
+
+        try:
+            with run.transact("Full Addition / Partial Removal"):
+                run.iamc.add(data)
+                run.checkpoints.create("Full Addition")
+                run.iamc.remove(remove_data)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        ret = run.iamc.tabulate()
+        assert_unordered_equality(data, ret, check_like=True)
+
+        assert len(run.checkpoints.tabulate()) == 1
+
     def test_iamc_requires_lock(self, platform: ixmp4.Platform) -> None:
         # Create a run
         run = platform.runs.create("Model", "Scenario")
