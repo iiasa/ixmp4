@@ -13,11 +13,11 @@ def test_run_meta(platform: ixmp4.Platform) -> None:
     run1 = platform.runs.create("Model 1", "Scenario 1")
     run1.set_as_default()
 
-    # set and update different types of meta indicators
-    # NOTE mypy doesn't support setters taking a different type than
-    # their property https://github.com/python/mypy/issues/3004
-
     with run1.transact("Add meta data"):
+        # set and update different types of meta indicators
+        # NOTE mypy doesn't support setters taking a different type than
+        # their property https://github.com/python/mypy/issues/3004
+
         run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
         run1.meta["mfloat"] = -1.9
 
