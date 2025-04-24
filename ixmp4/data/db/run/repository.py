@@ -92,7 +92,6 @@ class RunRepository(
             if not self.backend.auth_context.check_access("edit", model_name):
                 raise Forbidden(f"Access to model '{model_name}' denied.")
         run = super().create(model_name, *args, **kwargs)
-        self.backend.checkpoints.create(run.id, "Run created")
         return run
 
     @guard("view")
