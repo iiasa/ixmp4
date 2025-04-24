@@ -317,7 +317,7 @@ class QueryMixin(BaseRepository[ModelType]):
     def tabulate_query(self, exc: db.sql.Select[Any]) -> pd.DataFrame:
         if self.session.bind is not None:
             with self.engine.connect() as con:
-                return pd.read_sql(exc, con=con).replace([np.nan], [None])
+                return pd.read_sql(exc, con=con).replace({np.nan: None})  # type: ignore[list-item]
         else:
             raise ProgrammingError("Database session is closed.")
 
