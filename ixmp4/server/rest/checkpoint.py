@@ -39,6 +39,7 @@ def query(
     )
 
 
+@autodoc
 @router.post("/", response_model=api.Checkpoint)
 def create(
     checkpoint: CheckpointInput = Body(),
@@ -47,6 +48,7 @@ def create(
     return backend.checkpoints.create(checkpoint.run__id, checkpoint.message)
 
 
+@autodoc
 @router.delete("/{id}/")
 def delete(
     id: int = Path(),

@@ -100,6 +100,7 @@ def bulk_delete(
     backend.iamc.datapoints.bulk_delete(df.to_pandas())  # type: ignore[arg-type]
 
 
+@autodoc
 @router.patch("/versions/", response_model=api.DataFrame)
 def tabulate_versions(
     filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
