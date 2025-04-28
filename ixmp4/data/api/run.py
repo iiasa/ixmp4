@@ -1,5 +1,6 @@
 # TODO Use `type` instead of TypeAlias when dropping Python 3.11
-from typing import ClassVar, TypeAlias, cast
+from datetime import datetime
+from typing import Any, ClassVar, TypeAlias, cast
 
 import pandas as pd
 from pydantic import Field
@@ -32,6 +33,14 @@ class Run(base.BaseModel):
     version: int
     is_default: bool
 
+    created_at: datetime | None
+    created_by: str
+
+    updated_at: datetime | None
+    updated_by: str | None
+
+    lock_transaction: int | None = None
+
 
 JsonType: TypeAlias = dict[
     str,
@@ -50,6 +59,7 @@ class RunRepository(
     base.Creator[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
+    base.VersionManager[Run],
     abstract.RunRepository,
 ):
     model_class = Run
@@ -105,3 +115,30 @@ class RunRepository(
             "POST",
             self.prefix + "/".join([str(id), "unset-as-default-version/"]),
         )
+
+    def revert(self, id: int, transaction__id: int) -> None:
+        self._request(
+            "POST",
+            self.prefix + "/".join([str(id), "revert/"]),
+            json={"transaction__id": transaction__id},
+        )
+
+    def lock(self, id: int) -> Run:
+        run_dict = self._request(
+            "POST",
+            self.prefix + "/".join([str(id), "lock/"]),
+        )
+        return Run(**cast(dict[str, Any], run_dict))
+
+    def unlock(self, id: int) -> Run:
+        run_dict = self._request(
+            "POST",
+            self.prefix + "/".join([str(id), "unlock/"]),
+        )
+        return Run(**cast(dict[str, Any], run_dict))
+
+    def tabulate_versions(self, /, run__id: int | None = None) -> pd.DataFrame:
+        return self._tabulate(path="versions/", json={"run__id": run__id})
+
+    def tabulate_transactions(self, /, run__id: int | None = None) -> pd.DataFrame:
+        return self._tabulate(path="transactions/", json={"run__id": run__id})

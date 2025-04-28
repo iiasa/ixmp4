@@ -27,6 +27,10 @@ class Pagination(BaseModel):
     offset: int = Field(default=0, ge=0)
 
 
+class TabulateVersionArgs(BaseModel):
+    transaction__id: int | None = None
+
+
 class InitKwargs(TypedDict):
     total: int
     pagination: Pagination

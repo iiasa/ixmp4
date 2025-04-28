@@ -1,8 +1,11 @@
+import pandas as pd
 import pytest
+from sqlalchemy_continuum.operation import Operation
 
 import ixmp4
 from ixmp4 import Variable
 
+from .. import utils
 from ..fixtures import FilterIamcDataset
 
 
@@ -14,6 +17,32 @@ class TestDataIamcVariable:
         assert variable.name == "Variable"
         assert variable.created_at is not None
         assert variable.created_by == "@unknown"
+
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    "Variable",
+                    variable.created_at,
+                    "@unknown",
+                    1,
+                    None,
+                    Operation.INSERT,
+                ],
+            ],
+            columns=[
+                "id",
+                "name",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+
+        vdf = platform.backend.iamc.variables.tabulate_versions()
+        utils.assert_unordered_equality(expected_versions, vdf)
 
     def test_iamc_variable_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.iamc.variables.create("Variable")

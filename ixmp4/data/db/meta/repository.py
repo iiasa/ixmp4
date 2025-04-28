@@ -15,6 +15,7 @@ from ixmp4 import db
 from ixmp4.core.decorators import check_types
 from ixmp4.core.exceptions import InvalidRunMeta
 from ixmp4.data import abstract
+from ixmp4.data.abstract.meta import EnumerateKwargs as AbstractEnumerateKwargs
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model import Model
 from ixmp4.data.db.run import Run
@@ -44,7 +45,7 @@ class UpdateRunMetaEntryFrameSchema(AddRunMetaEntryFrameSchema):
     id: Series[pa.Int] = pa.Field(coerce=True)
 
 
-class EnumerateKwargs(TypedDict, total=False):
+class EnumerateKwargs(AbstractEnumerateKwargs, total=False):
     _filter: BaseFilter
 
 
@@ -59,6 +60,7 @@ class RunMetaEntryRepository(
     base.Enumerator[RunMetaEntry],
     base.BulkUpserter[RunMetaEntry],
     base.BulkDeleter[RunMetaEntry],
+    base.VersionManager[RunMetaEntry],
     abstract.RunMetaEntryRepository,
 ):
     model_class = RunMetaEntry
@@ -89,7 +91,7 @@ class RunMetaEntryRepository(
 
     def check_df_access(self, df: pd.DataFrame) -> None:
         if self.backend.auth_context is not None:
-            ts_ids = set(df["run__id"].unique().tolist())
+            ts_ids = cast(set[int], set(df["run__id"].unique().tolist()))
             self.backend.runs.check_access(
                 ts_ids,
                 access_type="edit",
@@ -123,12 +125,14 @@ class RunMetaEntryRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        exc = db.select(RunMetaEntry).where(RunMetaEntry.id == id)
+
+        try:
+            meta = self.session.execute(exc).scalar_one()
+        except NoResultFound:
+            raise RunMetaEntry.NotFound(id=id)
+
         if self.backend.auth_context is not None:
-            try:
-                pre_exc = db.select(RunMetaEntry).where(RunMetaEntry.id == id)
-                meta = self.session.execute(pre_exc).scalar_one()
-            except NoResultFound:
-                raise RunMetaEntry.NotFound(id=id)
             self.backend.runs.check_access(
                 {meta.run__id},
                 access_type="edit",
@@ -136,13 +140,8 @@ class RunMetaEntryRepository(
                 default_only=False,
             )
 
-        exc = db.delete(RunMetaEntry).where(RunMetaEntry.id == id)
-
-        try:
-            self.session.execute(exc)
-            self.session.commit()
-        except NoResultFound:
-            raise RunMetaEntry.NotFound(id=id)
+        self.session.delete(meta)
+        self.session.commit()
 
     def join_auth(
         self, exc: db.sql.Select[tuple[RunMetaEntry]]
@@ -200,6 +199,9 @@ class RunMetaEntryRepository(
                 [], columns=index_columns + ["id", "dtype", "key", "value"]
             )
 
+        return self.merge_value_columns(df)
+
+    def merge_value_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         def map_value_column(df: pd.DataFrame) -> pd.DataFrame:
             type_str = df.name
             type_ = RunMetaEntry.Type(type_str)
@@ -233,7 +235,7 @@ class RunMetaEntryRepository(
             # This cast should always be a no-op
             col = RunMetaEntry._column_map[cast(str, type_)]
             null_cols = set(RunMetaEntry._column_map.values()) - set([col])
-            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)
+            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)  # type: ignore[union-attr]
             type_df = type_df.rename(columns={"value": col})
 
             # ensure all other columns are overwritten
@@ -247,3 +249,9 @@ class RunMetaEntryRepository(
     def bulk_delete(self, df: DataFrame[RemoveRunMetaEntryFrameSchema]) -> None:
         self.check_df_access(df)
         super().bulk_delete(df)
+
+    @guard("view")
+    def tabulate_versions(
+        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
+    ) -> pd.DataFrame:
+        return super().tabulate_versions(**kwargs)

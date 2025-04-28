@@ -26,7 +26,8 @@ def create_testcase_iamc_variables(
         columns=["region", "variable", "unit", "step_year", "value"],
     )
     run = platform.runs.create("Model", "Scenario")
-    run.iamc.add(variable_data, type=ixmp4.DataPoint.Type.ANNUAL)
+    with run.transact("Add iamc data"):
+        run.iamc.add(variable_data, type=ixmp4.DataPoint.Type.ANNUAL)
     run.set_as_default()
 
     return iamc_variable, iamc_variable2
@@ -52,7 +53,10 @@ class TestCoreVariable:
             columns=["region", "variable", "unit", "step_year", "value"],
         )
         run = platform.runs.create("Model", "Scenario")
-        run.iamc.add(variable_data, type=ixmp4.DataPoint.Type.ANNUAL)
+
+        with run.transact("Add iamc data"):
+            run.iamc.add(variable_data, type=ixmp4.DataPoint.Type.ANNUAL)
+
         run.set_as_default()
 
         iamc_variable2 = platform.iamc.variables.get("IAMC Variable")

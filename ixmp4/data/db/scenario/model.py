@@ -7,6 +7,8 @@ from .. import base
 
 
 class Scenario(base.BaseModel, mixins.HasCreationInfo):
+    __versioned__ = {}
+
     NotFound: ClassVar = abstract.Scenario.NotFound
     NotUnique: ClassVar = abstract.Scenario.NotUnique
     DeletionPrevented: ClassVar = abstract.Scenario.DeletionPrevented

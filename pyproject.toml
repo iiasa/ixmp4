@@ -35,6 +35,7 @@ toml = ">=0.10.2"
 psycopg = { extras = ["binary"], version = ">=3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
+sqlalchemy-continuum = ">=1.4.2"
 
 [tool.poetry.group.docs]
 optional = true
@@ -84,7 +85,7 @@ requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
 exclude = ['^ixmp4\/db\/migrations\/']
-disable_error_code = ['override']
+disable_error_code = ['override', 'unused-ignore']
 show_error_codes = true
 plugins = [
     'numpy.typing.mypy_plugin',
@@ -116,7 +117,7 @@ warn_unreachable = true
 
 [[tool.mypy.overrides]]
 # Removing this introduces several errors
-module = ["uvicorn.workers"]
+module = ["uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_continuum.*"]
 # Without this, mypy is still fine, but pyproject.toml complains
 ignore_missing_imports = true
 

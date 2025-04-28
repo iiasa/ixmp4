@@ -37,8 +37,13 @@ class RunMetaEntry(base.BaseModel, Protocol):
     "Key for the entry. Unique for each `run__id`."
     dtype: types.String
     "Datatype of the entry's value."
-    value: types.Integer | types.Float | types.Integer | types.Boolean
+    value: types.Integer | types.Float | types.String | types.Boolean
     "Value of the entry."
+
+    value_int: types.Integer | None
+    value_str: types.String | None
+    value_float: types.Float | None
+    value_bool: types.Boolean | None
 
     _type_map: ClassVar[dict[type, str]] = {
         int: Type.INT,
@@ -94,6 +99,7 @@ class RunMetaEntryRepository(
     base.Enumerator,
     base.BulkUpserter,
     base.BulkDeleter,
+    base.VersionManager,
     Protocol,
 ):
     def create(self, run__id: int, key: str, value: MetaValue) -> RunMetaEntry:

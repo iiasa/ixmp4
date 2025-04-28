@@ -26,9 +26,9 @@ class Region(base.BaseModel, Protocol):
     "Region hierarchy."
 
     created_at: types.DateTime
-    "Creation date/time. TODO"
+    "Creation date/time."
     created_by: types.String
-    "Creator. TODO"
+    "Creator."
 
     def __str__(self) -> str:
         return f"<Region {self.id} name={self.name}>"
@@ -43,6 +43,7 @@ class RegionRepository(
     base.Deleter,
     base.Retriever,
     base.Enumerator,
+    base.VersionManager,
     Protocol,
 ):
     docs: DocsRepository

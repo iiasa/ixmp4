@@ -52,6 +52,14 @@ class TimeSeries(AbstractConcreteBase, base.BaseModel):
 ModelType = TypeVar("ModelType", bound=TimeSeries)
 
 
+class EnumerateTransactionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
+    pass
+
+
+class EnumerateVersionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
+    transaction__id: int | None
+
+
 class GetKwargs(TypedDict):
     _filter: BaseFilter
 
@@ -61,7 +69,7 @@ class SelectKwargs(TypedDict, total=False):
     run: dict[str, int]
 
 
-class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
+class EnumerateKwargs(abstract.annotations.IamcTimeseriesFilter, total=False):
     _filter: BaseFilter
     join_parameters: bool | None
 
@@ -76,6 +84,8 @@ class TimeSeriesRepository(
     base.Retriever[ModelType],
     base.Enumerator[ModelType],
     base.BulkUpserter[ModelType],
+    base.BulkDeleter[ModelType],
+    base.VersionManager[ModelType],
     Generic[ModelType],
 ):
     def join_auth(

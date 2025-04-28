@@ -1,18 +1,23 @@
 import asyncio
 from collections.abc import Iterable
 
+import numpy as np
 import pandas as pd
 import pytest
 
 import ixmp4
 from ixmp4 import DataPoint
 from ixmp4.conf import settings
-from ixmp4.core.exceptions import SchemaError
+from ixmp4.core.exceptions import RunLockRequired, SchemaError
 
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
 from ..utils import (
     assert_unordered_equality,
 )
+
+
+class CustomException(Exception):
+    pass
 
 
 class TestCoreIamc:
@@ -94,10 +99,10 @@ class TestCoreIamc:
         self.small.load_units(platform)
 
         run = platform.runs.create("Model", "Scenario")
-
         # == Full Addition ==
         # Save to database
-        run.iamc.add(data, type=_type)
+        with run.transact("Full Addition"):
+            run.iamc.add(data, type=_type)
 
         # Retrieve from database via Run
         ret = run.iamc.tabulate(raw=raw)
@@ -134,7 +139,8 @@ class TestCoreIamc:
         # Remove half the data
         remove_data = data.head(len(data) // 2).drop(columns=["value"])
         remaining_data = data.tail(len(data) // 2).reset_index(drop=True)
-        run.iamc.remove(remove_data, type=_type)
+        with run.transact("Partial Removal"):
+            run.iamc.remove(remove_data, type=_type)
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -154,8 +160,9 @@ class TestCoreIamc:
         # Update all data values
         data["value"] = -9.9
 
-        # Results in a half insert / half update
-        run.iamc.add(data, type=_type)
+        with run.transact("Partial Update / Partial Addition"):
+            # Results in a half insert / half update
+            run.iamc.add(data, type=_type)
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -166,7 +173,9 @@ class TestCoreIamc:
         # == Full Removal ==
         # Remove all data
         remove_data = data.drop(columns=["value"])
-        run.iamc.remove(remove_data, type=_type)
+        with run.transact("Full Removal"):
+            # Results in a half insert / half update
+            run.iamc.remove(remove_data, type=_type)
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -221,6 +230,319 @@ class TestCoreIamc:
         _run = platform.runs.get(*run)
         obs = _run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
+
+    def test_iamc_versioning(self, platform: ixmp4.Platform) -> None:
+        self.do_run_datapoints(
+            platform, self.small.annual.copy(), True, DataPoint.Type.ANNUAL
+        )
+        vdf = platform.backend.iamc.datapoints.tabulate_versions()
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    0.5,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    1,
+                    1,
+                    22,
+                    26.0,
+                    0,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    1.0,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    2,
+                    2,
+                    22,
+                    26.0,
+                    0,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    1.5,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    3,
+                    3,
+                    22,
+                    32.0,
+                    0,
+                    "Region 3",
+                    "Unit 3",
+                    "Variable 3",
+                ],
+                [
+                    1.7,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    4,
+                    4,
+                    22,
+                    32.0,
+                    0,
+                    "Region 3",
+                    "Unit 2",
+                    "Variable 4",
+                ],
+                [
+                    0.5,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    1,
+                    1,
+                    26,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    1.0,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    2,
+                    2,
+                    26,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    5,
+                    5,
+                    31,
+                    35.0,
+                    0,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    6,
+                    6,
+                    31,
+                    35.0,
+                    0,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    3,
+                    3,
+                    32,
+                    35.0,
+                    1,
+                    "Region 3",
+                    "Unit 3",
+                    "Variable 3",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    4,
+                    4,
+                    32,
+                    35.0,
+                    1,
+                    "Region 3",
+                    "Unit 2",
+                    "Variable 4",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2000,
+                    None,
+                    5,
+                    5,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 1",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2010,
+                    None,
+                    6,
+                    6,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 1",
+                    "Unit 2",
+                    "Variable 1",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    3,
+                    3,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 3",
+                    "Unit 3",
+                    "Variable 3",
+                ],
+                [
+                    -9.9,
+                    "ANNUAL",
+                    None,
+                    2020,
+                    None,
+                    4,
+                    4,
+                    35,
+                    np.nan,
+                    2,
+                    "Region 3",
+                    "Unit 2",
+                    "Variable 4",
+                ],
+            ],
+            columns=[
+                "value",
+                "type",
+                "step_category",
+                "step_year",
+                "step_datetime",
+                "time_series__id",
+                "id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+                "region",
+                "unit",
+                "variable",
+            ],
+        )
+        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
+    def test_iamc_rollback(self, platform: ixmp4.Platform) -> None:
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+        data = self.small.annual.copy().rename(columns={"step_year": "year"})
+
+        run = platform.runs.create("Model", "Scenario")
+
+        # == Full Addition ==
+        # Save to database
+        with run.transact("Full Addition"):
+            run.iamc.add(data)
+
+        # == Partial Removal ==
+        # Remove half the data
+        remove_data = data.head(len(data) // 2).drop(columns=["value"])
+        try:
+            with run.transact("Partial Removal Failure"):
+                run.iamc.remove(remove_data)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        ret = run.iamc.tabulate()
+        assert_unordered_equality(data, ret, check_like=True)
+
+        with run.transact("Partial Removal"):
+            run.iamc.remove(remove_data)
+
+        update_data = data.copy()
+        update_data["value"] = -9.9
+
+        try:
+            with run.transact("Partial Update / Partial Addition Failure"):
+                run.iamc.add(update_data)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        remaining_data = data.tail(len(data) // 2)
+        ret = run.iamc.tabulate()
+        assert_unordered_equality(remaining_data, ret, check_like=True)
+
+    def test_iamc_rollback_to_checkpoint(self, platform: ixmp4.Platform) -> None:
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+
+        data = self.small.annual.copy().rename(columns={"step_year": "year"})
+        remove_data = data.head(len(data) // 2).drop(columns=["value"])
+
+        run = platform.runs.create("Model", "Scenario")
+
+        try:
+            with run.transact("Full Addition / Partial Removal"):
+                run.iamc.add(data)
+                run.checkpoints.create("Full Addition")
+                run.iamc.remove(remove_data)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        ret = run.iamc.tabulate()
+        assert_unordered_equality(data, ret, check_like=True)
+
+        assert len(run.checkpoints.tabulate()) == 1
+
+    def test_iamc_requires_lock(self, platform: ixmp4.Platform) -> None:
+        # Create a run
+        run = platform.runs.create("Model", "Scenario")
+
+        # Attempt to add data without owning a lock
+        with pytest.raises(RunLockRequired):
+            run.iamc.add(self.small.annual.copy())
+
+        # Attempt to remove data without owning a lock
+        with pytest.raises(RunLockRequired):
+            run.iamc.remove(self.small.annual.copy())
 
 
 class TestCoreIamcReadOnly:

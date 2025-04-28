@@ -160,6 +160,16 @@ class NoDefaultRunVersion(IxmpError):
     http_error_name = "run_no_default_version"
 
 
+class RunIsLocked(IxmpError):
+    http_status_code = 400
+    http_error_name = "run_is_locked"
+
+
+class RunLockRequired(IxmpError):
+    http_status_code = 400
+    http_error_name = "run_lock_required"
+
+
 class InvalidRunMeta(IxmpError):
     http_status_code = 400
     http_error_name = "run_invalid_meta"

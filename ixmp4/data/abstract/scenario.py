@@ -19,9 +19,9 @@ class Scenario(base.BaseModel, Protocol):
     "Unique name of the scenario."
 
     created_at: types.DateTime
-    "Creation date/time. TODO"
+    "Creation date/time."
     created_by: types.String
-    "Creator. TODO"
+    "Creator."
 
     def __str__(self) -> str:
         return f"<Scenario {self.id} name={self.name}>"
@@ -31,7 +31,13 @@ class EnumerateKwargs(HasIdFilter, HasNameFilter, total=False):
     iamc: IamcScenarioFilter | bool
 
 
-class ScenarioRepository(base.Creator, base.Retriever, base.Enumerator, Protocol):
+class ScenarioRepository(
+    base.Creator,
+    base.Retriever,
+    base.Enumerator,
+    base.VersionManager,
+    Protocol,
+):
     docs: DocsRepository
 
     def create(self, name: str) -> Scenario:

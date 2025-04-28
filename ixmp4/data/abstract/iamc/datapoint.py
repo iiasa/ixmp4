@@ -76,6 +76,7 @@ class DataPointRepository(
     base.Enumerator,
     base.BulkUpserter,
     base.BulkDeleter,
+    base.VersionManager,
     Protocol,
 ):
     def list(

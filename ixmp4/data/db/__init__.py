@@ -3,6 +3,7 @@ This module contains sqlalchemy database models and repositories.
 """
 
 from .base import BaseModel, BaseRepository
+from .checkpoint import Checkpoint, CheckpointRepository
 from .docs import BaseDocsRepository, docs_model
 from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoint,
     DataPoint,
