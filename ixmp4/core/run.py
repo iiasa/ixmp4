@@ -120,6 +120,10 @@ class Run(BaseModelFacade):
         self.checkpoints.create(message)
         self._unlock()
 
+    def delete(self) -> None:
+        """Delete this run."""
+        self.backend.runs.delete(self._model.id)
+
 
 class RunRepository(BaseFacade):
     def create(
@@ -130,6 +134,16 @@ class RunRepository(BaseFacade):
         return Run(
             _backend=self.backend, _model=self.backend.runs.create(model, scenario)
         )
+
+    def delete(self, x: Run | int) -> None:
+        if isinstance(x, Run):
+            id = x.id
+        elif isinstance(x, int):
+            id = x
+        else:
+            raise TypeError("Invalid argument: Must be `Run` or `int`.")
+
+        self.backend.runs.delete(id)
 
     def get(
         self,
