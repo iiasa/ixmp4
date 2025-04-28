@@ -53,7 +53,7 @@ class TestDataOptimizationParameter:
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
         assert parameter.column_names is None
-        assert parameter.indexsets == [indexset.name]
+        assert parameter.indexset_names == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(Parameter.NotUnique):

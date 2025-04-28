@@ -23,7 +23,7 @@ class Parameter(base.BaseModel, Protocol):
     """Unique name of the Parameter."""
     data: types.JsonDict
     """Data stored in the Parameter."""
-    indexsets: types.Mapped[list[str]]
+    indexset_names: types.Mapped[list[str]]
     """List of the names of the IndexSets the Parameter is bound to."""
     column_names: types.Mapped[list[str] | None]
     """List of the Parameter's column names, if distinct from the IndexSet names."""

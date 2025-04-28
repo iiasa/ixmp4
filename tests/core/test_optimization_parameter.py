@@ -53,7 +53,7 @@ class TestCoreParameter:
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
         assert parameter.column_names is None
-        assert parameter.indexsets == [indexset.name]
+        assert parameter.indexset_names == [indexset.name]
         assert parameter.values == []
         assert parameter.units == []
 
@@ -104,7 +104,7 @@ class TestCoreParameter:
         assert parameter.data == {}
         assert parameter.values == []
         assert parameter.units == []
-        assert parameter.indexsets == [indexset.name]
+        assert parameter.indexset_names == [indexset.name]
 
         with pytest.raises(Parameter.NotFound):
             _ = run.optimization.parameters.get("Parameter 2")

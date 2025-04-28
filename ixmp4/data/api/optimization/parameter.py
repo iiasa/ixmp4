@@ -24,7 +24,7 @@ class Parameter(base.BaseModel):
     id: int
     name: str
     data: dict[str, Any]
-    indexsets: list[str]
+    indexset_names: list[str]
     column_names: list[str] | None
     run__id: int
 

@@ -149,7 +149,9 @@ class ParameterRepository(
                 ) from e
 
         index_list = (
-            parameter.column_names if parameter.column_names else parameter.indexsets
+            parameter.column_names
+            if parameter.column_names
+            else parameter.indexset_names
         )
         existing_data = pd.DataFrame(parameter.data)
         if not existing_data.empty:
