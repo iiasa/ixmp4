@@ -27,6 +27,7 @@ class CreateKwargs(TypedDict, total=False):
 
 class RunRepository(
     base.Creator[Run],
+    base.Deleter[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
     base.VersionManager[Run],
@@ -83,6 +84,32 @@ class RunRepository(
         run = Run(model=model, scenario=scenario, version=version)
         self.session.add(run)
         return run
+
+    def delete_optimization_data(self, id: int) -> None:
+        pass  # TODO: Implement this. @glatterf42
+
+    def delete_meta_data(self, id: int) -> None:
+        current_meta = self.backend.meta.tabulate(
+            run={"id": id, "default_only": False}
+        ).drop(columns=["id", "value", "dtype"])
+
+        if not current_meta.empty:
+            self.backend.meta.bulk_delete(current_meta)  # type: ignore[arg-type]
+
+    def delete_iamc_data(self, id: int) -> None:
+        current_dps = self.backend.iamc.datapoints.tabulate(
+            run={"id": id, "default_only": False}
+        )
+
+        if not current_dps.empty:
+            self.backend.iamc.datapoints.bulk_delete(current_dps)  # type: ignore[arg-type]
+
+    @guard("manage")
+    def delete(self, id: int) -> None:
+        self.delete_meta_data(id)
+        self.delete_iamc_data(id)
+        self.delete_optimization_data(id)
+        return super().delete(id)
 
     @guard("edit")
     def create(
@@ -232,6 +259,9 @@ class RunRepository(
         )
         self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
 
+    def revert_optimization_data(self, run: Run, transaction__id: int) -> None:
+        pass  # TODO: Implement this. @glatterf42
+
     def revert_meta(self, run: Run, transaction__id: int) -> None:
         current_meta = self.backend.meta.tabulate(
             run={"id": run.id, "default_only": False}
@@ -263,6 +293,7 @@ class RunRepository(
             return
 
         self.revert_iamc_data(run, transaction__id)
+        self.revert_optimization_data(run, transaction__id)
         self.revert_meta(run, transaction__id)
 
     @guard("view")
