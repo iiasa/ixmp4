@@ -277,7 +277,7 @@ class RunRepository(
             self.backend.meta.bulk_delete(current_meta)  # type: ignore[arg-type]
 
         version_meta = self.backend.meta.tabulate_versions(
-            transaction__id=transaction__id
+            transaction__id=transaction__id, run__id=run.id
         )
         if version_meta.empty:
             return

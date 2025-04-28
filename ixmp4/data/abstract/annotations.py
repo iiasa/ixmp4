@@ -175,5 +175,9 @@ class TabulateVersionsKwargs(HasPaginationArgs, total=False):
     transaction__id: NotRequired[int]
 
 
+class TabulateRunMetaVersionsKwargs(TabulateVersionsKwargs):
+    run__id: NotRequired[int]
+
+
 class TabulateDatapointVersionsKwargs(TabulateVersionsKwargs):
     run__id: NotRequired[int]
