@@ -57,6 +57,7 @@ JsonType: TypeAlias = dict[
 
 class RunRepository(
     base.Creator[Run],
+    base.Deleter[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
     base.VersionManager[Run],
@@ -67,6 +68,9 @@ class RunRepository(
 
     def create(self, model_name: str, scenario_name: str) -> Run:
         return super().create(model_name=model_name, scenario_name=scenario_name)
+
+    def delete(self, id: int) -> None:
+        super().delete(id)
 
     def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         return super().get(
