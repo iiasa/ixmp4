@@ -246,7 +246,7 @@ class RunRepository(
             self.backend.iamc.datapoints.bulk_delete(current_dps)  # type: ignore[arg-type]
 
         version_dps = self.backend.iamc.datapoints.tabulate_versions(
-            transaction__id=transaction__id
+            transaction__id=transaction__id, run__id=run.id
         )
         if version_dps.empty:
             return

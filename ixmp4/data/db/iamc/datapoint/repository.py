@@ -250,7 +250,10 @@ class DataPointRepository(
         self.timeseries.bulk_delete(orphan_ts)
 
     def select_versions(
-        self, transaction__id: int | None = None, **kwargs: Any
+        self,
+        transaction__id: int | None = None,
+        run__id: int | None = None,
+        **kwargs: Any,
     ) -> db.sql.Select[Any]:
         exc = db.select(
             self.version_bundle,
@@ -306,6 +309,11 @@ class DataPointRepository(
                     )
                 )
 
+        if run__id is not None:
+            exc = exc.where(
+                self.backend.iamc.timeseries.version_class.run__id == run__id
+            )
+
         for key in kwargs:
             columns = db.utils.get_columns(self.version_class)
             if key in columns:
@@ -315,6 +323,6 @@ class DataPointRepository(
 
     @guard("view")
     def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
+        self, /, **kwargs: Unpack[abstract.annotations.TabulateDatapointVersionsKwargs]
     ) -> pd.DataFrame:
         return super().tabulate_versions(**kwargs)
