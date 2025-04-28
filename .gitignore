@@ -23,6 +23,7 @@ secrets.env
 *.iml
 # tests
 tests/test-data
+tests/fixtures/optimization/big/parameterdata.csv
 .coverage*
 .profiles
 .benchmarks

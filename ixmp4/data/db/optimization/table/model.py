@@ -24,14 +24,11 @@ class Table(base.BaseModel):
     columns: types.Mapped[list["Column"]] = db.relationship()
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
-    # TODO: should we pass self to validate_data to raise more specific errors?
-
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        return utils.validate_data(
-            host=self,
-            data=data,
-            columns=self.columns,
+        utils.validate_data(
+            host=self, data=data, columns=self.columns, has_values_and_units=False
         )
+        return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
