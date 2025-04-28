@@ -218,7 +218,7 @@ class TestCoreRun:
             with pytest.raises(RunLockRequired):
                 run.delete()
 
-            with run1.transact("Delete run"):
+            with run.transact("Delete run"):
                 run.delete()
 
             self.assert_run_data_deleted(platform, run)
