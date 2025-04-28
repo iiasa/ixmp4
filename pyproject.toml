@@ -14,6 +14,7 @@ packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
 homepage = "https://software.ece.iiasa.ac.at"
 repository = "https://github.com/iiasa/ixmp4"
 documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
+requires-poetry = ">=2.0,<3.0"
 
 [tool.poetry.dependencies]
 PyJWT = ">=2.4.0"

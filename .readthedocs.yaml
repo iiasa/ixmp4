@@ -18,7 +18,7 @@ build:
     post_create_environment:
       # Install poetry
       # https://python-poetry.org/docs/#installing-manually
-      - pip install poetry
+      - pip install poetry~=2.0
       - poetry self add "poetry-dynamic-versioning[plugin]"
     post_install:
       # Install dependencies with 'docs' dependency group
