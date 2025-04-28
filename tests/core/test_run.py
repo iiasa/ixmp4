@@ -7,9 +7,9 @@ from typing_extensions import Unpack
 
 import ixmp4
 from ixmp4.core import Run
-from ixmp4.core.exceptions import IxmpError
+from ixmp4.core.exceptions import IxmpError, RunLockRequired
 
-from ..fixtures import FilterIamcDataset
+from ..fixtures import FilterIamcDataset, SmallIamcDataset
 
 
 def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.DataFrame:
@@ -23,6 +23,7 @@ def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.Da
 
 class TestCoreRun:
     filter = FilterIamcDataset()
+    small = SmallIamcDataset()
 
     def test_run_notfound(self, platform: ixmp4.Platform) -> None:
         # no Run with that model and scenario name exists
@@ -207,3 +208,33 @@ class TestCoreRun:
         variable = run.optimization.variables.get("Variable")
         assert equation.data == {}
         assert variable.data == {}
+
+    def test_run_delete(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1 = platform.runs.get("Model 1", "Scenario 1")
+        run2 = platform.runs.get("Model 2", "Scenario 2")
+
+        with pytest.raises(RunLockRequired):
+            run1.delete()
+
+        with run1.transact("Delete run"):
+            run1.delete()
+
+        self.assert_run_data_deleted(platform, run1)
+
+        platform.runs.delete(run2)
+
+        self.assert_run_data_deleted(platform, run2)
+
+    def assert_run_data_deleted(self, platform: ixmp4.Platform, run: Run) -> None:
+        ret_meta = platform.backend.meta.tabulate(
+            run={"id": run.id, "default_only": False}
+        )
+        assert ret_meta.empty
+
+        ret_iamc_dps = platform.backend.iamc.datapoints.tabulate(
+            run={"id": run.id, "default_only": True}
+        )
+        assert ret_iamc_dps.empty
+
+        # TODO: check if optimization data is deleted. @glatterf42
