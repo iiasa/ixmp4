@@ -209,22 +209,37 @@ class TestCoreRun:
         assert equation.data == {}
         assert variable.data == {}
 
-    def test_run_delete(self, platform: ixmp4.Platform) -> None:
+    def test_run_delete_via_object_method(self, platform: ixmp4.Platform) -> None:
         self.small.load_dataset(platform)
         run1 = platform.runs.get("Model 1", "Scenario 1")
         run2 = platform.runs.get("Model 2", "Scenario 2")
 
-        with pytest.raises(RunLockRequired):
-            run1.delete()
+        for run in [run1, run2]:
+            with pytest.raises(RunLockRequired):
+                run.delete()
 
-        with run1.transact("Delete run"):
-            run1.delete()
+            with run1.transact("Delete run"):
+                run.delete()
 
-        self.assert_run_data_deleted(platform, run1)
+            self.assert_run_data_deleted(platform, run)
 
-        platform.runs.delete(run2)
+    def test_run_delete_via_repository_id(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1 = platform.runs.get("Model 1", "Scenario 1")
+        run2 = platform.runs.get("Model 2", "Scenario 2")
 
-        self.assert_run_data_deleted(platform, run2)
+        for run in [run1, run2]:
+            platform.runs.delete(run.id)
+            self.assert_run_data_deleted(platform, run)
+
+    def test_run_delete_via_repository_object(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1 = platform.runs.get("Model 1", "Scenario 1")
+        run2 = platform.runs.get("Model 2", "Scenario 2")
+
+        for run in [run1, run2]:
+            platform.runs.delete(run)
+            self.assert_run_data_deleted(platform, run)
 
     def assert_run_data_deleted(self, platform: ixmp4.Platform, run: Run) -> None:
         ret_meta = platform.backend.meta.tabulate(
