@@ -241,6 +241,10 @@ class TestCoreRun:
             platform.runs.delete(run)
             self.assert_run_data_deleted(platform, run)
 
+    def test_run_invalid_argument(self, platform: ixmp4.Platform) -> None:
+        with pytest.raises(TypeError):
+            platform.runs.delete("Model|Scenario")  # type: ignore[arg-type]
+
     def assert_run_data_deleted(self, platform: ixmp4.Platform, run: Run) -> None:
         ret_meta = platform.backend.meta.tabulate(
             run={"id": run.id, "default_only": False}
