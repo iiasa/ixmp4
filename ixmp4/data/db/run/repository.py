@@ -104,11 +104,17 @@ class RunRepository(
         if not current_dps.empty:
             self.backend.iamc.datapoints.bulk_delete(current_dps)  # type: ignore[arg-type]
 
+    def delete_checkpoints(self, id: int) -> None:
+        checkpoints = self.backend.checkpoints.list(run__id=id)
+        for checkpoint in checkpoints:
+            self.backend.checkpoints.delete(checkpoint.id)
+
     @guard("manage")
     def delete(self, id: int) -> None:
         self.delete_meta_data(id)
         self.delete_iamc_data(id)
         self.delete_optimization_data(id)
+        self.delete_checkpoints(id)
         return super().delete(id)
 
     @guard("edit")
