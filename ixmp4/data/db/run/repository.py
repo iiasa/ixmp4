@@ -390,7 +390,7 @@ class RunRepository(
             new_parameter = self.backend.optimization.parameters.create(
                 run_id=run.id,
                 name=parameter.name,
-                constrained_to_indexsets=parameter.indexsets,
+                constrained_to_indexsets=parameter.indexset_names,
                 column_names=parameter.column_names,
             )
             self.backend.optimization.parameters.add_data(
