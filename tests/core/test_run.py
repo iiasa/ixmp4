@@ -263,7 +263,7 @@ class TestCoreRun:
         run1_1 = platform.runs.get("Model 1", "Scenario 1")
         run1_2 = platform.runs.get("Model 1", "Scenario 1")
 
-        with run1_1.transact(""):
+        with run1_1.transact("Erroneously lock run for deletion"):
             with pytest.raises(RunIsLocked):
                 run1_1.delete()
             with pytest.raises(RunIsLocked):
