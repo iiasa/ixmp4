@@ -93,13 +93,11 @@ class TimeSeriesRepository(
 
     @guard("view")
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[TimeSeries]:
-        timeseries_list: list[TimeSeries] = super().list(**kwargs)
-        return timeseries_list
+        return super().list(**kwargs)
 
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
-        df: pd.DataFrame = super().tabulate(**kwargs)
-        return df
+        return super().tabulate(**kwargs)
 
     @guard("edit")
     def bulk_upsert(self, df: pd.DataFrame, create_related: bool = False) -> None:

@@ -119,7 +119,7 @@ class IamcScenarioFilter(TypedDict, total=False):
     run: HasRunFilter
 
 
-class IamcTimeseriesFilter(TypedDict, total=False):
+class IamcTimeseriesFilter(HasNameFilter, total=False):
     region: HasRegionFilter | None
     variable: HasVariableFilter | None
     unit: HasUnitFilter | None

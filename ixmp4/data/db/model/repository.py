@@ -54,8 +54,7 @@ class ModelRepository(
     def get(self, name: str) -> Model:
         exc = self.select(name=name)
         try:
-            model: Model = self.session.execute(exc).scalar_one()
-            return model
+            return self.session.execute(exc).scalar_one()
         except db.NoResultFound:
             raise Model.NotFound
 

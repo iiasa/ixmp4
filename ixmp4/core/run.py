@@ -120,27 +120,35 @@ class Run(BaseModelFacade):
         self.checkpoints.create(message)
         self._unlock()
 
+    def clone(
+        self,
+        model: str | None = None,
+        scenario: str | None = None,
+        keep_solution: bool = True,
+    ) -> "Run":
+        return Run(
+            _backend=self.backend,
+            _model=self.backend.runs.clone(
+                run_id=self.id,
+                model_name=model,
+                scenario_name=scenario,
+                keep_solution=keep_solution,
+            ),
+        )
+
 
 class RunRepository(BaseFacade):
-    def create(
-        self,
-        model: str,
-        scenario: str,
-    ) -> Run:
+    def create(self, model: str, scenario: str) -> Run:
         return Run(
             _backend=self.backend, _model=self.backend.runs.create(model, scenario)
         )
 
-    def get(
-        self,
-        model: str,
-        scenario: str,
-        version: int | None = None,
-    ) -> Run:
-        if version is None:
-            _model = self.backend.runs.get_default_version(model, scenario)
-        else:
-            _model = self.backend.runs.get(model, scenario, version)
+    def get(self, model: str, scenario: str, version: int | None = None) -> Run:
+        _model = (
+            self.backend.runs.get_default_version(model, scenario)
+            if version is None
+            else self.backend.runs.get(model, scenario, version)
+        )
         return Run(_backend=self.backend, _model=_model)
 
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
