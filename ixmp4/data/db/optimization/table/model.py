@@ -11,11 +11,11 @@ from .. import IndexSet, base, utils
 class TableIndexsetAssociation(base.RootBaseModel):
     table_prefix = "optimization_"
 
-    table_id: types.TableId
+    table__id: types.TableId
     table: types.Mapped["Table"] = db.relationship(
         back_populates="_table_indexset_associations"
     )
-    indexset_id: types.IndexSetId
+    indexset__id: types.IndexSetId
     indexset: types.Mapped[IndexSet] = db.relationship()
 
     column_name: types.String = db.Column(db.String(255), nullable=True)

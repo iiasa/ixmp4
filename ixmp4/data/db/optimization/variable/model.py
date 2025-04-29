@@ -13,11 +13,11 @@ from .. import IndexSet, base, utils
 class VariableIndexsetAssociation(base.RootBaseModel):
     table_prefix = "optimization_"
 
-    variable_id: types.OptimizationVariableType
+    variable__id: types.OptimizationVariableType
     variable: types.Mapped["OptimizationVariable"] = db.relationship(
         back_populates="_variable_indexset_associations"
     )
-    indexset_id: types.IndexSetId
+    indexset__id: types.IndexSetId
     indexset: types.Mapped[IndexSet] = db.relationship()
 
     column_name: types.String = db.Column(db.String(255), nullable=True)

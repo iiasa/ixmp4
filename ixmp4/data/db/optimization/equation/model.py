@@ -15,11 +15,11 @@ from .. import base, utils
 class EquationIndexsetAssociation(base.RootBaseModel):
     table_prefix = "optimization_"
 
-    equation_id: types.EquationId
+    equation__id: types.EquationId
     equation: types.Mapped["Equation"] = db.relationship(
         back_populates="_equation_indexset_associations"
     )
-    indexset_id: types.IndexSetId
+    indexset__id: types.IndexSetId
     indexset: types.Mapped["IndexSet"] = db.relationship()
 
     column_name: types.String = db.Column(db.String(255), nullable=True)
