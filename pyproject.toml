@@ -162,6 +162,8 @@ max-complexity = 10
 exclude_also = [
     # Imports only used by type checkers
     "if TYPE_CHECKING:",
+    # Exclude ellipses used in function stubs
+    "^\\s*\\.\\.\\.",
 ]
 
 [tool.poetry-dynamic-versioning]
