@@ -271,7 +271,8 @@ class TestCoreRun:
         # Prepare original run
         run = platform.runs.create("Model", "Scenario")
         # Add IAMC data
-        run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
+        with run.transact("Add IAMC data"):
+            run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
 
         # Create optimization items and add some data
         indexset = run.optimization.indexsets.create("Indexset")
