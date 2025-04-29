@@ -120,18 +120,14 @@ class Run(BaseModelFacade):
             self._unlock()
             raise e
 
-        try:
-            self.checkpoints.create(message)
-        except Run.NotFound:
-            # If the run was deleted in the meantime, we cannot create a checkpoint
-            # and should not unlock the run.
-            pass
-        else:
-            self._unlock()
+        self.checkpoints.create(message)
+        self._unlock()
 
     def delete(self) -> None:
-        """Delete this run."""
-        self.require_lock()
+        """Delete this run.
+        Tries to acquire a lock in the background and will fail
+        if the lock is held by this or another object already.
+        """
         self.backend.runs.delete(self._model.id)
 
 

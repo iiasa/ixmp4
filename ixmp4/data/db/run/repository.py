@@ -111,6 +111,7 @@ class RunRepository(
 
     @guard("manage")
     def delete(self, id: int) -> None:
+        self.lock(id)
         self.delete_meta_data(id)
         self.delete_iamc_data(id)
         self.delete_optimization_data(id)

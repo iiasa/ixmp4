@@ -7,7 +7,7 @@ from typing_extensions import Unpack
 
 import ixmp4
 from ixmp4.core import Run
-from ixmp4.core.exceptions import IxmpError, RunLockRequired
+from ixmp4.core.exceptions import IxmpError, RunIsLocked
 
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
 
@@ -209,18 +209,24 @@ class TestCoreRun:
         assert equation.data == {}
         assert variable.data == {}
 
+    def test_run_delete_locked_run(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1_1 = platform.runs.get("Model 1", "Scenario 1")
+        run1_2 = platform.runs.get("Model 1", "Scenario 1")
+
+        with run1_1.transact(""):
+            with pytest.raises(RunIsLocked):
+                run1_1.delete()
+            with pytest.raises(RunIsLocked):
+                run1_2.delete()
+
     def test_run_delete_via_object_method(self, platform: ixmp4.Platform) -> None:
         self.small.load_dataset(platform)
         run1 = platform.runs.get("Model 1", "Scenario 1")
         run2 = platform.runs.get("Model 2", "Scenario 2")
 
         for run in [run1, run2]:
-            with pytest.raises(RunLockRequired):
-                run.delete()
-
-            with run.transact("Delete run"):
-                run.delete()
-
+            run.delete()
             self.assert_run_data_deleted(platform, run)
 
     def test_run_delete_via_repository_id(self, platform: ixmp4.Platform) -> None:
