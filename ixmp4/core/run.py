@@ -75,6 +75,7 @@ class Run(BaseModelFacade):
     def meta(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
         self._meta._set(meta)
 
+    @property
     def is_default(self) -> bool:
         return self._model.is_default
 

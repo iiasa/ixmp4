@@ -322,10 +322,11 @@ class TestCoreRun:
 
     def test_run_is_default(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        assert run.is_default() is False
+        assert run.is_default is False
 
         run.set_as_default()
-        assert run.is_default()
+        assert run.is_default
 
-        run.unset_as_default()
-        assert not run.is_default()
+        # Mypy doesn't know that set_as_default() reloads the underlying run._model
+        run.unset_as_default()  # type: ignore[unreachable]
+        assert not run.is_default
