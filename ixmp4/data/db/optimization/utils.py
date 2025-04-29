@@ -71,7 +71,7 @@ def validate_data(
     # pd.DataFrame.duplicated(keep="False")
     if data_frame[limited_to_indexsets.keys()].value_counts().max() > 1:
         raise host.DataInvalid(
-            f"While handling {host.__str__()}: \n" "The data contains duplicate rows!"
+            f"While handling {host.__str__()}: \nThe data contains duplicate rows!"
         )
 
     # Can we make this more specific? Iterating over columns; if any is False,

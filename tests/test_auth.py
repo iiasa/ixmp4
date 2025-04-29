@@ -10,6 +10,7 @@ from ixmp4.conf.user import User
 from ixmp4.core.exceptions import Forbidden, InvalidCredentials
 from ixmp4.data.backend import SqlAlchemyBackend
 
+from .core.test_run import assert_cloned_run
 from .fixtures import SmallIamcDataset
 
 
@@ -249,6 +250,9 @@ class TestAuthContext:
                             # https://github.com/python/mypy/issues/3004
                             run.meta = {"meta": "test"}  # type: ignore[assignment]
 
+                    with pytest.raises(Forbidden):
+                        _ = run.clone()
+
     def test_run_audit_info(self, db_platform: ixmp4.Platform) -> None:
         backend = cast(SqlAlchemyBackend, db_platform.backend)
 
@@ -330,6 +334,10 @@ class TestAuthContext:
                     with run.transact("Add meta data"):
                         run.meta = {"meta": "test"}  # type: ignore[assignment]
 
+                    # Test run.clone() uses auth()
+                    clone_with_solution = run.clone()
+                    assert_cloned_run(run, clone_with_solution, kept_solution=True)
+
                 else:
                     with pytest.raises(Forbidden):
                         _ = mp.runs.create(model, "Scenario")
@@ -348,6 +356,9 @@ class TestAuthContext:
                     with pytest.raises(Forbidden):
                         with run.transact("Add meta data"):
                             run.meta = {"meta": "test"}  # type: ignore[assignment]
+
+                    with pytest.raises(Forbidden):
+                        _ = run.clone()
             else:
                 with pytest.raises((ixmp4.Run.NotFound, ixmp4.Run.NoDefaultVersion)):
                     mp.runs.get(model, "Scenario")

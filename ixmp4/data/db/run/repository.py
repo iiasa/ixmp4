@@ -11,8 +11,10 @@ if TYPE_CHECKING:
 
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, NoDefaultRunVersion
+from ixmp4.core.utils import substitute_type
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db.iamc.utils import normalize_df
 from ixmp4.db import utils
 
 from .. import base
@@ -138,9 +140,7 @@ class RunRepository(
         )
 
         try:
-            # TODO clean up unnecessary cast such as this
-            run: Run = self.session.execute(exc).scalar_one()
-            return run
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Run.NotFound(
                 model=model_name,
@@ -169,8 +169,7 @@ class RunRepository(
         )
 
         try:
-            run: Run = self.session.execute(exc).scalar_one()
-            return run
+            return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise NoDefaultRunVersion
 
@@ -342,4 +341,126 @@ class RunRepository(
         run = self.get_by_id(id, _access_type="edit")
         run.lock_transaction = None
         self.session.commit()
+        return run
+
+    @guard("edit")
+    def clone(
+        self,
+        run_id: int,
+        model_name: str | None = None,
+        scenario_name: str | None = None,
+        keep_solution: bool = True,
+    ) -> Run:
+        base_run = self.get_by_id(id=run_id)
+        run = self.create(
+            model_name=model_name if model_name else base_run.model.name,
+            scenario_name=scenario_name if scenario_name else base_run.scenario.name,
+        )
+
+        datapoints = normalize_df(
+            df=self.backend.iamc.datapoints.tabulate(
+                join_parameters=True,
+                join_runs=False,
+                run={"id": base_run.id, "default_only": False},
+            ),
+            raw=False,
+            join_runs=False,
+        )
+        if not datapoints.empty:
+            datapoints["run__id"] = run.id
+            # TODO This is essentially duplicating core/iamc/data/_get_or_create_ts,
+            # which we should probably avoid.
+            id_cols = ["region", "variable", "unit", "run__id"]
+            # create set of unqiue timeseries (if missing)
+            ts_df = datapoints[id_cols].drop_duplicates()
+            self.backend.iamc.timeseries.bulk_upsert(ts_df, create_related=True)
+
+            # retrieve them again to get database ids
+            ts_df = self.backend.iamc.timeseries.tabulate(
+                join_parameters=True,
+                run={"id": run.id, "default_only": False},
+            )
+            ts_df = ts_df.rename(columns={"id": "time_series__id"})
+
+            # merge on the identity columns
+            datapoints = pd.merge(
+                datapoints, ts_df, how="left", on=id_cols, suffixes=(None, "_y")
+            )
+            substitute_type(df=datapoints)
+            # TODO This function expects a pandera.DataFrame of a certain schema, even
+            # though the abstract layer annotates it as pd.DataFrame and it works with
+            # one. I'm not simply adjusting the type hint because the function might be
+            # called directly, in which case we would like to reject unvalidated
+            # pd.DataFrames, I think. However, in this case, the data were validated
+            # before and need not be checked again.
+            self.backend.iamc.datapoints.bulk_upsert(datapoints)  # type: ignore[arg-type]
+
+        for scalar in base_run.scalars:
+            self.backend.optimization.scalars.create(
+                run_id=run.id,
+                name=scalar.name,
+                value=scalar.value,
+                unit_name=scalar.unit.name,
+            )
+
+        for indexset in base_run.indexsets:
+            new_indexset = self.backend.optimization.indexsets.create(
+                run_id=run.id, name=indexset.name
+            )
+            self.backend.optimization.indexsets.add_data(
+                indexset_id=new_indexset.id, data=indexset.data
+            )
+
+        for table in base_run.tables:
+            new_table = self.backend.optimization.tables.create(
+                run_id=run.id,
+                name=table.name,
+                constrained_to_indexsets=[
+                    column.indexset.name for column in table.columns
+                ],
+                column_names=[column.name for column in table.columns],
+            )
+            self.backend.optimization.tables.add_data(
+                table_id=new_table.id, data=table.data
+            )
+
+        for parameter in base_run.parameters:
+            new_parameter = self.backend.optimization.parameters.create(
+                run_id=run.id,
+                name=parameter.name,
+                constrained_to_indexsets=parameter.indexset_names,
+                column_names=parameter.column_names,
+            )
+            self.backend.optimization.parameters.add_data(
+                parameter_id=new_parameter.id, data=parameter.data
+            )
+
+        for equation in base_run.equations:
+            new_equation = self.backend.optimization.equations.create(
+                run_id=run.id,
+                name=equation.name,
+                constrained_to_indexsets=[
+                    column.indexset.name for column in equation.columns
+                ],
+                column_names=[column.name for column in equation.columns],
+            )
+            if keep_solution:
+                self.backend.optimization.equations.add_data(
+                    equation_id=new_equation.id, data=equation.data
+                )
+
+        for variable in base_run.variables:
+            new_variable = self.backend.optimization.variables.create(
+                run_id=run.id,
+                name=variable.name,
+                constrained_to_indexsets=[
+                    column.indexset.name for column in variable.columns
+                ],
+                column_names=[column.name for column in variable.columns],
+            )
+            if keep_solution:
+                self.backend.optimization.variables.add_data(
+                    variable_id=new_variable.id, data=variable.data
+                )
+
         return run

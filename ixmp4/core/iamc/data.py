@@ -1,10 +1,7 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING, Optional, TypeVar
+from typing import TYPE_CHECKING
 
 import pandas as pd
-import pandera as pa
-from pandera.engines import pandas_engine
-from pandera.typing import Series
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
@@ -12,6 +9,11 @@ from typing_extensions import Unpack
 from ixmp4.data.abstract import DataPoint as DataPointModel
 from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
 from ixmp4.data.backend import Backend
+from ixmp4.data.db.iamc.utils import (
+    AddDataPointFrameSchema,
+    RemoveDataPointFrameSchema,
+    normalize_df,
+)
 
 from ..base import BaseFacade
 from ..utils import substitute_type
@@ -19,61 +21,6 @@ from .variable import VariableRepository
 
 if TYPE_CHECKING:
     from ..run import Run
-
-
-class RemoveDataPointFrameSchema(pa.DataFrameModel):
-    type: Optional[Series[pa.String]] = pa.Field(isin=[t for t in DataPointModel.Type])
-    step_year: Optional[Series[pa.Int]] = pa.Field(coerce=True, nullable=True)
-    step_datetime: Optional[Series[pandas_engine.DateTime]] = pa.Field(
-        coerce=True, nullable=True
-    )
-    step_category: Optional[Series[pa.String]] = pa.Field(nullable=True)
-
-    region: Optional[Series[pa.String]] = pa.Field(coerce=True)
-    unit: Optional[Series[pa.String]] = pa.Field(coerce=True)
-    variable: Optional[Series[pa.String]] = pa.Field(coerce=True)
-
-
-class AddDataPointFrameSchema(RemoveDataPointFrameSchema):
-    value: Series[pa.Float] = pa.Field(coerce=True)
-
-
-MAP_STEP_COLUMN = {
-    "ANNUAL": "step_year",
-    "CATEGORICAL": "step_year",
-    "DATETIME": "step_datetime",
-}
-
-
-def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
-    df.rename(columns={"step_category": "subannual"}, inplace=True)
-
-    if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
-        df.rename(columns={"step_year": "year"}, inplace=True)
-        time_col = "year"
-    else:
-        T = TypeVar("T", bool, float, int, str)
-
-        def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
-            df["time"] = df[MAP_STEP_COLUMN[str(df.type)]]
-            return df
-
-        df = df.apply(map_step_column, axis=1)
-        time_col = "time"
-
-    columns = ["model", "scenario", "version"] if join_runs else []
-    columns += ["region", "variable", "unit"] + [time_col]
-    if "subannual" in df.columns:
-        columns += ["subannual"]
-    return df[columns + ["value"]]
-
-
-def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool) -> pd.DataFrame:
-    if not df.empty:
-        df = df.drop(columns=["time_series__id"])
-        if raw is False:
-            return convert_to_std_format(df, join_runs)
-    return df
 
 
 class RunIamcData(BaseFacade):
@@ -108,18 +55,10 @@ class RunIamcData(BaseFacade):
 
         # merge on the identity columns
         return pd.merge(
-            df,
-            ts_df,
-            how="left",
-            on=id_cols,
-            suffixes=(None, "_y"),
+            df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")
         )  # tada, df with 'time_series__id' added from the database.
 
-    def add(
-        self,
-        df: pd.DataFrame,
-        type: Optional[DataPointModel.Type] = None,
-    ) -> None:
+    def add(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
         self.run.require_lock()
         df = AddDataPointFrameSchema.validate(df)  # type: ignore[assignment]
         df["run__id"] = self.run.id
@@ -127,11 +66,7 @@ class RunIamcData(BaseFacade):
         substitute_type(df, type)
         self.backend.iamc.datapoints.bulk_upsert(df)
 
-    def remove(
-        self,
-        df: pd.DataFrame,
-        type: Optional[DataPointModel.Type] = None,
-    ) -> None:
+    def remove(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
         self.run.require_lock()
         df = RemoveDataPointFrameSchema.validate(df)  # type: ignore[assignment]
         df["run__id"] = self.run.id
