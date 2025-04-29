@@ -54,6 +54,14 @@ def create(
     return backend.runs.create(**run.model_dump(by_alias=True))
 
 
+@router.delete("/{id}/")
+def delete(
+    id: int = Path(),
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.runs.delete(id)
+
+
 @router.post("/{id}/set-as-default-version/")
 def set_as_default_version(
     id: int = Path(),

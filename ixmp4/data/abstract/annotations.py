@@ -4,7 +4,7 @@ from collections.abc import Iterable
 from typing import TypeAlias
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict
+from typing_extensions import NotRequired, TypedDict
 
 PrimitiveTypes: TypeAlias = bool | float | int | str
 PrimitiveIterableTypes: TypeAlias = (
@@ -169,3 +169,15 @@ class HasTransactionIdFilter(TypedDict, total=False):
     transaction__id__lt: int
     transaction__id__gte: int
     transaction__id__lte: int
+
+
+class TabulateVersionsKwargs(HasPaginationArgs, total=False):
+    transaction__id: NotRequired[int]
+
+
+class TabulateRunMetaVersionsKwargs(TabulateVersionsKwargs):
+    run__id: NotRequired[int]
+
+
+class TabulateDatapointVersionsKwargs(TabulateVersionsKwargs):
+    run__id: NotRequired[int]

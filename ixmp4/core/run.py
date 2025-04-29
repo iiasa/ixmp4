@@ -181,6 +181,17 @@ class Run(BaseModelFacade):
         self.checkpoints.create(message)
         self._unlock()
 
+    def delete(self) -> None:
+        """Delete this run.
+        Tries to acquire a lock in the background.
+
+        Raises
+        ------
+        :class:`ixmp4.core.exceptions.RunIsLocked`:
+            If the run is already locked by this or another object.
+        """
+        self.backend.runs.delete(self._model.id)
+
     def clone(
         self,
         model: str | None = None,
@@ -203,6 +214,16 @@ class RunRepository(BaseFacade):
         return Run(
             _backend=self.backend, _model=self.backend.runs.create(model, scenario)
         )
+
+    def delete(self, x: Run | int) -> None:
+        if isinstance(x, Run):
+            id = x.id
+        elif isinstance(x, int):
+            id = x
+        else:
+            raise TypeError("Invalid argument: Must be `Run` or `int`.")
+
+        self.backend.runs.delete(id)
 
     def get(self, model: str, scenario: str, version: int | None = None) -> Run:
         _model = (

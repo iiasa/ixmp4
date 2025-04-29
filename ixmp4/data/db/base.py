@@ -32,6 +32,9 @@ from typing_extensions import NotRequired, TypedDict, Unpack
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
 from ixmp4.data import abstract, types
+from ixmp4.data.abstract.annotations import (
+    TabulateVersionsKwargs as TabulateVersionsKwargs,
+)
 from ixmp4.db import filters
 
 if TYPE_CHECKING:
@@ -192,6 +195,7 @@ class Deleter(BaseRepository[ModelType]):
             self.session.delete(obj)
             self.session.commit()
         except IntegrityError:
+            self.session.rollback()
             raise self.model_class.DeletionPrevented
 
 
@@ -706,10 +710,6 @@ class BulkDeleter(BulkOperator[ModelType]):
 
 class TabulateTransactionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
     pass
-
-
-class TabulateVersionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
-    transaction__id: NotRequired[int]
 
 
 class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):

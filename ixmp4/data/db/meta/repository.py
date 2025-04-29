@@ -251,6 +251,6 @@ class RunMetaEntryRepository(
 
     @guard("view")
     def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
+        self, /, **kwargs: Unpack[abstract.annotations.TabulateRunMetaVersionsKwargs]
     ) -> pd.DataFrame:
         return super().tabulate_versions(**kwargs)

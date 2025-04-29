@@ -62,6 +62,7 @@ class EnumerateKwargs(HasRunFilter, total=False):
 
 class RunRepository(
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     base.VersionManager,
@@ -83,6 +84,21 @@ class RunRepository(
         -------
         :class:`ixmp4.data.abstract.Run`:
             The created run.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes a run and **all associated iamc, optimization and meta data**.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the run.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Run.NotFound`:
+            If the run with `id` does not exist.
         """
         ...
 

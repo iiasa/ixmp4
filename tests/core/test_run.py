@@ -7,7 +7,7 @@ from typing_extensions import Unpack
 
 import ixmp4
 from ixmp4.core import Run
-from ixmp4.core.exceptions import IxmpError
+from ixmp4.core.exceptions import IxmpError, RunIsLocked
 
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
 
@@ -72,7 +72,7 @@ def assert_cloned_run(original: Run, clone: Run, kept_solution: bool) -> None:
 
 class TestCoreRun:
     filter = FilterIamcDataset()
-    small = SmallIamcDataset
+    small = SmallIamcDataset()
 
     def test_run_notfound(self, platform: ixmp4.Platform) -> None:
         # no Run with that model and scenario name exists
@@ -257,6 +257,61 @@ class TestCoreRun:
         variable = run.optimization.variables.get("Variable")
         assert equation.data == {}
         assert variable.data == {}
+
+    def test_run_delete_locked_run(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1_1 = platform.runs.get("Model 1", "Scenario 1")
+        run1_2 = platform.runs.get("Model 1", "Scenario 1")
+
+        with run1_1.transact("Erroneously lock run for deletion"):
+            with pytest.raises(RunIsLocked):
+                run1_1.delete()
+            with pytest.raises(RunIsLocked):
+                run1_2.delete()
+
+    def test_run_delete_via_object_method(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1 = platform.runs.get("Model 1", "Scenario 1")
+        run2 = platform.runs.get("Model 2", "Scenario 2")
+
+        for run in [run1, run2]:
+            run.delete()
+            self.assert_run_data_deleted(platform, run)
+
+    def test_run_delete_via_repository_id(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1 = platform.runs.get("Model 1", "Scenario 1")
+        run2 = platform.runs.get("Model 2", "Scenario 2")
+
+        for run in [run1, run2]:
+            platform.runs.delete(run.id)
+            self.assert_run_data_deleted(platform, run)
+
+    def test_run_delete_via_repository_object(self, platform: ixmp4.Platform) -> None:
+        self.small.load_dataset(platform)
+        run1 = platform.runs.get("Model 1", "Scenario 1")
+        run2 = platform.runs.get("Model 2", "Scenario 2")
+
+        for run in [run1, run2]:
+            platform.runs.delete(run)
+            self.assert_run_data_deleted(platform, run)
+
+    def test_run_invalid_argument(self, platform: ixmp4.Platform) -> None:
+        with pytest.raises(TypeError):
+            platform.runs.delete("Model|Scenario")  # type: ignore[arg-type]
+
+    def assert_run_data_deleted(self, platform: ixmp4.Platform, run: Run) -> None:
+        ret_meta = platform.backend.meta.tabulate(
+            run={"id": run.id, "default_only": False}
+        )
+        assert ret_meta.empty
+
+        ret_iamc_dps = platform.backend.iamc.datapoints.tabulate(
+            run={"id": run.id, "default_only": True}
+        )
+        assert ret_iamc_dps.empty
+
+        # TODO: check if optimization data is deleted. @glatterf42
 
     def test_run_clone(self, platform: ixmp4.Platform) -> None:
         # Prepare test data and platform

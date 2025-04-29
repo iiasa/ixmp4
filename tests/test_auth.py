@@ -202,6 +202,16 @@ class TestAuthContext:
                     with pytest.raises(Forbidden):
                         mp.units.create("Created Unit")
 
+                if view and not manage:
+                    try:
+                        run = mp.runs.get("Model 1", "Scenario 1")
+                    except (ixmp4.Run.NotFound, ixmp4.Run.NoDefaultVersion):
+                        pass  # cant view the run :()
+                    else:
+                        with pytest.raises(Forbidden):
+                            with run.transact("Delete run"):
+                                run.delete()
+
                 if view and not edit:
                     r = mp.regions.get("Region 1")
                     with pytest.raises(Forbidden):
