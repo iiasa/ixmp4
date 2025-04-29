@@ -48,7 +48,7 @@ class TestDataOptimizationVariable:
         assert variable.name == "Variable"
         assert variable.data == {}
         assert variable.column_names is None
-        assert variable.indexsets is None
+        assert variable.indexset_names is None
 
         # Test creation with indexset
         indexset, indexset_2 = create_indexsets_for_run(
@@ -64,7 +64,7 @@ class TestDataOptimizationVariable:
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
         assert variable_2.column_names is None
-        assert variable_2.indexsets == [indexset.name]
+        assert variable_2.indexset_names == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(OptimizationVariable.NotUnique):
@@ -100,7 +100,7 @@ class TestDataOptimizationVariable:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert variable_3.indexsets == [indexset.name]
+        assert variable_3.indexset_names == [indexset.name]
         assert variable_3.column_names == ["Column 1"]
 
         # Test duplicate column_names raise

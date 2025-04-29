@@ -54,7 +54,7 @@ class TestDataOptimizationEquation:
         assert equation.name == "Equation"
         assert equation.data == {}  # JsonDict type currently requires a dict, not None
         assert equation.column_names is None
-        assert equation.indexsets == [indexset.name]
+        assert equation.indexset_names == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(Equation.NotUnique):

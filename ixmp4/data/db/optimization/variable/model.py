@@ -60,7 +60,7 @@ class OptimizationVariable(base.BaseModel):
     )
 
     @property
-    def indexsets(self) -> list[str] | None:
+    def indexset_names(self) -> list[str] | None:
         return (
             [indexset.name for indexset in self._indexsets]
             if len(self._indexsets) > 0

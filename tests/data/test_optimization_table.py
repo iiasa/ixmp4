@@ -50,7 +50,7 @@ class TestDataOptimizationTable:
         assert table.run__id == run.id
         assert table.name == "Table"
         assert table.data == {}  # JsonDict type currently requires a dict, not None
-        assert table.indexsets == [indexset_1.name]
+        assert table.indexset_names == [indexset_1.name]
         assert table.column_names is None
 
         # Test duplicate name raises

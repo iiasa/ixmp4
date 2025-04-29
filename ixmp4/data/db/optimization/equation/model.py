@@ -60,7 +60,7 @@ class Equation(base.BaseModel):
     )
 
     @property
-    def indexsets(self) -> list[str]:
+    def indexset_names(self) -> list[str]:
         return [indexset.name for indexset in self._indexsets]
 
     @property

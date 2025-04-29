@@ -63,8 +63,8 @@ class Equation(BaseModelFacade):
         return cast(list[float], self._model.data.get("marginals", []))
 
     @property
-    def indexsets(self) -> list[str]:
-        return self._model.indexsets
+    def indexset_names(self) -> list[str]:
+        return self._model.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:

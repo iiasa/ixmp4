@@ -54,7 +54,7 @@ class TestCoreTable:
         assert table.id == 1
         assert table.name == "Table 1"
         assert table.data == {}
-        assert table.indexsets == [indexset.name]
+        assert table.indexset_names == [indexset.name]
         assert table.column_names is None
 
         # Test duplicate name raises
@@ -102,7 +102,7 @@ class TestCoreTable:
         assert table.id == 1
         assert table.name == "Table"
         assert table.data == {}
-        assert table.indexsets == [indexset.name]
+        assert table.indexset_names == [indexset.name]
 
         with pytest.raises(Table.NotFound):
             _ = run.optimization.tables.get(name="Table 2")

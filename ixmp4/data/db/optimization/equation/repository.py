@@ -136,7 +136,7 @@ class EquationRepository(
             )
 
         index_list = (
-            equation.column_names if equation.column_names else equation.indexsets
+            equation.column_names if equation.column_names else equation.indexset_names
         )
         existing_data = pd.DataFrame(equation.data)
         if not existing_data.empty:

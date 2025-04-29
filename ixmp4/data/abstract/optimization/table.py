@@ -23,7 +23,7 @@ class Table(base.BaseModel, Protocol):
     """Unique name of the Table."""
     data: types.JsonDict
     """Data stored in the Table."""
-    indexsets: types.Mapped[list[str]]
+    indexset_names: types.Mapped[list[str]]
     """List of the names of the IndexSets the Table is bound to."""
     column_names: types.Mapped[list[str] | None]
     """List of the Table's column names, if distinct from the IndexSet names."""

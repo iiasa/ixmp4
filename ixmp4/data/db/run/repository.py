@@ -415,7 +415,7 @@ class RunRepository(
             new_table = self.backend.optimization.tables.create(
                 run_id=run.id,
                 name=table.name,
-                constrained_to_indexsets=table.indexsets,
+                constrained_to_indexsets=table.indexset_names,
                 column_names=table.column_names,
             )
             self.backend.optimization.tables.add_data(
@@ -437,7 +437,7 @@ class RunRepository(
             new_equation = self.backend.optimization.equations.create(
                 run_id=run.id,
                 name=equation.name,
-                constrained_to_indexsets=equation.indexsets,
+                constrained_to_indexsets=equation.indexset_names,
                 column_names=equation.column_names,
             )
             if keep_solution:
@@ -449,7 +449,7 @@ class RunRepository(
             new_variable = self.backend.optimization.variables.create(
                 run_id=run.id,
                 name=variable.name,
-                constrained_to_indexsets=variable.indexsets,
+                constrained_to_indexsets=variable.indexset_names,
                 column_names=variable.column_names,
             )
             if keep_solution:

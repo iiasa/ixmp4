@@ -54,7 +54,7 @@ class TestCoreEquation:
         assert equation.name == "Equation"
         assert equation.data == {}  # JsonDict type currently requires a dict, not None
         assert equation.column_names is None
-        assert equation.indexsets == [indexset.name]
+        assert equation.indexset_names == [indexset.name]
         assert equation.levels == []
         assert equation.marginals == []
 
@@ -106,7 +106,7 @@ class TestCoreEquation:
         assert equation.levels == []
         assert equation.marginals == []
         assert equation.column_names is None
-        assert equation.indexsets == [indexset.name]
+        assert equation.indexset_names == [indexset.name]
 
         with pytest.raises(Equation.NotFound):
             _ = run.optimization.equations.get("Equation 2")

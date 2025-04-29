@@ -148,7 +148,7 @@ class VariableRepository(
             )
 
         index_list = (
-            variable.column_names if variable.column_names else variable.indexsets
+            variable.column_names if variable.column_names else variable.indexset_names
         )
         existing_data = pd.DataFrame(variable.data)
         if index_list:

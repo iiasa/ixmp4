@@ -45,7 +45,7 @@ class TestCoreVariable:
         assert variable.run_id == run.id
         assert variable.name == "Variable"
         assert variable.data == {}
-        assert variable.indexsets is None
+        assert variable.indexset_names is None
         assert variable.column_names is None
         assert variable.levels == []
         assert variable.marginals == []
@@ -64,7 +64,7 @@ class TestCoreVariable:
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
         assert variable_2.column_names is None
-        assert variable_2.indexsets == [indexset.name]
+        assert variable_2.indexset_names == [indexset.name]
         assert variable_2.levels == []
         assert variable_2.marginals == []
 
@@ -127,7 +127,7 @@ class TestCoreVariable:
         assert variable.levels == []
         assert variable.marginals == []
         assert variable.column_names is None
-        assert variable.indexsets == [indexset.name]
+        assert variable.indexset_names == [indexset.name]
 
         with pytest.raises(OptimizationVariable.NotFound):
             _ = run.optimization.variables.get("Variable 2")

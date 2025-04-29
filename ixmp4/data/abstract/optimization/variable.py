@@ -22,7 +22,7 @@ class Variable(base.BaseModel, Protocol):
     """Unique name of the Variable."""
     data: types.JsonDict
     """Data stored in the Variable."""
-    indexsets: types.Mapped[list[str] | None]
+    indexset_names: types.Mapped[list[str] | None]
     """List of the names of the IndexSets the Variable is bound to."""
     column_names: types.Mapped[list[str] | None]
     """List of the Variable's column names, if distinct from the IndexSet names."""

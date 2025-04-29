@@ -24,7 +24,7 @@ class Variable(base.BaseModel):
     id: int
     name: str
     data: dict[str, list[float] | list[int] | list[str]]
-    indexsets: list[str] | None
+    indexset_names: list[str] | None
     column_names: list[str] | None
     run__id: int
 

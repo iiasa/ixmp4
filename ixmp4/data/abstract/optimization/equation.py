@@ -23,7 +23,7 @@ class Equation(base.BaseModel, Protocol):
     """Unique name of the Equation."""
     data: types.JsonDict
     """Data stored in the Equation."""
-    indexsets: types.Mapped[list[str]]
+    indexset_names: types.Mapped[list[str]]
     """List of the names of the IndexSets the Equation is bound to."""
     column_names: types.Mapped[list[str] | None]
     """List of the Equation's column names, if distinct from the IndexSet names."""
