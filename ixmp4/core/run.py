@@ -99,9 +99,6 @@ class Run(BaseModelFacade):
 
         try:
             yield
-        # except Forbidden as e:
-        #     self._unlock()
-        #     raise e
         except Exception as e:
             checkpoint_df = self.checkpoints.tabulate()
             if checkpoint_df.empty:
