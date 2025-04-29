@@ -122,8 +122,12 @@ class Run(BaseModelFacade):
 
     def delete(self) -> None:
         """Delete this run.
-        Tries to acquire a lock in the background and will fail
-        if the lock is held by this or another object already.
+        Tries to acquire a lock in the background.
+
+        Raises
+        ------
+        :class:`ixmp4.core.exceptions.RunIsLocked`:
+            If the run is already locked by this or another object.
         """
         self.backend.runs.delete(self._model.id)
 
