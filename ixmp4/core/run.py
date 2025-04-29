@@ -1,3 +1,4 @@
+import time
 from collections import UserDict
 from contextlib import contextmanager
 from typing import ClassVar, Generator, cast
@@ -36,7 +37,9 @@ class Run(BaseModelFacade):
 
     checkpoints: RunCheckpoints
 
-    owns_lock = False
+    owns_lock: bool = False
+    minimum_lock_timeout: float = 0.1
+    maximum_lock_timeout: float = 5
 
     def __init__(self, **kwargs: Unpack[RunKwargs]) -> None:
         super().__init__(**kwargs)
@@ -93,9 +96,61 @@ class Run(BaseModelFacade):
         self._model = self.backend.runs.unlock(self._model.id)
         self.owns_lock = False
 
+    def _lock_with_timeout(self, timeout: float) -> None:
+        """Try locking the run until a timeout passes."""
+        start_time = time.time()
+        while True:
+            try:
+                self._lock()
+                break
+            except RunModel.IsLocked as e:
+                elapsed_time = time.time() - start_time
+                if elapsed_time > timeout:
+                    raise e
+                remaining_time = timeout - elapsed_time
+                sleep_time = elapsed_time * 2
+                sleep_time = min(sleep_time, self.maximum_lock_timeout)
+                sleep_time = max(sleep_time, self.minimum_lock_timeout)
+                sleep_time = min(sleep_time, remaining_time)
+                time.sleep(sleep_time)
+
     @contextmanager
-    def transact(self, message: str) -> Generator[None, None, None]:
-        self._lock()
+    def transact(
+        self, message: str, timeout: float | None = None
+    ) -> Generator[None, None, None]:
+        """
+        Context manager to lock the run before yielding control
+        back to the caller. The run is unlocked and a checkpoint
+        with the provided `message` is created after the context
+        manager exits.
+        If an exception occurs, the run is reverted to the last
+        checkpoint or if no checkpoint exists, to the transaction
+        the run was locked at.
+
+        If the run is already locked, the context manager will
+        throw `Run.IsLocked` or if `timeout` is provided retry until
+        the timeout has passed (and then throw the original
+        `Run.IsLocked` exception).
+
+        Parameters
+        ----------
+        messsage : str
+            The message for the checkpoint created after
+            conclusion of the context manager.
+        timeout : int, optional
+            Timeout in seconds.
+
+        Raises
+        ------
+        :class:`ixmp4.core.exceptions.RunIsLocked`
+            If the run is already locked and no timeout is provided
+            or the provided timeout is exceeded.
+        """
+
+        if timeout is None:
+            self._lock()
+        else:
+            self._lock_with_timeout(timeout)
 
         try:
             yield
