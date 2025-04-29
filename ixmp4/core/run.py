@@ -75,14 +75,20 @@ class Run(BaseModelFacade):
     def meta(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
         self._meta._set(meta)
 
+    @property
+    def is_default(self) -> bool:
+        return self._model.is_default
+
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
         combination."""
         self.backend.runs.set_as_default_version(self._model.id)
+        self._model = self.backend.runs.get_by_id(self._model.id)
 
     def unset_as_default(self) -> None:
         """Unsets this run as the default version."""
         self.backend.runs.unset_as_default_version(self._model.id)
+        self._model = self.backend.runs.get_by_id(self._model.id)
 
     def require_lock(self) -> None:
         if not self.owns_lock:
