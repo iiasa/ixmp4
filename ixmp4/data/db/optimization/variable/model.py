@@ -26,9 +26,14 @@ class OptimizationVariable(base.BaseModel):
 
     @validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        if not bool(data):
+        # Only validate data that has more than the mininum required keys
+        if not bool(data.keys() - self._required_keys):
             return data
         utils.validate_data(host=self, data=data, columns=self.columns)
         return data
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
+
+    @property
+    def _required_keys(self) -> set[str]:
+        return {"levels", "marginals"}
