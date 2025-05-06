@@ -70,6 +70,7 @@ from sqlalchemy.orm import (
     backref,
     mapped_column,
     relationship,
+    validates,
 )
 from sqlalchemy.orm.exc import NoResultFound
 from sqlalchemy.types import *
@@ -77,6 +78,10 @@ from sqlalchemy.types import *
 from . import utils
 
 Column = mapped_column
+EquationIdType = Annotated[
+    int,
+    Column(Integer, ForeignKey("optimization_equation.id"), nullable=False, index=True),
+]
 IndexSetIdType = Annotated[
     int,
     Column(Integer, ForeignKey("optimization_indexset.id"), nullable=False, index=True),
@@ -86,6 +91,15 @@ JsonType = JSON()
 # model
 JsonType = JsonType.with_variant(JSONB(), "postgresql")  # type:ignore[no-untyped-call]
 NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
+OptimizationVariableIdType = Annotated[
+    int,
+    Column(
+        Integer,
+        ForeignKey("optimization_optimizationvariable.id"),
+        nullable=False,
+        index=True,
+    ),
+]
 ParameterIdType = Annotated[
     int,
     Column(
@@ -95,6 +109,10 @@ ParameterIdType = Annotated[
 RunIdType = Annotated[
     int,
     Column(Integer, ForeignKey("run.id"), nullable=False, index=True),
+]
+TableIdType = Annotated[
+    int,
+    Column(Integer, ForeignKey("optimization_table.id"), nullable=False, index=True),
 ]
 UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
 UsernameType = Annotated[str, Column(String(255), nullable=True)]

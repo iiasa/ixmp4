@@ -7,6 +7,7 @@ from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
 )
+from ixmp4.data.backend.api import RestBackend
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -44,8 +45,8 @@ class TestCoreVariable:
         assert variable.run_id == run.id
         assert variable.name == "Variable"
         assert variable.data == {}
-        assert variable.columns == []
-        assert variable.constrained_to_indexsets == []
+        assert variable.indexset_names is None
+        assert variable.column_names is None
         assert variable.levels == []
         assert variable.marginals == []
 
@@ -62,9 +63,8 @@ class TestCoreVariable:
         assert variable_2.run_id == run.id
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
-        assert variable_2.columns is not None
-        assert variable_2.columns[0].name == indexset.name
-        assert variable_2.constrained_to_indexsets == [indexset.name]
+        assert variable_2.column_names is None
+        assert variable_2.indexset_names == [indexset.name]
         assert variable_2.levels == []
         assert variable_2.marginals == []
 
@@ -99,8 +99,7 @@ class TestCoreVariable:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert variable_3.columns is not None
-        assert variable_3.columns[0].name == "Column 1"
+        assert variable_3.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -111,17 +110,6 @@ class TestCoreVariable:
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        indexset_2.add(data=2024)
-        variable_4 = run.optimization.variables.create(
-            "Variable 4",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert variable_4.columns is not None
-        assert variable_4.columns[0].dtype == "object"
-        assert variable_4.columns[1].dtype == "int64"
 
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -138,9 +126,8 @@ class TestCoreVariable:
         assert variable.data == {}
         assert variable.levels == []
         assert variable.marginals == []
-        assert variable.columns is not None
-        assert variable.columns[0].name == indexset.name
-        assert variable.constrained_to_indexsets == [indexset.name]
+        assert variable.column_names is None
+        assert variable.indexset_names == [indexset.name]
 
         with pytest.raises(OptimizationVariable.NotFound):
             _ = run.optimization.variables.get("Variable 2")
@@ -185,7 +172,7 @@ class TestCoreVariable:
             variable_2.add(
                 pd.DataFrame(
                     {
-                        indexset.name: [None],
+                        indexset.name: ["foo"],
                         indexset_2.name: [2],
                         "levels": [1],
                     }
@@ -198,7 +185,7 @@ class TestCoreVariable:
             variable_2.add(
                 data=pd.DataFrame(
                     {
-                        indexset.name: [None],
+                        indexset.name: ["foo"],
                         indexset_2.name: [2],
                         "marginals": [0],
                     }
@@ -249,6 +236,8 @@ class TestCoreVariable:
             name="Variable 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
+        # NOTE entries for levels and marginals must be convertible to one of
+        # (float, int, str)
         test_data_6 = {
             indexset.name: ["foo", "foo", "bar", "bar"],
             indexset_2.name: [1, 3, 1, 2],
@@ -271,15 +260,38 @@ class TestCoreVariable:
             )
             .reset_index()
         )
-        assert_unordered_equality(expected, pd.DataFrame(variable_4.data))
+        # NOTE Something along the API route converts all levels and marginals to float,
+        # while the direct pandas call respects the different dtypes. However, anyone
+        # accessing .levels and .marginals will always be served float, so that's fine.
+        if isinstance(platform.backend, RestBackend):
+            expected = expected.astype({"levels": float, "marginals": float})
+        assert_unordered_equality(
+            expected, pd.DataFrame(variable_4.data), check_dtype=False
+        )
 
         # Test adding to scalar variable raises
         with pytest.raises(
             OptimizationDataValidationError,
-            match="Trying to add data to unknown Columns!",
+            match="Trying to add data to unknown columns!",
         ):
             variable_5 = run.optimization.variables.create("Variable 5")
             variable_5.add(data={"foo": ["bar"], "levels": [1], "marginals": [0]})
+
+        # Test adding with column_names
+        variable_6 = run.optimization.variables.create(
+            name="Variable 6",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        variable_6.add(data=test_data_8)
+
+        assert variable_6.data == test_data_8
 
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -287,8 +299,8 @@ class TestCoreVariable:
         indexset.add(data=["foo", "bar"])
         test_data = {
             "Indexset": ["bar", "foo"],
-            "levels": [2.0, 1],
-            "marginals": [0, "test"],
+            "levels": [2.3, 1],
+            "marginals": [0, 4.2],
         }
         variable = run.optimization.variables.create(
             "Variable",

@@ -1,6 +1,4 @@
-from typing import Any, ClassVar, cast
-
-from sqlalchemy.orm import validates
+from typing import Any, ClassVar
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
@@ -13,11 +11,11 @@ from .. import IndexSet, base, utils
 class ParameterIndexsetAssociation(base.RootBaseModel):
     table_prefix = "optimization_"
 
-    parameter_id: types.ParameterId
+    parameter__id: types.ParameterId
     parameter: types.Mapped["Parameter"] = db.relationship(
         back_populates="_parameter_indexset_associations"
     )
-    indexset_id: types.IndexSetId
+    indexset__id: types.IndexSetId
     indexset: types.Mapped[IndexSet] = db.relationship()
 
     column_name: types.String = db.Column(db.String(255), nullable=True)
@@ -31,10 +29,28 @@ class Parameter(base.BaseModel):
     DeletionPrevented: ClassVar = abstract.Parameter.DeletionPrevented
 
     run__id: types.RunId
+    data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
+
+    @db.validates("data")
+    def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
+        # NOTE Not checking for data with only values and units, since these are Scalars
+        if not bool(data):
+            return data
+        utils.validate_data(
+            host=self,
+            data=data,
+            indexsets=self._indexsets,
+            column_names=self.column_names,
+        )
+        return data
 
     _parameter_indexset_associations: types.Mapped[
         list[ParameterIndexsetAssociation]
-    ] = db.relationship(back_populates="parameter", cascade="all, delete-orphan")
+    ] = db.relationship(
+        back_populates="parameter",
+        cascade="all, delete-orphan",
+        order_by="ParameterIndexsetAssociation.id",
+    )
 
     _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(
         "_parameter_indexset_associations", "indexset"
@@ -49,13 +65,7 @@ class Parameter(base.BaseModel):
 
     @property
     def column_names(self) -> list[str] | None:
-        return cast(list[str], self._column_names) if any(self._column_names) else None
-
-    data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
-
-    @validates("data")
-    def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        utils.validate_data(host=self, data=data, columns=self._indexsets)
-        return data
+        names = [name for name in self._column_names if name]
+        return names if bool(names) else None
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)

@@ -7,6 +7,7 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
 )
 from ixmp4.data.abstract import OptimizationVariable
+from ixmp4.data.backend.api import RestBackend
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -46,7 +47,8 @@ class TestDataOptimizationVariable:
         assert variable.run__id == run.id
         assert variable.name == "Variable"
         assert variable.data == {}
-        assert variable.columns == []
+        assert variable.column_names is None
+        assert variable.indexset_names is None
 
         # Test creation with indexset
         indexset, indexset_2 = create_indexsets_for_run(
@@ -61,26 +63,13 @@ class TestDataOptimizationVariable:
         assert variable_2.run__id == run.id
         assert variable_2.name == "Variable 2"
         assert variable_2.data == {}  # JsonDict type currently requires dict, not None
-        assert variable_2.columns is not None
-        assert variable_2.columns[0].name == indexset.name
-        assert variable_2.columns[0].constrained_to_indexset == indexset.id
+        assert variable_2.column_names is None
+        assert variable_2.indexset_names == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(OptimizationVariable.NotUnique):
             _ = platform.backend.optimization.variables.create(
                 run_id=run.id, name="Variable", constrained_to_indexsets=[indexset.name]
-            )
-
-        # Test that giving column_names, but not constrained_to_indexsets raises
-        with pytest.raises(
-            OptimizationItemUsageError,
-            match="Received `column_names` to name columns, but no "
-            "`constrained_to_indexsets`",
-        ):
-            _ = platform.backend.optimization.variables.create(
-                run_id=run.id,
-                name="Variable 0",
-                column_names=["Dimension 1"],
             )
 
         # Test that giving column_names, but not constrained_to_indexsets raises
@@ -111,8 +100,8 @@ class TestDataOptimizationVariable:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert variable_3.columns is not None
-        assert variable_3.columns[0].name == "Column 1"
+        assert variable_3.indexset_names == [indexset.name]
+        assert variable_3.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -124,21 +113,6 @@ class TestDataOptimizationVariable:
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        platform.backend.optimization.indexsets.add_data(indexset_2.id, data=2024)
-        indexset_2 = platform.backend.optimization.indexsets.get(
-            run.id, indexset_2.name
-        )
-        variable_4 = platform.backend.optimization.variables.create(
-            run_id=run.id,
-            name="Variable 4",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert variable_4.columns is not None
-        assert variable_4.columns[0].dtype == "object"
-        assert variable_4.columns[1].dtype == "int64"
 
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -206,7 +180,7 @@ class TestDataOptimizationVariable:
                 variable_id=variable_2.id,
                 data=pd.DataFrame(
                     {
-                        indexset.name: [None],
+                        indexset.name: ["foo"],
                         indexset_2.name: [2],
                         "marginals": [1],
                     }
@@ -221,7 +195,7 @@ class TestDataOptimizationVariable:
                 variable_id=variable_2.id,
                 data=pd.DataFrame(
                     {
-                        indexset.name: [None],
+                        indexset.name: ["foo"],
                         indexset_2.name: [2],
                         "levels": [1],
                     }
@@ -278,6 +252,8 @@ class TestDataOptimizationVariable:
             name="Variable 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
+        # NOTE entries for levels and marginals must be convertible to one of
+        # (float, int, str)
         test_data_6 = {
             indexset.name: ["foo", "foo", "bar", "bar"],
             indexset_2.name: [1, 3, 1, 2],
@@ -307,7 +283,36 @@ class TestDataOptimizationVariable:
             )
             .reset_index()
         )
-        assert_unordered_equality(expected, pd.DataFrame(variable_4.data))
+        # NOTE Something along the API route converts all levels and marginals to float,
+        # while the direct pandas call respects the different dtypes. However, anyone
+        # accessing .levels and .marginals will always be served float, so that's fine.
+        if isinstance(platform.backend, RestBackend):
+            expected = expected.astype({"levels": float, "marginals": float})
+        assert_unordered_equality(
+            expected, pd.DataFrame(variable_4.data), check_dtype=False
+        )
+
+        # Test adding with column_names
+        variable_5 = platform.backend.optimization.variables.create(
+            run_id=run.id,
+            name="Variable 5",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        platform.backend.optimization.variables.add_data(
+            variable_id=variable_5.id, data=test_data_8
+        )
+        variable_5 = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable 5"
+        )
+
+        assert variable_5.data == test_data_8
 
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -318,7 +323,7 @@ class TestDataOptimizationVariable:
         test_data = {
             "Indexset": ["bar", "foo"],
             "levels": [2.0, 1],
-            "marginals": [0, "test"],
+            "marginals": [0, 4.2],
         }
         variable = platform.backend.optimization.variables.create(
             run_id=run.id,

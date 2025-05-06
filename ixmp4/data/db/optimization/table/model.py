@@ -1,14 +1,24 @@
 from typing import Any, ClassVar
 
-from sqlalchemy.orm import Mapped as Mapped
-from sqlalchemy.orm import validates
-
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 
-from .. import Column, base, utils
+from .. import IndexSet, base, utils
+
+
+class TableIndexsetAssociation(base.RootBaseModel):
+    table_prefix = "optimization_"
+
+    table__id: types.TableId
+    table: types.Mapped["Table"] = db.relationship(
+        back_populates="_table_indexset_associations"
+    )
+    indexset__id: types.IndexSetId
+    indexset: types.Mapped[IndexSet] = db.relationship()
+
+    column_name: types.String = db.Column(db.String(255), nullable=True)
 
 
 class Table(base.BaseModel):
@@ -18,17 +28,44 @@ class Table(base.BaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Table.DeletionPrevented
 
-    # constrained_to_indexsets: ClassVar[list[str] | None] = None
-
     run__id: types.RunId
-    columns: types.Mapped[list["Column"]] = db.relationship()
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
-    @validates("data")
+    @db.validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
+        if not bool(data):
+            return data
         utils.validate_data(
-            host=self, data=data, columns=self.columns, has_values_and_units=False
+            host=self,
+            data=data,
+            indexsets=self._indexsets,
+            column_names=self.column_names,
+            has_extra_columns=False,
         )
         return data
+
+    _table_indexset_associations: types.Mapped[list[TableIndexsetAssociation]] = (
+        db.relationship(
+            back_populates="table",
+            cascade="all, delete-orphan",
+            order_by="TableIndexsetAssociation.id",
+        )
+    )
+
+    _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(
+        "_table_indexset_associations", "indexset"
+    )
+    _column_names: db.AssociationProxy[list[str | None]] = db.association_proxy(
+        "_table_indexset_associations", "column_name"
+    )
+
+    @property
+    def indexset_names(self) -> list[str]:
+        return [indexset.name for indexset in self._indexsets]
+
+    @property
+    def column_names(self) -> list[str] | None:
+        names = [name for name in self._column_names if name]
+        return names if bool(names) else None
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)

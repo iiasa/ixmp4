@@ -7,6 +7,7 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
 )
 from ixmp4.data.abstract import Equation
+from ixmp4.data.backend.api import RestBackend
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -52,8 +53,8 @@ class TestDataOptimizationEquation:
         assert equation.run__id == run.id
         assert equation.name == "Equation"
         assert equation.data == {}  # JsonDict type currently requires a dict, not None
-        assert equation.columns[0].name == indexset.name
-        assert equation.columns[0].constrained_to_indexset == indexset.id
+        assert equation.column_names is None
+        assert equation.indexset_names == [indexset.name]
 
         # Test duplicate name raises
         with pytest.raises(Equation.NotUnique):
@@ -77,7 +78,7 @@ class TestDataOptimizationEquation:
             constrained_to_indexsets=[indexset.name],
             column_names=["Column 1"],
         )
-        assert equation_2.columns[0].name == "Column 1"
+        assert equation_2.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -89,20 +90,6 @@ class TestDataOptimizationEquation:
                 constrained_to_indexsets=[indexset.name, indexset.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        platform.backend.optimization.indexsets.add_data(indexset_2.id, data=2024)
-        indexset_2 = platform.backend.optimization.indexsets.get(
-            run.id, indexset_2.name
-        )
-        equation_3 = platform.backend.optimization.equations.create(
-            run_id=run.id,
-            name="Equation 5",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert equation_3.columns[0].dtype == "object"
-        assert equation_3.columns[1].dtype == "int64"
 
     def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -170,7 +157,7 @@ class TestDataOptimizationEquation:
                 equation_id=equation_2.id,
                 data=pd.DataFrame(
                     {
-                        indexset.name: [None],
+                        indexset.name: ["foo"],
                         indexset_2.name: [2],
                         "marginals": [1],
                     }
@@ -185,7 +172,7 @@ class TestDataOptimizationEquation:
                 equation_id=equation_2.id,
                 data=pd.DataFrame(
                     {
-                        indexset.name: [None],
+                        indexset.name: ["foo"],
                         indexset_2.name: [2],
                         "levels": [1],
                     }
@@ -242,6 +229,8 @@ class TestDataOptimizationEquation:
             name="Equation 4",
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
+        # NOTE entries for levels and marginals must be convertible to one of
+        # (float, int, str)
         test_data_6 = {
             indexset.name: ["foo", "foo", "bar", "bar"],
             indexset_2.name: [1, 3, 1, 2],
@@ -271,7 +260,36 @@ class TestDataOptimizationEquation:
             )
             .reset_index()
         )
-        assert_unordered_equality(expected, pd.DataFrame(equation_4.data))
+        # NOTE Something along the API route converts all levels and marginals to float,
+        # while the direct pandas call respects the different dtypes. However, anyone
+        # accessing .levels and .marginals will always be served float, so that's fine.
+        if isinstance(platform.backend, RestBackend):
+            expected = expected.astype({"levels": float, "marginals": float})
+        assert_unordered_equality(
+            expected, pd.DataFrame(equation_4.data), check_dtype=False
+        )
+
+        # Test adding with column_names
+        equation_5 = platform.backend.optimization.equations.create(
+            run_id=run.id,
+            name="Equation 5",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        platform.backend.optimization.equations.add_data(
+            equation_id=equation_5.id, data=test_data_8
+        )
+        equation_5 = platform.backend.optimization.equations.get(
+            run_id=run.id, name="Equation 5"
+        )
+
+        assert equation_5.data == test_data_8
 
     def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -283,8 +301,8 @@ class TestDataOptimizationEquation:
         )
         test_data = {
             indexset.name: ["bar", "foo"],
-            "levels": [2.0, 1],
-            "marginals": [0, "test"],
+            "levels": [2.3, 1],
+            "marginals": [0, 4.2],
         }
         equation = platform.backend.optimization.equations.create(
             run_id=run.id,

@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 if TYPE_CHECKING:
     from . import InitKwargs
@@ -35,7 +35,7 @@ class Parameter(BaseModelFacade):
         return self._model.run__id
 
     @property
-    def data(self) -> dict[str, Any]:
+    def data(self) -> dict[str, list[float] | list[int] | list[str]]:
         return self._model.data
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
@@ -49,13 +49,11 @@ class Parameter(BaseModelFacade):
 
     @property
     def values(self) -> list[float]:
-        values: list[float] = self._model.data.get("values", [])
-        return values
+        return cast(list[float], self._model.data.get("values", []))
 
     @property
     def units(self) -> list[Unit]:
-        units: list[Unit] = self._model.data.get("units", [])
-        return units
+        return cast(list[Unit], self._model.data.get("units", []))
 
     @property
     def indexset_names(self) -> list[str]:

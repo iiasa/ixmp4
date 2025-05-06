@@ -415,10 +415,8 @@ class RunRepository(
             new_table = self.backend.optimization.tables.create(
                 run_id=run.id,
                 name=table.name,
-                constrained_to_indexsets=[
-                    column.indexset.name for column in table.columns
-                ],
-                column_names=[column.name for column in table.columns],
+                constrained_to_indexsets=table.indexset_names,
+                column_names=table.column_names,
             )
             self.backend.optimization.tables.add_data(
                 table_id=new_table.id, data=table.data
@@ -439,10 +437,8 @@ class RunRepository(
             new_equation = self.backend.optimization.equations.create(
                 run_id=run.id,
                 name=equation.name,
-                constrained_to_indexsets=[
-                    column.indexset.name for column in equation.columns
-                ],
-                column_names=[column.name for column in equation.columns],
+                constrained_to_indexsets=equation.indexset_names,
+                column_names=equation.column_names,
             )
             if keep_solution:
                 self.backend.optimization.equations.add_data(
@@ -453,10 +449,8 @@ class RunRepository(
             new_variable = self.backend.optimization.variables.create(
                 run_id=run.id,
                 name=variable.name,
-                constrained_to_indexsets=[
-                    column.indexset.name for column in variable.columns
-                ],
-                column_names=[column.name for column in variable.columns],
+                constrained_to_indexsets=variable.indexset_names,
+                column_names=variable.column_names,
             )
             if keep_solution:
                 self.backend.optimization.variables.add_data(

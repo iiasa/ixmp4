@@ -13,7 +13,6 @@ from ixmp4.data import types
 from .. import base
 from ..docs import DocsRepository
 from .base import BackendBaseRepository
-from .column import Column
 
 
 class Variable(base.BaseModel, Protocol):
@@ -23,8 +22,10 @@ class Variable(base.BaseModel, Protocol):
     """Unique name of the Variable."""
     data: types.JsonDict
     """Data stored in the Variable."""
-    columns: types.Mapped[list[Column] | None]
-    """Data specifying this Variable's Columns."""
+    indexset_names: types.Mapped[list[str] | None]
+    """List of the names of the IndexSets the Variable is bound to."""
+    column_names: types.Mapped[list[str] | None]
+    """List of the Variable's column names, if distinct from the IndexSet names."""
 
     run__id: types.Integer
     "Foreign unique integer id of a run."
@@ -57,7 +58,7 @@ class VariableRepository(
         """Creates a Variable.
 
         Each column of the Variable needs to be constrained to an existing
-        :class:ixmp4.data.abstract.optimization.IndexSet. These are specified by name
+        :class:`ixmp4.data.abstract.optimization.IndexSet`. These are specified by name
         and per default, these will be the column names. They can be overwritten by
         specifying `column_names`, which needs to specify a unique name for each column.
 
@@ -80,7 +81,7 @@ class VariableRepository(
         ------
         :class:`ixmp4.data.abstract.optimization.Variable.NotUnique`:
             If the Variable with `name` already exists for the Run with `run_id`.
-        ValueError
+        :class:`ixmp4.core.exceptions.OptimizationItemUsageError`:
             If `column_names` are not unique or not enough names are given.
 
         Returns
@@ -195,7 +196,7 @@ class VariableRepository(
 
         Raises
         ------
-        ValueError:
+        :class:`ixmp4.core.exceptions.OptimizationItemUsageError`:
             - If values are missing, `None`, or `NaN`
             - If values are not allowed based on constraints to `Indexset`s
             - If rows are not unique

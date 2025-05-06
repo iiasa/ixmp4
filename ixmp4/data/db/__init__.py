@@ -19,8 +19,6 @@ from .iamc import (  # AnnualDataPoint,; SubAnnualDataPoint,; CategoricalDataPoi
 from .meta import RunMetaEntry, RunMetaEntryRepository
 from .model import Model, ModelRepository
 from .optimization import (
-    Column,
-    ColumnRepository,
     Equation,
     EquationRepository,
     IndexSet,
@@ -32,8 +30,6 @@ from .optimization import (
     Table,
     TableRepository,
 )
-
-# TODO for PR: avoiding name conflict here Is that okay?
 from .optimization import Variable as OptimizationVariable
 from .optimization import VariableRepository as OptimizationVariableRepository
 from .region import Region, RegionRepository

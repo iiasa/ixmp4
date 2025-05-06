@@ -50,8 +50,8 @@ class TestDataOptimizationTable:
         assert table.run__id == run.id
         assert table.name == "Table"
         assert table.data == {}  # JsonDict type currently requires a dict, not None
-        assert table.columns[0].name == indexset_1.name
-        assert table.columns[0].constrained_to_indexset == indexset_1.id
+        assert table.indexset_names == [indexset_1.name]
+        assert table.column_names is None
 
         # Test duplicate name raises
         with pytest.raises(Table.NotUnique):
@@ -75,7 +75,7 @@ class TestDataOptimizationTable:
             constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
-        assert table_2.columns[0].name == "Column 1"
+        table_2.column_names == ["Column 1"]
 
         # Test duplicate column_names raise
         with pytest.raises(
@@ -87,20 +87,6 @@ class TestDataOptimizationTable:
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
-
-        # Test column.dtype is registered correctly
-        platform.backend.optimization.indexsets.add_data(indexset_2.id, data=2024)
-        indexset_2 = platform.backend.optimization.indexsets.get(
-            run.id, indexset_2.name
-        )
-        table_3 = platform.backend.optimization.tables.create(
-            run_id=run.id,
-            name="Table 5",
-            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
-        )
-        # If indexset doesn't have data, a generic dtype is registered
-        assert table_3.columns[0].dtype == "object"
-        assert table_3.columns[1].dtype == "int64"
 
     def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -191,7 +177,7 @@ class TestDataOptimizationTable:
             column_names=["Column 1", "Column 2"],
         )
         with pytest.raises(
-            OptimizationDataValidationError, match="Data is missing for some Columns!"
+            OptimizationDataValidationError, match="Data is missing for some columns!"
         ):
             platform.backend.optimization.tables.add_data(
                 table_id=table_3.id, data={"Column 1": ["bar"]}
@@ -219,7 +205,7 @@ class TestDataOptimizationTable:
         # Test raising on non-existing Column.name
         with pytest.raises(
             OptimizationDataValidationError,
-            match="Trying to add data to unknown Columns!",
+            match="Trying to add data to unknown columns!",
         ):
             platform.backend.optimization.tables.add_data(
                 table_id=table_3.id, data={"Column 3": [1]}
@@ -253,7 +239,7 @@ class TestDataOptimizationTable:
         # This doesn't seem to test a distinct case compared to the above
         with pytest.raises(
             OptimizationDataValidationError,
-            match="Trying to add data to unknown Columns!",
+            match="Trying to add data to unknown columns!",
         ):
             platform.backend.optimization.tables.add_data(
                 table_id=table_4.id,
