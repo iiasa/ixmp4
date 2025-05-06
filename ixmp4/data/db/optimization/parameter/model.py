@@ -1,4 +1,4 @@
-from typing import Any, ClassVar, cast
+from typing import Any, ClassVar
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
@@ -61,6 +61,7 @@ class Parameter(base.BaseModel):
 
     @property
     def column_names(self) -> list[str] | None:
-        return cast(list[str], self._column_names) if any(self._column_names) else None
+        names = [name for name in self._column_names if name]
+        return names if bool(names) else None
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)

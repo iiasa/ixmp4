@@ -63,6 +63,11 @@ class TestCoreEquation:
             _ = run.optimization.equations.create(
                 "Equation", constrained_to_indexsets=[indexset.name]
             )
+            _ = run.optimization.equations.create(
+                "Equation",
+                constrained_to_indexsets=[indexset_1.name],
+                column_names=["Column 1"],
+            )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
@@ -247,6 +252,22 @@ class TestCoreEquation:
         assert_unordered_equality(
             expected, pd.DataFrame(equation_4.data), check_dtype=False
         )
+
+        # Test adding with column_names
+        equation_5 = run.optimization.equations.create(
+            name="Equation 5",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        equation_5.add(data=test_data_8)
+
+        assert equation_5.data == test_data_8
 
     def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

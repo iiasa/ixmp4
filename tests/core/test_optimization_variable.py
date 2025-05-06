@@ -277,6 +277,22 @@ class TestCoreVariable:
             variable_5 = run.optimization.variables.create("Variable 5")
             variable_5.add(data={"foo": ["bar"], "levels": [1], "marginals": [0]})
 
+        # Test adding with column_names
+        variable_6 = run.optimization.variables.create(
+            name="Variable 6",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "levels": [6, 5, 4, 3, 2, 1],
+            "marginals": [0.5] * 6,
+        }
+        variable_6.add(data=test_data_8)
+
+        assert variable_6.data == test_data_8
+
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")

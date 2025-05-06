@@ -269,6 +269,28 @@ class TestDataOptimizationParameter:
         )
         assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
+        # Test adding with column_names
+        parameter_3 = platform.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 3",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        test_data_8 = {
+            "Column 1": ["", "", "foo", "foo", "bar", "bar"],
+            "Column 2": [3, 1, 2, 1, 2, 3],
+            "values": [6, 5, 4, 3, 2, 1],
+            "units": [unit.name] * 6,
+        }
+        platform.backend.optimization.parameters.add_data(
+            parameter_id=parameter_3.id, data=test_data_8
+        )
+        parameter_3 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter 3"
+        )
+
+        assert parameter_3.data == test_data_8
+
     def test_list_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset, indexset_2 = create_indexsets_for_run(
