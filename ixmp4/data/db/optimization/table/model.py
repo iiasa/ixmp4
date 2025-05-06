@@ -45,7 +45,11 @@ class Table(base.BaseModel):
         return data
 
     _table_indexset_associations: types.Mapped[list[TableIndexsetAssociation]] = (
-        db.relationship(back_populates="table", cascade="all, delete-orphan")
+        db.relationship(
+            back_populates="table",
+            cascade="all, delete-orphan",
+            order_by="TableIndexsetAssociation.id",
+        )
     )
 
     _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(

@@ -49,7 +49,11 @@ class Equation(base.BaseModel):
         return data
 
     _equation_indexset_associations: types.Mapped[list[EquationIndexsetAssociation]] = (
-        db.relationship(back_populates="equation", cascade="all, delete-orphan")
+        db.relationship(
+            back_populates="equation",
+            cascade="all, delete-orphan",
+            order_by="EquationIndexsetAssociation.id",
+        )
     )
 
     _indexsets: db.AssociationProxy[list["IndexSet"]] = db.association_proxy(

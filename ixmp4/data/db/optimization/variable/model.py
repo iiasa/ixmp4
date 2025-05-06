@@ -49,7 +49,11 @@ class OptimizationVariable(base.BaseModel):
         return data
 
     _variable_indexset_associations: types.Mapped[list[VariableIndexsetAssociation]] = (
-        db.relationship(back_populates="variable", cascade="all, delete-orphan")
+        db.relationship(
+            back_populates="variable",
+            cascade="all, delete-orphan",
+            order_by="VariableIndexsetAssociation.id",
+        )
     )
 
     _indexsets: db.AssociationProxy[list[IndexSet]] = db.association_proxy(
