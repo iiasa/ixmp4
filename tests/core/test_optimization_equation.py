@@ -65,7 +65,7 @@ class TestCoreEquation:
             )
             _ = run.optimization.equations.create(
                 "Equation",
-                constrained_to_indexsets=[indexset_1.name],
+                constrained_to_indexsets=[indexset.name],
                 column_names=["Column 1"],
             )
 
