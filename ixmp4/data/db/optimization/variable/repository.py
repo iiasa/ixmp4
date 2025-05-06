@@ -132,13 +132,13 @@ class VariableRepository(
         return super().tabulate(**kwargs)
 
     @guard("edit")
-    def add_data(self, variable_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
             try:
                 data = pd.DataFrame.from_dict(data=data)
             except ValueError as e:
                 raise Variable.DataInvalid(str(e)) from e
-        variable = self.get_by_id(id=variable_id)
+        variable = self.get_by_id(id=id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)
         if missing_columns:
@@ -164,8 +164,8 @@ class VariableRepository(
         self.session.commit()
 
     @guard("edit")
-    def remove_data(self, variable_id: int) -> None:
-        variable = self.get_by_id(id=variable_id)
+    def remove_data(self, id: int) -> None:
+        variable = self.get_by_id(id=id)
         # TODO Is there a better way to reset .data?
         variable.data = {}
         self.session.commit()

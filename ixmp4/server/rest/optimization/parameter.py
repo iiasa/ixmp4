@@ -60,15 +60,13 @@ def query(
 
 
 @autodoc
-@router.patch("/{parameter_id}/data/")
+@router.patch("/{id}/data/")
 def add_data(
-    parameter_id: int,
+    id: int,
     data: DataInput,
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.optimization.parameters.add_data(
-        parameter_id=parameter_id, **data.model_dump()
-    )
+    backend.optimization.parameters.add_data(id=id, **data.model_dump())
 
 
 @autodoc

@@ -120,14 +120,14 @@ class ParameterRepository(
         return super().tabulate(**kwargs)
 
     @guard("edit")
-    def add_data(self, parameter_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
             try:
                 data = pd.DataFrame.from_dict(data=data)
             except ValueError as e:
                 raise Parameter.DataInvalid(str(e)) from e
 
-        parameter = self.get_by_id(id=parameter_id)
+        parameter = self.get_by_id(id=id)
 
         missing_columns = set(["values", "units"]) - set(data.columns)
         if missing_columns:

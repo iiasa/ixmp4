@@ -79,14 +79,14 @@ class TestDataOptimizationIndexSet:
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_1.id, data=test_data
+            id=indexset_1.id, data=test_data
         )
         indexset_1 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_1.name
         )
 
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=test_data
+            id=indexset_2.id, data=test_data
         )
 
         assert (
@@ -98,12 +98,12 @@ class TestDataOptimizationIndexSet:
 
         with pytest.raises(OptimizationDataValidationError):
             platform.backend.optimization.indexsets.add_data(
-                indexset_id=indexset_1.id, data=["baz", "foo"]
+                id=indexset_1.id, data=["baz", "foo"]
             )
 
         with pytest.raises(OptimizationDataValidationError):
             platform.backend.optimization.indexsets.add_data(
-                indexset_id=indexset_2.id, data=["baz", "baz"]
+                id=indexset_2.id, data=["baz", "baz"]
             )
 
         # Test data types are conserved
@@ -113,7 +113,7 @@ class TestDataOptimizationIndexSet:
 
         test_data_2 = [1.2, 3.4, 5.6]
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_3.id, data=test_data_2
+            id=indexset_3.id, data=test_data_2
         )
         indexset_3 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_3.name
@@ -124,7 +124,7 @@ class TestDataOptimizationIndexSet:
 
         test_data_3 = [0, 1, 2]
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_4.id, data=test_data_3
+            id=indexset_4.id, data=test_data_3
         )
         indexset_4 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_4.name
@@ -141,15 +141,13 @@ class TestDataOptimizationIndexSet:
             platform=platform, run_id=run.id, amount=1
         )
         test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
-        platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=test_data
-        )
+        platform.backend.optimization.indexsets.add_data(id=indexset.id, data=test_data)
 
         # Test removing multiple arbitrary known data
         remove_data = ["do", "mi", "la", "ti"]
         expected = [data for data in test_data if data not in remove_data]
         platform.backend.optimization.indexsets.remove_data(
-            indexset_id=indexset.id, data=remove_data
+            id=indexset.id, data=remove_data
         )
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
@@ -159,9 +157,7 @@ class TestDataOptimizationIndexSet:
 
         # Test removing single item
         expected.remove("fa")
-        platform.backend.optimization.indexsets.remove_data(
-            indexset_id=indexset.id, data="fa"
-        )
+        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="fa")
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
         )
@@ -179,16 +175,16 @@ class TestDataOptimizationIndexSet:
         ):
             # Test completely unknown data
             platform.backend.optimization.indexsets.remove_data(
-                indexset_id=indexset.id, data=["foo"]
+                id=indexset.id, data=["foo"]
             )
             # Test partly unknown data
             platform.backend.optimization.indexsets.remove_data(
-                indexset_id=indexset.id, data=["foo", "so"]
+                id=indexset.id, data=["foo", "so"]
             )
 
         # Test removing all remaining data
         platform.backend.optimization.indexsets.remove_data(
-            indexset_id=indexset.id, data=["so", "re"]
+            id=indexset.id, data=["so", "re"]
         )
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
@@ -223,12 +219,8 @@ class TestDataOptimizationIndexSet:
         indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
-        platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_1.id, data="foo"
-        )
-        platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2]
-        )
+        platform.backend.optimization.indexsets.add_data(id=indexset_1.id, data="foo")
+        platform.backend.optimization.indexsets.add_data(id=indexset_2.id, data=[1, 2])
 
         indexset_1 = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset_1.name

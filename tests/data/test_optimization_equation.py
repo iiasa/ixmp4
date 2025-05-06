@@ -114,10 +114,10 @@ class TestDataOptimizationEquation:
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar", ""]
+            id=indexset.id, data=["foo", "bar", ""]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -136,7 +136,7 @@ class TestDataOptimizationEquation:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         platform.backend.optimization.equations.add_data(
-            equation_id=equation.id, data=test_data_1
+            id=equation.id, data=test_data_1
         )
 
         equation = platform.backend.optimization.equations.get(
@@ -154,7 +154,7 @@ class TestDataOptimizationEquation:
             OptimizationItemUsageError, match=r"must include the column\(s\): levels!"
         ):
             platform.backend.optimization.equations.add_data(
-                equation_id=equation_2.id,
+                id=equation_2.id,
                 data=pd.DataFrame(
                     {
                         indexset.name: ["foo"],
@@ -169,7 +169,7 @@ class TestDataOptimizationEquation:
             match=r"must include the column\(s\): marginals!",
         ):
             platform.backend.optimization.equations.add_data(
-                equation_id=equation_2.id,
+                id=equation_2.id,
                 data=pd.DataFrame(
                     {
                         indexset.name: ["foo"],
@@ -186,7 +186,7 @@ class TestDataOptimizationEquation:
             match="All arrays must be of the same length",
         ):
             platform.backend.optimization.equations.add_data(
-                equation_id=equation_2.id,
+                id=equation_2.id,
                 data={
                     indexset.name: ["foo", "foo"],
                     indexset_2.name: [2, 2],
@@ -199,7 +199,7 @@ class TestDataOptimizationEquation:
             OptimizationDataValidationError, match="contains duplicate rows"
         ):
             platform.backend.optimization.equations.add_data(
-                equation_id=equation_2.id,
+                id=equation_2.id,
                 data={
                     indexset.name: ["foo", "foo"],
                     indexset_2.name: [2, 2],
@@ -216,7 +216,7 @@ class TestDataOptimizationEquation:
             "marginals": [1, 3, 5, 6, 4, 2],
         }
         platform.backend.optimization.equations.add_data(
-            equation_id=equation_2.id, data=test_data_2
+            id=equation_2.id, data=test_data_2
         )
         equation_2 = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation 2"
@@ -238,7 +238,7 @@ class TestDataOptimizationEquation:
             "marginals": [6, 7.8, 9, 0],
         }
         platform.backend.optimization.equations.add_data(
-            equation_id=equation_4.id, data=test_data_6
+            id=equation_4.id, data=test_data_6
         )
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
@@ -247,7 +247,7 @@ class TestDataOptimizationEquation:
             "marginals": [6, 7.8, 9, "0", 3],
         }
         platform.backend.optimization.equations.add_data(
-            equation_id=equation_4.id, data=test_data_7
+            id=equation_4.id, data=test_data_7
         )
         equation_4 = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation 4"
@@ -283,7 +283,7 @@ class TestDataOptimizationEquation:
             "marginals": [0.5] * 6,
         }
         platform.backend.optimization.equations.add_data(
-            equation_id=equation_5.id, data=test_data_8
+            id=equation_5.id, data=test_data_8
         )
         equation_5 = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation 5"
@@ -297,7 +297,7 @@ class TestDataOptimizationEquation:
             platform=platform, run_id=run.id, amount=1
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar"]
+            id=indexset.id, data=["foo", "bar"]
         )
         test_data = {
             indexset.name: ["bar", "foo"],
@@ -315,7 +315,7 @@ class TestDataOptimizationEquation:
         )
         assert equation.data == test_data
 
-        platform.backend.optimization.equations.remove_data(equation_id=equation.id)
+        platform.backend.optimization.equations.remove_data(id=equation.id)
         equation = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation"
         )
@@ -380,10 +380,10 @@ class TestDataOptimizationEquation:
         )
 
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar"]
+            id=indexset.id, data=["foo", "bar"]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         test_data_1 = {
             indexset.name: ["foo"],
@@ -392,7 +392,7 @@ class TestDataOptimizationEquation:
             "marginals": [-0],
         }
         platform.backend.optimization.equations.add_data(
-            equation_id=equation.id, data=test_data_1
+            id=equation.id, data=test_data_1
         )
         equation = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation"
@@ -405,7 +405,7 @@ class TestDataOptimizationEquation:
             "marginals": [2.0, -4],
         }
         platform.backend.optimization.equations.add_data(
-            equation_id=equation_2.id, data=test_data_2
+            id=equation_2.id, data=test_data_2
         )
         equation_2 = platform.backend.optimization.equations.get(
             run_id=run.id, name="Equation 2"

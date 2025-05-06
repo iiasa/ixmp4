@@ -107,10 +107,10 @@ class TestDataOptimizationTable:
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_1.id, data=["foo", "bar", ""]
+            id=indexset_1.id, data=["foo", "bar", ""]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -123,9 +123,7 @@ class TestDataOptimizationTable:
             name="Table",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
-        platform.backend.optimization.tables.add_data(
-            table_id=table.id, data=test_data_1
-        )
+        platform.backend.optimization.tables.add_data(id=table.id, data=test_data_1)
 
         table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
         assert table.data == test_data_1
@@ -138,7 +136,7 @@ class TestDataOptimizationTable:
 
         with pytest.raises(OptimizationDataValidationError, match="missing values"):
             platform.backend.optimization.tables.add_data(
-                table_id=table_2.id,
+                id=table_2.id,
                 data=pd.DataFrame({indexset_1.name: [None], indexset_2.name: [2]}),
                 # empty string is allowed for now (see below), but None or NaN raise
             )
@@ -147,7 +145,7 @@ class TestDataOptimizationTable:
             OptimizationDataValidationError, match="contains duplicate rows"
         ):
             platform.backend.optimization.tables.add_data(
-                table_id=table_2.id,
+                id=table_2.id,
                 data={indexset_1.name: ["foo", "foo"], indexset_2.name: [2, 2]},
             )
 
@@ -157,14 +155,12 @@ class TestDataOptimizationTable:
             match="contains values that are not allowed",
         ):
             platform.backend.optimization.tables.add_data(
-                table_id=table_2.id,
+                id=table_2.id,
                 data={indexset_1.name: ["foo"], indexset_2.name: [0]},
             )
 
         test_data_2 = {indexset_1.name: [""], indexset_2.name: [3]}
-        platform.backend.optimization.tables.add_data(
-            table_id=table_2.id, data=test_data_2
-        )
+        platform.backend.optimization.tables.add_data(id=table_2.id, data=test_data_2)
         table_2 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 2"
         )
@@ -180,13 +176,11 @@ class TestDataOptimizationTable:
             OptimizationDataValidationError, match="Data is missing for some columns!"
         ):
             platform.backend.optimization.tables.add_data(
-                table_id=table_3.id, data={"Column 1": ["bar"]}
+                id=table_3.id, data={"Column 1": ["bar"]}
             )
 
         test_data_3 = {"Column 1": ["bar"], "Column 2": [2]}
-        platform.backend.optimization.tables.add_data(
-            table_id=table_3.id, data=test_data_3
-        )
+        platform.backend.optimization.tables.add_data(id=table_3.id, data=test_data_3)
         table_3 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 3"
         )
@@ -194,8 +188,7 @@ class TestDataOptimizationTable:
 
         # Test data is expanded when Column.name is already present
         platform.backend.optimization.tables.add_data(
-            table_id=table_3.id,
-            data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
+            id=table_3.id, data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]})
         )
         table_3 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 3"
@@ -208,7 +201,7 @@ class TestDataOptimizationTable:
             match="Trying to add data to unknown columns!",
         ):
             platform.backend.optimization.tables.add_data(
-                table_id=table_3.id, data={"Column 3": [1]}
+                id=table_3.id, data={"Column 3": [1]}
             )
 
         # Test that order is not important...
@@ -219,9 +212,7 @@ class TestDataOptimizationTable:
             column_names=["Column 1", "Column 2"],
         )
         test_data_4 = {"Column 2": [2], "Column 1": ["bar"]}
-        platform.backend.optimization.tables.add_data(
-            table_id=table_4.id, data=test_data_4
-        )
+        platform.backend.optimization.tables.add_data(id=table_4.id, data=test_data_4)
         table_4 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 4"
         )
@@ -229,7 +220,7 @@ class TestDataOptimizationTable:
 
         # ...even for expanding
         platform.backend.optimization.tables.add_data(
-            table_id=table_4.id, data={"Column 1": ["foo"], "Column 2": [1]}
+            id=table_4.id, data={"Column 1": ["foo"], "Column 2": [1]}
         )
         table_4 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 4"
@@ -242,7 +233,7 @@ class TestDataOptimizationTable:
             match="Trying to add data to unknown columns!",
         ):
             platform.backend.optimization.tables.add_data(
-                table_id=table_4.id,
+                id=table_4.id,
                 data={"Column 1": ["bar"], "Column 2": [3], "Indexset": ["foo"]},
             )
 
@@ -256,27 +247,87 @@ class TestDataOptimizationTable:
         }
 
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_3.id, data=[1.0, 2.2, 3.14]
+            id=indexset_3.id, data=[1.0, 2.2, 3.14]
         )
         table_5 = platform.backend.optimization.tables.create(
             run_id=run.id,
             name="Table 5",
             constrained_to_indexsets=[indexset_1.name, indexset_3.name],
         )
-        platform.backend.optimization.tables.add_data(
-            table_id=table_5.id, data=test_data_5
-        )
+        platform.backend.optimization.tables.add_data(id=table_5.id, data=test_data_5)
         table_5 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 5"
         )
         assert table_5.data == test_data_5
 
         # This doesn't raise since the union of existing and new data is validated
-        platform.backend.optimization.tables.add_data(table_id=table_5.id, data={})
+        platform.backend.optimization.tables.add_data(id=table_5.id, data={})
         table_5 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 5"
         )
         assert table_5.data == test_data_5
+
+    def test_table_remove_data(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = create_indexsets_for_run(
+            platform=platform, run_id=run.id
+        )
+        platform.backend.optimization.indexsets.add_data(
+            id=indexset_1.id, data=["foo", "bar", ""]
+        )
+        platform.backend.optimization.indexsets.add_data(
+            id=indexset_2.id, data=[1, 2, 3]
+        )
+        test_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 1, 2, 3],
+        }
+        table = platform.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+        )
+        platform.backend.optimization.tables.add_data(id=table.id, data=test_data_1)
+
+        # Test removing one row
+        remove_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo"],
+            indexset_2.name: [1],
+        }
+        platform.backend.optimization.tables.remove_data(
+            id=table.id, data=remove_data_1
+        )
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
+
+        # Prepare the expectation from the original test data
+        # You can confirm manually that only the correct types are removed
+        for key in remove_data_1.keys():
+            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+
+        assert table.data == test_data_1
+
+        # Test removing multiple rows
+        remove_data_2 = pd.DataFrame(
+            {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
+        )
+        platform.backend.optimization.tables.remove_data(
+            id=table.id, data=remove_data_2
+        )
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
+
+        # Prepare the expectation
+        expected = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
+
+        assert table.data == expected
+
+        # Test removing all remaining data
+        remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
+        platform.backend.optimization.tables.remove_data(
+            id=table.id, data=remove_data_3
+        )
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
+
+        assert table.data == {}
 
     def test_list_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -326,21 +377,17 @@ class TestDataOptimizationTable:
         )
 
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_1.id, data=["foo", "bar"]
+            id=indexset_1.id, data=["foo", "bar"]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         test_data_1 = {indexset_1.name: ["foo"], indexset_2.name: [1]}
-        platform.backend.optimization.tables.add_data(
-            table_id=table.id, data=test_data_1
-        )
+        platform.backend.optimization.tables.add_data(id=table.id, data=test_data_1)
         table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
 
         test_data_2 = {indexset_2.name: [2, 3], indexset_1.name: ["foo", "bar"]}
-        platform.backend.optimization.tables.add_data(
-            table_id=table_2.id, data=test_data_2
-        )
+        platform.backend.optimization.tables.add_data(id=table_2.id, data=test_data_2)
         table_2 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 2"
         )
