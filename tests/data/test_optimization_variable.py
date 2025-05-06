@@ -137,10 +137,10 @@ class TestDataOptimizationVariable:
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar", ""]
+            id=indexset.id, data=["foo", "bar", ""]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -159,7 +159,7 @@ class TestDataOptimizationVariable:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         platform.backend.optimization.variables.add_data(
-            variable_id=variable.id, data=test_data_1
+            id=variable.id, data=test_data_1
         )
 
         variable = platform.backend.optimization.variables.get(
@@ -177,7 +177,7 @@ class TestDataOptimizationVariable:
             OptimizationItemUsageError, match=r"must include the column\(s\): levels!"
         ):
             platform.backend.optimization.variables.add_data(
-                variable_id=variable_2.id,
+                id=variable_2.id,
                 data=pd.DataFrame(
                     {
                         indexset.name: ["foo"],
@@ -192,7 +192,7 @@ class TestDataOptimizationVariable:
             match=r"must include the column\(s\): marginals!",
         ):
             platform.backend.optimization.variables.add_data(
-                variable_id=variable_2.id,
+                id=variable_2.id,
                 data=pd.DataFrame(
                     {
                         indexset.name: ["foo"],
@@ -209,7 +209,7 @@ class TestDataOptimizationVariable:
             match="All arrays must be of the same length",
         ):
             platform.backend.optimization.variables.add_data(
-                variable_id=variable_2.id,
+                id=variable_2.id,
                 data={
                     indexset.name: ["foo", "foo"],
                     indexset_2.name: [2, 2],
@@ -222,7 +222,7 @@ class TestDataOptimizationVariable:
             OptimizationDataValidationError, match="contains duplicate rows"
         ):
             platform.backend.optimization.variables.add_data(
-                variable_id=variable_2.id,
+                id=variable_2.id,
                 data={
                     indexset.name: ["foo", "foo"],
                     indexset_2.name: [2, 2],
@@ -239,7 +239,7 @@ class TestDataOptimizationVariable:
             "marginals": [1, 3, 5, 6, 4, 2],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_2.id, data=test_data_2
+            id=variable_2.id, data=test_data_2
         )
         variable_2 = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable 2"
@@ -261,7 +261,7 @@ class TestDataOptimizationVariable:
             "marginals": [6, 7.8, 9, 0],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_4.id, data=test_data_6
+            id=variable_4.id, data=test_data_6
         )
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
@@ -270,7 +270,7 @@ class TestDataOptimizationVariable:
             "marginals": [6, 7.8, 9, "0", 3],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_4.id, data=test_data_7
+            id=variable_4.id, data=test_data_7
         )
         variable_4 = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable 4"
@@ -306,7 +306,7 @@ class TestDataOptimizationVariable:
             "marginals": [0.5] * 6,
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_5.id, data=test_data_8
+            id=variable_5.id, data=test_data_8
         )
         variable_5 = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable 5"
@@ -318,7 +318,7 @@ class TestDataOptimizationVariable:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar"]
+            id=indexset.id, data=["foo", "bar"]
         )
         test_data = {
             "Indexset": ["bar", "foo"],
@@ -336,7 +336,7 @@ class TestDataOptimizationVariable:
         )
         assert variable.data == test_data
 
-        platform.backend.optimization.variables.remove_data(variable_id=variable.id)
+        platform.backend.optimization.variables.remove_data(id=variable.id)
         variable = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable"
         )
@@ -399,10 +399,10 @@ class TestDataOptimizationVariable:
         )
 
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar"]
+            id=indexset.id, data=["foo", "bar"]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         test_data_1 = {
             indexset.name: ["foo"],
@@ -411,7 +411,7 @@ class TestDataOptimizationVariable:
             "marginals": [-0],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable.id, data=test_data_1
+            id=variable.id, data=test_data_1
         )
         variable = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable"
@@ -424,7 +424,7 @@ class TestDataOptimizationVariable:
             "marginals": [2.0, -4],
         }
         platform.backend.optimization.variables.add_data(
-            variable_id=variable_2.id, data=test_data_2
+            id=variable_2.id, data=test_data_2
         )
         variable_2 = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable 2"

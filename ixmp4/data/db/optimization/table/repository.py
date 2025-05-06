@@ -116,10 +116,10 @@ class TableRepository(
         return super().tabulate(**kwargs)
 
     @guard("edit")
-    def add_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
             data = pd.DataFrame.from_dict(data=data)
-        table = self.get_by_id(id=table_id)
+        table = self.get_by_id(id=id)
 
         table.data = cast(
             types.JsonDict,
@@ -131,12 +131,12 @@ class TableRepository(
         self.session.commit()
 
     @guard("edit")
-    def remove_data(self, table_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def remove_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
             data = pd.DataFrame.from_dict(data=data)
 
-        table = self.get_by_id(id=table_id)
-        index_list = table.column_names if table.column_names else table.indexsets
+        table = self.get_by_id(id=id)
+        index_list = table.column_names if table.column_names else table.indexset_names
         existing_data = pd.DataFrame(table.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)

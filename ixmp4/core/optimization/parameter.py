@@ -40,9 +40,7 @@ class Parameter(BaseModelFacade):
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Parameter."""
-        self.backend.optimization.parameters.add_data(
-            parameter_id=self._model.id, data=data
-        )
+        self.backend.optimization.parameters.add_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.parameters.get(
             run_id=self._model.run__id, name=self._model.name
         )

@@ -176,7 +176,7 @@ class VariableRepository(
     # TODO Once present, state how to check which IndexSets are linked and which values
     # they permit
     # TODO Can we remove the r-marker?
-    def add_data(self, variable_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         r"""Adds data to a Variable.
 
         The data will be validated with the linked constrained
@@ -189,7 +189,7 @@ class VariableRepository(
 
         Parameters
         ----------
-        variable_id : int
+        id : int
             The id of the :class:`ixmp4.data.abstract.optimization.Variable`.
         data : dict[str, Any] | pandas.DataFrame
             The data to be added.
@@ -207,12 +207,12 @@ class VariableRepository(
         """
         ...
 
-    def remove_data(self, variable_id: int) -> None:
+    def remove_data(self, id: int) -> None:
         """Removes data from a Variable.
 
         Parameters
         ----------
-        variable_id : int
+        id : int
             The id of the :class:`ixmp4.data.abstract.optimization.Variable`.
 
         Returns

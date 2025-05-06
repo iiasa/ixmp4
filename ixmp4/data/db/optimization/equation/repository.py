@@ -120,13 +120,13 @@ class EquationRepository(
         return super().tabulate(**kwargs)
 
     @guard("edit")
-    def add_data(self, equation_id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+    def add_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
         if isinstance(data, dict):
             try:
                 data = pd.DataFrame.from_dict(data=data)
             except ValueError as e:
                 raise Equation.DataInvalid(str(e)) from e
-        equation = self.get_by_id(id=equation_id)
+        equation = self.get_by_id(id=id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)
         if missing_columns:
@@ -152,8 +152,8 @@ class EquationRepository(
         self.session.commit()
 
     @guard("edit")
-    def remove_data(self, equation_id: int) -> None:
-        equation = self.get_by_id(id=equation_id)
+    def remove_data(self, id: int) -> None:
+        equation = self.get_by_id(id=id)
         # TODO Is there a better way to reset .data?
         equation.data = {}
         self.session.commit()

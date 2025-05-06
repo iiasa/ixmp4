@@ -58,23 +58,23 @@ def query(
 
 
 @autodoc
-@router.patch("/{table_id}/data/")
+@router.patch("/{id}/data/")
 def add_data(
-    table_id: int,
+    id: int,
     data: DataInput,
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.optimization.tables.add_data(table_id=table_id, **data.model_dump())
+    backend.optimization.tables.add_data(id=id, **data.model_dump())
 
 
 @autodoc
-@router.delete("/{table_id}/data/")
+@router.delete("/{id}/data/")
 def remove_data(
-    table_id: int,
+    id: int,
     data: DataInput,
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.optimization.tables.remove_data(table_id=table_id, **data.model_dump())
+    backend.optimization.tables.remove_data(id=id, **data.model_dump())
 
 
 @autodoc

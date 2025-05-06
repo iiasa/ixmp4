@@ -114,10 +114,10 @@ class TestDataOptimizationParameter:
             platform=platform, run_id=run.id
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar", ""]
+            id=indexset.id, data=["foo", "bar", ""]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -136,7 +136,7 @@ class TestDataOptimizationParameter:
             constrained_to_indexsets=[indexset.name, indexset_2.name],
         )
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter.id, data=test_data_1
+            id=parameter.id, data=test_data_1
         )
 
         parameter = platform.backend.optimization.parameters.get(
@@ -154,7 +154,7 @@ class TestDataOptimizationParameter:
             OptimizationItemUsageError, match=r"must include the column\(s\): values!"
         ):
             platform.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+                id=parameter_2.id,
                 data=pd.DataFrame(
                     {
                         indexset.name: [None],
@@ -168,7 +168,7 @@ class TestDataOptimizationParameter:
             OptimizationItemUsageError, match=r"must include the column\(s\): units!"
         ):
             platform.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+                id=parameter_2.id,
                 data=pd.DataFrame(
                     {
                         indexset.name: [None],
@@ -185,7 +185,7 @@ class TestDataOptimizationParameter:
             match="All arrays must be of the same length",
         ):
             platform.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+                id=parameter_2.id,
                 data={
                     indexset.name: ["foo", "foo"],
                     indexset_2.name: [2, 2],
@@ -198,7 +198,7 @@ class TestDataOptimizationParameter:
             OptimizationDataValidationError, match="contains duplicate rows"
         ):
             platform.backend.optimization.parameters.add_data(
-                parameter_id=parameter_2.id,
+                id=parameter_2.id,
                 data={
                     indexset.name: ["foo", "foo"],
                     indexset_2.name: [2, 2],
@@ -215,7 +215,7 @@ class TestDataOptimizationParameter:
             "units": [unit.name] * 6,
         }
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_2.id, data=test_data_2
+            id=parameter_2.id, data=test_data_2
         )
         parameter_2 = platform.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 2"
@@ -245,7 +245,7 @@ class TestDataOptimizationParameter:
             "units": [unit.name] * 4,
         }
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_4.id, data=test_data_6
+            id=parameter_4.id, data=test_data_6
         )
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
@@ -254,7 +254,7 @@ class TestDataOptimizationParameter:
             "units": [unit.name] * 2 + [unit_2.name] * 3,
         }
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_4.id, data=test_data_7
+            id=parameter_4.id, data=test_data_7
         )
         parameter_4 = platform.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 4"
@@ -283,7 +283,7 @@ class TestDataOptimizationParameter:
             "units": [unit.name] * 6,
         }
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_3.id, data=test_data_8
+            id=parameter_3.id, data=test_data_8
         )
         parameter_3 = platform.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 3"
@@ -355,10 +355,10 @@ class TestDataOptimizationParameter:
         unit = platform.backend.units.create("Unit")
         unit_2 = platform.backend.units.create("Unit 2")
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset.id, data=["foo", "bar"]
+            id=indexset.id, data=["foo", "bar"]
         )
         platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2, 3]
+            id=indexset_2.id, data=[1, 2, 3]
         )
         test_data_1 = {
             indexset.name: ["foo"],
@@ -367,7 +367,7 @@ class TestDataOptimizationParameter:
             "units": [unit.name],
         }
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter.id, data=test_data_1
+            id=parameter.id, data=test_data_1
         )
         parameter = platform.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter"
@@ -380,7 +380,7 @@ class TestDataOptimizationParameter:
             "units": [unit.name, unit_2.name],
         }
         platform.backend.optimization.parameters.add_data(
-            parameter_id=parameter_2.id, data=test_data_2
+            id=parameter_2.id, data=test_data_2
         )
         parameter_2 = platform.backend.optimization.parameters.get(
             run_id=run.id, name="Parameter 2"

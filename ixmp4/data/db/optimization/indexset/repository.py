@@ -75,17 +75,15 @@ class IndexSetRepository(
 
     @guard("edit")
     def add_data(
-        self,
-        indexset_id: int,
-        data: float | int | str | List[float] | List[int] | List[str],
+        self, id: int, data: float | int | str | List[float] | List[int] | List[str]
     ) -> None:
-        indexset = self.get_by_id(id=indexset_id)
+        indexset = self.get_by_id(id=id)
         _data = data if isinstance(data, list) else [data]
 
         bulk_insert_enabled_data = [{"value": str(d)} for d in _data]
         try:
             self.session.execute(
-                db.insert(IndexSetData).values(indexset__id=indexset_id),
+                db.insert(IndexSetData).values(indexset__id=id),
                 bulk_insert_enabled_data,
             )
         except db.IntegrityError as e:
@@ -101,30 +99,22 @@ class IndexSetRepository(
 
     @guard("edit")
     def remove_data(
-        self,
-        indexset_id: int,
-        data: float | int | str | List[float] | List[int] | List[str],
+        self, id: int, data: float | int | str | List[float] | List[int] | List[str]
     ) -> None:
         _data = [str(d) for d in data] if isinstance(data, list) else [str(data)]
 
         result = self.session.execute(
             db.delete(IndexSetData).where(
-                IndexSetData.indexset__id == indexset_id,
+                IndexSetData.indexset__id == id,
                 IndexSetData.value.in_(_data),
             )
         )
 
         if result.rowcount == 0:
-            log.info(
-                f"No data were removed! Are {data} registered to IndexSet "
-                f"{indexset_id}?"
-            )
+            log.info(f"No data were removed! Are {data} registered to IndexSet {id}?")
             return None
         elif result.rowcount != len(_data):
-            log.info(
-                "Not all items in `data` were registered for IndexSet "
-                f"{indexset_id}!"
-            )
+            log.info(f"Not all items in `data` were registered for IndexSet {id}!")
 
         # Expire session to refresh IndexSets stored in it
         self.session.commit()

@@ -36,9 +36,7 @@ class IndexSet(BaseModelFacade):
         self, data: float | int | str | list[float] | list[int] | list[str]
     ) -> None:
         """Adds data to an existing IndexSet."""
-        self.backend.optimization.indexsets.add_data(
-            indexset_id=self._model.id, data=data
-        )
+        self.backend.optimization.indexsets.add_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
         )
@@ -47,9 +45,7 @@ class IndexSet(BaseModelFacade):
         self, data: float | int | str | list[float] | list[int] | list[str]
     ) -> None:
         """Removes data from an existing IndexSet."""
-        self.backend.optimization.indexsets.remove_data(
-            indexset_id=self._model.id, data=data
-        )
+        self.backend.optimization.indexsets.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
         )
