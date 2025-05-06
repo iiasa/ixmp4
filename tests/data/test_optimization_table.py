@@ -294,31 +294,31 @@ class TestDataOptimizationTable:
             indexset_1.name: ["foo"],
             indexset_2.name: [1],
         }
-        # You can confirm manually that only the correct types are removed
-        for key in remove_data_1.keys():
-            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
         platform.backend.optimization.tables.remove_data(
             id=table.id, data=remove_data_1
         )
         table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
 
+        # Prepare the expectation from the original test data
+        # You can confirm manually that only the correct types are removed
+        for key in remove_data_1.keys():
+            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+
         assert table.data == test_data_1
 
         # Test removing multiple rows
-        index_list = [indexset_1.name, indexset_2.name]
         remove_data_2 = pd.DataFrame(
             {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
         )
-        test_data_2 = pd.DataFrame(test_data_1).set_index(index_list)
-        expected = test_data_2[
-            ~test_data_2.index.isin(remove_data_2.set_index(index_list).index)
-        ].reset_index()
         platform.backend.optimization.tables.remove_data(
             id=table.id, data=remove_data_2
         )
         table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
 
-        assert table.data == expected.to_dict(orient="list")
+        # Prepare the expectation
+        expected = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
+
+        assert table.data == expected
 
         # Test removing all remaining data
         remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
