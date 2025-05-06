@@ -6,7 +6,7 @@ import ixmp4
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data.abstract import IndexSet
 
-from ..utils import create_indexsets_for_run
+from ..utils import assert_logs, create_indexsets_for_run
 
 
 def df_from_list(indexsets: list[IndexSet]) -> pd.DataFrame:
@@ -72,67 +72,6 @@ class TestDataOptimizationIndexSet:
                 run_id=run.id, name="Indexset 2"
             )
 
-    def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        indexset_1, indexset_2 = create_indexsets_for_run(
-            platform=platform, run_id=run.id
-        )
-        assert [indexset_1] == platform.backend.optimization.indexsets.list(
-            name=indexset_1.name
-        )
-        assert [
-            indexset_1,
-            indexset_2,
-        ] == platform.backend.optimization.indexsets.list()
-
-        # Test only indexsets belonging to this Run are listed when run_id is provided
-        run_2 = platform.backend.runs.create("Model", "Scenario")
-        indexset_3, indexset_4 = create_indexsets_for_run(
-            platform=platform, run_id=run_2.id, offset=2
-        )
-        assert [indexset_3, indexset_4] == platform.backend.optimization.indexsets.list(
-            run_id=run_2.id
-        )
-
-    def test_tabulate_indexsets(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        indexset_1, indexset_2 = create_indexsets_for_run(
-            platform=platform, run_id=run.id
-        )
-        platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_1.id, data="foo"
-        )
-        platform.backend.optimization.indexsets.add_data(
-            indexset_id=indexset_2.id, data=[1, 2]
-        )
-
-        indexset_1 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name=indexset_1.name
-        )
-        indexset_2 = platform.backend.optimization.indexsets.get(
-            run_id=run.id, name=indexset_2.name
-        )
-        expected = df_from_list(indexsets=[indexset_1, indexset_2])
-        pdt.assert_frame_equal(
-            expected, platform.backend.optimization.indexsets.tabulate()
-        )
-
-        expected = df_from_list(indexsets=[indexset_1])
-        pdt.assert_frame_equal(
-            expected,
-            platform.backend.optimization.indexsets.tabulate(name=indexset_1.name),
-        )
-
-        # Test only indexsets belonging to this Run are tabulated if run_id is provided
-        run_2 = platform.backend.runs.create("Model", "Scenario")
-        indexset_3, indexset_4 = create_indexsets_for_run(
-            platform=platform, run_id=run_2.id, offset=3
-        )
-        expected = df_from_list(indexsets=[indexset_3, indexset_4])
-        pdt.assert_frame_equal(
-            expected, platform.backend.optimization.indexsets.tabulate(run_id=run_2.id)
-        )
-
     def test_add_data(self, platform: ixmp4.Platform) -> None:
         test_data = ["foo", "bar"]
         run = platform.backend.runs.create("Model", "Scenario")
@@ -193,3 +132,127 @@ class TestDataOptimizationIndexSet:
 
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
+
+    def test_remove_data(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        (indexset,) = create_indexsets_for_run(
+            platform=platform, run_id=run.id, amount=1
+        )
+        test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset.id, data=test_data
+        )
+
+        # Test removing multiple arbitrary known data
+        remove_data = ["do", "mi", "la", "ti"]
+        expected = [data for data in test_data if data not in remove_data]
+        platform.backend.optimization.indexsets.remove_data(
+            indexset_id=indexset.id, data=remove_data
+        )
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
+
+        assert indexset.data == expected
+
+        # Test removing single item
+        expected.remove("fa")
+        platform.backend.optimization.indexsets.remove_data(
+            indexset_id=indexset.id, data="fa"
+        )
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
+
+        assert indexset.data == expected
+
+        # Test removing unknown data logs messages
+        with assert_logs(
+            caplog=caplog,
+            message_or_messages=[
+                "No data were removed!",
+                "Not all items in `data` were registered",
+            ],
+            at_level="INFO",
+        ):
+            # Test completely unknown data
+            platform.backend.optimization.indexsets.remove_data(
+                indexset_id=indexset.id, data=["foo"]
+            )
+            # Test partly unknown data
+            platform.backend.optimization.indexsets.remove_data(
+                indexset_id=indexset.id, data=["foo", "so"]
+            )
+
+        # Test removing all remaining data
+        platform.backend.optimization.indexsets.remove_data(
+            indexset_id=indexset.id, data=["so", "re"]
+        )
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
+
+        assert indexset.data == []
+
+    def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = create_indexsets_for_run(
+            platform=platform, run_id=run.id
+        )
+        assert [indexset_1] == platform.backend.optimization.indexsets.list(
+            name=indexset_1.name
+        )
+        assert [
+            indexset_1,
+            indexset_2,
+        ] == platform.backend.optimization.indexsets.list()
+
+        # Test only indexsets belonging to this Run are listed when run_id is provided
+        run_2 = platform.backend.runs.create("Model", "Scenario")
+        indexset_3, indexset_4 = create_indexsets_for_run(
+            platform=platform, run_id=run_2.id, offset=2
+        )
+        assert [indexset_3, indexset_4] == platform.backend.optimization.indexsets.list(
+            run_id=run_2.id
+        )
+
+    def test_tabulate_indexsets(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = create_indexsets_for_run(
+            platform=platform, run_id=run.id
+        )
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset_1.id, data="foo"
+        )
+        platform.backend.optimization.indexsets.add_data(
+            indexset_id=indexset_2.id, data=[1, 2]
+        )
+
+        indexset_1 = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset_1.name
+        )
+        indexset_2 = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset_2.name
+        )
+        expected = df_from_list(indexsets=[indexset_1, indexset_2])
+        pdt.assert_frame_equal(
+            expected, platform.backend.optimization.indexsets.tabulate()
+        )
+
+        expected = df_from_list(indexsets=[indexset_1])
+        pdt.assert_frame_equal(
+            expected,
+            platform.backend.optimization.indexsets.tabulate(name=indexset_1.name),
+        )
+
+        # Test only indexsets belonging to this Run are tabulated if run_id is provided
+        run_2 = platform.backend.runs.create("Model", "Scenario")
+        indexset_3, indexset_4 = create_indexsets_for_run(
+            platform=platform, run_id=run_2.id, offset=3
+        )
+        expected = df_from_list(indexsets=[indexset_3, indexset_4])
+        pdt.assert_frame_equal(
+            expected, platform.backend.optimization.indexsets.tabulate(run_id=run_2.id)
+        )
