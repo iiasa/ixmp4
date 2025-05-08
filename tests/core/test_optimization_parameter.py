@@ -255,6 +255,95 @@ class TestCoreParameter:
 
         assert parameter_5.data == test_data_8
 
+    def test_parameter_remove_data(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        unit = platform.units.create("Unit")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
+        indexset_1.add(data=["foo", "bar", ""])
+        indexset_2.add(data=[1, 2, 3])
+        initial_data: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
+            indexset_2.name: [1, 2, 3, 1, 2, 3],
+            "values": [1, 2, 3, 4, 5, 6],
+            "units": [unit.name] * 6,
+        }
+        parameter = run.optimization.parameters.create(
+            name="Parameter",
+            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+        )
+        parameter.add(data=initial_data)
+
+        # Test removing empty data removes nothing
+        parameter.remove(data={})
+
+        assert parameter.data == initial_data
+
+        # Test incomplete index raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            parameter.remove(data={indexset_1.name: ["foo"]})
+
+        # Test unknown keys without indexed columns raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            parameter.remove(data={"foo": ["bar"]})
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            parameter.remove(data={"units": [unit.name]})
+
+        # Test removing one row
+        remove_data_1: dict[str, list[int] | list[str]] = {
+            indexset_1.name: ["foo"],
+            indexset_2.name: [1],
+        }
+        parameter.remove(data=remove_data_1)
+
+        # Prepare the expectation from the original test data
+        # You can confirm manually that only the correct types are removed
+        for key in remove_data_1.keys():
+            initial_data[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+        initial_data["values"].remove(1)  # type: ignore[arg-type]
+        initial_data["units"].remove(unit.name)  # type: ignore[arg-type]
+
+        assert parameter.data == initial_data
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data_1["values"] = [1]
+        parameter.remove(data=remove_data_1)
+
+        assert parameter.data == initial_data
+
+        # Test removing multiple rows
+        remove_data_2 = pd.DataFrame(
+            {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
+        )
+        parameter.remove(data=remove_data_2)
+
+        # Prepare the expectation
+        expected = {
+            indexset_1.name: ["foo", "bar"],
+            indexset_2.name: [2, 2],
+            "values": [2, 5],
+            "units": [unit.name] * 2,
+        }
+
+        assert parameter.data == expected
+
+        # Test removing all remaining data
+        remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
+        parameter.remove(data=remove_data_3)
+
+        assert parameter.data == {}
+
     def test_list_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)

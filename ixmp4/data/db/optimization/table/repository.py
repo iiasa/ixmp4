@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
@@ -18,6 +19,8 @@ from ixmp4.data.auth.decorators import guard
 from .. import base
 from .docs import TableDocsRepository
 from .model import Table, TableIndexsetAssociation
+
+logger = logging.getLogger(__name__)
 
 
 class TableRepository(
@@ -135,12 +138,26 @@ class TableRepository(
         if isinstance(data, dict):
             data = pd.DataFrame.from_dict(data=data)
 
+        if data.empty:
+            return
+
         table = self.get_by_id(id=id)
         index_list = table.column_names if table.column_names else table.indexset_names
         existing_data = pd.DataFrame(table.data)
         if not existing_data.empty:
             existing_data.set_index(index_list, inplace=True)
-        data.set_index(index_list, inplace=True)
+
+        # This is the only kind of validation we do for removal data
+        try:
+            data.set_index(index_list, inplace=True)
+        except KeyError as e:
+            logger.error(
+                f"Data to be removed must include {index_list} as keys/columns, but "
+                f"{[name for name in data.columns]} were provided."
+            )
+            raise OptimizationItemUsageError(
+                "The data to be removed must specify one or more complete indices!"
+            ) from e
 
         remaining_data = existing_data[~existing_data.index.isin(data.index)]
         if not remaining_data.index.empty:

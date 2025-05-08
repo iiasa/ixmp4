@@ -102,6 +102,11 @@ class TestCoreIndexset:
         indexset_1 = run.optimization.indexsets.create("Indexset 1")
         indexset_1.add(test_data)
 
+        # Test removing an empty list removes nothing
+        indexset_1.remove(data=[])
+
+        assert indexset_1.data == test_data
+
         # Test removing multiple arbitrary known data
         remove_data = ["do", "mi", "la", "ti"]
         expected = [data for data in test_data if data not in remove_data]
@@ -112,6 +117,17 @@ class TestCoreIndexset:
         # Test removing single item
         expected.remove("fa")
         indexset_1.remove(data="fa")
+
+        assert indexset_1.data == expected
+
+        # Test removing non-existing data removes nothing
+        indexset_1.remove(data="fa")
+
+        assert indexset_1.data == expected
+
+        # Test removing wrong type removes nothing (through conversion to unknown str)
+        # NOTE Why does mypy not prevent this?
+        indexset_1.remove(data=True)
 
         assert indexset_1.data == expected
 

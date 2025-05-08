@@ -8,6 +8,8 @@ if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
+import logging
+
 import pandas as pd
 
 from ixmp4 import db
@@ -20,6 +22,8 @@ from ixmp4.data.db.unit import Unit
 from .. import base
 from .docs import ParameterDocsRepository
 from .model import Parameter, ParameterIndexsetAssociation
+
+logger = logging.getLogger(__name__)
 
 
 class ParameterRepository(
@@ -163,3 +167,40 @@ class ParameterRepository(
         )
 
         self.session.commit()
+
+    @guard("edit")
+    def remove_data(self, id: int, data: dict[str, Any] | pd.DataFrame) -> None:
+        if isinstance(data, dict):
+            data = pd.DataFrame.from_dict(data=data)
+
+        if data.empty:
+            return
+
+        parameter = self.get_by_id(id=id)
+        index_list = (
+            parameter.column_names
+            if parameter.column_names
+            else parameter.indexset_names
+        )
+        existing_data = pd.DataFrame(parameter.data)
+        if not existing_data.empty:
+            existing_data.set_index(index_list, inplace=True)
+
+        # This is the only kind of validation we do for removal data
+        try:
+            data.set_index(index_list, inplace=True)
+        except KeyError as e:
+            logger.error(
+                f"Data to be removed must include {index_list} as keys/columns, but "
+                f"{[name for name in data.columns]} were provided."
+            )
+            raise OptimizationItemUsageError(
+                "The data to be removed must specify one or more complete indices to "
+                "remove associated units and values!"
+            ) from e
+
+        remaining_data = existing_data[~existing_data.index.isin(data.index)]
+        if not remaining_data.index.empty:
+            remaining_data.reset_index(inplace=True)
+
+        parameter.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))

@@ -101,6 +101,9 @@ class IndexSetRepository(
     def remove_data(
         self, id: int, data: float | int | str | List[float] | List[int] | List[str]
     ) -> None:
+        if not bool(data):
+            return
+
         _data = [str(d) for d in data] if isinstance(data, list) else [str(data)]
 
         result = self.session.execute(

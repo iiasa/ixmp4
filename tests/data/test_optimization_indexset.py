@@ -143,6 +143,14 @@ class TestDataOptimizationIndexSet:
         test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
         platform.backend.optimization.indexsets.add_data(id=indexset.id, data=test_data)
 
+        # Test removing an empty list removes nothing
+        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data=[])
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
+
+        assert indexset.data == test_data
+
         # Test removing multiple arbitrary known data
         remove_data = ["do", "mi", "la", "ti"]
         expected = [data for data in test_data if data not in remove_data]
@@ -158,6 +166,23 @@ class TestDataOptimizationIndexSet:
         # Test removing single item
         expected.remove("fa")
         platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="fa")
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
+
+        assert indexset.data == expected
+
+        # Test removing non-existing data removes nothing
+        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="fa")
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
+
+        assert indexset.data == expected
+
+        # Test removing wrong type removes nothing (through conversion to unknown str)
+        # NOTE Why does mypy not prevent this?
+        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data=True)
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
         )

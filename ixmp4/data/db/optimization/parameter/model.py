@@ -33,9 +33,11 @@ class Parameter(base.BaseModel):
 
     @db.validates("data")
     def validate_data(self, key: Any, data: dict[str, Any]) -> dict[str, Any]:
-        # NOTE Not checking for data with only values and units, since these are Scalars
         if not bool(data):
             return data
+        # This case can only arise when all keys have been deleted
+        elif not bool(set(data.keys()) - {"values", "units"}):
+            return {}
         utils.validate_data(
             host=self,
             data=data,
