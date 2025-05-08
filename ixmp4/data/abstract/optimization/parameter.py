@@ -213,7 +213,8 @@ class ParameterRepository(
         id : int
             The id of the :class:`ixmp4.data.abstract.optimization.Parameter`.
         data : dict[str, Any] | pandas.DataFrame
-            The data to be removed.
+            The data to be removed. This must specify all indexed columns. All other
+            keys/columns are ignored.
 
         Returns
         -------

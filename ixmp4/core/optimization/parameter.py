@@ -46,7 +46,10 @@ class Parameter(BaseModelFacade):
         )
 
     def remove(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Removes data from the Parameter."""
+        """Removes data from the Parameter.
+
+        The data must specify all indexed columns. All other keys/columns are ignored.
+        """
         self.backend.optimization.parameters.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.parameters.get(
             run_id=self._model.run__id, name=self._model.name
