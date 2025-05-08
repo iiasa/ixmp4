@@ -252,6 +252,23 @@ class TestCoreTable:
         )
         table.add(data=initial_data)
 
+        # Test removing empty data removes nothing
+        table.remove(data={})
+
+        assert table.data == initial_data
+
+        # Test incomplete index raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            table.remove(data={indexset_1.name: ["foo"]})
+
+        # Test unknown keys without indexed columns raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            table.remove(data={"foo": ["bar"]})
+
         # Test removing one row
         remove_data_1: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo"],
@@ -263,6 +280,13 @@ class TestCoreTable:
         # You can confirm manually that only the correct types are removed
         for key in remove_data_1.keys():
             initial_data[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+
+        assert table.data == initial_data
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data_1["foo"] = ["bar"]
+        table.remove(data=remove_data_1)
 
         assert table.data == initial_data
 

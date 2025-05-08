@@ -278,7 +278,7 @@ class TestDataOptimizationTable:
         platform.backend.optimization.indexsets.add_data(
             id=indexset_2.id, data=[1, 2, 3]
         )
-        test_data_1: dict[str, list[int] | list[str]] = {
+        initial_data: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 1, 2, 3],
         }
@@ -287,7 +287,29 @@ class TestDataOptimizationTable:
             name="Table",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
-        platform.backend.optimization.tables.add_data(id=table.id, data=test_data_1)
+        platform.backend.optimization.tables.add_data(id=table.id, data=initial_data)
+
+        # Test removing empty data removes nothing
+        platform.backend.optimization.tables.remove_data(id=table.id, data={})
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
+
+        assert table.data == initial_data
+
+        # Test incomplete index raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.tables.remove_data(
+                id=table.id, data={indexset_1.name: ["foo"]}
+            )
+
+        # Test unknown keys without indexed columns raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.tables.remove_data(
+                id=table.id, data={"foo": ["bar"]}
+            )
 
         # Test removing one row
         remove_data_1: dict[str, list[int] | list[str]] = {
@@ -302,9 +324,19 @@ class TestDataOptimizationTable:
         # Prepare the expectation from the original test data
         # You can confirm manually that only the correct types are removed
         for key in remove_data_1.keys():
-            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+            initial_data[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
 
-        assert table.data == test_data_1
+        assert table.data == initial_data
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data_1["foo"] = ["bar"]
+        platform.backend.optimization.tables.remove_data(
+            id=table.id, data=remove_data_1
+        )
+        table = platform.backend.optimization.tables.get(run_id=run.id, name="Table")
+
+        assert table.data == initial_data
 
         # Test removing multiple rows
         remove_data_2 = pd.DataFrame(
