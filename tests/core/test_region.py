@@ -147,3 +147,24 @@ class TestCoreRegion:
         platform.regions.delete_docs("Test Region")
 
         assert region.docs is None
+
+    def test_list_docs(self, platform: ixmp4.Platform) -> None:
+        region_1 = platform.regions.create("Region 1", "Hierarchy")
+        region_1.docs = "Description of Region 1"
+        region_2 = platform.regions.create("Region 2", "Hierarchy")
+        region_2.docs = "Description of Region 2"
+        region_3 = platform.regions.create("Region 3", "Hierarchy")
+        region_3.docs = "Description of Region 3"
+
+        assert platform.regions.list_docs() == [
+            region_1.docs,
+            region_2.docs,
+            region_3.docs,
+        ]
+
+        assert platform.regions.list_docs(id=region_2.id) == [region_2.docs]
+
+        assert platform.regions.list_docs(id__in=[region_1.id, region_3.id]) == [
+            region_1.docs,
+            region_3.docs,
+        ]

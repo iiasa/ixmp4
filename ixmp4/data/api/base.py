@@ -42,7 +42,7 @@ JsonType: TypeAlias = Mapping[
     | None,
 ]
 ParamType: TypeAlias = dict[
-    str, bool | int | str | list[int] | Mapping[str, Any] | None
+    str, bool | int | str | list[int] | Iterable[int] | Mapping[str, Any] | None
 ]
 _RequestParamType: TypeAlias = Mapping[
     str,
@@ -427,7 +427,10 @@ class GetKwargs(TypedDict, total=False):
 class Retriever(BaseRepository[ModelType]):
     def get(self, **kwargs: Unpack[GetKwargs]) -> ModelType:
         _kwargs = cast(
-            dict[str, bool | int | str | list[int] | Mapping[str, Any] | None],
+            dict[
+                str,
+                bool | int | str | list[int] | Iterable[int] | Mapping[str, Any] | None,
+            ],
             kwargs,
         )
         list_ = (

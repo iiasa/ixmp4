@@ -23,12 +23,17 @@ class DocsInput(BaseModel):
 @router.get("/models/", response_model=EnumerationOutput[api.Docs])
 def list_models(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.models.docs.list(dimension_id=dimension_id),
-        total=backend.models.docs.count(dimension_id=dimension_id),
+        results=backend.models.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.models.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -52,12 +57,17 @@ def delete_models(
 @router.get("/regions/", response_model=EnumerationOutput[api.Docs])
 def list_regions(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.regions.docs.list(dimension_id=dimension_id),
-        total=backend.regions.docs.count(dimension_id=dimension_id),
+        results=backend.regions.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.regions.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -81,12 +91,17 @@ def delete_regions(
 @router.get("/scenarios/", response_model=EnumerationOutput[api.Docs])
 def list_scenarios(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.scenarios.docs.list(dimension_id=dimension_id),
-        total=backend.scenarios.docs.count(dimension_id=dimension_id),
+        results=backend.scenarios.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.scenarios.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -110,12 +125,17 @@ def delete_scenarios(
 @router.get("/units/", response_model=EnumerationOutput[api.Docs])
 def list_units(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.units.docs.list(dimension_id=dimension_id),
-        total=backend.units.docs.count(dimension_id=dimension_id),
+        results=backend.units.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.units.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -139,12 +159,17 @@ def delete_units(
 @router.get("/iamc/variables/", response_model=EnumerationOutput[api.Docs])
 def list_variables(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.iamc.variables.docs.list(dimension_id=dimension_id),
-        total=backend.iamc.variables.docs.count(dimension_id=dimension_id),
+        results=backend.iamc.variables.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.iamc.variables.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -168,12 +193,17 @@ def delete_variables(
 @router.get("/optimization/indexsets/", response_model=EnumerationOutput[api.Docs])
 def list_indexsets(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.optimization.indexsets.docs.list(dimension_id=dimension_id),
-        total=backend.optimization.indexsets.docs.count(dimension_id=dimension_id),
+        results=backend.optimization.indexsets.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.optimization.indexsets.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -197,12 +227,17 @@ def delete_indexsets(
 @router.get("/optimization/scalars/", response_model=EnumerationOutput[api.Docs])
 def list_scalars(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.optimization.scalars.docs.list(dimension_id=dimension_id),
-        total=backend.optimization.scalars.docs.count(dimension_id=dimension_id),
+        results=backend.optimization.scalars.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.optimization.scalars.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -226,12 +261,17 @@ def delete_scalars(
 @router.get("/optimization/tables/", response_model=EnumerationOutput[api.Docs])
 def list_tables(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.optimization.tables.docs.list(dimension_id=dimension_id),
-        total=backend.optimization.tables.docs.count(dimension_id=dimension_id),
+        results=backend.optimization.tables.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.optimization.tables.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -255,12 +295,17 @@ def delete_tables(
 @router.get("/optimization/parameters/", response_model=EnumerationOutput[api.Docs])
 def list_parameters(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.optimization.parameters.docs.list(dimension_id=dimension_id),
-        total=backend.optimization.parameters.docs.count(dimension_id=dimension_id),
+        results=backend.optimization.parameters.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.optimization.parameters.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -284,12 +329,17 @@ def delete_parameters(
 @router.get("/optimization/variables/", response_model=EnumerationOutput[api.Docs])
 def list_optimization_variables(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.optimization.variables.docs.list(dimension_id=dimension_id),
-        total=backend.optimization.variables.docs.count(dimension_id=dimension_id),
+        results=backend.optimization.variables.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.optimization.variables.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 
@@ -313,12 +363,17 @@ def delete_optimization_variables(
 @router.get("/optimization/equations/", response_model=EnumerationOutput[api.Docs])
 def list_equations(
     dimension_id: int | None = Query(None),
+    dimension_id__in: list[int] | None = Query(None),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
 ) -> EnumerationOutput[AbstractDocs]:
     return EnumerationOutput(
-        results=backend.optimization.equations.docs.list(dimension_id=dimension_id),
-        total=backend.optimization.equations.docs.count(dimension_id=dimension_id),
+        results=backend.optimization.equations.docs.list(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
+        total=backend.optimization.equations.docs.count(
+            dimension_id=dimension_id, dimension_id__in=dimension_id__in
+        ),
         pagination=pagination,
     )
 

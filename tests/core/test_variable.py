@@ -127,3 +127,26 @@ class TestCoreVariable:
         platform.iamc.variables.delete_docs("IAMC Variable")
 
         assert iamc_variable.docs is None
+
+    def test_list_docs(self, platform: ixmp4.Platform) -> None:
+        variable_1 = platform.iamc.variables.create("Variable 1")
+        variable_1.docs = "Description of Variable 1"
+        variable_2 = platform.iamc.variables.create("Variable 2")
+        variable_2.docs = "Description of Variable 2"
+        variable_3 = platform.iamc.variables.create("Variable 3")
+        variable_3.docs = "Description of Variable 3"
+
+        assert platform.iamc.variables.list_docs() == [
+            variable_1.docs,
+            variable_2.docs,
+            variable_3.docs,
+        ]
+
+        assert platform.iamc.variables.list_docs(id=variable_2.id) == [variable_2.docs]
+
+        assert platform.iamc.variables.list_docs(
+            id__in=[variable_1.id, variable_3.id]
+        ) == [
+            variable_1.docs,
+            variable_3.docs,
+        ]

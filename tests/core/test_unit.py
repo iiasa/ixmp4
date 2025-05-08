@@ -148,3 +148,20 @@ class TestCoreUnit:
         platform.units.delete_docs("Unit")
 
         assert unit.docs is None
+
+    def test_list_docs(self, platform: ixmp4.Platform) -> None:
+        unit_1 = platform.units.create("Unit 1")
+        unit_1.docs = "Description of Unit 1"
+        unit_2 = platform.units.create("Unit 2")
+        unit_2.docs = "Description of Unit 2"
+        unit_3 = platform.units.create("Unit 3")
+        unit_3.docs = "Description of Unit 3"
+
+        assert platform.units.list_docs() == [unit_1.docs, unit_2.docs, unit_3.docs]
+
+        assert platform.units.list_docs(id=unit_2.id) == [unit_2.docs]
+
+        assert platform.units.list_docs(id__in=[unit_1.id, unit_3.id]) == [
+            unit_1.docs,
+            unit_3.docs,
+        ]
