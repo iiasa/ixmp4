@@ -46,7 +46,10 @@ class Table(BaseModelFacade):
         )
 
     def remove(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Removes data from the Table."""
+        """Removes data from the Table.
+
+        The data must specify all indexed columns. All other keys/columns are ignored.
+        """
         self.backend.optimization.tables.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.tables.get(
             run_id=self._model.run__id, name=self._model.name
