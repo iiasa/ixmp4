@@ -328,6 +328,13 @@ class TestDataOptimizationParameter:
 
         assert parameter_3.data == test_data_8
 
+        # Test adding empty data works
+        platform.backend.optimization.parameters.add_data(id=parameter_3.id, data={})
+        parameter_3 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter 3"
+        )
+        assert parameter_3.data == test_data_8
+
     def test_parameter_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
 

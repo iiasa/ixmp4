@@ -121,6 +121,11 @@ class TestCoreIndexset:
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
 
+        # Test adding empty data works
+        indexset_4.add(data=[])
+
+        assert indexset_4.data == test_data_3
+
     def test_remove_elements(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
