@@ -154,9 +154,7 @@ class VariableRepository(
                 f"{', '.join(missing_columns)}!"
             )
 
-        index_list = (
-            variable.column_names if variable.column_names else variable.indexset_names
-        )
+        index_list = variable.column_names or variable.indexset_names
         existing_data = pd.DataFrame(variable.data)
         if index_list:
             data = data.set_index(index_list)

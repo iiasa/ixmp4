@@ -23,7 +23,7 @@ class Equation(base.BaseModel, Protocol):
     """Unique name of the Equation."""
     data: types.JsonDict
     """Data stored in the Equation."""
-    indexset_names: types.Mapped[list[str]]
+    indexset_names: types.Mapped[list[str] | None]
     """List of the names of the IndexSets the Equation is bound to."""
     column_names: types.Mapped[list[str] | None]
     """List of the Equation's column names, if distinct from the IndexSet names."""
@@ -54,7 +54,7 @@ class EquationRepository(
         self,
         run_id: int,
         name: str,
-        constrained_to_indexsets: list[str],
+        constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Equation:
         """Creates an Equation.
@@ -71,9 +71,10 @@ class EquationRepository(
             defined.
         name : str
             The unique name of the Equation.
-        constrained_to_indexsets : list[str]
+        constrained_to_indexsets : list[str] | None = None
             List of :class:`ixmp4.data.abstract.optimization.IndexSet` names that define
-            the allowed contents of the Equation's columns.
+            the allowed contents of the Equation's columns. If None, no data
+            can be added beyond `levels` and `marginals`!
         column_names: list[str] | None = None
             Optional list of names to use as column names. If given, overwrites the
             names inferred from `constrained_to_indexsets`.
