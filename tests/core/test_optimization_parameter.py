@@ -264,7 +264,7 @@ class TestCoreParameter:
         )
         indexset_1.add(data=["foo", "bar", ""])
         indexset_2.add(data=[1, 2, 3])
-        test_data_1: dict[str, list[int] | list[str]] = {
+        initial_data: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 1, 2, 3],
             "values": [1, 2, 3, 4, 5, 6],
@@ -274,7 +274,30 @@ class TestCoreParameter:
             name="Parameter",
             constrained_to_indexsets=[indexset_1.name, indexset_2.name],
         )
-        parameter.add(data=test_data_1)
+        parameter.add(data=initial_data)
+
+        # Test removing empty data removes nothing
+        parameter.remove(data={})
+
+        assert parameter.data == initial_data
+
+        # Test incomplete index raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            parameter.remove(data={indexset_1.name: ["foo"]})
+
+        # Test unknown keys without indexed columns raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            parameter.remove(data={"foo": ["bar"]})
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            parameter.remove(data={"units": [unit.name]})
 
         # Test removing one row
         remove_data_1: dict[str, list[int] | list[str]] = {
@@ -286,11 +309,18 @@ class TestCoreParameter:
         # Prepare the expectation from the original test data
         # You can confirm manually that only the correct types are removed
         for key in remove_data_1.keys():
-            test_data_1[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
-        test_data_1["values"].remove(1)  # type: ignore[arg-type]
-        test_data_1["units"].remove(unit.name)  # type: ignore[arg-type]
+            initial_data[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
+        initial_data["values"].remove(1)  # type: ignore[arg-type]
+        initial_data["units"].remove(unit.name)  # type: ignore[arg-type]
 
-        assert parameter.data == test_data_1
+        assert parameter.data == initial_data
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data_1["values"] = [1]
+        parameter.remove(data=remove_data_1)
+
+        assert parameter.data == initial_data
 
         # Test removing multiple rows
         remove_data_2 = pd.DataFrame(

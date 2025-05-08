@@ -320,6 +320,38 @@ class TestDataOptimizationParameter:
             id=parameter.id, data=initial_data
         )
 
+        # Test removing empty data removes nothing
+        platform.backend.optimization.parameters.remove_data(id=parameter.id, data={})
+        parameter = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter"
+        )
+
+        assert parameter.data == initial_data
+
+        # Test incomplete index raises
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.parameters.remove_data(
+                id=parameter.id, data={indexset_1.name: ["foo"]}
+            )
+
+        # Test unknown keys without indexed columns raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.parameters.remove_data(
+                id=parameter.id, data={"foo": ["bar"]}
+            )
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.parameters.remove_data(
+                id=parameter.id, data={"units": [unit.name]}
+            )
+
         # Test removing one row
         remove_data_1: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo"],
@@ -338,6 +370,18 @@ class TestDataOptimizationParameter:
             initial_data[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
         initial_data["values"].remove(1)  # type: ignore[arg-type]
         initial_data["units"].remove(unit.name)  # type: ignore[arg-type]
+
+        assert parameter.data == initial_data
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data_1["values"] = [1]
+        platform.backend.optimization.parameters.remove_data(
+            id=parameter.id, data=remove_data_1
+        )
+        parameter = platform.backend.optimization.parameters.get(
+            run_id=run.id, name="Parameter"
+        )
 
         assert parameter.data == initial_data
 
