@@ -40,41 +40,41 @@ class TestCoreParameter:
         run = platform.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset, indexset_2 = tuple(
+        indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         parameter = run.optimization.parameters.create(
             name="Parameter",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
         )
 
         assert parameter.run_id == run.id
         assert parameter.name == "Parameter"
         assert parameter.data == {}  # JsonDict type currently requires a dict, not None
         assert parameter.column_names is None
-        assert parameter.indexset_names == [indexset.name]
+        assert parameter.indexset_names == [indexset_1.name]
         assert parameter.values == []
         assert parameter.units == []
 
         # Test duplicate name raises
         with pytest.raises(Parameter.NotUnique):
             _ = run.optimization.parameters.create(
-                "Parameter", constrained_to_indexsets=[indexset.name]
+                "Parameter", constrained_to_indexsets=[indexset_1.name]
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
         with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             _ = run.optimization.parameters.create(
                 "Parameter 2",
-                constrained_to_indexsets=[indexset.name],
+                constrained_to_indexsets=[indexset_1.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
         # Test columns_names are used for names if given
         parameter_2 = run.optimization.parameters.create(
             "Parameter 2",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
         assert parameter_2.column_names == ["Column 1"]
@@ -85,9 +85,19 @@ class TestCoreParameter:
         ):
             _ = run.optimization.parameters.create(
                 name="Parameter 3",
-                constrained_to_indexsets=[indexset.name, indexset.name],
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test using different column names for same indexset
+        parameter_3 = run.optimization.parameters.create(
+            name="Parameter 3",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+
+        assert parameter_3.column_names == ["Column 1", "Column 2"]
+        assert parameter_3.indexset_names == [indexset_1.name, indexset_1.name]
 
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

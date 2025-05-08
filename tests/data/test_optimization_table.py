@@ -88,6 +88,17 @@ class TestDataOptimizationTable:
                 column_names=["Column 1", "Column 1"],
             )
 
+        # Test using different column names for same indexset
+        table_3 = platform.backend.optimization.tables.create(
+            run_id=run.id,
+            name="Table 3",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+
+        assert table_3.column_names == ["Column 1", "Column 2"]
+        assert table_3.indexset_names == [indexset_1.name, indexset_1.name]
+
     def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _, _ = create_indexsets_for_run(platform=platform, run_id=run.id)

@@ -41,25 +41,27 @@ class TestDataOptimizationEquation:
         run = platform.backend.runs.create("Model", "Scenario")
 
         # Test normal creation
-        indexset, indexset_2 = create_indexsets_for_run(
+        indexset_1, indexset_2 = create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
         equation = platform.backend.optimization.equations.create(
             run_id=run.id,
             name="Equation",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
         )
 
         assert equation.run__id == run.id
         assert equation.name == "Equation"
         assert equation.data == {}  # JsonDict type currently requires a dict, not None
         assert equation.column_names is None
-        assert equation.indexset_names == [indexset.name]
+        assert equation.indexset_names == [indexset_1.name]
 
         # Test duplicate name raises
         with pytest.raises(Equation.NotUnique):
             _ = platform.backend.optimization.equations.create(
-                run_id=run.id, name="Equation", constrained_to_indexsets=[indexset.name]
+                run_id=run.id,
+                name="Equation",
+                constrained_to_indexsets=[indexset_1.name],
             )
 
         # Test mismatch in constrained_to_indexsets and column_names raises
@@ -67,7 +69,7 @@ class TestDataOptimizationEquation:
             _ = platform.backend.optimization.equations.create(
                 run_id=run.id,
                 name="Equation 2",
-                constrained_to_indexsets=[indexset.name],
+                constrained_to_indexsets=[indexset_1.name],
                 column_names=["Dimension 1", "Dimension 2"],
             )
 
@@ -75,7 +77,7 @@ class TestDataOptimizationEquation:
         equation_2 = platform.backend.optimization.equations.create(
             run_id=run.id,
             name="Equation 2",
-            constrained_to_indexsets=[indexset.name],
+            constrained_to_indexsets=[indexset_1.name],
             column_names=["Column 1"],
         )
         assert equation_2.column_names == ["Column 1"]
@@ -87,9 +89,20 @@ class TestDataOptimizationEquation:
             _ = platform.backend.optimization.equations.create(
                 run_id=run.id,
                 name="Equation 3",
-                constrained_to_indexsets=[indexset.name, indexset.name],
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
                 column_names=["Column 1", "Column 1"],
             )
+
+        # Test using different column names for same indexset
+        equation_3 = platform.backend.optimization.equations.create(
+            run_id=run.id,
+            name="Equation 3",
+            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+            column_names=["Column 1", "Column 2"],
+        )
+
+        assert equation_3.column_names == ["Column 1", "Column 2"]
+        assert equation_3.indexset_names == [indexset_1.name, indexset_1.name]
 
     def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")

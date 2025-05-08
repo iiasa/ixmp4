@@ -50,13 +50,17 @@ class TableRepository(
     ) -> Table:
         table = Table(name=name, run__id=run_id)
 
-        indexsets = self.backend.optimization.indexsets.list(
-            name__in=constrained_to_indexsets, run_id=run_id
-        )
-        for i in range(len(indexsets)):
+        # TODO fix this for other items and add tests for all, too
+        indexsets = {
+            indexset: self.backend.optimization.indexsets.get(
+                run_id=run_id, name=indexset
+            )
+            for indexset in set(constrained_to_indexsets)
+        }
+        for i in range(len(constrained_to_indexsets)):
             _ = TableIndexsetAssociation(
                 table=table,
-                indexset=indexsets[i],
+                indexset=indexsets[constrained_to_indexsets[i]],
                 column_name=column_names[i] if column_names else None,
             )
 
