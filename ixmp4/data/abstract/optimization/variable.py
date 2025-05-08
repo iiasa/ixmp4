@@ -42,6 +42,7 @@ class Variable(base.BaseModel, Protocol):
 class VariableRepository(
     BackendBaseRepository[Variable],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -88,6 +89,23 @@ class VariableRepository(
         -------
         :class:`ixmp4.data.abstract.optimization.Variable`:
             The created Variable.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes a Variable.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the Variable.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.Variable.NotFound`:
+            If the Variable with `id` does not exist.
+        :class:`ixmp4.data.abstract.Variable.DeletionPrevented`:
+            If the Variable with `id` is used in the database, preventing it's deletion.
         """
         ...
 

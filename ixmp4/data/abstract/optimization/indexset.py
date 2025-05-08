@@ -39,6 +39,7 @@ class IndexSet(base.BaseModel, Protocol):
 class IndexSetRepository(
     BackendBaseRepository[IndexSet],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -65,6 +66,23 @@ class IndexSetRepository(
         -------
         :class:`ixmp4.data.abstract.IndexSet`:
             The created IndexSet.
+        """
+        ...
+
+    def delete(self, id: int) -> None:
+        """Deletes an IndexSet.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the IndexSet.
+
+        Raises
+        ------
+        :class:`ixmp4.data.abstract.IndexSet.NotFound`:
+            If the IndexSet with `id` does not exist.
+        :class:`ixmp4.data.abstract.IndexSet.DeletionPrevented`:
+            If the IndexSet with `id` is used in the database, preventing it's deletion.
         """
         ...
 

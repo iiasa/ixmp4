@@ -53,6 +53,7 @@ class OptimizationVariable(base.BaseModel):
             back_populates="variable",
             cascade="all, delete-orphan",
             order_by="VariableIndexsetAssociation.id",
+            passive_deletes=True,
         )
     )
 

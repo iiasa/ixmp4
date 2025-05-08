@@ -49,6 +49,7 @@ class Table(base.BaseModel):
             back_populates="table",
             cascade="all, delete-orphan",
             order_by="TableIndexsetAssociation.id",
+            passive_deletes=True,
         )
     )
 

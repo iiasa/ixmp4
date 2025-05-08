@@ -14,7 +14,7 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Parameter as ParameterModel
 from ixmp4.data.abstract import Run, Unit
 
-from .base import Creator, Lister, Retriever, Tabulator
+from .base import Creator, Deleter, Lister, Retriever, Tabulator
 
 
 class Parameter(BaseModelFacade):
@@ -107,6 +107,7 @@ class Parameter(BaseModelFacade):
 
 class ParameterRepository(
     Creator[Parameter, ParameterModel],
+    Deleter[Parameter, ParameterModel],
     Retriever[Parameter, ParameterModel],
     Lister[Parameter, ParameterModel],
     Tabulator[Parameter, ParameterModel],

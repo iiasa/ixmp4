@@ -62,6 +62,22 @@ class TestCoreScalar:
         scalar_3 = run.optimization.scalars.create("Scalar 3", value=1)
         assert scalar_3.unit.name == ""
 
+    def test_delete_scalar(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+        unit = platform.units.create("Unit")
+        scalar_1 = run.optimization.scalars.create(name="Scalar", value=3.14, unit=unit)
+
+        # Test unknown name raises
+        with pytest.raises(Scalar.NotFound):
+            run.optimization.scalars.delete(item="does not exist")
+
+        # TODO How to check that DeletionPrevented is raised?
+
+        # Test normal deletion
+        run.optimization.scalars.delete(item=scalar_1.name)
+
+        assert run.optimization.scalars.tabulate().empty
+
     def test_get_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")

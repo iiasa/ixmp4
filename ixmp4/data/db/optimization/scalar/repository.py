@@ -24,6 +24,7 @@ class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...
 
 class ScalarRepository(
     base.Creator[Scalar],
+    base.Deleter[Scalar],
     base.Retriever[Scalar],
     base.Enumerator[Scalar],
     abstract.ScalarRepository,
@@ -48,6 +49,10 @@ class ScalarRepository(
         )
         self.session.add(scalar)
         return scalar
+
+    @guard("edit")
+    def delete(self, id: int) -> None:
+        return super().delete(id=id)
 
     @guard("view")
     def get(self, run_id: int, name: str) -> Scalar:

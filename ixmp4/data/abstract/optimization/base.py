@@ -27,6 +27,7 @@ class CreateKwargs(TypedDict, total=False):
 class BackendBaseRepository(
     Generic[BackendModelType],
     base.Creator,
+    base.Deleter,
     base.Retriever,
     base.Enumerator,
     Protocol,
@@ -36,6 +37,8 @@ class BackendBaseRepository(
     def create(
         self, run_id: int, name: str, **kwargs: Unpack["CreateKwargs"]
     ) -> BackendModelType: ...
+
+    def delete(self, id: int) -> None: ...
 
     def get(self, run_id: int, name: str) -> BackendModelType: ...
 

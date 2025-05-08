@@ -104,6 +104,32 @@ class TestDataOptimizationEquation:
         assert equation_3.column_names == ["Column 1", "Column 2"]
         assert equation_3.indexset_names == [indexset_1.name, indexset_1.name]
 
+    def test_delete_equation(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1, _ = create_indexsets_for_run(platform=platform, run_id=run.id)
+        equation = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        # TODO How to check that DeletionPrevented is raised? No other object uses
+        # Equation.id, so nothing could prevent the deletion.
+
+        # Test unknown id raises
+        with pytest.raises(Equation.NotFound):
+            platform.backend.optimization.equations.delete(id=(equation.id + 1))
+
+        # Test normal deletion
+        platform.backend.optimization.equations.delete(id=equation.id)
+
+        assert platform.backend.optimization.equations.tabulate().empty
+
+        # Confirm that IndexSet has not been deleted
+        assert not platform.backend.optimization.indexsets.tabulate().empty
+
+        # Test that association table rows are deleted
+        # If they haven't, this would raise DeletionPrevented
+        platform.backend.optimization.indexsets.delete(id=indexset_1.id)
+
     def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(

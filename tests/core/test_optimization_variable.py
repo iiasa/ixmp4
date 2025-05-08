@@ -51,7 +51,7 @@ class TestCoreVariable:
         assert variable.marginals == []
 
         # Test creation with indexset
-        indexset_1, indexset_2 = tuple(
+        indexset_1, _ = tuple(
             IndexSet(_backend=platform.backend, _model=model)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
@@ -120,6 +120,42 @@ class TestCoreVariable:
 
         assert variable_4.column_names == ["Column 1", "Column 2"]
         assert variable_4.indexset_names == [indexset_1.name, indexset_1.name]
+
+    def test_delete_variable(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+
+        variable_1 = run.optimization.variables.create(name="Variable 1")
+
+        # Test deletion without linked IndexSets
+        run.optimization.variables.delete(item=variable_1.name)
+
+        assert run.optimization.variables.tabulate().empty
+
+        (indexset_1,) = create_indexsets_for_run(
+            platform=platform, run_id=run.id, amount=1
+        )
+        variable_2 = run.optimization.variables.create(
+            name="Variable 2", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        # TODO How to check that DeletionPrevented is raised? No other object uses
+        # Variable.id, so nothing could prevent the deletion.
+
+        # Test unknown name raises
+        with pytest.raises(OptimizationVariable.NotFound):
+            run.optimization.variables.delete(item="does not exist")
+
+        # Test normal deletion
+        run.optimization.variables.delete(item=variable_2.name)
+
+        assert run.optimization.variables.tabulate().empty
+
+        # Confirm that IndexSet has not been deleted
+        assert not run.optimization.indexsets.tabulate().empty
+
+        # Test that association table rows are deleted
+        # If they haven't, this would raise DeletionPrevented
+        run.optimization.indexsets.delete(item=indexset_1.id)
 
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

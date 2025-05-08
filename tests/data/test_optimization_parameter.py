@@ -103,6 +103,32 @@ class TestDataOptimizationParameter:
         assert parameter_3.column_names == ["Column 1", "Column 2"]
         assert parameter_3.indexset_names == [indexset_1.name, indexset_1.name]
 
+    def test_delete_parameter(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1, _ = create_indexsets_for_run(platform=platform, run_id=run.id)
+        parameter = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        # TODO How to check that DeletionPrevented is raised? No other object uses
+        # Parameter.id, so nothing could prevent the deletion.
+
+        # Test unknown id raises
+        with pytest.raises(Parameter.NotFound):
+            platform.backend.optimization.parameters.delete(id=(parameter.id + 1))
+
+        # Test normal deletion
+        platform.backend.optimization.parameters.delete(id=parameter.id)
+
+        assert platform.backend.optimization.parameters.tabulate().empty
+
+        # Confirm that IndexSet has not been deleted
+        assert not platform.backend.optimization.indexsets.tabulate().empty
+
+        # Test that association table rows are deleted
+        # If they haven't, this would raise DeletionPrevented
+        platform.backend.optimization.indexsets.delete(id=indexset_1.id)
+
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)

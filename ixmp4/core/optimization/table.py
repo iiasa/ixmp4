@@ -14,7 +14,7 @@ from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Table as TableModel
 
-from .base import Creator, Lister, Retriever, Tabulator
+from .base import Creator, Deleter, Lister, Retriever, Tabulator
 
 
 class Table(BaseModelFacade):
@@ -99,6 +99,7 @@ class Table(BaseModelFacade):
 
 class TableRepository(
     Creator[Table, TableModel],
+    Deleter[Table, TableModel],
     Retriever[Table, TableModel],
     Lister[Table, TableModel],
     Tabulator[Table, TableModel],

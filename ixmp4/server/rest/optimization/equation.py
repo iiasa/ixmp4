@@ -83,3 +83,12 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Equation:
     return backend.optimization.equations.create(**equation.model_dump())
+
+
+@autodoc
+@router.delete("/{id}/")
+def delete(
+    id: int,
+    backend: Backend = Depends(deps.get_backend),
+) -> None:
+    backend.optimization.equations.delete(id=id)
