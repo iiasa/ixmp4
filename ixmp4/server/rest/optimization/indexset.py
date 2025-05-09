@@ -77,6 +77,9 @@ def add_data(
 def remove_data(
     id: int,
     data: DataInput,
+    remove_dependent_data: bool = Query(True),
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.optimization.indexsets.remove_data(id=id, **data.model_dump())
+    backend.optimization.indexsets.remove_data(
+        id=id, remove_dependent_data=remove_dependent_data, **data.model_dump()
+    )

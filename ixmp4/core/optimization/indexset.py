@@ -42,10 +42,14 @@ class IndexSet(BaseModelFacade):
         )
 
     def remove(
-        self, data: float | int | str | list[float] | list[int] | list[str]
+        self,
+        data: float | int | str | list[float] | list[int] | list[str],
+        remove_dependent_data: bool = True,
     ) -> None:
         """Removes data from an existing IndexSet."""
-        self.backend.optimization.indexsets.remove_data(id=self._model.id, data=data)
+        self.backend.optimization.indexsets.remove_data(
+            id=self._model.id, data=data, remove_dependent_data=remove_dependent_data
+        )
         self._model = self.backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
         )

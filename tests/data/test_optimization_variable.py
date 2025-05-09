@@ -8,6 +8,7 @@ from ixmp4.core.exceptions import (
 )
 from ixmp4.data.abstract import OptimizationVariable
 from ixmp4.data.backend.api import RestBackend
+from ixmp4.data.db.optimization.variable.repository import logger
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -377,13 +378,15 @@ class TestDataOptimizationVariable:
 
         assert variable_5.data == test_data_8
 
-    def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
+    def test_variable_remove_data(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")
         platform.backend.optimization.indexsets.add_data(
             id=indexset.id, data=["foo", "bar"]
         )
-        test_data = {
+        test_data: dict[str, list[float | int | str]] = {
             "Indexset": ["bar", "foo"],
             "levels": [2.0, 1],
             "marginals": [0, 4.2],
@@ -399,11 +402,78 @@ class TestDataOptimizationVariable:
         )
         assert variable.data == test_data
 
+        # Test removing empty data removes nothing
+        platform.backend.optimization.variables.remove_data(
+            id=variable.id, data=pd.DataFrame()
+        )
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+
+        assert variable.data == test_data
+
+        # Test incomplete index raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.variables.remove_data(
+                id=variable.id, data={"foo": ["bar"]}
+            )
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            platform.backend.optimization.variables.remove_data(
+                id=variable.id, data={"levels": [2.3]}
+            )
+
+        # Test removing one row
+        remove_data = {indexset.name: [test_data[indexset.name][0]]}
+        test_data_2 = {k: [v[1]] for k, v in test_data.items()}
+        platform.backend.optimization.variables.remove_data(
+            id=variable.id, data=remove_data
+        )
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+        assert variable.data == test_data_2
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data["levels"] = [1]
+        platform.backend.optimization.variables.remove_data(
+            id=variable.id, data=remove_data
+        )
+        variable = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable"
+        )
+
+        assert variable.data == test_data_2
+
+        # Test removing all rows
         platform.backend.optimization.variables.remove_data(id=variable.id)
         variable = platform.backend.optimization.variables.get(
             run_id=run.id, name="Variable"
         )
         assert variable.data == {}
+
+        # Test removing specific data from unindexed Equation warns
+        variable_2 = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable 2"
+        )
+
+        caplog.clear()
+        with caplog.at_level("WARNING", logger=logger.name):
+            platform.backend.optimization.variables.remove_data(
+                id=variable_2.id, data=test_data_2
+            )
+
+        expected = [
+            f"Trying to remove {test_data_2} from Variable '{variable_2.name}', but "
+            "that is not indexed; not removing anything!"
+        ]
+        assert caplog.messages == expected
 
     def test_list_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")

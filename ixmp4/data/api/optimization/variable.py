@@ -78,8 +78,17 @@ class VariableRepository(
             method="PATCH", path=self.prefix + str(id) + "/data/", json=kwargs
         )
 
-    def remove_data(self, id: int) -> None:
-        self._request(method="DELETE", path=self.prefix + str(id) + "/data/")
+    def remove_data(
+        self, id: int, data: dict[str, Any] | pd.DataFrame | None = None
+    ) -> None:
+        if isinstance(data, pd.DataFrame):
+            # data will always contain str, not only Hashable
+            data = cast(dict[str, Any], data.to_dict(orient="list"))
+        kwargs = {"data": data}
+
+        self._request(
+            method="DELETE", path=self.prefix + str(id) + "/data/", json=kwargs
+        )
 
     def get(self, run_id: int, name: str) -> Variable:
         return super().get(run_id=run_id, name=name)

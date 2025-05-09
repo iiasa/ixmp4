@@ -8,6 +8,7 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
 )
 from ixmp4.data.backend.api import RestBackend
+from ixmp4.data.db.optimization.variable.repository import logger
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -350,11 +351,13 @@ class TestCoreVariable:
 
         assert variable_6.data == test_data_8
 
-    def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
+    def test_variable_remove_data(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(data=["foo", "bar"])
-        test_data = {
+        test_data: dict[str, list[float | int | str]] = {
             "Indexset": ["bar", "foo"],
             "levels": [2.3, 1],
             "marginals": [0, 4.2],
@@ -366,8 +369,52 @@ class TestCoreVariable:
         variable.add(test_data)
         assert variable.data == test_data
 
+        # Test removing empty data removes nothing
+        variable.remove_data(data={})
+
+        assert variable.data == test_data
+
+        # Test incomplete index raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            variable.remove_data(data={"foo": ["bar"]})
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            variable.remove_data(data={"levels": [2.3]})
+
+        # Test removing one row
+        remove_data = {indexset.name: [test_data[indexset.name][0]]}
+        test_data_2 = {k: [v[1]] for k, v in test_data.items()}
+        variable.remove_data(data=remove_data)
+        assert variable.data == test_data_2
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data["levels"] = [1]
+        variable.remove_data(data=remove_data)
+
+        assert variable.data == test_data_2
+
+        # Test removing all rows
         variable.remove_data()
         assert variable.data == {}
+
+        # Test removing specific data from unindexed Equation warns
+        variable_2 = run.optimization.variables.create("Variable 2")
+
+        caplog.clear()
+        with caplog.at_level("WARNING", logger=logger.name):
+            variable_2.remove_data(data=test_data_2)
+
+        expected = [
+            f"Trying to remove {test_data_2} from Variable '{variable_2.name}', but "
+            "that is not indexed; not removing anything!"
+        ]
+        assert caplog.messages == expected
 
     def test_list_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
