@@ -8,6 +8,7 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
 )
 from ixmp4.data.backend.api import RestBackend
+from ixmp4.data.db.optimization.variable.repository import logger
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -350,7 +351,9 @@ class TestCoreVariable:
 
         assert variable_6.data == test_data_8
 
-    def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
+    def test_variable_remove_data(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(data=["foo", "bar"])
@@ -399,6 +402,19 @@ class TestCoreVariable:
         # Test removing all rows
         variable.remove_data()
         assert variable.data == {}
+
+        # Test removing specific data from unindexed Equation warns
+        variable_2 = run.optimization.variables.create("Variable 2")
+
+        caplog.clear()
+        with caplog.at_level("WARNING", logger=logger.name):
+            variable_2.remove_data(data=test_data_2)
+
+        expected = [
+            f"Trying to remove {test_data_2} from Variable '{variable_2.name}', but "
+            "that is not indexed; not removing anything!"
+        ]
+        assert caplog.messages == expected
 
     def test_list_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

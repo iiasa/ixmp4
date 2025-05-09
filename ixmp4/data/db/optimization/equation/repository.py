@@ -193,6 +193,10 @@ class EquationRepository(
 
             index_list = equation.column_names or equation.indexset_names
             if not index_list:
+                logger.warning(
+                    f"Trying to remove {data.to_dict(orient='list')} from Equation '"
+                    f"{equation.name}', but that is not indexed; not removing anything!"
+                )
                 return  # can't remove specific data from unindexed variable
 
             existing_data = pd.DataFrame(equation.data)

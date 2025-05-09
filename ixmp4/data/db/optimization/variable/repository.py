@@ -194,6 +194,10 @@ class VariableRepository(
 
             index_list = variable.column_names or variable.indexset_names
             if not index_list:
+                logger.warning(
+                    f"Trying to remove {data.to_dict(orient='list')} from Variable '"
+                    f"{variable.name}', but that is not indexed; not removing anything!"
+                )
                 return  # can't remove specific data from unindexed variable
 
             existing_data = pd.DataFrame(variable.data)
