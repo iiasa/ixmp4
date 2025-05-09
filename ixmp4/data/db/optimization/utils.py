@@ -1,11 +1,15 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Union
 
 import pandas as pd
 
 from . import base
 
 if TYPE_CHECKING:
+    from .equation import Equation
     from .indexset import IndexSet
+    from .parameter import Parameter
+    from .table import Table
+    from .variable import Variable
 
 
 def validate_data(
@@ -71,3 +75,26 @@ def validate_data(
             "The data contains values that are not allowed as per the IndexSets "
             "it is constrained to!"
         )
+
+
+# NOTE | does not seem to work yet for stringified type hints
+def _find_columns_linked_to_indexset(
+    item: Union["Table", "Parameter", "Equation", "Variable"], name: str
+) -> list[str]:
+    """Determine columns in `item`.data that are linked to IndexSet `name`.
+
+    Only works for `items` linked to IndexSet `name`.
+    """
+    if not item.column_names:
+        # The item's indexset_names must be a unique list of names
+        return [name]
+    else:
+        # If we have column_names, we must also have indexsets
+        assert item.indexset_names
+
+        # Handle possible duplicate values
+        return [
+            item.column_names[i]
+            for i in range(len(item.column_names))
+            if item.indexset_names[i] == name
+        ]
