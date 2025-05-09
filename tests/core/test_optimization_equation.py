@@ -8,6 +8,7 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
 )
 from ixmp4.data.backend.api import RestBackend
+from ixmp4.data.db.optimization.equation.repository import logger
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -350,7 +351,9 @@ class TestCoreEquation:
 
         assert equation_6.data == test_data_8
 
-    def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
+    def test_equation_remove_data(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(data=["foo", "bar"])
@@ -399,6 +402,19 @@ class TestCoreEquation:
         # Test removing all rows
         equation.remove_data()
         assert equation.data == {}
+
+        # Test removing specific data from unindexed Equation warns
+        equation_2 = run.optimization.equations.create("Equation 2")
+
+        caplog.clear()
+        with caplog.at_level("WARNING", logger=logger.name):
+            equation_2.remove_data(data=test_data_2)
+
+        expected = [
+            f"Trying to remove {test_data_2} from Equation '{equation_2.name}', but "
+            "that is not indexed; not removing anything!"
+        ]
+        assert caplog.messages == expected
 
     def test_list_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
