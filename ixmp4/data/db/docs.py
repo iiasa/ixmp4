@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable
 from typing import ClassVar, TypeVar
 
@@ -11,6 +12,8 @@ from ixmp4.data import abstract, types
 
 from ..auth.decorators import guard
 from . import base
+
+logger = logging.getLogger(__name__)
 
 
 class AbstractDocs(base.BaseModel):
@@ -70,7 +73,13 @@ class BaseDocsRepository(
         # TODO Should we enforce that only one of these filters can be active?
         if dimension_id is not None:
             _exc = _exc.where(self.model_class.dimension__id == dimension_id)
-        elif dimension_id__in is not None:
+        if dimension_id__in is not None:
+            if dimension_id and dimension_id not in dimension_id__in:
+                logger.warning(
+                    "Applying incompatible filters to select for docs: "
+                    f"dimension_id '{dimension_id}' is not in dimension_id__in "
+                    f"{dimension_id__in}!"
+                )
             _exc = _exc.where(self.model_class.dimension__id.in_(dimension_id__in))
 
         return _exc
@@ -83,7 +92,13 @@ class BaseDocsRepository(
     ) -> db.sql.Select[tuple[int]]:
         if dimension_id is not None:
             _exc = _exc.where(self.model_class.dimension__id == dimension_id)
-        elif dimension_id__in is not None:
+        if dimension_id__in is not None:
+            if dimension_id and dimension_id not in dimension_id__in:
+                logger.warning(
+                    "Applying incompatible filters to select for docs: "
+                    f"dimension_id '{dimension_id}' is not in dimension_id__in "
+                    f"{dimension_id__in}!"
+                )
             _exc = _exc.where(self.model_class.dimension__id.in_(dimension_id__in))
 
         return _exc

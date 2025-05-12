@@ -1,7 +1,10 @@
+import logging
+
 import pytest
 
 import ixmp4
 from ixmp4.data.abstract import Docs
+from ixmp4.data.db.docs import logger
 
 
 class TestDataDocs:
@@ -930,3 +933,28 @@ class TestDataDocs:
         assert platform.backend.optimization.equations.docs.list(
             dimension_id__in=[equation_1.id, equation_3.id]
         ) == [docs_equation_1, docs_equation_3]
+
+    def test_list_with_incompatible_filters(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # This logic is the same for all kinds of docs, so no need to include this in
+        # all tests above
+        unit_1 = platform.backend.units.create("Unit 1")
+        unit_2 = platform.backend.units.create("Unit 2")
+        unit_3 = platform.backend.units.create("Unit 3")
+        _ = platform.backend.units.docs.set(unit_1.id, "Description of Unit 1")
+        _ = platform.backend.units.docs.set(unit_2.id, "Description of Unit 2")
+        _ = platform.backend.units.docs.set(unit_3.id, "Description of Unit 3")
+
+        with caplog.at_level(level=logging.WARNING, logger=logger.name):
+            assert (
+                platform.backend.units.docs.list(
+                    dimension_id=1, dimension_id__in=[2, 3]
+                )
+                == []
+            )
+
+        assert (
+            "Applying incompatible filters to select for docs: "
+            "dimension_id '1' is not in dimension_id__in [2, 3]!"
+        ) in caplog.messages
