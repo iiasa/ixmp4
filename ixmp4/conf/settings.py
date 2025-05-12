@@ -43,14 +43,7 @@ class Settings(BaseSettings):
     def __init__(self, *args: Any, **kwargs: Any) -> None:
         super().__init__(*args, **kwargs)
 
-        self.storage_directory.mkdir(parents=True, exist_ok=True)
-
-        self.database_dir = self.storage_directory / "databases"
-        self.database_dir.mkdir(exist_ok=True)
-
-        self.log_dir = self.storage_directory / "log"
-        self.log_dir.mkdir(exist_ok=True)
-
+        self.setup_directories()
         self.configure_logging(self.mode)
 
         self._credentials: Credentials | None = None
@@ -92,6 +85,15 @@ class Settings(BaseSettings):
         if self._manager is None:
             self.load_manager_config()
         return self._manager  # type: ignore[return-value]
+
+    def setup_directories(self) -> None:
+        self.storage_directory.mkdir(parents=True, exist_ok=True)
+
+        self.database_dir = self.storage_directory / "databases"
+        self.database_dir.mkdir(exist_ok=True)
+
+        self.log_dir = self.storage_directory / "log"
+        self.log_dir.mkdir(exist_ok=True)
 
     def load_credentials(self) -> None:
         credentials_config = self.storage_directory / "credentials.toml"
