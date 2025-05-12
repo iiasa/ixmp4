@@ -45,9 +45,13 @@ class Variable(BaseModelFacade):
             run_id=self._model.run__id, name=self._model.name
         )
 
-    def remove_data(self) -> None:
-        """Removes all data from the Variable."""
-        self.backend.optimization.variables.remove_data(id=self._model.id)
+    def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
+        """Removes all data from the Variable.
+
+        If `data` is `None` (the default), remove all data. Otherwise, data must specify
+        all indexed columns. All other keys/columns are ignored.
+        """
+        self.backend.optimization.variables.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.variables.get(
             run_id=self._model.run__id, name=self._model.name
         )

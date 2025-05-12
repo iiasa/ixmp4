@@ -23,7 +23,7 @@ class VariableCreateInput(BaseModel):
 
 
 class DataInput(BaseModel):
-    data: dict[str, list[float] | list[int] | list[str]]
+    data: dict[str, list[float] | list[int] | list[str]] | None
 
 
 @autodoc
@@ -71,9 +71,10 @@ def add_data(
 @router.delete("/{id}/data/")
 def remove_data(
     id: int,
+    data: DataInput,
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.optimization.variables.remove_data(id=id)
+    backend.optimization.variables.remove_data(id=id, **data.model_dump())
 
 
 @autodoc

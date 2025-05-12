@@ -1,7 +1,10 @@
+import logging
+
 import pytest
 
 import ixmp4
 from ixmp4.data.abstract import Docs
+from ixmp4.data.db.docs import logger
 
 
 class TestDataDocs:
@@ -43,6 +46,34 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.models.docs.get(model.id)
 
+    def test_list_modeldocs(self, platform: ixmp4.Platform) -> None:
+        model_1 = platform.backend.models.create("Model 1")
+        model_2 = platform.backend.models.create("Model 2")
+        model_3 = platform.backend.models.create("Model 3")
+        docs_model_1 = platform.backend.models.docs.set(
+            model_1.id, "Description of Model 1"
+        )
+        docs_model_2 = platform.backend.models.docs.set(
+            model_2.id, "Description of Model 2"
+        )
+        docs_model_3 = platform.backend.models.docs.set(
+            model_3.id, "Description of Model 3"
+        )
+
+        assert platform.backend.models.docs.list() == [
+            docs_model_1,
+            docs_model_2,
+            docs_model_3,
+        ]
+
+        assert platform.backend.models.docs.list(dimension_id=model_2.id) == [
+            docs_model_2
+        ]
+
+        assert platform.backend.models.docs.list(
+            dimension_id__in=[model_1.id, model_3.id]
+        ) == [docs_model_1, docs_model_3]
+
     def test_get_and_set_regiondocs(self, platform: ixmp4.Platform) -> None:
         region = platform.backend.regions.create("Region", "Hierarchy")
         docs_region = platform.backend.regions.docs.set(
@@ -83,6 +114,34 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.regions.docs.get(region.id)
 
+    def test_list_regiondocs(self, platform: ixmp4.Platform) -> None:
+        region_1 = platform.backend.regions.create("Region 1", "Hierarchy")
+        region_2 = platform.backend.regions.create("Region 2", "Hierarchy")
+        region_3 = platform.backend.regions.create("Region 3", "Hierarchy")
+        docs_region_1 = platform.backend.regions.docs.set(
+            region_1.id, "Description of Region 1"
+        )
+        docs_region_2 = platform.backend.regions.docs.set(
+            region_2.id, "Description of Region 2"
+        )
+        docs_region_3 = platform.backend.regions.docs.set(
+            region_3.id, "Description of Region 3"
+        )
+
+        assert platform.backend.regions.docs.list() == [
+            docs_region_1,
+            docs_region_2,
+            docs_region_3,
+        ]
+
+        assert platform.backend.regions.docs.list(dimension_id=region_2.id) == [
+            docs_region_2
+        ]
+
+        assert platform.backend.regions.docs.list(
+            dimension_id__in=[region_1.id, region_3.id]
+        ) == [docs_region_1, docs_region_3]
+
     def test_get_and_set_scenariodocs(self, platform: ixmp4.Platform) -> None:
         scenario = platform.backend.scenarios.create("Scenario")
         docs_scenario = platform.backend.scenarios.docs.set(
@@ -122,6 +181,34 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.scenarios.docs.get(scenario.id)
 
+    def test_list_scenariodocs(self, platform: ixmp4.Platform) -> None:
+        scenario_1 = platform.backend.scenarios.create("Scenario 1")
+        scenario_2 = platform.backend.scenarios.create("Scenario 2")
+        scenario_3 = platform.backend.scenarios.create("Scenario 3")
+        docs_scenario_1 = platform.backend.scenarios.docs.set(
+            scenario_1.id, "Description of Scenario 1"
+        )
+        docs_scenario_2 = platform.backend.scenarios.docs.set(
+            scenario_2.id, "Description of Scenario 2"
+        )
+        docs_scenario_3 = platform.backend.scenarios.docs.set(
+            scenario_3.id, "Description of Scenario 3"
+        )
+
+        assert platform.backend.scenarios.docs.list() == [
+            docs_scenario_1,
+            docs_scenario_2,
+            docs_scenario_3,
+        ]
+
+        assert platform.backend.scenarios.docs.list(dimension_id=scenario_2.id) == [
+            docs_scenario_2
+        ]
+
+        assert platform.backend.scenarios.docs.list(
+            dimension_id__in=[scenario_1.id, scenario_3.id]
+        ) == [docs_scenario_1, docs_scenario_3]
+
     def test_get_and_set_unitdocs(self, platform: ixmp4.Platform) -> None:
         unit = platform.backend.units.create("Unit")
         docs_unit = platform.backend.units.docs.set(unit.id, "Description of test Unit")
@@ -157,6 +244,32 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.units.docs.get(unit.id)
+
+    def test_list_unitdocs(self, platform: ixmp4.Platform) -> None:
+        unit_1 = platform.backend.units.create("Unit 1")
+        unit_2 = platform.backend.units.create("Unit 2")
+        unit_3 = platform.backend.units.create("Unit 3")
+        docs_unit_1 = platform.backend.units.docs.set(
+            unit_1.id, "Description of Unit 1"
+        )
+        docs_unit_2 = platform.backend.units.docs.set(
+            unit_2.id, "Description of Unit 2"
+        )
+        docs_unit_3 = platform.backend.units.docs.set(
+            unit_3.id, "Description of Unit 3"
+        )
+
+        assert platform.backend.units.docs.list() == [
+            docs_unit_1,
+            docs_unit_2,
+            docs_unit_3,
+        ]
+
+        assert platform.backend.units.docs.list(dimension_id=unit_2.id) == [docs_unit_2]
+
+        assert platform.backend.units.docs.list(
+            dimension_id__in=[unit_1.id, unit_3.id]
+        ) == [docs_unit_1, docs_unit_3]
 
     def test_get_and_set_variabledocs(self, platform: ixmp4.Platform) -> None:
         variable = platform.backend.iamc.variables.create("Variable")
@@ -197,6 +310,34 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.iamc.variables.docs.get(variable.id)
+
+    def test_list_variabledocs(self, platform: ixmp4.Platform) -> None:
+        variable_1 = platform.backend.iamc.variables.create("Variable 1")
+        variable_2 = platform.backend.iamc.variables.create("Variable 2")
+        variable_3 = platform.backend.iamc.variables.create("Variable 3")
+        docs_variable_1 = platform.backend.iamc.variables.docs.set(
+            variable_1.id, "Description of Variable 1"
+        )
+        docs_variable_2 = platform.backend.iamc.variables.docs.set(
+            variable_2.id, "Description of Variable 2"
+        )
+        docs_variable_3 = platform.backend.iamc.variables.docs.set(
+            variable_3.id, "Description of Variable 3"
+        )
+
+        assert platform.backend.iamc.variables.docs.list() == [
+            docs_variable_1,
+            docs_variable_2,
+            docs_variable_3,
+        ]
+
+        assert platform.backend.iamc.variables.docs.list(
+            dimension_id=variable_2.id
+        ) == [docs_variable_2]
+
+        assert platform.backend.iamc.variables.docs.list(
+            dimension_id__in=[variable_1.id, variable_3.id]
+        ) == [docs_variable_1, docs_variable_3]
 
     def test_get_and_set_indexsetdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -256,6 +397,41 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.indexsets.docs.get(indexset.id)
 
+    def test_list_indexsetdocs(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset_1 = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet 1"
+        )
+        indexset_2 = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet 2"
+        )
+        indexset_3 = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="IndexSet 3"
+        )
+        docs_indexset_1 = platform.backend.optimization.indexsets.docs.set(
+            indexset_1.id, "Description of IndexSet 1"
+        )
+        docs_indexset_2 = platform.backend.optimization.indexsets.docs.set(
+            indexset_2.id, "Description of IndexSet 2"
+        )
+        docs_indexset_3 = platform.backend.optimization.indexsets.docs.set(
+            indexset_3.id, "Description of IndexSet 3"
+        )
+
+        assert platform.backend.optimization.indexsets.docs.list() == [
+            docs_indexset_1,
+            docs_indexset_2,
+            docs_indexset_3,
+        ]
+
+        assert platform.backend.optimization.indexsets.docs.list(
+            dimension_id=indexset_2.id
+        ) == [docs_indexset_2]
+
+        assert platform.backend.optimization.indexsets.docs.list(
+            dimension_id__in=[indexset_1.id, indexset_3.id]
+        ) == [docs_indexset_1, docs_indexset_3]
+
     def test_get_and_set_scalardocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         unit = platform.backend.units.create("Unit")
@@ -307,6 +483,42 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.scalars.docs.get(scalar.id)
+
+    def test_list_scalardocs(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        unit = platform.backend.units.create("Unit")
+        scalar_1 = platform.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar 1", value=1, unit_name=unit.name
+        )
+        scalar_2 = platform.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar 2", value=2, unit_name=unit.name
+        )
+        scalar_3 = platform.backend.optimization.scalars.create(
+            run_id=run.id, name="Scalar 3", value=3, unit_name=unit.name
+        )
+        docs_scalar_1 = platform.backend.optimization.scalars.docs.set(
+            scalar_1.id, "Description of Scalar 1"
+        )
+        docs_scalar_2 = platform.backend.optimization.scalars.docs.set(
+            scalar_2.id, "Description of Scalar 2"
+        )
+        docs_scalar_3 = platform.backend.optimization.scalars.docs.set(
+            scalar_3.id, "Description of Scalar 3"
+        )
+
+        assert platform.backend.optimization.scalars.docs.list() == [
+            docs_scalar_1,
+            docs_scalar_2,
+            docs_scalar_3,
+        ]
+
+        assert platform.backend.optimization.scalars.docs.list(
+            dimension_id=scalar_2.id
+        ) == [docs_scalar_2]
+
+        assert platform.backend.optimization.scalars.docs.list(
+            dimension_id__in=[scalar_1.id, scalar_3.id]
+        ) == [docs_scalar_1, docs_scalar_3]
 
     def test_get_and_set_tabledocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -365,6 +577,44 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.tables.docs.get(table.id)
+
+    def test_list_tabledocs(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        table_1 = platform.backend.optimization.tables.create(
+            run_id=run.id, name="Table 1", constrained_to_indexsets=[indexset.name]
+        )
+        table_2 = platform.backend.optimization.tables.create(
+            run_id=run.id, name="Table 2", constrained_to_indexsets=[indexset.name]
+        )
+        table_3 = platform.backend.optimization.tables.create(
+            run_id=run.id, name="Table 3", constrained_to_indexsets=[indexset.name]
+        )
+        docs_table_1 = platform.backend.optimization.tables.docs.set(
+            table_1.id, "Description of Table 1"
+        )
+        docs_table_2 = platform.backend.optimization.tables.docs.set(
+            table_2.id, "Description of Table 2"
+        )
+        docs_table_3 = platform.backend.optimization.tables.docs.set(
+            table_3.id, "Description of Table 3"
+        )
+
+        assert platform.backend.optimization.tables.docs.list() == [
+            docs_table_1,
+            docs_table_2,
+            docs_table_3,
+        ]
+
+        assert platform.backend.optimization.tables.docs.list(
+            dimension_id=table_2.id
+        ) == [docs_table_2]
+
+        assert platform.backend.optimization.tables.docs.list(
+            dimension_id__in=[table_1.id, table_3.id]
+        ) == [docs_table_1, docs_table_3]
 
     def test_get_and_set_parameterdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -434,6 +684,44 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.parameters.docs.get(parameter.id)
+
+    def test_list_parameterdocs(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        parameter_1 = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter 1", constrained_to_indexsets=[indexset.name]
+        )
+        parameter_2 = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter 2", constrained_to_indexsets=[indexset.name]
+        )
+        parameter_3 = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter 3", constrained_to_indexsets=[indexset.name]
+        )
+        docs_parameter_1 = platform.backend.optimization.parameters.docs.set(
+            parameter_1.id, "Description of Parameter 1"
+        )
+        docs_parameter_2 = platform.backend.optimization.parameters.docs.set(
+            parameter_2.id, "Description of Parameter 2"
+        )
+        docs_parameter_3 = platform.backend.optimization.parameters.docs.set(
+            parameter_3.id, "Description of Parameter 3"
+        )
+
+        assert platform.backend.optimization.parameters.docs.list() == [
+            docs_parameter_1,
+            docs_parameter_2,
+            docs_parameter_3,
+        ]
+
+        assert platform.backend.optimization.parameters.docs.list(
+            dimension_id=parameter_2.id
+        ) == [docs_parameter_2]
+
+        assert platform.backend.optimization.parameters.docs.list(
+            dimension_id__in=[parameter_1.id, parameter_3.id]
+        ) == [docs_parameter_1, docs_parameter_3]
 
     def test_get_and_set_optimizationvariabledocs(
         self, platform: ixmp4.Platform
@@ -506,6 +794,41 @@ class TestDataDocs:
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.variables.docs.get(variable.id)
 
+    def test_list_optimizationvariabledocs(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        variable_1 = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable 1"
+        )
+        variable_2 = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable 2"
+        )
+        variable_3 = platform.backend.optimization.variables.create(
+            run_id=run.id, name="Variable 3"
+        )
+        docs_variable_1 = platform.backend.optimization.variables.docs.set(
+            variable_1.id, "Description of Variable 1"
+        )
+        docs_variable_2 = platform.backend.optimization.variables.docs.set(
+            variable_2.id, "Description of Variable 2"
+        )
+        docs_variable_3 = platform.backend.optimization.variables.docs.set(
+            variable_3.id, "Description of Variable 3"
+        )
+
+        assert platform.backend.optimization.variables.docs.list() == [
+            docs_variable_1,
+            docs_variable_2,
+            docs_variable_3,
+        ]
+
+        assert platform.backend.optimization.variables.docs.list(
+            dimension_id=variable_2.id
+        ) == [docs_variable_2]
+
+        assert platform.backend.optimization.variables.docs.list(
+            dimension_id__in=[variable_1.id, variable_3.id]
+        ) == [docs_variable_1, docs_variable_3]
+
     def test_get_and_set_equationdocs(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         _ = platform.backend.optimization.indexsets.create(
@@ -572,3 +895,66 @@ class TestDataDocs:
 
         with pytest.raises(Docs.NotFound):
             platform.backend.optimization.equations.docs.get(equation.id)
+
+    def test_list_optimizationequationdocs(self, platform: ixmp4.Platform) -> None:
+        run = platform.backend.runs.create("Model", "Scenario")
+        indexset = platform.backend.optimization.indexsets.create(
+            run_id=run.id, name="Indexset"
+        )
+        equation_1 = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation 1", constrained_to_indexsets=[indexset.name]
+        )
+        equation_2 = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation 2", constrained_to_indexsets=[indexset.name]
+        )
+        equation_3 = platform.backend.optimization.equations.create(
+            run_id=run.id, name="Equation 3", constrained_to_indexsets=[indexset.name]
+        )
+        docs_equation_1 = platform.backend.optimization.equations.docs.set(
+            equation_1.id, "Description of Equation 1"
+        )
+        docs_equation_2 = platform.backend.optimization.equations.docs.set(
+            equation_2.id, "Description of Equation 2"
+        )
+        docs_equation_3 = platform.backend.optimization.equations.docs.set(
+            equation_3.id, "Description of Equation 3"
+        )
+
+        assert platform.backend.optimization.equations.docs.list() == [
+            docs_equation_1,
+            docs_equation_2,
+            docs_equation_3,
+        ]
+
+        assert platform.backend.optimization.equations.docs.list(
+            dimension_id=equation_2.id
+        ) == [docs_equation_2]
+
+        assert platform.backend.optimization.equations.docs.list(
+            dimension_id__in=[equation_1.id, equation_3.id]
+        ) == [docs_equation_1, docs_equation_3]
+
+    def test_list_with_incompatible_filters(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
+        # This logic is the same for all kinds of docs, so no need to include this in
+        # all tests above
+        unit_1 = platform.backend.units.create("Unit 1")
+        unit_2 = platform.backend.units.create("Unit 2")
+        unit_3 = platform.backend.units.create("Unit 3")
+        _ = platform.backend.units.docs.set(unit_1.id, "Description of Unit 1")
+        _ = platform.backend.units.docs.set(unit_2.id, "Description of Unit 2")
+        _ = platform.backend.units.docs.set(unit_3.id, "Description of Unit 3")
+
+        with caplog.at_level(level=logging.WARNING, logger=logger.name):
+            assert (
+                platform.backend.units.docs.list(
+                    dimension_id=1, dimension_id__in=[2, 3]
+                )
+                == []
+            )
+
+        assert (
+            "Applying incompatible filters to select for docs: "
+            "dimension_id '1' is not in dimension_id__in [2, 3]!"
+        ) in caplog.messages

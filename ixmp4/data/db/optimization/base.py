@@ -2,7 +2,7 @@ from typing import ClassVar
 
 from ixmp4.core.exceptions import IxmpError
 from ixmp4.data import types
-from ixmp4.data.abstract.annotations import HasNameFilter, HasRunIdFilter
+from ixmp4.data.abstract.annotations import HasIdFilter, HasNameFilter, HasRunIdFilter
 from ixmp4.db.filters import BaseFilter
 
 from .. import mixins
@@ -30,5 +30,5 @@ class BaseModel(RootBaseModel, mixins.HasCreationInfo):
     name: types.Name
 
 
-class EnumerateKwargs(HasNameFilter, HasRunIdFilter, total=False):
+class EnumerateKwargs(HasIdFilter, HasNameFilter, HasRunIdFilter, total=False):
     _filter: BaseFilter

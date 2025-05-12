@@ -90,3 +90,20 @@ class TestCoreModel:
         platform.models.delete_docs("Model")
 
         assert model.docs is None
+
+    def test_list_docs(self, platform: ixmp4.Platform) -> None:
+        model_1 = platform.models.create("Model 1")
+        model_1.docs = "Description of Model 1"
+        model_2 = platform.models.create("Model 2")
+        model_2.docs = "Description of Model 2"
+        model_3 = platform.models.create("Model 3")
+        model_3.docs = "Description of Model 3"
+
+        assert platform.models.list_docs() == [model_1.docs, model_2.docs, model_3.docs]
+
+        assert platform.models.list_docs(id=model_2.id) == [model_2.docs]
+
+        assert platform.models.list_docs(id__in=[model_1.id, model_3.id]) == [
+            model_1.docs,
+            model_3.docs,
+        ]

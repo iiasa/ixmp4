@@ -225,13 +225,19 @@ class EquationRepository(
         """
         ...
 
-    def remove_data(self, id: int) -> None:
+    def remove_data(
+        self, id: int, data: dict[str, Any] | pd.DataFrame | None = None
+    ) -> None:
         """Removes data from an Equation.
 
         Parameters
         ----------
         id : int
             The id of the :class:`ixmp4.data.abstract.optimization.Equation`.
+        data : dict[str, Any] | pandas.DataFrame, optional
+            The data to be removed. If specified, remove only specific data. This must
+            specify all indexed columns. All other keys/columns are ignored. Otherwise,
+            remove all data (the default).
 
         Returns
         -------

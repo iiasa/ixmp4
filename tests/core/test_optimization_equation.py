@@ -8,6 +8,7 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
 )
 from ixmp4.data.backend.api import RestBackend
+from ixmp4.data.db.optimization.equation.repository import logger
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
 
@@ -345,12 +346,19 @@ class TestCoreEquation:
 
         assert equation_6.data == test_data_8
 
-    def test_equation_remove_data(self, platform: ixmp4.Platform) -> None:
+        # Test adding empty data works
+        equation_6.add(pd.DataFrame())
+
+        assert equation_6.data == test_data_8
+
+    def test_equation_remove_data(
+        self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
+    ) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset = run.optimization.indexsets.create("Indexset")
         indexset.add(data=["foo", "bar"])
-        test_data = {
-            "Indexset": ["bar", "foo"],
+        test_data: dict[str, list[float | int | str]] = {
+            indexset.name: ["bar", "foo"],
             "levels": [2.3, 1],
             "marginals": [0, 4.2],
         }
@@ -361,8 +369,52 @@ class TestCoreEquation:
         equation.add(test_data)
         assert equation.data == test_data
 
+        # Test removing empty data removes nothing
+        equation.remove_data(data={})
+
+        assert equation.data == test_data
+
+        # Test incomplete index raises...
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            equation.remove_data(data={"foo": ["bar"]})
+
+        # ...even when removing a column that's known in principle
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            equation.remove_data(data={"levels": [2.3]})
+
+        # Test removing one row
+        remove_data = {indexset.name: [test_data[indexset.name][0]]}
+        test_data_2 = {k: [v[1]] for k, v in test_data.items()}
+        equation.remove_data(data=remove_data)
+        assert equation.data == test_data_2
+
+        # Test removing non-existing (but correctly formatted) data works, even with
+        # additional/unused columns
+        remove_data["levels"] = [1]
+        equation.remove_data(data=remove_data)
+
+        assert equation.data == test_data_2
+
+        # Test removing all rows
         equation.remove_data()
         assert equation.data == {}
+
+        # Test removing specific data from unindexed Equation warns
+        equation_2 = run.optimization.equations.create("Equation 2")
+
+        caplog.clear()
+        with caplog.at_level("WARNING", logger=logger.name):
+            equation_2.remove_data(data=test_data_2)
+
+        expected = [
+            f"Trying to remove {test_data_2} from Equation '{equation_2.name}', but "
+            "that is not indexed; not removing anything!"
+        ]
+        assert caplog.messages == expected
 
     def test_list_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")

@@ -1,3 +1,4 @@
+import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
@@ -19,6 +20,8 @@ from ixmp4.data.auth.decorators import guard
 from .. import base
 from .docs import EquationDocsRepository
 from .model import Equation, EquationIndexsetAssociation
+
+logger = logging.getLogger(__name__)
 
 
 class EquationRepository(
@@ -144,6 +147,10 @@ class EquationRepository(
                 data = pd.DataFrame.from_dict(data=data)
             except ValueError as e:
                 raise Equation.DataInvalid(str(e)) from e
+
+        if data.empty:
+            return  # nothing to do
+
         equation = self.get_by_id(id=id)
 
         missing_columns = set(["levels", "marginals"]) - set(data.columns)
@@ -168,8 +175,51 @@ class EquationRepository(
         self.session.commit()
 
     @guard("edit")
-    def remove_data(self, id: int) -> None:
+    def remove_data(
+        self, id: int, data: dict[str, Any] | pd.DataFrame | None = None
+    ) -> None:
         equation = self.get_by_id(id=id)
-        # TODO Is there a better way to reset .data?
-        equation.data = {}
+
+        if data is None:
+            # Remove all data per default
+            # TODO Is there a better way to reset .data?
+            equation.data = {}
+        else:
+            if isinstance(data, dict):
+                data = pd.DataFrame.from_dict(data=data)
+
+            if data.empty:
+                return
+
+            index_list = equation.column_names or equation.indexset_names
+            if not index_list:
+                logger.warning(
+                    f"Trying to remove {data.to_dict(orient='list')} from Equation '"
+                    f"{equation.name}', but that is not indexed; not removing anything!"
+                )
+                return  # can't remove specific data from unindexed variable
+
+            existing_data = pd.DataFrame(equation.data)
+            if not existing_data.empty:
+                existing_data.set_index(index_list, inplace=True)
+
+            # This is the only kind of validation we do for removal data
+            try:
+                data.set_index(index_list, inplace=True)
+            except KeyError as e:
+                logger.error(
+                    f"Data to be removed must include {index_list} as keys/columns, "
+                    f"but {[name for name in data.columns]} were provided."
+                )
+                raise OptimizationItemUsageError(
+                    "The data to be removed must specify one or more complete indices "
+                    "to remove associated levels and marginals!"
+                ) from e
+
+            remaining_data = existing_data[~existing_data.index.isin(data.index)]
+            if not remaining_data.index.empty:
+                remaining_data.reset_index(inplace=True)
+
+            equation.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
+
         self.session.commit()

@@ -161,12 +161,21 @@ class TestDataOptimizationIndexSet:
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
 
+        # Test adding empty data works
+        platform.backend.optimization.indexsets.add_data(id=indexset_4.id, data=[])
+
+        indexset_4 = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset_4.name
+        )
+
+        assert indexset_4.data == test_data_3
+
     def test_remove_data(
         self, platform: ixmp4.Platform, caplog: pytest.LogCaptureFixture
     ) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
-            platform=platform, run_id=run.id, amount=1
+        (indexset, indexset_2) = create_indexsets_for_run(
+            platform=platform, run_id=run.id
         )
         test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
         platform.backend.optimization.indexsets.add_data(id=indexset.id, data=test_data)
@@ -179,21 +188,120 @@ class TestDataOptimizationIndexSet:
 
         assert indexset.data == test_data
 
+        # Define additional items affected by `remove_data`
+        # Define a basic affected Table
+        table = platform.backend.optimization.tables.create(
+            run_id=run.id, name="Table", constrained_to_indexsets=[indexset.name]
+        )
+        platform.backend.optimization.tables.add_data(
+            id=table.id, data={indexset.name: ["do", "re", "mi"]}
+        )
+
+        # Define an affected Table without data
+        table_2 = platform.backend.optimization.tables.create(
+            run_id=run.id, name="Table 2", constrained_to_indexsets=[indexset.name]
+        )
+
+        # Define a basic affected Parameter
+        unit = platform.units.create("Unit")
+        parameter = platform.backend.optimization.parameters.create(
+            run_id=run.id, name="Parameter", constrained_to_indexsets=[indexset.name]
+        )
+        platform.backend.optimization.parameters.add_data(
+            id=parameter.id,
+            data={
+                indexset.name: ["mi", "fa", "so"],
+                "values": [1, 2, 3],
+                "units": [unit.name] * 3,
+            },
+        )
+
+        # Define a Parameter where only 1 dimension is affected
+        platform.backend.optimization.indexsets.add_data(
+            id=indexset_2.id, data=["foo", "bar", "baz"]
+        )
+        parameter_2 = platform.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 2",
+            constrained_to_indexsets=[indexset.name, indexset_2.name],
+        )
+        platform.backend.optimization.parameters.add_data(
+            id=parameter_2.id,
+            data={
+                indexset.name: ["do", "do", "la", "ti"],
+                indexset_2.name: ["foo", "bar", "baz", "foo"],
+                "values": [1, 2, 3, 4],
+                "units": [unit.name] * 4,
+            },
+        )
+
+        # Define a Parameter with 2 affected dimensions
+        parameter_3 = platform.backend.optimization.parameters.create(
+            run_id=run.id,
+            name="Parameter 3",
+            constrained_to_indexsets=[indexset.name, indexset.name],
+            column_names=["Column 1", "Column 2"],
+        )
+        platform.backend.optimization.parameters.add_data(
+            id=parameter_3.id,
+            data={
+                "Column 1": ["la", "la", "do", "ti"],
+                "Column 2": ["re", "fa", "mi", "do"],
+                "values": [1, 2, 3, 4],
+                "units": [unit.name] * 4,
+            },
+        )
+
         # Test removing multiple arbitrary known data
-        remove_data = ["do", "mi", "la", "ti"]
-        expected = [data for data in test_data if data not in remove_data]
+        remove_data = ["fa", "mi", "la", "ti"]
+
+        # Set expectations
+        expected = ["do", "re", "so"]
+        expected_table = ["do", "re"]
+        expected_parameter = {
+            indexset.name: ["so"],
+            "values": [3],
+            "units": [unit.name],
+        }
+        expected_parameter_2 = {
+            indexset.name: ["do", "do"],
+            indexset_2.name: ["foo", "bar"],
+            "values": [1, 2],
+            "units": [unit.name] * 2,
+        }
+
         platform.backend.optimization.indexsets.remove_data(
             id=indexset.id, data=remove_data
         )
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
         )
-
         assert indexset.data == expected
 
+        # Test effect on linked items
+        table = platform.backend.optimization.tables.get(run_id=run.id, name=table.name)
+        parameter = platform.backend.optimization.parameters.get(
+            run_id=run.id, name=parameter.name
+        )
+        parameter_2 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name=parameter_2.name
+        )
+        parameter_3 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name=parameter_3.name
+        )
+        assert table.data[indexset.name] == expected_table
+        assert parameter.data == expected_parameter
+        assert parameter_2.data == expected_parameter_2
+        assert parameter_3.data == {}
+
         # Test removing single item
-        expected.remove("fa")
-        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="fa")
+        expected.remove("do")
+        expected_table.remove("do")
+        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="do")
+        # NOTE Manual reloading is not actually necessary when using the DB layer
+        # directly, but we should document this as necessary because we would have to
+        # build something close to an sqla-like object tracking system for the API layer
+        # otherwise
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
         )
@@ -201,7 +309,7 @@ class TestDataOptimizationIndexSet:
         assert indexset.data == expected
 
         # Test removing non-existing data removes nothing
-        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="fa")
+        platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="do")
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
         )
@@ -216,6 +324,13 @@ class TestDataOptimizationIndexSet:
         )
 
         assert indexset.data == expected
+
+        table = platform.backend.optimization.tables.get(run_id=run.id, name=table.name)
+        parameter_2 = platform.backend.optimization.parameters.get(
+            run_id=run.id, name=parameter_2.name
+        )
+        assert table.data[indexset.name] == expected_table
+        assert parameter_2.data == {}
 
         # Test removing unknown data logs messages
         with assert_logs(
@@ -232,18 +347,26 @@ class TestDataOptimizationIndexSet:
             )
             # Test partly unknown data
             platform.backend.optimization.indexsets.remove_data(
-                id=indexset.id, data=["foo", "so"]
+                id=indexset.id, data=["foo", "so"], remove_dependent_data=False
             )
 
         # Test removing all remaining data
         platform.backend.optimization.indexsets.remove_data(
-            id=indexset.id, data=["so", "re"]
+            id=indexset.id, data=["so", "re"], remove_dependent_data=False
         )
         indexset = platform.backend.optimization.indexsets.get(
             run_id=run.id, name=indexset.name
         )
-
         assert indexset.data == []
+        assert table_2.data == {}
+
+        # Test dependent items were not changed
+        table = platform.backend.optimization.tables.get(run_id=run.id, name=table.name)
+        parameter = platform.backend.optimization.parameters.get(
+            run_id=run.id, name=parameter.name
+        )
+        assert table.data[indexset.name] == expected_table
+        assert parameter.data == expected_parameter
 
     def test_list_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
