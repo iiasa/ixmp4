@@ -93,3 +93,24 @@ class TestCoreScenario:
         platform.scenarios.delete_docs("Scenario")
 
         assert scenario.docs is None
+
+    def test_list_docs(self, platform: ixmp4.Platform) -> None:
+        scenario_1 = platform.scenarios.create("Scenario 1")
+        scenario_1.docs = "Description of Scenario 1"
+        scenario_2 = platform.scenarios.create("Scenario 2")
+        scenario_2.docs = "Description of Scenario 2"
+        scenario_3 = platform.scenarios.create("Scenario 3")
+        scenario_3.docs = "Description of Scenario 3"
+
+        assert platform.scenarios.list_docs() == [
+            scenario_1.docs,
+            scenario_2.docs,
+            scenario_3.docs,
+        ]
+
+        assert platform.scenarios.list_docs(id=scenario_2.id) == [scenario_2.docs]
+
+        assert platform.scenarios.list_docs(id__in=[scenario_1.id, scenario_3.id]) == [
+            scenario_1.docs,
+            scenario_3.docs,
+        ]

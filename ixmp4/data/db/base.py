@@ -208,6 +208,7 @@ class CheckAccessKwargs(TypedDict, total=False):
 class SelectCountKwargs(abstract.HasNameFilter, total=False):
     default_only: bool | None
     dimension_id: int | None
+    dimension_id__in: Iterable[int] | None
     id__in: set[int]
     is_default: bool | None
     join_parameters: bool | None
@@ -367,6 +368,7 @@ class EnumerateKwargs(TypedDict):
 
 class CountKwargs(abstract.HasNameFilter, total=False):
     dimension_id: int | None
+    dimension_id__in: Iterable[int] | None
     _filter: filters.BaseFilter
     join_parameters: bool | None
     join_runs: bool | None
