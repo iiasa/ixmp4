@@ -1,10 +1,18 @@
+from pathlib import Path
+
 from alembic import command
 from alembic.config import Config
 from alembic.migration import MigrationContext
 from alembic.script import ScriptDirectory
 from sqlalchemy import create_engine
 
-alembic_config = Config("alembic.ini")
+from ixmp4 import __file__
+
+root = Path(__file__).parent.parent
+alembic_config = Config(root / "alembic.ini")
+alembic_config.set_main_option(
+    "script_location", str(root / "ixmp4" / "db" / "migrations")
+)
 
 
 def get_database_revision(dsn: str) -> str | None:
