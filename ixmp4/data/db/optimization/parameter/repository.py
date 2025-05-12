@@ -139,6 +139,9 @@ class ParameterRepository(
             except ValueError as e:
                 raise Parameter.DataInvalid(str(e)) from e
 
+        if data.empty:
+            return  # nothing to do
+
         parameter = self.get_by_id(id=id)
 
         missing_columns = set(["values", "units"]) - set(data.columns)

@@ -369,6 +369,14 @@ class TestDataOptimizationVariable:
 
         assert variable_5.data == test_data_8
 
+        # Test adding empty data works
+        platform.backend.optimization.variables.add_data(id=variable_5.id, data={})
+        variable_5 = platform.backend.optimization.variables.get(
+            run_id=run.id, name="Variable 5"
+        )
+
+        assert variable_5.data == test_data_8
+
     def test_variable_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
         indexset = platform.backend.optimization.indexsets.create(run.id, "Indexset")
