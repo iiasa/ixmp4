@@ -5,7 +5,6 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data.abstract import IndexSet
-from ixmp4.data.backend.api import RestBackend
 
 from ..utils import assert_logs, create_indexsets_for_run
 
@@ -257,35 +256,18 @@ class TestDataOptimizationIndexSet:
         remove_data = ["fa", "mi", "la", "ti"]
 
         # Set expectations
-        expected = [data for data in test_data if data not in remove_data]
-        table = platform.backend.optimization.tables.get(run_id=run.id, name=table.name)
-        parameter = platform.backend.optimization.parameters.get(
-            run_id=run.id, name=parameter.name
-        )
-        parameter_2 = platform.backend.optimization.parameters.get(
-            run_id=run.id, name=parameter_2.name
-        )
-        parameter_3 = platform.backend.optimization.parameters.get(
-            run_id=run.id, name=parameter_3.name
-        )
-        expected_table = [
-            data for data in table.data[indexset.name] if data not in remove_data
-        ]
+        expected = ["do", "re", "so"]
+        expected_table = ["do", "re"]
         expected_parameter = {
-            k: [
-                v[i]
-                for i in range(len(v))
-                if parameter.data[indexset.name][i] not in remove_data
-            ]
-            for k, v in parameter.data.items()
+            indexset.name: ["so"],
+            "values": [3],
+            "units": [unit.name],
         }
         expected_parameter_2 = {
-            k: [
-                v[i]
-                for i in range(len(v))
-                if parameter_2.data[indexset.name][i] not in remove_data
-            ]
-            for k, v in parameter_2.data.items()
+            indexset.name: ["do", "do"],
+            indexset_2.name: ["foo", "bar"],
+            "values": [1, 2],
+            "units": [unit.name] * 2,
         }
 
         platform.backend.optimization.indexsets.remove_data(
@@ -316,11 +298,13 @@ class TestDataOptimizationIndexSet:
         expected.remove("do")
         expected_table.remove("do")
         platform.backend.optimization.indexsets.remove_data(id=indexset.id, data="do")
-        # TODO Why do we (only) need to reload items when using the rest API?
-        if isinstance(platform.backend, RestBackend):
-            indexset = platform.backend.optimization.indexsets.get(
-                run_id=run.id, name=indexset.name
-            )
+        # NOTE Manual reloading is not actually necessary when using the DB layer
+        # directly, but we should document this as necessary because we would have to
+        # build something close to an sqla-like object tracking system for the API layer
+        # otherwise
+        indexset = platform.backend.optimization.indexsets.get(
+            run_id=run.id, name=indexset.name
+        )
 
         assert indexset.data == expected
 

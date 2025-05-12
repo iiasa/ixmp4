@@ -5,7 +5,6 @@ import pytest
 import ixmp4
 from ixmp4.core import IndexSet
 from ixmp4.core.exceptions import DeletionPrevented, OptimizationDataValidationError
-from ixmp4.data.backend.api import RestBackend
 
 from ..utils import create_indexsets_for_run
 
@@ -194,36 +193,31 @@ class TestCoreIndexset:
 
         # Test removing multiple arbitrary known data
         remove_data = ["fa", "mi", "la", "ti"]
-        expected = [data for data in test_data if data not in remove_data]
-        expected_table = [
-            data for data in table.data[indexset_1.name] if data not in remove_data
-        ]
+        expected = ["do", "re", "so"]
+        expected_table = ["do", "re"]
         expected_parameter = {
-            k: [
-                v[i]
-                for i in range(len(v))
-                if parameter.data[indexset_1.name][i] not in remove_data
-            ]
-            for k, v in parameter.data.items()
+            indexset_1.name: ["so"],
+            "values": [3],
+            "units": [unit.name],
         }
         expected_parameter_2 = {
-            k: [
-                v[i]
-                for i in range(len(v))
-                if parameter_2.data[indexset_1.name][i] not in remove_data
-            ]
-            for k, v in parameter_2.data.items()
+            indexset_1.name: ["do", "do"],
+            indexset_2.name: ["foo", "bar"],
+            "values": [1, 2],
+            "units": [unit.name] * 2,
         }
         indexset_1.remove(data=remove_data)
 
         assert indexset_1.data == expected
 
-        # TODO Why do we need to reload items when using the rest API?
-        if isinstance(platform.backend, RestBackend):
-            table = run.optimization.tables.get(table.name)
-            parameter = run.optimization.parameters.get(parameter.name)
-            parameter_2 = run.optimization.parameters.get(parameter_2.name)
-            parameter_3 = run.optimization.parameters.get(parameter_3.name)
+        # NOTE Manual reloading is not actually necessary when using the DB layer
+        # directly, but we should document this as necessary because we would have to
+        # build something close to an sqla-like object tracking system for the API layer
+        # otherwise
+        table = run.optimization.tables.get(table.name)
+        parameter = run.optimization.parameters.get(parameter.name)
+        parameter_2 = run.optimization.parameters.get(parameter_2.name)
+        parameter_3 = run.optimization.parameters.get(parameter_3.name)
 
         # Test effect on linked items
         assert table.data[indexset_1.name] == expected_table
@@ -248,9 +242,9 @@ class TestCoreIndexset:
         indexset_1.remove(data=True)
 
         assert indexset_1.data == expected
-        if isinstance(platform.backend, RestBackend):
-            table = run.optimization.tables.get(table.name)
-            parameter_2 = run.optimization.parameters.get(parameter_2.name)
+
+        table = run.optimization.tables.get(table.name)
+        parameter_2 = run.optimization.parameters.get(parameter_2.name)
 
         assert table.data[indexset_1.name] == expected_table
         assert parameter_2.data == {}
@@ -260,10 +254,9 @@ class TestCoreIndexset:
 
         assert indexset_1.data == []
 
-        if isinstance(platform.backend, RestBackend):
-            table = run.optimization.tables.get(table.name)
-            table_2 = run.optimization.tables.get(table_2.name)
-            parameter = run.optimization.parameters.get(parameter.name)
+        table = run.optimization.tables.get(table.name)
+        table_2 = run.optimization.tables.get(table_2.name)
+        parameter = run.optimization.parameters.get(parameter.name)
 
         assert table_2.data == {}
 
