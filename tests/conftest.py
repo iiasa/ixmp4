@@ -225,18 +225,26 @@ def profiled(
 Profiled: TypeAlias = Callable[[], _GeneratorContextManager[None]]
 
 
+def reload_settings(storage_directory: Path) -> None:
+    """Reload the settings from the provided storage_directory
+    to ensure that the test environment is clean."""
+    settings.storage_directory = storage_directory
+    settings.setup_directories()
+    settings.configure_logging(settings.mode)
+    settings.load_toml_config()
+
+
 @pytest.fixture(scope="function")
 def clean_storage_directory() -> Generator[Path, None, None]:
     """Fixture to create a temporary ixmp4 storage directory for tests."""
     orginial_storage_dir = settings.storage_directory
 
     with TemporaryDirectory() as temp_dir:
-        settings.storage_directory = Path(temp_dir)
-        settings.setup_directories()
-        settings.load_toml_config()
+        reload_settings(Path(temp_dir))
         yield settings.storage_directory
 
-    settings.storage_directory = orginial_storage_dir
+    # Restore the original settings
+    reload_settings(orginial_storage_dir)
 
 
 @pytest.fixture(scope="function")
