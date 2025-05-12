@@ -167,7 +167,10 @@ class IndexSetRepository(
         ...
 
     def remove_data(
-        self, id: int, data: float | int | str | List[float] | List[int] | List[str]
+        self,
+        id: int,
+        data: float | int | str | List[float] | List[int] | List[str],
+        remove_dependent_data: bool = True,
     ) -> None:
         """Removes data from an existing IndexSet.
 
@@ -177,6 +180,9 @@ class IndexSetRepository(
             The id of the target IndexSet.
         data : float | int | str | List[float] | List[int] | List[str]
             The data to be removed from the IndexSet.
+        remove_dependent_data : bool, optional
+            Whether to delete data from all linked items referencing `data`.
+            Default: `True`.
 
         Returns
         -------

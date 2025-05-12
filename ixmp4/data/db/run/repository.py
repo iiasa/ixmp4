@@ -343,6 +343,10 @@ class RunRepository(
         self.session.commit()
         return run
 
+    # TODO improve performance
+    # Suggestion by meksor: write a (single) query to load all objects with run_id to a
+    # (single) dataframe, change the run_id, then write all back (does that work at
+    # once/with one query?)
     @guard("edit")
     def clone(
         self,
