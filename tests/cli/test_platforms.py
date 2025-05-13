@@ -22,7 +22,7 @@ class TestAddPlatformCLI:
             "No file at the standard filesystem location for name 'test' exists. "
             "Do you want to create a new database?"
         ) in result.stdout
-        assert "[alembic.runtime.migration] Running upgrade" in result.stdout
+        assert "Creating the database and running migrations..." in result.stdout
 
         assert "Platform added successfully." in result.stdout
 
@@ -36,13 +36,13 @@ class TestAddPlatformCLI:
         assert "test.sqlite3" in platform_info.dsn
 
     def test_add_platform_sqlite_dsn(self, clean_storage_directory: Path) -> None:
+        # Explicitly set the DSN to a different location
         alternative_path = (
             clean_storage_directory / "databases" / "test-alternative.sqlite3"
         )
         result = runner.invoke(
             platforms.app,
             ["add", "test", f"--dsn=sqlite://{alternative_path}"],
-            input="y",
         )
         assert result.exit_code == 0
         assert "Platform added successfully." in result.stdout
@@ -56,7 +56,7 @@ class TestAddPlatformCLI:
             "No file at the standard filesystem location for name 'test' exists. "
             "Do you want to create a new database?"
         ) not in result.stdout
-        assert "[alembic.runtime.migration] Running upgrade" not in result.stdout
+        assert "Creating the database and running migrations..." not in result.stdout
         assert not alternative_path.is_file()
 
     def test_add_platform_from_anywhere(
@@ -77,7 +77,7 @@ class TestAddPlatformCLI:
         assert (clean_storage_directory / "databases" / "test.sqlite3").is_file()
 
         # Assert failure when trying to add the same platform again
-        result = runner.invoke(platforms.app, ["add", "test"], input="y")
+        result = runner.invoke(platforms.app, ["add", "test"])
         assert result.exit_code == 2
         assert (
             "Invalid value: Platform with name 'test' already exists."
