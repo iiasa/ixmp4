@@ -230,7 +230,6 @@ def reload_settings(storage_directory: Path) -> None:
     to ensure that the test environment is clean."""
     settings.storage_directory = storage_directory
     settings.setup_directories()
-    settings.configure_logging(settings.mode)
     settings.load_toml_config()
 
 
