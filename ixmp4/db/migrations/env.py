@@ -12,7 +12,6 @@ if not context.is_offline_mode():
 ```
 """
 
-from logging.config import fileConfig
 from typing import Literal
 
 from alembic import context
@@ -28,11 +27,6 @@ from ixmp4.data.db import BaseModel
 config = context.config
 dsn = config.get_main_option("sqlalchemy.url", settings.migration_db_uri)
 dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
-
-# Interpret the config file for Python logging.
-# This line sets up loggers basically.
-assert config.config_file_name is not None
-fileConfig(config.config_file_name)
 
 configure_mappers()
 

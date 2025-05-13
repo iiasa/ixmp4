@@ -1,6 +1,6 @@
 from dotenv import load_dotenv
 
-from ixmp4.conf.settings import Settings
+from ixmp4.conf.settingsmodel import Settings
 
 load_dotenv()
-settings = Settings()
+settings: Settings = Settings()

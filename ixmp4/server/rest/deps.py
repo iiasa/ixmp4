@@ -101,7 +101,9 @@ async def get_toml_backend(
         backend.close()
 
 
-get_backend = get_managed_backend if settings.managed else get_toml_backend
+get_backend: Callable[[str, User], AsyncGenerator[SqlAlchemyBackend, None]] = (
+    get_managed_backend if settings.managed else get_toml_backend
+)
 
 
 def get_test_backend_dependency(

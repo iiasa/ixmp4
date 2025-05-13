@@ -1,13 +1,16 @@
 import cProfile
+import os
 import pstats
 from collections.abc import Callable, Generator
 from contextlib import _GeneratorContextManager, contextmanager
 from pathlib import Path
+from tempfile import TemporaryDirectory
 from typing import Any, TypeAlias
 
 import pytest
 
 from ixmp4 import Platform
+from ixmp4.conf import settings
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
@@ -220,3 +223,34 @@ def profiled(
 
 
 Profiled: TypeAlias = Callable[[], _GeneratorContextManager[None]]
+
+
+def reload_settings(storage_directory: Path) -> None:
+    """Reload the settings from the provided storage_directory
+    to ensure that the test environment is clean."""
+    settings.storage_directory = storage_directory
+    settings.setup_directories()
+    settings.load_toml_config()
+
+
+@pytest.fixture(scope="function")
+def clean_storage_directory() -> Generator[Path, None, None]:
+    """Fixture to create a temporary ixmp4 storage directory for tests."""
+    orginial_storage_dir = settings.storage_directory
+
+    with TemporaryDirectory() as temp_dir:
+        reload_settings(Path(temp_dir))
+        yield settings.storage_directory
+
+    # Restore the original settings
+    reload_settings(orginial_storage_dir)
+
+
+@pytest.fixture(scope="function")
+def tmp_working_directory() -> Generator[Path, None, None]:
+    """Fixture to create and enter a temporary working directory for tests."""
+    with TemporaryDirectory() as temp_dir:
+        orginal_dir = os.getcwd()
+        os.chdir(temp_dir)
+        yield Path(temp_dir)
+        os.chdir(orginal_dir)

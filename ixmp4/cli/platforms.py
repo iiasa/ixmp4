@@ -36,7 +36,7 @@ def validate_dsn(dsn: str | None) -> str | None:
     match = re.match(r"^(sqlite|postgresql\+psycopg|https|http)(\:\/\/)", dsn)
     if match is None:
         raise typer.BadParameter(
-            "Platform dsn must be a valid URl or database connection string."
+            "Platform dsn must be a valid URL or database connection string."
         )
     else:
         return dsn
@@ -58,6 +58,7 @@ def prompt_sqlite_dsn(name: str) -> str:
             f"No file at the standard filesystem location for name '{name}' exists. "
             "Do you want to create a new database?"
         ):
+            utils.echo("Creating the database and running migrations...")
             alembic.upgrade_database(dsn, "head")
             return dsn
         else:
@@ -100,7 +101,7 @@ def prompt_sqlite_removal(dsn: str) -> None:
     path = Path(dsn.replace("sqlite://", ""))
     path_str = typer.style(path, fg=typer.colors.CYAN)
     if typer.confirm(
-        "Do you want to remove the associated database file at " f"{path_str} as well?"
+        f"Do you want to remove the associated database file at {path_str} as well?"
     ):
         path.unlink()
         utils.echo("\nDatabase file deleted.")

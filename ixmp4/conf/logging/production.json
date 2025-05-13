@@ -7,6 +7,10 @@
       "datefmt": "%H:%M:%S"
     }
   },
+  "root": {
+    "level": "WARNING",
+    "handlers": ["console"]
+  },
   "loggers": {
     "ixmp4": {
       "level": "INFO",
