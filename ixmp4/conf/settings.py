@@ -8,6 +8,7 @@ from httpx import ConnectError
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 
+from ixmp4 import __file__ as __root__file__
 from ixmp4.core.exceptions import InvalidCredentials
 
 from .auth import AnonymousAuth, ManagerAuth
@@ -19,6 +20,7 @@ from .user import local_user
 logger = logging.getLogger(__name__)
 
 here = Path(__file__).parent
+root = Path(__root__file__).parent.parent
 
 
 class Settings(BaseSettings):
@@ -87,6 +89,11 @@ class Settings(BaseSettings):
         return self._manager  # type: ignore[return-value]
 
     def setup_directories(self) -> None:
+        self.storage_directory = Path.expanduser(self.storage_directory)
+
+        if not self.storage_directory.is_absolute():
+            self.storage_directory = root / self.storage_directory
+
         self.storage_directory.mkdir(parents=True, exist_ok=True)
 
         self.database_dir = self.storage_directory / "databases"
