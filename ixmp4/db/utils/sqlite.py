@@ -1,4 +1,3 @@
-from collections.abc import Generator
 from pathlib import Path
 
 from ixmp4.conf import settings
@@ -7,13 +6,6 @@ from ixmp4.conf import settings
 def get_database_dir() -> Path:
     """Returns the path to the local sqlite database directory."""
     return settings.storage_directory / "databases"
-
-
-def yield_databases() -> Generator[Path, None, None]:
-    """Yields all local sqlite database files."""
-
-    databases = get_database_dir().glob("*.sqlite3")
-    return databases
 
 
 def get_database_path(name: str) -> Path:
