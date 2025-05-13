@@ -58,6 +58,7 @@ def prompt_sqlite_dsn(name: str) -> str:
             f"No file at the standard filesystem location for name '{name}' exists. "
             "Do you want to create a new database?"
         ):
+            utils.echo("Creating the database and running migrations...")
             alembic.upgrade_database(dsn, "head")
             return dsn
         else:
