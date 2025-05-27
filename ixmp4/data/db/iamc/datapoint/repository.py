@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pandas as pd
-import pandera.pandas as pa
+import pandera as pa
 from pandera.engines import pandas_engine
 from pandera.typing import DataFrame, Series
 from sqlalchemy_continuum import version_class

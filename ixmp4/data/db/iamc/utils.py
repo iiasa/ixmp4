@@ -1,7 +1,7 @@
 from typing import TypeVar
 
 import pandas as pd
-import pandera.pandas as pa
+import pandera as pa
 from pandera.engines import pandas_engine
 from pandera.typing import Series
 

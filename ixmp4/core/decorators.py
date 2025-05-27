@@ -2,7 +2,7 @@ import functools
 from collections.abc import Callable
 from typing import Any, TypeVar
 
-import pandera.pandas as pa
+import pandera as pa
 from pandera.errors import SchemaError as PanderaSchemaError
 from pandera.typing import DataFrame
 
