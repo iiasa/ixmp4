@@ -14,6 +14,7 @@ from ixmp4.db import Session, filters, sql, typing_column, utils
 
 
 class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
+    id: filters.Id
     name: filters.String
     hierarchy: filters.String
 
@@ -29,6 +30,7 @@ class RegionFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
+    id: filters.Id
     name: filters.String
 
     sqla_model: ClassVar[type] = Unit
@@ -46,6 +48,7 @@ class UnitFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
+    id: filters.Id
     name: filters.String
 
     sqla_model: ClassVar[type] = Variable
@@ -62,6 +65,7 @@ class VariableFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
+    id: filters.Id
     name: filters.String
 
     sqla_model: ClassVar[type] = Model
@@ -78,6 +82,7 @@ class ModelFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
 
 
 class ScenarioFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
+    id: filters.Id
     name: filters.String
 
     sqla_model: ClassVar[type] = Scenario
