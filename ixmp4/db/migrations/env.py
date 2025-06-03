@@ -15,7 +15,7 @@ if not context.is_offline_mode():
 from typing import Literal
 
 from alembic import context
-from sqlalchemy import create_engine
+from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.schema import SchemaItem
 
@@ -91,11 +91,13 @@ def run_migrations_online() -> None:
     and associate a connection with the context.
 
     """
-    connectable = create_engine(dsn)
+    engine: Engine | None = context.config.attributes.get("connection", None)
+    if engine is None:
+        engine = create_engine(dsn)
 
-    with connectable.connect() as connection:
+    with engine.connect() as conn:
         context.configure(
-            connection=connection,
+            connection=conn,
             target_metadata=target_metadata,
             compare_type=True,
             render_as_batch=True,
