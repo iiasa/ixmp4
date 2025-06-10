@@ -16,6 +16,8 @@ from pytest_alembic.tests import (
 from pytest_alembic.tests import (
     test_upgrade as upgrade,
 )
+from sqlalchemy import text
+from sqlalchemy.exc import OperationalError, ProgrammingError
 
 from .conftest import (
     Backends,
@@ -51,6 +53,13 @@ def alembic(
     config = Config.from_raw_config(None)
     with bctx as backend:
         backend.teardown()
+        with backend.engine.connect() as conn:
+            try:
+                conn.execute(text("DROP TABLE alembic_version;"))
+                conn.commit()
+            except (ProgrammingError, OperationalError):
+                conn.rollback()
+
         with pytest_alembic.runner(config=config, engine=backend.engine) as runner:
             yield runner
 
