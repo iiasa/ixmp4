@@ -2,6 +2,7 @@ from contextlib import contextmanager
 from typing import Generator
 
 from alembic import op
+from sqlalchemy import text
 
 
 @contextmanager
@@ -18,7 +19,14 @@ def pause_foreign_key_checks() -> Generator[None, None, None]:
         op.execute("PRAGMA foreign_keys = OFF;")
     elif context.dialect.name == "postgresql":
         # y i k e s
-        op.execute("ALTER TABLE * DISABLE TRIGGER ALL;")
+        tables = [
+            row[0]
+            for row in op.get_bind().execute(
+                text("SELECT tablename FROM pg_tables WHERE schemaname = 'public';")
+            )
+        ]
+        for table in tables:
+            op.execute(f'ALTER TABLE "{table}" DISABLE TRIGGER ALL;')
     else:
         raise NotImplementedError(
             "Foreign key checks cannot be paused for dialect "
@@ -31,4 +39,11 @@ def pause_foreign_key_checks() -> Generator[None, None, None]:
         if context.dialect.name == "sqlite":
             op.execute("PRAGMA foreign_keys = ON;")
         elif context.dialect.name == "postgresql":
-            op.execute("ALTER TABLE * ENABLE TRIGGER ALL;")
+            tables = [
+                row[0]
+                for row in op.get_bind().execute(
+                    text("SELECT tablename FROM pg_tables WHERE schemaname = 'public';")
+                )
+            ]
+            for table in tables:
+                op.execute(f'ALTER TABLE "{table}" ENABLE TRIGGER ALL;')
