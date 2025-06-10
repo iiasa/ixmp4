@@ -72,7 +72,7 @@ def test_model_definitions_match_ddl(alembic: MigrationContext) -> None:
 
 @pytest.mark.parametrize("alembic", ["sqlite", "postgres"], indirect=True)
 def test_single_head_revision(alembic: MigrationContext) -> None:
-    """Test that model definitions match the DDL."""
+    """Assert that there only exists one head revision."""
     single_head_revision(alembic)
 
 
