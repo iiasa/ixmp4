@@ -48,7 +48,7 @@ logger = logging.getLogger(__name__)
 
 @lru_cache()
 def cached_create_engine(dsn: str) -> Engine:
-    return create_engine(dsn, poolclass=NullPool)
+    return create_engine(dsn, poolclass=NullPool, max_identifier_length=63)
 
 
 class IamcSubobject(BaseIamcSubobject):
@@ -164,6 +164,7 @@ class SqliteTestBackend(SqlAlchemyBackend):
             dsn,
             connect_args={"check_same_thread": False},
             poolclass=StaticPool,
+            max_identifier_length=63,
         )
         self.session = self.Session(bind=self.engine)
 
@@ -173,5 +174,9 @@ class PostgresTestBackend(SqlAlchemyBackend):
         super().__init__(*args)
 
     def make_engine(self, dsn: str) -> None:
-        self.engine = create_engine(dsn, poolclass=NullPool)
+        self.engine = create_engine(
+            dsn,
+            poolclass=NullPool,
+            max_identifier_length=63,
+        )
         self.session = self.Session(bind=self.engine)

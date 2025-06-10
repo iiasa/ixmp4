@@ -93,7 +93,7 @@ def run_migrations_online() -> None:
     """
     engine: Engine | None = context.config.attributes.get("connection", None)
     if engine is None:
-        engine = create_engine(dsn)
+        engine = create_engine(dsn, max_identifier_length=63)
 
     with engine.connect() as conn:
         context.configure(
