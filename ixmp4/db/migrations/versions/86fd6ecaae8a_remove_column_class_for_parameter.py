@@ -33,16 +33,12 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["indexset__id"],
             ["optimization_indexset.id"],
-            name=op.f(
-                "fk_optimization_parameterindexsetassociation_indexset__id_optimization_indexset"
-            ),
+            name=op.f("fk_optimization_parameterindexsetassociation_indexset___7045"),
         ),
         sa.ForeignKeyConstraint(
             ["parameter__id"],
             ["optimization_parameter.id"],
-            name=op.f(
-                "fk_optimization_parameterindexsetassociation_parameter__id_optimization_parameter"
-            ),
+            name=op.f("fk_optimization_parameterindexsetassociation_parameter__8a6d"),
         ),
         sa.PrimaryKeyConstraint(
             "id", name=op.f("pk_optimization_parameterindexsetassociation")

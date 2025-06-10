@@ -202,9 +202,7 @@ def upgrade():
         batch_op.alter_column("table__id", existing_type=sa.INTEGER(), nullable=True)
         batch_op.drop_index("ix_optimization_column_table__id")
         batch_op.create_foreign_key(
-            batch_op.f(
-                "fk_optimization_column_variable__id_optimization_optimizationvariable"
-            ),
+            batch_op.f("fk_optimization_column_variable__id_optimization_optimi_2f05"),
             "optimization_optimizationvariable",
             ["variable__id"],
             ["id"],
@@ -237,9 +235,7 @@ def downgrade():
             type_="foreignkey",
         )
         batch_op.drop_constraint(
-            batch_op.f(
-                "fk_optimization_column_variable__id_optimization_optimizationvariable"
-            ),
+            batch_op.f("fk_optimization_column_variable__id_optimization_optimi_2f05"),
             type_="foreignkey",
         )
         batch_op.create_index(

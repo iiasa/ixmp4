@@ -68,9 +68,7 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["constrained_to_indexset"],
             ["optimization_indexset.id"],
-            name=op.f(
-                "fk_optimization_column_constrained_to_indexset_optimization_indexset"
-            ),
+            name=op.f("fk_optimization_column_constrained_to_indexset_optimiza_8432"),
         ),
         sa.ForeignKeyConstraint(
             ["table__id"],

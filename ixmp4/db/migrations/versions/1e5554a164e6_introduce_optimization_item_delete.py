@@ -22,13 +22,11 @@ def upgrade():
         "optimization_equationindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            "fk_optimization_equationindexsetassociation_equation__id_optimization_equation",
+            "fk_optimization_equationindexsetassociation_equation__i_be8b",
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            batch_op.f(
-                "fk_optimization_equationindexsetassociation_equation__id_optimization_equation"
-            ),
+            batch_op.f("fk_optimization_equationindexsetassociation_equation__i_be8b"),
             "optimization_equation",
             ["equation__id"],
             ["id"],
@@ -54,13 +52,11 @@ def upgrade():
         "optimization_parameterindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            "fk_optimization_parameterindexsetassociation_parameter__id_optimization_parameter",
+            "fk_optimization_parameterindexsetassociation_parameter__8a6d",
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            batch_op.f(
-                "fk_optimization_parameterindexsetassociation_parameter__id_optimization_parameter"
-            ),
+            batch_op.f("fk_optimization_parameterindexsetassociation_parameter__8a6d"),
             "optimization_parameter",
             ["parameter__id"],
             ["id"],
@@ -71,13 +67,11 @@ def upgrade():
         "optimization_tableindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            "fk_optimization_tableindexsetassociation_table__id_optimization_table",
+            "fk_optimization_tableindexsetassociation_table__id_opti_5cfe",
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            batch_op.f(
-                "fk_optimization_tableindexsetassociation_table__id_optimization_table"
-            ),
+            batch_op.f("fk_optimization_tableindexsetassociation_table__id_opti_5cfe"),
             "optimization_table",
             ["table__id"],
             ["id"],
@@ -88,13 +82,11 @@ def upgrade():
         "optimization_variableindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            "fk_optimization_variableindexsetassociation_variable__id_optimization_optimizationvariable",
+            "fk_optimization_variableindexsetassociation_variable__i_02a8",
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            batch_op.f(
-                "fk_optimization_variableindexsetassociation_variable__id_optimization_optimizationvariable"
-            ),
+            batch_op.f("fk_optimization_variableindexsetassociation_variable__i_02a8"),
             "optimization_optimizationvariable",
             ["variable__id"],
             ["id"],
@@ -110,13 +102,11 @@ def downgrade():
         "optimization_variableindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            batch_op.f(
-                "fk_optimization_variableindexsetassociation_variable__id_optimization_optimizationvariable"
-            ),
+            batch_op.f("fk_optimization_variableindexsetassociation_variable__i_02a8"),
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            "fk_optimization_variableindexsetassociation_variable__id_optimization_optimizationvariable",
+            "fk_optimization_variableindexsetassociation_variable__i_02a8",
             "optimization_optimizationvariable",
             ["variable__id"],
             ["id"],
@@ -126,13 +116,11 @@ def downgrade():
         "optimization_tableindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            batch_op.f(
-                "fk_optimization_tableindexsetassociation_table__id_optimization_table"
-            ),
+            batch_op.f("fk_optimization_tableindexsetassociation_table__id_opti_5cfe"),
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            "fk_optimization_tableindexsetassociation_table__id_optimization_table",
+            "fk_optimization_tableindexsetassociation_table__id_opti_5cfe",
             "optimization_table",
             ["table__id"],
             ["id"],
@@ -142,13 +130,11 @@ def downgrade():
         "optimization_parameterindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            batch_op.f(
-                "fk_optimization_parameterindexsetassociation_parameter__id_optimization_parameter"
-            ),
+            batch_op.f("fk_optimization_parameterindexsetassociation_parameter__8a6d"),
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            "fk_optimization_parameterindexsetassociation_parameter__id_optimization_parameter",
+            "fk_optimization_parameterindexsetassociation_parameter__8a6d",
             "optimization_parameter",
             ["parameter__id"],
             ["id"],
@@ -172,13 +158,11 @@ def downgrade():
         "optimization_equationindexsetassociation", schema=None
     ) as batch_op:
         batch_op.drop_constraint(
-            batch_op.f(
-                "fk_optimization_equationindexsetassociation_equation__id_optimization_equation"
-            ),
+            batch_op.f("fk_optimization_equationindexsetassociation_equation__i_be8b"),
             type_="foreignkey",
         )
         batch_op.create_foreign_key(
-            "fk_optimization_equationindexsetassociation_equation__id_optimization_equation",
+            "fk_optimization_equationindexsetassociation_equation__i_be8b",
             "optimization_equation",
             ["equation__id"],
             ["id"],

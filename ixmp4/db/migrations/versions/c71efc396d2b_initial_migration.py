@@ -361,9 +361,7 @@ def upgrade():
             "step_year",
             "step_category",
             "step_datetime",
-            name=op.f(
-                "uq_iamc_datapoint_oracle_time_series__id_step_year_step_category_step_datetime"
-            ),
+            name=op.f("uq_iamc_datapoint_oracle_time_series__id_step_year_step_4f3b"),
         ),
     )
     with op.batch_alter_table("iamc_datapoint_oracle", schema=None) as batch_op:
@@ -420,9 +418,7 @@ def upgrade():
             "time_series__id",
             "step_year",
             "step_category",
-            name=op.f(
-                "uq_iamc_datapoint_universal_time_series__id_step_year_step_category"
-            ),
+            name=op.f("uq_iamc_datapoint_universal_time_series__id_step_year_s_8c6e"),
         ),
     )
     with op.batch_alter_table("iamc_datapoint_universal", schema=None) as batch_op:
