@@ -10,6 +10,8 @@ Create Date: 2024-07-31 11:13:39.889253
 import sqlalchemy as sa
 from alembic import op
 
+from ixmp4.db.migrations import utils
+
 # Revision identifiers, used by Alembic.
 revision = "c29289ced488"
 down_revision = "081bbda6bb7b"
@@ -25,13 +27,14 @@ def upgrade():
             sa.Column("created_by", sa.String(length=255), nullable=True)
         )
 
-    with op.batch_alter_table("region", schema=None) as batch_op:
-        batch_op.alter_column(
-            "name",
-            existing_type=sa.VARCHAR(length=1023),
-            type_=sa.String(length=255),
-            existing_nullable=False,
-        )
+    with utils.pause_foreign_key_checks():
+        with op.batch_alter_table("region", schema=None) as batch_op:
+            batch_op.alter_column(
+                "name",
+                existing_type=sa.VARCHAR(length=1023),
+                type_=sa.String(length=255),
+                existing_nullable=False,
+            )
 
     with op.batch_alter_table("run", schema=None) as batch_op:
         batch_op.add_column(sa.Column("updated_at", sa.DateTime(), nullable=True))
@@ -54,13 +57,14 @@ def downgrade():
         batch_op.drop_column("updated_by")
         batch_op.drop_column("updated_at")
 
-    with op.batch_alter_table("region", schema=None) as batch_op:
-        batch_op.alter_column(
-            "name",
-            existing_type=sa.String(length=255),
-            type_=sa.VARCHAR(length=1023),
-            existing_nullable=False,
-        )
+    with utils.pause_foreign_key_checks():
+        with op.batch_alter_table("region", schema=None) as batch_op:
+            batch_op.alter_column(
+                "name",
+                existing_type=sa.String(length=255),
+                type_=sa.VARCHAR(length=1023),
+                existing_nullable=False,
+            )
 
     with op.batch_alter_table("optimization_column", schema=None) as batch_op:
         batch_op.drop_column("created_by")

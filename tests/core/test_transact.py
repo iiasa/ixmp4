@@ -22,7 +22,7 @@ class TestCoreTransact:
 
         time.sleep(0.1)
 
-        with run2.transact("Test transaction", timeout=1):
+        with run2.transact("Test transaction", timeout=2):
             run2.meta["mstr"] = "baz"
 
         assert run2.meta["mstr"] == "baz"

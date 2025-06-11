@@ -33,16 +33,12 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["equation__id"],
             ["optimization_equation.id"],
-            name=op.f(
-                "fk_optimization_equationindexsetassociation_equation__id_optimization_equation"
-            ),
+            name=op.f("fk_optimization_equationindexsetassociation_equation__i_be8b"),
         ),
         sa.ForeignKeyConstraint(
             ["indexset__id"],
             ["optimization_indexset.id"],
-            name=op.f(
-                "fk_optimization_equationindexsetassociation_indexset__id_optimization_indexset"
-            ),
+            name=op.f("fk_optimization_equationindexsetassociation_indexset__i_82d0"),
         ),
         sa.PrimaryKeyConstraint(
             "id", name=op.f("pk_optimization_equationindexsetassociation")
@@ -76,16 +72,12 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["indexset__id"],
             ["optimization_indexset.id"],
-            name=op.f(
-                "fk_optimization_tableindexsetassociation_indexset__id_optimization_indexset"
-            ),
+            name=op.f("fk_optimization_tableindexsetassociation_indexset__id_o_868a"),
         ),
         sa.ForeignKeyConstraint(
             ["table__id"],
             ["optimization_table.id"],
-            name=op.f(
-                "fk_optimization_tableindexsetassociation_table__id_optimization_table"
-            ),
+            name=op.f("fk_optimization_tableindexsetassociation_table__id_opti_5cfe"),
         ),
         sa.PrimaryKeyConstraint(
             "id", name=op.f("pk_optimization_tableindexsetassociation")
@@ -119,16 +111,12 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["indexset__id"],
             ["optimization_indexset.id"],
-            name=op.f(
-                "fk_optimization_variableindexsetassociation_indexset__id_optimization_indexset"
-            ),
+            name=op.f("fk_optimization_variableindexsetassociation_indexset__i_044c"),
         ),
         sa.ForeignKeyConstraint(
             ["variable__id"],
             ["optimization_optimizationvariable.id"],
-            name=op.f(
-                "fk_optimization_variableindexsetassociation_variable__id_optimization_optimizationvariable"
-            ),
+            name=op.f("fk_optimization_variableindexsetassociation_variable__i_02a8"),
         ),
         sa.PrimaryKeyConstraint(
             "id", name=op.f("pk_optimization_variableindexsetassociation")
@@ -166,7 +154,7 @@ def downgrade():
         sa.Column("constrained_to_indexset", sa.INTEGER(), nullable=False),
         sa.Column("unique", sa.BOOLEAN(), nullable=False),
         sa.Column("id", sa.INTEGER(), nullable=False),
-        sa.Column("created_at", sa.DATETIME(), nullable=True),
+        sa.Column("created_at", sa.DateTime(), nullable=True),
         sa.Column("created_by", sa.VARCHAR(length=255), nullable=True),
         sa.Column("equation__id", sa.INTEGER(), nullable=True),
         sa.Column("parameter__id", sa.INTEGER(), nullable=True),
@@ -174,7 +162,7 @@ def downgrade():
         sa.ForeignKeyConstraint(
             ["constrained_to_indexset"],
             ["optimization_indexset.id"],
-            name="fk_optimization_column_constrained_to_indexset_optimization_indexset",
+            name="fk_optimization_column_constrained_to_indexset_optimiza_8432",
         ),
         sa.ForeignKeyConstraint(
             ["equation__id"],
@@ -194,7 +182,7 @@ def downgrade():
         sa.ForeignKeyConstraint(
             ["variable__id"],
             ["optimization_optimizationvariable.id"],
-            name="fk_optimization_column_variable__id_optimization_optimizationvariable",
+            name="fk_optimization_column_variable__id_optimization_optimi_2f05",
         ),
         sa.PrimaryKeyConstraint("id", name="pk_optimization_column"),
         sa.UniqueConstraint(

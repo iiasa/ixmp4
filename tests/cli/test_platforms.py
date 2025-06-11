@@ -81,4 +81,4 @@ class TestAddPlatformCLI:
         assert result.exit_code == 2
         assert (
             "Invalid value: Platform with name 'test' already exists."
-        ) in result.stdout
+        ) in result.output
