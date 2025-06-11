@@ -10,6 +10,8 @@ Create Date: 2025-03-13 16:57:24.338393
 import sqlalchemy as sa
 from alembic import op
 
+from ixmp4.db.migrations import utils
+
 # Revision identifiers, used by Alembic.
 revision = "bc2e195788ba"
 down_revision = "0b45de1602a6"
@@ -77,9 +79,10 @@ def downgrade():
         batch_op.drop_index(batch_op.f("ix_run_version_lock_transaction"))
         batch_op.drop_column("lock_transaction")
 
-    with op.batch_alter_table("run", schema=None) as batch_op:
-        batch_op.drop_index(batch_op.f("ix_run_lock_transaction"))
-        batch_op.drop_column("lock_transaction")
+    with utils.pause_foreign_key_checks():
+        with op.batch_alter_table("run", schema=None) as batch_op:
+            batch_op.drop_index(batch_op.f("ix_run_lock_transaction"))
+            batch_op.drop_column("lock_transaction")
 
     with op.batch_alter_table("checkpoint", schema=None) as batch_op:
         batch_op.drop_index(batch_op.f("ix_checkpoint_transaction__id"))

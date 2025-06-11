@@ -96,7 +96,7 @@ def downgrade():
         sa.Column("type", sa.VARCHAR(length=255), nullable=False),
         sa.Column("step_category", sa.VARCHAR(length=1023), nullable=True),
         sa.Column("step_year", sa.INTEGER(), nullable=True),
-        sa.Column("step_datetime", sa.DATETIME(), nullable=True),
+        sa.Column("step_datetime", sa.DateTime(), nullable=True),
         sa.Column("time_series__id", sa.INTEGER(), nullable=False),
         sa.Column("id", sa.INTEGER(), nullable=False),
         sa.ForeignKeyConstraint(
@@ -110,7 +110,7 @@ def downgrade():
             "step_year",
             "step_category",
             "step_datetime",
-            name="uq_iamc_datapoint_oracle_time_series__id_step_year_step_category_step_datetime",
+            name="uq_iamc_datapoint_oracle_time_series__id_step_year_step_4f3b",
         ),
     )
     with op.batch_alter_table("iamc_datapoint_oracle", schema=None) as batch_op:

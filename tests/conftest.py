@@ -16,7 +16,7 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
 from ixmp4.data.backend.db import PostgresTestBackend
 
-from .fixtures import BigIamcDataset, MediumIamcDataset
+from .fixtures import BigIamcDataset, MediumIamcDataset, MigrationFixtures
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 backend_fixtures = {
@@ -254,3 +254,10 @@ def tmp_working_directory() -> Generator[Path, None, None]:
         os.chdir(temp_dir)
         yield Path(temp_dir)
         os.chdir(orginal_dir)
+
+
+@pytest.fixture
+def alembic_config() -> dict[str, Any]:
+    return {
+        "at_revision_data": {"c71efc396d2b": MigrationFixtures.c71efc396d2b},
+    }
