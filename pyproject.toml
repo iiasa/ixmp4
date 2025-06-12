@@ -59,7 +59,7 @@ optional = true
 
 [tool.poetry.group.dev.dependencies]
 build = ">=1.0.3"
-mypy = ">=1.13.0"
+mypy = ">=1.13.0, <1.16.0"
 pandas-stubs = ">=2.0.0.230412"
 pre-commit = ">=3.3.3"
 ptvsd = ">=4.3.2"
@@ -88,12 +88,7 @@ requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 exclude = ['^ixmp4\/db\/migrations\/']
 disable_error_code = ['override', 'unused-ignore']
 show_error_codes = true
-plugins = [
-    'numpy.typing.mypy_plugin',
-    'pandera.mypy',
-    'pydantic.mypy',
-    'sqlalchemy.ext.mypy.plugin',
-]
+plugins = ['pandera.mypy', 'pydantic.mypy', 'sqlalchemy.ext.mypy.plugin']
 # The following are equivalent to --strict mypy as seen in 
 # https://mypy.readthedocs.io/en/stable/existing_code.html#introduce-stricter-options
 warn_unused_configs = true
