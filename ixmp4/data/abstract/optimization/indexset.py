@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, List, Protocol
 
 if TYPE_CHECKING:
@@ -8,8 +9,6 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data import types
-
 from .. import base
 from ..docs import DocsRepository
 from .base import BackendBaseRepository
@@ -18,18 +17,18 @@ from .base import BackendBaseRepository
 class IndexSet(base.BaseModel, Protocol):
     """IndexSet data model."""
 
-    name: types.String
+    name: str
     """Unique name of the IndexSet."""
-    run__id: types.Integer
+    run__id: int
     """The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
     defined. """
 
-    data: types.OptimizationDataList
+    data: list[float] | list[int] | list[str]
     """Unique list of str, int, or float."""
 
-    created_at: types.DateTime
+    created_at: datetime
     "Creation date/time. TODO"
-    created_by: types.String
+    created_by: str
     "Creator. TODO"
 
     def __str__(self) -> str:

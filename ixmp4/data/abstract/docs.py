@@ -1,19 +1,17 @@
 from collections.abc import Iterable
 from typing import Protocol
 
-from ixmp4.data import types
-
 from . import base
 
 
 class Docs(base.BaseModel, Protocol):
     """Abstract documentation model for one object of any dimension."""
 
-    description: types.String
+    description: str
     "Description of the dimension object."
-    dimension__id: types.Integer
+    dimension__id: int
     "Foreign unique integer id of the object in the dimension's table."
-    dimension: types.Mapped[base.BaseModel]
+    dimension: base.BaseModel
     "The documented object."
 
     # This doesn't work since each dimension has a different self.dimension object as

@@ -1,3 +1,4 @@
+from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, Protocol
 
 import pandas as pd
@@ -11,7 +12,6 @@ from ixmp4.core.exceptions import (
     RunIsLocked,
     RunLockRequired,
 )
-from ixmp4.data import types
 
 from . import base
 from .annotations import HasRunFilter, IamcRunFilter
@@ -27,28 +27,28 @@ class Run(base.BaseModel, Protocol):
     IsLocked: ClassVar[type[IxmpError]] = RunIsLocked
     LockRequired: ClassVar[type[IxmpError]] = RunLockRequired
 
-    model__id: types.Integer
+    model__id: int
     "Foreign unique integer id of the model."
-    model: types.Mapped["Model"]
+    model: "Model"
     "Associated model."
 
-    scenario__id: types.Integer
+    scenario__id: int
     "Foreign unique integer id of the scenario."
-    scenario: types.Mapped["Scenario"]
+    scenario: "Scenario"
     "Associated scenario."
 
-    version: types.Integer
+    version: int
     "Run version."
-    is_default: types.Boolean
+    is_default: bool
     "`True` if this is the default run version."
 
-    created_at: types.DateTime
-    created_by: types.String
+    created_at: datetime
+    created_by: str
 
-    updated_at: types.DateTime
-    updated_by: types.String
+    updated_at: datetime
+    updated_by: str
 
-    lock_transaction: types.Mapped[int | None]
+    lock_transaction: int | None
 
     def __str__(self) -> str:
         return f"<Run {self.id} model={self.model.name} \

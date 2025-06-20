@@ -31,7 +31,7 @@ from typing_extensions import NotRequired, TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
-from ixmp4.data import abstract, types
+from ixmp4.data import abstract
 from ixmp4.data.abstract.annotations import (
     TabulateVersionsKwargs as TabulateVersionsKwargs,
 )
@@ -75,7 +75,7 @@ class BaseModel(DeclarativeBase):
     def __tablename__(cls: "BaseModel") -> str:
         return str(cls.table_prefix + cls.__name__.lower())
 
-    id: types.Integer = db.Column(
+    id: db.MappedColumn[int] = db.Column(
         db.Integer,
         Identity(always=False, on_null=True, start=1, increment=1),
         primary_key=True,
@@ -182,7 +182,7 @@ class Creator(BaseRepository[ModelType], abstract.Creator):
         return model
 
 
-class Deleter(BaseRepository[ModelType]):
+class Deleter(BaseRepository[ModelType], abstract.Deleter):
     def delete(self, id: int) -> None:
         exc = db.select(self.model_class).where(self.model_class.id == id)
 
@@ -333,14 +333,14 @@ class QueryMixin(BaseRepository[ModelType]):
         return list(result)
 
 
-class Lister(QueryMixin[ModelType], Selecter[ModelType]):
+class Lister(QueryMixin[ModelType], Selecter[ModelType], abstract.Lister):
     def list(self, *args: Any, **kwargs: Any) -> list[ModelType]:
         _exc = self.select(*args, **kwargs)
         _exc = _exc.order_by(self.model_class.id.asc())
         return self.list_query(_exc)
 
 
-class Tabulator(QueryMixin[ModelType], Selecter[ModelType]):
+class Tabulator(QueryMixin[ModelType], Selecter[ModelType], abstract.Tabulator):
     def tabulate(self, *args: Any, _raw: bool = False, **kwargs: Any) -> pd.DataFrame:
         _exc = self.select(*args, **kwargs)
         _exc = _exc.order_by(self.model_class.id.asc())
@@ -381,7 +381,7 @@ class CountKwargs(abstract.HasNameFilter, total=False):
     variable: abstract.annotations.HasVariableFilter
 
 
-class Enumerator(Lister[ModelType], Tabulator[ModelType]):
+class Enumerator(Lister[ModelType], Tabulator[ModelType], abstract.Enumerator):
     def enumerate(
         self, table: bool = False, **kwargs: Unpack[EnumerateKwargs]
     ) -> list[ModelType] | pd.DataFrame:

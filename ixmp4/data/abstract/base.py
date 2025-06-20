@@ -9,7 +9,6 @@ if TYPE_CHECKING:
 import pandas as pd
 
 from ixmp4.core.exceptions import DeletionPrevented, IxmpError, NotFound, NotUnique
-from ixmp4.data import types
 
 
 class BaseMeta(_ProtocolMeta):
@@ -40,7 +39,7 @@ class BaseModel(Protocol, metaclass=BaseMeta):
     NotFound: ClassVar[type[IxmpError]]
     DeletionPrevented: ClassVar[type[IxmpError]]
 
-    id: types.Integer
+    id: int
     "Unique integer id."
 
 
