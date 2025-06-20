@@ -8,10 +8,8 @@ from pydantic import StrictBool, StrictFloat, StrictInt, StrictStr
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data import types
-
 from . import base
-from .annotations import HasIdFilter, HasRunFilter, HasRunIdFilter
+from .annotations import HasIdFilter, HasRunFilter, HasRunIdFilter, PrimitiveTypes
 
 # as long as all of these are `Strict` the order does not matter
 StrictMetaValue = StrictBool | StrictInt | StrictFloat | StrictStr
@@ -31,19 +29,19 @@ class RunMetaEntry(base.BaseModel, Protocol):
         def from_pytype(cls, type_: type) -> str:
             return RunMetaEntry._type_map[type_]
 
-    run__id: types.Integer
+    run__id: int
     "Foreign unique integer id of a run."
-    key: types.String
+    key: str
     "Key for the entry. Unique for each `run__id`."
-    dtype: types.String
+    dtype: str
     "Datatype of the entry's value."
-    value: types.Integer | types.Float | types.String | types.Boolean
+    value: PrimitiveTypes
     "Value of the entry."
 
-    value_int: types.Integer | None
-    value_str: types.String | None
-    value_float: types.Float | None
-    value_bool: types.Boolean | None
+    value_int: int | None
+    value_str: str | None
+    value_float: float | None
+    value_bool: bool | None
 
     _type_map: ClassVar[dict[type, str]] = {
         int: Type.INT,

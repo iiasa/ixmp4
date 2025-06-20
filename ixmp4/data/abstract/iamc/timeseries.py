@@ -9,8 +9,6 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data import types
-
 from .. import base
 from ..annotations import (
     HasIdFilter,
@@ -24,7 +22,7 @@ from ..annotations import (
 class TimeSeries(base.BaseModel, Protocol):
     """Time series data model."""
 
-    run__id: types.Integer
+    run__id: int
     "Unique run id."
     parameters: Mapping[str, Any]
     "A set of parameter values for the time series."

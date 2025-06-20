@@ -5,7 +5,6 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data import types
 from ixmp4.data.abstract import annotations
 
 from . import base
@@ -24,13 +23,13 @@ class Checkpoint(base.BaseModel, Protocol):
     Represents a run's state (the data it holds) at a particular transaction.
     Used to roll back to a previous state of the run."""
 
-    run__id: types.Integer
+    run__id: int
     "Id of associated run."
 
-    transaction__id: types.Integer
+    transaction__id: int
     "Id of associated transaction."
 
-    message: types.String
+    message: str
     "Checkpoint message."
 
     def __str__(self) -> str:

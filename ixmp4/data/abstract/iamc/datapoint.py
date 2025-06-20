@@ -1,5 +1,6 @@
 import enum
 from collections.abc import Iterable
+from datetime import datetime
 from typing import Protocol
 
 import pandas as pd
@@ -7,26 +8,24 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
-from ixmp4.data import types
-
 from .. import base
 
 
 class DataPoint(base.BaseModel, Protocol):
     """Data point data model."""
 
-    time_series__id: types.Integer
+    time_series__id: int
     "Foreign unique integer id of the associated time series."
-    value: types.Float
+    value: float
     "Value of the data point."
-    type: types.String
+    type: str
     "Type of data point either `ANNUAL`, `CATEGORICAL` or `DATETIME`."
 
-    step_year: types.Integer | None
+    step_year: int | None
     "An integer time step required by data points of type `ANNUAL` or `CATEGORICAL`."
-    step_category: types.String | None
+    step_category: str | None
     "A string category required by data points of type `CATEGORICAL`."
-    step_datetime: types.DateTime | None
+    step_datetime: datetime | None
     "A datetime object required by data points of type `DATETIME`."
 
     class Type(str, enum.Enum):

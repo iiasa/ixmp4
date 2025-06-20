@@ -1,11 +1,10 @@
+from datetime import datetime
 from typing import Protocol
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-from ixmp4.data import types
 
 from . import base
 from .annotations import HasIdFilter, HasNameFilter, IamcUnitFilter
@@ -15,11 +14,11 @@ from .docs import DocsRepository
 class Unit(base.BaseModel, Protocol):
     """Unit data model."""
 
-    name: types.String
+    name: str
     "Unique name of the unit."
-    created_at: types.DateTime
+    created_at: datetime
     "Creation date/time."
-    created_by: types.String
+    created_by: str
     "Creator."
 
     def __str__(self) -> str:

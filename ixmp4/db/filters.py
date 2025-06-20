@@ -276,6 +276,8 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 )
             else:
                 field = namespace.get(filter_name, Field(None))
+            # NOTE field should always be pydantic FieldInfo, convince type checker
+            assert field is not None
             field.json_schema_extra = {"sqla_column": name}
             namespace[filter_name] = field
 

@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import datetime
 from typing import TYPE_CHECKING, Protocol
 
 from ..annotations import HasUnitIdFilter
@@ -14,8 +15,6 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data import types
-
 from .. import base
 from ..docs import DocsRepository
 from ..unit import Unit
@@ -25,20 +24,20 @@ from .base import BackendBaseRepository
 class Scalar(base.BaseModel, Protocol):
     """Scalar data model."""
 
-    name: types.String
+    name: str
     """Unique name of the Scalar."""
-    value: types.Float
+    value: float
     """Value of the Scalar."""
-    unit__id: types.Integer
+    unit__id: int
     "Foreign unique integer id of a unit."
-    unit: types.Mapped[Unit]
+    unit: Unit
     "Associated unit."
-    run__id: types.Integer
+    run__id: int
     "Foreign unique integer id of a run."
 
-    created_at: types.DateTime
+    created_at: datetime
     "Creation date/time. TODO"
-    created_by: types.String
+    created_by: str
     "Creator. TODO"
 
     def __str__(self) -> str:

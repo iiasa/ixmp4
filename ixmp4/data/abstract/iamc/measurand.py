@@ -5,22 +5,20 @@ if TYPE_CHECKING:
 
 import pandas as pd
 
-from ixmp4.data import types
-
 from .. import base
 
 
 class Measurand(base.BaseModel, Protocol):
     """Measurand data model."""
 
-    variable__id: types.Integer
+    variable__id: int
     "Foreign unique integer id of a variable."
-    variable: types.Mapped["Variable"]
+    variable: "Variable"
     "Associated variable."
 
-    unit__id: types.Integer
+    unit__id: int
     "Foreign unique integer id of a unit."
-    unit: types.Mapped["Unit"]
+    unit: "Unit"
     "Associated unit."
 
     def __str__(self) -> str:
