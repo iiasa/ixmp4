@@ -52,8 +52,9 @@ poetry self add "poetry-dynamic-versioning[plugin]"
 # (using "--with dev,docs,server" if dev and docs dependencies should be installed as well)
 poetry install --with dev,docs,server
 
-# Activate virtual environment
-poetry shell
+# Activate virtual environment, e.g. using Bash/Zsh/Csh
+# See https://python-poetry.org/docs/managing-environments/#activating-the-environment
+eval $(poetry env activate)
 
 # Copy the template environment configuration
 cp template.env .env
