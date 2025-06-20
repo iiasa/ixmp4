@@ -31,7 +31,7 @@ from typing_extensions import NotRequired, TypedDict, Unpack
 
 from ixmp4 import db
 from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
-from ixmp4.data import abstract
+from ixmp4.data import abstract, types
 from ixmp4.data.abstract.annotations import (
     TabulateVersionsKwargs as TabulateVersionsKwargs,
 )
@@ -75,7 +75,7 @@ class BaseModel(DeclarativeBase):
     def __tablename__(cls: "BaseModel") -> str:
         return str(cls.table_prefix + cls.__name__.lower())
 
-    id: db.MappedColumn[int] = db.Column(
+    id: types.Mapped[int] = db.Column(
         db.Integer,
         Identity(always=False, on_null=True, start=1, increment=1),
         primary_key=True,
