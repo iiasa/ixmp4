@@ -322,7 +322,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         session: db.Session,
     ) -> db.sql.Select[tuple[FilterType]]:
         dict_model = dict(self)
-        for name, field_info in self.model_fields.items():
+        for name, field_info in self.__class__.model_fields.items():
             value = dict_model.get(name, field_info.get_default())
             if isinstance(value, BaseFilter):
                 submodel = getattr(value, "sqla_model", None)
