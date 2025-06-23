@@ -3,12 +3,13 @@ from typing import TypeVar
 import pandas as pd
 import pandera as pa
 from pandera.engines import pandas_engine
+from pandera.pandas import DataFrameModel
 from pandera.typing import Series
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
 
 
-class RemoveDataPointFrameSchema(pa.DataFrameModel):
+class RemoveDataPointFrameSchema(DataFrameModel):
     type: Series[pa.String] | None = pa.Field(isin=[t for t in DataPointModel.Type])
     step_year: Series[pa.Int] | None = pa.Field(coerce=True, nullable=True)
     step_datetime: Series[pandas_engine.DateTime] | None = pa.Field(

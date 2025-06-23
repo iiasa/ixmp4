@@ -4,6 +4,7 @@ import numpy as np
 import pandas as pd
 import pandera as pa
 from pandera.engines import pandas_engine
+from pandera.pandas import DataFrameModel
 from pandera.typing import DataFrame, Series
 from sqlalchemy_continuum import version_class
 from sqlalchemy_continuum.operation import Operation
@@ -35,7 +36,7 @@ if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
-class RemoveDataPointFrameSchema(pa.DataFrameModel):
+class RemoveDataPointFrameSchema(DataFrameModel):
     type: Series[pa.String] | None = pa.Field(isin=[t for t in DataPoint.Type])
     step_year: Series[pa.Int] | None = pa.Field(coerce=True, nullable=True)
     step_datetime: Series[pandas_engine.DateTime] | None = pa.Field(

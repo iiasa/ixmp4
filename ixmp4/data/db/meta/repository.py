@@ -5,6 +5,7 @@ if TYPE_CHECKING:
 
 import pandas as pd
 import pandera as pa
+from pandera.pandas import DataFrameModel
 from pandera.typing import DataFrame, Series
 from sqlalchemy.exc import NoResultFound
 
@@ -28,7 +29,7 @@ from .model import RunMetaEntry
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
 
-class RemoveRunMetaEntryFrameSchema(pa.DataFrameModel):
+class RemoveRunMetaEntryFrameSchema(DataFrameModel):
     key: Series[pa.String] = pa.Field(coerce=True)
     run__id: Series[pa.Int] = pa.Field(coerce=True)
 
