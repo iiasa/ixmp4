@@ -276,6 +276,8 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 )
             else:
                 field = namespace.get(filter_name, Field(None))
+            # NOTE field should always be pydantic FieldInfo, convince type checker
+            assert field is not None
             field.json_schema_extra = {"sqla_column": name}
             namespace[filter_name] = field
 
@@ -320,7 +322,7 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         session: db.Session,
     ) -> db.sql.Select[tuple[FilterType]]:
         dict_model = dict(self)
-        for name, field_info in self.model_fields.items():
+        for name, field_info in self.__class__.model_fields.items():
             value = dict_model.get(name, field_info.get_default())
             if isinstance(value, BaseFilter):
                 submodel = getattr(value, "sqla_model", None)

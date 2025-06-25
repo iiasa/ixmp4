@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
 if TYPE_CHECKING:
@@ -9,8 +10,6 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data import types
-
 from .. import base
 from ..docs import DocsRepository
 from .base import BackendBaseRepository
@@ -19,21 +18,21 @@ from .base import BackendBaseRepository
 class Parameter(base.BaseModel, Protocol):
     """Parameter data model."""
 
-    name: types.String
+    name: str
     """Unique name of the Parameter."""
-    data: types.JsonDict
+    data: dict[str, list[float] | list[int] | list[str]]
     """Data stored in the Parameter."""
-    indexset_names: types.Mapped[list[str]]
+    indexset_names: list[str]
     """List of the names of the IndexSets the Parameter is bound to."""
-    column_names: types.Mapped[list[str] | None]
+    column_names: list[str] | None
     """List of the Parameter's column names, if distinct from the IndexSet names."""
 
-    run__id: types.Integer
+    run__id: int
     "Foreign unique integer id of a run."
 
-    created_at: types.DateTime
+    created_at: datetime
     "Creation date/time. TODO"
-    created_by: types.String
+    created_by: str
     "Creator. TODO"
 
     def __str__(self) -> str:

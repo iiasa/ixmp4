@@ -9,6 +9,7 @@ from json.decoder import JSONDecodeError
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, TypeAlias, TypeVar, cast
 
 import httpx
+import numpy as np
 import pandas as pd
 from pydantic import BaseModel as PydanticBaseModel
 from pydantic import ConfigDict, Field, GetCoreSchemaHandler
@@ -396,9 +397,9 @@ class BaseRepository(Generic[ModelType]):
                 data, table=True, params=params, json=json, path=path
             )  # type: ignore[assignment]
             dfs = [DataFrame(**page).to_pandas() for page in pages]
-            return pd.concat(dfs)
+            return pd.concat(dfs).replace({np.nan: None})
         else:
-            return DataFrame(**data).to_pandas()
+            return DataFrame(**data).to_pandas().replace({np.nan: None})
 
     def _create(
         self, *args: Unpack[tuple[str]], **kwargs: Unpack[_RequestKwargs]

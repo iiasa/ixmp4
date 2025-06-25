@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -151,7 +152,7 @@ class TestDataRun:
                 "end_transaction_id",
                 "operation_type",
             ],
-        )
+        ).replace({np.nan: None})
 
         vdf = platform.backend.runs.tabulate_versions()
         self.drop_audit_info(vdf)

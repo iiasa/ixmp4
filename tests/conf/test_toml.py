@@ -38,7 +38,7 @@ class TestTomlPlatforms(TomlTest):
         toml_config.add_platform("test2", "test2://test2/")
 
         expected_toml = (
-            '[test]\ndsn = "test://test/"\n\n' '[test2]\ndsn = "test2://test2/"\n'
+            '[test]\ndsn = "test://test/"\n\n[test2]\ndsn = "test2://test2/"\n'
         )
         self.assert_toml_file(toml_config, expected_toml)
 
