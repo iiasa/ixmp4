@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -56,7 +57,7 @@ class TestDataRegion:
                 "end_transaction_id",
                 "operation_type",
             ],
-        )
+        ).replace({np.nan: None})
         vdf = platform.backend.regions.tabulate_versions()
         assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 

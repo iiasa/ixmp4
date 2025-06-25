@@ -307,7 +307,7 @@ class TestCoreIamc:
                     1,
                     1,
                     26,
-                    np.nan,
+                    None,
                     2,
                     "Region 1",
                     "Unit 1",
@@ -322,7 +322,7 @@ class TestCoreIamc:
                     2,
                     2,
                     26,
-                    np.nan,
+                    None,
                     2,
                     "Region 1",
                     "Unit 2",
@@ -397,7 +397,7 @@ class TestCoreIamc:
                     5,
                     5,
                     35,
-                    np.nan,
+                    None,
                     2,
                     "Region 1",
                     "Unit 1",
@@ -412,7 +412,7 @@ class TestCoreIamc:
                     6,
                     6,
                     35,
-                    np.nan,
+                    None,
                     2,
                     "Region 1",
                     "Unit 2",
@@ -427,7 +427,7 @@ class TestCoreIamc:
                     3,
                     3,
                     35,
-                    np.nan,
+                    None,
                     2,
                     "Region 3",
                     "Unit 3",
@@ -442,7 +442,7 @@ class TestCoreIamc:
                     4,
                     4,
                     35,
-                    np.nan,
+                    None,
                     2,
                     "Region 3",
                     "Unit 2",
@@ -464,7 +464,7 @@ class TestCoreIamc:
                 "unit",
                 "variable",
             ],
-        )
+        ).replace({np.nan: None})
         assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_iamc_rollback(self, platform: ixmp4.Platform) -> None:
