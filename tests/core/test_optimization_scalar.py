@@ -37,9 +37,10 @@ class TestCoreScalar:
     def test_create_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
-        scalar_1 = run.optimization.scalars.create(
-            "Scalar 1", value=10, unit="Test Unit"
-        )
+        with run.transact("Test scalars.create()"):
+            scalar_1 = run.optimization.scalars.create(
+                "Scalar 1", value=10, unit="Test Unit"
+            )
         assert scalar_1.id == 1
         assert scalar_1.name == "Scalar 1"
         assert scalar_1.value == 10
@@ -47,41 +48,55 @@ class TestCoreScalar:
         # assert scalar_1.unit == unit
         assert scalar_1.unit.id == unit.id
 
-        with pytest.raises(Scalar.NotUnique):
-            scalar_2 = run.optimization.scalars.create(
-                "Scalar 1", value=20, unit=unit.name
-            )
+        unit2 = platform.units.create("Test Unit 2")
+        with run.transact("Test scalars.create() errors"):
+            with pytest.raises(Scalar.NotUnique):
+                # Test creation with a different value
+                scalar_2 = run.optimization.scalars.create(
+                    "Scalar 1", value=20, unit=unit.name
+                )
 
-        with pytest.raises(TypeError):
-            # Testing a missing parameter on purpose
-            _ = run.optimization.scalars.create("Scalar 2")  # type: ignore[call-arg]
+            with pytest.raises(Scalar.NotUnique):
+                # Test creation with a different unit
+                _ = run.optimization.scalars.create(
+                    "Scalar 1", value=20, unit=unit2.name
+                )
 
-        scalar_2 = run.optimization.scalars.create("Scalar 2", value=20, unit=unit)
+            with pytest.raises(TypeError):
+                # Testing a missing parameter on purpose
+                _ = run.optimization.scalars.create("Scalar 2")  # type: ignore[call-arg]
+
+            scalar_2 = run.optimization.scalars.create("Scalar 2", value=20, unit=unit)
         assert scalar_1.id != scalar_2.id
 
-        scalar_3 = run.optimization.scalars.create("Scalar 3", value=1)
+        with run.transact("Test scalars.create() dimensionless"):
+            scalar_3 = run.optimization.scalars.create("Scalar 3", value=1)
         assert scalar_3.unit.name == ""
 
     def test_delete_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Unit")
-        scalar_1 = run.optimization.scalars.create(name="Scalar", value=3.14, unit=unit)
+        with run.transact("Test scalars.delete()"):
+            scalar_1 = run.optimization.scalars.create(
+                name="Scalar", value=3.14, unit=unit
+            )
 
-        # Test unknown name raises
-        with pytest.raises(Scalar.NotFound):
-            run.optimization.scalars.delete(item="does not exist")
+            # Test unknown name raises
+            with pytest.raises(Scalar.NotFound):
+                run.optimization.scalars.delete(item="does not exist")
 
-        # TODO How to check that DeletionPrevented is raised?
+            # TODO How to check that DeletionPrevented is raised?
 
-        # Test normal deletion
-        run.optimization.scalars.delete(item=scalar_1.name)
+            # Test normal deletion
+            run.optimization.scalars.delete(item=scalar_1.name)
 
         assert run.optimization.scalars.tabulate().empty
 
     def test_get_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
-        scalar = run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
+        with run.transact("Test scalars.get()"):
+            scalar = run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
         result = run.optimization.scalars.get(scalar.name)
         assert scalar.id == result.id
         assert scalar.name == result.name
@@ -94,18 +109,16 @@ class TestCoreScalar:
     def test_update_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
-        unit2 = platform.units.create("Test Unit 2")
-        scalar = run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
+        with run.transact("Test Scalar update() -- preparation"):
+            scalar = run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
         assert scalar.value == 10
         assert scalar.unit.id == unit.id
 
-        with pytest.raises(Scalar.NotUnique):
-            _ = run.optimization.scalars.create("Scalar", value=20, unit=unit2.name)
-
-        scalar.value = 30
-        # NOTE mypy doesn't support setters taking a different type than
-        # their property https://github.com/python/mypy/issues/3004
-        scalar.unit = "Test Unit"  # type: ignore[assignment]
+        with run.transact("Test Scalar update()"):
+            scalar.value = 30
+            # NOTE mypy doesn't support setters taking a different type than
+            # their property https://github.com/python/mypy/issues/3004
+            scalar.unit = "Test Unit"  # type: ignore[assignment]
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
         result = run.optimization.scalars.get("Scalar")
@@ -118,14 +131,18 @@ class TestCoreScalar:
     def test_list_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
-        scalar_1 = run.optimization.scalars.create(
-            "Scalar 1", value=1, unit="Test Unit"
-        )
-        scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        with run.transact("Test scalars.list()"):
+            scalar_1 = run.optimization.scalars.create(
+                "Scalar 1", value=1, unit="Test Unit"
+            )
+            scalar_2 = run.optimization.scalars.create(
+                "Scalar 2", value=2, unit=unit.name
+            )
+
         # Create scalar in another run to test listing scalars for specific run
-        platform.runs.create("Model", "Scenario").optimization.scalars.create(
-            "Scalar 1", value=1, unit=unit
-        )
+        run_2 = platform.runs.create("Model 2", "Scenario 2")
+        with run_2.transact("Test scalars.list() 2"):
+            run_2.optimization.scalars.create("Scalar 1", value=1, unit=unit)
 
         expected_ids = [scalar_1.id, scalar_2.id]
         list_ids = [scalar.id for scalar in run.optimization.scalars.list()]
@@ -141,12 +158,18 @@ class TestCoreScalar:
     def test_tabulate_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
-        scalar_1 = run.optimization.scalars.create("Scalar 1", value=1, unit=unit.name)
-        scalar_2 = run.optimization.scalars.create("Scalar 2", value=2, unit=unit.name)
+        with run.transact("Test scalars.tabulate()"):
+            scalar_1 = run.optimization.scalars.create(
+                "Scalar 1", value=1, unit=unit.name
+            )
+            scalar_2 = run.optimization.scalars.create(
+                "Scalar 2", value=2, unit=unit.name
+            )
+
         # Create scalar in another run to test tabulating scalars for specific run
-        platform.runs.create("Model", "Scenario").optimization.scalars.create(
-            "Scalar 1", value=1, unit=unit
-        )
+        run_2 = platform.runs.create("Model", "Scenario")
+        with run_2.transact("Test scalars.tabulate() 2"):
+            run_2.optimization.scalars.create("Scalar 1", value=1, unit=unit)
 
         expected = df_from_list(scalars=[scalar_1, scalar_2])
         result = run.optimization.scalars.tabulate()
@@ -159,7 +182,10 @@ class TestCoreScalar:
     def test_scalar_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
-        scalar = run.optimization.scalars.create("Scalar 1", value=4, unit=unit.name)
+        with run.transact("Test Scalar.docs"):
+            scalar = run.optimization.scalars.create(
+                "Scalar 1", value=4, unit=unit.name
+            )
         docs = "Documentation of Scalar 1"
         scalar.docs = docs
         assert scalar.docs == docs
