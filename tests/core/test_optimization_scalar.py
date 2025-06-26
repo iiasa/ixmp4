@@ -116,9 +116,7 @@ class TestCoreScalar:
 
         with run.transact("Test Scalar update()"):
             scalar.value = 30
-            # NOTE mypy doesn't support setters taking a different type than
-            # their property https://github.com/python/mypy/issues/3004
-            scalar.unit = "Test Unit"  # type: ignore[assignment]
+            scalar.unit = "Test Unit"
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
         result = run.optimization.scalars.get("Scalar")
