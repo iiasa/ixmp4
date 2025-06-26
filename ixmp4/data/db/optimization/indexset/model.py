@@ -30,7 +30,7 @@ class IndexSet(base.BaseModel):
         return (
             []
             if self._data_type is None
-            else np.array([d.value for d in self._data], dtype=self._data_type).tolist()  # type: ignore[return-value]
+            else np.array([d.value for d in self._data], dtype=self._data_type).tolist()
         )
 
     @data.setter

@@ -2,22 +2,22 @@ from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
 if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
     from . import InitKwargs
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseModelFacade
 from ixmp4.core.unit import Unit
 from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
 
-from .base import Deleter, Lister, Retriever, Tabulator
+from .base import Deleter, Lister, OptimizationBaseModelFacade, Retriever, Tabulator
 
 
-class Scalar(BaseModelFacade):
+class Scalar(OptimizationBaseModelFacade):
     _model: ScalarModel
     NotFound: ClassVar = ScalarModel.NotFound
     NotUnique: ClassVar = ScalarModel.NotUnique
@@ -37,6 +37,7 @@ class Scalar(BaseModelFacade):
 
     @value.setter
     def value(self, value: float) -> None:
+        self._run.require_lock()
         self._model.value = value
         self.backend.optimization.scalars.update(
             id=self._model.id,
@@ -51,6 +52,7 @@ class Scalar(BaseModelFacade):
 
     @unit.setter
     def unit(self, value: str | Unit) -> None:
+        self._run.require_lock()
         if isinstance(value, str):
             unit_model = self.backend.units.get(value)
             value = Unit(_backend=self.backend, _model=unit_model)
@@ -104,12 +106,13 @@ class ScalarRepository(
     Lister[Scalar, ScalarModel],
     Tabulator[Scalar, ScalarModel],
 ):
-    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.scalars
         self._model_type = Scalar
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
+        self._run.require_lock()
         if isinstance(unit, Unit):
             unit_name = unit.name
         elif isinstance(unit, str):
@@ -129,4 +132,4 @@ class ScalarRepository(
                 message=f"Scalar '{name}' already exists! Did you mean to call "
                 "run.optimization.scalars.update()?"
             ) from e
-        return Scalar(_backend=self.backend, _model=model)
+        return Scalar(_backend=self.backend, _model=model, _run=self._run)

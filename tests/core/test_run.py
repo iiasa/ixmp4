@@ -234,23 +234,25 @@ class TestCoreRun:
 
     def test_run_remove_solution(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        indexset = run.optimization.indexsets.create("Indexset")
-        indexset.add(["foo", "bar"])
         test_data = {
             "Indexset": ["bar", "foo"],
             "levels": [2.5, 1],
             "marginals": [0, 6.9],
         }
-        run.optimization.equations.create(
-            "Equation",
-            constrained_to_indexsets=[indexset.name],
-        ).add(test_data)
-        run.optimization.variables.create(
-            "Variable",
-            constrained_to_indexsets=[indexset.name],
-        ).add(test_data)
+        with run.transact("Test Run.opt.remove_solution()"):
+            indexset = run.optimization.indexsets.create("Indexset")
+            indexset.add(["foo", "bar"])
+            run.optimization.equations.create(
+                "Equation",
+                constrained_to_indexsets=[indexset.name],
+            ).add(test_data)
+            run.optimization.variables.create(
+                "Variable",
+                constrained_to_indexsets=[indexset.name],
+            ).add(test_data)
 
-        run.optimization.remove_solution()
+            run.optimization.remove_solution()
+
         # Need to fetch them here even if fetched before because API layer might not
         # forward changes automatically
         equation = run.optimization.equations.get("Equation")
@@ -326,30 +328,30 @@ class TestCoreRun:
         # Prepare original run
         run = platform.runs.create("Model", "Scenario")
         # Add IAMC data
-        with run.transact("Add IAMC data"):
+        with run.transact("Add data"):
             run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
 
-        # Create optimization items and add some data
-        indexset = run.optimization.indexsets.create("Indexset")
-        indexset.add(["foo", "bar"])
+            # Create optimization items and add some data
+            indexset = run.optimization.indexsets.create("Indexset")
+            indexset.add(["foo", "bar"])
 
-        run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
+            run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
 
-        run.optimization.tables.create(
-            "Table", constrained_to_indexsets=[indexset.name]
-        ).add({"Indexset": ["bar"]})
+            run.optimization.tables.create(
+                "Table", constrained_to_indexsets=[indexset.name]
+            ).add({"Indexset": ["bar"]})
 
-        run.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=[indexset.name]
-        ).add(test_data)
+            run.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=[indexset.name]
+            ).add(test_data)
 
-        run.optimization.variables.create(
-            "Variable", constrained_to_indexsets=[indexset.name]
-        ).add(test_solution)
+            run.optimization.variables.create(
+                "Variable", constrained_to_indexsets=[indexset.name]
+            ).add(test_solution)
 
-        run.optimization.equations.create(
-            "Equation", constrained_to_indexsets=[indexset.name]
-        ).add(test_solution)
+            run.optimization.equations.create(
+                "Equation", constrained_to_indexsets=[indexset.name]
+            ).add(test_solution)
 
         # Test cloning while keeping the solution
         clone_with_solution = run.clone()
@@ -363,7 +365,8 @@ class TestCoreRun:
 
         # Test working with cloned run
         cloned_indexset = clone_with_solution.optimization.indexsets.get(indexset.name)
-        cloned_indexset.add("baz")
+        with clone_with_solution.transact("Test Run.clone() working with clone"):
+            cloned_indexset.add("baz")
         expected = indexset.data
         # TODO If possible, it would be great to type hint data according to what it is
         # so that something like this works (not just a generic union of lists):
@@ -389,23 +392,26 @@ class TestCoreRun:
     def test_run_has_solution(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
 
-        # Set up an equation and a variable
-        indexset = run.optimization.indexsets.create("Indexset")
-        indexset.add(["foo"])
-        equation = run.optimization.equations.create(
-            name="Equation",
-            constrained_to_indexsets=[indexset.name],
-        )
-        variable = run.optimization.variables.create("Variable")
+        with run.transact("Test Run.opt.has_solution()"):
+            # Set up an equation and a variable
+            indexset = run.optimization.indexsets.create("Indexset")
+            indexset.add(["foo"])
+            equation = run.optimization.equations.create(
+                name="Equation",
+                constrained_to_indexsets=[indexset.name],
+            )
+            variable = run.optimization.variables.create("Variable")
 
         # Without data in them, the run has no solution
         assert not run.optimization.has_solution()
 
         # Add data to equation to simulate having a solution
-        equation.add({indexset.name: ["foo"], "levels": [1], "marginals": [0]})
+        with run.transact("Test Run.opt.has_solution() with equ data"):
+            equation.add({indexset.name: ["foo"], "levels": [1], "marginals": [0]})
         assert run.optimization.has_solution()
 
         # Check this also works for having data just in the variable
-        equation.remove_data()
-        variable.add({"levels": [2025], "marginals": [1.5]})
+        with run.transact("Test Run.opt.has_solution() with var data"):
+            equation.remove_data()
+            variable.add({"levels": [2025], "marginals": [1.5]})
         assert run.optimization.has_solution()

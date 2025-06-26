@@ -41,13 +41,14 @@ class TestCoreParameter:
 
         # Test normal creation
         indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        parameter = run.optimization.parameters.create(
-            name="Parameter",
-            constrained_to_indexsets=[indexset_1.name],
-        )
+        with run.transact("Test parameters.create()"):
+            parameter = run.optimization.parameters.create(
+                name="Parameter",
+                constrained_to_indexsets=[indexset_1.name],
+            )
 
         assert parameter.run_id == run.id
         assert parameter.name == "Parameter"
@@ -57,44 +58,47 @@ class TestCoreParameter:
         assert parameter.values == []
         assert parameter.units == []
 
-        # Test duplicate name raises
-        with pytest.raises(Parameter.NotUnique):
-            _ = run.optimization.parameters.create(
-                "Parameter", constrained_to_indexsets=[indexset_1.name]
-            )
+        with run.transact("Test parameters.create() errors and column_names"):
+            # Test duplicate name raises
+            with pytest.raises(Parameter.NotUnique):
+                _ = run.optimization.parameters.create(
+                    "Parameter", constrained_to_indexsets=[indexset_1.name]
+                )
 
-        # Test mismatch in constrained_to_indexsets and column_names raises
-        with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
-            _ = run.optimization.parameters.create(
+            # Test mismatch in constrained_to_indexsets and column_names raises
+            with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
+                _ = run.optimization.parameters.create(
+                    "Parameter 2",
+                    constrained_to_indexsets=[indexset_1.name],
+                    column_names=["Dimension 1", "Dimension 2"],
+                )
+
+            # Test columns_names are used for names if given
+            parameter_2 = run.optimization.parameters.create(
                 "Parameter 2",
                 constrained_to_indexsets=[indexset_1.name],
-                column_names=["Dimension 1", "Dimension 2"],
+                column_names=["Column 1"],
             )
 
-        # Test columns_names are used for names if given
-        parameter_2 = run.optimization.parameters.create(
-            "Parameter 2",
-            constrained_to_indexsets=[indexset_1.name],
-            column_names=["Column 1"],
-        )
         assert parameter_2.column_names == ["Column 1"]
 
-        # Test duplicate column_names raise
-        with pytest.raises(
-            OptimizationItemUsageError, match="`column_names` are not unique"
-        ):
-            _ = run.optimization.parameters.create(
+        with run.transact("Test parameters.create() multiple column_names"):
+            # Test duplicate column_names raise
+            with pytest.raises(
+                OptimizationItemUsageError, match="`column_names` are not unique"
+            ):
+                _ = run.optimization.parameters.create(
+                    name="Parameter 3",
+                    constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+                    column_names=["Column 1", "Column 1"],
+                )
+
+            # Test using different column names for same indexset
+            parameter_3 = run.optimization.parameters.create(
                 name="Parameter 3",
                 constrained_to_indexsets=[indexset_1.name, indexset_1.name],
-                column_names=["Column 1", "Column 1"],
+                column_names=["Column 1", "Column 2"],
             )
-
-        # Test using different column names for same indexset
-        parameter_3 = run.optimization.parameters.create(
-            name="Parameter 3",
-            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
-            column_names=["Column 1", "Column 2"],
-        )
 
         assert parameter_3.column_names == ["Column 1", "Column 2"]
         assert parameter_3.indexset_names == [indexset_1.name, indexset_1.name]
@@ -104,19 +108,20 @@ class TestCoreParameter:
         (indexset_1,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
-        parameter = run.optimization.parameters.create(
-            name="Parameter", constrained_to_indexsets=[indexset_1.name]
-        )
+        with run.transact("Test parameters.delete()"):
+            parameter = run.optimization.parameters.create(
+                name="Parameter", constrained_to_indexsets=[indexset_1.name]
+            )
 
-        # TODO How to check that DeletionPrevented is raised? No other object uses
-        # Parameter.id, so nothing could prevent the deletion.
+            # TODO How to check that DeletionPrevented is raised? No other object uses
+            # Parameter.id, so nothing could prevent the deletion.
 
-        # Test unknown name raises
-        with pytest.raises(Parameter.NotFound):
-            run.optimization.parameters.delete(item="does not exist")
+            # Test unknown name raises
+            with pytest.raises(Parameter.NotFound):
+                run.optimization.parameters.delete(item="does not exist")
 
-        # Test normal deletion
-        run.optimization.parameters.delete(item=parameter.name)
+            # Test normal deletion
+            run.optimization.parameters.delete(item=parameter.name)
 
         assert run.optimization.parameters.tabulate().empty
 
@@ -125,16 +130,18 @@ class TestCoreParameter:
 
         # Test that association table rows are deleted
         # If they haven't, this would raise DeletionPrevented
-        run.optimization.indexsets.delete(item=indexset_1.id)
+        with run.transact("Test parameters.delete() indexset linkage"):
+            run.optimization.indexsets.delete(item=indexset_1.id)
 
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
-        _ = run.optimization.parameters.create(
-            name="Parameter", constrained_to_indexsets=[indexset.name]
-        )
+        with run.transact("Test parameters.get()"):
+            _ = run.optimization.parameters.create(
+                name="Parameter", constrained_to_indexsets=[indexset.name]
+            )
         parameter = run.optimization.parameters.get(name="Parameter")
         assert parameter.run_id == run.id
         assert parameter.id == 1
@@ -151,11 +158,9 @@ class TestCoreParameter:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Unit")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        indexset.add(data=["foo", "bar", ""])
-        indexset_2.add(data=[1, 2, 3])
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
         # can remedy this. Or maybe we want to catch the resulting
@@ -167,81 +172,91 @@ class TestCoreParameter:
             "values": [3.14],
             "units": [unit.name],
         }
-        parameter = run.optimization.parameters.create(
-            "Parameter",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        parameter.add(data=test_data_1)
+
+        with run.transact("Test Parameter.add()"):
+            indexset.add(data=["foo", "bar", ""])
+            indexset_2.add(data=[1, 2, 3])
+            parameter = run.optimization.parameters.create(
+                "Parameter",
+                constrained_to_indexsets=[indexset.name, indexset_2.name],
+            )
+            parameter.add(data=test_data_1)
+
         assert parameter.data == test_data_1
         assert parameter.values == test_data_1["values"]
         assert parameter.units == test_data_1["units"]
 
-        parameter_2 = run.optimization.parameters.create(
-            name="Parameter 2",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-
-        with pytest.raises(
-            OptimizationItemUsageError, match=r"must include the column\(s\): values!"
-        ):
-            parameter_2.add(
-                pd.DataFrame(
-                    {
-                        indexset.name: [None],
-                        indexset_2.name: [2],
-                        "units": [unit.name],
-                    }
-                ),
-            )
-
-        with pytest.raises(
-            OptimizationItemUsageError, match=r"must include the column\(s\): units!"
-        ):
-            parameter_2.add(
-                data=pd.DataFrame(
-                    {
-                        indexset.name: [None],
-                        indexset_2.name: [2],
-                        "values": [""],
-                    }
-                ),
-            )
-
-        # By converting data to pd.DataFrame, we automatically enforce equal length
-        # of new columns, raises All arrays must be of the same length otherwise:
-        with pytest.raises(
-            OptimizationDataValidationError,
-            match="All arrays must be of the same length",
-        ):
-            parameter_2.add(
-                data={
-                    indexset.name: ["foo", "foo"],
-                    indexset_2.name: [2, 2],
-                    "values": [1, 2],
-                    "units": [unit.name],
-                },
-            )
-
-        with pytest.raises(
-            OptimizationDataValidationError, match="contains duplicate rows"
-        ):
-            parameter_2.add(
-                data={
-                    indexset.name: ["foo", "foo"],
-                    indexset_2.name: [2, 2],
-                    "values": [1, 2],
-                    "units": [unit.name, unit.name],
-                },
-            )
-
-        # Test that order is conserved
         test_data_2 = {
             indexset.name: ["", "", "foo", "foo", "bar", "bar"],
             indexset_2.name: [3, 1, 2, 1, 2, 3],
             "values": [6, 5, 4, 3, 2, 1],
             "units": [unit.name] * 6,
         }
-        parameter_2.add(test_data_2)
+
+        with run.transact("Test Parameter.add() errors and order"):
+            parameter_2 = run.optimization.parameters.create(
+                name="Parameter 2",
+                constrained_to_indexsets=[indexset.name, indexset_2.name],
+            )
+
+            with pytest.raises(
+                OptimizationItemUsageError,
+                match=r"must include the column\(s\): values!",
+            ):
+                parameter_2.add(
+                    pd.DataFrame(
+                        {
+                            indexset.name: [None],
+                            indexset_2.name: [2],
+                            "units": [unit.name],
+                        }
+                    ),
+                )
+
+            with pytest.raises(
+                OptimizationItemUsageError,
+                match=r"must include the column\(s\): units!",
+            ):
+                parameter_2.add(
+                    data=pd.DataFrame(
+                        {
+                            indexset.name: [None],
+                            indexset_2.name: [2],
+                            "values": [""],
+                        }
+                    ),
+                )
+
+            # By converting data to pd.DataFrame, we automatically enforce equal length
+            # of new columns, raises All arrays must be of the same length otherwise:
+            with pytest.raises(
+                OptimizationDataValidationError,
+                match="All arrays must be of the same length",
+            ):
+                parameter_2.add(
+                    data={
+                        indexset.name: ["foo", "foo"],
+                        indexset_2.name: [2, 2],
+                        "values": [1, 2],
+                        "units": [unit.name],
+                    },
+                )
+
+            with pytest.raises(
+                OptimizationDataValidationError, match="contains duplicate rows"
+            ):
+                parameter_2.add(
+                    data={
+                        indexset.name: ["foo", "foo"],
+                        indexset_2.name: [2, 2],
+                        "values": [1, 2],
+                        "units": [unit.name, unit.name],
+                    },
+                )
+
+            # Test that order is conserved
+            parameter_2.add(test_data_2)
+
         assert parameter_2.data == test_data_2
         assert parameter_2.values == test_data_2["values"]
         assert parameter_2.units == test_data_2["units"]
@@ -249,24 +264,27 @@ class TestCoreParameter:
         unit_2 = platform.units.create("Unit 2")
 
         # Test updating of existing keys
-        parameter_4 = run.optimization.parameters.create(
-            name="Parameter 4",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
         test_data_6 = {
             indexset.name: ["foo", "foo", "bar", "bar"],
             indexset_2.name: [1, 3, 1, 2],
             "values": [1, "2", 2.3, "4"],
             "units": [unit.name] * 4,
         }
-        parameter_4.add(data=test_data_6)
         test_data_7 = {
             indexset.name: ["foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 2, 1],
             "values": [1, 2.3, 3, 4, "5"],
             "units": [unit.name] * 2 + [unit_2.name] * 3,
         }
-        parameter_4.add(data=test_data_7)
+
+        with run.transact("Test Parameter.add() update"):
+            parameter_4 = run.optimization.parameters.create(
+                name="Parameter 4",
+                constrained_to_indexsets=[indexset.name, indexset_2.name],
+            )
+            parameter_4.add(data=test_data_6)
+            parameter_4.add(data=test_data_7)
+
         expected = (
             pd.DataFrame(test_data_7)
             .set_index([indexset.name, indexset_2.name])
@@ -278,23 +296,26 @@ class TestCoreParameter:
         assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
         # Test adding with column_names
-        parameter_5 = run.optimization.parameters.create(
-            name="Parameter 5",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-            column_names=["Column 1", "Column 2"],
-        )
         test_data_8 = {
             "Column 1": ["", "", "foo", "foo", "bar", "bar"],
             "Column 2": [3, 1, 2, 1, 2, 3],
             "values": [6, 5, 4, 3, 2, 1],
             "units": [unit.name] * 6,
         }
-        parameter_5.add(data=test_data_8)
+
+        with run.transact("Test Parameter.add() column_names"):
+            parameter_5 = run.optimization.parameters.create(
+                name="Parameter 5",
+                constrained_to_indexsets=[indexset.name, indexset_2.name],
+                column_names=["Column 1", "Column 2"],
+            )
+            parameter_5.add(data=test_data_8)
 
         assert parameter_5.data == test_data_8
 
         # Test adding empty data works
-        parameter_5.add(pd.DataFrame())
+        with run.transact("Test Parameter.add() empty"):
+            parameter_5.add(pd.DataFrame())
 
         assert parameter_5.data == test_data_8
 
@@ -302,52 +323,57 @@ class TestCoreParameter:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Unit")
         indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        indexset_1.add(data=["foo", "bar", ""])
-        indexset_2.add(data=[1, 2, 3])
         initial_data: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
             indexset_2.name: [1, 2, 3, 1, 2, 3],
             "values": [1, 2, 3, 4, 5, 6],
             "units": [unit.name] * 6,
         }
-        parameter = run.optimization.parameters.create(
-            name="Parameter",
-            constrained_to_indexsets=[indexset_1.name, indexset_2.name],
-        )
-        parameter.add(data=initial_data)
+
+        with run.transact("Test Parameter.remove() -- preparation"):
+            indexset_1.add(data=["foo", "bar", ""])
+            indexset_2.add(data=[1, 2, 3])
+            parameter = run.optimization.parameters.create(
+                name="Parameter",
+                constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            )
+            parameter.add(data=initial_data)
 
         # Test removing empty data removes nothing
-        parameter.remove(data={})
+        with run.transact("Test Parameter.remove() empty"):
+            parameter.remove(data={})
 
         assert parameter.data == initial_data
 
-        # Test incomplete index raises
-        with pytest.raises(
-            OptimizationItemUsageError, match="data to be removed must specify"
-        ):
-            parameter.remove(data={indexset_1.name: ["foo"]})
-
-        # Test unknown keys without indexed columns raises...
-        with pytest.raises(
-            OptimizationItemUsageError, match="data to be removed must specify"
-        ):
-            parameter.remove(data={"foo": ["bar"]})
-
-        # ...even when removing a column that's known in principle
-        with pytest.raises(
-            OptimizationItemUsageError, match="data to be removed must specify"
-        ):
-            parameter.remove(data={"units": [unit.name]})
-
-        # Test removing one row
         remove_data_1: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo"],
             indexset_2.name: [1],
         }
-        parameter.remove(data=remove_data_1)
+
+        with run.transact("Test Parameter.remove() errors and single"):
+            # Test incomplete index raises
+            with pytest.raises(
+                OptimizationItemUsageError, match="data to be removed must specify"
+            ):
+                parameter.remove(data={indexset_1.name: ["foo"]})
+
+            # Test unknown keys without indexed columns raises...
+            with pytest.raises(
+                OptimizationItemUsageError, match="data to be removed must specify"
+            ):
+                parameter.remove(data={"foo": ["bar"]})
+
+            # ...even when removing a column that's known in principle
+            with pytest.raises(
+                OptimizationItemUsageError, match="data to be removed must specify"
+            ):
+                parameter.remove(data={"units": [unit.name]})
+
+            # Test removing one row
+            parameter.remove(data=remove_data_1)
 
         # Prepare the expectation from the original test data
         # You can confirm manually that only the correct types are removed
@@ -361,7 +387,8 @@ class TestCoreParameter:
         # Test removing non-existing (but correctly formatted) data works, even with
         # additional/unused columns
         remove_data_1["values"] = [1]
-        parameter.remove(data=remove_data_1)
+        with run.transact("Test Parameter.remove() non-existing"):
+            parameter.remove(data=remove_data_1)
 
         assert parameter.data == initial_data
 
@@ -369,7 +396,8 @@ class TestCoreParameter:
         remove_data_2 = pd.DataFrame(
             {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
         )
-        parameter.remove(data=remove_data_2)
+        with run.transact("Test Parameter.remove() multiple"):
+            parameter.remove(data=remove_data_2)
 
         # Prepare the expectation
         expected = {
@@ -383,27 +411,31 @@ class TestCoreParameter:
 
         # Test removing all remaining data
         remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
-        parameter.remove(data=remove_data_3)
+        with run.transact("Test Parameter.remove() all data"):
+            parameter.remove(data=remove_data_3)
 
         assert parameter.data == {}
 
     def test_list_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id)
-        parameter = run.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=["Indexset 1"]
-        )
-        parameter_2 = run.optimization.parameters.create(
-            "Parameter 2", constrained_to_indexsets=["Indexset 2"]
-        )
+        with run.transact("Test parameters.list()"):
+            parameter = run.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=["Indexset 1"]
+            )
+            parameter_2 = run.optimization.parameters.create(
+                "Parameter 2", constrained_to_indexsets=["Indexset 2"]
+            )
+
         # Create new run to test listing parameters for specific run
         run_2 = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
-        run_2.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=[indexset.name]
-        )
+        with run_2.transact("Test parameters.list() for specific run"):
+            run_2.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=[indexset.name]
+            )
         expected_ids = [parameter.id, parameter_2.id]
         list_ids = [parameter.id for parameter in run.optimization.parameters.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -419,25 +451,27 @@ class TestCoreParameter:
     def test_tabulate_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
-        parameter = run.optimization.parameters.create(
-            name="Parameter",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
-        parameter_2 = run.optimization.parameters.create(
-            name="Parameter 2",
-            constrained_to_indexsets=[indexset.name, indexset_2.name],
-        )
+        with run.transact("Test parameters.tabulate()"):
+            parameter = run.optimization.parameters.create(
+                name="Parameter",
+                constrained_to_indexsets=[indexset.name, indexset_2.name],
+            )
+            parameter_2 = run.optimization.parameters.create(
+                name="Parameter 2",
+                constrained_to_indexsets=[indexset.name, indexset_2.name],
+            )
         # Create new run to test listing parameters for specific run
         run_2 = platform.runs.create("Model", "Scenario")
         (indexset_3,) = create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
-        run_2.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=[indexset_3.name]
-        )
+        with run_2.transact("Test parameters.tabulate() for specific run"):
+            run_2.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=[indexset_3.name]
+            )
         pd.testing.assert_frame_equal(
             df_from_list([parameter_2]),
             run.optimization.parameters.tabulate(name="Parameter 2"),
@@ -445,23 +479,25 @@ class TestCoreParameter:
 
         unit = platform.units.create("Unit")
         unit_2 = platform.units.create("Unit 2")
-        indexset.add(data=["foo", "bar"])
-        indexset_2.add(data=[1, 2, 3])
         test_data_1 = {
             indexset.name: ["foo"],
             indexset_2.name: [1],
             "values": ["value"],
             "units": [unit.name],
         }
-        parameter.add(data=test_data_1)
-
         test_data_2 = {
             indexset_2.name: [2, 3],
             indexset.name: ["foo", "bar"],
             "values": [1, "value"],
             "units": [unit.name, unit_2.name],
         }
-        parameter_2.add(data=test_data_2)
+
+        with run.transact("Test parameters.tabulate() with data"):
+            indexset.add(data=["foo", "bar"])
+            indexset_2.add(data=[1, 2, 3])
+            parameter.add(data=test_data_1)
+            parameter_2.add(data=test_data_2)
+
         pd.testing.assert_frame_equal(
             df_from_list([parameter, parameter_2]),
             run.optimization.parameters.tabulate(),
@@ -472,9 +508,10 @@ class TestCoreParameter:
         (indexset,) = create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
-        parameter_1 = run.optimization.parameters.create(
-            "Parameter 1", constrained_to_indexsets=[indexset.name]
-        )
+        with run.transact("Test Parameter.docs"):
+            parameter_1 = run.optimization.parameters.create(
+                "Parameter 1", constrained_to_indexsets=[indexset.name]
+            )
         docs = "Documentation of Parameter 1"
         parameter_1.docs = docs
         assert parameter_1.docs == docs
