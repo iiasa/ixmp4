@@ -61,18 +61,18 @@ def generate_initial_version_data(
             autoload_with=conn,
         )
 
-        res = conn.execute(sa.select(data_table)).mappings().all()
-
-        initial_versions = [
-            {
-                **row,
-                "transaction_id": transaction_id,
-                "end_transaction_id": None,
-                "operation_type": Operation.INSERT,
-            }
-            for row in res
-        ]
-        op.bulk_insert(version_table, initial_versions)
+        partitions = conn.execute(sa.select(data_table)).mappings().partitions(5000)
+        for res in partitions:
+            initial_versions = [
+                {
+                    **row,
+                    "transaction_id": transaction_id,
+                    "end_transaction_id": None,
+                    "operation_type": Operation.INSERT,
+                }
+                for row in res
+            ]
+            op.bulk_insert(version_table, initial_versions)
     else:
         logging.warning("No database connection available.")
 
