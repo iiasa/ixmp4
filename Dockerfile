@@ -20,7 +20,7 @@ ENV \
     PIP_DISABLE_PIP_VERSION_CHECK=on \
     PIP_DEFAULT_TIMEOUT=100 
 
-RUN pip install poetry
+RUN pip install poetry==$POETRY_VERSION
 
 ENV PATH="$POETRY_HOME/bin:$PATH"
 
