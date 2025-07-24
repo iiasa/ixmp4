@@ -1,6 +1,8 @@
 from typing import TYPE_CHECKING, Generic, TypeVar
 
 if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
     from . import InitKwargs
 
 
@@ -11,9 +13,36 @@ from typing_extensions import TypedDict, Unpack
 
 from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.data import abstract
+from ixmp4.data.backend import Backend
+
+
+class BaseModelFacadeKwargs(TypedDict, total=False):
+    _model: abstract.BaseModel | None
+    _backend: Backend | None
+
+
+class OptimizationBaseModelFacade(BaseModelFacade):
+    _run: "Run"
+
+    def __init__(self, _run: "Run", **kwargs: Unpack[BaseModelFacadeKwargs]) -> None:
+        """Initialize an optimization item instance.
+
+        Parameters
+        ----------
+        _run : `Run`
+            The :class:`ixmp4.core.run.Run` this item belongs to.
+        """
+        # NOTE This function enables requiring a Run's lock to add or remove data to a
+        # single optimization object. It also allows sidestepping the requirement to
+        # have a Run locked before editing it. Thus, this function should only be called
+        # internally.
+        super().__init__(**kwargs)
+
+        self._run = _run
+
 
 FacadeOptimizationModelType = TypeVar(
-    "FacadeOptimizationModelType", bound=BaseModelFacade
+    "FacadeOptimizationModelType", bound=OptimizationBaseModelFacade
 )
 AbstractOptimizationModelType = TypeVar(
     "AbstractOptimizationModelType", bound=abstract.BaseModel
@@ -23,11 +52,11 @@ AbstractOptimizationModelType = TypeVar(
 class OptimizationBaseRepository(
     BaseFacade, Generic[FacadeOptimizationModelType, AbstractOptimizationModelType]
 ):
-    _run: abstract.Run
+    _run: "Run"
     _backend_repository: abstract.BackendBaseRepository[AbstractOptimizationModelType]
     _model_type: type[FacadeOptimizationModelType]
 
-    def __init__(self, _run: abstract.Run, **kwargs: Unpack["InitKwargs"]) -> None:
+    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(**kwargs)
         self._run = _run
 
@@ -41,10 +70,11 @@ class Creator(
     def create(
         self, name: str, **kwargs: Unpack["abstract.optimization.base.CreateKwargs"]
     ) -> FacadeOptimizationModelType:
+        self._run.require_lock()
         model = self._backend_repository.create(
             run_id=self._run.id, name=name, **kwargs
         )
-        return self._model_type(_backend=self.backend, _model=model)
+        return self._model_type(_backend=self.backend, _model=model, _run=self._run)
 
 
 class Deleter(
@@ -54,6 +84,7 @@ class Deleter(
     abstract.Deleter,
 ):
     def delete(self, item: int | str) -> None:
+        self._run.require_lock()
         if isinstance(item, int):
             id = item
         elif isinstance(item, str):
@@ -73,7 +104,7 @@ class Retriever(
 ):
     def get(self, name: str) -> FacadeOptimizationModelType:
         model = self._backend_repository.get(run_id=self._run.id, name=name)
-        return self._model_type(_backend=self.backend, _model=model)
+        return self._model_type(_backend=self.backend, _model=model, _run=self._run)
 
 
 class Lister(
@@ -84,7 +115,10 @@ class Lister(
 ):
     def list(self, name: str | None = None) -> list[FacadeOptimizationModelType]:
         models = self._backend_repository.list(run_id=self._run.id, name=name)
-        return [self._model_type(_backend=self.backend, _model=m) for m in models]
+        return [
+            self._model_type(_backend=self.backend, _model=m, _run=self._run)
+            for m in models
+        ]
 
 
 class Tabulator(

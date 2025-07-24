@@ -1,4 +1,5 @@
-from ixmp4.data.abstract import Run
+from typing import TYPE_CHECKING
+
 from ixmp4.data.backend import Backend
 
 from ..base import BaseFacade
@@ -8,6 +9,9 @@ from .parameter import ParameterRepository
 from .scalar import ScalarRepository
 from .table import TableRepository
 from .variable import VariableRepository
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
 
 
 class OptimizationData(BaseFacade):
@@ -21,7 +25,7 @@ class OptimizationData(BaseFacade):
     tables: TableRepository
     variables: VariableRepository
 
-    def __init__(self, run: Run, **kwargs: Backend) -> None:
+    def __init__(self, run: "Run", **kwargs: Backend) -> None:
         super().__init__(**kwargs)
         self.equations = EquationRepository(_backend=self.backend, _run=run)
         self.indexsets = IndexSetRepository(_backend=self.backend, _run=run)
@@ -30,6 +34,7 @@ class OptimizationData(BaseFacade):
         self.tables = TableRepository(_backend=self.backend, _run=run)
         self.variables = VariableRepository(_backend=self.backend, _run=run)
 
+    # TODO Improve performance by writing dedicated queries
     def remove_solution(self) -> None:
         for equation in self.equations.list():
             equation.remove_data()

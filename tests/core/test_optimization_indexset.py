@@ -4,7 +4,11 @@ import pytest
 
 import ixmp4
 from ixmp4.core import IndexSet
-from ixmp4.core.exceptions import DeletionPrevented, OptimizationDataValidationError
+from ixmp4.core.exceptions import (
+    DeletionPrevented,
+    OptimizationDataValidationError,
+    RunLockRequired,
+)
 
 from ..utils import create_indexsets_for_run
 
@@ -45,40 +49,54 @@ def df_from_list(indexsets: list[IndexSet]) -> pd.DataFrame:
 class TestCoreIndexset:
     def test_create_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        indexset_1 = run.optimization.indexsets.create("Indexset 1")
+        with run.transact("Test indexsets.create()"):
+            indexset_1 = run.optimization.indexsets.create("Indexset 1")
         assert indexset_1.id == 1
         assert indexset_1.name == "Indexset 1"
 
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.indexsets.create("Indexset 2")
+
+        with run.transact("Test indexsets.create() 2"):
+            indexset_2 = run.optimization.indexsets.create("Indexset 2")
         assert indexset_1.id != indexset_2.id
 
-        with pytest.raises(IndexSet.NotUnique):
-            _ = run.optimization.indexsets.create("Indexset 1")
+        with run.transact("Test indexsets.create() error"):
+            with pytest.raises(IndexSet.NotUnique):
+                _ = run.optimization.indexsets.create("Indexset 1")
 
     def test_delete_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        indexset_1 = run.optimization.indexsets.create(name="Indexset")
-        run.optimization.indexsets.delete(item=indexset_1.name)
+        with run.transact("Test indexsets.delete()"):
+            indexset_1 = run.optimization.indexsets.create(name="Indexset")
+            run.optimization.indexsets.delete(item=indexset_1.name)
 
         # Test normal deletion
         assert run.optimization.indexsets.tabulate().empty
 
-        # Test unknown id raises
-        with pytest.raises(IndexSet.NotFound):
-            run.optimization.indexsets.delete(item="does not exist")
+        with run.transact("Test indexsets.delete() NotFound"):
+            # Test unknown id raises
+            with pytest.raises(IndexSet.NotFound):
+                run.optimization.indexsets.delete(item="does not exist")
 
         # Test DeletionPrevented is raised when IndexSet is used somewhere
         (indexset_2,) = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(
                 platform=platform, run_id=run.id, amount=1
             )
         )
-        with pytest.raises(DeletionPrevented):
-            _ = run.optimization.tables.create(
-                name="Table 1", constrained_to_indexsets=[indexset_2.name]
-            )
-            run.optimization.indexsets.delete(item=indexset_2.id)
+        with run.transact("Test indexsets.create() DeletionPrevented"):
+            with pytest.raises(DeletionPrevented):
+                _ = run.optimization.tables.create(
+                    name="Table 1", constrained_to_indexsets=[indexset_2.name]
+                )
+                run.optimization.indexsets.delete(item=indexset_2.id)
+
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.indexsets.delete(item="Indexset 2")
 
     def test_get_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -93,104 +111,66 @@ class TestCoreIndexset:
     def test_add_elements(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         test_data = ["foo", "bar"]
-        indexset_1 = run.optimization.indexsets.create("Indexset 1")
-        indexset_1.add(test_data)
-        run.optimization.indexsets.create("Indexset 2").add(test_data)
-        indexset_2 = run.optimization.indexsets.get("Indexset 2")
+        with run.transact("Test Indexset.add()"):
+            indexset_1 = run.optimization.indexsets.create("Indexset 1")
+            indexset_1.add(test_data)
+            run.optimization.indexsets.create("Indexset 2").add(test_data)
+            indexset_2 = run.optimization.indexsets.get("Indexset 2")
 
         assert indexset_1.data == indexset_2.data
 
-        with pytest.raises(OptimizationDataValidationError):
+        with run.transact("Test Indexset.add() errors"):
+            with pytest.raises(OptimizationDataValidationError):
+                indexset_1.add(["baz", "foo"])
+
+            with pytest.raises(OptimizationDataValidationError):
+                indexset_2.add(["baz", "baz"])
+
+        # Test add without run lock raises
+        with pytest.raises(RunLockRequired):
             indexset_1.add(["baz", "foo"])
 
-        with pytest.raises(OptimizationDataValidationError):
-            indexset_2.add(["baz", "baz"])
-
         # Test data types are conserved
-        indexset_3 = run.optimization.indexsets.create("Indexset 3")
         test_data_2 = [1.2, 3.4, 5.6]
-        indexset_3.add(data=test_data_2)
+        with run.transact("Test Indexset.add() data types"):
+            indexset_3 = run.optimization.indexsets.create("Indexset 3")
+            indexset_3.add(data=test_data_2)
 
         assert indexset_3.data == test_data_2
         assert type(indexset_3.data[0]).__name__ == "float"
 
-        indexset_4 = run.optimization.indexsets.create("Indexset 4")
         test_data_3 = [0, 1, 2]
-        indexset_4.add(data=test_data_3)
+        with run.transact("Test Indexset.add() data types 2"):
+            indexset_4 = run.optimization.indexsets.create("Indexset 4")
+            indexset_4.add(data=test_data_3)
 
         assert indexset_4.data == test_data_3
         assert type(indexset_4.data[0]).__name__ == "int"
 
-        # Test adding empty data works
-        indexset_4.add(data=[])
+        with run.transact("Test Indexset.add() empty data"):
+            # Test adding empty data works
+            indexset_4.add(data=[])
 
         assert indexset_4.data == test_data_3
 
     def test_remove_elements(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         test_data = ["do", "re", "mi", "fa", "so", "la", "ti"]
-        indexset_1 = run.optimization.indexsets.create("Indexset 1")
-        indexset_1.add(test_data)
+        with run.transact("Test Indexset.remove()"):
+            indexset_1 = run.optimization.indexsets.create("Indexset 1")
+            indexset_1.add(test_data)
 
-        # Test removing an empty list removes nothing
-        indexset_1.remove(data=[])
+            # Test removing an empty list removes nothing
+            indexset_1.remove(data=[])
 
         assert indexset_1.data == test_data
+
+        # Test remove without run lock raises
+        with pytest.raises(RunLockRequired):
+            indexset_1.remove(data=[])
+
         # Define additional items affected by `remove_data`
-        # Define a basic affected Table
-        table = run.optimization.tables.create(
-            "Table", constrained_to_indexsets=[indexset_1.name]
-        )
-        table.add({indexset_1.name: ["do", "re", "mi"]})
-
-        # Define an affected Table without data
-        table_2 = run.optimization.tables.create(
-            "Table 2", constrained_to_indexsets=[indexset_1.name]
-        )
-
-        # Define a basic affected Parameter
         unit = platform.units.create("Unit")
-        parameter = run.optimization.parameters.create(
-            "Parameter", constrained_to_indexsets=[indexset_1.name]
-        )
-        parameter.add(
-            {
-                indexset_1.name: ["mi", "fa", "so"],
-                "values": [1, 2, 3],
-                "units": [unit.name] * 3,
-            }
-        )
-
-        # Define a Parameter where only 1 dimension is affected
-        indexset_2 = run.optimization.indexsets.create("Indexset 2")
-        indexset_2.add(["foo", "bar", "baz"])
-        parameter_2 = run.optimization.parameters.create(
-            "Parameter 2", constrained_to_indexsets=[indexset_1.name, indexset_2.name]
-        )
-        parameter_2.add(
-            {
-                indexset_1.name: ["do", "do", "la", "ti"],
-                indexset_2.name: ["foo", "bar", "baz", "foo"],
-                "values": [1, 2, 3, 4],
-                "units": [unit.name] * 4,
-            }
-        )
-
-        # Define a Parameter with 2 affected dimensions
-        parameter_3 = run.optimization.parameters.create(
-            "Parameter 3",
-            constrained_to_indexsets=[indexset_1.name, indexset_1.name],
-            column_names=["Column 1", "Column 2"],
-        )
-        parameter_3.add(
-            {
-                "Column 1": ["la", "la", "do", "ti"],
-                "Column 2": ["re", "fa", "mi", "do"],
-                "values": [1, 2, 3, 4],
-                "units": [unit.name, unit.name, unit.name, unit.name],
-            }
-        )
-
         # Test removing multiple arbitrary known data
         remove_data = ["fa", "mi", "la", "ti"]
         expected = ["do", "re", "so"]
@@ -200,13 +180,62 @@ class TestCoreIndexset:
             "values": [3],
             "units": [unit.name],
         }
-        expected_parameter_2 = {
-            indexset_1.name: ["do", "do"],
-            indexset_2.name: ["foo", "bar"],
-            "values": [1, 2],
-            "units": [unit.name] * 2,
-        }
-        indexset_1.remove(data=remove_data)
+        with run.transact("Test Indexset.remove() linked items"):
+            # Define a basic affected Table
+            table = run.optimization.tables.create(
+                "Table", constrained_to_indexsets=[indexset_1.name]
+            )
+            table.add({indexset_1.name: ["do", "re", "mi"]})
+
+            # Define an affected Table without data
+            table_2 = run.optimization.tables.create(
+                "Table 2", constrained_to_indexsets=[indexset_1.name]
+            )
+
+            # Define a basic affected Parameter
+            parameter = run.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=[indexset_1.name]
+            )
+            parameter.add(
+                {
+                    indexset_1.name: ["mi", "fa", "so"],
+                    "values": [1, 2, 3],
+                    "units": [unit.name] * 3,
+                }
+            )
+
+            # Define a Parameter where only 1 dimension is affected
+            indexset_2 = run.optimization.indexsets.create("Indexset 2")
+            indexset_2.add(["foo", "bar", "baz"])
+            parameter_2 = run.optimization.parameters.create(
+                "Parameter 2",
+                constrained_to_indexsets=[indexset_1.name, indexset_2.name],
+            )
+            parameter_2.add(
+                {
+                    indexset_1.name: ["do", "do", "la", "ti"],
+                    indexset_2.name: ["foo", "bar", "baz", "foo"],
+                    "values": [1, 2, 3, 4],
+                    "units": [unit.name] * 4,
+                }
+            )
+
+            # Define a Parameter with 2 affected dimensions
+            parameter_3 = run.optimization.parameters.create(
+                "Parameter 3",
+                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+                column_names=["Column 1", "Column 2"],
+            )
+            parameter_3.add(
+                {
+                    "Column 1": ["la", "la", "do", "ti"],
+                    "Column 2": ["re", "fa", "mi", "do"],
+                    "values": [1, 2, 3, 4],
+                    "units": [unit.name, unit.name, unit.name, unit.name],
+                }
+            )
+
+            indexset_1.remove(data=remove_data)
 
         assert indexset_1.data == expected
 
@@ -220,6 +249,12 @@ class TestCoreIndexset:
         parameter_3 = run.optimization.parameters.get(parameter_3.name)
 
         # Test effect on linked items
+        expected_parameter_2 = {
+            indexset_1.name: ["do", "do"],
+            indexset_2.name: ["foo", "bar"],
+            "values": [1, 2],
+            "units": [unit.name] * 2,
+        }
         assert table.data[indexset_1.name] == expected_table
         assert parameter.data == expected_parameter
         assert parameter_2.data == expected_parameter_2
@@ -228,18 +263,21 @@ class TestCoreIndexset:
         # Test removing a single item
         expected.remove("do")
         expected_table.remove("do")
-        indexset_1.remove(data="do")
+        with run.transact("Test Indexset.remove() linked items single"):
+            indexset_1.remove(data="do")
 
         assert indexset_1.data == expected
 
-        # Test removing non-existing data removes nothing
-        indexset_1.remove(data="fa")
+        with run.transact("Test Indexset.remove() linked items non-existing"):
+            # Test removing non-existing data removes nothing
+            indexset_1.remove(data="fa")
 
         assert indexset_1.data == expected
 
-        # Test removing wrong type removes nothing (through conversion to unknown str)
-        # NOTE Why does mypy not prevent this?
-        indexset_1.remove(data=True)
+        with run.transact("Test Indexset.remove() linked items wrong type"):
+            # Test removing wrong type removes nothing (via conversion to unknown str)
+            # NOTE Why does mypy not prevent this?
+            indexset_1.remove(data=True)
 
         assert indexset_1.data == expected
 
@@ -249,8 +287,9 @@ class TestCoreIndexset:
         assert table.data[indexset_1.name] == expected_table
         assert parameter_2.data == {}
 
-        # Test removing all remaining data
-        indexset_1.remove(data=["so", "re"], remove_dependent_data=False)
+        with run.transact("Test Indexset.remove() linked items all data"):
+            # Test removing all remaining data
+            indexset_1.remove(data=["so", "re"], remove_dependent_data=False)
 
         assert indexset_1.data == []
 
@@ -270,9 +309,9 @@ class TestCoreIndexset:
             platform=platform, run_id=run.id
         )
         # Create indexset in another run to test listing indexsets for specific run
-        platform.runs.create("Model", "Scenario").optimization.indexsets.create(
-            "Indexset 1"
-        )
+        run_2 = platform.runs.create("Model", "Scenario")
+        with run_2.transact("Test indexsets.list()"):
+            run_2.optimization.indexsets.create("Indexset 1")
         expected_ids = [indexset_1.id, indexset_2.id]
         list_ids = [indexset.id for indexset in run.optimization.indexsets.list()]
         assert not (set(expected_ids) ^ set(list_ids))
@@ -288,13 +327,13 @@ class TestCoreIndexset:
     def test_tabulate_indexsets(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(platform=platform, run_id=run.id)
         )
         # Create indexset in another run to test tabulating indexsets for specific run
-        platform.runs.create("Model", "Scenario").optimization.indexsets.create(
-            "Indexset 1"
-        )
+        run_2 = platform.runs.create("Model", "Scenario")
+        with run_2.transact("Test indexsets.tabulate()"):
+            run_2.optimization.indexsets.create("Indexset 1")
 
         expected = df_from_list(indexsets=[indexset_1, indexset_2])
         result = run.optimization.indexsets.tabulate()
@@ -309,7 +348,7 @@ class TestCoreIndexset:
     def test_indexset_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset_1,) = tuple(
-            IndexSet(_backend=platform.backend, _model=model)
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
             for model in create_indexsets_for_run(
                 platform=platform, run_id=run.id, amount=1
             )

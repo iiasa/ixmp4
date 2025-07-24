@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
 if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
     from . import InitKwargs
 
 import pandas as pd
@@ -9,15 +11,20 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Run
 from ixmp4.data.abstract import Table as TableModel
 
-from .base import Creator, Deleter, Lister, Retriever, Tabulator
+from .base import (
+    Creator,
+    Deleter,
+    Lister,
+    OptimizationBaseModelFacade,
+    Retriever,
+    Tabulator,
+)
 
 
-class Table(BaseModelFacade):
+class Table(OptimizationBaseModelFacade):
     _model: TableModel
     NotFound: ClassVar = TableModel.NotFound
     NotUnique: ClassVar = TableModel.NotUnique
@@ -40,6 +47,7 @@ class Table(BaseModelFacade):
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Table."""
+        self._run.require_lock()
         self.backend.optimization.tables.add_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.tables.get(
             run_id=self._model.run__id, name=self._model.name
@@ -50,6 +58,7 @@ class Table(BaseModelFacade):
 
         The data must specify all indexed columns. All other keys/columns are ignored.
         """
+        self._run.require_lock()
         self.backend.optimization.tables.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.tables.get(
             run_id=self._model.run__id, name=self._model.name
@@ -104,7 +113,7 @@ class TableRepository(
     Lister[Table, TableModel],
     Tabulator[Table, TableModel],
 ):
-    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.tables
         self._model_type = Table

@@ -245,10 +245,7 @@ class TestAuthContext:
 
                     with pytest.raises(Forbidden):
                         with run.transact("Add meta data"):
-                            # NOTE mypy doesn't support setters taking a different
-                            # type than their property
-                            # https://github.com/python/mypy/issues/3004
-                            run.meta = {"meta": "test"}  # type: ignore[assignment]
+                            run.meta = {"meta": "test"}
 
                     with pytest.raises(Forbidden):
                         _ = run.clone()
@@ -314,7 +311,7 @@ class TestAuthContext:
         with run.transact("Add iamc data"):
             run.iamc.add(annual_dps, type=ixmp4.DataPoint.Type.ANNUAL)
         with run.transact("Add meta data"):
-            run.meta = {"meta": "test"}  # type: ignore[assignment]
+            run.meta = {"meta": "test"}
         run.set_as_default()
 
         with backend.auth(user, self.mock_manager, platform_info):
@@ -332,7 +329,7 @@ class TestAuthContext:
                             type=ixmp4.DataPoint.Type.ANNUAL,
                         )
                     with run.transact("Add meta data"):
-                        run.meta = {"meta": "test"}  # type: ignore[assignment]
+                        run.meta = {"meta": "test"}
 
                     # Test run.clone() uses auth()
                     clone_with_solution = run.clone()
@@ -355,7 +352,7 @@ class TestAuthContext:
 
                     with pytest.raises(Forbidden):
                         with run.transact("Add meta data"):
-                            run.meta = {"meta": "test"}  # type: ignore[assignment]
+                            run.meta = {"meta": "test"}
 
                     with pytest.raises(Forbidden):
                         _ = run.clone()

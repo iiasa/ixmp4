@@ -48,7 +48,7 @@ class Run(BaseModelFacade):
 
         self.iamc = RunIamcData(_backend=self.backend, run=self)
         self._meta = RunMetaFacade(_backend=self.backend, run=self)
-        self.optimization = OptimizationData(_backend=self.backend, run=self._model)
+        self.optimization = OptimizationData(_backend=self.backend, run=self)
         self.checkpoints = RunCheckpoints(_backend=self.backend, run=self)
 
     @property

@@ -92,8 +92,7 @@ def df_to_dict(df: pd.DataFrame) -> DataFrameDict:
         index=df.index.to_list(),
         columns=columns,
         dtypes=dtypes,
-        # https://github.com/numpy/numpy/issues/27944
-        data=df.values.tolist(),  # type: ignore[arg-type]
+        data=df.values.tolist(),
     )
 
 
