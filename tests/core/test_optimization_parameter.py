@@ -6,6 +6,7 @@ from ixmp4.core import IndexSet, Parameter
 from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
+    RunLockRequired,
 )
 
 from ..utils import assert_unordered_equality, create_indexsets_for_run
@@ -57,6 +58,12 @@ class TestCoreParameter:
         assert parameter.indexset_names == [indexset_1.name]
         assert parameter.values == []
         assert parameter.units == []
+
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.parameters.create(
+                "Parameter 2", constrained_to_indexsets=[indexset_1.name]
+            )
 
         with run.transact("Test parameters.create() errors and column_names"):
             # Test duplicate name raises
@@ -133,6 +140,10 @@ class TestCoreParameter:
         with run.transact("Test parameters.delete() indexset linkage"):
             run.optimization.indexsets.delete(item=indexset_1.id)
 
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.parameters.delete(item="Parameter 2")
+
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
@@ -192,6 +203,10 @@ class TestCoreParameter:
             "values": [6, 5, 4, 3, 2, 1],
             "units": [unit.name] * 6,
         }
+
+        # Test add without run lock raises
+        with pytest.raises(RunLockRequired):
+            parameter.add(data=test_data_2)
 
         with run.transact("Test Parameter.add() errors and order"):
             parameter_2 = run.optimization.parameters.create(
@@ -347,6 +362,10 @@ class TestCoreParameter:
             parameter.remove(data={})
 
         assert parameter.data == initial_data
+
+        # Test remove without run lock raises
+        with pytest.raises(RunLockRequired):
+            parameter.remove(data={})
 
         remove_data_1: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo"],

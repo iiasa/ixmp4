@@ -4,7 +4,11 @@ import pytest
 
 import ixmp4
 from ixmp4.core import IndexSet
-from ixmp4.core.exceptions import DeletionPrevented, OptimizationDataValidationError
+from ixmp4.core.exceptions import (
+    DeletionPrevented,
+    OptimizationDataValidationError,
+    RunLockRequired,
+)
 
 from ..utils import create_indexsets_for_run
 
@@ -50,6 +54,10 @@ class TestCoreIndexset:
         assert indexset_1.id == 1
         assert indexset_1.name == "Indexset 1"
 
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.indexsets.create("Indexset 2")
+
         with run.transact("Test indexsets.create() 2"):
             indexset_2 = run.optimization.indexsets.create("Indexset 2")
         assert indexset_1.id != indexset_2.id
@@ -86,6 +94,10 @@ class TestCoreIndexset:
                 )
                 run.optimization.indexsets.delete(item=indexset_2.id)
 
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.indexsets.delete(item="Indexset 2")
+
     def test_get_indexset(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         create_indexsets_for_run(platform=platform, run_id=run.id, amount=1)
@@ -113,6 +125,10 @@ class TestCoreIndexset:
 
             with pytest.raises(OptimizationDataValidationError):
                 indexset_2.add(["baz", "baz"])
+
+        # Test add without run lock raises
+        with pytest.raises(RunLockRequired):
+            indexset_1.add(["baz", "foo"])
 
         # Test data types are conserved
         test_data_2 = [1.2, 3.4, 5.6]
@@ -148,6 +164,10 @@ class TestCoreIndexset:
             indexset_1.remove(data=[])
 
         assert indexset_1.data == test_data
+
+        # Test remove without run lock raises
+        with pytest.raises(RunLockRequired):
+            indexset_1.remove(data=[])
 
         # Define additional items affected by `remove_data`
         unit = platform.units.create("Unit")

@@ -6,6 +6,7 @@ from ixmp4.core import IndexSet, OptimizationVariable
 from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
+    RunLockRequired,
 )
 from ixmp4.data.backend.api import RestBackend
 from ixmp4.data.db.optimization.variable.repository import logger
@@ -51,6 +52,10 @@ class TestCoreVariable:
         assert variable.column_names is None
         assert variable.levels == []
         assert variable.marginals == []
+
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.variables.create("Variable 2")
 
         # Test creation with indexset
         indexset_1, _ = tuple(
@@ -173,6 +178,10 @@ class TestCoreVariable:
         with run.transact("Test indexsets.delete() in variables.delete()"):
             run.optimization.indexsets.delete(item=indexset_1.id)
 
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.variables.delete(item="Variable 2")
+
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
@@ -231,6 +240,10 @@ class TestCoreVariable:
             "levels": [6, 5, 4, 3, 2, 1],
             "marginals": [1, 3, 5, 6, 4, 2],
         }
+
+        # Test add without run lock raises
+        with pytest.raises(RunLockRequired):
+            variable.add(data=test_data_2)
 
         with run.transact("Test Variable.add() errors and order"):
             variable_2 = run.optimization.variables.create(
@@ -397,6 +410,10 @@ class TestCoreVariable:
             variable.remove_data(data={})
 
         assert variable.data == test_data
+
+        # Test remove without run lock raises
+        with pytest.raises(RunLockRequired):
+            variable.remove_data(data={})
 
         with run.transact("Test Variable.remove_data() errors"):
             # Test incomplete index raises...

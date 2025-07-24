@@ -6,6 +6,7 @@ from ixmp4.core import Equation, IndexSet
 from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
+    RunLockRequired,
 )
 from ixmp4.data.backend.api import RestBackend
 from ixmp4.data.db.optimization.equation.repository import logger
@@ -51,6 +52,10 @@ class TestCoreEquation:
         assert equation_1.column_names is None
         assert equation_1.levels == []
         assert equation_1.marginals == []
+
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.equations.create("Equation 2")
 
         # Test creation with indexset
         indexset_1, _ = tuple(
@@ -171,6 +176,10 @@ class TestCoreEquation:
             # If they haven't, this would raise DeletionPrevented
             run.optimization.indexsets.delete(item=indexset_1.id)
 
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.equations.delete(item="Equation 2")
+
     def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
@@ -228,6 +237,10 @@ class TestCoreEquation:
             "levels": [6, 5, 4, 3, 2, 1],
             "marginals": [1, 3, 5, 6, 4, 2],
         }
+
+        # Test add without run lock raises
+        with pytest.raises(RunLockRequired):
+            equation.add(data=test_data_2)
 
         with run.transact("Test Equation.add() errors and order"):
             equation_2 = run.optimization.equations.create(
@@ -394,6 +407,10 @@ class TestCoreEquation:
             equation.remove_data(data={})
 
         assert equation.data == test_data
+
+        # Test remove without run lock raises
+        with pytest.raises(RunLockRequired):
+            equation.remove_data(data={})
 
         remove_data = {indexset.name: [test_data[indexset.name][0]]}
         test_data_2 = {k: [v[1]] for k, v in test_data.items()}

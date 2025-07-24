@@ -6,6 +6,7 @@ from ixmp4.core import IndexSet, Table
 from ixmp4.core.exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
+    RunLockRequired,
 )
 
 from ..utils import create_indexsets_for_run
@@ -57,6 +58,12 @@ class TestCoreTable:
         assert table.data == {}
         assert table.indexset_names == [indexset_1.name]
         assert table.column_names is None
+
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.tables.create(
+                "Table 2", constrained_to_indexsets=[indexset_1.name]
+            )
 
         with run.transact("Test tables.create() errors and column_names"):
             # Test duplicate name raises
@@ -132,6 +139,10 @@ class TestCoreTable:
             # If they haven't, this would raise DeletionPrevented
             run.optimization.indexsets.delete(item=indexset_1.id)
 
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.tables.delete(item="Table 2")
+
     def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = create_indexsets_for_run(
@@ -174,6 +185,10 @@ class TestCoreTable:
         assert table.data == test_data_1
 
         test_data_2 = {indexset.name: [""], indexset_2.name: [3]}
+
+        # Test add without run lock raises
+        with pytest.raises(RunLockRequired):
+            table.add(data=test_data_2)
 
         with run.transact("Test Table.add() errors"):
             table_2 = run.optimization.tables.create(
@@ -321,6 +336,10 @@ class TestCoreTable:
             indexset_1.name: ["foo"],
             indexset_2.name: [1],
         }
+
+        # Test remove without run lock raises
+        with pytest.raises(RunLockRequired):
+            table.remove(data=remove_data_1)
 
         with run.transact("Test Table.remove() errors and single"):
             # Test incomplete index raises

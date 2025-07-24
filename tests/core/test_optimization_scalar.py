@@ -3,6 +3,7 @@ import pytest
 
 import ixmp4
 from ixmp4.core import Scalar
+from ixmp4.core.exceptions import RunLockRequired
 
 from ..utils import assert_unordered_equality
 
@@ -48,6 +49,10 @@ class TestCoreScalar:
         # assert scalar_1.unit == unit
         assert scalar_1.unit.id == unit.id
 
+        # Test create without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.scalars.create("Scalar 2", value=20)
+
         unit2 = platform.units.create("Test Unit 2")
         with run.transact("Test scalars.create() errors"):
             with pytest.raises(Scalar.NotUnique):
@@ -92,6 +97,10 @@ class TestCoreScalar:
 
         assert run.optimization.scalars.tabulate().empty
 
+        # Test delete without run lock raises
+        with pytest.raises(RunLockRequired):
+            run.optimization.scalars.delete(item=1)
+
     def test_get_scalar(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         unit = platform.units.create("Test Unit")
@@ -115,7 +124,7 @@ class TestCoreScalar:
         assert scalar.unit.id == unit.id
 
         with run.transact("Test Scalar update()"):
-            scalar.value = 30
+            scalar.value = 3.0
             scalar.unit = "Test Unit"
         # NOTE: doesn't work for some reason (but doesn't either for e.g. model.get())
         # assert scalar == run.optimization.scalars.get("Scalar")
@@ -123,8 +132,14 @@ class TestCoreScalar:
 
         assert scalar.id == result.id
         assert scalar.name == result.name
-        assert scalar.value == result.value == 30
+        assert scalar.value == result.value == 3.0
         assert scalar.unit.id == result.unit.id == 1
+
+        # Test update without run lock raises
+        with pytest.raises(RunLockRequired):
+            scalar.value = 1
+        with pytest.raises(RunLockRequired):
+            scalar.unit = "1"
 
     def test_list_scalars(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
