@@ -421,6 +421,7 @@ class BulkOperator(Tabulator[ModelType]):
     ) -> pd.DataFrame:
         columns = db.utils.get_columns(self.model_class)
         primary_key_columns = db.utils.get_pk_columns(self.model_class)
+        existing_df.dropna(axis=1, inplace=True)
         on = (
             (
                 set(existing_df.columns) & set(df.columns) & set(columns.keys())
