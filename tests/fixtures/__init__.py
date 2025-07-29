@@ -52,6 +52,8 @@ class SmallIamcDataset:
     categorical = pd.read_csv(here / "small/categorical.csv")
     datetime = pd.read_csv(here / "small/datetime.csv")
     datetime["step_datetime"] = pd.to_datetime(datetime["step_datetime"])
+    mixed = pd.read_csv(here / "small/mixed.csv")
+    mixed["step_datetime"] = pd.to_datetime(mixed["step_datetime"])
 
     @classmethod
     def load_regions(cls, platform: ixmp4.Platform) -> None:

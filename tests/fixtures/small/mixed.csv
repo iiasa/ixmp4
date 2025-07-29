@@ -1,0 +1,5 @@
+region,variable,unit,step_year,step_datetime,value
+Region 1,Variable 1,Unit 1,2000,,0.5
+Region 1,Variable 1,Unit 2,,2010-01-01 00:00:00,1.0
+Region 3,Variable 4,Unit 2,,2020-01-01 00:00:00,1.7
+Region 3,Variable 3,Unit 3,2020,,1.5
