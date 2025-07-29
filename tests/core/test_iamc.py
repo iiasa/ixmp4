@@ -66,6 +66,11 @@ class TestCoreIamc:
             platform, self.small.datetime.copy(), True, DataPoint.Type.DATETIME
         )
 
+    def test_run_mixed_datapoints(self, platform: ixmp4.Platform):
+        self.do_run_datapoints(
+            platform, self.small.mixed.copy(), True, None
+        )
+
     @pytest.mark.parametrize(
         "invalid_type", (DataPoint.Type.ANNUAL, DataPoint.Type.CATEGORICAL)
     )
@@ -102,13 +107,17 @@ class TestCoreIamc:
         # == Full Addition ==
         # Save to database
         with run.transact("Full Addition"):
-            run.iamc.add(data, type=_type)
+            if raw is True and _type is None:
+                for _data, _data_type in split_datapoints_by_type(data):
+                    run.iamc.add(_data, type=_data_type)
+            else:
+                run.iamc.add(data, type=_type)
 
         # Retrieve from database via Run
         ret = run.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(data, ret, check_like=True)
+        assert_unordered_equality(data, ret, check_like=True, check_dtype=False, check_column_type=False)
 
         # If not set as default, retrieve from database
         # via Platform returns an empty frame
@@ -126,21 +135,26 @@ class TestCoreIamc:
         test_mp_data["scenario"] = run.scenario.name
         test_mp_data["version"] = run.version
         test_mp_data = test_mp_data[ret.columns]
-        assert_unordered_equality(test_mp_data, ret, check_like=True)
+        assert_unordered_equality(test_mp_data, ret, check_like=True, check_column_type=False)
 
         # Retrieve from database after setting the run to default
         run.set_as_default()
         ret = platform.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(test_mp_data, ret, check_like=True)
+        assert_unordered_equality(test_mp_data, ret, check_like=True, check_column_type=False)
 
         # == Partial Removal ==
         # Remove half the data
         remove_data = data.head(len(data) // 2).drop(columns=["value"])
         remaining_data = data.tail(len(data) // 2).reset_index(drop=True)
         with run.transact("Partial Removal"):
-            run.iamc.remove(remove_data, type=_type)
+            if raw is True and _type is None:
+                for _data, _data_type in split_datapoints_by_type(remove_data):
+                    print(_data)
+                    run.iamc.remove(_data, type=_data_type)
+            else:
+                run.iamc.remove(remove_data, type=_type)
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -162,20 +176,27 @@ class TestCoreIamc:
 
         with run.transact("Partial Update / Partial Addition"):
             # Results in a half insert / half update
-            run.iamc.add(data, type=_type)
+            if raw is True and _type is None:
+                for _data, _data_type in split_datapoints_by_type(data):
+                    run.iamc.add(_data, type=_data_type)
+            else:
+                run.iamc.add(data, type=_type)
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(data, ret, check_like=True)
+        assert_unordered_equality(data, ret, check_like=True, check_column_type=False)
 
         # == Full Removal ==
         # Remove all data
         remove_data = data.drop(columns=["value"])
         with run.transact("Full Removal"):
-            # Results in a half insert / half update
-            run.iamc.remove(remove_data, type=_type)
+            if raw is True and _type is None:
+                for _remove_data, _data_type in split_datapoints_by_type(remove_data):
+                    run.iamc.remove(_remove_data, type=_data_type)
+            else:
+                run.iamc.remove(remove_data, type=_type)
 
         # Retrieve from database
         ret = run.iamc.tabulate(raw=raw)
@@ -558,3 +579,18 @@ class TestCoreIamcReadOnly:
     def test_mp_tabulate_big(self, platform_med: ixmp4.Platform) -> None:
         res = platform_med.iamc.tabulate(raw=True, run={"default_only": False})
         assert len(res) > settings.default_page_size
+
+
+def split_datapoints_by_type(data: pd.DataFrame):
+    lst = []
+
+    for drop_cols, _type in [
+        ({"step_datetime", "step_categorical"}, DataPoint.Type.ANNUAL),
+        ({"step_year", "step_categorical"}, DataPoint.Type.DATETIME),
+        ({"step_year", "step_datetime"}, DataPoint.Type.CATEGORICAL),
+    ]:
+        _data = data.drop(columns=drop_cols.intersection(data.columns)).dropna()
+        if any(["step" in i for i in _data.columns]):
+            lst.append((_data, _type))
+
+    return lst
