@@ -3,6 +3,7 @@ from contextlib import contextmanager, nullcontext
 from itertools import chain
 from typing import Any
 
+import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
@@ -20,14 +21,24 @@ class AssertKwargs(TypedDict, total=False):
     check_dtype: bool
 
 
+def clean_df(df: pd.DataFrame):
+    df = df.sort_index(axis=1)
+    df = df.sort_values(by=list(df.columns)).reset_index(drop=True)
+    if "step_datetime" in df.columns:
+        df["step_datetime"] = pd.to_datetime(df["step_datetime"])
+    if "step_year" in df.columns:
+        df["step_year"] = df["step_year"].fillna(np.nan).map(float)
+    return df
+
+
 def assert_unordered_equality(
     df1: pd.DataFrame, df2: pd.DataFrame, **kwargs: Unpack[AssertKwargs]
 ) -> None:
-    df1 = df1.sort_index(axis=1)
-    df1 = df1.sort_values(by=list(df1.columns)).reset_index(drop=True)
-    df2 = df2.sort_index(axis=1)
-    df2 = df2.sort_values(by=list(df2.columns)).reset_index(drop=True)
-    pdt.assert_frame_equal(df1, df2, **kwargs)
+    pdt.assert_frame_equal(
+        clean_df(df1),
+        clean_df(df2),
+        **kwargs
+    )
 
 
 def create_indexsets_for_run(
