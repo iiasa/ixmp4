@@ -40,9 +40,7 @@ class Scalar(OptimizationBaseModelFacade):
         self._run.require_lock()
         self._model.value = value
         self.backend.optimization.scalars.update(
-            id=self._model.id,
-            value=self._model.value,
-            unit_id=self._model.unit.id,
+            id=self._model.id, value=self._model.value
         )
 
     @property
@@ -57,9 +55,7 @@ class Scalar(OptimizationBaseModelFacade):
             unit_model = self.backend.units.get(value)
             value = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
-            id=self._model.id,
-            value=self._model.value,
-            unit_id=value.id,
+            id=self._model.id, unit_id=value.id
         )
 
     @property
