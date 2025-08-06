@@ -20,6 +20,8 @@ from ixmp4.core.utils import substitute_type
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.iamc.utils import normalize_df
+from ixmp4.data.db.unit import Unit
+from ixmp4.data.db.utils import map_existing
 from ixmp4.db import utils
 
 from .. import base, versions
@@ -224,6 +226,40 @@ class RunRepository(
         run.is_default = False
         self.session.commit()
 
+    def revert_units(self, transaction__id: int) -> None:
+        units_to_revert = self.backend.units.versions.tabulate(
+            transaction__id=transaction__id, valid="after_transaction"
+        )
+        if units_to_revert.empty:
+            return
+
+        # NOTE Reverting only affected units requires careful attention to detail to
+        # ensure other items' foreignkey constraints are not disturbed. Much easier and
+        # safer to revert all; plus we're not running this always and there shouldn't be
+        # too many affected units.
+        current_units = self.backend.units.tabulate()
+
+        if not current_units.empty:
+            self.backend.units.bulk_delete(current_units)
+
+        version_units = self.backend.units.versions.tabulate(
+            transaction__id=transaction__id
+        )
+        if version_units.empty:
+            return
+
+        with self.backend.event_handler.pause():
+            self.backend.units.bulk_upsert(
+                version_units.drop(
+                    columns=[
+                        "id",
+                        "transaction_id",
+                        "end_transaction_id",
+                        "operation_type",
+                    ]
+                )
+            )
+
     def _get_or_create_ts(self, run__id: int, df: pd.DataFrame) -> pd.DataFrame:
         df["run__id"] = run__id
         id_cols = ["region", "variable", "unit", "run__id"]
@@ -275,8 +311,113 @@ class RunRepository(
         )
         self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
 
-    def revert_optimization_data(self, run: Run, transaction__id: int) -> None:
-        pass  # TODO: Implement this. @glatterf42
+    def _restore_deleted_units(self, transaction__id: int) -> None:
+        deleted_units = self.backend.units.versions.tabulate(
+            transaction__id, valid="after_transaction"
+        )
+        deleted_units = deleted_units[
+            deleted_units["operation_type"] == versions.Operation.DELETE
+        ]
+        if not deleted_units.empty:
+            with self.backend.event_handler.pause():
+                self.backend.units.bulk_insert(
+                    deleted_units.drop(
+                        columns=[
+                            "id",
+                            "transaction_id",
+                            "end_transaction_id",
+                            "operation_type",
+                        ]
+                    )
+                )
+
+                # NOTE Need this since there may be no commit() between restoration and
+                # using restored units for foreign keys
+                self.session.commit()
+
+    def _map_units_on_rollback(self, df: pd.DataFrame) -> pd.DataFrame:
+        # Map units requested in df to new unit ids
+        # NOTE This df has two unit__id columns: one containing current ids and one ids
+        # from before the rollback (called _old). Extra columns like this are ignored by
+        # bulk_insert(), it seems.
+        df, missing = map_existing(
+            df,
+            existing_df=self.backend.units.tabulate(name__in=df["unit"]),
+            join_on=("name", "unit"),
+            map=("id", "unit__id"),
+            suffixes=("_old", None),
+        )
+        if len(missing) > 0:
+            raise Unit.NotFound(", ".join(missing))
+
+        return df
+
+    def revert_optimization_data(
+        self, run: Run, transaction__id: int, revert_platform: bool = False
+    ) -> None:
+        # TODO: Implement this. @glatterf42
+        # Let's start with scalars
+        current_scalars = self.backend.optimization.scalars.tabulate(run_id=run.id)
+        version_scalars = self.backend.optimization.scalars.versions.tabulate(
+            transaction__id=transaction__id, run__id=run.id
+        )
+
+        # TODO Add a check to exit early if current == version
+
+        scalars_to_delete = current_scalars[
+            ~current_scalars["id"].isin(version_scalars["id"])
+        ]
+
+        if not scalars_to_delete.empty:
+            self.backend.optimization.scalars.bulk_delete(scalars_to_delete)
+
+        if revert_platform:
+            # Restore deleted units
+            self._restore_deleted_units(transaction__id=transaction__id)
+            # Map requested to restored units
+            version_scalars = self._map_units_on_rollback(df=version_scalars)
+
+        # NOTE This manual splitting of data could be avoided if `tabulate_existing`
+        # returned the correct values
+        # This would allow us to simply `bulk_upsert` the data, though that queries the
+        # DB again (for `tabulate_existing`, the data of which we already have here)
+        scalars_to_insert = version_scalars[
+            ~version_scalars["id"].isin(current_scalars["id"])
+        ].drop(
+            columns=[
+                "id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+                "unit",
+            ]
+        )
+
+        # Limit updates to those differing from their existing versions
+        scalars_to_consider = set(
+            self.backend.optimization.scalars.versions.tabulate(
+                transaction__id=transaction__id,
+                run__id=run.id,
+                valid="after_transaction",
+            )["id"]
+        )
+        version_scalars = version_scalars[
+            version_scalars["id"].isin(scalars_to_consider)
+        ]
+
+        scalars_to_update = version_scalars[
+            version_scalars["id"].isin(current_scalars["id"])
+        ].drop(
+            columns=["transaction_id", "end_transaction_id", "operation_type", "unit"]
+        )
+
+        if not scalars_to_insert.empty:
+            with self.backend.event_handler.pause():
+                self.backend.optimization.scalars.bulk_insert(scalars_to_insert)
+        if not scalars_to_update.empty:
+            self.backend.optimization.scalars.bulk_update(scalars_to_update)
+
+        self.session.commit()
 
     def revert_meta(self, run: Run, transaction__id: int) -> None:
         current_meta = self.backend.meta.tabulate(
@@ -307,8 +448,11 @@ class RunRepository(
             )
 
     @guard("edit")
-    def revert(self, id: int, transaction__id: int) -> None:
+    def revert(
+        self, id: int, transaction__id: int, revert_platform: bool = False
+    ) -> None:
         self.check_versioning_compatiblity()
+
         run = self.get_by_id(id, _access_type="edit")
 
         if self.backend.transactions.latest().id == transaction__id:
@@ -316,7 +460,9 @@ class RunRepository(
             return
 
         self.revert_iamc_data(run, transaction__id)
-        self.revert_optimization_data(run, transaction__id)
+        self.revert_optimization_data(
+            run, transaction__id, revert_platform=revert_platform
+        )
         self.revert_meta(run, transaction__id)
 
     @guard("edit")
@@ -349,6 +495,9 @@ class RunRepository(
     # Suggestion by meksor: write a (single) query to load all objects with run_id to a
     # (single) dataframe, change the run_id, then write all back (does that work at
     # once/with one query?)
+    # Alternatively, at least use bulk statements for the optimization items and ensure
+    # that commit is only called once at the end (so that either all changes make it or
+    # none and to avoid multiple transactions with the DB)
     @guard("edit")
     def clone(
         self,

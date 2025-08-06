@@ -1,9 +1,12 @@
 from collections.abc import Iterable
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Any, Literal
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
+from ixmp4.data.db.unit.model import UnitVersion
+
+# TODO Move this to the end of the import block and add to existing commit
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
@@ -13,13 +16,49 @@ from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.abstract.annotations import HasUnitIdFilter
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
 
 from .. import base
 from .docs import ScalarDocsRepository
-from .model import Scalar
+from .model import Scalar, ScalarVersion
 
 
 class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...
+
+
+class ScalarVersionRepository(versions.VersionRepository[ScalarVersion]):
+    model_class = ScalarVersion
+
+    def select(
+        self,
+        transaction__id: int | None = None,
+        run__id: int | None = None,
+        valid: Literal["at_transaction", "after_transaction"] = "at_transaction",
+        **kwargs: Any,
+    ) -> db.sql.Select[Any]:
+        exc = db.select(self.bundle, UnitVersion.name.label("unit")).select_from(
+            self.model_class
+        )
+
+        exc = exc.join(UnitVersion, onclause=ScalarVersion.unit__id == UnitVersion.id)
+
+        if transaction__id is not None:
+            for vclass in (self.model_class, UnitVersion):
+                match valid:
+                    case "at_transaction":
+                        exc = self.where_valid_at_transaction(
+                            exc, transaction__id, vclass
+                        )
+                    case "after_transaction":
+                        exc = self.where_recorded_after_transaction(
+                            exc, transaction__id
+                        )
+
+        if run__id is not None:
+            exc = exc.where(ScalarVersion.run__id == run__id)
+
+        exc = self.where_matches_kwargs(exc, **kwargs)
+        return exc.distinct()
 
 
 class ScalarRepository(
@@ -27,9 +66,12 @@ class ScalarRepository(
     base.Deleter[Scalar],
     base.Retriever[Scalar],
     base.Enumerator[Scalar],
+    base.BulkUpserter[Scalar],
+    base.BulkDeleter[Scalar],
     abstract.ScalarRepository,
 ):
     model_class = Scalar
+    versions: ScalarVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -38,6 +80,8 @@ class ScalarRepository(
         from .filter import OptimizationScalarFilter
 
         self.filter_class = OptimizationScalarFilter
+
+        self.versions = ScalarVersionRepository(*args)
 
     def add(self, name: str, value: float | int, unit_name: str, run_id: int) -> Scalar:
         unit_id = self.backend.units.get(unit_name).id
@@ -83,18 +127,16 @@ class ScalarRepository(
     def update(
         self, id: int, value: float | None = None, unit_id: int | None = None
     ) -> Scalar:
-        exc = db.update(Scalar).where(
-            Scalar.id == id,
-        )
+        scalar = self.get_by_id(id)
 
         if value is not None:
-            exc = exc.values(value=value)
+            scalar.value = value
         if unit_id is not None:
-            exc = exc.values(unit__id=unit_id)
+            scalar.unit__id = unit_id
 
-        self.session.execute(exc)
         self.session.commit()
-        return self.get_by_id(id)
+
+        return scalar
 
     @guard("view")
     def list(self, **kwargs: Unpack[EnumerateKwargs]) -> Iterable[Scalar]:

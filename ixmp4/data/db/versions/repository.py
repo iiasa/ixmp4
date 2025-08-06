@@ -1,4 +1,6 @@
-from typing import Any, TypeVar
+from typing import Any, Literal, TypeVar
+
+import pandas as pd
 
 from ixmp4 import db
 
@@ -23,6 +25,11 @@ class VersionRepository(
                 exc = exc.where(columns[key] == kwargs[key])
         return exc
 
+    def where_recorded_after_transaction(
+        self, exc: db.sql.Select[Any], transaction__id: int
+    ) -> db.sql.Select[Any]:
+        return exc.where(self.model_class.transaction_id > transaction__id)
+
     def where_valid_at_transaction(
         self,
         exc: db.sql.Select[Any],
@@ -43,13 +50,29 @@ class VersionRepository(
         )
 
     def select(
-        self, transaction__id: int | None = None, **kwargs: Any
+        self,
+        transaction__id: int | None = None,
+        valid: Literal["at_transaction", "after_transaction"] = "at_transaction",
+        **kwargs: Any,
     ) -> db.sql.Select[Any]:
         exc = db.select(self.model_class)
 
         if transaction__id is not None:
-            exc = self.where_valid_at_transaction(exc, transaction__id)
+            match valid:
+                case "at_transaction":
+                    exc = self.where_valid_at_transaction(exc, transaction__id)
+                case "after_transaction":
+                    exc = self.where_recorded_after_transaction(exc, transaction__id)
 
         exc = self.where_matches_kwargs(exc, **kwargs)
 
         return exc.order_by(self.model_class.id.asc())
+
+    def tabulate(
+        self,
+        *args: Any,
+        _raw: bool = False,
+        valid: Literal["at_transaction", "after_transaction"] = "at_transaction",
+        **kwargs: Any,
+    ) -> pd.DataFrame:
+        return super().tabulate(*args, _raw=_raw, valid=valid, **kwargs)
