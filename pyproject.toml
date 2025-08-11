@@ -35,7 +35,6 @@ toml = ">=0.10.2"
 psycopg = { extras = ["binary"], version = ">=3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
-sqlalchemy-continuum = ">=1.4.2"
 
 [tool.poetry.group.docs]
 optional = true
@@ -113,7 +112,7 @@ warn_unreachable = true
 
 [[tool.mypy.overrides]]
 # Removing this introduces several errors
-module = ["uvicorn.workers", "sqlalchemy_utils", "sqlalchemy_continuum.*"]
+module = ["uvicorn.workers", "sqlalchemy_utils"]
 # Without this, mypy is still fine, but pyproject.toml complains
 ignore_missing_imports = true
 
