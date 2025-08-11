@@ -420,8 +420,7 @@ class BulkOperator(Tabulator[ModelType]):
         df = df.drop(columns=existing_columns + extra_columns)
         df = df.dropna(axis="index", how="all")
         df = df.replace({np.nan: None})
-        # df = df.dropna(axis="columns", how="all")
-        # df = df.dropna()
+
         return df
 
     def split_by_max_unique_values(
