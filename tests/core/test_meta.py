@@ -154,8 +154,8 @@ class CustomException(Exception):
     pass
 
 
-def test_run_meta_rollback(platform: ixmp4.Platform) -> None:
-    run = platform.runs.create("Model 1", "Scenario 1")
+def test_run_meta_rollback(pg_platform: ixmp4.Platform) -> None:
+    run = pg_platform.runs.create("Model 1", "Scenario 1")
 
     with run.transact("Add meta data"):
         run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
