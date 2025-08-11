@@ -13,6 +13,7 @@ run/*
 
 # env & secrets
 .env
+.env*
 secrets.env
 
 # vscode
