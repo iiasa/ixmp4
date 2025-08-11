@@ -6,7 +6,7 @@ from ixmp4.data.db.model.filter import ModelFilter
 from ixmp4.data.db.model.model import Model
 
 from . import deps
-from .base import BaseModel, EnumerationOutput, Pagination, TabulateVersionArgs
+from .base import BaseModel, EnumerationOutput, Pagination
 from .decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -47,17 +47,3 @@ def create(
 ) -> Model:
     return backend.models.create(**model.model_dump())
 
-
-@router.patch("/versions/", response_model=api.DataFrame)
-def tabulate_versions(
-    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
-    pagination: Pagination = Depends(),
-    backend: Backend = Depends(deps.get_backend),
-) -> api.DataFrame:
-    return api.DataFrame.model_validate(
-        backend.models.tabulate_versions(
-            limit=pagination.limit,
-            offset=pagination.offset,
-            **filter.model_dump(),
-        )
-    )
