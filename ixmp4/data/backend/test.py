@@ -79,6 +79,8 @@ mock_manager = MockManagerConfig([test_platform], test_permissions)
 
 
 class RestTestBackend(RestBackend):
+    db_backend: "SqlAlchemyBackend"
+
     def __init__(self, db_backend: "SqlAlchemyBackend") -> None:
         self.db_backend = db_backend
         self.auth_params = (test_user, mock_manager, test_platform)
