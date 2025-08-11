@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class ParameterIndexsetAssociation(base.RootBaseModel):
-    table_prefix = "optimization_"
+    __tablename__ = "optimization_parameterindexsetassociation"
 
     parameter__id: types.ParameterId
     parameter: types.Mapped["Parameter"] = db.relationship(
@@ -25,6 +25,8 @@ class ParameterIndexsetAssociation(base.RootBaseModel):
 
 
 class Parameter(base.BaseModel):
+    __tablename__ = "optimization_parameter"
+
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Parameter.NotFound
     NotUnique: ClassVar = abstract.Parameter.NotUnique

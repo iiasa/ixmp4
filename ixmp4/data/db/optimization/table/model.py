@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class TableIndexsetAssociation(base.RootBaseModel):
-    table_prefix = "optimization_"
+    __tablename__ = "optimization_tableindexsetassociation"
 
     table__id: types.TableId
     table: types.Mapped["Table"] = db.relationship(
@@ -25,6 +25,8 @@ class TableIndexsetAssociation(base.RootBaseModel):
 
 
 class Table(base.BaseModel):
+    __tablename__ = "optimization_table"
+
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Table.NotFound
     NotUnique: ClassVar = abstract.Table.NotUnique

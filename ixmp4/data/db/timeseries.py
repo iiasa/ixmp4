@@ -84,7 +84,6 @@ class TimeSeriesRepository(
     base.Enumerator[ModelType],
     base.BulkUpserter[ModelType],
     base.BulkDeleter[ModelType],
-    base.VersionManager[ModelType],
     Generic[ModelType],
 ):
     def join_auth(

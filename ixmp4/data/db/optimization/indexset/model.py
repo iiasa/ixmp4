@@ -11,6 +11,8 @@ from .. import base
 
 
 class IndexSet(base.BaseModel):
+    __tablename__ = "optimization_indexset"
+
     NotFound: ClassVar = abstract.IndexSet.NotFound
     NotUnique: ClassVar = abstract.IndexSet.NotUnique
     DataInvalid: ClassVar = OptimizationDataValidationError
@@ -43,7 +45,7 @@ class IndexSet(base.BaseModel):
 
 
 class IndexSetData(base.RootBaseModel):
-    table_prefix = "optimization_"
+    __tablename__ = "optimization_indexsetdata"
 
     indexset: types.Mapped["IndexSet"] = db.relationship(back_populates="_data")
     indexset__id: types.IndexSet__Id
