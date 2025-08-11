@@ -43,7 +43,7 @@ def create_indexsets_for_run(
     )
 
 
-SqlaBackendCallable = Callable[[Backend], Any]
+SqlaBackendCallable = Callable[[SqlAlchemyBackend], Any]
 
 
 def versioning_test(
