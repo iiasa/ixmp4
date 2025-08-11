@@ -2,6 +2,7 @@ from collections.abc import Mapping
 
 from ixmp4 import db
 from ixmp4.data import types
+from ixmp4.data.db import versions
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.region import Region
 from ixmp4.data.db.timeseries import TimeSeries as BaseTimeSeries
@@ -10,7 +11,7 @@ from .. import base
 
 
 class TimeSeries(BaseTimeSeries, base.BaseModel):
-    __versioned__ = {}
+    __tablename__ = "iamc_timeseries"
 
     __table_args__ = (db.UniqueConstraint("run__id", "region__id", "measurand__id"),)
 
@@ -35,3 +36,15 @@ class TimeSeries(BaseTimeSeries, base.BaseModel):
             "unit": self.measurand.unit.name,
             "variable": self.measurand.variable.name,
         }
+
+
+class TimeSeriesVersion(versions.DefaultVersionModel):
+    __tablename__ = "iamc_timeseries_version"
+    region__id: types.Integer = db.Column(nullable=False, index=True)
+    measurand__id: types.Integer = db.Column(nullable=False, index=True)
+    run__id: types.Integer = db.Column(nullable=False, index=True)
+
+
+version_triggers = versions.PostgresVersionTriggers(
+    TimeSeries.__table__, TimeSeriesVersion.__table__
+)
