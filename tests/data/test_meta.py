@@ -1,13 +1,14 @@
 import numpy as np
 import pandas as pd
 import pytest
-from sqlalchemy_continuum.operation import Operation
 
 import ixmp4
 from ixmp4.core.exceptions import InvalidRunMeta, SchemaError
 from ixmp4.data.abstract.meta import RunMetaEntry
+from ixmp4.data.backend import SqlAlchemyBackend
+from ixmp4.data.db.versions import Operation
 
-from ..utils import assert_unordered_equality
+from .. import utils
 
 TEST_ENTRIES: list[tuple[str, bool | float | int | str, str]] = [
     ("Boolean", True, RunMetaEntry.Type.BOOL),
@@ -30,7 +31,7 @@ class TestDataMeta:
         run.set_as_default()
 
         creations = []
-        transaction_id = 2  # two transactions already occured above
+        transaction_id = 5  # five transactions already occured above
         for key, value, type in TEST_ENTRIES:
             transaction_id += 1
             entry = platform.backend.meta.create(run.id, key, value)
@@ -55,30 +56,32 @@ class TestDataMeta:
                 ]
             )
 
-        expected_versions = pd.DataFrame(
-            creations,
-            columns=[
-                "id",
-                "key",
-                "dtype",
-                "run__id",
-                "value_int",
-                "value_str",
-                "value_float",
-                "value_bool",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        ).replace({np.nan: None})
-        vdf = platform.backend.meta.tabulate_versions()
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
-
         for key, value, type in TEST_ENTRIES:
             entry = platform.backend.meta.get(run.id, key)
             assert entry.key == key
             assert entry.value == value
             assert entry.dtype == type
+
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
+                creations,
+                columns=[
+                    "id",
+                    "key",
+                    "dtype",
+                    "run__id",
+                    "value_int",
+                    "value_str",
+                    "value_float",
+                    "value_bool",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            ).replace({np.nan: None})
+            vdf = backend.meta.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_illegal_key(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -116,31 +119,33 @@ class TestDataMeta:
         entry = platform.backend.meta.create(run.id, "Key", "Value")
         platform.backend.meta.delete(entry.id)
 
-        expected_versions = pd.DataFrame(
-            [
-                [1, "Key", "STR", 1, None, "Value", None, None, 2, 3, 0],
-                [1, "Key", "STR", 1, None, "Value", None, None, 3, None, 2],
-            ],
-            columns=[
-                "id",
-                "key",
-                "dtype",
-                "run__id",
-                "value_int",
-                "value_str",
-                "value_float",
-                "value_bool",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        ).replace({np.nan: None})
-
-        vdf = platform.backend.meta.tabulate_versions()
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
-
         with pytest.raises(RunMetaEntry.NotFound):
             platform.backend.meta.get(run.id, "Key")
+
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
+                [
+                    [1, "Key", "STR", 1, None, "Value", None, None, 4, 5, 0],
+                    [1, "Key", "STR", 1, None, "Value", None, None, 5, None, 2],
+                ],
+                columns=[
+                    "id",
+                    "key",
+                    "dtype",
+                    "run__id",
+                    "value_int",
+                    "value_str",
+                    "value_float",
+                    "value_bool",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            ).replace({np.nan: None})
+
+            vdf = backend.meta.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_list_entry(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -167,7 +172,7 @@ class TestDataMeta:
         true_entries["run__id"] = run.id
 
         entries = platform.backend.meta.tabulate()
-        assert_unordered_equality(entries, true_entries)
+        utils.assert_unordered_equality(entries, true_entries)
 
     def test_tabulate_entries_with_run_filters(self, platform: ixmp4.Platform) -> None:
         run1 = platform.runs.create("Model", "Scenario")
@@ -189,15 +194,15 @@ class TestDataMeta:
 
         expected = pd.concat([true_entries1, true_entries2], ignore_index=True)
 
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             platform.backend.meta.tabulate(run={"default_only": False}), expected
         )
 
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             platform.backend.meta.tabulate(run={"is_default": True}), true_entries1
         )
 
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             platform.backend.meta.tabulate(
                 run={"is_default": False, "default_only": False}
             ),
@@ -219,7 +224,7 @@ class TestDataMeta:
 
         entry = platform.backend.meta.tabulate(key=key)
 
-        assert_unordered_equality(entry, true_entry, check_dtype=False)
+        utils.assert_unordered_equality(entry, true_entry, check_dtype=False)
 
     def test_entry_bulk_operations(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
@@ -231,7 +236,7 @@ class TestDataMeta:
         # == Full Addition ==
         platform.backend.meta.bulk_upsert(entries.drop(columns=["id", "dtype"]))
         ret = platform.backend.meta.tabulate()
-        assert_unordered_equality(entries, ret)
+        utils.assert_unordered_equality(entries, ret)
 
         # == Partial Removal ==
         # Remove half the data
@@ -242,7 +247,7 @@ class TestDataMeta:
         platform.backend.meta.bulk_delete(remove_data)
 
         ret = platform.backend.meta.tabulate()
-        assert_unordered_equality(remaining_data, ret)
+        utils.assert_unordered_equality(remaining_data, ret)
 
         # == Partial Update / Partial Addition ==
         entries["value"] = -9.9
@@ -258,12 +263,11 @@ class TestDataMeta:
             columns=["id", "key", "value", "dtype"],
         )
         updated_entries["run__id"] = run.id
-        updated_entries["value"] = updated_entries["value"].astype("object")
 
         platform.backend.meta.bulk_upsert(updated_entries.drop(columns=["id", "dtype"]))
         ret = platform.backend.meta.tabulate()
 
-        assert_unordered_equality(updated_entries, ret, check_like=True)
+        utils.assert_unordered_equality(updated_entries, ret, check_like=True)
 
         # == Full Removal ==
         remove_data = entries.drop(columns=["value", "id", "dtype"])
@@ -272,45 +276,51 @@ class TestDataMeta:
         ret = platform.backend.meta.tabulate()
         assert ret.empty
 
-        expected_versions = pd.DataFrame(
-            [
-                # == Full Addition ==
-                [1, "Boolean", "BOOL", None, None, None, True, 1, 3, 7, 0],
-                [1, "Float", "FLOAT", None, None, 0.2, None, 2, 4, 7, 0],
-                [1, "Integer", "INT", 1.0, None, None, None, 3, 5, 9, 0],
-                [1, "String", "STR", None, "Value", None, None, 4, 6, 9, 0],
-                # == Partial Removal ==
-                [1, "Boolean", "BOOL", None, None, None, True, 1, 7, None, 2],
-                [1, "Float", "FLOAT", None, None, 0.2, None, 2, 7, None, 2],
-                # == Partial Update / Partial Addition ==
-                [1, "Boolean", "FLOAT", None, None, -9.9, None, 5, 8, 10, 0],
-                [1, "Float", "FLOAT", None, None, -9.9, None, 6, 8, 10, 0],
-                [1, "Integer", "FLOAT", None, None, -9.9, None, 3, 9, 10, 1],
-                [1, "String", "FLOAT", None, None, -9.9, None, 4, 9, 10, 1],
-                # == Full Removal ==
-                [1, "Boolean", "FLOAT", None, None, -9.9, None, 5, 10, None, 2],
-                [1, "Float", "FLOAT", None, None, -9.9, None, 6, 10, None, 2],
-                # TODO: Bug here! value_int and value_str are not set to None,
-                # after changing the dtype, doesnt really matter for now though
-                [1, "Integer", "FLOAT", 1.0, None, -9.9, None, 3, 10, None, 2],
-                [1, "String", "FLOAT", None, "Value", -9.9, None, 4, 10, None, 2],
-            ],
-            columns=[
-                "run__id",
-                "key",
-                "dtype",
-                "value_int",
-                "value_str",
-                "value_float",
-                "value_bool",
-                "id",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        ).replace({np.nan: None})
-        vdf = platform.backend.meta.tabulate_versions()
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+        # E   DataFrame.iloc[:, 9] (column name="value_int") values are different (7.14286 %)
+        # E   [index]: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
+        # E   [left]:  [None, None, None, None, None, None, None, None, 1.0, None, None, None, 1.0, None]
+        # E   [right]: [None, None, None, 1.0, None, None, None, None, 1.0, None, None, None, 1.0, None]
+        # E   At positional index 3, first diff: None != 1.0
+
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
+                [
+                    # == Full Addition ==
+                    [1, "Boolean", "BOOL", None, None, None, True, 1, 6, 10, 0],
+                    [1, "Float", "FLOAT", None, None, 0.2, None, 2, 7, 10, 0],
+                    [1, "Integer", "INT", 1.0, None, None, None, 3, 8, 15, 0],
+                    [1, "String", "STR", None, "Value", None, None, 4, 9, 15, 0],
+                    # == Partial Removal ==
+                    [1, "Boolean", "BOOL", None, None, None, True, 1, 10, None, 2],
+                    [1, "Float", "FLOAT", None, None, 0.2, None, 2, 10, None, 2],
+                    # == Partial Update / Partial Addition ==
+                    [1, "Boolean", "FLOAT", None, None, -9.9, None, 5, 11, 15, 0],
+                    [1, "Float", "FLOAT", None, None, -9.9, None, 6, 12, 15, 0],
+                    [1, "Integer", "FLOAT", None, None, -9.9, None, 3, 13, 15, 1],
+                    [1, "String", "FLOAT", None, None, -9.9, None, 4, 14, 15, 1],
+                    # == Full Removal ==
+                    [1, "Boolean", "FLOAT", None, None, -9.9, None, 5, 15, None, 2],
+                    [1, "Float", "FLOAT", None, None, -9.9, None, 6, 15, None, 2],
+                    [1, "Integer", "FLOAT", None, None, -9.9, None, 3, 15, None, 2],
+                    [1, "String", "FLOAT", None, None, -9.9, None, 4, 15, None, 2],
+                ],
+                columns=[
+                    "run__id",
+                    "key",
+                    "dtype",
+                    "value_int",
+                    "value_str",
+                    "value_float",
+                    "value_bool",
+                    "id",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            ).replace({np.nan: None})
+            vdf = backend.meta.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_meta_bulk_exceptions(self, platform: ixmp4.Platform) -> None:
         entries = pd.DataFrame(
