@@ -32,7 +32,6 @@ class ModelRepository(
     base.Creator[Model],
     base.Retriever[Model],
     base.Enumerator[Model],
-    base.VersionManager[Model],
     abstract.ModelRepository,
 ):
     model_class = Model

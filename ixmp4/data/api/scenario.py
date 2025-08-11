@@ -36,7 +36,6 @@ class ScenarioRepository(
     base.Creator[Scenario],
     base.Retriever[Scenario],
     base.Enumerator[Scenario],
-    base.VersionManager[Scenario],
     abstract.ScenarioRepository,
 ):
     model_class = Scenario

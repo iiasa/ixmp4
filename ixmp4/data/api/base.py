@@ -547,12 +547,3 @@ class BulkDeleter(BulkOperator[ModelType]):
             params=kwargs,
             content=json_,
         )
-
-
-class VersionManager(BaseRepository[ModelType]):
-    def tabulate_versions(
-        self, transaction__id: int | None = None, **kwargs: Any
-    ) -> pd.DataFrame:
-        return self._tabulate(
-            path="versions/", json={"transaction__id": transaction__id, **kwargs}
-        )
