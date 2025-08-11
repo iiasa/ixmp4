@@ -5,6 +5,8 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
+from .. import versions
+
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
@@ -16,7 +18,11 @@ from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .docs import ModelDocsRepository
-from .model import Model
+from .model import Model, ModelVersion
+
+
+class ModelVersionRepository(versions.VersionRepository[ModelVersion]):
+    model_class = ModelVersion
 
 
 class EnumerateKwargs(abstract.annotations.HasNameFilter, total=False):
@@ -31,15 +37,16 @@ class ModelRepository(
     base.Creator[Model],
     base.Retriever[Model],
     base.Enumerator[Model],
-    base.VersionManager[Model],
     abstract.ModelRepository,
 ):
     model_class = Model
     docs: ModelDocsRepository
+    versions: ModelVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
         self.docs = ModelDocsRepository(*args)
+        self.versions = ModelVersionRepository(*args)
 
         from .filter import ModelFilter
 
@@ -69,9 +76,3 @@ class ModelRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions()

@@ -6,8 +6,6 @@ import pandera as pa
 from pandera.engines import pandas_engine
 from pandera.pandas import DataFrameModel
 from pandera.typing import DataFrame, Series
-from sqlalchemy_continuum import version_class
-from sqlalchemy_continuum.operation import Operation
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
@@ -17,20 +15,21 @@ from ixmp4.core.decorators import check_types
 from ixmp4.core.exceptions import InconsistentIamcType, ProgrammingError
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
 from ixmp4.data.db.model import Model
-from ixmp4.data.db.region import Region
+from ixmp4.data.db.region import Region, RegionVersion
 from ixmp4.data.db.run import Run, RunRepository
 from ixmp4.data.db.scenario import Scenario
-from ixmp4.data.db.unit import Unit
+from ixmp4.data.db.unit import Unit, UnitVersion
 from ixmp4.db.filters import BaseFilter
 
 from .. import base
-from ..measurand import Measurand
-from ..timeseries import TimeSeries, TimeSeriesRepository
-from ..variable import Variable
+from ..measurand import Measurand, MeasurandVersion
+from ..timeseries import TimeSeries, TimeSeriesRepository, TimeSeriesVersion
+from ..variable import Variable, VariableVersion
 from . import get_datapoint_model
 from .filter import DataPointFilter
-from .model import DataPoint
+from .model import DataPoint, UniversalDataPointVersion
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -92,16 +91,72 @@ class EnumerateKwargs(abstract.iamc.datapoint.EnumerateKwargs, total=False):
     _filter: BaseFilter
 
 
+class DatapointVersionRepository(versions.VersionRepository[UniversalDataPointVersion]):
+    model_class = UniversalDataPointVersion
+
+    def select(
+        self,
+        transaction__id: int | None = None,
+        run__id: int | None = None,
+        **kwargs: Any,
+    ) -> db.sql.Select[Any]:
+        exc = db.select(
+            self.bundle,
+            RegionVersion.name.label("region"),
+            UnitVersion.name.label("unit"),
+            VariableVersion.name.label("variable"),
+        ).select_from(self.model_class)
+
+        exc = (
+            exc.join(
+                TimeSeriesVersion,
+                onclause=self.model_class.time_series__id == TimeSeriesVersion.id,
+            )
+            .join(
+                RegionVersion,
+                onclause=TimeSeriesVersion.region__id == RegionVersion.id,
+            )
+            .join(
+                MeasurandVersion,
+                onclause=TimeSeriesVersion.measurand__id == MeasurandVersion.id,
+            )
+            .join(
+                UnitVersion,
+                onclause=MeasurandVersion.unit__id == UnitVersion.id,
+            )
+            .join(
+                VariableVersion,
+                onclause=MeasurandVersion.variable__id == VariableVersion.id,
+            )
+        )
+
+        if transaction__id is not None:
+            for vclass in [
+                self.model_class,
+                RegionVersion,
+                MeasurandVersion,
+                UnitVersion,
+                VariableVersion,
+            ]:
+                exc = self.where_valid_at_transaction(exc, transaction__id, vclass)
+
+        if run__id is not None:
+            exc = exc.where(TimeSeriesVersion.run__id == run__id)
+
+        exc = self.where_matches_kwargs(exc, **kwargs)
+        return exc.distinct()
+
+
 class DataPointRepository(
     base.Enumerator[DataPoint],
     base.BulkUpserter[DataPoint],
     base.BulkDeleter[DataPoint],
-    base.VersionManager[DataPoint],
     abstract.DataPointRepository,
 ):
     model_class = DataPoint
     timeseries: TimeSeriesRepository
     runs: RunRepository
+    versions: DatapointVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         backend, *_ = args
@@ -110,6 +165,7 @@ class DataPointRepository(
 
         self.timeseries = TimeSeriesRepository(*args)
         self.runs = RunRepository(*args)
+        self.versions = DatapointVersionRepository(*args)
 
         self.filter_class = DataPointFilter
         super().__init__(*args)
@@ -249,81 +305,3 @@ class DataPointRepository(
         )
         orphan_ts = self.timeseries.tabulate_query(exc)
         self.timeseries.bulk_delete(orphan_ts)
-
-    def select_versions(
-        self,
-        transaction__id: int | None = None,
-        run__id: int | None = None,
-        **kwargs: Any,
-    ) -> db.sql.Select[Any]:
-        exc = db.select(
-            self.version_bundle,
-            self.backend.regions.version_class.name.label("region"),
-            self.backend.units.version_class.name.label("unit"),
-            self.backend.iamc.variables.version_class.name.label("variable"),
-        ).select_from(self.version_class)
-
-        exc = (
-            exc.join(
-                self.backend.iamc.timeseries.version_class,
-                onclause=self.version_class.time_series__id
-                == self.backend.iamc.timeseries.version_class.id,
-            )
-            .join(
-                self.backend.regions.version_class,
-                onclause=self.backend.iamc.timeseries.version_class.region__id
-                == self.backend.regions.version_class.id,
-            )
-            .join(
-                version_class(Measurand),
-                onclause=self.backend.iamc.timeseries.version_class.measurand__id
-                == version_class(Measurand).id,
-            )
-            .join(
-                self.backend.units.version_class,
-                onclause=version_class(Measurand).unit__id
-                == self.backend.units.version_class.id,
-            )
-            .join(
-                self.backend.iamc.variables.version_class,
-                onclause=version_class(Measurand).variable__id
-                == self.backend.iamc.variables.version_class.id,
-            )
-        )
-
-        if transaction__id is not None:
-            for vclass in [
-                self.version_class,
-                self.backend.regions.version_class,
-                version_class(Measurand),
-                self.backend.units.version_class,
-                self.backend.iamc.variables.version_class,
-            ]:
-                exc = exc.where(
-                    db.and_(
-                        vclass.transaction_id <= transaction__id,
-                        vclass.operation_type != Operation.DELETE,
-                        db.or_(
-                            vclass.end_transaction_id > transaction__id,
-                            vclass.end_transaction_id == db.null(),
-                        ),
-                    )
-                )
-
-        if run__id is not None:
-            exc = exc.where(
-                self.backend.iamc.timeseries.version_class.run__id == run__id
-            )
-
-        for key in kwargs:
-            columns = db.utils.get_columns(self.version_class)
-            if key in columns:
-                exc = exc.where(columns[key] == kwargs[key])
-
-        return exc.distinct()
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[abstract.annotations.TabulateDatapointVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)
