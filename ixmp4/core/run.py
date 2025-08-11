@@ -1,4 +1,5 @@
 import time
+import warnings
 from collections import UserDict
 from contextlib import contextmanager
 from typing import ClassVar, Generator, cast
@@ -9,6 +10,7 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
+from ixmp4.core.exceptions import OperationNotSupported
 from ixmp4.data.abstract import Model as ModelModel
 from ixmp4.data.abstract import Run as RunModel
 from ixmp4.data.abstract import Scenario as ScenarioModel
@@ -165,14 +167,25 @@ class Run(BaseModelFacade):
             if checkpoint_df.empty:
                 checkpoint_transaction = -1
             else:
-                checkpoint_transaction = int(checkpoint_df["transaction__id"].max())
+                max_tx_id = checkpoint_df["transaction__id"].max()
+                if pd.isnull(max_tx_id):
+                    checkpoint_transaction = -1
+                else:
+                    checkpoint_transaction = int(max_tx_id)
 
             assert self._model.lock_transaction is not None
 
-            if checkpoint_transaction > self._model.lock_transaction:
-                self.backend.runs.revert(self._model.id, checkpoint_transaction)
-            else:
-                self.backend.runs.revert(self._model.id, self._model.lock_transaction)
+            target_transaction = max(
+                checkpoint_transaction, self._model.lock_transaction
+            )
+            try:
+                self.backend.runs.revert(self._model.id, target_transaction)
+            except OperationNotSupported as ons_exc:
+                warnings.warn(
+                    "An exception occurred but the `Run` "
+                    "was not reverted because versioning "
+                    "is not supported by this platform: " + ons_exc.message
+                )
 
             self._meta.refetch_data()
             self._unlock()
