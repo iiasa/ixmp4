@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
     from . import InitKwargs
 
 import pandas as pd
@@ -9,15 +11,20 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Equation as EquationModel
-from ixmp4.data.abstract import Run
 
-from .base import Creator, Deleter, Lister, Retriever, Tabulator
+from .base import (
+    Creator,
+    Deleter,
+    Lister,
+    OptimizationBaseModelFacade,
+    Retriever,
+    Tabulator,
+)
 
 
-class Equation(BaseModelFacade):
+class Equation(OptimizationBaseModelFacade):
     _model: EquationModel
     NotFound: ClassVar = EquationModel.NotFound
     NotUnique: ClassVar = EquationModel.NotUnique
@@ -40,6 +47,7 @@ class Equation(BaseModelFacade):
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Equation."""
+        self._run.require_lock()
         self.backend.optimization.equations.add_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.equations.get(
             run_id=self._model.run__id, name=self._model.name
@@ -52,6 +60,7 @@ class Equation(BaseModelFacade):
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
         """
+        self._run.require_lock()
         self.backend.optimization.equations.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.equations.get(
             run_id=self._model.run__id, name=self._model.name
@@ -114,7 +123,7 @@ class EquationRepository(
     Lister[Equation, EquationModel],
     Tabulator[Equation, EquationModel],
 ):
-    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.equations
         self._model_type = Equation

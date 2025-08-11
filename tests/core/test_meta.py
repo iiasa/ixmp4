@@ -15,10 +15,7 @@ def test_run_meta(platform: ixmp4.Platform) -> None:
 
     with run1.transact("Add meta data"):
         # set and update different types of meta indicators
-        # NOTE mypy doesn't support setters taking a different type than
-        # their property https://github.com/python/mypy/issues/3004
-
-        run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+        run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
         run1.meta["mfloat"] = -1.9
 
     run2 = platform.runs.get("Model 1", "Scenario 1")
@@ -40,7 +37,7 @@ def test_run_meta(platform: ixmp4.Platform) -> None:
 
     # remove all meta indicators and set a new indicator
     with run1.transact("Update meta data"):
-        run1.meta = {"mnew": "bar"}  # type: ignore[assignment]
+        run1.meta = {"mnew": "bar"}
 
     run2 = platform.runs.get("Model 1", "Scenario 1")
 
@@ -68,9 +65,9 @@ def test_run_meta(platform: ixmp4.Platform) -> None:
 
     run2 = platform.runs.create("Model 2", "Scenario 2")
     with run1.transact("Update meta data"):
-        run1.meta = {"mstr": "baz"}  # type: ignore[assignment]
+        run1.meta = {"mstr": "baz"}
     with run2.transact("Update meta data"):
-        run2.meta = {"mfloat": 3.1415926535897}  # type: ignore[assignment]
+        run2.meta = {"mfloat": 3.1415926535897}
 
     # test default_only run filter
     exp = pd.DataFrame(
@@ -104,7 +101,7 @@ def test_run_meta(platform: ixmp4.Platform) -> None:
 
     # test filter by key
     with run1.transact("Update meta data"):
-        run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}  # type: ignore[assignment]
+        run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
 
     exp = pd.DataFrame(
         [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
@@ -132,12 +129,12 @@ def test_run_meta_numpy(
 
     # set multiple meta indicators of same type ("value"-column of numpy-type)
     with run1.transact("Add meta data"):
-        run1.meta = {"key": npvalue1, "other key": npvalue1}  # type: ignore[assignment]
+        run1.meta = {"key": npvalue1, "other key": npvalue1}
     assert run1.meta["key"] == pyvalue1
 
     # set meta indicators of different types ("value"-column of type `object`)
     with run1.transact("Update meta data"):
-        run1.meta = {"key": npvalue1, "other key": "some value"}  # type: ignore[assignment]
+        run1.meta = {"key": npvalue1, "other key": "some value"}
     assert run1.meta["key"] == pyvalue1
 
     # set meta via setter
@@ -158,7 +155,7 @@ def test_run_meta_rollback(pg_platform: ixmp4.Platform) -> None:
     run = pg_platform.runs.create("Model 1", "Scenario 1")
 
     with run.transact("Add meta data"):
-        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
         run.meta["mfloat"] = -1.9
 
     try:
@@ -197,10 +194,10 @@ def test_meta_requires_lock(platform: ixmp4.Platform) -> None:
         run.meta["mint"] = 13
 
     with pytest.raises(RunLockRequired):
-        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
 
     with run.transact("Add meta data"):
-        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}  # type: ignore[assignment]
+        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
 
     # Attempt to remove data without owning a lock
     with pytest.raises(RunLockRequired):
@@ -216,7 +213,7 @@ def test_run_meta_none(platform: ixmp4.Platform, nonevalue: float | None) -> Non
 
     # set multiple indicators where one value is None
     with run1.transact("Add meta data with `None`"):
-        run1.meta = {"mint": 13, "mnone": nonevalue}  # type: ignore[assignment]
+        run1.meta = {"mint": 13, "mnone": nonevalue}
     assert run1.meta["mint"] == 13
     with pytest.raises(KeyError, match="'mnone'"):
         run1.meta["mnone"]

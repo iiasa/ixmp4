@@ -85,7 +85,7 @@ requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
 
 [tool.mypy]
 exclude = ['^ixmp4\/db\/migrations\/']
-disable_error_code = ['override', 'unused-ignore']
+disable_error_code = ['override']
 show_error_codes = true
 plugins = ['pandera.mypy', 'pydantic.mypy']
 # The following are equivalent to --strict mypy as seen in 

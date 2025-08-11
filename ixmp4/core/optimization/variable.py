@@ -2,6 +2,8 @@ from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
 if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
     from . import InitKwargs
 
 import pandas as pd
@@ -9,15 +11,20 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseModelFacade
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import OptimizationVariable as VariableModel
-from ixmp4.data.abstract import Run
 
-from .base import Deleter, Lister, Retriever, Tabulator
+from .base import (
+    Creator,
+    Deleter,
+    Lister,
+    OptimizationBaseModelFacade,
+    Retriever,
+    Tabulator,
+)
 
 
-class Variable(BaseModelFacade):
+class Variable(OptimizationBaseModelFacade):
     _model: VariableModel
     NotFound: ClassVar = VariableModel.NotFound
     NotUnique: ClassVar = VariableModel.NotUnique
@@ -40,6 +47,7 @@ class Variable(BaseModelFacade):
 
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Variable."""
+        self._run.require_lock()
         self.backend.optimization.variables.add_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.variables.get(
             run_id=self._model.run__id, name=self._model.name
@@ -51,6 +59,7 @@ class Variable(BaseModelFacade):
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
         """
+        self._run.require_lock()
         self.backend.optimization.variables.remove_data(id=self._model.id, data=data)
         self._model = self.backend.optimization.variables.get(
             run_id=self._model.run__id, name=self._model.name
@@ -107,12 +116,13 @@ class Variable(BaseModelFacade):
 
 
 class VariableRepository(
+    Creator[Variable, VariableModel],
     Deleter[Variable, VariableModel],
     Retriever[Variable, VariableModel],
     Lister[Variable, VariableModel],
     Tabulator[Variable, VariableModel],
 ):
-    def __init__(self, _run: Run, **kwargs: Unpack["InitKwargs"]) -> None:
+    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
         self._backend_repository = self.backend.optimization.variables
         self._model_type = Variable
@@ -123,10 +133,8 @@ class VariableRepository(
         constrained_to_indexsets: str | list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Variable:
-        model = self.backend.optimization.variables.create(
+        return super().create(
             name=name,
-            run_id=self._run.id,
             constrained_to_indexsets=constrained_to_indexsets,
             column_names=column_names,
         )
-        return Variable(_backend=self.backend, _model=model)

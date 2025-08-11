@@ -106,7 +106,7 @@ IndexSet__IdType = Annotated[
 JsonType = JSON()
 # NOTE sqlalchemy's JSON is untyped, but we may not need it if we redesign the opt DB
 # model
-JsonType = JsonType.with_variant(JSONB(), "postgresql")  # type:ignore[no-untyped-call]
+JsonType = JsonType.with_variant(JSONB(), "postgresql")
 
 name_len = 255
 NameType = Annotated[str, Column(String(name_len), nullable=False, unique=False)]

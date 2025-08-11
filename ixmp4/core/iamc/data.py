@@ -60,7 +60,7 @@ class RunIamcData(BaseFacade):
 
     def add(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
         self.run.require_lock()
-        df = AddDataPointFrameSchema.validate(df)  # type: ignore[assignment]
+        df = AddDataPointFrameSchema.validate(df)
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
@@ -68,7 +68,7 @@ class RunIamcData(BaseFacade):
 
     def remove(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
         self.run.require_lock()
-        df = RemoveDataPointFrameSchema.validate(df)  # type: ignore[assignment]
+        df = RemoveDataPointFrameSchema.validate(df)
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
