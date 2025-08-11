@@ -107,7 +107,11 @@ JsonType = JSON()
 # NOTE sqlalchemy's JSON is untyped, but we may not need it if we redesign the opt DB
 # model
 JsonType = JsonType.with_variant(JSONB(), "postgresql")  # type:ignore[no-untyped-call]
-NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
+
+name_len = 255
+NameType = Annotated[str, Column(String(name_len), nullable=False, unique=False)]
+UniqueNameType = Annotated[str, Column(String(name_len), nullable=False, unique=True)]
+
 OptimizationVariableIdType = Annotated[
     int,
     Column(
@@ -139,5 +143,4 @@ TableIdType = Annotated[
         index=True,
     ),
 ]
-UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
 UsernameType = Annotated[str, Column(String(255), nullable=True)]
