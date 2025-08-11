@@ -48,7 +48,8 @@ class PostgresVersionTriggers(object):
             )
         if not isinstance(version_table, Table):
             raise ProgrammingError(
-                f"Argument 'version_table' must be `Table` not {version_table.__class__.__name__}"
+                "Argument 'version_table' must be `Table` not "
+                f"`{version_table.__class__.__name__}`"
             )
 
         logger.debug(
