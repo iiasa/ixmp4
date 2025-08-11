@@ -4,7 +4,6 @@ import logging
 import sqlite3
 from collections.abc import Callable, Iterable, Iterator, Mapping
 from datetime import datetime
-from functools import cached_property
 from typing import TYPE_CHECKING, Any, ClassVar, Generic, Protocol, TypeVar, cast
 
 import numpy as np
@@ -14,23 +13,19 @@ from sqlalchemy.engine import Engine
 from sqlalchemy.engine.interfaces import Dialect
 from sqlalchemy.exc import IntegrityError, NoResultFound
 from sqlalchemy.ext.compiler import compiles
-from sqlalchemy.orm import Bundle, DeclarativeBase, declared_attr
+from sqlalchemy.orm import Bundle, DeclarativeBase
 from sqlalchemy.orm.session import Session
 from sqlalchemy.sql.schema import Identity, MetaData
-from sqlalchemy_continuum import make_versioned, transaction_class, version_class
-from sqlalchemy_continuum.operation import Operation
-from sqlalchemy_continuum.utils import (
-    end_tx_column_name,
-    get_versioning_manager,
-    is_versioned,
-    tx_column_name,
-)
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import NotRequired, TypedDict, Unpack
 
 from ixmp4 import db
-from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
+from ixmp4.core.exceptions import (
+    Forbidden,
+    IxmpError,
+    ProgrammingError,
+)
 from ixmp4.data import abstract, types
 from ixmp4.data.abstract.annotations import (
     TabulateVersionsKwargs as TabulateVersionsKwargs,
@@ -58,24 +53,14 @@ def visit_identity(element: Any, compiler: Any, **kwargs: Any) -> TextClause:
     return text("")
 
 
-make_versioned(user_cls=None)
-
-
 class BaseModel(DeclarativeBase):
-    __versioned__: dict[str, object]
-
     NotFound: ClassVar[type[IxmpError]]
     NotUnique: ClassVar[type[IxmpError]]
     DeletionPrevented: ClassVar[type[IxmpError]]
 
-    table_prefix: str = ""
     updateable_columns: ClassVar[list[str]] = []
 
-    @declared_attr.directive
-    def __tablename__(cls: "BaseModel") -> str:
-        return str(cls.table_prefix + cls.__name__.lower())
-
-    id: types.Mapped[int] = db.Column(
+    id: types.Id = db.Column(
         db.Integer,
         Identity(always=False, on_null=True, start=1, increment=1),
         primary_key=True,
@@ -107,26 +92,6 @@ class BaseRepository(Generic[ModelType]):
     dialect: Dialect
     bundle: Bundle[Any]
     model_class: type[ModelType]
-
-    @cached_property
-    def is_versioned(self) -> Any:
-        return is_versioned(self.model_class)
-
-    @cached_property
-    def version_class(self) -> Any:
-        return version_class(self.model_class)
-
-    @cached_property
-    def transaction_class(self) -> Any:
-        return transaction_class(self.model_class)
-
-    @cached_property
-    def tx_column_name(self) -> Any:
-        return tx_column_name(self.model_class)
-
-    @cached_property
-    def end_tx_column_name(self) -> Any:
-        return end_tx_column_name(self.model_class)
 
     def __init__(self, backend: "SqlAlchemyBackend") -> None:
         self.backend = backend
@@ -453,8 +418,10 @@ class BulkOperator(Tabulator[ModelType]):
         ]
 
         df = df.drop(columns=existing_columns + extra_columns)
-        df = df.dropna(axis="columns", how="all")
-        df = df.dropna()
+        df = df.dropna(axis="index", how="all")
+        df = df.replace({np.nan: None})
+        # df = df.dropna(axis="columns", how="all")
+        # df = df.dropna()
         return df
 
     def split_by_max_unique_values(
@@ -528,11 +495,6 @@ class BulkOperator(Tabulator[ModelType]):
             )
             yield pd.DataFrame(chunk_df)
 
-    def get_transaction(self) -> TransactionProtocol:
-        mgr = get_versioning_manager(self.model_class)
-        uow = mgr.unit_of_work(self.session)
-        return cast(TransactionProtocol, uow.create_transaction(self.session))
-
 
 class BulkUpserter(BulkOperator[ModelType]):
     def bulk_upsert(self, df: pd.DataFrame) -> None:
@@ -571,9 +533,11 @@ class BulkUpserter(BulkOperator[ModelType]):
             insert_df = self.drop_merge_artifacts(
                 df.where(~df["exists"]), extra_columns=["id", "differs", "exists"]
             )
-            update_df = self.drop_merge_artifacts(
-                df.where(df["exists"] & df["differs"]),
-                extra_columns=["differs", "exists"],
+            update_df = (
+                self.drop_merge_artifacts(  # gets rid of metas null columns, fix!
+                    df.where(df["exists"] & df["differs"]),
+                    extra_columns=["differs", "exists"],
+                )
             )
 
             if not insert_df.empty:
@@ -585,16 +549,6 @@ class BulkUpserter(BulkOperator[ModelType]):
 
         self.session.commit()
 
-    def bulk_insert_versions(self, df: pd.DataFrame) -> None:
-        transaction = self.get_transaction()
-
-        df.loc[:, self.tx_column_name] = transaction.id
-        df.loc[:, "operation_type"] = Operation.INSERT
-
-        vclass = version_class(self.model_class)
-        vm = cast(list[dict[str, Any]], df.to_dict("records"))
-        self.session.execute(db.insert(vclass), vm)
-
     def bulk_insert(self, df: pd.DataFrame, **kwargs: Any) -> None:
         if "id" in df.columns:
             raise ProgrammingError("You may not insert the 'id' column.")
@@ -603,47 +557,11 @@ class BulkUpserter(BulkOperator[ModelType]):
         m = cast(list[dict[str, Any]], df.to_dict("records"))
 
         exc = db.insert(self.model_class).execution_options(synchronize_session=False)
-        if self.is_versioned:
-            if self.dialect.name == "sqlite":
-                # https://docs.sqlalchemy.org/en/20/core/connections.html#correlating-returning-rows-to-parameter-sets
-                logger.warning(
-                    "Dispatching a versioned insert statement on an 'sqlite' backend. "
-                    "This might be very slow!"
-                )
-
-            exc = exc.returning(self.model_class.id, sort_by_parameter_order=True)
 
         try:
-            result = self.session.execute(exc, m).scalars()
+            self.session.execute(exc, m)
         except IntegrityError as e:
             raise self.model_class.NotUnique(*e.args)
-
-        if self.is_versioned:
-            ids = list(result)
-            df.loc[:, "id"] = ids
-            self.bulk_insert_versions(df)
-
-    def bulk_update_versions(self, df: pd.DataFrame) -> None:
-        transaction = self.get_transaction()
-        df[self.tx_column_name] = transaction.id
-        df["operation_type"] = Operation.UPDATE
-
-        exc = (
-            db.update(self.version_class)
-            .where(
-                db.and_(
-                    self.version_class.id.in_(df["id"]),
-                    self.version_class.end_transaction_id == db.null(),
-                )
-            )
-            .values(end_transaction_id=transaction.id)
-            .execution_options(synchronize_session=False)
-        )
-
-        self.session.execute(exc)
-
-        vm = cast(list[dict[str, Any]], df.to_dict("records"))
-        self.session.execute(db.insert(self.version_class), vm)
 
     def bulk_update(self, df: pd.DataFrame, **kwargs: Any) -> None:
         # to_dict returns a more general list[Mapping[Hashable, Unknown]]
@@ -653,38 +571,11 @@ class BulkUpserter(BulkOperator[ModelType]):
             db.update(self.model_class).execution_options(synchronize_session=False), m
         )
 
-        if is_versioned(self.model_class):
-            self.bulk_update_versions(df)
-
 
 class BulkDeleter(BulkOperator[ModelType]):
     def bulk_delete(self, df: pd.DataFrame) -> None:
         for chunk_df in self.yield_chunks(df):
             self.bulk_delete_chunk(chunk_df)
-
-    def bulk_delete_versions(self, df: pd.DataFrame) -> None:
-        transaction = self.get_transaction()
-        vclass = version_class(self.model_class)
-
-        df[self.tx_column_name] = transaction.id
-        df["operation_type"] = Operation.DELETE
-
-        for _, sdf in df.groupby(df.index // self.max_list_length):
-            uexc = (
-                db.update(vclass)
-                .where(
-                    db.and_(
-                        vclass.id.in_(sdf["id"]),
-                        vclass.end_transaction_id == db.null(),
-                    )
-                )
-                .values(end_transaction_id=transaction.id)
-            )
-
-        self.session.execute(uexc, execution_options={"synchronize_session": False})
-
-        vm = cast(list[dict[str, Any]], df.to_dict("records"))
-        self.session.execute(db.insert(vclass), vm)
 
     def bulk_delete_chunk(self, df: pd.DataFrame) -> None:
         existing_df = self.tabulate_existing(df)
@@ -704,81 +595,8 @@ class BulkDeleter(BulkOperator[ModelType]):
         for exc in excs:
             self.session.execute(exc, execution_options={"synchronize_session": False})
 
-        if is_versioned(self.model_class):
-            self.bulk_delete_versions(df)
-
         self.session.commit()
 
 
 class TabulateTransactionsKwargs(abstract.annotations.HasPaginationArgs, total=False):
     pass
-
-
-class VersionManager(QueryMixin[ModelType], BaseRepository[ModelType]):
-    def __init__(self, backend: "SqlAlchemyBackend") -> None:
-        super().__init__(backend)
-
-        self.version_bundle: Bundle[Any] = Bundle(
-            self.version_class.__name__,
-            *db.utils.get_columns(self.version_class).values(),
-        )
-
-    def select_transactions(self) -> db.sql.Select[Any]:
-        return db.select(self.transaction_class)
-
-    def select_versions(
-        self, transaction__id: int | None = None, **kwargs: Any
-    ) -> db.sql.Select[Any]:
-        exc = db.select(self.version_class)
-
-        if transaction__id is not None:
-            exc = exc.where(
-                db.and_(
-                    self.version_class.transaction_id <= transaction__id,
-                    self.version_class.operation_type != Operation.DELETE,
-                    db.or_(
-                        self.version_class.end_transaction_id > transaction__id,
-                        self.version_class.end_transaction_id == db.null(),
-                    ),
-                )
-            )
-
-        for key in kwargs:
-            columns = db.utils.get_columns(self.version_class)
-            if key in columns:
-                exc = exc.where(columns[key] == kwargs[key])
-
-        return exc
-
-    def apply_pagination(
-        self, exc: db.sql.Select[Any], limit: int | None, offset: int | None
-    ) -> db.sql.Select[Any]:
-        if limit is not None:
-            exc = exc.limit(limit)
-        if offset is not None:
-            exc = exc.offset(offset)
-        return exc
-
-    def tabulate_versions(
-        self,
-        limit: int | None = None,
-        offset: int | None = None,
-        transaction__id: int | None = None,
-        **kwargs: Any,
-    ) -> pd.DataFrame:
-        exc = self.select_versions(transaction__id=transaction__id, **kwargs)
-        exc = exc.order_by(self.version_class.transaction_id.asc())
-        exc = self.apply_pagination(exc, limit, offset)
-
-        return self.tabulate_query(exc)
-
-    def tabulate_transactions(
-        self,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> pd.DataFrame:
-        exc = self.select_transactions()
-        exc = exc.order_by(self.transaction_class.issued_at.desc())
-        exc = self.apply_pagination(exc, limit, offset)
-
-        return self.tabulate_query(exc)
