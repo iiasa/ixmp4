@@ -78,5 +78,3 @@ def bulk_delete(
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
     backend.meta.bulk_delete(df.to_pandas())  # type: ignore[arg-type]
-
-

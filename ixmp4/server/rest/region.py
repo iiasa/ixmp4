@@ -55,5 +55,3 @@ def delete(
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
     backend.regions.delete(id)
-
-

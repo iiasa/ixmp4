@@ -276,12 +276,6 @@ class TestDataMeta:
         ret = platform.backend.meta.tabulate()
         assert ret.empty
 
-        # E   DataFrame.iloc[:, 9] (column name="value_int") values are different (7.14286 %)
-        # E   [index]: [0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13]
-        # E   [left]:  [None, None, None, None, None, None, None, None, 1.0, None, None, None, 1.0, None]
-        # E   [right]: [None, None, None, 1.0, None, None, None, None, 1.0, None, None, None, 1.0, None]
-        # E   At positional index 3, first diff: None != 1.0
-
         @utils.versioning_test(platform.backend)
         def assert_versions(backend: SqlAlchemyBackend) -> None:
             expected_versions = pd.DataFrame(

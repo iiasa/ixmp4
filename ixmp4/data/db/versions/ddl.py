@@ -15,7 +15,7 @@ class VersionProcedure(object):
         declare tx_id INT;
     begin
         begin
-            insert into %(transaction_tablename)s (issued_at) 
+            insert into %(transaction_tablename)s (issued_at)
             values (NOW()) returning id into tx_id;
         end;
 
@@ -23,7 +23,7 @@ class VersionProcedure(object):
             update %(version_tablename)s set %(end_transaction_id_column)s = tx_id
             where id in (select id from OLD_TABLE);
 
-            insert into %(version_tablename)s (%(versioned_column_names)s, 
+            insert into %(version_tablename)s (%(versioned_column_names)s,
             %(transaction_id_column)s, operation_type)
             select %(versioned_column_names)s, tx_id, %(op_delete)s
             from OLD_TABLE;
@@ -31,12 +31,12 @@ class VersionProcedure(object):
             update %(version_tablename)s set %(end_transaction_id_column)s = tx_id
             where id in (select id from NEW_TABLE);
 
-            insert into %(version_tablename)s (%(versioned_column_names)s, 
+            insert into %(version_tablename)s (%(versioned_column_names)s,
             %(transaction_id_column)s, operation_type)
             select %(versioned_column_names)s, tx_id, %(op_update)s
             from NEW_TABLE;
         elsif (TG_OP='INSERT') then
-            insert into %(version_tablename)s (%(versioned_column_names)s, 
+            insert into %(version_tablename)s (%(versioned_column_names)s,
             %(transaction_id_column)s, operation_type)
             select %(versioned_column_names)s, tx_id, %(op_insert)s
             from NEW_TABLE;
@@ -125,24 +125,24 @@ class VersionTrigger(object):
 
 class InsertTrigger(VersionTrigger):
     signature_template = "%(tablename)s_version_trigger_insert"
-    definition_template = """after insert on %(tablename)s 
-    referencing 
-        new table as NEW_TABLE 
+    definition_template = """after insert on %(tablename)s
+    referencing
+        new table as NEW_TABLE
     for each statement EXECUTE function %(procedure_sig)s;"""
 
 
 class UpdateTrigger(VersionTrigger):
     signature_template = "%(tablename)s_version_trigger_update"
-    definition_template = """after update on %(tablename)s 
-    referencing 
-        old table as OLD_TABLE 
-        new table as NEW_TABLE 
+    definition_template = """after update on %(tablename)s
+    referencing
+        old table as OLD_TABLE
+        new table as NEW_TABLE
     for each statement EXECUTE function %(procedure_sig)s;"""
 
 
 class DeleteTrigger(VersionTrigger):
     signature_template = "%(tablename)s_version_trigger_delete"
-    definition_template = """after delete on %(tablename)s 
-    referencing 
-    old table as OLD_TABLE 
+    definition_template = """after delete on %(tablename)s
+    referencing
+    old table as OLD_TABLE
     for each statement EXECUTE function %(procedure_sig)s;"""

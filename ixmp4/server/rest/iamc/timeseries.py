@@ -69,4 +69,3 @@ def bulk_upsert(
 ) -> Response:
     backend.iamc.timeseries.bulk_upsert(df.to_pandas(), create_related=create_related)
     return Response(status_code=201)
-

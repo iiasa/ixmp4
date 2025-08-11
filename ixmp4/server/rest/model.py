@@ -46,4 +46,3 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Model:
     return backend.models.create(**model.model_dump())
-

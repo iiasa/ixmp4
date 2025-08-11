@@ -46,4 +46,3 @@ def create(
     backend: Backend = Depends(deps.get_backend),
 ) -> Scenario:
     return backend.scenarios.create(**scenario.model_dump())
-

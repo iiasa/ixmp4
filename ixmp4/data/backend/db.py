@@ -154,4 +154,3 @@ class SqlAlchemyBackend(Backend):
     def close(self) -> None:
         self.session.close()
         self.engine.dispose()
-
