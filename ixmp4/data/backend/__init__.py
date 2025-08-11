@@ -1,3 +1,4 @@
-from .api import RestBackend, RestTestBackend
+from .api import RestBackend
 from .base import Backend
-from .db import SqlAlchemyBackend, SqliteTestBackend
+from .db import SqlAlchemyBackend
+from .test import RestTestBackend, SqliteTestBackend
