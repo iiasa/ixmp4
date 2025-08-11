@@ -1,7 +1,7 @@
 from collections.abc import Generator
 from contextlib import contextmanager, nullcontext
 from itertools import chain
-from typing import Any
+from typing import Any, Callable
 
 import pandas as pd
 import pandas.testing as pdt
@@ -12,6 +12,7 @@ from typing_extensions import TypedDict, Unpack
 
 from ixmp4 import Platform
 from ixmp4.data.abstract.optimization import IndexSet
+from ixmp4.data.backend import Backend, SqlAlchemyBackend
 
 
 # Based on current usage
@@ -40,6 +41,23 @@ def create_indexsets_for_run(
         )
         for i in range(offset, offset + amount)
     )
+
+
+SqlaBackendCallable = Callable[[SqlAlchemyBackend], Any]
+
+
+def versioning_test(
+    backend: Backend,
+) -> Callable[[SqlaBackendCallable], SqlaBackendCallable]:
+    """Runs the provided function immediately if on a postgresql database backend."""
+
+    def decorator(func: SqlaBackendCallable) -> SqlaBackendCallable:
+        if isinstance(backend, SqlAlchemyBackend):
+            if backend.engine.dialect.name == "postgresql":
+                func(backend)
+        return func
+
+    return decorator
 
 
 # Thanks to khaeru for writing this for ixmp
