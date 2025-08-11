@@ -136,14 +136,16 @@ def platform_fixture(request: pytest.FixtureRequest) -> Generator[Platform, Any,
 def clear_pgsql_database(request: pytest.FixtureRequest) -> None:
     """Ensures the postgres database is clean of registered tables
     in case e.g. the previous test session failed to tear down."""
-    postgres_dsn = request.config.option.postgres_dsn
-    pgsql = PostgresTestBackend(
-        PlatformInfo(
-            name="postgres-test",
-            dsn=postgres_dsn,
-        ),
-    )
-    pgsql._drop_all()
+
+    if "postgres" in request.config.option.backend:
+        postgres_dsn = request.config.option.postgres_dsn
+        pgsql = PostgresTestBackend(
+            PlatformInfo(
+                name="postgres-test",
+                dsn=postgres_dsn,
+            ),
+        )
+        pgsql._drop_all()
 
 
 # function scope fixtures
