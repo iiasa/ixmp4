@@ -46,7 +46,6 @@ class TimeSeriesRepository(
     base.Retriever,
     base.Enumerator,
     base.BulkUpserter,
-    base.VersionManager,
     Protocol,
     Generic[ModelType],
 ):

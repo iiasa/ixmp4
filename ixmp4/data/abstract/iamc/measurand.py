@@ -29,7 +29,6 @@ class MeasurandRepository(
     base.Creator,
     base.Retriever,
     base.Enumerator,
-    base.VersionManager,
     Protocol,
 ):
     def create(self, variable_name: str, unit__id: int) -> Measurand: ...
