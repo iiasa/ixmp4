@@ -3,11 +3,6 @@ from typing import TYPE_CHECKING
 from .api import RestBackend
 from .db import SqlAlchemyBackend
 
-if TYPE_CHECKING:
-    pass
-
-
-from typing import TYPE_CHECKING
 
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import NullPool, StaticPool
