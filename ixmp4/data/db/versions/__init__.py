@@ -172,8 +172,4 @@ class PostgresVersionTriggers(object):
             ddl = schema.DDL(ent.to_drop_sql()).execute_if(  # type: ignore[no-untyped-call]
                 dialect="postgresql"
             )
-            event.listen(
-                self.table,
-                "before_drop",
-                ddl,
-            )
+            event.listen(self.table, "before_drop", ddl)
