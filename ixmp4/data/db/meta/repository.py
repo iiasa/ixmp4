@@ -1,10 +1,5 @@
 from typing import TYPE_CHECKING, Any, cast
 
-from .. import versions
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
 import pandas as pd
 import pandera as pa
 from pandera.pandas import DataFrameModel
@@ -25,8 +20,11 @@ from ixmp4.data.db.run import Run
 from ixmp4.data.db.scenario import Scenario
 from ixmp4.db.filters import BaseFilter
 
-from .. import base
+from .. import base, versions
 from .model import RunMetaEntry, RunMetaEntryVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
