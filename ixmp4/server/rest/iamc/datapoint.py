@@ -22,6 +22,7 @@ def query(
     filter: DataPointFilter = Body(DataPointFilter()),
     join_parameters: bool | None = Query(False),
     join_runs: bool = Query(False),
+    join_run_id: bool = Query(False),
     table: bool | None = Query(False),
     pagination: Pagination = Depends(),
     backend: Backend = Depends(deps.get_backend),
@@ -56,9 +57,9 @@ def query(
 
 
     """
-    if (join_parameters or join_runs) and not table:
+    if (join_parameters or join_runs or join_run_id) and not table:
         raise BadRequest(
-            "`join_parameters` or `join_run` can only be used with `table=true`."
+            "`join_parameters`, `join_runs` or `join_run_id` can only be used with `table=true`."
         )
 
     return EnumerationOutput(
@@ -69,11 +70,13 @@ def query(
             table=bool(table),
             join_parameters=join_parameters,
             join_runs=join_runs,
+            join_run_id=join_run_id,
         ),
         total=backend.iamc.datapoints.count(
             _filter=filter,
             join_parameters=join_parameters,
             join_runs=join_runs,
+            join_run_id=join_run_id,
         ),
         pagination=pagination,
     )

@@ -89,6 +89,7 @@ def infer_content(df: pd.DataFrame, col: str) -> str:
 class EnumerateKwargs(abstract.iamc.datapoint.EnumerateKwargs, total=False):
     join_parameters: bool | None
     join_runs: bool
+    join_run_id: bool
     _filter: BaseFilter
 
 
@@ -129,19 +130,22 @@ class DataPointRepository(
         return exc
 
     def select_joined_parameters(
-        self, join_runs: bool = False
+        self, join_runs: bool = False, join_run_id: bool = False
     ) -> db.sql.Select[tuple[DataPoint]]:
         # NOTE Not quite sure about this bundle, seems to possibly take all types of
         # all model classes?
         bundle: list[db.Label[str] | db.Label[int] | db.Bundle[Any]] = []
         if join_runs:
-            bundle.extend(
-                [
-                    Model.name.label("model"),
-                    Scenario.name.label("scenario"),
-                    Run.version.label("version"),
-                ]
-            )
+            col_bundle: list[Any] = [
+                Model.name.label("model"),
+                Scenario.name.label("scenario"),
+                Run.version.label("version"),
+            ]
+            if join_run_id:
+                col_bundle.insert(0, Run.id.label("run__id"))
+            bundle.extend(col_bundle)
+        elif join_run_id:
+            bundle.append(Run.id.label("run__id"))
 
         bundle.extend(
             [
@@ -163,12 +167,13 @@ class DataPointRepository(
             .join(Variable, onclause=Measurand.variable__id == Variable.id)
         )
 
-        if join_runs:
-            _exc = (
-                _exc.join(Run, onclause=TimeSeries.run__id == Run.id)
-                .join(Model, onclause=Model.id == Run.model__id)
-                .join(Scenario, onclause=Scenario.id == Run.scenario__id)
-            )
+        if join_runs or join_run_id:
+            _exc = _exc.join(Run, onclause=TimeSeries.run__id == Run.id)
+            if join_runs:
+                _exc = (
+                    _exc.join(Model, onclause=Model.id == Run.model__id)
+                    .join(Scenario, onclause=Scenario.id == Run.scenario__id)
+                )
         return _exc
 
     def select(
@@ -176,6 +181,7 @@ class DataPointRepository(
         *,
         join_parameters: bool | None = False,
         join_runs: bool = False,
+        join_run_id: bool = False,
         _filter: DataPointFilter | None = None,
         _exc: db.sql.Select[tuple[DataPoint]] | None = None,
         **kwargs: Any,
@@ -183,7 +189,7 @@ class DataPointRepository(
         if _exc is not None:
             exc = _exc
         elif join_parameters:
-            exc = self.select_joined_parameters(join_runs)
+            exc = self.select_joined_parameters(join_runs, join_run_id)
         else:
             exc = db.select(self.bundle)
 

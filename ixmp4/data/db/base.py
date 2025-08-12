@@ -352,6 +352,7 @@ class PaginateKwargs(TypedDict):
     _filter: filters.BaseFilter
     join_parameters: NotRequired[bool | None]
     join_runs: NotRequired[bool | None]
+    join_run_id: NotRequired[bool | None]
     join_run_index: NotRequired[bool | None]
     table: bool
 
@@ -360,6 +361,7 @@ class EnumerateKwargs(TypedDict):
     _filter: filters.BaseFilter
     join_parameters: NotRequired[bool | None]
     join_runs: NotRequired[bool | None]
+    join_run_id: NotRequired[bool | None]
     join_run_index: NotRequired[bool | None]
     _post_filter: Callable[
         [db.sql.Select[tuple[ModelType]]], db.sql.Select[tuple[ModelType]]
@@ -372,6 +374,7 @@ class CountKwargs(abstract.HasNameFilter, total=False):
     _filter: filters.BaseFilter
     join_parameters: bool | None
     join_runs: bool | None
+    join_run_id: bool | None
     iamc: abstract.annotations.IamcFilterAlias
     model: abstract.annotations.HasModelFilter
     region: abstract.annotations.HasRegionFilter

@@ -75,3 +75,36 @@ def test_invalid_filters(
         platform.backend.iamc.datapoints.tabulate(**filter)  # type: ignore[arg-type]
     with pytest.raises(BadFilterArguments):
         platform.backend.iamc.datapoints.list(**filter)  # type: ignore[arg-type]
+
+def test_join_runs(platform: ixmp4.Platform) -> None:
+    filter_dataset.load_dataset(platform)
+    df = platform.backend.iamc.datapoints.tabulate(
+        join_parameters=True, join_runs=True
+    )
+    if not df.empty:
+        assert "model" in df.columns
+        assert "scenario" in df.columns
+        assert "version" in df.columns
+        assert "run__id" not in df.columns
+
+def test_join_run_id(platform: ixmp4.Platform) -> None:
+    run1, run2 = filter_dataset.load_dataset(platform)
+    df = platform.backend.iamc.datapoints.tabulate(
+        join_parameters=True, join_run_id=True
+    )
+    if not df.empty:
+        assert "run__id" in df.columns
+        assert len(df["run__id"].unique()) > 0
+        assert set(df["run__id"].unique()) <= {run1.id, run2.id}
+
+
+def test_join_run_id_only_without_join_runs(platform: ixmp4.Platform) -> None:
+    filter_dataset.load_dataset(platform)
+    df = platform.backend.iamc.datapoints.tabulate(
+        join_parameters=True, join_run_id=True, join_runs=False
+    )
+    if not df.empty:
+        assert "run__id" in df.columns
+        assert "model" not in df.columns
+        assert "scenario" not in df.columns
+        assert "version" not in df.columns

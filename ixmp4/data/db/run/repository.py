@@ -369,6 +369,7 @@ class RunRepository(
             ),
             raw=False,
             join_runs=False,
+            join_run_id=False,
         )
         if not datapoints.empty:
             datapoints["run__id"] = run.id
