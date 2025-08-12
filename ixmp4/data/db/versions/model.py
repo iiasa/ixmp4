@@ -1,9 +1,6 @@
 import enum
 
-from sqlalchemy import (
-    BigInteger,
-    SmallInteger,
-)
+from sqlalchemy import BigInteger, SmallInteger
 
 from ixmp4 import db
 from ixmp4.data import types

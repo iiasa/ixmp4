@@ -21,11 +21,7 @@ from sqlalchemy.sql.schema import Identity, MetaData
 from typing_extensions import NotRequired, TypedDict, Unpack
 
 from ixmp4 import db
-from ixmp4.core.exceptions import (
-    Forbidden,
-    IxmpError,
-    ProgrammingError,
-)
+from ixmp4.core.exceptions import Forbidden, IxmpError, ProgrammingError
 from ixmp4.data import abstract, types
 from ixmp4.data.abstract.annotations import (
     TabulateVersionsKwargs as TabulateVersionsKwargs,

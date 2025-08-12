@@ -1,8 +1,6 @@
 from typing import Any
 
-from sqlalchemy import (
-    DateTime,
-)
+from sqlalchemy import DateTime
 
 from ixmp4 import db
 from ixmp4.core.exceptions import NotFound
