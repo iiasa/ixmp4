@@ -8,7 +8,6 @@ from sqlalchemy.orm import configure_mappers
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.pool import NullPool
 
-# TODO Import this from typing when dropping support for Python 3.11
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
 from ixmp4.conf.user import User
