@@ -1,8 +1,6 @@
 from typing import Any
 
-from sqlalchemy import (
-    Table,
-)
+from sqlalchemy import Table
 from sqlalchemy.sql import ColumnCollection, ColumnElement
 
 from .model import Operation
