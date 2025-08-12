@@ -1,9 +1,7 @@
 from typing import TYPE_CHECKING
 
-from .api import RestBackend
-from .db import SqlAlchemyBackend
-
-
+import pandas as pd
+from fastapi.testclient import TestClient
 from sqlalchemy.engine import create_engine
 from sqlalchemy.pool import NullPool, StaticPool
 
@@ -13,17 +11,16 @@ from typing_extensions import Unpack
 from ixmp4.conf import settings
 from ixmp4.conf.auth import BaseAuth, SelfSignedAuth
 from ixmp4.conf.base import PlatformInfo
-from ixmp4.conf.manager import ManagerPlatformInfo
+from ixmp4.conf.manager import ManagerPlatformInfo, MockManagerConfig
 from ixmp4.conf.user import User
+from ixmp4.server import app, v1
+from ixmp4.server.rest import deps
+
+from .api import RestBackend
+from .db import SqlAlchemyBackend
 
 if TYPE_CHECKING:
     from .db import SqlAlchemyBackend
-import pandas as pd
-from fastapi.testclient import TestClient
-
-from ixmp4.conf.manager import MockManagerConfig
-from ixmp4.server import app, v1
-from ixmp4.server.rest import deps
 
 
 class SqliteTestBackend(SqlAlchemyBackend):
