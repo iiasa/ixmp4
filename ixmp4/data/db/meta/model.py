@@ -7,7 +7,7 @@ from ixmp4 import db
 from ixmp4.core.exceptions import InvalidRunMeta
 from ixmp4.data import abstract, types
 
-from .. import base
+from .. import base, versions
 
 
 class InitKwargs(TypedDict):
@@ -17,8 +17,7 @@ class InitKwargs(TypedDict):
 
 
 class RunMetaEntry(base.BaseModel):
-    __versioned__ = {}
-
+    __tablename__ = "runmetaentry"
     NotFound: ClassVar = abstract.RunMetaEntry.NotFound
     NotUnique: ClassVar = abstract.RunMetaEntry.NotUnique
     DeletionPrevented: ClassVar = abstract.RunMetaEntry.DeletionPrevented
@@ -87,3 +86,20 @@ class RunMetaEntry(base.BaseModel):
         _kwargs["dtype"] = type_
         _kwargs[col] = value
         super().__init__(**_kwargs)
+
+
+class RunMetaEntryVersion(versions.DefaultVersionModel):
+    __tablename__ = "runmetaentry_version"
+    run__id: types.Integer = db.Column(nullable=False, index=True)
+    key: types.String = db.Column(db.String(1023), nullable=False)
+    dtype: types.String = db.Column(db.String(20), nullable=False)
+
+    value_int: types.Integer = db.Column(db.Integer, nullable=True)
+    value_str: types.String = db.Column(db.String(1023), nullable=True)
+    value_float: types.Float = db.Column(db.Float, nullable=True)
+    value_bool: types.Boolean = db.Column(db.Boolean, nullable=True)
+
+
+version_triggers = versions.PostgresVersionTriggers(
+    RunMetaEntry.__table__, RunMetaEntryVersion.__table__
+)

@@ -9,6 +9,8 @@ from .. import base
 
 
 class Scalar(base.BaseModel):
+    __tablename__ = "optimization_scalar"
+
     NotFound: ClassVar = abstract.Scalar.NotFound
     NotUnique: ClassVar = abstract.Scalar.NotUnique
     DeletionPrevented: ClassVar = abstract.Scalar.DeletionPrevented

@@ -42,7 +42,6 @@ class RegionRepository(
     base.Deleter,
     base.Retriever,
     base.Enumerator,
-    base.VersionManager,
     Protocol,
 ):
     docs: DocsRepository

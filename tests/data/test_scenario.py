@@ -3,9 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4 import Scenario
+from ixmp4.data.backend import SqlAlchemyBackend
 
+from .. import utils
 from ..fixtures import FilterIamcDataset
-from ..utils import assert_unordered_equality
 
 
 class TestDataScenario:
@@ -17,30 +18,32 @@ class TestDataScenario:
         assert scenario.created_at is not None
         assert scenario.created_by == "@unknown"
 
-        expected_versions = pd.DataFrame(
-            [
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
                 [
-                    1,
-                    "Scenario",
-                    scenario.created_at,
-                    "@unknown",
-                    1,
-                    None,
-                    0,
+                    [
+                        1,
+                        "Scenario",
+                        scenario.created_at,
+                        "@unknown",
+                        1,
+                        None,
+                        0,
+                    ],
                 ],
-            ],
-            columns=[
-                "id",
-                "name",
-                "created_at",
-                "created_by",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
-        vdf = platform.backend.scenarios.tabulate_versions()
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+                columns=[
+                    "id",
+                    "name",
+                    "created_at",
+                    "created_by",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            )
+            vdf = backend.scenarios.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_scenario_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.scenarios.create("Scenario")
@@ -81,7 +84,7 @@ class TestDataScenario:
         )
 
         scenarios = platform.backend.scenarios.tabulate()
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             scenarios.drop(columns=["created_at", "created_by"]), true_scenarios
         )
 

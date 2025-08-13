@@ -16,13 +16,13 @@ from ..unit import Unit
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
+from .. import versions
 from . import base
 from .variable import Variable
 
 
 class Measurand(base.BaseModel, mixins.HasCreationInfo):
-    __versioned__ = {}
-
+    __tablename__ = "iamc_measurand"
     NotFound: ClassVar = abstract.Measurand.NotFound
     NotUnique: ClassVar = abstract.Measurand.NotUnique
     DeletionPrevented: ClassVar = abstract.Measurand.DeletionPrevented
@@ -50,11 +50,24 @@ class Measurand(base.BaseModel, mixins.HasCreationInfo):
     )
 
 
+class MeasurandVersion(versions.DefaultVersionModel):
+    __tablename__ = "iamc_measurand_version"
+    variable__id: types.Integer = db.Column(nullable=False, index=True)
+    unit__id: types.Integer = db.Column(nullable=False, index=True)
+
+    created_at: types.DateTime = db.Column(nullable=True)
+    created_by: types.Username
+
+
+version_triggers = versions.PostgresVersionTriggers(
+    Measurand.__table__, MeasurandVersion.__table__
+)
+
+
 class MeasurandRepository(
     base.Creator[Measurand],
     base.Retriever[Measurand],
     base.Enumerator[Measurand],
-    base.VersionManager[Measurand],
     abstract.MeasurandRepository,
 ):
     model_class = Measurand
@@ -102,9 +115,3 @@ class MeasurandRepository(
     @guard("view")
     def tabulate(self) -> pd.DataFrame:
         return super().tabulate()
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)

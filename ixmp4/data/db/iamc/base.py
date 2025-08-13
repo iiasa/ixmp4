@@ -11,10 +11,8 @@ from ..base import (
     TabulateTransactionsKwargs,
     TabulateVersionsKwargs,
     Tabulator,
-    VersionManager,
 )
 
 
 class BaseModel(RootBaseModel):
     __abstract__ = True
-    table_prefix = "iamc_"

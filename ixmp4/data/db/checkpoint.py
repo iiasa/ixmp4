@@ -19,6 +19,7 @@ class EnumerateKwargs(
 
 
 class Checkpoint(base.BaseModel):
+    __tablename__ = "checkpoint"
     run__id: types.Integer = db.Column(
         db.Integer,
         db.ForeignKey("run.id"),
@@ -28,7 +29,7 @@ class Checkpoint(base.BaseModel):
     transaction__id: types.Integer = db.Column(
         db.Integer,
         db.ForeignKey("transaction.id"),
-        nullable=False,
+        nullable=True,
         index=True,
     )
     message: types.String
@@ -65,11 +66,15 @@ class CheckpointRepository(
 
     @guard("edit")
     def create(self, run__id: int, message: str) -> Checkpoint:
-        latest_transaction = self.backend.runs.get_latest_transaction()
+        # only save a transaction reference on pgsql
+        if self.backend.engine.dialect.name == "postgresql":
+            latest_transaction_id = self.backend.transactions.latest().id
+        else:
+            latest_transaction_id = None
         # permission check
         run = self.backend.runs.get_by_id(run__id, _access_type="edit")
 
-        return super().create(run.id, latest_transaction.id, message)
+        return super().create(run.id, latest_transaction_id, message)
 
     @guard("edit")
     def delete(self, id: int) -> None:

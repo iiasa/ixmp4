@@ -3,9 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4 import Model
+from ixmp4.data.backend import SqlAlchemyBackend
 
+from .. import utils
 from ..fixtures import FilterIamcDataset
-from ..utils import assert_unordered_equality
 
 
 class TestDataModel:
@@ -18,23 +19,25 @@ class TestDataModel:
         assert model.created_at is not None
         assert model.created_by == "@unknown"
 
-        expected_versions = pd.DataFrame(
-            [
-                [1, "Model", model.created_at, "@unknown", 1, None, 0],
-            ],
-            columns=[
-                "id",
-                "name",
-                "created_at",
-                "created_by",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
+                [
+                    [1, "Model", model.created_at, "@unknown", 1, None, 0],
+                ],
+                columns=[
+                    "id",
+                    "name",
+                    "created_at",
+                    "created_by",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            )
 
-        vdf = platform.backend.models.tabulate_versions()
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+            vdf = backend.models.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
     def test_model_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.models.create("Model")
@@ -74,7 +77,7 @@ class TestDataModel:
         )
 
         models = platform.backend.models.tabulate()
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             models.drop(columns=["created_at", "created_by"]), true_models
         )
 

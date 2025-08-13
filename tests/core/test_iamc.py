@@ -1,4 +1,5 @@
 import asyncio
+import warnings
 from collections.abc import Iterable
 
 import numpy as np
@@ -9,11 +10,10 @@ import ixmp4
 from ixmp4 import DataPoint
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import RunLockRequired, SchemaError
+from ixmp4.data.backend import SqlAlchemyBackend
 
+from .. import utils
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
-from ..utils import (
-    assert_unordered_equality,
-)
 
 
 class CustomException(Exception):
@@ -108,7 +108,7 @@ class TestCoreIamc:
         ret = run.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(data, ret, check_like=True)
+        utils.assert_unordered_equality(data, ret, check_like=True)
 
         # If not set as default, retrieve from database
         # via Platform returns an empty frame
@@ -126,14 +126,14 @@ class TestCoreIamc:
         test_mp_data["scenario"] = run.scenario.name
         test_mp_data["version"] = run.version
         test_mp_data = test_mp_data[ret.columns]
-        assert_unordered_equality(test_mp_data, ret, check_like=True)
+        utils.assert_unordered_equality(test_mp_data, ret, check_like=True)
 
         # Retrieve from database after setting the run to default
         run.set_as_default()
         ret = platform.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(test_mp_data, ret, check_like=True)
+        utils.assert_unordered_equality(test_mp_data, ret, check_like=True)
 
         # == Partial Removal ==
         # Remove half the data
@@ -146,7 +146,7 @@ class TestCoreIamc:
         ret = run.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(remaining_data, ret, check_like=True)
+        utils.assert_unordered_equality(remaining_data, ret, check_like=True)
 
         ts_after_delete = platform.backend.iamc.timeseries.tabulate(
             join_parameters=True
@@ -168,7 +168,7 @@ class TestCoreIamc:
         ret = run.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
-        assert_unordered_equality(data, ret, check_like=True)
+        utils.assert_unordered_equality(data, ret, check_like=True)
 
         # == Full Removal ==
         # Remove all data
@@ -231,248 +231,56 @@ class TestCoreIamc:
         obs = _run.iamc.tabulate(raw=True, **filters)
         assert len(obs) == exp_len
 
-    def test_iamc_versioning(self, platform: ixmp4.Platform) -> None:
+    def test_iamc_versioning(self, pg_platform: ixmp4.Platform) -> None:
         self.do_run_datapoints(
-            platform, self.small.annual.copy(), True, DataPoint.Type.ANNUAL
+            pg_platform, self.small.annual.copy(), True, DataPoint.Type.ANNUAL
         )
-        vdf = platform.backend.iamc.datapoints.tabulate_versions()
-        expected_versions = pd.DataFrame(
-            [
-                [
-                    0.5,
-                    "ANNUAL",
-                    None,
-                    2000,
-                    None,
-                    1,
-                    1,
-                    22,
-                    26.0,
-                    0,
-                    "Region 1",
-                    "Unit 1",
-                    "Variable 1",
-                ],
-                [
-                    1.0,
-                    "ANNUAL",
-                    None,
-                    2010,
-                    None,
-                    2,
-                    2,
-                    22,
-                    26.0,
-                    0,
-                    "Region 1",
-                    "Unit 2",
-                    "Variable 1",
-                ],
-                [
-                    1.5,
-                    "ANNUAL",
-                    None,
-                    2020,
-                    None,
-                    3,
-                    3,
-                    22,
-                    32.0,
-                    0,
-                    "Region 3",
-                    "Unit 3",
-                    "Variable 3",
-                ],
-                [
-                    1.7,
-                    "ANNUAL",
-                    None,
-                    2020,
-                    None,
-                    4,
-                    4,
-                    22,
-                    32.0,
-                    0,
-                    "Region 3",
-                    "Unit 2",
-                    "Variable 4",
-                ],
-                [
-                    0.5,
-                    "ANNUAL",
-                    None,
-                    2000,
-                    None,
-                    1,
-                    1,
-                    26,
-                    None,
-                    2,
-                    "Region 1",
-                    "Unit 1",
-                    "Variable 1",
-                ],
-                [
-                    1.0,
-                    "ANNUAL",
-                    None,
-                    2010,
-                    None,
-                    2,
-                    2,
-                    26,
-                    None,
-                    2,
-                    "Region 1",
-                    "Unit 2",
-                    "Variable 1",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2000,
-                    None,
-                    5,
-                    5,
-                    31,
-                    35.0,
-                    0,
-                    "Region 1",
-                    "Unit 1",
-                    "Variable 1",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2010,
-                    None,
-                    6,
-                    6,
-                    31,
-                    35.0,
-                    0,
-                    "Region 1",
-                    "Unit 2",
-                    "Variable 1",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2020,
-                    None,
-                    3,
-                    3,
-                    32,
-                    35.0,
-                    1,
-                    "Region 3",
-                    "Unit 3",
-                    "Variable 3",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2020,
-                    None,
-                    4,
-                    4,
-                    32,
-                    35.0,
-                    1,
-                    "Region 3",
-                    "Unit 2",
-                    "Variable 4",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2000,
-                    None,
-                    5,
-                    5,
-                    35,
-                    None,
-                    2,
-                    "Region 1",
-                    "Unit 1",
-                    "Variable 1",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2010,
-                    None,
-                    6,
-                    6,
-                    35,
-                    None,
-                    2,
-                    "Region 1",
-                    "Unit 2",
-                    "Variable 1",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2020,
-                    None,
-                    3,
-                    3,
-                    35,
-                    None,
-                    2,
-                    "Region 3",
-                    "Unit 3",
-                    "Variable 3",
-                ],
-                [
-                    -9.9,
-                    "ANNUAL",
-                    None,
-                    2020,
-                    None,
-                    4,
-                    4,
-                    35,
-                    None,
-                    2,
-                    "Region 3",
-                    "Unit 2",
-                    "Variable 4",
-                ],
-            ],
-            columns=[
-                "value",
-                "type",
-                "step_category",
-                "step_year",
-                "step_datetime",
-                "time_series__id",
-                "id",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-                "region",
-                "unit",
-                "variable",
-            ],
-        ).replace({np.nan: None})
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
-    def test_iamc_rollback(self, platform: ixmp4.Platform) -> None:
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
+        @utils.versioning_test(pg_platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            vdf = backend.iamc.datapoints.versions.tabulate()
+            expected_versions = pd.read_csv(
+                "./tests/core/expected_versions/test_iamc_versioning.csv"
+            ).replace({np.nan: None})
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+
+    def test_iamc_rollback_sqlite(self, sqlite_platform: ixmp4.Platform) -> None:
+        self.small.load_regions(sqlite_platform)
+        self.small.load_units(sqlite_platform)
         data = self.small.annual.copy().rename(columns={"step_year": "year"})
 
-        run = platform.runs.create("Model", "Scenario")
+        run = sqlite_platform.runs.create("Model", "Scenario")
+
+        with run.transact("Full Addition"):
+            run.iamc.add(data)
+
+        remove_data = data.head(len(data) // 2).drop(columns=["value"])
+        remaining_data = data.tail(len(data) // 2)
+
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                with (
+                    run.transact("Partial Removal Failure"),
+                ):
+                    run.iamc.remove(remove_data)
+                    raise CustomException("Whoops!!!")
+            except CustomException:
+                pass
+
+        ret = run.iamc.tabulate()
+        utils.assert_unordered_equality(remaining_data, ret, check_like=True)
+
+        assert (
+            "An exception occurred but the `Run` was not reverted because "
+            "versioning is not supported by this platform" in str(w[0].message)
+        )
+
+    def test_iamc_rollback(self, pg_platform: ixmp4.Platform) -> None:
+        self.small.load_regions(pg_platform)
+        self.small.load_units(pg_platform)
+        data = self.small.annual.copy().rename(columns={"step_year": "year"})
+
+        run = pg_platform.runs.create("Model", "Scenario")
 
         # == Full Addition ==
         # Save to database
@@ -490,7 +298,7 @@ class TestCoreIamc:
             pass
 
         ret = run.iamc.tabulate()
-        assert_unordered_equality(data, ret, check_like=True)
+        utils.assert_unordered_equality(data, ret, check_like=True)
 
         with run.transact("Partial Removal"):
             run.iamc.remove(remove_data)
@@ -507,16 +315,16 @@ class TestCoreIamc:
 
         remaining_data = data.tail(len(data) // 2)
         ret = run.iamc.tabulate()
-        assert_unordered_equality(remaining_data, ret, check_like=True)
+        utils.assert_unordered_equality(remaining_data, ret, check_like=True)
 
-    def test_iamc_rollback_to_checkpoint(self, platform: ixmp4.Platform) -> None:
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
+    def test_iamc_rollback_to_checkpoint(self, pg_platform: ixmp4.Platform) -> None:
+        self.small.load_regions(pg_platform)
+        self.small.load_units(pg_platform)
 
         data = self.small.annual.copy().rename(columns={"step_year": "year"})
         remove_data = data.head(len(data) // 2).drop(columns=["value"])
 
-        run = platform.runs.create("Model", "Scenario")
+        run = pg_platform.runs.create("Model", "Scenario")
 
         try:
             with run.transact("Full Addition / Partial Removal"):
@@ -528,7 +336,7 @@ class TestCoreIamc:
             pass
 
         ret = run.iamc.tabulate()
-        assert_unordered_equality(data, ret, check_like=True)
+        utils.assert_unordered_equality(data, ret, check_like=True)
 
         assert len(run.checkpoints.tabulate()) == 1
 

@@ -1,9 +1,10 @@
 import pandas as pd
 import pytest
-from sqlalchemy_continuum.operation import Operation
 
 import ixmp4
 from ixmp4 import Variable
+from ixmp4.data.backend import SqlAlchemyBackend
+from ixmp4.data.db.versions import Operation
 
 from .. import utils
 from ..fixtures import FilterIamcDataset
@@ -18,31 +19,32 @@ class TestDataIamcVariable:
         assert variable.created_at is not None
         assert variable.created_by == "@unknown"
 
-        expected_versions = pd.DataFrame(
-            [
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
                 [
-                    1,
-                    "Variable",
-                    variable.created_at,
-                    "@unknown",
-                    1,
-                    None,
-                    Operation.INSERT,
+                    [
+                        1,
+                        "Variable",
+                        variable.created_at,
+                        "@unknown",
+                        1,
+                        None,
+                        Operation.INSERT,
+                    ],
                 ],
-            ],
-            columns=[
-                "id",
-                "name",
-                "created_at",
-                "created_by",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
-
-        vdf = platform.backend.iamc.variables.tabulate_versions()
-        utils.assert_unordered_equality(expected_versions, vdf)
+                columns=[
+                    "id",
+                    "name",
+                    "created_at",
+                    "created_by",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            )
+            vdf = backend.iamc.variables.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf)
 
     def test_iamc_variable_unique(self, platform: ixmp4.Platform) -> None:
         platform.backend.iamc.variables.create("Variable")

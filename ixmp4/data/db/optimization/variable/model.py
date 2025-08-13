@@ -14,7 +14,7 @@ if TYPE_CHECKING:
 
 
 class VariableIndexsetAssociation(base.RootBaseModel):
-    table_prefix = "optimization_"
+    __tablename__ = "optimization_variableindexsetassociation"
 
     variable__id: types.OptimizationVariableType
     variable: types.Mapped["OptimizationVariable"] = db.relationship(
@@ -28,6 +28,8 @@ class VariableIndexsetAssociation(base.RootBaseModel):
 
 # NOTE table name will be optimization_optimizationvariable
 class OptimizationVariable(base.BaseModel):
+    __tablename__ = "optimization_optimizationvariable"
+
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Variable.NotFound
     NotUnique: ClassVar = abstract.Variable.NotUnique

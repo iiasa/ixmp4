@@ -105,7 +105,11 @@ IndexSet__IdType = Annotated[
 ]
 JsonType = JSON()
 JsonType = JsonType.with_variant(JSONB(), "postgresql")
-NameType = Annotated[str, Column(String(255), nullable=False, unique=False)]
+
+name_len = 255
+NameType = Annotated[str, Column(String(name_len), nullable=False, unique=False)]
+UniqueNameType = Annotated[str, Column(String(name_len), nullable=False, unique=True)]
+
 OptimizationVariableIdType = Annotated[
     int,
     Column(
@@ -137,5 +141,4 @@ TableIdType = Annotated[
         index=True,
     ),
 ]
-UniqueNameType = Annotated[str, Column(String(255), nullable=False, unique=True)]
 UsernameType = Annotated[str, Column(String(255), nullable=True)]

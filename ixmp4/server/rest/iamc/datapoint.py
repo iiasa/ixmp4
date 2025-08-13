@@ -7,7 +7,7 @@ from ixmp4.data.db.iamc.datapoint.filter import DataPointFilter
 from ixmp4.data.db.iamc.datapoint.model import DataPoint
 
 from .. import deps
-from ..base import EnumerationOutput, Pagination, TabulateVersionArgs
+from ..base import EnumerationOutput, Pagination
 from ..decorators import autodoc
 
 router: APIRouter = APIRouter(
@@ -98,19 +98,3 @@ def bulk_delete(
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
     backend.iamc.datapoints.bulk_delete(df.to_pandas())  # type: ignore[arg-type]
-
-
-@autodoc
-@router.patch("/versions/", response_model=api.DataFrame)
-def tabulate_versions(
-    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
-    pagination: Pagination = Depends(),
-    backend: Backend = Depends(deps.get_backend),
-) -> api.DataFrame:
-    return api.DataFrame.model_validate(
-        backend.iamc.datapoints.tabulate_versions(
-            limit=pagination.limit,
-            offset=pagination.offset,
-            **filter.model_dump(),
-        )
-    )

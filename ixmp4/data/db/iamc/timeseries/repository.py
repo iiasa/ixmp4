@@ -10,6 +10,7 @@ from typing_extensions import Unpack
 
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
 from ixmp4.data.db.base import BaseModel
 from ixmp4.data.db.iamc.measurand import Measurand
 from ixmp4.data.db.region import Region, RegionRepository
@@ -19,13 +20,16 @@ from ixmp4.data.db.timeseries import TimeSeriesRepository as BaseTimeSeriesRepos
 from ixmp4.data.db.unit import Unit, UnitRepository
 from ixmp4.data.db.utils import map_existing
 
-from .. import base
 from ..measurand import MeasurandRepository
 from ..variable import Variable
-from .model import TimeSeries
+from .model import TimeSeries, TimeSeriesVersion
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
+
+
+class TimeSeriesVersionRepository(versions.VersionRepository[TimeSeriesVersion]):
+    model_class = TimeSeriesVersion
 
 
 class TimeSeriesRepository(
@@ -37,6 +41,7 @@ class TimeSeriesRepository(
     regions: RegionRepository
     measurands: MeasurandRepository
     units: UnitRepository
+    versions: TimeSeriesVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         from .filter import TimeSeriesFilter
@@ -47,6 +52,8 @@ class TimeSeriesRepository(
         self.regions = RegionRepository(*args)
         self.measurands = MeasurandRepository(*args)
         self.units = UnitRepository(*args)
+        self.versions = TimeSeriesVersionRepository(*args)
+
         super().__init__(*args)
 
     # TODO Why do I have to essentially copy this and get_by_id() from db/timeseries?
@@ -168,9 +175,3 @@ class TimeSeriesRepository(
         df = self.map_regions(df)
         df = self.map_measurands(df)
         return df
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)

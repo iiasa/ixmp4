@@ -97,7 +97,6 @@ class RunMetaEntryRepository(
     base.Enumerator,
     base.BulkUpserter,
     base.BulkDeleter,
-    base.VersionManager,
     Protocol,
 ):
     def create(self, run__id: int, key: str, value: MetaValue) -> RunMetaEntry:

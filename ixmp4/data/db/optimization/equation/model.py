@@ -12,7 +12,7 @@ if TYPE_CHECKING:
 
 
 class EquationIndexsetAssociation(base.RootBaseModel):
-    table_prefix = "optimization_"
+    __tablename__ = "optimization_equationindexsetassociation"
 
     equation__id: types.EquationId
     equation: types.Mapped["Equation"] = db.relationship(
@@ -25,6 +25,8 @@ class EquationIndexsetAssociation(base.RootBaseModel):
 
 
 class Equation(base.BaseModel):
+    __tablename__ = "optimization_equation"
+
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Equation.NotFound
     NotUnique: ClassVar = abstract.Equation.NotUnique

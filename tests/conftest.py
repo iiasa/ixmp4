@@ -14,7 +14,7 @@ from ixmp4.conf import settings
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.backend import RestTestBackend, SqliteTestBackend
-from ixmp4.data.backend.db import PostgresTestBackend
+from ixmp4.data.backend.test import PostgresTestBackend
 
 from .fixtures import BigIamcDataset, MediumIamcDataset, MigrationFixtures
 
@@ -28,6 +28,7 @@ backend_fixtures = {
     "db_platform": ["sqlite", "postgres"],
     "rest_platform": ["rest-sqlite", "rest-postgres"],
     "sqlite_platform": ["sqlite"],
+    "pg_platform": ["postgres", "rest-postgres"],
 }
 
 
@@ -131,10 +132,27 @@ def platform_fixture(request: pytest.FixtureRequest) -> Generator[Platform, Any,
         yield Platform(_backend=backend)
 
 
+@pytest.fixture(scope="session", autouse=True)
+def clear_pgsql_database(request: pytest.FixtureRequest) -> None:
+    """Ensures the postgres database is clean of registered tables
+    in case e.g. the previous test session failed to tear down."""
+
+    if "postgres" in request.config.option.backend:
+        postgres_dsn = request.config.option.postgres_dsn
+        pgsql = PostgresTestBackend(
+            PlatformInfo(
+                name="postgres-test",
+                dsn=postgres_dsn,
+            ),
+        )
+        pgsql._drop_all()
+
+
 # function scope fixtures
 rest_platform = pytest.fixture(platform_fixture, name="rest_platform")
 db_platform = pytest.fixture(platform_fixture, name="db_platform")
 sqlite_platform = pytest.fixture(platform_fixture, name="sqlite_platform")
+pg_platform = pytest.fixture(platform_fixture, name="pg_platform")
 platform = pytest.fixture(platform_fixture, name="platform")
 
 big = BigIamcDataset()
