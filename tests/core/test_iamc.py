@@ -16,10 +16,6 @@ from .. import utils
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
 
 
-class CustomException(Exception):
-    pass
-
-
 class TestCoreIamc:
     small = SmallIamcDataset()
     filter = FilterIamcDataset()
@@ -263,8 +259,8 @@ class TestCoreIamc:
                     run.transact("Partial Removal Failure"),
                 ):
                     run.iamc.remove(remove_data)
-                    raise CustomException("Whoops!!!")
-            except CustomException:
+                    raise utils.CustomException("Whoops!!!")
+            except utils.CustomException:
                 pass
 
         ret = run.iamc.tabulate()
@@ -293,8 +289,8 @@ class TestCoreIamc:
         try:
             with run.transact("Partial Removal Failure"):
                 run.iamc.remove(remove_data)
-                raise CustomException("Whoops!!!")
-        except CustomException:
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
             pass
 
         ret = run.iamc.tabulate()
@@ -309,8 +305,8 @@ class TestCoreIamc:
         try:
             with run.transact("Partial Update / Partial Addition Failure"):
                 run.iamc.add(update_data)
-                raise CustomException("Whoops!!!")
-        except CustomException:
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
             pass
 
         remaining_data = data.tail(len(data) // 2)
@@ -331,8 +327,8 @@ class TestCoreIamc:
                 run.iamc.add(data)
                 run.checkpoints.create("Full Addition")
                 run.iamc.remove(remove_data)
-                raise CustomException("Whoops!!!")
-        except CustomException:
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
             pass
 
         ret = run.iamc.tabulate()
