@@ -2,13 +2,10 @@ import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
@@ -21,6 +18,9 @@ from .docs import OptimizationVariableDocsRepository
 from .model import OptimizationVariable as Variable
 from .model import VariableIndexsetAssociation
 
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +29,8 @@ class VariableRepository(
     base.Deleter[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
+    base.BulkDeleter[Variable],
+    base.BulkUpserter[Variable],
     abstract.VariableRepository,
 ):
     model_class = Variable
@@ -173,6 +175,7 @@ class VariableRepository(
 
         variable.data = cast(types.JsonDict, data.to_dict(orient="list"))
 
+        # TODO Do we need this?
         self.session.commit()
 
     @guard("edit")
@@ -223,4 +226,5 @@ class VariableRepository(
 
             variable.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
+        # TODO Do we need this?
         self.session.commit()

@@ -2,14 +2,10 @@ import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
@@ -21,6 +17,9 @@ from .. import base
 from .docs import EquationDocsRepository
 from .model import Equation, EquationIndexsetAssociation
 
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 logger = logging.getLogger(__name__)
 
 
@@ -29,6 +28,8 @@ class EquationRepository(
     base.Deleter[Equation],
     base.Retriever[Equation],
     base.Enumerator[Equation],
+    base.BulkDeleter[Equation],
+    base.BulkUpserter[Equation],
     abstract.EquationRepository,
 ):
     model_class = Equation
@@ -222,4 +223,5 @@ class EquationRepository(
 
             equation.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
+        # TODO Do we need this?
         self.session.commit()
