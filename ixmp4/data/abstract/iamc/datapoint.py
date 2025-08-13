@@ -98,7 +98,8 @@ class DataPointRepository(
             If set to `True` the resulting list will include model & scenario name
             and version id of the associated Run.
         join_run_id : bool
-            If set to `True` the resulting list will include the id of the associated Run as `run__id`.
+            If set to `True` the resulting list will include the id of the associated
+            Run as `run__id`.
         kwargs : Any
             Additional key word arguments. Any left over kwargs will be used as filters.
 
@@ -128,7 +129,8 @@ class DataPointRepository(
             If set to `True` the resulting data frame will include model & scenario name
             and version id of the associated Run.
         join_run_id : bool
-            If set to `True` the resulting data frame will include the id of the associated Run as `run__id`.
+            If set to `True` the resulting data frame will include the id of the
+            associated Run as `run__id`.
         kwargs : Any
             Additional key word arguments. Any left over kwargs will be used as filters.
 

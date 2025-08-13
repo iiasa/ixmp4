@@ -213,6 +213,7 @@ class SelectCountKwargs(abstract.HasNameFilter, total=False):
     is_default: bool | None
     join_parameters: bool | None
     join_runs: bool | None
+    join_run_id: bool | None
     iamc: abstract.annotations.IamcFilterAlias
     model: abstract.annotations.HasModelFilter
     region: abstract.annotations.HasRegionFilter
