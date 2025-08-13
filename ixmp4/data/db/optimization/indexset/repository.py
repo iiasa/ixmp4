@@ -139,6 +139,7 @@ class IndexSetRepository(
             Literal["float", "int", "str"], type(_data[0]).__name__
         )
 
+        # Flush & expire session to refresh IndexSets stored in it
         self.session.commit()
 
     @guard("edit")
@@ -190,7 +191,7 @@ class IndexSetRepository(
         # NOTE We are currently not resetting indexset._data_type even if all data are
         # removed from that indexset.
 
-        # Expire session to refresh IndexSets stored in it
+        # Flush & expire session to refresh IndexSets stored in it
         self.session.commit()
 
     def _find_linked_item_ids(

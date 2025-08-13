@@ -223,5 +223,4 @@ class EquationRepository(
 
             equation.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
-        # TODO Do we need this?
         self.session.commit()
