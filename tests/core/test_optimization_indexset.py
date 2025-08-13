@@ -1,3 +1,6 @@
+import logging
+
+import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
@@ -10,7 +13,7 @@ from ixmp4.core.exceptions import (
     RunLockRequired,
 )
 
-from ..utils import create_indexsets_for_run
+from ..utils import CustomException, assert_unordered_equality, create_indexsets_for_run
 
 
 def df_from_list(indexsets: list[IndexSet]) -> pd.DataFrame:
@@ -359,3 +362,203 @@ class TestCoreIndexset:
 
         indexset_1.docs = None
         assert indexset_1.docs is None
+
+    def test_versioning_indexset(self, platform: ixmp4.Platform) -> None:
+        logging.basicConfig()
+        logging.getLogger("sqlalchemy.engine").setLevel(logging.INFO)
+
+        run = platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
+
+        with run.transact("Test IndexSet versioning"):
+            indexset_1.add(1)
+            indexset_2.add(["foo", "bar", "baz"])
+
+        with run.transact("Test IndexSet versioning data removal"):
+            indexset_2.remove(["baz"])
+
+        vdf = platform.backend.optimization.indexsets.tabulate_versions()
+
+        expected = pd.DataFrame(
+            [
+                [
+                    None,
+                    run.id,
+                    indexset_1.name,
+                    indexset_1.id,
+                    indexset_1.created_at,
+                    indexset_1.created_by,
+                    2,
+                    5,
+                    0,
+                ],
+                [
+                    None,
+                    run.id,
+                    indexset_2.name,
+                    indexset_2.id,
+                    indexset_2.created_at,
+                    indexset_2.created_by,
+                    3,
+                    6,
+                    0,
+                ],
+                [
+                    "int",
+                    run.id,
+                    indexset_1.name,
+                    indexset_1.id,
+                    indexset_1.created_at,
+                    indexset_1.created_by,
+                    5,
+                    None,
+                    1,
+                ],
+                [
+                    "str",
+                    run.id,
+                    indexset_2.name,
+                    indexset_2.id,
+                    indexset_2.created_at,
+                    indexset_2.created_by,
+                    6,
+                    10,
+                    1,
+                ],
+                [
+                    "str",
+                    run.id,
+                    indexset_2.name,
+                    indexset_2.id,
+                    indexset_2.created_at,
+                    indexset_2.created_by,
+                    10,
+                    None,
+                    1,
+                ],
+            ],
+            columns=[
+                "_data_type",
+                "run__id",
+                "name",
+                "id",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        ).replace({np.nan: None})
+
+        print(vdf.to_string())
+
+        assert_unordered_equality(expected, vdf)
+
+    def test_indexset_rollback(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
+
+        # Test rollback of adding data
+        try:
+            with run.transact("Test IndexSet rollback empty data"):
+                indexset_1.add("foo")
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        indexset_1 = run.optimization.indexsets.get("Indexset 1")
+        assert indexset_1.data == []
+
+        # Test rollback of indexset creation
+        try:
+            with run.transact("Test IndexSet rollback on creation"):
+                run.optimization.indexsets.create("Indexset 3")
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        assert [i.name for i in run.optimization.indexsets.list()] == [
+            "Indexset 1",
+            "Indexset 2",
+        ]
+
+        # Test rollback of indexset deletion
+        try:
+            with run.transact("Test IndexSet rollback on deletion"):
+                run.optimization.indexsets.delete(indexset_2.id)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        indexset_2 = run.optimization.indexsets.get("Indexset 2")
+        assert indexset_2
+
+        # Test rollback with potential id re-use
+        # NOTE Skipping since we'll not use versioning on sqlite
+
+        # Test rollback to same name
+        try:
+            with run.transact("Test IndexSet rollback to same name"):
+                run.optimization.indexsets.delete(indexset_2.id)
+                indexset_2 = run.optimization.indexsets.create("Indexset 2")
+                indexset_2.add(1)
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        indexset_2 = run.optimization.indexsets.get("Indexset 2")
+        assert indexset_2.data == []
+
+        # Test resetting linked items
+        # NOTE Only re-insertions of IndexSets need to be checked as they may alter the
+        # IndexSet.id that is used for linking
+        platform.backend.optimization.tables.create(
+            run.id, "Table", constrained_to_indexsets=[indexset_1.name]
+        )
+
+        try:
+            with run.transact("Test IndexSet rollback linked items"):
+                run.optimization.tables.delete("Table")
+                run.optimization.indexsets.delete("Indexset 1")
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        table = run.optimization.tables.get("Table")
+        assert table.indexset_names == ["Indexset 1"]
+
+    def test_indexset_rollback_to_checkpoint(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=platform.backend, _model=model, _run=run)
+            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+        )
+
+        # Test rollback of removing data
+        try:
+            with run.transact("Test IndexSet rollback all data"):
+                indexset_1.add(["foo", "bar", "baz"])
+                run.checkpoints.create("Test IndexSet rollback all data")
+                indexset_1.remove(["foo", "bar", "baz"])
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        assert indexset_1.data == ["foo", "bar", "baz"]
+
+        try:
+            with run.transact("Test Indexset rollback partial removal"):
+                indexset_1.remove("bar")
+                raise CustomException("Whoops!!!")
+        except CustomException:
+            pass
+
+        assert indexset_1.data == ["foo", "bar", "baz"]
