@@ -175,7 +175,6 @@ class VariableRepository(
 
         variable.data = cast(types.JsonDict, data.to_dict(orient="list"))
 
-        # TODO Do we need this?
         self.session.commit()
 
     @guard("edit")
@@ -226,5 +225,4 @@ class VariableRepository(
 
             variable.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
-        # TODO Do we need this?
         self.session.commit()

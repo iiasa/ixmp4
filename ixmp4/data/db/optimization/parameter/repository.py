@@ -173,7 +173,6 @@ class ParameterRepository(
             ).to_dict(orient="list"),
         )
 
-        # TODO Do we need this?
         self.session.commit()
 
     @guard("edit")
@@ -208,3 +207,5 @@ class ParameterRepository(
             remaining_data.reset_index(inplace=True)
 
         parameter.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
+
+        self.session.commit()

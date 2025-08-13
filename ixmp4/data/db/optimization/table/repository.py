@@ -146,7 +146,7 @@ class TableRepository(
             ),
         )
 
-        # TODO Do we need this?
+        # Move pending changes to the DB transaction buffer
         self.session.commit()
 
     @guard("edit")
@@ -180,3 +180,5 @@ class TableRepository(
             remaining_data.reset_index(inplace=True)
 
         table.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
+
+        self.session.commit()
