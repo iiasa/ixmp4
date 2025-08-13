@@ -170,9 +170,8 @@ class DataPointRepository(
         if join_runs or join_run_id:
             _exc = _exc.join(Run, onclause=TimeSeries.run__id == Run.id)
             if join_runs:
-                _exc = (
-                    _exc.join(Model, onclause=Model.id == Run.model__id)
-                    .join(Scenario, onclause=Scenario.id == Run.scenario__id)
+                _exc = _exc.join(Model, onclause=Model.id == Run.model__id).join(
+                    Scenario, onclause=Scenario.id == Run.scenario__id
                 )
         return _exc
 
