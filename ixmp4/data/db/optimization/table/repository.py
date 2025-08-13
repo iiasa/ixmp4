@@ -2,13 +2,10 @@ import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
@@ -20,6 +17,9 @@ from .. import base
 from .docs import TableDocsRepository
 from .model import Table, TableIndexsetAssociation
 
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 logger = logging.getLogger(__name__)
 
 
@@ -28,6 +28,8 @@ class TableRepository(
     base.Deleter[Table],
     base.Retriever[Table],
     base.Enumerator[Table],
+    base.BulkDeleter[Table],
+    base.BulkUpserter[Table],
     abstract.TableRepository,
 ):
     model_class = Table
@@ -144,6 +146,7 @@ class TableRepository(
             ),
         )
 
+        # TODO Do we need this?
         self.session.commit()
 
     @guard("edit")

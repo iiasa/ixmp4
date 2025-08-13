@@ -1,16 +1,11 @@
+import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-
-import logging
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
@@ -23,6 +18,9 @@ from .. import base
 from .docs import ParameterDocsRepository
 from .model import Parameter, ParameterIndexsetAssociation
 
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
+
 logger = logging.getLogger(__name__)
 
 
@@ -31,6 +29,8 @@ class ParameterRepository(
     base.Deleter[Parameter],
     base.Retriever[Parameter],
     base.Enumerator[Parameter],
+    base.BulkDeleter[Parameter],
+    base.BulkUpserter[Parameter],
     abstract.ParameterRepository,
 ):
     model_class = Parameter
@@ -173,6 +173,7 @@ class ParameterRepository(
             ).to_dict(orient="list"),
         )
 
+        # TODO Do we need this?
         self.session.commit()
 
     @guard("edit")

@@ -1,9 +1,6 @@
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Generic, Protocol, TypeVar
 
-if TYPE_CHECKING:
-    from . import EnumerateKwargs
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -13,6 +10,9 @@ from ixmp4.data.abstract.unit import Unit
 
 from .. import base
 from ..docs import DocsRepository
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 BackendModelType = TypeVar("BackendModelType", bound=base.BaseModel, covariant=True)
 
@@ -30,7 +30,6 @@ class BackendBaseRepository(
     base.Deleter,
     base.Retriever,
     base.Enumerator,
-    base.VersionManager,
     Protocol,
 ):
     docs: DocsRepository

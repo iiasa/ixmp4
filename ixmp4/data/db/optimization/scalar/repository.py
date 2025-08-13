@@ -1,26 +1,24 @@
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, Literal
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-from ixmp4.data.db.unit.model import UnitVersion
-
-# TODO Move this to the end of the import block and add to existing commit
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.abstract.annotations import HasUnitIdFilter
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db import versions
+from ixmp4.data.db.unit.model import UnitVersion
 
 from .. import base
 from .docs import ScalarDocsRepository
 from .model import Scalar, ScalarVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
 class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...

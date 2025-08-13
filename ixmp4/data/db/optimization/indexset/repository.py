@@ -1,9 +1,15 @@
+import logging
 from collections.abc import Generator
 from typing import TYPE_CHECKING, Any, List, Literal, Sequence, cast
+
+import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
+from ixmp4 import db
+from ixmp4.data.abstract import optimization as abstract
+from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.optimization.equation.model import (
     EquationIndexsetAssociation,
 )
@@ -19,20 +25,12 @@ from ixmp4.data.db.optimization.variable.model import (
 )
 from ixmp4.data.db.optimization.variable.repository import VariableRepository
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-import logging
-
-import pandas as pd
-
-from ixmp4 import db
-from ixmp4.data.abstract import optimization as abstract
-from ixmp4.data.auth.decorators import guard
-
 from .. import base, utils
 from .docs import IndexSetDocsRepository
 from .model import IndexSet, IndexSetData
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 log = logging.getLogger(__name__)
 
@@ -42,6 +40,8 @@ class IndexSetRepository(
     base.Deleter[IndexSet],
     base.Retriever[IndexSet],
     base.Enumerator[IndexSet],
+    base.BulkDeleter[IndexSet],
+    base.BulkUpserter[IndexSet],
     abstract.IndexSetRepository,
 ):
     model_class = IndexSet
@@ -186,6 +186,9 @@ class IndexSetRepository(
             return None
         elif result.rowcount != len(_data):
             log.info(f"Not all items in `data` were registered for IndexSet {id}!")
+
+        # NOTE We are currently not resetting indexset._data_type even if all data are
+        # removed from that indexset.
 
         # Expire session to refresh IndexSets stored in it
         self.session.commit()

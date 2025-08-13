@@ -16,7 +16,6 @@ from ..base import (
     Lister,
     Retriever,
     Selecter,
-    TabulateVersionsKwargs,
     Tabulator,
 )
 

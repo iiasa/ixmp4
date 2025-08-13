@@ -1,11 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
-
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
@@ -15,6 +10,11 @@ from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
 
 from .base import Deleter, Lister, OptimizationBaseModelFacade, Retriever, Tabulator
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
+    from . import InitKwargs
 
 
 class Scalar(OptimizationBaseModelFacade):
