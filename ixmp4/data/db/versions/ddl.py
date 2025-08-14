@@ -19,7 +19,8 @@ class VersionProcedure(object):
 
         if (TG_OP='DELETE') then
             update %(version_tablename)s set %(end_transaction_id_column)s = tx_id
-            where id in (select id from OLD_TABLE);
+            where id in (select id from OLD_TABLE)
+            and %(end_transaction_id_column)s = NULL;
 
             insert into %(version_tablename)s (%(versioned_column_names)s,
             %(transaction_id_column)s, operation_type)
@@ -27,7 +28,8 @@ class VersionProcedure(object):
             from OLD_TABLE;
         elsif (TG_OP='UPDATE') then
             update %(version_tablename)s set %(end_transaction_id_column)s = tx_id
-            where id in (select id from NEW_TABLE);
+            where id in (select id from NEW_TABLE)
+            and %(end_transaction_id_column)s = NULL;
 
             insert into %(version_tablename)s (%(versioned_column_names)s,
             %(transaction_id_column)s, operation_type)
