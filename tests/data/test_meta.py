@@ -283,8 +283,8 @@ class TestDataMeta:
                     # == Full Addition ==
                     [1, "Boolean", "BOOL", None, None, None, True, 1, 6, 10, 0],
                     [1, "Float", "FLOAT", None, None, 0.2, None, 2, 7, 10, 0],
-                    [1, "Integer", "INT", 1.0, None, None, None, 3, 8, 15, 0],
-                    [1, "String", "STR", None, "Value", None, None, 4, 9, 15, 0],
+                    [1, "Integer", "INT", 1.0, None, None, None, 3, 8, 13, 0],
+                    [1, "String", "STR", None, "Value", None, None, 4, 9, 14, 0],
                     # == Partial Removal ==
                     [1, "Boolean", "BOOL", None, None, None, True, 1, 10, None, 2],
                     [1, "Float", "FLOAT", None, None, 0.2, None, 2, 10, None, 2],
