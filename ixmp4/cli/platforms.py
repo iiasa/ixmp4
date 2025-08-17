@@ -196,6 +196,40 @@ def upgrade() -> None:
                 utils.echo(f"Skipping '{p.name}' because of an error: {str(e)}")
 
 
+@app.command(help=("Downgrades all database platforms to the given revision."))
+def downgrade(
+    revision: str = typer.Argument(
+        ...,
+        help="The revision to downgrade to.",
+    ),
+) -> None:
+    platform_list: list[ManagerPlatformInfo] | list[TomlPlatformInfo]
+    if settings.managed:
+        utils.echo(
+            f"Establishing self-signed admin connection to '{settings.manager_url}'."
+        )
+        manager_conf = ManagerConfig(
+            str(settings.manager_url),
+            SelfSignedAuth(settings.secret_hs256),
+            remote=False,
+        )
+        platform_list = manager_conf.list_platforms()
+    else:
+        platform_list = settings.toml.list_platforms()
+
+    for p in platform_list:
+        if p.dsn.startswith("http"):
+            # This should probably never happen unless the manager registers an
+            # external rest platform.
+            utils.echo(f"Skipping '{p.name}' because it is a REST platform.")
+        else:
+            utils.echo(f"Downgrading platform '{p.name}' with dsn '{p.dsn}'...")
+            try:
+                alembic.downgrade_database(p.dsn, revision)
+            except OperationalError as e:
+                utils.echo(f"Skipping '{p.name}' because of an error: {str(e)}")
+
+
 @app.command(
     help=(
         "Stamps all database platforms from your local toml file with the given "
