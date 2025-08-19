@@ -34,7 +34,7 @@ class Run(base.BaseModel):
     is_default: bool
 
     created_at: datetime | None
-    created_by: str
+    created_by: str | None
 
     updated_at: datetime | None
     updated_by: str | None
