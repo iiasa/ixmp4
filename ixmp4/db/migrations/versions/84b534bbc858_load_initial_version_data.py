@@ -42,6 +42,8 @@ tables = [
     ("unit", "unit_version"),
 ]
 
+tabledata_chunksize = 10000
+
 
 def generate_initial_version_data(
     data_table_name: str, version_table_name: str, transaction_id: int
@@ -67,7 +69,13 @@ def generate_initial_version_data(
             autoload_with=conn,
         )
 
-        partitions = conn.execute(sa.select(data_table)).mappings().partitions(10000)
+        partitions = (
+            conn.execute(
+                sa.select(data_table).execution_options(yield_per=tabledata_chunksize)
+            )
+            .mappings()
+            .partitions(tabledata_chunksize)
+        )
         for res in partitions:
             initial_versions = [
                 {
