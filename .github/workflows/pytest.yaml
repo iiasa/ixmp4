@@ -133,7 +133,7 @@ jobs:
       #  install root project
       #------------------------
       - name: Install library
-        run: poetry install --no-interaction --with dev,server
+        run: poetry install --no-interaction
 
       #------------------
       #  run test suite
