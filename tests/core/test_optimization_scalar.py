@@ -257,7 +257,9 @@ class TestCoreScalar:
             scalar_1 = run.optimization.scalars.create(
                 "Scalar 1", value=4, unit=unit.name
             )
-            scalar_2 = run.optimization.scalars.create("Scalar 2", value=0)
+            scalar_2 = run.optimization.scalars.create(
+                "Scalar 2", value=0, unit=unit_2.name
+            )
 
         with run.transact("Test Scalar versioning with update"):
             scalar_1.value = 1.2
@@ -272,88 +274,21 @@ class TestCoreScalar:
         def assert_versions(backend: "SqlAlchemyBackend") -> None:
             vdf = backend.optimization.scalars.versions.tabulate()
 
-            expected = pd.DataFrame(
-                [
-                    [
-                        run.id,
-                        4,
-                        unit.id,
-                        "Scalar 1",
-                        1,
-                        7,
-                        12,
-                        0,
-                        scalar_1.created_at,
-                        scalar_1.created_by,
-                        "Test Unit",
-                    ],
-                    [
-                        run.id,
-                        0,
-                        3,
-                        "Scalar 2",
-                        2,
-                        9,
-                        16,
-                        0,
-                        scalar_2.created_at,
-                        scalar_2.created_by,
-                        "",
-                    ],
-                    [
-                        run.id,
-                        1.2,
-                        unit.id,
-                        "Scalar 1",
-                        1,
-                        12,
-                        13,
-                        1,
-                        scalar_1.created_at,
-                        scalar_1.created_by,
-                        "Test Unit",
-                    ],
-                    [
-                        run.id,
-                        1.2,
-                        unit_2.id,
-                        "Scalar 1",
-                        1,
-                        13,
-                        None,
-                        1,
-                        scalar_1.created_at,
-                        scalar_1.created_by,
-                        "Unit 2",
-                    ],
-                    [
-                        run.id,
-                        3.14,
-                        unit.id,
-                        "Scalar 2",
-                        2,
-                        16,
-                        None,
-                        1,
-                        scalar_2.created_at,
-                        scalar_2.created_by,
-                        "Test Unit",
-                    ],
-                ],
-                columns=[
-                    "run__id",
-                    "value",
-                    "unit__id",
-                    "name",
-                    "id",
-                    "transaction_id",
-                    "end_transaction_id",
-                    "operation_type",
-                    "created_at",
-                    "created_by",
-                    "unit",
-                ],
-            ).replace({np.nan: None})
+            expected = (
+                pd.read_csv("./tests/core/expected_versions/test_scalar_versioning.csv")
+                .replace({np.nan: None})
+                .assign(
+                    created_at=pd.Series(
+                        [
+                            scalar_1.created_at,
+                            scalar_2.created_at,
+                            scalar_1.created_at,
+                            scalar_1.created_at,
+                            scalar_2.created_at,
+                        ]
+                    )
+                )
+            )
 
             utils.assert_unordered_equality(expected, vdf, check_dtype=False)
 
