@@ -11,7 +11,8 @@ from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.abstract.annotations import HasUnitIdFilter
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db import versions
-from ixmp4.data.db.unit.model import UnitVersion
+from ixmp4.data.db.unit.model import Unit, UnitVersion
+from ixmp4.data.db.utils import map_existing
 
 from .. import base
 from .docs import ScalarDocsRepository
@@ -24,7 +25,9 @@ if TYPE_CHECKING:
 class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...
 
 
-class ScalarVersionRepository(versions.VersionRepository[ScalarVersion]):
+class ScalarVersionRepository(
+    versions.VersionRepository[ScalarVersion], base.BulkUpserter[ScalarVersion]
+):
     model_class = ScalarVersion
 
     def select(
@@ -64,8 +67,9 @@ class ScalarRepository(
     base.Deleter[Scalar],
     base.Retriever[Scalar],
     base.Enumerator[Scalar],
-    base.BulkUpserter[Scalar],
-    base.BulkDeleter[Scalar],
+    # base.BulkUpserter[Scalar],
+    # base.BulkDeleter[Scalar],
+    base.Reverter[Scalar],
     abstract.ScalarRepository,
 ):
     model_class = Scalar
@@ -80,6 +84,9 @@ class ScalarRepository(
         self.filter_class = OptimizationScalarFilter
 
         self.versions = ScalarVersionRepository(*args)
+
+        self.columns_to_drop_for_insert = self._columns_to_drop_for_insert | {"unit"}
+        self.columns_to_drop_for_update = self._columns_to_drop_for_update | {"unit"}
 
     def add(self, name: str, value: float | int, unit_name: str, run_id: int) -> Scalar:
         unit_id = self.backend.units.get(unit_name).id
@@ -143,3 +150,37 @@ class ScalarRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
+
+    def _map_units_on_revert(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Maps foreign-key-unit-ids to the ids of restored Units."""
+        # NOTE This df has two unit__id columns: one containing current ids and one ids
+        # from before the rollback (called _old). Extra columns like this are ignored by
+        # bulk_insert(), it seems.
+        df, missing = map_existing(
+            df,
+            existing_df=self.backend.units.tabulate(name__in=df["unit"]),
+            join_on=("name", "unit"),
+            map=("id", "unit__id"),
+            suffixes=("_old", None),
+        )
+        if len(missing) > 0:
+            raise Unit.NotFound(", ".join(missing))
+
+        return df
+
+    @guard("edit")
+    def revert(
+        self, transaction__id: int, run__id: int, revert_platform: bool = False
+    ) -> None:
+        correct_versions: pd.DataFrame | None = None
+        if revert_platform:
+            correct_versions = self.versions.tabulate(
+                transaction__id=transaction__id, run__id=run__id
+            )
+            correct_versions = self._map_units_on_revert(df=correct_versions)
+
+        return super().revert(
+            transaction__id=transaction__id,
+            run__id=run__id,
+            correct_versions=correct_versions,
+        )
