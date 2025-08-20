@@ -20,8 +20,6 @@ from ixmp4.core.utils import substitute_type
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.iamc.utils import normalize_df
-from ixmp4.data.db.unit import Unit
-from ixmp4.data.db.utils import map_existing
 from ixmp4.db import utils
 
 from .. import base, versions
@@ -335,89 +333,16 @@ class RunRepository(
                 # using restored units for foreign keys
                 self.session.commit()
 
-    def _map_units_on_rollback(self, df: pd.DataFrame) -> pd.DataFrame:
-        # Map units requested in df to new unit ids
-        # NOTE This df has two unit__id columns: one containing current ids and one ids
-        # from before the rollback (called _old). Extra columns like this are ignored by
-        # bulk_insert(), it seems.
-        df, missing = map_existing(
-            df,
-            existing_df=self.backend.units.tabulate(name__in=df["unit"]),
-            join_on=("name", "unit"),
-            map=("id", "unit__id"),
-            suffixes=("_old", None),
-        )
-        if len(missing) > 0:
-            raise Unit.NotFound(", ".join(missing))
-
-        return df
-
     def revert_optimization_data(
         self, run: Run, transaction__id: int, revert_platform: bool = False
     ) -> None:
-        # TODO: Implement this. @glatterf42
-        # Let's start with scalars
-        current_scalars = self.backend.optimization.scalars.tabulate(run_id=run.id)
-        version_scalars = self.backend.optimization.scalars.versions.tabulate(
-            transaction__id=transaction__id, run__id=run.id
+        # # TODO: Implement this. @glatterf42
+
+        self.backend.optimization.scalars.revert(
+            transaction__id=transaction__id,
+            run__id=run.id,
+            revert_platform=revert_platform,
         )
-
-        # TODO Add a check to exit early if current == version
-
-        scalars_to_delete = current_scalars[
-            ~current_scalars["id"].isin(version_scalars["id"])
-        ]
-
-        if not scalars_to_delete.empty:
-            self.backend.optimization.scalars.bulk_delete(scalars_to_delete)
-
-        if revert_platform:
-            # Restore deleted units
-            self._restore_deleted_units(transaction__id=transaction__id)
-            # Map requested to restored units
-            version_scalars = self._map_units_on_rollback(df=version_scalars)
-
-        # NOTE This manual splitting of data could be avoided if `tabulate_existing`
-        # returned the correct values
-        # This would allow us to simply `bulk_upsert` the data, though that queries the
-        # DB again (for `tabulate_existing`, the data of which we already have here)
-        scalars_to_insert = version_scalars[
-            ~version_scalars["id"].isin(current_scalars["id"])
-        ].drop(
-            columns=[
-                "id",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-                "unit",
-            ]
-        )
-
-        # Limit updates to those differing from their existing versions
-        scalars_to_consider = set(
-            self.backend.optimization.scalars.versions.tabulate(
-                transaction__id=transaction__id,
-                run__id=run.id,
-                valid="after_transaction",
-            )["id"]
-        )
-        version_scalars = version_scalars[
-            version_scalars["id"].isin(scalars_to_consider)
-        ]
-
-        scalars_to_update = version_scalars[
-            version_scalars["id"].isin(current_scalars["id"])
-        ].drop(
-            columns=["transaction_id", "end_transaction_id", "operation_type", "unit"]
-        )
-
-        if not scalars_to_insert.empty:
-            with self.backend.event_handler.pause():
-                self.backend.optimization.scalars.bulk_insert(scalars_to_insert)
-        if not scalars_to_update.empty:
-            self.backend.optimization.scalars.bulk_update(scalars_to_update)
-
-        self.session.commit()
 
     def revert_meta(self, run: Run, transaction__id: int) -> None:
         current_meta = self.backend.meta.tabulate(
@@ -458,6 +383,9 @@ class RunRepository(
         if self.backend.transactions.latest().id == transaction__id:
             # we are already at the right transaction
             return
+
+        if revert_platform:
+            self._restore_deleted_units(transaction__id)
 
         self.revert_iamc_data(run, transaction__id)
         self.revert_optimization_data(
