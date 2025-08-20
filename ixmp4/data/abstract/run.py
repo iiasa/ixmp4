@@ -258,7 +258,9 @@ class RunRepository(
         """
         ...
 
-    def revert(self, id: int, transaction__id: int) -> None:
+    def revert(
+        self, id: int, transaction__id: int, revert_platform: bool = False
+    ) -> None:
         """Reverts run data to a specific `transaction__id`.
 
         Parameters
@@ -267,6 +269,8 @@ class RunRepository(
             Unique integer id.
         transaction__id : int
             Id of the transaction to revert to.
+        revert_platform : bool, optional
+            Whether to revert the units defined on the platform, too. Default `False`.
 
         Raises
         ------

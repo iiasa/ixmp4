@@ -2,9 +2,6 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, Protocol
 
-if TYPE_CHECKING:
-    from . import EnumerateKwargs
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -13,6 +10,9 @@ from typing_extensions import Unpack
 from .. import base
 from ..docs import DocsRepository
 from .base import BackendBaseRepository
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs
 
 
 class Equation(base.BaseModel, Protocol):
