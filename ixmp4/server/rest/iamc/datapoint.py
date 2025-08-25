@@ -57,7 +57,7 @@ def query(
 
 
     """
-    if (join_parameters or join_runs or join_run_id) and not table:
+    if any((join_parameters, join_runs, join_run_id)) and not table:
         raise BadRequest(
             "`join_parameters`, `join_runs` or `join_run_id` can only be used "
             "with `table=true`."
