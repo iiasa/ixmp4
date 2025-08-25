@@ -54,6 +54,7 @@ class DataPointRepository(
         self,
         join_parameters: bool | None = None,
         join_runs: bool = False,
+        join_run_id: bool = False,
         **kwargs: Unpack[abstract.iamc.datapoint.EnumerateKwargs],
     ) -> list[DataPoint]:
         return super()._list(
@@ -61,6 +62,7 @@ class DataPointRepository(
             params={
                 "join_parameters": join_parameters,
                 "join_runs": join_runs,
+                "join_run_id": join_run_id,
             },
         )
 
@@ -68,6 +70,7 @@ class DataPointRepository(
         self,
         join_parameters: bool | None = None,
         join_runs: bool = False,
+        join_run_id: bool = False,
         **kwargs: Unpack[abstract.iamc.datapoint.EnumerateKwargs],
     ) -> pd.DataFrame:
         return super()._tabulate(
@@ -75,6 +78,7 @@ class DataPointRepository(
             params={
                 "join_parameters": join_parameters,
                 "join_runs": join_runs,
+                "join_run_id": join_run_id,
             },
         )
 

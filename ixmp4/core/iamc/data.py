@@ -91,8 +91,7 @@ class RunIamcData(BaseFacade):
             region=region,
             unit=unit,
         ).dropna(how="all", axis="columns")
-
-        return normalize_df(df, raw, False)
+        return normalize_df(df, raw, False, False)
 
 
 class PlatformIamcData(BaseFacade):
@@ -106,11 +105,14 @@ class PlatformIamcData(BaseFacade):
         self,
         *,
         join_runs: bool = True,
+        join_run_id: bool = False,
         raw: bool = False,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(
-            join_parameters=True, join_runs=join_runs, **kwargs
+            join_parameters=True,
+            join_runs=join_runs,
+            join_run_id=join_run_id,
+            **kwargs,
         ).dropna(how="all", axis="columns")
-
-        return normalize_df(df, raw, join_runs)
+        return normalize_df(df, raw, join_runs, join_run_id)

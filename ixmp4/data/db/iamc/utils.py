@@ -33,7 +33,9 @@ MAP_STEP_COLUMN = {
 }
 
 
-def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
+def convert_to_std_format(
+    df: pd.DataFrame, join_runs: bool, join_run_id: bool
+) -> pd.DataFrame:
     df.rename(columns={"step_category": "subannual"}, inplace=True)
 
     if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
@@ -49,16 +51,22 @@ def convert_to_std_format(df: pd.DataFrame, join_runs: bool) -> pd.DataFrame:
         df = df.apply(map_step_column, axis=1)
         time_col = "time"
 
-    columns = ["model", "scenario", "version"] if join_runs else []
+    columns = []
+    if join_run_id and "run__id" in df.columns:
+        columns.append("run__id")
+    if join_runs:
+        columns.extend(["model", "scenario", "version"])
     columns += ["region", "variable", "unit"] + [time_col]
     if "subannual" in df.columns:
         columns += ["subannual"]
     return df[columns + ["value"]]
 
 
-def normalize_df(df: pd.DataFrame, raw: bool, join_runs: bool) -> pd.DataFrame:
+def normalize_df(
+    df: pd.DataFrame, raw: bool, join_runs: bool, join_run_id: bool
+) -> pd.DataFrame:
     if not df.empty:
         df = df.drop(columns=["time_series__id"])
         if raw is False:
-            return convert_to_std_format(df, join_runs)
+            return convert_to_std_format(df, join_runs, join_run_id)
     return df

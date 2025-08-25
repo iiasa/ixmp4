@@ -82,6 +82,7 @@ class DataPointRepository(
         *,
         join_parameters: bool | None = False,
         join_runs: bool = False,
+        join_run_id: bool = False,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> list[DataPoint]:
         """Lists data points by specified criteria.
@@ -95,6 +96,9 @@ class DataPointRepository(
         join_runs : bool
             If set to `True` the resulting list will include model & scenario name
             and version id of the associated Run.
+        join_run_id : bool
+            If set to `True` the resulting list will include the id of the associated
+            Run as `run__id`.
         kwargs : Any
             Additional key word arguments. Any left over kwargs will be used as filters.
 
@@ -110,6 +114,7 @@ class DataPointRepository(
         *,
         join_parameters: bool | None = False,
         join_runs: bool = False,
+        join_run_id: bool = False,
         **kwargs: Unpack[EnumerateKwargs],
     ) -> pd.DataFrame:
         """Tabulates data points by specified criteria.
@@ -122,6 +127,9 @@ class DataPointRepository(
         join_runs : bool
             If set to `True` the resulting data frame will include model & scenario name
             and version id of the associated Run.
+        join_run_id : bool
+            If set to `True` the resulting data frame will include the id of the
+            associated Run as `run__id`.
         kwargs : Any
             Additional key word arguments. Any left over kwargs will be used as filters.
 
@@ -139,6 +147,7 @@ class DataPointRepository(
                     if it contains data points of type `CATEGORICAL`
                 - step_datetime
                     if it contains data points of type `DATETIME`
+                - run__id (if `join_run_id` is set to `True`)
                 - ... misc parameter columns if `join_parameters` is set to `True`
         """
         ...
