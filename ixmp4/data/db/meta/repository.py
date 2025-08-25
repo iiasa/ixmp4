@@ -1,8 +1,5 @@
 from typing import TYPE_CHECKING, Any, cast
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
 import pandas as pd
 import pandera as pa
 from pandera.pandas import DataFrameModel
@@ -23,8 +20,11 @@ from ixmp4.data.db.run import Run
 from ixmp4.data.db.scenario import Scenario
 from ixmp4.db.filters import BaseFilter
 
-from .. import base
-from .model import RunMetaEntry
+from .. import base, versions
+from .model import RunMetaEntry, RunMetaEntryVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
@@ -56,18 +56,23 @@ class CreateKwargs(TypedDict, total=False):
     value: abstract.annotations.PrimitiveTypes
 
 
+class RunMetaEntryVersionRepository(versions.VersionRepository[RunMetaEntryVersion]):
+    model_class = RunMetaEntryVersion
+
+
 class RunMetaEntryRepository(
     base.Creator[RunMetaEntry],
     base.Enumerator[RunMetaEntry],
     base.BulkUpserter[RunMetaEntry],
     base.BulkDeleter[RunMetaEntry],
-    base.VersionManager[RunMetaEntry],
     abstract.RunMetaEntryRepository,
 ):
     model_class = RunMetaEntry
+    versions: RunMetaEntryVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
+        self.versions = RunMetaEntryVersionRepository(*args)
 
         from .filter import RunMetaEntryFilter
 
@@ -249,9 +254,3 @@ class RunMetaEntryRepository(
     def bulk_delete(self, df: DataFrame[RemoveRunMetaEntryFrameSchema]) -> None:
         self.check_df_access(df)
         super().bulk_delete(df)
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[abstract.annotations.TabulateRunMetaVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)

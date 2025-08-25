@@ -65,7 +65,6 @@ class RunRepository(
     base.Deleter,
     base.Retriever,
     base.Enumerator,
-    base.VersionManager,
     Protocol,
 ):
     def create(self, model_name: str, scenario_name: str) -> Run:
@@ -308,8 +307,6 @@ class RunRepository(
             If no run with the `id` exists.
         """
         ...
-
-    def tabulate_transactions(self) -> pd.DataFrame: ...
 
     def clone(
         self,

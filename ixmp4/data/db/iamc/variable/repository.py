@@ -9,14 +9,19 @@ from ixmp4 import db
 from ixmp4.data import abstract
 from ixmp4.data.abstract.annotations import HasNameFilter
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
 from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .docs import VariableDocsRepository
-from .model import Variable
+from .model import Variable, VariableVersion
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
+
+
+class VariableVersionRepository(versions.VersionRepository[VariableVersion]):
+    model_class = VariableVersion
 
 
 class EnumerateKwargs(HasNameFilter, total=False):
@@ -31,14 +36,15 @@ class VariableRepository(
     base.Creator[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
-    base.VersionManager[Variable],
     abstract.VariableRepository,
 ):
     model_class = Variable
+    versions: VariableVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
         self.docs = VariableDocsRepository(*args)
+        self.versions = VariableVersionRepository(*args)
 
         from .filter import VariableFilter
 
@@ -68,9 +74,3 @@ class VariableRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)

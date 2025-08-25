@@ -6,8 +6,9 @@ import ixmp4
 import ixmp4.data
 import ixmp4.data.abstract
 from ixmp4.core.exceptions import NoDefaultRunVersion
+from ixmp4.data.backend import SqlAlchemyBackend
 
-from ..utils import assert_unordered_equality
+from .. import utils
 
 
 class TestDataRun:
@@ -18,43 +19,47 @@ class TestDataRun:
         assert run1.version == 1
         assert not run1.is_default
 
-        expected_run_versions = pd.DataFrame(
-            [
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_run_versions = pd.DataFrame(
                 [
-                    1,
-                    1,
-                    1,
-                    1,
-                    False,
-                    run1.created_at,
-                    "@unknown",
-                    None,
-                    None,
-                    None,
-                    1,
-                    None,
-                    0,
+                    [
+                        1,
+                        1,
+                        1,
+                        1,
+                        False,
+                        run1.created_at,
+                        "@unknown",
+                        None,
+                        None,
+                        None,
+                        3,
+                        None,
+                        0,
+                    ],
                 ],
-            ],
-            columns=[
-                "id",
-                "model__id",
-                "scenario__id",
-                "version",
-                "is_default",
-                "created_at",
-                "created_by",
-                "updated_at",
-                "updated_by",
-                "lock_transaction",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
+                columns=[
+                    "id",
+                    "model__id",
+                    "scenario__id",
+                    "version",
+                    "is_default",
+                    "created_at",
+                    "created_by",
+                    "updated_at",
+                    "updated_by",
+                    "lock_transaction",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            )
 
-        vdf = platform.backend.runs.tabulate_versions()
-        assert_unordered_equality(expected_run_versions, vdf, check_dtype=False)
+            vdf = backend.runs.versions.tabulate()
+            utils.assert_unordered_equality(
+                expected_run_versions, vdf, check_dtype=False
+            )
 
     def test_create_run_increment_version(self, platform: ixmp4.Platform) -> None:
         run1 = platform.backend.runs.create("Model", "Scenario")
@@ -64,58 +69,62 @@ class TestDataRun:
         assert run2.version == 2
         assert not run2.is_default
 
-        expected_run_versions = pd.DataFrame(
-            [
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_run_versions = pd.DataFrame(
                 [
-                    1,
-                    1,
-                    1,
-                    1,
-                    False,
-                    run1.created_at,
-                    "@unknown",
-                    None,
-                    None,
-                    None,
-                    1,
-                    None,
-                    0,
+                    [
+                        1,
+                        1,
+                        1,
+                        1,
+                        False,
+                        run1.created_at,
+                        "@unknown",
+                        None,
+                        None,
+                        None,
+                        3,
+                        None,
+                        0,
+                    ],
+                    [
+                        2,
+                        1,
+                        1,
+                        2,
+                        False,
+                        run2.created_at,
+                        "@unknown",
+                        None,
+                        None,
+                        None,
+                        4,
+                        None,
+                        0,
+                    ],
                 ],
-                [
-                    2,
-                    1,
-                    1,
-                    2,
-                    False,
-                    run2.created_at,
-                    "@unknown",
-                    None,
-                    None,
-                    None,
-                    2,
-                    None,
-                    0,
+                columns=[
+                    "id",
+                    "model__id",
+                    "scenario__id",
+                    "version",
+                    "is_default",
+                    "created_at",
+                    "created_by",
+                    "updated_at",
+                    "updated_by",
+                    "lock_transaction",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
                 ],
-            ],
-            columns=[
-                "id",
-                "model__id",
-                "scenario__id",
-                "version",
-                "is_default",
-                "created_at",
-                "created_by",
-                "updated_at",
-                "updated_by",
-                "lock_transaction",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
+            )
 
-        vdf = platform.backend.runs.tabulate_versions()
-        assert_unordered_equality(expected_run_versions, vdf, check_dtype=False)
+            vdf = backend.runs.versions.tabulate()
+            utils.assert_unordered_equality(
+                expected_run_versions, vdf, check_dtype=False
+            )
 
     def test_get_run_versions(self, platform: ixmp4.Platform) -> None:
         run1a = platform.backend.runs.create("Model", "Scenario")
@@ -134,30 +143,34 @@ class TestDataRun:
         run3b = platform.backend.runs.get("Model", "Scenario", 3)
         assert run3a.id == run3b.id
 
-        expected_run_versions = pd.DataFrame(
-            [
-                [1, 1, 1, 1, False, None, 1, None, 0],
-                [2, 1, 1, 2, False, None, 2, 3, 0],
-                [2, 1, 1, 2, True, None, 3, None, 1],
-                [3, 1, 1, 3, False, None, 4, None, 0],
-            ],
-            columns=[
-                "id",
-                "model__id",
-                "scenario__id",
-                "version",
-                "is_default",
-                "lock_transaction",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        ).replace({np.nan: None})
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_run_versions = pd.DataFrame(
+                [
+                    [1, 1, 1, 1, False, None, 3, None, 0],
+                    [2, 1, 1, 2, False, None, 4, 6, 0],
+                    [2, 1, 1, 2, True, None, 6, None, 1],
+                    [3, 1, 1, 3, False, None, 7, None, 0],
+                ],
+                columns=[
+                    "id",
+                    "model__id",
+                    "scenario__id",
+                    "version",
+                    "is_default",
+                    "lock_transaction",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            ).replace({np.nan: None})
 
-        vdf = platform.backend.runs.tabulate_versions()
-        self.drop_audit_info(vdf)
+            vdf = backend.runs.versions.tabulate()
+            self.drop_audit_info(vdf)
 
-        assert_unordered_equality(expected_run_versions, vdf, check_dtype=False)
+            utils.assert_unordered_equality(
+                expected_run_versions, vdf, check_dtype=False
+            )
 
     def test_get_run_no_default_version(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(NoDefaultRunVersion):
@@ -221,11 +234,11 @@ class TestDataRun:
 
         runs = platform.backend.runs.tabulate(default_only=False)
         self.drop_audit_info(runs)
-        assert_unordered_equality(runs, true_runs)
+        utils.assert_unordered_equality(runs, true_runs)
 
         runs = platform.backend.runs.tabulate(default_only=False, iamc=False)
         self.drop_audit_info(runs)
-        assert_unordered_equality(runs, true_runs)
+        utils.assert_unordered_equality(runs, true_runs)
 
         runs = platform.backend.runs.tabulate(default_only=False, iamc={})
         assert runs.empty

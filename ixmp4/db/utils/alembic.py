@@ -43,6 +43,13 @@ def upgrade_database(dsn: str, revision: str = "head") -> None:
     command.upgrade(alembic_config, revision)
 
 
+def downgrade_database(dsn: str, revision: str) -> None:
+    """Uses alembic to downgrade the given database."""
+
+    alembic_config.set_main_option("sqlalchemy.url", dsn)
+    command.downgrade(alembic_config, revision)
+
+
 def stamp_database(dsn: str, revision: str) -> None:
     """Uses alembic to stamp the given database with the given revision.
     Only touches the `alembic_version` table, nothing else."""

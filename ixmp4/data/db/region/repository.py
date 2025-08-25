@@ -6,6 +6,8 @@ from sqlalchemy.exc import NoResultFound
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
+from .. import versions
+
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
@@ -15,7 +17,11 @@ from ixmp4.db.filters import BaseFilter
 
 from .. import base
 from .docs import RegionDocsRepository
-from .model import Region
+from .model import Region, RegionVersion
+
+
+class RegionVersionRepository(versions.VersionRepository[RegionVersion]):
+    model_class = RegionVersion
 
 
 class EnumerateKwargs(
@@ -36,18 +42,20 @@ class RegionRepository(
     base.Deleter[Region],
     base.Retriever[Region],
     base.Enumerator[Region],
-    base.VersionManager[Region],
     abstract.RegionRepository,
 ):
     model_class = Region
+    docs: RegionDocsRepository
+    versions: RegionVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
+        self.docs = RegionDocsRepository(*args)
+        self.versions = RegionVersionRepository(*args)
 
         from .filter import RegionFilter
 
         self.filter_class = RegionFilter
-        self.docs = RegionDocsRepository(*args)
 
     def add(self, name: str, hierarchy: str) -> Region:
         region = Region(name=name, hierarchy=hierarchy)
@@ -77,9 +85,3 @@ class RegionRepository(
     @guard("view")
     def tabulate(self, **kwargs: Unpack[EnumerateKwargs]) -> pd.DataFrame:
         return super().tabulate(**kwargs)
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)

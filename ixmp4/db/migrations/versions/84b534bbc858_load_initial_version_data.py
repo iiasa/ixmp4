@@ -7,18 +7,24 @@ Create Date: 2025-05-28 17:25:06.159790
 
 """
 
+import enum
 import logging
 from datetime import datetime
 
 import sqlalchemy as sa
 from alembic import op
-from sqlalchemy_continuum.operation import Operation
 
-# Revision identifiers, used by Alembic.
 revision = "84b534bbc858"
 down_revision = "1e5554a164e6"
 branch_labels = None
 depends_on = None
+
+
+class Operation(int, enum.Enum):
+    INSERT = 0
+    UPDATE = 1
+    DELETE = 2
+
 
 logger = logging.getLogger(__name__)
 
@@ -35,6 +41,8 @@ tables = [
     ("scenario", "scenario_version"),
     ("unit", "unit_version"),
 ]
+
+tabledata_chunksize = 10000
 
 
 def generate_initial_version_data(
@@ -61,7 +69,13 @@ def generate_initial_version_data(
             autoload_with=conn,
         )
 
-        partitions = conn.execute(sa.select(data_table)).mappings().partitions(5000)
+        partitions = (
+            conn.execute(
+                sa.select(data_table).execution_options(yield_per=tabledata_chunksize)
+            )
+            .mappings()
+            .partitions(tabledata_chunksize)
+        )
         for res in partitions:
             initial_versions = [
                 {
@@ -85,6 +99,10 @@ def upgrade():
     conn = op.get_bind()
 
     if conn is not None:
+        if conn.dialect.name != "postgresql":
+            logging.info("Not running on postgres database, skipping migration.")
+            return
+
         # reflect transaction table
         transaction_table = sa.Table(
             "transaction",

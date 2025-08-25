@@ -6,10 +6,7 @@ from functools import lru_cache
 from sqlalchemy.engine import Engine, create_engine
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.orm.session import sessionmaker
-from sqlalchemy.pool import NullPool, StaticPool
-
-# TODO Import this from typing when dropping support for Python 3.11
-from typing_extensions import Unpack
+from sqlalchemy.pool import NullPool
 
 from ixmp4.conf.base import PlatformInfo
 from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
@@ -31,6 +28,7 @@ from ixmp4.data.db import (
     ScenarioRepository,
     TableRepository,
     TimeSeriesRepository,
+    TransactionRepository,
     UnitRepository,
     VariableRepository,
 )
@@ -77,6 +75,7 @@ class SqlAlchemyBackend(Backend):
     scenarios: ScenarioRepository
     units: UnitRepository
     checkpoints: CheckpointRepository
+    transactions: TransactionRepository
 
     Session = sessionmaker(autocommit=False, autoflush=False, future=True)
     auth_context: AuthorizationContext | None = None
@@ -121,6 +120,7 @@ class SqlAlchemyBackend(Backend):
         self.scenarios = ScenarioRepository(self)
         self.units = UnitRepository(self)
         self.checkpoints = CheckpointRepository(self)
+        self.transactions = TransactionRepository(self)
 
     @contextmanager
     def auth(
@@ -153,30 +153,3 @@ class SqlAlchemyBackend(Backend):
     def close(self) -> None:
         self.session.close()
         self.engine.dispose()
-
-
-class SqliteTestBackend(SqlAlchemyBackend):
-    def __init__(self, *args: Unpack[tuple[PlatformInfo]]) -> None:
-        super().__init__(*args)
-
-    def make_engine(self, dsn: str) -> None:
-        self.engine = create_engine(
-            dsn,
-            connect_args={"check_same_thread": False},
-            poolclass=StaticPool,
-            max_identifier_length=63,
-        )
-        self.session = self.Session(bind=self.engine)
-
-
-class PostgresTestBackend(SqlAlchemyBackend):
-    def __init__(self, *args: Unpack[tuple[PlatformInfo]]) -> None:
-        super().__init__(*args)
-
-    def make_engine(self, dsn: str) -> None:
-        self.engine = create_engine(
-            dsn,
-            poolclass=NullPool,
-            max_identifier_length=63,
-        )
-        self.session = self.Session(bind=self.engine)

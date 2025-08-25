@@ -17,7 +17,7 @@ class Checkpoint(base.BaseModel):
 
     id: int
     run__id: int
-    transaction__id: int
+    transaction__id: int | None
     message: str
 
 

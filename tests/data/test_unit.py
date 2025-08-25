@@ -3,9 +3,10 @@ import pytest
 
 import ixmp4
 from ixmp4 import Unit
+from ixmp4.data.backend import SqlAlchemyBackend
 
+from .. import utils
 from ..fixtures import FilterIamcDataset
-from ..utils import assert_unordered_equality
 
 
 class TestDataUnit:
@@ -15,22 +16,24 @@ class TestDataUnit:
         unit1 = platform.backend.units.create("Unit")
         assert unit1.name == "Unit"
 
-        expected_versions = pd.DataFrame(
-            [
-                [1, "Unit", unit1.created_at, "@unknown", 1, None, 0],
-            ],
-            columns=[
-                "id",
-                "name",
-                "created_at",
-                "created_by",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
-        vdf = platform.backend.units.tabulate_versions()
-        assert_unordered_equality(expected_versions, vdf, check_dtype=False)
+        @utils.versioning_test(platform.backend)
+        def assert_versions(backend: SqlAlchemyBackend) -> None:
+            expected_versions = pd.DataFrame(
+                [
+                    [1, "Unit", unit1.created_at, "@unknown", 1, None, 0],
+                ],
+                columns=[
+                    "id",
+                    "name",
+                    "created_at",
+                    "created_by",
+                    "transaction_id",
+                    "end_transaction_id",
+                    "operation_type",
+                ],
+            )
+            vdf = backend.units.versions.tabulate()
+            utils.assert_unordered_equality(expected_versions, vdf, check_dtype=False)
 
         unit2 = platform.backend.units.get("Unit")
         assert unit1.id == unit2.id
@@ -84,7 +87,7 @@ class TestDataUnit:
         )
 
         units = platform.backend.units.tabulate()
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             units.drop(columns=["created_at", "created_by"]), true_units
         )
 

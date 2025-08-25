@@ -34,7 +34,7 @@ class Run(base.BaseModel):
     is_default: bool
 
     created_at: datetime | None
-    created_by: str
+    created_by: str | None
 
     updated_at: datetime | None
     updated_by: str | None
@@ -60,7 +60,6 @@ class RunRepository(
     base.Deleter[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
-    base.VersionManager[Run],
     abstract.RunRepository,
 ):
     model_class = Run
@@ -140,12 +139,6 @@ class RunRepository(
             self.prefix + "/".join([str(id), "unlock/"]),
         )
         return Run(**cast(dict[str, Any], run_dict))
-
-    def tabulate_versions(self, /, run__id: int | None = None) -> pd.DataFrame:
-        return self._tabulate(path="versions/", json={"run__id": run__id})
-
-    def tabulate_transactions(self, /, run__id: int | None = None) -> pd.DataFrame:
-        return self._tabulate(path="transactions/", json={"run__id": run__id})
 
     def clone(
         self,

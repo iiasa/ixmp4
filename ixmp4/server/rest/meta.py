@@ -7,7 +7,7 @@ from ixmp4.data.db.meta.filter import RunMetaEntryFilter
 from ixmp4.data.db.meta.model import RunMetaEntry
 
 from . import deps
-from .base import BaseModel, EnumerationOutput, Pagination, TabulateVersionArgs
+from .base import BaseModel, EnumerationOutput, Pagination
 
 router: APIRouter = APIRouter(
     prefix="/meta",
@@ -78,18 +78,3 @@ def bulk_delete(
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
     backend.meta.bulk_delete(df.to_pandas())  # type: ignore[arg-type]
-
-
-@router.patch("/versions/", response_model=api.DataFrame)
-def tabulate_versions(
-    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
-    pagination: Pagination = Depends(),
-    backend: Backend = Depends(deps.get_backend),
-) -> api.DataFrame:
-    return api.DataFrame.model_validate(
-        backend.meta.tabulate_versions(
-            limit=pagination.limit,
-            offset=pagination.offset,
-            **filter.model_dump(),
-        )
-    )

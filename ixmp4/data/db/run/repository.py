@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from sqlalchemy.exc import NoResultFound
@@ -10,17 +10,26 @@ if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 from ixmp4 import db
-from ixmp4.core.exceptions import Forbidden, IxmpError, NoDefaultRunVersion
+from ixmp4.core.exceptions import (
+    Forbidden,
+    IxmpError,
+    NoDefaultRunVersion,
+    OperationNotSupported,
+)
 from ixmp4.core.utils import substitute_type
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.iamc.utils import normalize_df
 from ixmp4.db import utils
 
-from .. import base
+from .. import base, versions
 from ..model import Model, ModelRepository
 from ..scenario import Scenario, ScenarioRepository
-from .model import Run
+from .model import Run, RunVersion
+
+
+class RunVersionRepository(versions.VersionRepository[RunVersion]):
+    model_class = RunVersion
 
 
 class CreateKwargs(TypedDict, total=False):
@@ -32,17 +41,18 @@ class RunRepository(
     base.Deleter[Run],
     base.Retriever[Run],
     base.Enumerator[Run],
-    base.VersionManager[Run],
     abstract.RunRepository,
 ):
     model_class = Run
 
     models: ModelRepository
     scenarios: ScenarioRepository
+    versions: RunVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         self.models = ModelRepository(*args)
         self.scenarios = ScenarioRepository(*args)
+        self.versions = RunVersionRepository(*args)
 
         from .filter import RunFilter
 
@@ -245,7 +255,7 @@ class RunRepository(
         if not current_dps.empty:
             self.backend.iamc.datapoints.bulk_delete(current_dps)  # type: ignore[arg-type]
 
-        version_dps = self.backend.iamc.datapoints.tabulate_versions(
+        version_dps = self.backend.iamc.datapoints.versions.tabulate(
             transaction__id=transaction__id, run__id=run.id
         )
         if version_dps.empty:
@@ -276,7 +286,7 @@ class RunRepository(
         if not current_meta.empty:
             self.backend.meta.bulk_delete(current_meta)  # type: ignore[arg-type]
 
-        version_meta = self.backend.meta.tabulate_versions(
+        version_meta = self.backend.meta.versions.tabulate(
             transaction__id=transaction__id, run__id=run.id
         )
         if version_meta.empty:
@@ -290,37 +300,24 @@ class RunRepository(
         version_meta = version_meta.drop(columns=["dtype", "id"])
         self.backend.meta.bulk_upsert(version_meta)  # type: ignore[arg-type]
 
+    def check_versioning_compatiblity(self) -> None:
+        if self.backend.engine.dialect.name != "postgresql":
+            raise OperationNotSupported(
+                "Versioning is only enabled on 'postgres' platforms..."
+            )
+
     @guard("edit")
     def revert(self, id: int, transaction__id: int) -> None:
+        self.check_versioning_compatiblity()
         run = self.get_by_id(id, _access_type="edit")
 
-        if self.get_latest_transaction().id == transaction__id:
+        if self.backend.transactions.latest().id == transaction__id:
             # we are already at the right transaction
             return
 
         self.revert_iamc_data(run, transaction__id)
         self.revert_optimization_data(run, transaction__id)
         self.revert_meta(run, transaction__id)
-
-    @guard("view")
-    def tabulate_transactions(
-        self, /, **kwargs: Unpack[base.TabulateTransactionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_transactions(**kwargs)
-
-    @guard("view")
-    def tabulate_versions(
-        self, /, **kwargs: Unpack[base.TabulateVersionsKwargs]
-    ) -> pd.DataFrame:
-        return super().tabulate_versions(**kwargs)
-
-    def get_latest_transaction(self) -> base.TransactionProtocol:
-        exc = self.select_transactions()
-        exc = exc.order_by(self.transaction_class.issued_at.desc())
-        transaction = cast(
-            base.TransactionProtocol, self.session.execute(exc).scalars().first()
-        )
-        return transaction
 
     @guard("edit")
     def lock(self, id: int) -> Run:
@@ -332,7 +329,12 @@ class RunRepository(
 
         if run.lock_transaction is not None:
             raise Run.IsLocked()
-        run.lock_transaction = self.get_latest_transaction().id
+        try:
+            latest_transaction_id = self.backend.transactions.latest().id
+        except versions.Transaction.NotFound:
+            # on sqlite no transactions may exist
+            latest_transaction_id = 0
+        run.lock_transaction = latest_transaction_id
         self.session.commit()
         return run
 

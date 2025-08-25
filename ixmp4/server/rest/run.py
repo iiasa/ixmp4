@@ -7,7 +7,7 @@ from ixmp4.data.db.run.filter import RunFilter
 from ixmp4.data.db.run.model import Run
 
 from . import deps
-from .base import BaseModel, EnumerationOutput, Pagination, TabulateVersionArgs
+from .base import BaseModel, EnumerationOutput, Pagination
 
 router: APIRouter = APIRouter(
     prefix="/runs",
@@ -113,33 +113,6 @@ def unlock(
     backend: Backend = Depends(deps.get_backend),
 ) -> Run:
     return backend.runs.unlock(id)
-
-
-@router.patch("/versions/", response_model=api.DataFrame)
-def tabulate_versions(
-    filter: TabulateVersionArgs = Body(TabulateVersionArgs()),
-    pagination: Pagination = Depends(),
-    backend: Backend = Depends(deps.get_backend),
-) -> api.DataFrame:
-    return api.DataFrame.model_validate(
-        backend.runs.tabulate_versions(
-            limit=pagination.limit,
-            offset=pagination.offset,
-            **filter.model_dump(),
-        )
-    )
-
-
-@router.patch("/transactions/", response_model=api.DataFrame)
-def tabulate_transactions(
-    pagination: Pagination = Depends(),
-    backend: Backend = Depends(deps.get_backend),
-) -> api.DataFrame:
-    return api.DataFrame.model_validate(
-        backend.runs.tabulate_transactions(
-            limit=pagination.limit, offset=pagination.offset
-        )
-    )
 
 
 @router.post("/clone/", response_model=api.Run)

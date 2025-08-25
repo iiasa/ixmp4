@@ -25,7 +25,6 @@ class BaseModel(RootBaseModel, mixins.HasCreationInfo):
     DataInvalid: ClassVar[type[IxmpError]]
 
     __abstract__ = True
-    table_prefix = "optimization_"
 
     name: types.Name
 

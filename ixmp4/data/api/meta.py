@@ -53,7 +53,6 @@ class RunMetaEntryRepository(
     base.Enumerator[RunMetaEntry],
     base.BulkUpserter[RunMetaEntry],
     base.BulkDeleter[RunMetaEntry],
-    base.VersionManager[RunMetaEntry],
     abstract.RunMetaEntryRepository,
 ):
     model_class = RunMetaEntry

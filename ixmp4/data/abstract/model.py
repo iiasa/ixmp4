@@ -36,7 +36,6 @@ class ModelRepository(
     base.Creator,
     base.Retriever,
     base.Enumerator,
-    base.VersionManager,
     Protocol,
 ):
     docs: DocsRepository

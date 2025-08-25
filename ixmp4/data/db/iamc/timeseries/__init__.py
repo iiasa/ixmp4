@@ -1,2 +1,2 @@
-from .model import TimeSeries
+from .model import TimeSeries, TimeSeriesVersion
 from .repository import TimeSeriesRepository

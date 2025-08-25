@@ -26,8 +26,8 @@ class Checkpoint(base.BaseModel, Protocol):
     run__id: int
     "Id of associated run."
 
-    transaction__id: int
-    "Id of associated transaction."
+    transaction__id: int | None
+    "Id of associated transaction. `None` on sqlite databases."
 
     message: str
     "Checkpoint message."
