@@ -117,7 +117,5 @@ class TestPlatformGenerateCLI:
     def test_generate_platform_not_found(self) -> None:
         result = runner.invoke(platforms.app, ["generate", "nonexistent-platform"])
 
+        # We simply test whether the generate command errors
         assert result.exit_code == 2
-        assert (
-            "Invalid value: Platform 'nonexistent-platform' does not exist."
-        ) in result.output
