@@ -82,3 +82,42 @@ class TestAddPlatformCLI:
         assert (
             "Invalid value: Platform with name 'test' already exists."
         ) in result.output
+
+
+class TestPlatformGenerateCLI:
+    def test_generate_platform_data(self) -> None:
+        # Create a test platform
+        runner.invoke(platforms.app, ["add", "test-generate"], input="y")
+
+        # Run generate command with small numbers for testing
+        result = runner.invoke(
+            platforms.app,
+            [
+                "generate",
+                "test-generate",
+                "--models",
+                "2",
+                "--runs",
+                "3",
+                "--regions",
+                "5",
+                "--variables",
+                "10",
+                "--units",
+                "3",
+                "--datapoints",
+                "50",
+            ],
+            input="y",
+        )
+
+        # We simply test whether the generate command runs without error
+        assert result.exit_code == 0
+
+    def test_generate_platform_not_found(self) -> None:
+        result = runner.invoke(platforms.app, ["generate", "nonexistent-platform"])
+
+        assert result.exit_code == 2
+        assert (
+            "Invalid value: Platform 'nonexistent-platform' does not exist."
+        ) in result.output
