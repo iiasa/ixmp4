@@ -105,7 +105,8 @@ class MockDataGenerator(object):
             df["region"] = region_name
             df["variable"] = variable_name
             df["unit"] = unit_name
-            run.iamc.add(df, type=dp_type)
+            with run.transact("Add iamc data"):
+                run.iamc.add(df, type=dp_type)
             yield df
             dp_count += len(df)
             if self.num_datapoints == dp_count:
