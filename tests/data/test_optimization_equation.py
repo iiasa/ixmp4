@@ -17,9 +17,9 @@ def df_from_list(equations: list[Equation]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
-                equation.run__id,
                 equation.data,
                 equation.name,
+                equation.run__id,
                 equation.id,
                 equation.created_at,
                 equation.created_by,
@@ -27,9 +27,9 @@ def df_from_list(equations: list[Equation]) -> pd.DataFrame:
             for equation in equations
         ],
         columns=[
-            "run__id",
             "data",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",
