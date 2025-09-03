@@ -4,6 +4,11 @@ from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociation,
+    BaseIndexSetAssociationVersion,
+)
 
 from .. import base, utils
 
@@ -11,20 +16,16 @@ if TYPE_CHECKING:
     from .. import IndexSet
 
 
-class EquationIndexsetAssociation(base.RootBaseModel):
+class EquationIndexsetAssociation(BaseIndexSetAssociation):
     __tablename__ = "optimization_equationindexsetassociation"
 
     equation__id: types.EquationId
     equation: types.Mapped["Equation"] = db.relationship(
         back_populates="_equation_indexset_associations"
     )
-    indexset__id: types.IndexSetId
-    indexset: types.Mapped["IndexSet"] = db.relationship()
-
-    column_name: types.String = db.Column(db.String(255), nullable=True)
 
 
-class Equation(base.BaseModel):
+class Equation(base.RunLinkedBaseModel):
     __tablename__ = "optimization_equation"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -33,7 +34,7 @@ class Equation(base.BaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Equation.DeletionPrevented
 
-    run__id: types.RunId
+    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -75,8 +76,38 @@ class Equation(base.BaseModel):
         names = [name for name in self._column_names if name]
         return names if bool(names) else None
 
+    updateable_columns = ["data"]
+
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
     @property
     def _required_keys(self) -> set[str]:
         return {"levels", "marginals"}
+
+
+class EquationVersion(versions.RunLinkedVersionModel):
+    __tablename__ = "optimization_equation_version"
+
+    name: types.String = db.Column(db.String(255), nullable=False)
+    run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
+
+    data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
+
+    created_at: types.DateTime = db.Column(nullable=True)
+    created_by: types.Username
+
+
+class EquationIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
+    __tablename__ = "optimization_equationindexsetassociation_version"
+
+    equation__id: db.MappedColumn[int] = db.Column(
+        db.Integer, nullable=False, index=True
+    )
+
+
+version_triggers = versions.PostgresVersionTriggers(
+    Equation.__table__, EquationVersion.__table__
+)
+data_version_triggers = versions.PostgresVersionTriggers(
+    EquationIndexsetAssociation.__table__, EquationIndexsetAssociationVersion.__table__
+)

@@ -6,6 +6,11 @@ from ixmp4.core.exceptions import (
 )
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociation,
+    BaseIndexSetAssociationVersion,
+)
 
 from .. import base, utils
 
@@ -13,21 +18,18 @@ if TYPE_CHECKING:
     from .. import IndexSet
 
 
-class VariableIndexsetAssociation(base.RootBaseModel):
+class VariableIndexsetAssociation(BaseIndexSetAssociation):
     __tablename__ = "optimization_variableindexsetassociation"
 
     variable__id: types.OptimizationVariableType
     variable: types.Mapped["OptimizationVariable"] = db.relationship(
         back_populates="_variable_indexset_associations"
     )
-    indexset__id: types.IndexSetId
-    indexset: types.Mapped["IndexSet"] = db.relationship()
-
-    column_name: types.String = db.Column(db.String(255), nullable=True)
 
 
+# TODO Once the rest works, rename this table and class and remove the NOTE
 # NOTE table name will be optimization_optimizationvariable
-class OptimizationVariable(base.BaseModel):
+class OptimizationVariable(base.RunLinkedBaseModel):
     __tablename__ = "optimization_optimizationvariable"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -36,7 +38,7 @@ class OptimizationVariable(base.BaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Variable.DeletionPrevented
 
-    run__id: types.RunId
+    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -79,8 +81,38 @@ class OptimizationVariable(base.BaseModel):
         names = [name for name in self._column_names if name]
         return names if bool(names) else None
 
+    updateable_columns = ["data"]
+
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
     @property
     def _required_keys(self) -> set[str]:
         return {"levels", "marginals"}
+
+
+class VariableVersion(versions.RunLinkedVersionModel):
+    __tablename__ = "optimization_variable_version"
+
+    name: types.String = db.Column(db.String(255), nullable=False)
+    run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
+
+    data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
+
+    created_at: types.DateTime = db.Column(nullable=True)
+    created_by: types.Username
+
+
+class VariableIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
+    __tablename__ = "optimization_variableindexsetassociation_version"
+
+    variable__id: db.MappedColumn[int] = db.Column(
+        db.Integer, nullable=False, index=True
+    )
+
+
+version_triggers = versions.PostgresVersionTriggers(
+    OptimizationVariable.__table__, VariableVersion.__table__
+)
+data_version_triggers = versions.PostgresVersionTriggers(
+    VariableIndexsetAssociation.__table__, VariableIndexsetAssociationVersion.__table__
+)

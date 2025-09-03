@@ -12,10 +12,21 @@ from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociationRepository,
+    BaseIndexSetAssociationReverter,
+    BaseIndexSetAssociationVersionRepository,
+)
 
 from .. import base
 from .docs import TableDocsRepository
-from .model import Table, TableIndexsetAssociation
+from .model import (
+    Table,
+    TableIndexsetAssociation,
+    TableIndexsetAssociationVersion,
+    TableVersion,
+)
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -23,18 +34,51 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class TableVersionRepository(versions.RunLinkedVersionRepository[TableVersion]):
+    model_class = TableVersion
+
+
+class TableIndexSetAssociationVersionRepository(
+    BaseIndexSetAssociationVersionRepository[TableIndexsetAssociationVersion]
+):
+    model_class = TableIndexsetAssociationVersion
+    parent_version = TableVersion
+    _item_id_column = "table__id"
+
+
+class TableIndexSetAssociationRepository(
+    BaseIndexSetAssociationRepository[
+        TableIndexsetAssociation, TableIndexsetAssociationVersion
+    ]
+):
+    model_class = TableIndexsetAssociation
+    versions: TableIndexSetAssociationVersionRepository
+
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.versions = TableIndexSetAssociationVersionRepository(backend)
+
+        from .filter import OptimizationTableIndexSetAssociationFilter
+
+        self.filter_class = OptimizationTableIndexSetAssociationFilter
+
+
 class TableRepository(
     base.Creator[Table],
     base.Deleter[Table],
     base.Retriever[Table],
     base.Enumerator[Table],
-    base.BulkDeleter[Table],
-    base.BulkUpserter[Table],
+    BaseIndexSetAssociationReverter[
+        Table, TableIndexsetAssociation, TableIndexsetAssociationVersion
+    ],
     abstract.TableRepository,
 ):
     model_class = Table
 
     UsageError = OptimizationItemUsageError
+
+    versions: TableVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -43,6 +87,12 @@ class TableRepository(
         from .filter import OptimizationTableFilter
 
         self.filter_class = OptimizationTableFilter
+
+        self.versions = TableVersionRepository(*args)
+
+        self._associations = TableIndexSetAssociationRepository(*args)
+
+        self._item_id_column = "table__id"
 
     def add(
         self,
@@ -182,3 +232,12 @@ class TableRepository(
         table.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
         self.session.commit()
+
+    @guard("edit")
+    def revert(self, transaction__id: int, run__id: int) -> None:
+        super().revert(transaction__id=transaction__id, run__id=run__id)
+
+        # Revert TableIndexSetAssociation
+        self._revert_indexset_association(
+            transaction__id=transaction__id, run__id=run__id
+        )
