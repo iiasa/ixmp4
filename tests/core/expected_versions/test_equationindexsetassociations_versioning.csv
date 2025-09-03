@@ -1,0 +1,4 @@
+id,equation__id,indexset__id,column_name,transaction_id,end_transaction_id,operation_type
+1,1,1,Column 1,15,None,0
+2,2,2,None,19,23,0
+2,2,2,None,23,None,2
