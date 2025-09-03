@@ -12,10 +12,21 @@ from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociationRepository,
+    BaseIndexSetAssociationReverter,
+    BaseIndexSetAssociationVersionRepository,
+)
 
 from .. import base
 from .docs import EquationDocsRepository
-from .model import Equation, EquationIndexsetAssociation
+from .model import (
+    Equation,
+    EquationIndexsetAssociation,
+    EquationIndexsetAssociationVersion,
+    EquationVersion,
+)
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -23,18 +34,51 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class EquationVersionRepository(versions.RunLinkedVersionRepository[EquationVersion]):
+    model_class = EquationVersion
+
+
+class EquationIndexSetAssociationVersionRepository(
+    BaseIndexSetAssociationVersionRepository[EquationIndexsetAssociationVersion]
+):
+    model_class = EquationIndexsetAssociationVersion
+    parent_version = EquationVersion
+    _item_id_column = "equation__id"
+
+
+class EquationIndexSetAssociationRepository(
+    BaseIndexSetAssociationRepository[
+        EquationIndexsetAssociation, EquationIndexsetAssociationVersion
+    ]
+):
+    model_class = EquationIndexsetAssociation
+    versions: EquationIndexSetAssociationVersionRepository
+
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.versions = EquationIndexSetAssociationVersionRepository(backend)
+
+        from .filter import OptimizationEquationIndexSetAssociationFilter
+
+        self.filter_class = OptimizationEquationIndexSetAssociationFilter
+
+
 class EquationRepository(
     base.Creator[Equation],
     base.Deleter[Equation],
     base.Retriever[Equation],
     base.Enumerator[Equation],
-    base.BulkDeleter[Equation],
-    base.BulkUpserter[Equation],
+    BaseIndexSetAssociationReverter[
+        Equation, EquationIndexsetAssociation, EquationIndexsetAssociationVersion
+    ],
     abstract.EquationRepository,
 ):
     model_class = Equation
 
     UsageError = OptimizationItemUsageError
+
+    versions: EquationVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -43,6 +87,12 @@ class EquationRepository(
         from .filter import EquationFilter
 
         self.filter_class = EquationFilter
+
+        self.versions = EquationVersionRepository(*args)
+
+        self._associations = EquationIndexSetAssociationRepository(*args)
+
+        self._item_id_column = "equation__id"
 
     def add(
         self,
@@ -224,3 +274,12 @@ class EquationRepository(
             equation.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
         self.session.commit()
+
+    @guard("edit")
+    def revert(self, transaction__id: int, run__id: int) -> None:
+        super().revert(transaction__id=transaction__id, run__id=run__id)
+
+        # Revert EquationIndexSetAssociation
+        self._revert_indexset_association(
+            transaction__id=transaction__id, run__id=run__id
+        )

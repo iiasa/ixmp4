@@ -4,6 +4,11 @@ from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationDataValidationError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociation,
+    BaseIndexSetAssociationVersion,
+)
 
 from .. import base, utils
 
@@ -11,20 +16,16 @@ if TYPE_CHECKING:
     from .. import IndexSet
 
 
-class ParameterIndexsetAssociation(base.RootBaseModel):
+class ParameterIndexsetAssociation(BaseIndexSetAssociation):
     __tablename__ = "optimization_parameterindexsetassociation"
 
     parameter__id: types.ParameterId
     parameter: types.Mapped["Parameter"] = db.relationship(
         back_populates="_parameter_indexset_associations"
     )
-    indexset__id: types.IndexSetId
-    indexset: types.Mapped["IndexSet"] = db.relationship()
-
-    column_name: types.String = db.Column(db.String(255), nullable=True)
 
 
-class Parameter(base.BaseModel):
+class Parameter(base.RunLinkedBaseModel):
     __tablename__ = "optimization_parameter"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -33,7 +34,7 @@ class Parameter(base.BaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Parameter.DeletionPrevented
 
-    run__id: types.RunId
+    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -76,4 +77,35 @@ class Parameter(base.BaseModel):
         names = [name for name in self._column_names if name]
         return names if bool(names) else None
 
+    updateable_columns = ["data"]
+
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
+
+
+class ParameterVersion(versions.RunLinkedVersionModel):
+    __tablename__ = "optimization_parameter_version"
+
+    name: types.String = db.Column(db.String(255), nullable=False)
+    run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
+
+    data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
+
+    created_at: types.DateTime = db.Column(nullable=True)
+    created_by: types.Username
+
+
+class ParameterIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
+    __tablename__ = "optimization_parameterindexsetassociation_version"
+
+    parameter__id: db.MappedColumn[int] = db.Column(
+        db.Integer, nullable=False, index=True
+    )
+
+
+version_triggers = versions.PostgresVersionTriggers(
+    Parameter.__table__, ParameterVersion.__table__
+)
+data_version_triggers = versions.PostgresVersionTriggers(
+    ParameterIndexsetAssociation.__table__,
+    ParameterIndexsetAssociationVersion.__table__,
+)

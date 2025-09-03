@@ -1,4 +1,5 @@
 from collections.abc import Iterable
+from functools import partial, reduce
 from typing import TYPE_CHECKING, Any, Literal
 
 import pandas as pd
@@ -13,6 +14,7 @@ from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db import versions
 from ixmp4.data.db.unit.model import Unit, UnitVersion
 from ixmp4.data.db.utils import map_existing
+from ixmp4.db import utils
 
 from .. import base
 from .docs import ScalarDocsRepository
@@ -43,17 +45,11 @@ class ScalarVersionRepository(
 
         exc = exc.join(UnitVersion, onclause=ScalarVersion.unit__id == UnitVersion.id)
 
-        if transaction__id is not None:
-            for vclass in (self.model_class, UnitVersion):
-                match valid:
-                    case "at_transaction":
-                        exc = self.where_valid_at_transaction(
-                            exc, transaction__id, vclass
-                        )
-                    case "after_transaction":
-                        exc = self.where_recorded_after_transaction(
-                            exc, transaction__id
-                        )
+        apply_transaction__id = partial(
+            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        )
+
+        exc = reduce(apply_transaction__id, {self.model_class, UnitVersion}, exc)
 
         if run__id is not None:
             exc = exc.where(ScalarVersion.run__id == run__id)
@@ -67,8 +63,6 @@ class ScalarRepository(
     base.Deleter[Scalar],
     base.Retriever[Scalar],
     base.Enumerator[Scalar],
-    # base.BulkUpserter[Scalar],
-    # base.BulkDeleter[Scalar],
     base.Reverter[Scalar],
     abstract.ScalarRepository,
 ):
@@ -84,9 +78,6 @@ class ScalarRepository(
         self.filter_class = OptimizationScalarFilter
 
         self.versions = ScalarVersionRepository(*args)
-
-        self.columns_to_drop_for_insert = self._columns_to_drop_for_insert | {"unit"}
-        self.columns_to_drop_for_update = self._columns_to_drop_for_update | {"unit"}
 
     def add(self, name: str, value: float | int, unit_name: str, run_id: int) -> Scalar:
         unit_id = self.backend.units.get(unit_name).id
@@ -174,10 +165,43 @@ class ScalarRepository(
     ) -> None:
         correct_versions: pd.DataFrame | None = None
         if revert_platform:
-            correct_versions = self.versions.tabulate(
-                transaction__id=transaction__id, run__id=run__id
+            old_unit_subquery = self.backend.units.versions._select_for_id_map(
+                transaction__id=transaction__id
+            ).subquery()
+            new_unit_subquery = self.backend.units._select_for_id_map().subquery()
+
+            unit_map_subquery = utils.create_id_map_subquery(
+                old_exc=old_unit_subquery, new_exc=new_unit_subquery
             )
-            correct_versions = self._map_units_on_revert(df=correct_versions)
+
+            _columns = utils.get_columns(self.versions.model_class)
+            maybe_add_column_to_collection = partial(
+                utils._maybe_add_column_to_collection, exclude={"unit__id"}
+            )
+            columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
+                maybe_add_column_to_collection,
+                _columns.items(),
+                db.sql.ColumnCollection(),
+            )
+
+            select_correct_versions = (
+                db.select(
+                    unit_map_subquery.c.new_id.label("unit__id"), *columns.values()
+                )
+                .select_from(self.versions.model_class)
+                .join(
+                    unit_map_subquery,
+                    self.versions.model_class.unit__id == unit_map_subquery.c.old_id,
+                )
+            )
+
+            select_correct_versions = self.versions._apply_transaction__id(
+                exc=select_correct_versions,
+                vclass=self.versions.model_class,
+                transaction__id=transaction__id,
+            ).order_by(self.versions.model_class.id.asc())
+
+            correct_versions = self.tabulate_query(select_correct_versions)
 
         return super().revert(
             transaction__id=transaction__id,

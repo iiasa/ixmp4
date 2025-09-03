@@ -12,11 +12,22 @@ from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociationRepository,
+    BaseIndexSetAssociationReverter,
+    BaseIndexSetAssociationVersionRepository,
+)
 from ixmp4.data.db.unit import Unit
 
 from .. import base
 from .docs import ParameterDocsRepository
-from .model import Parameter, ParameterIndexsetAssociation
+from .model import (
+    Parameter,
+    ParameterIndexsetAssociation,
+    ParameterIndexsetAssociationVersion,
+    ParameterVersion,
+)
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -24,18 +35,51 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
+class ParameterVersionRepository(versions.RunLinkedVersionRepository[ParameterVersion]):
+    model_class = ParameterVersion
+
+
+class ParameterIndexSetAssociationVersionRepository(
+    BaseIndexSetAssociationVersionRepository[ParameterIndexsetAssociationVersion]
+):
+    model_class = ParameterIndexsetAssociationVersion
+    parent_version = ParameterVersion
+    _item_id_column = "parameter__id"
+
+
+class ParameterIndexSetAssociationRepository(
+    BaseIndexSetAssociationRepository[
+        ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
+    ]
+):
+    model_class = ParameterIndexsetAssociation
+    versions: ParameterIndexSetAssociationVersionRepository
+
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.versions = ParameterIndexSetAssociationVersionRepository(backend)
+
+        from .filter import OptimizationParameterIndexSetAssociationFilter
+
+        self.filter_class = OptimizationParameterIndexSetAssociationFilter
+
+
 class ParameterRepository(
     base.Creator[Parameter],
     base.Deleter[Parameter],
     base.Retriever[Parameter],
     base.Enumerator[Parameter],
-    base.BulkDeleter[Parameter],
-    base.BulkUpserter[Parameter],
+    BaseIndexSetAssociationReverter[
+        Parameter, ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
+    ],
     abstract.ParameterRepository,
 ):
     model_class = Parameter
 
     UsageError = OptimizationItemUsageError
+
+    versions: ParameterVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -44,6 +88,12 @@ class ParameterRepository(
         from .filter import OptimizationParameterFilter
 
         self.filter_class = OptimizationParameterFilter
+
+        self.versions = ParameterVersionRepository(*args)
+
+        self._associations = ParameterIndexSetAssociationRepository(*args)
+
+        self._item_id_column = "parameter__id"
 
     def add(
         self,
@@ -209,3 +259,12 @@ class ParameterRepository(
         parameter.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
         self.session.commit()
+
+    @guard("edit")
+    def revert(self, transaction__id: int, run__id: int) -> None:
+        super().revert(transaction__id=transaction__id, run__id=run__id)
+
+        # Revert ParameterIndexSetAssociation
+        self._revert_indexset_association(
+            transaction__id=transaction__id, run__id=run__id
+        )

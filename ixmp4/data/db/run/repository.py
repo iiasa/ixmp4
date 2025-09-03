@@ -336,12 +336,29 @@ class RunRepository(
     def revert_optimization_data(
         self, run: Run, transaction__id: int, revert_platform: bool = False
     ) -> None:
-        # # TODO: Implement this. @glatterf42
-
+        # TODO Should we figure out a way to say which of the following should actually
+        # run? Or just make sure they're noops if nothing's required to do?
+        # NOTE Only Scalars store Unit IDs as foreign keys
         self.backend.optimization.scalars.revert(
             transaction__id=transaction__id,
             run__id=run.id,
             revert_platform=revert_platform,
+        )
+        # NOTE IndexSets need to be reverted before linked items
+        self.backend.optimization.indexsets.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.tables.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.parameters.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.equations.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.variables.revert(
+            transaction__id=transaction__id, run__id=run.id
         )
 
     def revert_meta(self, run: Run, transaction__id: int) -> None:

@@ -25,6 +25,8 @@ class Scalar(base.BaseModel):
         db.Integer, db.ForeignKey("unit.id"), index=True
     )
 
+    updateable_columns = ["value", "unit__id"]
+
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
 

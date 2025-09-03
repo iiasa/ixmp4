@@ -1,5 +1,6 @@
 import logging
 from collections.abc import Generator
+from functools import partial, reduce
 from typing import TYPE_CHECKING, Any, List, Literal, Sequence, cast
 
 import pandas as pd
@@ -10,6 +11,7 @@ from typing_extensions import Unpack
 from ixmp4 import db
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
 from ixmp4.data.db.optimization.equation.model import (
     EquationIndexsetAssociation,
 )
@@ -24,10 +26,11 @@ from ixmp4.data.db.optimization.variable.model import (
     VariableIndexsetAssociation,
 )
 from ixmp4.data.db.optimization.variable.repository import VariableRepository
+from ixmp4.data.db.utils import map_existing
 
 from .. import base, utils
 from .docs import IndexSetDocsRepository
-from .model import IndexSet, IndexSetData
+from .model import IndexSet, IndexSetData, IndexSetDataVersion, IndexSetVersion
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
@@ -35,16 +38,103 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
+class IndexSetVersionRepository(versions.RunLinkedVersionRepository[IndexSetVersion]):
+    model_class = IndexSetVersion
+
+
+class IndexSetDataVersionRepository(versions.VersionRepository[IndexSetDataVersion]):
+    model_class = IndexSetDataVersion
+
+    def select(
+        self,
+        transaction__id: int | None = None,
+        valid: Literal["at_transaction", "after_transaction"] = "at_transaction",
+        indexset__ids: list[int] | None = None,
+        **kwargs: Any,
+    ) -> db.sql.Select[Any]:
+        exc = db.select(
+            self.bundle, IndexSetVersion.name.label("indexset")
+        ).select_from(self.model_class)
+
+        exc = exc.join(
+            IndexSetVersion,
+            onclause=IndexSetDataVersion.indexset__id == IndexSetVersion.id,
+        )
+
+        apply_transaction__id = partial(
+            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        )
+
+        exc = reduce(apply_transaction__id, {self.model_class, IndexSetVersion}, exc)
+
+        if indexset__ids is not None:
+            exc = exc.where(IndexSetDataVersion.indexset__id.in_(indexset__ids))
+
+        exc = self.where_matches_kwargs(exc, **kwargs)
+        return exc.distinct()
+
+    def select_ids(
+        self,
+        transaction__id: int | None = None,
+        valid: Literal["at_transaction", "after_transaction"] = "at_transaction",
+        indexset__ids: list[int] | None = None,
+        **kwargs: Any,
+    ) -> db.sql.Select[Any]:
+        exc = db.select(
+            self.model_class.id, IndexSetVersion.name.label("indexset")
+        ).select_from(self.model_class)
+
+        exc = exc.join(
+            IndexSetVersion,
+            onclause=IndexSetDataVersion.indexset__id == IndexSetVersion.id,
+        )
+
+        apply_transaction__id = partial(
+            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        )
+
+        exc = reduce(apply_transaction__id, {self.model_class, IndexSetVersion}, exc)
+
+        if indexset__ids is not None:
+            exc = exc.where(IndexSetDataVersion.indexset__id.in_(indexset__ids))
+
+        exc = self.where_matches_kwargs(exc, **kwargs)
+        return exc.distinct()
+
+
+class IndexSetDataRepository(base.Reverter[IndexSetData]):
+    model_class = IndexSetData
+    versions: IndexSetDataVersionRepository
+
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.versions = IndexSetDataVersionRepository(backend)
+
+        from .filter import OptimizationIndexSetDataFilter
+
+        self.filter_class = OptimizationIndexSetDataFilter
+
+    # TODO If we only pass on variables, remove this function implementation
+    def revert(
+        self, transaction__id: int, correct_versions: pd.DataFrame | None
+    ) -> None:
+        return super().revert(
+            transaction__id=transaction__id, correct_versions=correct_versions
+        )
+
+
 class IndexSetRepository(
     base.Creator[IndexSet],
     base.Deleter[IndexSet],
     base.Retriever[IndexSet],
     base.Enumerator[IndexSet],
-    base.BulkDeleter[IndexSet],
-    base.BulkUpserter[IndexSet],
+    base.RunLinkedReverter[IndexSet],
     abstract.IndexSetRepository,
 ):
     model_class = IndexSet
+    versions: IndexSetVersionRepository
+    _data: IndexSetDataRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -53,6 +143,10 @@ class IndexSetRepository(
         from .filter import OptimizationIndexSetFilter
 
         self.filter_class = OptimizationIndexSetFilter
+
+        self.versions = IndexSetVersionRepository(*args)
+
+        self._data = IndexSetDataRepository(*args)
 
         self._linked_columns_lookup = {
             "table": (
@@ -296,3 +390,63 @@ class IndexSetRepository(
             remove_data = df[df[columns].isin(invalid_data).any(axis=1)]
 
             repo.remove_data(item.id, remove_data)
+
+    def _map_indexsets_on_revert(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Maps foreign-key-indexset-ids to the ids of restored IndexSets."""
+
+        df, missing = map_existing(
+            df,
+            existing_df=self.tabulate(name__in=df["indexset"]),
+            join_on=("name", "indexset"),
+            map=("id", "indexset__id"),
+            suffixes=("_old", None),
+        )
+        if len(missing) > 0:
+            raise IndexSet.NotFound(", ".join(missing))
+
+        return df
+
+    @guard("edit")
+    def revert(self, transaction__id: int, run__id: int) -> None:
+        super().revert(transaction__id=transaction__id, run__id=run__id)
+
+        # Revert IndexSetData: map indexset ids (and their data) from before
+        # transaction__id to after
+        indexset_map_subquery = self._create_id_map_subquery(
+            transaction__id=transaction__id, run__id=run__id
+        )
+
+        _columns = db.utils.get_columns(self._data.versions.model_class)
+        maybe_add_column_to_collection = partial(
+            db.utils._maybe_add_column_to_collection, exclude={"indexset__id"}
+        )
+        columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
+            maybe_add_column_to_collection,
+            _columns.items(),
+            db.sql.ColumnCollection(),
+        )
+
+        select_correct_versions = (
+            db.select(
+                indexset_map_subquery.c.new_id.label("indexset__id"), *columns.values()
+            )
+            .select_from(self._data.versions.model_class)
+            .join(
+                indexset_map_subquery,
+                self._data.versions.model_class.indexset__id
+                == indexset_map_subquery.c.old_id,
+            )
+        )
+
+        select_correct_versions = self._data.versions._apply_transaction__id(
+            exc=select_correct_versions,
+            vclass=self._data.versions.model_class,
+            transaction__id=transaction__id,
+        ).order_by(self._data.versions.model_class.id.asc())
+
+        correct_versions = self.tabulate_query(select_correct_versions)
+
+        # Revert with corrected (restored) indexset_ids
+        self._data.revert(
+            transaction__id=transaction__id, correct_versions=correct_versions
+        )
