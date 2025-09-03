@@ -68,6 +68,7 @@ from sqlalchemy.orm import (
     Session,
     aliased,
     backref,
+    declared_attr,
     mapped_column,
     relationship,
     validates,
