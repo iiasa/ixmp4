@@ -1,3 +1,7 @@
+import warnings
+from typing import TYPE_CHECKING
+
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -9,16 +13,19 @@ from ixmp4.core.exceptions import (
     RunLockRequired,
 )
 
-from ..utils import assert_unordered_equality, create_indexsets_for_run
+from .. import utils
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend import SqlAlchemyBackend
 
 
 def df_from_list(parameters: list[Parameter]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
-                parameter.run_id,
                 parameter.data,
                 parameter.name,
+                parameter.run_id,
                 parameter.id,
                 parameter.created_at,
                 parameter.created_by,
@@ -26,9 +33,9 @@ def df_from_list(parameters: list[Parameter]) -> pd.DataFrame:
             for parameter in parameters
         ],
         columns=[
-            "run__id",
             "data",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -43,7 +50,9 @@ class TestCoreParameter:
         # Test normal creation
         indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test parameters.create()"):
             parameter = run.optimization.parameters.create(
@@ -112,7 +121,7 @@ class TestCoreParameter:
 
     def test_delete_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset_1,) = create_indexsets_for_run(
+        (indexset_1,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test parameters.delete()"):
@@ -146,7 +155,7 @@ class TestCoreParameter:
 
     def test_get_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test parameters.get()"):
@@ -170,7 +179,9 @@ class TestCoreParameter:
         unit = platform.units.create("Unit")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -308,7 +319,7 @@ class TestCoreParameter:
             )
             .reset_index()
         )
-        assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
+        utils.assert_unordered_equality(expected, pd.DataFrame(parameter_4.data))
 
         # Test adding with column_names
         test_data_8 = {
@@ -339,7 +350,9 @@ class TestCoreParameter:
         unit = platform.units.create("Unit")
         indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         initial_data: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
@@ -437,7 +450,7 @@ class TestCoreParameter:
 
     def test_list_parameter(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        create_indexsets_for_run(platform=platform, run_id=run.id)
+        utils.create_indexsets_for_run(platform=platform, run_id=run.id)
         with run.transact("Test parameters.list()"):
             parameter = run.optimization.parameters.create(
                 "Parameter", constrained_to_indexsets=["Indexset 1"]
@@ -448,7 +461,7 @@ class TestCoreParameter:
 
         # Create new run to test listing parameters for specific run
         run_2 = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
         with run_2.transact("Test parameters.list() for specific run"):
@@ -471,7 +484,9 @@ class TestCoreParameter:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test parameters.tabulate()"):
             parameter = run.optimization.parameters.create(
@@ -484,7 +499,7 @@ class TestCoreParameter:
             )
         # Create new run to test listing parameters for specific run
         run_2 = platform.runs.create("Model", "Scenario")
-        (indexset_3,) = create_indexsets_for_run(
+        (indexset_3,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
         with run_2.transact("Test parameters.tabulate() for specific run"):
@@ -524,7 +539,7 @@ class TestCoreParameter:
 
     def test_parameter_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test Parameter.docs"):
@@ -537,3 +552,313 @@ class TestCoreParameter:
 
         parameter_1.docs = None
         assert parameter_1.docs is None
+
+    def test_parameter_rollback_sqlite(self, sqlite_platform: ixmp4.Platform) -> None:
+        run = sqlite_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=sqlite_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=sqlite_platform, run_id=run.id, amount=1
+            )
+        )
+        test_data = {indexset.name: ["foo"]}
+
+        with run.transact("Test Parameter versioning"):
+            parameter = run.optimization.parameters.create(
+                "Parameter 1", constrained_to_indexsets=[indexset.name]
+            )
+            indexset.add(["foo"])
+
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                with (
+                    run.transact("Test Parameter versioning update on sqlite"),
+                ):
+                    parameter.add(test_data)
+                    raise utils.CustomException("Whoops!!!")
+            except utils.CustomException:
+                pass
+
+        parameter = run.optimization.parameters.get(parameter.name)
+
+        assert parameter.data == test_data
+        assert (
+            "An exception occurred but the `Run` was not reverted because "
+            "versioning is not supported by this platform" in str(w[0].message)
+        )
+
+    def test_versioning_parameter(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+        unit = pg_platform.units.create("Unit")
+        unit_2 = pg_platform.units.create("Unit 2")
+
+        with run.transact("Test Parameter versioning"):
+            indexset_1.add(data=[1, 2, 3])
+            indexset_2.add(data=["foo", "bar"])
+            parameter = run.optimization.parameters.create(
+                "Parameter 1",
+                constrained_to_indexsets=[indexset_1.name],
+                column_names=["Column 1"],
+            )
+            parameter.docs = "Docs of Parameter 1"
+            parameter.add(
+                data={
+                    "Column 1": [1, 2],
+                    "values": [1, 2],
+                    "units": [unit.name, unit.name],
+                }
+            )
+            parameter.add(data={"Column 1": [3], "values": [3], "units": [unit.name]})
+            parameter_2 = run.optimization.parameters.create(
+                name="Parameter 2", constrained_to_indexsets=[indexset_2.name]
+            )
+            parameter_2.add(
+                data={
+                    indexset_2.name: ["foo", "bar"],
+                    "values": [4, 5],
+                    "units": [unit_2.name, unit_2.name],
+                }
+            )
+            parameter_2.remove(data={indexset_2.name: ["foo"]})
+            run.optimization.parameters.delete(parameter_2.id)
+
+            @utils.versioning_test(pg_platform.backend)
+            def assert_versions(backend: "SqlAlchemyBackend") -> None:
+                # Test Parameter versions
+                vdf = backend.optimization.parameters.versions.tabulate()
+
+                data = vdf["data"].to_list()
+
+                # TODO assert_unordered_equality can't handle dict for .data
+                # property/column. Should we switch it to nullable? How do we test here?
+                expected = (
+                    pd.read_csv(
+                        "./tests/core/expected_versions/test_parameter_versioning.csv"
+                    )
+                    .replace({np.nan: None})
+                    .assign(
+                        created_at=pd.Series(
+                            [
+                                parameter.created_at,
+                                parameter.created_at,
+                                parameter.created_at,
+                                parameter_2.created_at,
+                                parameter_2.created_at,
+                                parameter_2.created_at,
+                                parameter_2.created_at,
+                            ]
+                        )
+                    )
+                )
+
+                # NOTE Don't know how to store/read in these dicts with csv
+                expected_data = [
+                    {},
+                    {
+                        "Column 1": [1, 2],
+                        "values": [1, 2],
+                        "units": [unit.name, unit.name],
+                    },
+                    {
+                        "Column 1": [1, 2, 3],
+                        "values": [1, 2, 3],
+                        "units": [unit.name, unit.name, unit.name],
+                    },
+                    {},
+                    {
+                        "Indexset 2": ["foo", "bar"],
+                        "values": [4, 5],
+                        "units": [unit_2.name, unit_2.name],
+                    },
+                    {"Indexset 2": ["bar"], "values": [5], "units": [unit_2.name]},
+                    {"Indexset 2": ["bar"], "values": [5], "units": [unit_2.name]},
+                ]
+
+                utils.assert_unordered_equality(expected, vdf.drop(columns="data"))
+                assert data == expected_data
+
+                # Test ParameterIndexSetAssociation versions
+                # NOTE The last entry here comes implicitly from deleting Parameter 2
+                vdf = backend.optimization.parameters._associations.versions.tabulate()
+
+                expected = pd.read_csv(
+                    "./tests/core/expected_versions/test_parameterindexsetassociations_versioning.csv"
+                ).replace({np.nan: None})
+
+                utils.assert_unordered_equality(expected, vdf)
+
+    def test_parameter_rollback(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+        unit = pg_platform.units.create("Unit")
+
+        # Test rollback of Parameter creation
+        try:
+            with run.transact("Test Parameter rollback on creation"):
+                _ = run.optimization.parameters.create(
+                    "Parameter", constrained_to_indexsets=[indexset_1.name]
+                )
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert run.optimization.parameters.tabulate().empty
+
+        # Test rollback of Parameter creation when linked in Docs table
+        try:
+            with run.transact("Test Parameter rollback after setting docs"):
+                parameter = run.optimization.parameters.create(
+                    "Parameter", constrained_to_indexsets=[indexset_1.name]
+                )
+                parameter.docs = "Test Parameter"
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert pg_platform.backend.optimization.parameters.docs.tabulate().empty
+
+        with run.transact("Test Parameter rollback setup"):
+            parameter = run.optimization.parameters.create(
+                "Parameter", constrained_to_indexsets=[indexset_1.name]
+            )
+            indexset_1.add(data=[1, 2, 3])
+            parameter_2 = run.optimization.parameters.create(
+                "Parameter 2",
+                constrained_to_indexsets=[indexset_2.name],
+                column_names=["Column 2"],
+            )
+            indexset_2.add(data=["foo", "bar"])
+
+        test_data = {
+            indexset_1.name: [1, 3],
+            "values": [1.0, 3.0],
+            "units": [unit.name, unit.name],
+        }
+
+        # Test rollback of Parameter data addition
+        try:
+            with run.transact("Test Parameter rollback on data addition"):
+                parameter.add(data=test_data)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter = run.optimization.parameters.get("Parameter")
+        assert parameter.data == {}
+
+        # Test rollback of Parameter data removal
+        with run.transact("Test Parameter rollback on data removal -- setup"):
+            parameter.add(data=test_data)
+
+        try:
+            with run.transact("Test Parameter rollback on data removal"):
+                parameter.remove(data={indexset_1.name: [1]})
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter = run.optimization.parameters.get("Parameter")
+        assert parameter.data == test_data
+
+        # Test rollback of Parameter deletion
+        try:
+            with run.transact("Test Parameter rollback on deletion"):
+                run.optimization.parameters.delete("Parameter")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter = run.optimization.parameters.get("Parameter")
+        assert parameter.indexset_names == [indexset_1.name]
+        assert parameter.data == test_data
+
+        # Test rollback of Parameter deletion with column_names
+        try:
+            with run.transact("Test Parameter rollback on deletion with column_names"):
+                run.optimization.parameters.delete("Parameter 2")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter_2 = run.optimization.parameters.get("Parameter 2")
+        assert parameter_2.indexset_names == [indexset_2.name]
+        assert parameter_2.column_names == ["Column 2"]
+
+        # Test rollback of Parameter deletion with IndexSet deletion
+        try:
+            with run.transact(
+                "Test Parameter rollback on deletion w/ IndexSet deletion"
+            ):
+                run.optimization.parameters.delete("Parameter")
+                run.optimization.indexsets.delete(indexset_1.name)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter = run.optimization.parameters.get("Parameter")
+        assert parameter.indexset_names == [indexset_1.name]
+        assert parameter.data == test_data
+
+        # Test rollback of Parameter deletion with Unit deletion
+        try:
+            with run.transact(
+                "Test Parameter rollback on deletion w/ Unit deletion",
+                revert_platform_on_error=True,
+            ):
+                run.optimization.parameters.delete(parameter.id)
+                pg_platform.units.delete(unit)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter = run.optimization.parameters.get("Parameter")
+        assert parameter.units[0] == unit.name
+
+        # NOTE Without revert_platform_on_error above, this would not work
+        unit = pg_platform.units.get(unit.name)
+        assert unit.id is not None
+
+    def test_parameter_rollback_to_checkpoint(
+        self, pg_platform: ixmp4.Platform
+    ) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id, amount=1
+            )
+        )
+        unit = pg_platform.units.create("Unit")
+        test_data = {
+            indexset.name: [1, 3],
+            "values": [1.0, 3.0],
+            "units": [unit.name, unit.name],
+        }
+
+        try:
+            with run.transact("Test Parameter rollback to checkpoint"):
+                parameter = run.optimization.parameters.create(
+                    "Parameter", constrained_to_indexsets=[indexset.name]
+                )
+                indexset.add(data=[1, 2, 3])
+                parameter.add(data=test_data)
+                run.checkpoints.create("Test Parameter rollback to checkpoint")
+                parameter.remove(data={indexset.name: [1]})
+                run.optimization.parameters.delete(item=parameter.id)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        parameter = run.optimization.parameters.get("Parameter")
+        assert parameter.data == test_data

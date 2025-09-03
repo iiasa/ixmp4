@@ -341,11 +341,23 @@ class TestCoreScalar:
         scalars = run.optimization.scalars.tabulate()
         assert scalars["name"].to_list() == ["Scalar 1", "Scalar 2"]
 
+        # Test rollback of Scalar creation when linked in Docs table
+        try:
+            with run.transact("Test Scalar rollback after setting docs"):
+                scalar_3 = run.optimization.scalars.create(
+                    "Scalar 3", value=1, unit=unit
+                )
+                scalar_3.docs = "Scalar 3"
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert pg_platform.backend.optimization.scalars.docs.tabulate().empty
+
         # Test rollback on delete
         try:
             with run.transact("Test Scalar rollback on delete"):
                 run.optimization.scalars.delete("Scalar 2")
-                print(run.optimization.scalars.tabulate().to_string())
                 raise utils.CustomException("Whoops!!!")
         except utils.CustomException:
             pass

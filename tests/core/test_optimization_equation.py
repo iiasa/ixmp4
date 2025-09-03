@@ -1,3 +1,7 @@
+import warnings
+from typing import TYPE_CHECKING
+
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -11,16 +15,19 @@ from ixmp4.core.exceptions import (
 from ixmp4.data.backend.api import RestBackend
 from ixmp4.data.db.optimization.equation.repository import logger
 
-from ..utils import assert_unordered_equality, create_indexsets_for_run
+from .. import utils
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend import SqlAlchemyBackend
 
 
 def df_from_list(equations: list[Equation]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
-                equation.run_id,
                 equation.data,
                 equation.name,
+                equation.run_id,
                 equation.id,
                 equation.created_at,
                 equation.created_by,
@@ -28,9 +35,9 @@ def df_from_list(equations: list[Equation]) -> pd.DataFrame:
             for equation in equations
         ],
         columns=[
-            "run__id",
             "data",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -60,7 +67,9 @@ class TestCoreEquation:
         # Test creation with indexset
         indexset_1, _ = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test equations.create() linked"):
             equation_2 = run.optimization.equations.create(
@@ -148,7 +157,7 @@ class TestCoreEquation:
 
         assert run.optimization.equations.tabulate().empty
 
-        (indexset_1,) = create_indexsets_for_run(
+        (indexset_1,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test equations.delete() linked"):
@@ -182,7 +191,7 @@ class TestCoreEquation:
 
     def test_get_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test equations.get()"):
@@ -206,7 +215,9 @@ class TestCoreEquation:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -355,7 +366,7 @@ class TestCoreEquation:
         # accessing .levels and .marginals will always be served float, so that's fine.
         if isinstance(platform.backend, RestBackend):
             expected = expected.astype({"levels": float, "marginals": float})
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             expected, pd.DataFrame(equation_4.data), check_dtype=False
         )
 
@@ -463,7 +474,7 @@ class TestCoreEquation:
 
     def test_list_equation(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        indexset, indexset_2 = create_indexsets_for_run(
+        indexset, indexset_2 = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
         with run.transact("Test equations.list()"):
@@ -476,7 +487,7 @@ class TestCoreEquation:
 
         # Create new run to test listing equations of specific run
         run_2 = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
         with run_2.transact("Test equations.list() for specific run"):
@@ -498,7 +509,9 @@ class TestCoreEquation:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test equations.tabulate()"):
             equation = run.optimization.equations.create(
@@ -512,7 +525,7 @@ class TestCoreEquation:
 
         # Create new run to test tabulating equations of specific run
         run_2 = platform.runs.create("Model", "Scenario")
-        (indexset_3,) = create_indexsets_for_run(
+        (indexset_3,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
         with run_2.transact("Test equations.tabulate() for specific run"):
@@ -552,7 +565,7 @@ class TestCoreEquation:
         run = platform.runs.create("Model", "Scenario")
         (indexset,) = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(
+            for model in utils.create_indexsets_for_run(
                 platform=platform, run_id=run.id, amount=1
             )
         )
@@ -566,3 +579,300 @@ class TestCoreEquation:
 
         equation_1.docs = None
         assert equation_1.docs is None
+
+    def test_equation_rollback_sqlite(self, sqlite_platform: ixmp4.Platform) -> None:
+        run = sqlite_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=sqlite_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=sqlite_platform, run_id=run.id, amount=1
+            )
+        )
+        test_data = {indexset.name: ["foo"]}
+
+        with run.transact("Test Equation versioning"):
+            equation = run.optimization.equations.create(
+                "Equation 1", constrained_to_indexsets=[indexset.name]
+            )
+            indexset.add(["foo"])
+
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                with (
+                    run.transact("Test Equation versioning update on sqlite"),
+                ):
+                    equation.add(test_data)
+                    raise utils.CustomException("Whoops!!!")
+            except utils.CustomException:
+                pass
+
+        equation = run.optimization.equations.get(equation.name)
+
+        assert equation.data == test_data
+        assert (
+            "An exception occurred but the `Run` was not reverted because "
+            "versioning is not supported by this platform" in str(w[0].message)
+        )
+
+    def test_versioning_equation(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+
+        with run.transact("Test Equation versioning"):
+            indexset_1.add(data=[1, 2, 3])
+            indexset_2.add(data=["foo", "bar"])
+            equation = run.optimization.equations.create(
+                "Equation 1",
+                constrained_to_indexsets=[indexset_1.name],
+                column_names=["Column 1"],
+            )
+            equation.docs = "Docs of Equation 1"
+            equation.add(
+                data={"Column 1": [1, 2], "levels": [1, 2], "marginals": [0, 0]}
+            )
+            equation.add(data={"Column 1": [3], "levels": [3], "marginals": [1]})
+            equation_2 = run.optimization.equations.create(
+                name="Equation 2", constrained_to_indexsets=[indexset_2.name]
+            )
+            equation_2.add(
+                data={
+                    indexset_2.name: ["foo", "bar"],
+                    "levels": [4, 5],
+                    "marginals": [0, 0],
+                }
+            )
+            equation_2.remove_data(data={indexset_2.name: ["foo"]})
+            run.optimization.equations.delete(equation_2.id)
+
+            @utils.versioning_test(pg_platform.backend)
+            def assert_versions(backend: "SqlAlchemyBackend") -> None:
+                # Test Equation versions
+                vdf = backend.optimization.equations.versions.tabulate()
+
+                data = vdf["data"].to_list()
+
+                # TODO assert_unordered_equality can't handle dict for .data
+                # property/column. Should we switch it to nullable? How do we test here?
+                expected = (
+                    pd.read_csv(
+                        "./tests/core/expected_versions/test_equation_versioning.csv"
+                    )
+                    .replace({np.nan: None})
+                    .assign(
+                        created_at=pd.Series(
+                            [
+                                equation.created_at,
+                                equation.created_at,
+                                equation.created_at,
+                                equation_2.created_at,
+                                equation_2.created_at,
+                                equation_2.created_at,
+                                equation_2.created_at,
+                            ]
+                        )
+                    )
+                )
+
+                # NOTE Don't know how to store/read in these dicts with csv
+                expected_data = [
+                    {},
+                    {"Column 1": [1, 2], "levels": [1, 2], "marginals": [0, 0]},
+                    {
+                        "Column 1": [1, 2, 3],
+                        "levels": [1, 2, 3],
+                        "marginals": [0, 0, 1],
+                    },
+                    {},
+                    {
+                        "Indexset 2": ["foo", "bar"],
+                        "levels": [4, 5],
+                        "marginals": [0, 0],
+                    },
+                    {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
+                    {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
+                ]
+
+                utils.assert_unordered_equality(expected, vdf.drop(columns="data"))
+                assert data == expected_data
+
+                # Test EquationIndexSetAssociation versions
+                # NOTE The last entry here comes implicitly from deleting Equation 2
+                vdf = backend.optimization.equations._associations.versions.tabulate()
+
+                expected = pd.read_csv(
+                    "./tests/core/expected_versions/test_equationindexsetassociations_versioning.csv"
+                ).replace({np.nan: None})
+
+                utils.assert_unordered_equality(expected, vdf)
+
+    def test_equation_rollback(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+
+        # Test rollback of Equation creation
+        try:
+            with run.transact("Test Equation rollback on creation"):
+                _ = run.optimization.equations.create(
+                    "Equation", constrained_to_indexsets=[indexset_1.name]
+                )
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert run.optimization.equations.tabulate().empty
+
+        # Test rollback of scalar Equation creation
+        try:
+            with run.transact("Test scalar Equation rollback on creation"):
+                _ = run.optimization.equations.create("Equation")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert run.optimization.equations.tabulate().empty
+
+        # Test rollback of Equation creation when linked in Docs table
+        try:
+            with run.transact("Test Equation rollback after setting docs"):
+                equation = run.optimization.equations.create("Equation")
+                equation.docs = "Test Equation"
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert pg_platform.backend.optimization.equations.docs.tabulate().empty
+
+        with run.transact("Test Equation rollback setup"):
+            equation = run.optimization.equations.create(
+                "Equation", constrained_to_indexsets=[indexset_1.name]
+            )
+            indexset_1.add(data=[1, 2, 3])
+            equation_2 = run.optimization.equations.create(
+                "Equation 2",
+                constrained_to_indexsets=[indexset_2.name],
+                column_names=["Column 2"],
+            )
+            indexset_2.add(data=["foo", "bar"])
+            equation_3 = run.optimization.equations.create("Equation 3")
+
+        test_data = {
+            indexset_1.name: [1, 3],
+            "levels": [1.0, 3.0],
+            "marginals": [0.5, 0.5],
+        }
+
+        # Test rollback of Equation data addition
+        try:
+            with run.transact("Test Equation rollback on data addition"):
+                equation.add(data=test_data)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation = run.optimization.equations.get("Equation")
+        assert equation.data == {}
+
+        # Test rollback of Equation data removal
+        with run.transact("Test Equation rollback on data removal -- setup"):
+            equation.add(data=test_data)
+
+        try:
+            with run.transact("Test Equation rollback on data removal"):
+                equation.remove_data(data={indexset_1.name: [1]})
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation = run.optimization.equations.get("Equation")
+        assert equation.data == test_data
+
+        # Test rollback of Equation deletion
+        try:
+            with run.transact("Test Equation rollback on deletion"):
+                run.optimization.equations.delete("Equation")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation = run.optimization.equations.get("Equation")
+        assert equation.indexset_names == [indexset_1.name]
+        assert equation.data == test_data
+
+        # Test rollback of Equation deletion with column_names
+        try:
+            with run.transact("Test Equation rollback on deletion with column_names"):
+                run.optimization.equations.delete("Equation 2")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation_2 = run.optimization.equations.get("Equation 2")
+        assert equation_2.indexset_names == [indexset_2.name]
+        assert equation_2.column_names == ["Column 2"]
+
+        # Test rollback of Equation deletion with IndexSet deletion
+        try:
+            with run.transact(
+                "Test Equation rollback on deletion w/ IndexSet deletion"
+            ):
+                run.optimization.equations.delete("Equation")
+                run.optimization.indexsets.delete(indexset_1.name)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation = run.optimization.equations.get("Equation")
+        assert equation.indexset_names == [indexset_1.name]
+        assert equation.data == test_data
+
+        # Test rollback of scalar Equation deletion
+        try:
+            with run.transact("Test rollback of scalar Equation deletion"):
+                run.optimization.equations.delete(equation_3.id)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation_3 = run.optimization.equations.get("Equation 3")
+        assert equation_3.indexset_names is None
+
+    def test_equation_rollback_to_checkpoint(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id, amount=1
+            )
+        )
+        test_data = {
+            indexset.name: [1, 3],
+            "levels": [1.0, 3.0],
+            "marginals": [0.5, 0.5],
+        }
+
+        try:
+            with run.transact("Test Equation rollback to checkpoint"):
+                equation = run.optimization.equations.create(
+                    "Equation", constrained_to_indexsets=[indexset.name]
+                )
+                indexset.add(data=[1, 2, 3])
+                equation.add(data=test_data)
+                run.checkpoints.create("Test Equation rollback to checkpoint")
+                equation.remove_data(data={indexset.name: [1]})
+                run.optimization.equations.delete(item=equation.id)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        equation = run.optimization.equations.get("Equation")
+        assert equation.data == test_data
