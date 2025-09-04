@@ -70,7 +70,7 @@ class IndexSetVersion(versions.RunLinkedVersionModel):
 
 
 class IndexSetDataVersion(versions.DefaultVersionModel):
-    __tablename__ = "optimization_indexset_data_version"
+    __tablename__ = "optimization_indexsetdata_version"
 
     indexset__id: db.MappedColumn[int] = db.Column(
         db.Integer, nullable=False, index=True

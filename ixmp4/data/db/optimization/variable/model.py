@@ -27,7 +27,6 @@ class VariableIndexsetAssociation(BaseIndexSetAssociation):
     )
 
 
-# TODO Once the rest works, rename this table and class and remove the NOTE
 # NOTE table name will be optimization_optimizationvariable
 class OptimizationVariable(base.RunLinkedBaseModel):
     __tablename__ = "optimization_optimizationvariable"
