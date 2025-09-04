@@ -153,57 +153,7 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 continue
             cls.process_field(namespace, name, annot)
 
-        new_class = cast(
-            FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs)
-        )
-
-        cls._validate_remote_filter_config(new_class)
-
-        return new_class
-
-    @classmethod
-    def _validate_remote_filter_config(cls, filter_class: type["BaseFilter"]) -> None:
-        """Validate remote filter configuration at class definition time."""
-        class_dict = filter_class.__dict__
-        remote_filters: set[str] = class_dict.get("_remote_filters", set())
-        remote_path: list[RemotePathStep] = class_dict.get("_remote_path", [])
-
-        # Check consistency between remote_filters and remote_path
-        if remote_filters and not remote_path:
-            raise ProgrammingError(
-                f"{filter_class.__name__} defines _remote_filters "
-                "but missing _remote_path"
-            )
-
-        if remote_path and not remote_filters:
-            raise ProgrammingError(
-                f"{filter_class.__name__} defines _remote_path "
-                "but missing _remote_filters"
-            )
-
-        # Validate each step in the remote path
-        for i, step in enumerate(remote_path):
-            try:
-                target_model = step["target_model"]
-                fk_attr = step["fk_attr"]
-                source_model = step["source_model"]
-                pk_attr = step["pk_attr"]
-            except KeyError as e:
-                raise ProgrammingError(
-                    f"{filter_class.__name__} remote path step {i} "
-                    f"missing required key: {e}"
-                )
-
-            if not hasattr(target_model, fk_attr):
-                raise ProgrammingError(
-                    f"{filter_class.__name__} remote path step {i}: "
-                    f"{target_model.__name__} missing attribute '{fk_attr}'"
-                )
-            if not hasattr(source_model, pk_attr):
-                raise ProgrammingError(
-                    f"{filter_class.__name__} remote path step {i}: "
-                    f"{source_model.__name__} missing attribute '{pk_attr}'"
-                )
+        return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
 
     @classmethod
     def build_lookups(
@@ -361,22 +311,6 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         populate_by_name=True,
     )
     sqla_model: ClassVar[type | None] = None
-
-    @classmethod
-    def setup_remote_filters(
-        cls,
-        remote_filters: set[str],
-        join_path: list[RemotePathStep],
-    ) -> None:
-        """Configure remote filters and join path for subquery optimization.
-
-        Args:
-            remote_filters: Set of filter field names that should use
-                subquery optimization
-            join_path: List of join steps to reach the remote tables
-        """
-        cls._remote_filters = remote_filters
-        cls._remote_path = join_path
 
     @model_validator(mode="before")
     @classmethod
