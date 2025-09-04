@@ -32,16 +32,39 @@ class SimpleIamcUnitFilter(
         return super().join_datapoints(exc, session)
 
 
-class IamcUnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
+class IamcUnitFilter(
+    base.UnitFilter,
+    BaseIamcFilter,
+    metaclass=filters.FilterMeta,
+):
     variable: base.VariableFilter | None = filters.Field(None)
     region: base.RegionFilter | None = filters.Field(None)
     run: base.RunFilter = filters.Field(
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
+    _remote_filters = {"run", "region", "variable"}
+    _remote_path = [
+        {
+            "target_model": Measurand,
+            "fk_attr": "unit__id",
+            "source_model": Unit,
+            "pk_attr": "id",
+        },
+        {
+            "target_model": TimeSeries,
+            "fk_attr": "measurand__id",
+            "source_model": Measurand,
+            "pk_attr": "id",
+        },
+    ]
+
     def join(
         self, exc: db.sql.Select[tuple[Unit]], session: db.Session | None = None
     ) -> db.sql.Select[tuple[Unit]]:
+        if self._should_use_subquery_optimization():
+            return exc
+
         return super().join_datapoints(exc, session)
 
 

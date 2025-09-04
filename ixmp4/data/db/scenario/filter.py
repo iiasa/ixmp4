@@ -35,7 +35,9 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
 
 
 class IamcScenarioFilter(
-    base.ScenarioFilter, BaseIamcFilter, metaclass=filters.FilterMeta
+    base.ScenarioFilter,
+    BaseIamcFilter,
+    metaclass=filters.FilterMeta,
 ):
     region: base.RegionFilter | None = filters.Field(None)
     variable: base.VariableFilter | None = filters.Field(None)
@@ -44,9 +46,28 @@ class IamcScenarioFilter(
         default=RunFilter(id=None, version=None, is_default=True)
     )
 
+    _remote_filters = {"run", "region", "variable", "unit"}
+    _remote_path = [
+        {
+            "target_model": Run,
+            "fk_attr": "scenario__id",
+            "source_model": Scenario,
+            "pk_attr": "id",
+        },
+        {
+            "target_model": TimeSeries,
+            "fk_attr": "run__id",
+            "source_model": Run,
+            "pk_attr": "id",
+        },
+    ]
+
     def join(
         self, exc: db.sql.Select[tuple[Scenario]], session: db.Session | None = None
     ) -> db.sql.Select[tuple[Scenario]]:
+        if self._should_use_subquery_optimization():
+            return exc
+
         return super().join_datapoints(exc, session)
 
 

@@ -34,7 +34,11 @@ class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
     model: base.ModelFilter | None = filters.Field(default=None, exclude=True)
 
 
-class IamcModelFilter(base.ModelFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
+class IamcModelFilter(
+    base.ModelFilter,
+    BaseIamcFilter,
+    metaclass=filters.FilterMeta,
+):
     region: base.RegionFilter | None = filters.Field(None)
     variable: base.VariableFilter | None = filters.Field(None)
     unit: base.UnitFilter | None = filters.Field(None)
@@ -42,9 +46,28 @@ class IamcModelFilter(base.ModelFilter, BaseIamcFilter, metaclass=filters.Filter
         default=RunFilter(id=None, version=None, is_default=True)
     )
 
+    _remote_filters = {"run", "region", "variable", "unit"}
+    _remote_path = [
+        {
+            "target_model": Run,
+            "fk_attr": "model__id",
+            "source_model": Model,
+            "pk_attr": "id",
+        },
+        {
+            "target_model": TimeSeries,
+            "fk_attr": "run__id",
+            "source_model": Run,
+            "pk_attr": "id",
+        },
+    ]
+
     def join(
         self, exc: db.sql.Select[tuple[Model]], session: db.Session | None = None
     ) -> db.sql.Select[tuple[Model]]:
+        if self._should_use_subquery_optimization():
+            return exc
+
         return super().join_datapoints(exc, session)
 
 
