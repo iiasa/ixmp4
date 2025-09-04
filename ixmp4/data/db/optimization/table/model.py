@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class TableIndexsetAssociation(BaseIndexSetAssociation):
-    __tablename__ = "optimization_tableindexsetassociation"
+    __tablename__ = "opt_tab_idx_association"
 
     table__id: types.TableId
     table: types.Mapped["Table"] = db.relationship(
@@ -26,7 +26,7 @@ class TableIndexsetAssociation(BaseIndexSetAssociation):
 
 
 class Table(base.RunLinkedBaseModel):
-    __tablename__ = "optimization_table"
+    __tablename__ = "opt_tab"
 
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Table.NotFound
@@ -34,7 +34,6 @@ class Table(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Table.DeletionPrevented
 
-    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -81,7 +80,7 @@ class Table(base.RunLinkedBaseModel):
 
 
 class TableVersion(versions.RunLinkedVersionModel):
-    __tablename__ = "optimization_table_version"
+    __tablename__ = "opt_tab_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
     run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
@@ -93,7 +92,7 @@ class TableVersion(versions.RunLinkedVersionModel):
 
 
 class TableIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
-    __tablename__ = "optimization_tableindexsetassociation_version"
+    __tablename__ = "opt_tab_idx_association_version"
 
     table__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
 

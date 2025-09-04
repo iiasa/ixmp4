@@ -10,7 +10,7 @@ from .. import base
 
 
 class Scalar(base.BaseModel):
-    __tablename__ = "optimization_scalar"
+    __tablename__ = "opt_sca"
 
     NotFound: ClassVar = abstract.Scalar.NotFound
     NotUnique: ClassVar = abstract.Scalar.NotUnique
@@ -31,7 +31,7 @@ class Scalar(base.BaseModel):
 
 
 class ScalarVersion(versions.DefaultVersionModel):
-    __tablename__ = "optimization_scalar_version"
+    __tablename__ = "opt_sca_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
     run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)

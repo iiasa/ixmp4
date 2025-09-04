@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class ParameterIndexsetAssociation(BaseIndexSetAssociation):
-    __tablename__ = "optimization_parameterindexsetassociation"
+    __tablename__ = "opt_par_idx_association"
 
     parameter__id: types.ParameterId
     parameter: types.Mapped["Parameter"] = db.relationship(
@@ -26,7 +26,7 @@ class ParameterIndexsetAssociation(BaseIndexSetAssociation):
 
 
 class Parameter(base.RunLinkedBaseModel):
-    __tablename__ = "optimization_parameter"
+    __tablename__ = "opt_par"
 
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Parameter.NotFound
@@ -34,7 +34,6 @@ class Parameter(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Parameter.DeletionPrevented
 
-    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -83,7 +82,7 @@ class Parameter(base.RunLinkedBaseModel):
 
 
 class ParameterVersion(versions.RunLinkedVersionModel):
-    __tablename__ = "optimization_parameter_version"
+    __tablename__ = "opt_par_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
     run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
@@ -95,7 +94,7 @@ class ParameterVersion(versions.RunLinkedVersionModel):
 
 
 class ParameterIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
-    __tablename__ = "optimization_parameterindexsetassociation_version"
+    __tablename__ = "opt_par_idx_association_version"
 
     parameter__id: db.MappedColumn[int] = db.Column(
         db.Integer, nullable=False, index=True

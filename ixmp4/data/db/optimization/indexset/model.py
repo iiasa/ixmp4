@@ -12,7 +12,7 @@ from .. import base
 
 
 class IndexSet(base.RunLinkedBaseModel):
-    __tablename__ = "optimization_indexset"
+    __tablename__ = "opt_idx"
 
     NotFound: ClassVar = abstract.IndexSet.NotFound
     NotUnique: ClassVar = abstract.IndexSet.NotUnique
@@ -40,15 +40,13 @@ class IndexSet(base.RunLinkedBaseModel):
     def data(self, value: list[float] | list[int] | list[str]) -> None:
         return None
 
-    # run__id: types.RunId
-
     updateable_columns = ["_data_type"]
 
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
 
 class IndexSetData(base.RootBaseModel):
-    __tablename__ = "optimization_indexsetdata"
+    __tablename__ = "opt_idx_data"
 
     indexset: types.Mapped["IndexSet"] = db.relationship(back_populates="_data")
     indexset__id: types.IndexSet__Id
@@ -58,7 +56,7 @@ class IndexSetData(base.RootBaseModel):
 
 
 class IndexSetVersion(versions.RunLinkedVersionModel):
-    __tablename__ = "optimization_indexset_version"
+    __tablename__ = "opt_idx_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
     run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
@@ -70,7 +68,7 @@ class IndexSetVersion(versions.RunLinkedVersionModel):
 
 
 class IndexSetDataVersion(versions.DefaultVersionModel):
-    __tablename__ = "optimization_indexset_data_version"
+    __tablename__ = "opt_idx_data_version"
 
     indexset__id: db.MappedColumn[int] = db.Column(
         db.Integer, nullable=False, index=True

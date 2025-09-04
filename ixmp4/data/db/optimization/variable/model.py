@@ -19,7 +19,7 @@ if TYPE_CHECKING:
 
 
 class VariableIndexsetAssociation(BaseIndexSetAssociation):
-    __tablename__ = "optimization_variableindexsetassociation"
+    __tablename__ = "opt_var_idx_association"
 
     variable__id: types.OptimizationVariableType
     variable: types.Mapped["OptimizationVariable"] = db.relationship(
@@ -27,10 +27,8 @@ class VariableIndexsetAssociation(BaseIndexSetAssociation):
     )
 
 
-# TODO Once the rest works, rename this table and class and remove the NOTE
-# NOTE table name will be optimization_optimizationvariable
 class OptimizationVariable(base.RunLinkedBaseModel):
-    __tablename__ = "optimization_optimizationvariable"
+    __tablename__ = "opt_var"
 
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Variable.NotFound
@@ -38,7 +36,6 @@ class OptimizationVariable(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Variable.DeletionPrevented
 
-    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -91,7 +88,7 @@ class OptimizationVariable(base.RunLinkedBaseModel):
 
 
 class VariableVersion(versions.RunLinkedVersionModel):
-    __tablename__ = "optimization_variable_version"
+    __tablename__ = "opt_var_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
     run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
@@ -103,7 +100,7 @@ class VariableVersion(versions.RunLinkedVersionModel):
 
 
 class VariableIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
-    __tablename__ = "optimization_variableindexsetassociation_version"
+    __tablename__ = "opt_var_idx_association_version"
 
     variable__id: db.MappedColumn[int] = db.Column(
         db.Integer, nullable=False, index=True

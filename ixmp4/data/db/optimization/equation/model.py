@@ -17,7 +17,7 @@ if TYPE_CHECKING:
 
 
 class EquationIndexsetAssociation(BaseIndexSetAssociation):
-    __tablename__ = "optimization_equationindexsetassociation"
+    __tablename__ = "opt_equ_idx_association"
 
     equation__id: types.EquationId
     equation: types.Mapped["Equation"] = db.relationship(
@@ -26,7 +26,7 @@ class EquationIndexsetAssociation(BaseIndexSetAssociation):
 
 
 class Equation(base.RunLinkedBaseModel):
-    __tablename__ = "optimization_equation"
+    __tablename__ = "opt_equ"
 
     # NOTE: These might be mixin-able, but would require some abstraction
     NotFound: ClassVar = abstract.Equation.NotFound
@@ -34,7 +34,6 @@ class Equation(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Equation.DeletionPrevented
 
-    # run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -86,7 +85,7 @@ class Equation(base.RunLinkedBaseModel):
 
 
 class EquationVersion(versions.RunLinkedVersionModel):
-    __tablename__ = "optimization_equation_version"
+    __tablename__ = "opt_equ_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
     run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)
@@ -98,7 +97,7 @@ class EquationVersion(versions.RunLinkedVersionModel):
 
 
 class EquationIndexsetAssociationVersion(BaseIndexSetAssociationVersion):
-    __tablename__ = "optimization_equationindexsetassociation_version"
+    __tablename__ = "opt_equ_idx_association_version"
 
     equation__id: db.MappedColumn[int] = db.Column(
         db.Integer, nullable=False, index=True
