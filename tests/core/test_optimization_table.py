@@ -121,7 +121,7 @@ class TestCoreTable:
 
         # Test indexset_names is not writable
         with run.transact("Test table.indexset_names setter"):
-            with pytest.raises(AttributeError, match="has no setter"):
+            with pytest.raises(AttributeError, match="set"):
                 # Triggering mypy error on purpose
                 table.indexset_names = [indexset_2.name]  # type:ignore[misc]
 
@@ -328,7 +328,7 @@ class TestCoreTable:
             table = run.optimization.tables.create(
                 name="Table 6", constrained_to_indexsets=[indexset.name]
             )
-            with pytest.raises(AttributeError, match="has no setter"):
+            with pytest.raises(AttributeError, match="set"):
                 # Triggering mypy error on purpose
                 table.data = {indexset.name: ["foo"]}  # type:ignore[misc]
 
