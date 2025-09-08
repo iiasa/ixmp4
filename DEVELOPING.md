@@ -253,7 +253,7 @@ docker-compose -f tests/docker-compose.yml up
 
 ### Benchmarks
 
-The tests contain two types of benchmarks:
+The tests contain three types of benchmarks:
 
 - `test_benchmarks.py`
   Simple throughput benchmarks for a
@@ -264,6 +264,11 @@ The tests contain two types of benchmarks:
 
 - `test_benchmark_filters.py`
   Benchmarks the retrieval of iamc data with different filters.
+  Primarily used for testing query speed.
+
+- `test_benchmark_rest_filters.py`
+  Benchmarks the retrieval of data with different filters
+  over the REST API.
   Primarily used for testing query speed.
 
 ### Profiling

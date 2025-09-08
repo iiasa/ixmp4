@@ -24,6 +24,7 @@ backend_fixtures = {
     "platform_med": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "platform_big": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "db_platform_big": ["sqlite", "postgres"],
+    "rest_platform_big": ["rest-sqlite", "rest-postgres"],
     "platform": ["sqlite", "postgres", "rest-sqlite", "rest-postgres"],
     "db_platform": ["sqlite", "postgres"],
     "rest_platform": ["rest-sqlite", "rest-postgres"],
@@ -180,6 +181,10 @@ def td_platform_fixture(
 # class scope fixture with big test data
 db_platform_big = pytest.fixture(
     td_platform_fixture(big), scope="class", name="db_platform_big"
+)
+
+rest_platform_big = pytest.fixture(
+    td_platform_fixture(big), scope="class", name="rest_platform_big"
 )
 
 platform_med = pytest.fixture(
