@@ -350,7 +350,6 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
         if not remote_filters:
             return False
 
-        # Check if any remote filters are active
         for name in remote_filters:
             field_info = self.__class__.model_fields.get(name)
             if field_info:
@@ -378,6 +377,21 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
             elif value is not None:
                 exc = self._apply_field_filter(exc, name, value, model, session)
         return exc.distinct()
+
+    def _apply_without_distinct(
+        self,
+        exc: db.sql.Select[tuple[FilterType]],
+        model: object,
+        session: db.Session,
+    ) -> db.sql.Select[tuple[FilterType]]:
+        """Apply filters without adding DISTINCT (for use in subqueries)."""
+        for name, field_info in self.__class__.model_fields.items():
+            value = getattr(self, name, field_info.get_default())
+            if isinstance(value, BaseFilter):
+                exc = self._apply_nested_filter(exc, value, session)
+            elif value is not None:
+                exc = self._apply_field_filter(exc, name, value, model, session)
+        return exc
 
     def _apply_with_subquery_optimization(
         self,
@@ -449,9 +463,9 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
 
     def _build_subquery_joins(
         self,
-        subquery: db.sql.Select[tuple[Any]],
+        subquery: db.sql.Select[tuple[FilterType]],
         remote_path: list[RemotePathStep],
-    ) -> db.sql.Select[tuple[Any]]:
+    ) -> db.sql.Select[tuple[FilterType]]:
         """Build the join chain for the subquery."""
         for step in remote_path:
             target_model = step["target_model"]
@@ -467,14 +481,18 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
 
     def _apply_filters_to_subquery(
         self,
-        subquery: db.sql.Select[tuple[Any]],
+        subquery: db.sql.Select[tuple[FilterType]],
         active_remote_filters: dict[str, "BaseFilter"],
         session: db.Session,
-    ) -> db.sql.Select[tuple[Any]]:
+    ) -> db.sql.Select[tuple[FilterType]]:
         """Apply remote filters to the subquery."""
         for filter_value in active_remote_filters.values():
             subquery = filter_value.join(subquery, session=session)
-            subquery = filter_value.apply(subquery, filter_value.sqla_model, session)
+            # We don't want DISTINCT in the subquery
+            # it is potentially very costly and not needed
+            subquery = filter_value._apply_without_distinct(
+                subquery, filter_value.sqla_model, session
+            )
         return subquery
 
     def _apply_local_filters(
