@@ -1,5 +1,6 @@
 from typing import ClassVar
 
+from ixmp4.data.db.optimization.parameter.model import ParameterIndexsetAssociation
 from ixmp4.db import Session, filters, sql
 
 from .. import Parameter, Run
@@ -17,3 +18,11 @@ class OptimizationParameterFilter(filters.BaseFilter, metaclass=filters.FilterMe
     ) -> sql.Select[tuple[Parameter]]:
         exc = exc.join(Run, onclause=Parameter.run__id == Run.id)
         return exc
+
+
+class OptimizationParameterIndexSetAssociationFilter(
+    filters.BaseFilter, metaclass=filters.FilterMeta
+):
+    id: filters.Id | None = filters.Field(None)
+
+    sqla_model: ClassVar[type] = ParameterIndexsetAssociation

@@ -15,9 +15,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
-                table.run__id,
                 table.data,
                 table.name,
+                table.run__id,
                 table.id,
                 table.created_at,
                 table.created_by,
@@ -25,9 +25,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
             for table in tables
         ],
         columns=[
-            "run__id",
             "data",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -410,6 +410,7 @@ class TestDataOptimizationTable:
         assert [table, table_2] == platform.backend.optimization.tables.list()
 
         assert [table] == platform.backend.optimization.tables.list(name="Table")
+
         # Test listing of Tables when specifying a Run
         run_2 = platform.backend.runs.create("Model", "Scenario")
         indexset_3, indexset_4 = create_indexsets_for_run(
@@ -421,9 +422,22 @@ class TestDataOptimizationTable:
         table_4 = platform.backend.optimization.tables.create(
             run_id=run_2.id, name="Table 2", constrained_to_indexsets=[indexset_4.name]
         )
-        assert [table_3, table_4] == platform.backend.optimization.tables.list(
-            run_id=run_2.id
+        # Test that remove_data() is persisted in the DB as well
+        platform.backend.optimization.indexsets.add_data(indexset_3.id, [1, 2])
+        platform.backend.optimization.tables.add_data(
+            table_3.id, data={indexset_3.name: [1, 2]}
         )
+        platform.backend.optimization.tables.remove_data(
+            table_3.id, data={indexset_3.name: [1]}
+        )
+        table_3 = platform.backend.optimization.tables.get(run_2.id, "Table")
+
+        for expected, result in zip(
+            [table_3, table_4],
+            platform.backend.optimization.tables.list(run_id=run_2.id),
+        ):
+            assert expected.name == result.name
+            assert expected.data == result.data
 
     def test_tabulate_table(self, platform: ixmp4.Platform) -> None:
         run = platform.backend.runs.create("Model", "Scenario")
@@ -457,6 +471,9 @@ class TestDataOptimizationTable:
 
         test_data_2 = {indexset_2.name: [2, 3], indexset_1.name: ["foo", "bar"]}
         platform.backend.optimization.tables.add_data(id=table_2.id, data=test_data_2)
+        platform.backend.optimization.tables.remove_data(
+            id=table_2.id, data={indexset_1.name: ["foo"], indexset_2.name: [2]}
+        )
         table_2 = platform.backend.optimization.tables.get(
             run_id=run.id, name="Table 2"
         )

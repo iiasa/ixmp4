@@ -119,11 +119,16 @@ class RunRepository(
             self.prefix + "/".join([str(id), "unset-as-default-version/"]),
         )
 
-    def revert(self, id: int, transaction__id: int) -> None:
+    def revert(
+        self, id: int, transaction__id: int, revert_platform: bool = False
+    ) -> None:
         self._request(
             "POST",
             self.prefix + "/".join([str(id), "revert/"]),
-            json={"transaction__id": transaction__id},
+            json={
+                "transaction__id": transaction__id,
+                "revert_platform": revert_platform,
+            },
         )
 
     def lock(self, id: int) -> Run:

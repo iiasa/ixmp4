@@ -224,6 +224,40 @@ class RunRepository(
         run.is_default = False
         self.session.commit()
 
+    def revert_units(self, transaction__id: int) -> None:
+        units_to_revert = self.backend.units.versions.tabulate(
+            transaction__id=transaction__id, valid="after_transaction"
+        )
+        if units_to_revert.empty:
+            return
+
+        # NOTE Reverting only affected units requires careful attention to detail to
+        # ensure other items' foreignkey constraints are not disturbed. Much easier and
+        # safer to revert all; plus we're not running this always and there shouldn't be
+        # too many affected units.
+        current_units = self.backend.units.tabulate()
+
+        if not current_units.empty:
+            self.backend.units.bulk_delete(current_units)
+
+        version_units = self.backend.units.versions.tabulate(
+            transaction__id=transaction__id
+        )
+        if version_units.empty:
+            return
+
+        with self.backend.event_handler.pause():
+            self.backend.units.bulk_upsert(
+                version_units.drop(
+                    columns=[
+                        "id",
+                        "transaction_id",
+                        "end_transaction_id",
+                        "operation_type",
+                    ]
+                )
+            )
+
     def _get_or_create_ts(self, run__id: int, df: pd.DataFrame) -> pd.DataFrame:
         df["run__id"] = run__id
         id_cols = ["region", "variable", "unit", "run__id"]
@@ -275,8 +309,57 @@ class RunRepository(
         )
         self.backend.iamc.datapoints.bulk_upsert(version_dps)  # type: ignore[arg-type]
 
-    def revert_optimization_data(self, run: Run, transaction__id: int) -> None:
-        pass  # TODO: Implement this. @glatterf42
+    def _restore_deleted_units(self, transaction__id: int) -> None:
+        deleted_units = self.backend.units.versions.tabulate(
+            transaction__id, valid="after_transaction"
+        )
+        deleted_units = deleted_units[
+            deleted_units["operation_type"] == versions.Operation.DELETE
+        ]
+        if not deleted_units.empty:
+            with self.backend.event_handler.pause():
+                self.backend.units.bulk_insert(
+                    deleted_units.drop(
+                        columns=[
+                            "id",
+                            "transaction_id",
+                            "end_transaction_id",
+                            "operation_type",
+                        ]
+                    )
+                )
+
+                # NOTE Need this since there may be no commit() between restoration and
+                # using restored units for foreign keys
+                self.session.commit()
+
+    def revert_optimization_data(
+        self, run: Run, transaction__id: int, revert_platform: bool = False
+    ) -> None:
+        # TODO Should we figure out a way to say which of the following should actually
+        # run? Or just make sure they're noops if nothing's required to do?
+        # NOTE Only Scalars store Unit IDs as foreign keys
+        self.backend.optimization.scalars.revert(
+            transaction__id=transaction__id,
+            run__id=run.id,
+            revert_platform=revert_platform,
+        )
+        # NOTE IndexSets need to be reverted before linked items
+        self.backend.optimization.indexsets.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.tables.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.parameters.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.equations.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
+        self.backend.optimization.variables.revert(
+            transaction__id=transaction__id, run__id=run.id
+        )
 
     def revert_meta(self, run: Run, transaction__id: int) -> None:
         current_meta = self.backend.meta.tabulate(
@@ -307,16 +390,24 @@ class RunRepository(
             )
 
     @guard("edit")
-    def revert(self, id: int, transaction__id: int) -> None:
+    def revert(
+        self, id: int, transaction__id: int, revert_platform: bool = False
+    ) -> None:
         self.check_versioning_compatiblity()
+
         run = self.get_by_id(id, _access_type="edit")
 
         if self.backend.transactions.latest().id == transaction__id:
             # we are already at the right transaction
             return
 
+        if revert_platform:
+            self._restore_deleted_units(transaction__id)
+
         self.revert_iamc_data(run, transaction__id)
-        self.revert_optimization_data(run, transaction__id)
+        self.revert_optimization_data(
+            run, transaction__id, revert_platform=revert_platform
+        )
         self.revert_meta(run, transaction__id)
 
     @guard("edit")
@@ -349,6 +440,9 @@ class RunRepository(
     # Suggestion by meksor: write a (single) query to load all objects with run_id to a
     # (single) dataframe, change the run_id, then write all back (does that work at
     # once/with one query?)
+    # Alternatively, at least use bulk statements for the optimization items and ensure
+    # that commit is only called once at the end (so that either all changes make it or
+    # none and to avoid multiple transactions with the DB)
     @guard("edit")
     def clone(
         self,

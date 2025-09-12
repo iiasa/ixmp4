@@ -124,7 +124,10 @@ class Run(BaseModelFacade):
 
     @contextmanager
     def transact(
-        self, message: str, timeout: float | None = None
+        self,
+        message: str,
+        timeout: float | None = None,
+        revert_platform_on_error: bool = False,
     ) -> Generator[None, None, None]:
         """
         Context manager to lock the run before yielding control
@@ -147,6 +150,8 @@ class Run(BaseModelFacade):
             conclusion of the context manager.
         timeout : int, optional
             Timeout in seconds.
+        revert_platform_on_error : bool, optional
+            Whether to revert units when encountering an error; default `False`.
 
         Raises
         ------
@@ -179,7 +184,11 @@ class Run(BaseModelFacade):
                 checkpoint_transaction, self._model.lock_transaction
             )
             try:
-                self.backend.runs.revert(self._model.id, target_transaction)
+                self.backend.runs.revert(
+                    self._model.id,
+                    target_transaction,
+                    revert_platform=revert_platform_on_error,
+                )
             except OperationNotSupported as ons_exc:
                 warnings.warn(
                     "An exception occurred but the `Run` "

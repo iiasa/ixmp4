@@ -1,11 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -22,6 +17,11 @@ from .base import (
     Retriever,
     Tabulator,
 )
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
+    from . import InitKwargs
 
 
 class Table(OptimizationBaseModelFacade):

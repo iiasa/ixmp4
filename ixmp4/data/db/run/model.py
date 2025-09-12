@@ -1,17 +1,19 @@
-from typing import ClassVar
+from typing import TYPE_CHECKING, ClassVar
 
 from ixmp4 import db
 from ixmp4.data import abstract, types
 from ixmp4.data.db.model.model import Model
-from ixmp4.data.db.optimization.equation import Equation
-from ixmp4.data.db.optimization.indexset import IndexSet
-from ixmp4.data.db.optimization.parameter import Parameter
-from ixmp4.data.db.optimization.scalar import Scalar
-from ixmp4.data.db.optimization.table import Table
-from ixmp4.data.db.optimization.variable import Variable as OptimizationVariable
 from ixmp4.data.db.scenario.model import Scenario
 
 from .. import base, mixins, versions
+
+if TYPE_CHECKING:
+    from ixmp4.data.db.optimization.equation import Equation
+    from ixmp4.data.db.optimization.indexset import IndexSet
+    from ixmp4.data.db.optimization.parameter import Parameter
+    from ixmp4.data.db.optimization.scalar import Scalar
+    from ixmp4.data.db.optimization.table import Table
+    from ixmp4.data.db.optimization.variable import Variable as OptimizationVariable
 
 
 class Run(base.BaseModel, mixins.HasUpdateInfo):

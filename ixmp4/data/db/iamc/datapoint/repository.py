@@ -132,13 +132,13 @@ class DatapointVersionRepository(versions.VersionRepository[UniversalDataPointVe
         )
 
         if transaction__id is not None:
-            for vclass in [
+            for vclass in {
                 self.model_class,
                 RegionVersion,
                 MeasurandVersion,
                 UnitVersion,
                 VariableVersion,
-            ]:
+            }:
                 exc = self.where_valid_at_transaction(exc, transaction__id, vclass)
 
         if run__id is not None:
