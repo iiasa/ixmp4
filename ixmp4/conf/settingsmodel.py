@@ -46,7 +46,6 @@ class Settings(BaseSettings):
         super().__init__(*args, **kwargs)
 
         self.setup_directories()
-        self.configure_logging(self.mode)
 
         self._credentials: Credentials | None = None
         self._toml: TomlConfig | None = None
