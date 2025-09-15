@@ -24,9 +24,12 @@ root = Path(__root__file__).parent.parent
 
 
 class Settings(BaseSettings):
-    mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
-        "production"
-    )
+    mode: (
+        Literal["library"]
+        | Literal["production"]
+        | Literal["development"]
+        | Literal["debug"]
+    ) = "library"
     storage_directory: Path = Field(Path("~/.local/share/ixmp4/"))
     secret_hs256: str = "default_secret_hs256"
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
