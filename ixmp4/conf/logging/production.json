@@ -13,8 +13,7 @@
   },
   "loggers": {
     "ixmp4": {
-      "level": "INFO",
-      "handlers": ["console"]
+      "level": "INFO"
     }
   },
   "handlers": {

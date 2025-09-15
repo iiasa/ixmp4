@@ -1,18 +1,18 @@
 {
   "version": 1,
-  "disable_existing_loggers": false,
-  "formatters":{
+  "disable_existing_loggers": true,
+  "formatters": {
     "generic": {
       "format": "[%(levelname)s] %(asctime)s - %(name)s: %(message)s",
       "datefmt": "%H:%M:%S"
-    } 
+    }
   },
   "root": {
     "level": "DEBUG",
     "handlers": ["console"]
   },
-  "handlers":{
-    "console":{
+  "handlers": {
+    "console": {
       "class": "logging.StreamHandler",
       "level": "NOTSET",
       "formatter": "generic"
@@ -20,6 +20,9 @@
   },
   "loggers": {
     "sqlalchemy": {
+      "level": "NOTSET"
+    },
+    "ixmp4": {
       "level": "NOTSET"
     }
   }
