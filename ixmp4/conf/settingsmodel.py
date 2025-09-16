@@ -47,6 +47,13 @@ class Settings(BaseSettings):
 
         self.setup_directories()
 
+        ixmp4_logger = logging.getLogger("ixmp4")
+        if ixmp4_logger.level == logging.NOTSET:
+            ixmp4_logger.setLevel(logging.INFO)
+
+        if len(ixmp4_logger.handlers) == 0:
+            ixmp4_logger.addHandler(logging.StreamHandler())
+
         self._credentials: Credentials | None = None
         self._toml: TomlConfig | None = None
         self._default_auth: ManagerAuth | AnonymousAuth | None = None
