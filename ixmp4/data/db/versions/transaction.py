@@ -26,7 +26,7 @@ class TransactionRepository(
         return db.select(self.model_class).order_by(self.model_class.id.desc())
 
     def latest(self) -> Transaction:
-        tx = self.session.execute(self.select()).scalars().first()
+        tx = self.session.execute(self.select().limit(1)).scalars().first()
         if tx is None:
             raise Transaction.NotFound("No transactions in database.")
         return tx
