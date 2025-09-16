@@ -4,15 +4,18 @@ import fastapi as fa
 import httpx
 import pandas as pd
 import pydantic as pyd
-from sqlalchemy import orm
 from toolkit import db
-from toolkit.auth import AuthorizationContext
 from toolkit.exceptions import NotFound, NotUnique
 from typing_extensions import Unpack
 
 from ixmp4.models.region import Region
 
-from .base import AbstractService, procedure
+from .base import (
+    AbstractService,
+    DirectTransport,
+    TransportT,
+    procedure,
+)
 from .dto import DataFrame as DataFrameDTO
 from .dto import EnumerationOutput, Pagination
 
@@ -88,11 +91,13 @@ class RegionService(AbstractService):
     items: ItemRepository
     pandas: PandasRepository
 
-    def __init__(self, session: orm.Session, auth_ctx: AuthorizationContext):
-        self.executor = db.r.SessionExecutor(session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
-        super().__init__(session, auth_ctx)
+    def __init__(self, transport: TransportT):
+        super().__init__(transport)
+
+        if isinstance(transport, DirectTransport):
+            self.executor = db.r.SessionExecutor(transport.session)
+            self.items = ItemRepository(self.executor)
+            self.pandas = PandasRepository(self.executor)
 
     @procedure()
     def create(self, name: str, hierarchy: str) -> RegionDTO:
@@ -111,9 +116,10 @@ class RegionService(AbstractService):
     @create.client()
     @staticmethod
     def create_client(
+        svc: "RegionService",
         client: httpx.Client,
-    ) -> Callable[["RegionService", str, str], RegionDTO]:
-        def create(self: "RegionService", name: str, hierarchy: str) -> RegionDTO:
+    ) -> Callable[..., RegionDTO]:
+        def create(name: str, hierarchy: str) -> RegionDTO:
             res = client.post("/", json={"name": name, "hierarchy": hierarchy})
             return RegionDTO(**res.json())
 
@@ -133,6 +139,18 @@ class RegionService(AbstractService):
         ) -> None:
             return svc.delete(id)
 
+    @delete.client()
+    @staticmethod
+    def delete_client(
+        svc: "RegionService",
+        client: httpx.Client,
+    ) -> Callable[..., None]:
+        def delete(id: int) -> None:
+            res = client.delete("/" + str(id) + "/")
+            return None
+
+        return delete
+
     @procedure()
     def get(self, name: str) -> RegionDTO:
         return RegionDTO.model_validate(self.items.get({"name": name}))
@@ -145,6 +163,18 @@ class RegionService(AbstractService):
             svc: RegionService = fa.Depends(svc_dep), region: GetRegion = fa.Body()
         ) -> RegionDTO:
             return svc.get(region["name"])
+
+    @get.client()
+    @staticmethod
+    def get_client(
+        svc: "RegionService",
+        client: httpx.Client,
+    ) -> Callable[..., RegionDTO]:
+        def get(name: str) -> RegionDTO:
+            res = client.patch("/get", json={"name": name})
+            return RegionDTO(**res.json())
+
+        return get
 
     def get_or_create(self, name: str, hierarchy: str | None = None) -> RegionDTO:
         try:
@@ -163,8 +193,8 @@ class RegionService(AbstractService):
             return region
 
     @procedure()
-    def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
-        return self.items.list(values=kwargs)
+    def list(self, **kwargs: Unpack[RegionFilter]) -> list[RegionDTO]:
+        return [RegionDTO.model_validate(i) for i in self.items.list(values=kwargs)]
 
     @list.endpoint()
     @staticmethod
@@ -186,6 +216,18 @@ class RegionService(AbstractService):
                 total=svc.items.count(values=filter),
                 pagination=pagination,
             )
+
+    @list.client()
+    @staticmethod
+    def list_client(
+        svc: "RegionService",
+        client: httpx.Client,
+    ) -> Callable[..., List[RegionDTO]]:
+        def list(**kwargs: Unpack[RegionFilter]) -> List[RegionDTO]:
+            res = client.patch("/list", json=kwargs)
+            return EnumerationOutput[List[RegionDTO]](**res.json()).results
+
+        return list
 
     @procedure()
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
@@ -211,3 +253,15 @@ class RegionService(AbstractService):
                 total=svc.pandas.count(values=filter),
                 pagination=pagination,
             )
+
+    @tabulate.client()
+    @staticmethod
+    def tabulate_client(
+        svc: "RegionService",
+        client: httpx.Client,
+    ) -> Callable[..., pd.DataFrame]:
+        def tabulate(**kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
+            res = client.patch("/tabulate", json=kwargs)
+            return DataFrameDTO(**res.json()).to_pandas()
+
+        return tabulate

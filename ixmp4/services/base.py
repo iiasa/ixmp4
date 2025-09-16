@@ -1,21 +1,44 @@
 import abc
 import functools
+import inspect
 from typing import Any, Callable, Concatenate, Generic, ParamSpec, TypeVar
 
 import fastapi as fa
 import httpx
+from pydantic import create_model
 from sqlalchemy import orm
 from toolkit.auth import AuthorizationContext
 from toolkit.exceptions import ProgrammingError
 
 
-class AbstractService(abc.ABC):
+class AbstractTransport(abc.ABC):
+    pass
+
+
+class DirectTransport(AbstractTransport):
     session: orm.Session
     auth_ctx: AuthorizationContext
 
     def __init__(self, session: orm.Session, auth_ctx: AuthorizationContext):
         self.session = session
         self.auth_ctx = auth_ctx
+
+
+class HttpxTransport(AbstractTransport):
+    client: httpx.Client
+
+    def __init__(self, client: httpx.Client):
+        self.client = client
+
+
+TransportT = TypeVar("TransportT", bound=AbstractTransport)
+
+
+class AbstractService(abc.ABC):
+    transport: AbstractTransport
+
+    def __init__(self, transport: AbstractTransport):
+        self.transport = transport
 
     @classmethod
     def build_router(
@@ -27,7 +50,8 @@ class AbstractService(abc.ABC):
             session: orm.Session = fa.Depends(session_dep),
             auth_ctx: AuthorizationContext = fa.Depends(auth_dep),
         ) -> AbstractService:
-            return cls(session, auth_ctx)
+            transport = DirectTransport(session, auth_ctx)
+            return cls(transport)
 
         router = fa.APIRouter()
         for proc in cls.collect_procedures():
@@ -53,20 +77,41 @@ HttpReturnT = TypeVar("HttpReturnT")
 HttpParams = ParamSpec("HttpParams")
 
 EndpointFunc = Callable[[fa.APIRouter, Callable[..., Any]], None]
-ClientFunc = Callable[[httpx.Client], ReturnT]
-
+ClientFunc = Callable[Params, ReturnT]
 ServiceT = TypeVar("ServiceT", bound=AbstractService)
+ClientFuncGetter = Callable[[ServiceT, httpx.Client], ClientFunc[Params, ReturnT]]
 
 
 class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     func: Callable[Concatenate[ServiceT, Params], ReturnT]
     service_class: type[AbstractService]
     endpoint_functions: list[EndpointFunc]
-    client_function: ClientFunc[ReturnT]
+    client_function_getters: dict[
+        type[AbstractTransport], ClientFuncGetter[ServiceT, Params, ReturnT]
+    ]
 
     def __init__(self, func: Callable[Concatenate[ServiceT, Params], ReturnT]):
         self.func = func
         self.endpoint_functions = []
+        self.client_function_getters = {}
+
+    def register_endpoint(self, router: fa.APIRouter) -> None:
+        func_name = self.func.__name__
+        cc_func_name = func_name.title().replace("_", "")
+        sig = inspect.signature(self.func)
+        fields = {}
+        for name, param in sig.parameters.items():
+            if param.annotation == inspect.Parameter.empty:
+                raise ProgrammingError(
+                    f"Paramater `{name}` of `{func_name}` requires a type annotation."
+                )
+
+            if param.default == inspect.Parameter.empty:
+                fields[name] = param.annotation
+            else:
+                fields[name] = (param.annotation, param.default)
+
+        PayloadModel = create_model(cc_func_name, **fields)
 
     def endpoint(
         self,
@@ -80,12 +125,15 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         return decorator
 
     def client(
-        self,
-    ) -> Callable[[ClientFunc[ReturnT]], ClientFunc[ReturnT]]:
+        self, for_transport: type[AbstractTransport] = HttpxTransport
+    ) -> Callable[
+        [ClientFuncGetter[ServiceT, Params, ReturnT]],
+        ClientFuncGetter[ServiceT, Params, ReturnT],
+    ]:
         def decorator(
-            func: ClientFunc[ReturnT],
-        ) -> ClientFunc[ReturnT]:
-            self.client_function = func
+            func: ClientFuncGetter[ServiceT, Params, ReturnT],
+        ) -> ClientFuncGetter[ServiceT, Params, ReturnT]:
+            self.client_function_getters[for_transport] = func
             return func
 
         return decorator
