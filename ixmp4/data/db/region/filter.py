@@ -26,16 +26,33 @@ class SimpleIamcRegionFilter(
         return super().join_datapoints(exc, session)
 
 
-class IamcRegionFilter(base.RegionFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
+class IamcRegionFilter(
+    base.RegionFilter,
+    BaseIamcFilter,
+    metaclass=filters.FilterMeta,
+):
     variable: base.VariableFilter | None = filters.Field(None)
     unit: base.UnitFilter | None = filters.Field(None)
     run: base.RunFilter = filters.Field(
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
+    _remote_filters = {"run", "variable", "unit"}
+    _remote_path = [
+        {
+            "target_model": TimeSeries,
+            "fk_attr": "region__id",
+            "source_model": Region,
+            "pk_attr": "id",
+        },
+    ]
+
     def join(
         self, exc: db.sql.Select[tuple[Region]], session: Session | None = None
     ) -> db.sql.Select[tuple[Region]]:
+        if self._should_use_subquery_optimization():
+            return exc
+
         return super().join_datapoints(exc, session)
 
 

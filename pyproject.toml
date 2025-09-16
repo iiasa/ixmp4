@@ -4,6 +4,7 @@ authors = [
     "Fridolin Glatter <glatter@iiasa.ac.at>",
     "Daniel Huppmann <huppmann@iiasa.ac.at>",
     "Philip Hackstock <hackstock@iiasa.ac.at>",
+    "Pino Mussak <mussak@iiasa.ac.at>"
 ]
 name = "ixmp4"
 version = "0.0.0"

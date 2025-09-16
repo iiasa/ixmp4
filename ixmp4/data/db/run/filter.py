@@ -1,4 +1,4 @@
-from typing import Any
+from typing import Any, ClassVar
 
 from ixmp4 import db
 from ixmp4.data.db import filters as base
@@ -12,9 +12,24 @@ class IamcRunFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     variable: base.VariableFilter
     unit: base.UnitFilter
 
+    sqla_model: ClassVar[type] = Run
+
+    _remote_filters = {"region", "variable", "unit"}
+    _remote_path = [
+        {
+            "target_model": TimeSeries,
+            "fk_attr": "run__id",
+            "source_model": Run,
+            "pk_attr": "id",
+        },
+    ]
+
     def join(
         self, exc: db.sql.Select[tuple[Run]], session: db.Session | None = None
     ) -> db.sql.Select[tuple[Run]]:
+        if self._should_use_subquery_optimization():
+            return exc
+
         if not utils.is_joined(exc, TimeSeries):
             exc = exc.join(TimeSeries, onclause=TimeSeries.run__id == Run.id)
         return exc

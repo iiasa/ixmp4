@@ -14,7 +14,26 @@ class VariableFilter(base.VariableFilter, metaclass=filters.FilterMeta):
         default=base.RunFilter(id=None, version=None, is_default=True)
     )
 
+    _remote_filters = {"run", "region", "unit"}
+    _remote_path = [
+        {
+            "target_model": Measurand,
+            "fk_attr": "variable__id",
+            "source_model": Variable,
+            "pk_attr": "id",
+        },
+        {
+            "target_model": TimeSeries,
+            "fk_attr": "measurand__id",
+            "source_model": Measurand,
+            "pk_attr": "id",
+        },
+    ]
+
     def join(self, exc: SelectType, session: Session | None = None) -> SelectType:
+        if self._should_use_subquery_optimization():
+            return exc
+
         if not utils.is_joined(exc, Measurand):
             exc = exc.join(Measurand, Measurand.variable__id == Variable.id)
 

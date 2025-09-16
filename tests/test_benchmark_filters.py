@@ -10,6 +10,9 @@ from .fixtures import BigIamcDataset
 
 big = BigIamcDataset()
 
+WARMUP_ROUNDS = 5
+ROUNDS = 10
+
 
 @pytest.mark.parametrize(
     "filters",
@@ -57,5 +60,5 @@ def test_filter_datapoints_benchmark(
             # Not sure why mypy complains here, maybe about covariance?
             return platform.iamc.tabulate(**filters)  # type: ignore[arg-type]
 
-    df = benchmark.pedantic(run, warmup_rounds=5, rounds=10)
+    df = benchmark.pedantic(run, warmup_rounds=WARMUP_ROUNDS, rounds=ROUNDS)
     assert not df.empty

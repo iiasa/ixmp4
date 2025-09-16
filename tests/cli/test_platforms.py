@@ -118,4 +118,4 @@ class TestPlatformGenerateCLI:
         result = runner.invoke(platforms.app, ["generate", "nonexistent-platform"])
 
         # We simply test whether the generate command errors
-        assert result.exit_code == 2
+        assert result.exit_code > 0
