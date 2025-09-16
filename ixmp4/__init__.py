@@ -1,5 +1,3 @@
-import importlib.metadata
-
 from ixmp4.core import IndexSet as IndexSet
 from ixmp4.core import Model as Model
 from ixmp4.core import Parameter as Parameter
