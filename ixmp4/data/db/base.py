@@ -77,9 +77,24 @@ BaseModel.metadata = MetaData(
     }
 )
 
+
+class NamedBaseModel(BaseModel):
+    __abstract__ = True
+    name: types.Name
+
+
+class RunLinkedBaseModel(NamedBaseModel):
+    __abstract__ = True
+    run__id: types.RunId
+
+
 SelectType = TypeVar("SelectType", bound=db.sql.Select[tuple[BaseModel, ...]])
 
 ModelType = TypeVar("ModelType", bound=BaseModel)
+
+NamedModelType = TypeVar("NamedModelType", bound=NamedBaseModel)
+
+RunLinkedModelType = TypeVar("RunLinkedModelType", bound=RunLinkedBaseModel)
 
 
 class BaseRepository(Generic[ModelType]):
@@ -280,6 +295,22 @@ class Selecter(BaseRepository[ModelType]):
         if _post_filter is not None:
             _exc = _post_filter(_exc)
         return _exc
+
+
+class NamedSelecter(Selecter[NamedModelType]):
+    model_class: type[NamedModelType]
+
+    def _select_for_id_map(self) -> db.sql.Select[tuple[int, str]]:
+        return db.select(self.model_class.id, self.model_class.name)
+
+
+class RunLinkedSelecter(NamedSelecter[RunLinkedModelType]):
+    model_class: type[RunLinkedModelType]
+
+    def _select_for_id_map(self, run__id: int) -> db.sql.Select[tuple[int, str]]:
+        return db.select(self.model_class.id, self.model_class.name).where(
+            self.model_class.run__id == run__id
+        )
 
 
 class QueryMixin(BaseRepository[ModelType]):

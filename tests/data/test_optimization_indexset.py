@@ -15,8 +15,8 @@ def df_from_list(indexsets: list[IndexSet]) -> pd.DataFrame:
         # which doesn't like lists
         [
             [
-                indexset.run__id,
                 indexset.name,
+                indexset.run__id,
                 indexset.id,
                 indexset.created_at,
                 indexset.created_by,
@@ -24,8 +24,8 @@ def df_from_list(indexsets: list[IndexSet]) -> pd.DataFrame:
             for indexset in indexsets
         ],
         columns=[
-            "run__id",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",

@@ -133,3 +133,7 @@ def assert_logs(
                 else [f"    {repr(msg)}" for msg in caplog.messages[first:]],
             )
             pytest.fail("\n".join(lines))
+
+
+class CustomException(Exception):
+    pass

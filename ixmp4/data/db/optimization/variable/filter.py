@@ -3,6 +3,7 @@ from ixmp4.data.db.run import Run
 from ixmp4.db import Session, filters, sql, utils
 
 from .model import OptimizationVariable as Variable
+from .model import VariableIndexsetAssociation
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
@@ -20,4 +21,15 @@ class OptimizationVariableFilter(
     def join(
         self, exc: sql.Select[tuple[Variable]], session: Session | None = None
     ) -> sql.Select[tuple[Variable]]:
+        return exc
+
+
+class OptimizationVariableIndexSetAssociationFilter(
+    base.OptimizationVariableIndexSetAssociationFilter, metaclass=filters.FilterMeta
+):
+    def join(
+        self,
+        exc: sql.Select[tuple[VariableIndexsetAssociation]],
+        session: Session | None = None,
+    ) -> sql.Select[tuple[VariableIndexsetAssociation]]:
         return exc

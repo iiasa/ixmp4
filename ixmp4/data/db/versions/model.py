@@ -26,3 +26,13 @@ class DefaultVersionModel(base.BaseModel):
     end_transaction_id: types.Integer = db.Column(
         BigInteger(), nullable=True, index=True
     )
+
+
+class NamedVersionModel(DefaultVersionModel, base.NamedBaseModel):
+    __abstract__ = True
+    name: types.Name = db.Column(db.String(255), nullable=False)
+
+
+class RunLinkedVersionModel(NamedVersionModel, base.RunLinkedBaseModel):
+    __abstract__ = True
+    run__id: db.MappedColumn[int] = db.Column(db.Integer, nullable=False, index=True)

@@ -181,3 +181,8 @@ class TabulateRunMetaVersionsKwargs(TabulateVersionsKwargs):
 
 class TabulateDatapointVersionsKwargs(TabulateVersionsKwargs):
     run__id: NotRequired[int]
+
+
+# TODO This seems to get repetitive
+class TabulateOptimizationVersionsKwargs(TabulateVersionsKwargs):
+    run__id: NotRequired[int]

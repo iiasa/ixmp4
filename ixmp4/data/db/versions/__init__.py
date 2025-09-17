@@ -13,11 +13,18 @@ from .ddl import (
     UpdateTrigger,
     VersionProcedure,
 )
-from .model import DefaultVersionModel as DefaultVersionModel
-from .model import Operation as Operation
-from .repository import VersionRepository as VersionRepository
-from .transaction import Transaction as Transaction
-from .transaction import TransactionRepository as TransactionRepository
+from .model import (
+    DefaultVersionModel,
+    NamedVersionModel,
+    Operation,
+    RunLinkedVersionModel,
+)
+from .repository import (
+    NamedVersionRepository,
+    RunLinkedVersionRepository,
+    VersionRepository,
+)
+from .transaction import Transaction, TransactionRepository
 
 logger = logging.getLogger(__name__)
 default_tx_id_column_key = "transaction_id"

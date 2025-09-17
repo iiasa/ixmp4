@@ -1,3 +1,7 @@
+import warnings
+from typing import TYPE_CHECKING
+
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -9,18 +13,22 @@ from ixmp4.core.exceptions import (
     RunLockRequired,
 )
 from ixmp4.data.backend.api import RestBackend
+from ixmp4.data.backend.test import RestTestBackend
 from ixmp4.data.db.optimization.variable.repository import logger
 
-from ..utils import assert_unordered_equality, create_indexsets_for_run
+from .. import utils
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend import SqlAlchemyBackend
 
 
 def df_from_list(variables: list[OptimizationVariable]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
-                variable.run_id,
                 variable.data,
                 variable.name,
+                variable.run_id,
                 variable.id,
                 variable.created_at,
                 variable.created_by,
@@ -28,9 +36,9 @@ def df_from_list(variables: list[OptimizationVariable]) -> pd.DataFrame:
             for variable in variables
         ],
         columns=[
-            "run__id",
             "data",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -60,7 +68,9 @@ class TestCoreVariable:
         # Test creation with indexset
         indexset_1, _ = tuple(
             IndexSet(_run=run, _backend=platform.backend, _model=model)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test creating indexed Variable"):
             variable_2 = run.optimization.variables.create(
@@ -150,7 +160,7 @@ class TestCoreVariable:
 
         assert run.optimization.variables.tabulate().empty
 
-        (indexset_1,) = create_indexsets_for_run(
+        (indexset_1,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test deletion of indexed Variable"):
@@ -184,7 +194,7 @@ class TestCoreVariable:
 
     def test_get_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test get Variable"):
@@ -208,7 +218,9 @@ class TestCoreVariable:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         # pandas can only convert dicts to dataframes if the values are lists
         # or if index is given. But maybe using read_json instead of from_dict
@@ -348,7 +360,7 @@ class TestCoreVariable:
         # accessing .levels and .marginals will always be served float, so that's fine.
         if isinstance(platform.backend, RestBackend):
             expected = expected.astype({"levels": float, "marginals": float})
-        assert_unordered_equality(
+        utils.assert_unordered_equality(
             expected, pd.DataFrame(variable_4.data), check_dtype=False
         )
 
@@ -447,7 +459,7 @@ class TestCoreVariable:
             variable.remove_data()
         assert variable.data == {}
 
-        # Test removing specific data from unindexed Equation warns
+        # Test removing specific data from unindexed Variable warns
         with run.transact("Test Variable.remove_data() warns on scalar Variable"):
             variable_2 = run.optimization.variables.create("Variable 2")
 
@@ -463,7 +475,7 @@ class TestCoreVariable:
 
     def test_list_variable(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        indexset, indexset_2 = create_indexsets_for_run(
+        indexset, indexset_2 = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id
         )
         with run.transact("Test variables.list()"):
@@ -476,7 +488,7 @@ class TestCoreVariable:
 
         # Create new run to test listing variables for specific run
         run_2 = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
         with run_2.transact("Test variables.list() for specific run"):
@@ -498,7 +510,9 @@ class TestCoreVariable:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test variables.tabulate()"):
             variable = run.optimization.variables.create(
@@ -512,7 +526,7 @@ class TestCoreVariable:
 
         # Create new run to test tabulating variables for specific run
         run_2 = platform.runs.create("Model", "Scenario")
-        (indexset_3,) = create_indexsets_for_run(
+        (indexset_3,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run_2.id, amount=1
         )
         with run_2.transact("Test variables.tabulate() for specific run"):
@@ -549,7 +563,7 @@ class TestCoreVariable:
 
     def test_variable_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test Variable.docs"):
@@ -562,3 +576,309 @@ class TestCoreVariable:
 
         variable_1.docs = None
         assert variable_1.docs is None
+
+    def test_variable_rollback_sqlite(self, sqlite_platform: ixmp4.Platform) -> None:
+        run = sqlite_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=sqlite_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=sqlite_platform, run_id=run.id, amount=1
+            )
+        )
+        test_data = {indexset.name: ["foo"], "levels": [1], "marginals": [0]}
+
+        with run.transact("Test Variable versioning"):
+            variable = run.optimization.variables.create(
+                "Variable 1", constrained_to_indexsets=[indexset.name]
+            )
+            indexset.add(["foo"])
+
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                with (
+                    run.transact("Test Variable versioning update on sqlite"),
+                ):
+                    variable.add(test_data)
+                    raise utils.CustomException("Whoops!!!")
+            except utils.CustomException:
+                pass
+
+        variable = run.optimization.variables.get(variable.name)
+
+        assert variable.data == test_data
+        assert (
+            "An exception occurred but the `Run` was not reverted because "
+            "versioning is not supported by this platform" in str(w[0].message)
+        )
+
+    def test_versioning_variable(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+
+        with run.transact("Test Variable versioning"):
+            indexset_1.add(data=[1, 2, 3])
+            indexset_2.add(data=["foo", "bar"])
+            variable = run.optimization.variables.create(
+                "Variable 1",
+                constrained_to_indexsets=[indexset_1.name],
+                column_names=["Column 1"],
+            )
+            variable.docs = "Docs of Variable 1"
+            variable.add(
+                data={"Column 1": [1, 2], "levels": [1, 2], "marginals": [0, 0]}
+            )
+            variable.add(data={"Column 1": [3], "levels": [3], "marginals": [1]})
+            variable_2 = run.optimization.variables.create(
+                name="Variable 2", constrained_to_indexsets=[indexset_2.name]
+            )
+            variable_2.add(
+                data={
+                    indexset_2.name: ["foo", "bar"],
+                    "levels": [4, 5],
+                    "marginals": [0, 0],
+                }
+            )
+            variable_2.remove_data(data={indexset_2.name: ["foo"]})
+            run.optimization.variables.delete(variable_2.id)
+
+            @utils.versioning_test(pg_platform.backend)
+            def assert_versions(backend: "SqlAlchemyBackend") -> None:
+                # Test Variable versions
+                vdf = backend.optimization.variables.versions.tabulate()
+
+                data = vdf["data"].to_list()
+
+                # TODO assert_unordered_equality can't handle dict for .data
+                # property/column. Should we switch it to nullable? How do we test here?
+                expected = (
+                    pd.read_csv(
+                        "./tests/core/expected_versions/test_variable_versioning.csv"
+                    )
+                    .replace({np.nan: None})
+                    .assign(
+                        created_at=pd.Series(
+                            [
+                                variable.created_at,
+                                variable.created_at,
+                                variable.created_at,
+                                variable_2.created_at,
+                                variable_2.created_at,
+                                variable_2.created_at,
+                                variable_2.created_at,
+                            ]
+                        )
+                    )
+                )
+
+                # NOTE Don't know how to store/read in these dicts with csv
+                expected_data = [
+                    {},
+                    {"Column 1": [1, 2], "levels": [1, 2], "marginals": [0, 0]},
+                    {
+                        "Column 1": [1, 2, 3],
+                        "levels": [1, 2, 3],
+                        "marginals": [0, 0, 1],
+                    },
+                    {},
+                    {
+                        "Indexset 2": ["foo", "bar"],
+                        "levels": [4, 5],
+                        "marginals": [0, 0],
+                    },
+                    {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
+                    {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
+                ]
+
+                # NOTE See note in table tests about changing values.
+                if isinstance(pg_platform.backend, RestTestBackend):
+                    expected = expected.replace({22: 23, 22.0: 23.0})
+
+                utils.assert_unordered_equality(
+                    expected, vdf.drop(columns="data"), check_dtype=False
+                )
+                assert data == expected_data
+
+                # Test VariableIndexSetAssociation versions
+                # NOTE The last entry here comes implicitly from deleting Variable 2
+                vdf = backend.optimization.variables._associations.versions.tabulate()
+
+                expected = pd.read_csv(
+                    "./tests/core/expected_versions/test_variableindexsetassociations_versioning.csv"
+                ).replace({np.nan: None})
+
+                if isinstance(pg_platform.backend, RestTestBackend):
+                    expected = expected.replace({23: 22, 23.0: 22.0})
+
+                utils.assert_unordered_equality(expected, vdf, check_dtype=False)
+
+    def test_variable_rollback(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+
+        # Test rollback of Variable creation
+        try:
+            with run.transact("Test Variable rollback on creation"):
+                _ = run.optimization.variables.create(
+                    "Variable", constrained_to_indexsets=[indexset_1.name]
+                )
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert run.optimization.variables.tabulate().empty
+
+        # Test rollback of scalar Variable creation
+        try:
+            with run.transact("Test Variable rollback on creation"):
+                _ = run.optimization.variables.create("Variable")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert run.optimization.variables.tabulate().empty
+
+        # Test rollback of Variable creation when linked in Docs table
+        try:
+            with run.transact("Test Variable rollback after setting docs"):
+                variable = run.optimization.variables.create("Variable")
+                variable.docs = "Test Variable"
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert pg_platform.backend.optimization.variables.docs.list() == []
+
+        with run.transact("Test Variable rollback setup"):
+            variable = run.optimization.variables.create(
+                "Variable", constrained_to_indexsets=[indexset_1.name]
+            )
+            indexset_1.add(data=[1, 2, 3])
+            variable_2 = run.optimization.variables.create(
+                "Variable 2",
+                constrained_to_indexsets=[indexset_2.name],
+                column_names=["Column 2"],
+            )
+            indexset_2.add(data=["foo", "bar"])
+            variable_3 = run.optimization.variables.create("Variable 3")
+
+        test_data = {
+            indexset_1.name: [1, 3],
+            "levels": [1.0, 3.0],
+            "marginals": [0.5, 0.5],
+        }
+
+        # Test rollback of Variable data addition
+        try:
+            with run.transact("Test Variable rollback on data addition"):
+                variable.add(data=test_data)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable = run.optimization.variables.get("Variable")
+        assert variable.data == {}
+
+        # Test rollback of Variable data removal
+        with run.transact("Test Variable rollback on data removal -- setup"):
+            variable.add(data=test_data)
+
+        try:
+            with run.transact("Test Variable rollback on data removal"):
+                variable.remove_data(data={indexset_1.name: [1]})
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable = run.optimization.variables.get("Variable")
+        assert variable.data == test_data
+
+        # Test rollback of Variable deletion
+        try:
+            with run.transact("Test Variable rollback on deletion"):
+                run.optimization.variables.delete("Variable")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable = run.optimization.variables.get("Variable")
+        assert variable.indexset_names == [indexset_1.name]
+        assert variable.data == test_data
+
+        # Test rollback of Variable deletion with column_names
+        try:
+            with run.transact("Test Variable rollback on deletion with column_names"):
+                run.optimization.variables.delete("Variable 2")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable_2 = run.optimization.variables.get("Variable 2")
+        assert variable_2.indexset_names == [indexset_2.name]
+        assert variable_2.column_names == ["Column 2"]
+
+        # Test rollback of Variable deletion with IndexSet deletion
+        try:
+            with run.transact(
+                "Test Variable rollback on deletion w/ IndexSet deletion"
+            ):
+                run.optimization.variables.delete("Variable")
+                run.optimization.indexsets.delete(indexset_1.name)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable = run.optimization.variables.get("Variable")
+        assert variable.indexset_names == [indexset_1.name]
+        assert variable.data == test_data
+
+        # Test rollback of scalar Variable deletion
+        try:
+            with run.transact("Test rollback of scalar Variable deletion"):
+                run.optimization.variables.delete(variable_3.id)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable_3 = run.optimization.variables.get("Variable 3")
+        assert variable_3.indexset_names is None
+
+    def test_variable_rollback_to_checkpoint(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id, amount=1
+            )
+        )
+        test_data = {
+            indexset.name: [1, 3],
+            "levels": [1.0, 3.0],
+            "marginals": [0.5, 0.5],
+        }
+
+        try:
+            with run.transact("Test Variable rollback to checkpoint"):
+                variable = run.optimization.variables.create(
+                    "Variable", constrained_to_indexsets=[indexset.name]
+                )
+                indexset.add(data=[1, 2, 3])
+                variable.add(data=test_data)
+                run.checkpoints.create("Test Variable rollback to checkpoint")
+                variable.remove_data(data={indexset.name: [1]})
+                run.optimization.variables.delete(item=variable.id)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        variable = run.optimization.variables.get("Variable")
+        assert variable.data == test_data

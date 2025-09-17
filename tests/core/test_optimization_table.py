@@ -1,3 +1,7 @@
+import warnings
+from typing import TYPE_CHECKING
+
+import numpy as np
 import pandas as pd
 import pytest
 
@@ -8,8 +12,12 @@ from ixmp4.core.exceptions import (
     OptimizationItemUsageError,
     RunLockRequired,
 )
+from ixmp4.data.backend.test import RestTestBackend
 
-from ..utils import create_indexsets_for_run
+from .. import utils
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend import SqlAlchemyBackend
 
 
 def df_from_list(tables: list[Table]) -> pd.DataFrame:
@@ -18,9 +26,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
         # which doesn't like lists
         [
             [
-                table.run_id,
                 table.data,
                 table.name,
+                table.run_id,
                 table.id,
                 table.created_at,
                 table.created_by,
@@ -28,9 +36,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
             for table in tables
         ],
         columns=[
-            "run__id",
             "data",
             "name",
+            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -45,7 +53,9 @@ class TestCoreTable:
         # Test normal creation
         indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test tables.create()"):
             table = run.optimization.tables.create(
@@ -109,9 +119,15 @@ class TestCoreTable:
         assert table_3.column_names == ["Column 1", "Column 2"]
         assert table_3.indexset_names == [indexset_1.name, indexset_1.name]
 
+        # Test indexset_names is not writable
+        with run.transact("Test table.indexset_names setter"):
+            with pytest.raises(AttributeError, match="set"):
+                # Triggering mypy error on purpose
+                table.indexset_names = [indexset_2.name]  # type:ignore[misc]
+
     def test_delete_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset_1,) = create_indexsets_for_run(
+        (indexset_1,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test tables.delete()"):
@@ -145,7 +161,7 @@ class TestCoreTable:
 
     def test_get_table(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test tables.get()"):
@@ -166,7 +182,9 @@ class TestCoreTable:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test Table.add()"):
             indexset.add(data=["foo", "bar", ""])
@@ -306,13 +324,23 @@ class TestCoreTable:
             table_5.add(data={})
         assert table_5.data == test_data_5
 
+        with run.transact("Test table.data setter"):
+            table = run.optimization.tables.create(
+                name="Table 6", constrained_to_indexsets=[indexset.name]
+            )
+            with pytest.raises(AttributeError, match="set"):
+                # Triggering mypy error on purpose
+                table.data = {indexset.name: ["foo"]}  # type:ignore[misc]
+
     def test_table_remove_data(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
 
         # Prepare a table containing some test data
         indexset_1, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         initial_data: dict[str, list[int] | list[str]] = {
             indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
@@ -393,7 +421,7 @@ class TestCoreTable:
 
     def test_list_tables(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        create_indexsets_for_run(platform=platform, run_id=run.id)
+        utils.create_indexsets_for_run(platform=platform, run_id=run.id)
         with run.transact("Test tables.list()"):
             table = run.optimization.tables.create(
                 "Table", constrained_to_indexsets=["Indexset 1"]
@@ -423,7 +451,9 @@ class TestCoreTable:
         run = platform.runs.create("Model", "Scenario")
         indexset, indexset_2 = tuple(
             IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in create_indexsets_for_run(platform=platform, run_id=run.id)
+            for model in utils.create_indexsets_for_run(
+                platform=platform, run_id=run.id
+            )
         )
         with run.transact("Test tables.tabulate()"):
             table = run.optimization.tables.create(
@@ -463,7 +493,7 @@ class TestCoreTable:
 
     def test_table_docs(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
-        (indexset,) = create_indexsets_for_run(
+        (indexset,) = utils.create_indexsets_for_run(
             platform=platform, run_id=run.id, amount=1
         )
         with run.transact("Test Table.docs"):
@@ -476,3 +506,261 @@ class TestCoreTable:
 
         table_1.docs = None
         assert table_1.docs is None
+
+    def test_table_rollback_sqlite(self, sqlite_platform: ixmp4.Platform) -> None:
+        run = sqlite_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=sqlite_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=sqlite_platform, run_id=run.id, amount=1
+            )
+        )
+        test_data = {indexset.name: ["foo"]}
+
+        with run.transact("Test Table versioning"):
+            table = run.optimization.tables.create(
+                "Table 1", constrained_to_indexsets=[indexset.name]
+            )
+            indexset.add(["foo"])
+
+        with warnings.catch_warnings(record=True) as w:
+            try:
+                with (
+                    run.transact("Test Table versioning update on sqlite"),
+                ):
+                    table.add(test_data)
+                    raise utils.CustomException("Whoops!!!")
+            except utils.CustomException:
+                pass
+
+        table = run.optimization.tables.get(table.name)
+
+        assert table.data == test_data
+        assert (
+            "An exception occurred but the `Run` was not reverted because "
+            "versioning is not supported by this platform" in str(w[0].message)
+        )
+
+    def test_versioning_table(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+
+        with run.transact("Test Table versioning"):
+            indexset_1.add(data=[1, 2, 3])
+            indexset_2.add(data=["foo", "bar"])
+            table = run.optimization.tables.create(
+                "Table 1", constrained_to_indexsets=[indexset_1.name]
+            )
+            table.docs = "Docs of Table 1"
+            table.add(data={indexset_1.name: [1, 2]})
+            table.add(data={indexset_1.name: [3]})
+            table_2 = run.optimization.tables.create(
+                name="Table 2", constrained_to_indexsets=[indexset_2.name]
+            )
+            table_2.add(data={indexset_2.name: ["foo", "bar"]})
+            table_2.remove(data={indexset_2.name: ["foo"]})
+            run.optimization.tables.delete(table_2.id)
+
+            @utils.versioning_test(pg_platform.backend)
+            def assert_versions(backend: "SqlAlchemyBackend") -> None:
+                # Test Table versions
+                vdf = backend.optimization.tables.versions.tabulate()
+
+                data = vdf["data"].to_list()
+
+                # TODO assert_unordered_equality can't handle dict for .data
+                # property/column. Should we switch it to nullable? How do we test here?
+                expected = (
+                    pd.read_csv(
+                        "./tests/core/expected_versions/test_table_versioning.csv"
+                    )
+                    .replace({np.nan: None})
+                    .assign(
+                        created_at=pd.Series(
+                            [
+                                table.created_at,
+                                table.created_at,
+                                table.created_at,
+                                table_2.created_at,
+                                table_2.created_at,
+                                table_2.created_at,
+                                table_2.created_at,
+                            ]
+                        )
+                    )
+                )
+
+                # NOTE Don't know how to store/read in these dicts with csv
+                expected_data = [
+                    {},
+                    {"Indexset 1": [1, 2]},
+                    {"Indexset 1": [1, 2, 3]},
+                    {},
+                    {"Indexset 2": ["foo", "bar"]},
+                    {"Indexset 2": ["bar"]},
+                    {"Indexset 2": ["bar"]},
+                ]
+
+                # NOTE In the server layer, fastapi uses pydantic to convert a DB.table
+                # to an API.table. This requires loading the association relationship,
+                # which gets DELETEd first iif it's loaded. Thus, the transaction_id
+                # changes from postgres to rest-postgres.
+                if isinstance(pg_platform.backend, RestTestBackend):
+                    expected = expected.replace({22: 23, 22.0: 23.0})
+
+                utils.assert_unordered_equality(
+                    expected, vdf.drop(columns="data"), check_dtype=False
+                )
+                assert data == expected_data
+
+                # Test TableIndexSetAssociation versions
+                # NOTE The last entry here comes implicitly from deleting Table 2
+                vdf = backend.optimization.tables._associations.versions.tabulate()
+
+                expected = pd.read_csv(
+                    "./tests/core/expected_versions/test_tableindexsetassociations_versioning.csv"
+                ).replace({np.nan: None})
+
+                if isinstance(pg_platform.backend, RestTestBackend):
+                    expected = expected.replace({23: 22, 23.0: 22.0})
+
+                utils.assert_unordered_equality(expected, vdf, check_dtype=False)
+
+    def test_table_rollback(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        indexset_1, indexset_2 = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id
+            )
+        )
+
+        # Test rollback of Table creation
+        try:
+            with run.transact("Test Table rollback on creation"):
+                _ = run.optimization.tables.create(
+                    "Table", constrained_to_indexsets=[indexset_1.name]
+                )
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert run.optimization.tables.tabulate().empty
+
+        # Test rollback of Table creation when linked in Docs table
+        try:
+            with run.transact("Test Table rollback after setting docs"):
+                table = run.optimization.tables.create(
+                    "Table", constrained_to_indexsets=[indexset_1.name]
+                )
+                table.docs = "Test Table"
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        assert pg_platform.backend.optimization.tables.docs.list() == []
+
+        with run.transact("Test Table rollback setup"):
+            table = run.optimization.tables.create(
+                "Table", constrained_to_indexsets=[indexset_1.name]
+            )
+            indexset_1.add(data=[1, 2, 3])
+            table_2 = run.optimization.tables.create(
+                "Table 2",
+                constrained_to_indexsets=[indexset_2.name],
+                column_names=["Column 2"],
+            )
+            indexset_2.add(data=["foo", "bar"])
+
+        # Test rollback of Table data addition
+        try:
+            with run.transact("Test Table rollback on data addition"):
+                table.add(data={indexset_1.name: [1, 3]})
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        table = run.optimization.tables.get("Table")
+        assert table.data == {}
+
+        # Test rollback of Table data removal
+        with run.transact("Test Table rollback on data removal -- setup"):
+            table.add(data={indexset_1.name: [1, 3]})
+
+        try:
+            with run.transact("Test Table rollback on data removal"):
+                table.remove(data={indexset_1.name: [1]})
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        table = run.optimization.tables.get("Table")
+        assert table.data == {indexset_1.name: [1, 3]}
+
+        # Test rollback of Table deletion
+        try:
+            with run.transact("Test Table rollback on deletion"):
+                run.optimization.tables.delete("Table")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        table = run.optimization.tables.get("Table")
+        assert table.indexset_names == [indexset_1.name]
+        assert table.data == {indexset_1.name: [1, 3]}
+
+        # Test rollback of Table deletion with column_names
+        try:
+            with run.transact("Test Table rollback on deletion with column_names"):
+                run.optimization.tables.delete("Table 2")
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        table_2 = run.optimization.tables.get("Table 2")
+        assert table_2.indexset_names == [indexset_2.name]
+        assert table_2.column_names == ["Column 2"]
+
+        # Test rollback of Table deletion with IndexSet deletion
+        try:
+            with run.transact("Test Table rollback on deletion w/ IndexSet deletion"):
+                run.optimization.tables.delete("Table")
+                run.optimization.indexsets.delete(indexset_1.name)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        table = run.optimization.tables.get("Table")
+        assert table.indexset_names == [indexset_1.name]
+        assert table.data == {indexset_1.name: [1, 3]}
+
+    def test_table_rollback_to_checkpoint(self, pg_platform: ixmp4.Platform) -> None:
+        run = pg_platform.runs.create("Model", "Scenario")
+        (indexset,) = tuple(
+            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
+            for model in utils.create_indexsets_for_run(
+                platform=pg_platform, run_id=run.id, amount=1
+            )
+        )
+
+        try:
+            with run.transact("Test Table rollback to checkpoint"):
+                table = run.optimization.tables.create(
+                    "Table", constrained_to_indexsets=[indexset.name]
+                )
+                indexset.add(data=[1, 2, 3])
+                table.add(data={indexset.name: [1, 3]})
+                run.checkpoints.create("Test Table rollback to checkpoint")
+                table.remove(data={indexset.name: [1]})
+                run.optimization.tables.delete(item=table.id)
+                raise utils.CustomException("Whoops!!!")
+        except utils.CustomException:
+            pass
+
+        table = run.optimization.tables.get("Table")
+        assert table.data == {indexset.name: [1, 3]}

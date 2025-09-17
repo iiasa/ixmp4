@@ -2,23 +2,21 @@ from collections.abc import Iterable
 from datetime import datetime
 from typing import TYPE_CHECKING, Protocol
 
-from ..annotations import HasUnitIdFilter
-
-if TYPE_CHECKING:
-    from . import EnumerateKwargs as BaseEnumerateKwargs
-
-    class EnumerateKwargs(BaseEnumerateKwargs, HasUnitIdFilter, total=False): ...
-
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
 from .. import base
+from ..annotations import HasUnitIdFilter
 from ..docs import DocsRepository
 from ..unit import Unit
 from .base import BackendBaseRepository
+
+if TYPE_CHECKING:
+    from . import EnumerateKwargs as BaseEnumerateKwargs
+
+    class EnumerateKwargs(BaseEnumerateKwargs, HasUnitIdFilter, total=False): ...
 
 
 class Scalar(base.BaseModel, Protocol):
