@@ -45,8 +45,8 @@ class Run(base.BaseModel, Protocol):
     created_at: datetime
     created_by: str
 
-    updated_at: datetime
-    updated_by: str
+    updated_at: datetime | None
+    updated_by: str | None
 
     lock_transaction: int | None
 
