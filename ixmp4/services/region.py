@@ -1,35 +1,18 @@
 from typing import TypedDict
 
 import pandas as pd
-import pydantic as pyd
 from toolkit import db
 from toolkit.exceptions import NotFound, NotUnique
 from typing_extensions import Unpack
 
 from ixmp4.models.region import Region
 
+from . import dto
 from .base import (
     AbstractService,
     DirectTransport,
-    procedure,
 )
-
-
-class RegionDTO(pyd.BaseModel):
-    name: str
-    hierarchy: str
-    id: int
-
-    model_config = pyd.ConfigDict(from_attributes=True)
-
-
-class CreateRegion(TypedDict):
-    name: str
-    hierarchy: str
-
-
-class GetRegion(TypedDict):
-    name: str
+from .procedures import PaginatedProcedure, procedure
 
 
 class RegionNotFound(NotFound):
@@ -92,20 +75,20 @@ class RegionService(AbstractService):
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
 
-    @procedure()
-    def create(self, name: str, hierarchy: str) -> RegionDTO:
+    @procedure(methods=["POST"])
+    def create(self, name: str, hierarchy: str) -> dto.Region:
         self.items.create({"name": name, "hierarchy": hierarchy})
-        return RegionDTO.model_validate(self.items.get({"name": name}))
+        return dto.Region.model_validate(self.items.get({"name": name}))
 
-    @procedure()
+    @procedure(methods=["DELETE"])
     def delete(self, id: int) -> None:
         self.items.delete_by_pk({"id": id})
 
-    @procedure()
-    def get(self, name: str) -> RegionDTO:
-        return RegionDTO.model_validate(self.items.get({"name": name}))
+    @procedure(methods=["POST"])
+    def get(self, name: str) -> dto.Region:
+        return dto.Region.model_validate(self.items.get({"name": name}))
 
-    def get_or_create(self, name: str, hierarchy: str | None = None) -> RegionDTO:
+    def get_or_create(self, name: str, hierarchy: str | None = None) -> dto.Region:
         try:
             region = self.get(name)
         except RegionNotFound:
@@ -121,10 +104,29 @@ class RegionService(AbstractService):
         else:
             return region
 
-    @procedure()
-    def list(self, **kwargs: Unpack[RegionFilter]) -> list[RegionDTO]:
-        return [RegionDTO.model_validate(i) for i in self.items.list(values=kwargs)]
+    @procedure(PaginatedProcedure, methods=["PATCH"])
+    def list(self, **kwargs: Unpack[RegionFilter]) -> list[dto.Region]:
+        return [dto.Region.model_validate(i) for i in self.items.list(values=kwargs)]
 
-    @procedure()
+    @list.paginated_procedure()
+    def paginated_list(
+        self, pagination: dto.Pagination, **kwargs: Unpack[RegionFilter]
+    ) -> list[dto.Region]:
+        return [
+            dto.Region.model_validate(i)
+            for i in self.items.list(
+                values=kwargs, limit=pagination.limit, offset=pagination.offset
+            )
+        ]
+
+    @procedure(PaginatedProcedure, methods=["PATCH"])
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
         return self.pandas.tabulate(values=kwargs)
+
+    @tabulate.paginated_procedpaginated_procedureure()
+    def paginated_tabulate(
+        self, pagination: dto.Pagination, **kwargs: Unpack[RegionFilter]
+    ) -> list[dto.Region]:
+        return self.pandas.tabulate(
+            values=kwargs, limit=pagination.limit, offset=pagination.offset
+        )

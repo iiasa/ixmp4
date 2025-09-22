@@ -91,8 +91,18 @@ class Pagination(pyd.BaseModel):
     offset: int
 
 
-class EnumerationOutput(pyd.BaseModel, Generic[ResultsT]):
+class PaginatedResult(pyd.BaseModel, Generic[ResultsT]):
     results: ResultsT
     total: int
     pagination: Pagination
     model_config = pyd.ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+
+class BaseModel(pyd.BaseModel):
+    model_config = pyd.ConfigDict(from_attributes=True)
+
+
+class Region(BaseModel):
+    name: str
+    hierarchy: str
+    id: int
