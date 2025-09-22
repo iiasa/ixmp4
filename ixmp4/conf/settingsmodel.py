@@ -1,6 +1,8 @@
 import json
 import logging
 import logging.config
+import os
+import sys
 from pathlib import Path
 from typing import Any, Literal
 
@@ -21,6 +23,14 @@ logger = logging.getLogger(__name__)
 
 here = Path(__file__).parent
 root = Path(__root__file__).parent.parent
+
+try:
+    __IPYTHON__  # type: ignore
+    _in_ipython_session = True
+except NameError:
+    _in_ipython_session = False
+
+_stdout_is_tty = os.isatty(sys.stdout.fileno())
 
 
 class Settings(BaseSettings):
@@ -47,12 +57,8 @@ class Settings(BaseSettings):
 
         self.setup_directories()
 
-        ixmp4_logger = logging.getLogger("ixmp4")
-        if ixmp4_logger.level == logging.NOTSET:
-            ixmp4_logger.setLevel(logging.INFO)
-
-        if len(ixmp4_logger.handlers) == 0:
-            ixmp4_logger.addHandler(logging.StreamHandler())
+        if _stdout_is_tty or _in_ipython_session:
+            self.configure_logging(self.mode)
 
         self._credentials: Credentials | None = None
         self._toml: TomlConfig | None = None
