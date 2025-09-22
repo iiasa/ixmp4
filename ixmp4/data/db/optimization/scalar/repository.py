@@ -174,14 +174,9 @@ class ScalarRepository(
                 old_exc=old_unit_subquery, new_exc=new_unit_subquery
             )
 
-            _columns = utils.get_columns(self.versions.model_class)
-            maybe_add_column_to_collection = partial(
-                utils._maybe_add_column_to_collection, exclude={"unit__id"}
-            )
-            columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
-                maybe_add_column_to_collection,
-                _columns.items(),
-                db.sql.ColumnCollection(),
+            columns = utils.collect_columns_to_select(
+                columns=utils.get_columns(self.versions.model_class),
+                exclude={"unit__id"},
             )
 
             select_correct_versions = (

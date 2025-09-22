@@ -119,16 +119,9 @@ class BaseIndexSetAssociationReverter(
         )
 
         # Prepare columns with correctly updated IDs for SELECT
-        # NOTE we only get ReadOnlyCollections, so can't just remove() items
-        _columns = utils.get_columns(self._associations.versions.model_class)
-        maybe_add_column_to_collection = partial(
-            utils._maybe_add_column_to_collection,
+        columns = utils.collect_columns_to_select(
+            columns=utils.get_columns(self._associations.versions.model_class),
             exclude={self._item_id_column, "indexset__id"},
-        )
-        columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
-            maybe_add_column_to_collection,
-            _columns.items(),
-            db.sql.ColumnCollection(),
         )
 
         # Construct SELECT to find correct versions with updated IDs

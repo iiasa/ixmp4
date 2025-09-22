@@ -416,14 +416,9 @@ class IndexSetRepository(
             transaction__id=transaction__id, run__id=run__id
         )
 
-        _columns = db.utils.get_columns(self._data.versions.model_class)
-        maybe_add_column_to_collection = partial(
-            db.utils._maybe_add_column_to_collection, exclude={"indexset__id"}
-        )
-        columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
-            maybe_add_column_to_collection,
-            _columns.items(),
-            db.sql.ColumnCollection(),
+        columns = db.utils.collect_columns_to_select(
+            db.utils.get_columns(self._data.versions.model_class),
+            exclude={"indexset__id"},
         )
 
         select_correct_versions = (
