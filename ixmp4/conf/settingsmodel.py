@@ -1,6 +1,7 @@
 import json
 import logging
 import logging.config
+import sys
 from pathlib import Path
 from typing import Any, Literal
 
@@ -21,6 +22,14 @@ logger = logging.getLogger(__name__)
 
 here = Path(__file__).parent
 root = Path(__root__file__).parent.parent
+
+try:
+    __IPYTHON__  # type: ignore
+    _in_ipython_session = True
+except NameError:
+    _in_ipython_session = False
+
+_sys_has_ps1 = hasattr(sys, "ps1")
 
 
 class Settings(BaseSettings):
@@ -46,7 +55,9 @@ class Settings(BaseSettings):
         super().__init__(*args, **kwargs)
 
         self.setup_directories()
-        self.configure_logging(self.mode)
+
+        if self.is_in_interactive_mode():
+            self.configure_logging(self.mode)
 
         self._credentials: Credentials | None = None
         self._toml: TomlConfig | None = None
@@ -54,6 +65,9 @@ class Settings(BaseSettings):
         self._manager: ManagerConfig | None = None
 
         logger.debug(f"Settings loaded: {self}")
+
+    def is_in_interactive_mode(self) -> bool:
+        return _sys_has_ps1 or _in_ipython_session
 
     @property
     def credentials(self) -> Credentials:
