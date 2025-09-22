@@ -1,7 +1,6 @@
 import json
 import logging
 import logging.config
-import os
 import sys
 from pathlib import Path
 from typing import Any, Literal
@@ -30,7 +29,7 @@ try:
 except NameError:
     _in_ipython_session = False
 
-_stdout_is_tty = os.isatty(sys.stdout.fileno())
+_sys_has_ps1 = hasattr(sys, "ps1")
 
 
 class Settings(BaseSettings):
@@ -68,7 +67,7 @@ class Settings(BaseSettings):
         logger.debug(f"Settings loaded: {self}")
 
     def is_in_interactive_mode(self) -> bool:
-        return _stdout_is_tty or _in_ipython_session
+        return _sys_has_ps1 or _in_ipython_session
 
     @property
     def credentials(self) -> Credentials:
