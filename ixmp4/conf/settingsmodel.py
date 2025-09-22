@@ -57,7 +57,7 @@ class Settings(BaseSettings):
 
         self.setup_directories()
 
-        if _stdout_is_tty or _in_ipython_session:
+        if self.is_in_interactive_mode():
             self.configure_logging(self.mode)
 
         self._credentials: Credentials | None = None
@@ -66,6 +66,9 @@ class Settings(BaseSettings):
         self._manager: ManagerConfig | None = None
 
         logger.debug(f"Settings loaded: {self}")
+
+    def is_in_interactive_mode(self) -> bool:
+        return _stdout_is_tty or _in_ipython_session
 
     @property
     def credentials(self) -> Credentials:
