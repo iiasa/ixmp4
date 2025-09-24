@@ -7,7 +7,7 @@ from ixmp4.data.db import mixins
 from .. import base, versions
 
 
-class Unit(base.NamedBaseModel, mixins.HasCreationInfo):
+class Unit(base.BaseModel, mixins.HasCreationInfo):
     __tablename__ = "unit"
     NotFound: ClassVar = abstract.Unit.NotFound
     NotUnique: ClassVar = abstract.Unit.NotUnique
@@ -17,7 +17,7 @@ class Unit(base.NamedBaseModel, mixins.HasCreationInfo):
     name: types.UniqueName = db.Column(db.String(255), nullable=False, unique=True)
 
 
-class UnitVersion(versions.NamedVersionModel):
+class UnitVersion(versions.DefaultVersionModel):
     __tablename__ = "unit_version"
     name: types.String = db.Column(db.String(255), nullable=False)
 

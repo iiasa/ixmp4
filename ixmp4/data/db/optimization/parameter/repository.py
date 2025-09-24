@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ParameterVersionRepository(versions.RunLinkedVersionRepository[ParameterVersion]):
+class ParameterVersionRepository(versions.VersionRepository[ParameterVersion]):
     model_class = ParameterVersion
 
 
@@ -71,7 +71,7 @@ class ParameterRepository(
     base.Retriever[Parameter],
     base.Enumerator[Parameter],
     BaseIndexSetAssociationReverter[
-        Parameter, ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
+        ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
     ],
     abstract.ParameterRepository,
 ):
@@ -266,5 +266,5 @@ class ParameterRepository(
 
         # Revert ParameterIndexSetAssociation
         self._revert_indexset_association(
-            transaction__id=transaction__id, run__id=run__id
+            repo=self, transaction__id=transaction__id, run__id=run__id
         )

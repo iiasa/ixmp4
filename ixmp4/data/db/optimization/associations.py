@@ -4,17 +4,23 @@ from typing import TYPE_CHECKING, Any, Generic, Literal, TypeVar
 from ixmp4 import db
 from ixmp4.data import types
 from ixmp4.data.db.base import BaseModel as RootBaseModel
-from ixmp4.data.db.base import RunLinkedModelType
-from ixmp4.data.db.optimization.base import Reverter, RunLinkedReverter
+from ixmp4.data.db.optimization.base import Reverter
 from ixmp4.data.db.optimization.indexset.model import IndexSetVersion
 from ixmp4.data.db.versions.model import DefaultVersionModel
-from ixmp4.data.db.versions.repository import (
-    VersionRepository,
-)
+from ixmp4.data.db.versions.repository import VersionRepository
 from ixmp4.db import utils
+from ixmp4.db.utils.revert import apply_transaction__id
+
+from .utils import create_id_map_subquery
 
 if TYPE_CHECKING:
-    from ixmp4.data.db.optimization import IndexSet
+    from ixmp4.data.db.optimization import (
+        EquationRepository,
+        IndexSet,
+        ParameterRepository,
+        TableRepository,
+        VariableRepository,
+    )
 
 
 class BaseIndexSetAssociation(RootBaseModel):
@@ -63,14 +69,27 @@ class BaseIndexSetAssociationVersionRepository(
         item__ids: list[int] | None = None,
         **kwargs: Any,
     ) -> db.sql.Select[Any]:
-        exc = db.select(self.bundle).select_from(self.model_class)
+        exc = (
+            db.select(self.bundle)
+            .join_from(
+                self.model_class,
+                IndexSetVersion,
+                self.model_class.indexset__id == IndexSetVersion.id,
+            )
+            .join_from(
+                self.model_class,
+                self.parent_version,
+                getattr(self.model_class, self._item_id_column)
+                == self.parent_version.id,
+            )
+        )
 
-        apply_transaction__id = partial(
-            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        _apply_transaction__id = partial(
+            apply_transaction__id, transaction__id=transaction__id, valid=valid
         )
 
         exc = reduce(
-            apply_transaction__id,
+            _apply_transaction__id,
             {self.model_class, IndexSetVersion, self.parent_version},
             exc,
         )
@@ -83,7 +102,7 @@ class BaseIndexSetAssociationVersionRepository(
                 )
             )
 
-        exc = self.where_matches_kwargs(exc, **kwargs)
+        exc = utils.where_matches_kwargs(exc, model_class=self.model_class, **kwargs)
         return exc.distinct()
 
 
@@ -95,9 +114,18 @@ class BaseIndexSetAssociationRepository(
     versions: BaseIndexSetAssociationVersionRepository[AssociationVersionModelType]
 
 
+RepoType = TypeVar(
+    "RepoType",
+    "EquationRepository",
+    "ParameterRepository",
+    "TableRepository",
+    "VariableRepository",
+)
+
+
 class BaseIndexSetAssociationReverter(
-    RunLinkedReverter[RunLinkedModelType],
-    Generic[RunLinkedModelType, AssociationModelType, AssociationVersionModelType],
+    Reverter[AssociationModelType],
+    Generic[AssociationModelType, AssociationVersionModelType],
 ):
     _associations: BaseIndexSetAssociationRepository[
         AssociationModelType, AssociationVersionModelType
@@ -107,15 +135,17 @@ class BaseIndexSetAssociationReverter(
         "equation__id", "parameter__id", "table__id", "variable__id"
     ]
 
-    def _revert_indexset_association(self, transaction__id: int, run__id: int) -> None:
+    def _revert_indexset_association(
+        self, repo: RepoType, transaction__id: int, run__id: int
+    ) -> None:
         # Create subquery to map IDs from before rollback to new ones
-        item_map_subquery = self._create_id_map_subquery(
-            transaction__id=transaction__id, run__id=run__id
+        item_map_subquery = create_id_map_subquery(
+            transaction__id=transaction__id, run__id=run__id, repo=repo
         )
-        indexset_map_subquery = (
-            self.backend.optimization.indexsets._create_id_map_subquery(
-                transaction__id=transaction__id, run__id=run__id
-            )
+        indexset_map_subquery = create_id_map_subquery(
+            transaction__id=transaction__id,
+            run__id=run__id,
+            repo=self.backend.optimization.indexsets,
         )
 
         # Prepare columns with correctly updated IDs for SELECT
@@ -143,9 +173,9 @@ class BaseIndexSetAssociationReverter(
                 == indexset_map_subquery.c.old_id,
             )
         )
-        select_correct_versions = self._associations.versions._apply_transaction__id(
+        select_correct_versions = apply_transaction__id(
             exc=select_correct_versions,
-            vclass=self._associations.versions.model_class,
+            model_class=self._associations.versions.model_class,
             transaction__id=transaction__id,
         ).order_by(self._associations.versions.model_class.id.asc())
 

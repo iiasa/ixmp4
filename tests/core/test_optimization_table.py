@@ -26,9 +26,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
         # which doesn't like lists
         [
             [
+                table.run_id,
                 table.data,
                 table.name,
-                table.run_id,
                 table.id,
                 table.created_at,
                 table.created_by,
@@ -36,9 +36,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
             for table in tables
         ],
         columns=[
+            "run__id",
             "data",
             "name",
-            "run__id",
             "id",
             "created_at",
             "created_by",

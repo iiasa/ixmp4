@@ -24,9 +24,9 @@ def df_from_list(parameters: list[Parameter]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
+                parameter.run_id,
                 parameter.data,
                 parameter.name,
-                parameter.run_id,
                 parameter.id,
                 parameter.created_at,
                 parameter.created_by,
@@ -34,9 +34,9 @@ def df_from_list(parameters: list[Parameter]) -> pd.DataFrame:
             for parameter in parameters
         ],
         columns=[
+            "run__id",
             "data",
             "name",
-            "run__id",
             "id",
             "created_at",
             "created_by",

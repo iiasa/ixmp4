@@ -25,7 +25,7 @@ class TableIndexsetAssociation(BaseIndexSetAssociation):
     )
 
 
-class Table(base.RunLinkedBaseModel):
+class Table(base.BaseModel):
     __tablename__ = "opt_tab"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -34,6 +34,7 @@ class Table(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Table.DeletionPrevented
 
+    run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -79,7 +80,7 @@ class Table(base.RunLinkedBaseModel):
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
 
-class TableVersion(versions.RunLinkedVersionModel):
+class TableVersion(versions.DefaultVersionModel):
     __tablename__ = "opt_tab_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)

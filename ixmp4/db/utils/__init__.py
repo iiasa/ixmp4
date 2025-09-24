@@ -100,3 +100,13 @@ def collect_columns_to_select(
             columns_to_collect.add(column=column, key=name)
 
     return columns_to_collect
+
+
+def where_matches_kwargs(
+    exc: sql.Select[Any], model_class: type["BaseModel"], **kwargs: Any
+) -> sql.Select[Any]:
+    for key in kwargs:
+        columns = get_columns(model_class)
+        if key in columns:
+            exc = exc.where(columns[key] == kwargs[key])
+    return exc

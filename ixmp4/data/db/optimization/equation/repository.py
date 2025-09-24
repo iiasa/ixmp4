@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class EquationVersionRepository(versions.RunLinkedVersionRepository[EquationVersion]):
+class EquationVersionRepository(versions.VersionRepository[EquationVersion]):
     model_class = EquationVersion
 
 
@@ -70,7 +70,7 @@ class EquationRepository(
     base.Retriever[Equation],
     base.Enumerator[Equation],
     BaseIndexSetAssociationReverter[
-        Equation, EquationIndexsetAssociation, EquationIndexsetAssociationVersion
+        EquationIndexsetAssociation, EquationIndexsetAssociationVersion
     ],
     abstract.EquationRepository,
 ):
@@ -281,5 +281,5 @@ class EquationRepository(
 
         # Revert EquationIndexSetAssociation
         self._revert_indexset_association(
-            transaction__id=transaction__id, run__id=run__id
+            repo=self, transaction__id=transaction__id, run__id=run__id
         )

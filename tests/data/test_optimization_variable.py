@@ -17,9 +17,9 @@ def df_from_list(variables: list[OptimizationVariable]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
+                variable.run__id,
                 variable.data,
                 variable.name,
-                variable.run__id,
                 variable.id,
                 variable.created_at,
                 variable.created_by,
@@ -27,9 +27,9 @@ def df_from_list(variables: list[OptimizationVariable]) -> pd.DataFrame:
             for variable in variables
         ],
         columns=[
+            "run__id",
             "data",
             "name",
-            "run__id",
             "id",
             "created_at",
             "created_by",
