@@ -29,7 +29,9 @@ class AbstractDocs(base.BaseModel):
 
 
 def docs_model(model: type[base.BaseModel]) -> type[AbstractDocs]:
-    dimension__id = db.Column(db.Integer, db.ForeignKey(model.id), unique=True)
+    dimension__id = db.Column(
+        db.Integer, db.ForeignKey(model.id, ondelete="CASCADE"), unique=True
+    )
 
     table_dict = {
         "NotFound": AbstractDocs.NotFound,

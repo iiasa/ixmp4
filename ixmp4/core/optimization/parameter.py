@@ -1,11 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -13,7 +8,6 @@ from typing_extensions import Unpack
 
 from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Parameter as ParameterModel
-from ixmp4.data.abstract import Unit
 
 from .base import (
     Creator,
@@ -23,6 +17,11 @@ from .base import (
     Retriever,
     Tabulator,
 )
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
+    from . import InitKwargs
 
 
 class Parameter(OptimizationBaseModelFacade):
@@ -70,8 +69,8 @@ class Parameter(OptimizationBaseModelFacade):
         return cast(list[float], self._model.data.get("values", []))
 
     @property
-    def units(self) -> list[Unit]:
-        return cast(list[Unit], self._model.data.get("units", []))
+    def units(self) -> list[str]:
+        return cast(list[str], self._model.data.get("units", []))
 
     @property
     def indexset_names(self) -> list[str]:

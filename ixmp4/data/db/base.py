@@ -77,6 +77,7 @@ BaseModel.metadata = MetaData(
     }
 )
 
+
 SelectType = TypeVar("SelectType", bound=db.sql.Select[tuple[BaseModel, ...]])
 
 ModelType = TypeVar("ModelType", bound=BaseModel)

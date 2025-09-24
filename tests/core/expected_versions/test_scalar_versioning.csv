@@ -1,0 +1,6 @@
+run__id,value,unit__id,name,id,transaction_id,end_transaction_id,operation_type,created_by,unit
+1,4,1,Scalar 1,1,7,11,0,@unknown,Test Unit
+1,0,2,Scalar 2,2,8,15,0,@unknown,Unit 2
+1,1.2,1,Scalar 1,1,11,12,1,@unknown,Test Unit
+1,1.2,2,Scalar 1,1,12,None,1,@unknown,Unit 2
+1,3.14,1,Scalar 2,2,15,None,1,@unknown,Test Unit

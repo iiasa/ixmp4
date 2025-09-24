@@ -1,15 +1,23 @@
-from typing import TYPE_CHECKING, Any, Union
+from typing import TYPE_CHECKING, Any, TypeVar, Union
 
 import pandas as pd
+
+from ixmp4 import db
+from ixmp4.db.utils.revert import select_for_id_map
 
 from . import base
 
 if TYPE_CHECKING:
-    from .equation import Equation
-    from .indexset import IndexSet
-    from .parameter import Parameter
-    from .table import Table
-    from .variable import Variable
+    from .equation.model import Equation
+    from .equation.repository import EquationRepository
+    from .indexset.model import IndexSet
+    from .indexset.repository import IndexSetRepository
+    from .parameter.model import Parameter
+    from .parameter.repository import ParameterRepository
+    from .table.model import Table
+    from .table.repository import TableRepository
+    from .variable.model import OptimizationVariable
+    from .variable.repository import VariableRepository
 
 
 def validate_data(
@@ -79,7 +87,7 @@ def validate_data(
 
 # NOTE | does not seem to work yet for stringified type hints
 def _find_columns_linked_to_indexset(
-    item: Union["Table", "Parameter", "Equation", "Variable"], name: str
+    item: Union["Table", "Parameter", "Equation", "OptimizationVariable"], name: str
 ) -> list[str]:
     """Determine columns in `item`.data that are linked to IndexSet `name`.
 
@@ -98,3 +106,30 @@ def _find_columns_linked_to_indexset(
             for i in range(len(item.column_names))
             if item.indexset_names[i] == name
         ]
+
+
+ReposForIdMapType = TypeVar(
+    "ReposForIdMapType",
+    "EquationRepository",
+    "IndexSetRepository",
+    "ParameterRepository",
+    "TableRepository",
+    "VariableRepository",
+)
+
+
+def create_id_map_subquery(
+    transaction__id: int, run__id: int, repo: ReposForIdMapType
+) -> db.sql.Subquery:
+    old_items_subquery = select_for_id_map(
+        model_class=repo.versions.model_class,
+        run__id=run__id,
+        transaction__id=transaction__id,
+    ).subquery()
+    new_items_subquery = select_for_id_map(
+        model_class=repo.model_class, run__id=run__id
+    ).subquery()
+
+    return db.utils.create_id_map_subquery(
+        old_exc=old_items_subquery, new_exc=new_items_subquery
+    )

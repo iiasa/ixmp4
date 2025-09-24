@@ -67,9 +67,7 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["dimension__id"],
             ["optimization_indexset.id"],
-            name=op.f(
-                "fk_optimization_indexset_docs_dimension__id_optimization_indexset"
-            ),
+            name=op.f("fk_optimization_indexset_docs_dimension__id_optimizatio_72ee"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_optimization_indexset_docs")),
         sa.UniqueConstraint(

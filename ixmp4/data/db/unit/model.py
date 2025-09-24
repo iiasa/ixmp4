@@ -13,7 +13,8 @@ class Unit(base.BaseModel, mixins.HasCreationInfo):
     NotUnique: ClassVar = abstract.Unit.NotUnique
     DeletionPrevented: ClassVar = abstract.Unit.DeletionPrevented
 
-    name: types.UniqueName
+    # NOTE With only types.UniqueName, the non-unique base version of name is used
+    name: types.UniqueName = db.Column(db.String(255), nullable=False, unique=True)
 
 
 class UnitVersion(versions.DefaultVersionModel):

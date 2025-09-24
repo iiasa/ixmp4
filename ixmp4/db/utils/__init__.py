@@ -1,8 +1,9 @@
+from collections.abc import Iterable
 from contextlib import suppress
+from functools import reduce
 from typing import TYPE_CHECKING, Any, TypeVar
 
 from sqlalchemy import inspect, sql
-from sqlalchemy.orm import Mapper
 from sqlalchemy.sql import ColumnCollection, ColumnElement
 from sqlalchemy.sql.base import ReadOnlyColumnCollection
 
@@ -15,7 +16,7 @@ JoinType = TypeVar("JoinType", bound=sql.Select[tuple["BaseModel", ...]])
 
 
 # This should not need to be Any, I think, but if I put "BaseModel" instead, various
-# things like RunMetaEntry are not recognized -> this sounds like covarianve again,
+# things like RunMetaEntry are not recognized -> this sounds like covariance again,
 # but covariant typevars are not allowed as type hints.
 def is_joined(exc: sql.Select[tuple[Any, ...]], model: type["BaseModel"]) -> bool:
     """Returns `True` if `model` has been joined in `exc`."""
@@ -30,31 +31,82 @@ def is_joined(exc: sql.Select[tuple[Any, ...]], model: type["BaseModel"]) -> boo
     return False
 
 
-def get_columns(model_class: type) -> ColumnCollection[str, ColumnElement[Any]]:
-    mapper: Mapper[Any] | None = inspect(model_class)
+def get_columns(
+    model_class: type["BaseModel"],
+) -> ReadOnlyColumnCollection[str, ColumnElement[Any]]:
+    mapper = inspect(model_class)
     if mapper is not None:
         return mapper.selectable.columns
     else:
         raise ProgrammingError(f"Model class `{model_class.__name__}` is not mapped.")
 
 
+def _maybe_add_pk_column_to_collection(
+    columns: ColumnCollection[str, ColumnElement[int]], column: ColumnElement[Any]
+) -> ColumnCollection[str, ColumnElement[int]]:
+    if column.primary_key:
+        columns.add(column)
+
+    return columns
+
+
 def get_pk_columns(
-    model_class: type,
+    model_class: type["BaseModel"],
 ) -> ReadOnlyColumnCollection[str, ColumnElement[int]]:
-    columns: ColumnCollection[str, ColumnElement[int]] = ColumnCollection()
-    for col in get_columns(model_class):
-        if col.primary_key:
-            columns.add(col)
+    columns: ColumnCollection[str, ColumnElement[int]] = reduce(
+        _maybe_add_pk_column_to_collection, get_columns(model_class), ColumnCollection()
+    )
 
     return columns.as_readonly()
+
+
+def _maybe_add_fk_column_to_collection(
+    columns: ColumnCollection[str, ColumnElement[int]], column: ColumnElement[Any]
+) -> ColumnCollection[str, ColumnElement[int]]:
+    if len(column.foreign_keys) > 0:
+        columns.add(column)
+
+    return columns
 
 
 def get_foreign_columns(
-    model_class: type,
+    model_class: type["BaseModel"],
 ) -> ReadOnlyColumnCollection[str, ColumnElement[int]]:
-    columns: ColumnCollection[str, ColumnElement[int]] = ColumnCollection()
-    for col in get_columns(model_class):
-        if len(col.foreign_keys) > 0:
-            columns.add(col)
+    columns: ColumnCollection[str, ColumnElement[int]] = reduce(
+        _maybe_add_fk_column_to_collection, get_columns(model_class), ColumnCollection()
+    )
 
     return columns.as_readonly()
+
+
+def create_id_map_subquery(
+    old_exc: sql.Subquery, new_exc: sql.Subquery
+) -> sql.Subquery:
+    return (
+        sql.select(old_exc.c.id.label("old_id"), new_exc.c.id.label("new_id"))
+        .join(new_exc, old_exc.c.name == new_exc.c.name)
+        .subquery()
+    )
+
+
+def collect_columns_to_select(
+    columns: ColumnCollection[str, ColumnElement[Any]], exclude: Iterable[str]
+) -> ColumnCollection[str, ColumnElement[Any]]:
+    # NOTE we only get ReadOnlyCollections, so can't just remove() items
+    columns_to_collect: ColumnCollection[str, ColumnElement[Any]] = ColumnCollection()
+
+    for name, column in columns.items():
+        if name not in exclude:
+            columns_to_collect.add(column=column, key=name)
+
+    return columns_to_collect
+
+
+def where_matches_kwargs(
+    exc: sql.Select[Any], model_class: type["BaseModel"], **kwargs: Any
+) -> sql.Select[Any]:
+    for key in kwargs:
+        columns = get_columns(model_class)
+        if key in columns:
+            exc = exc.where(columns[key] == kwargs[key])
+    return exc

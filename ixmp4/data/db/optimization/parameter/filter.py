@@ -2,7 +2,7 @@ from ixmp4.data.db import filters as base
 from ixmp4.data.db.run import Run
 from ixmp4.db import Session, filters, sql, utils
 
-from .model import Parameter
+from .model import Parameter, ParameterIndexsetAssociation
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
@@ -20,4 +20,15 @@ class OptimizationParameterFilter(
     def join(
         self, exc: sql.Select[tuple[Parameter]], session: Session | None = None
     ) -> sql.Select[tuple[Parameter]]:
+        return exc
+
+
+class OptimizationParameterIndexSetAssociationFilter(
+    base.OptimizationParameterIndexSetAssociationFilter, metaclass=filters.FilterMeta
+):
+    def join(
+        self,
+        exc: sql.Select[tuple[ParameterIndexsetAssociation]],
+        session: Session | None = None,
+    ) -> sql.Select[tuple[ParameterIndexsetAssociation]]:
         return exc

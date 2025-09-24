@@ -2,7 +2,7 @@ from ixmp4.data.db import filters as base
 from ixmp4.data.db.run import Run
 from ixmp4.db import Session, filters, sql, utils
 
-from .model import Equation
+from .model import Equation, EquationIndexsetAssociation
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
@@ -18,4 +18,15 @@ class EquationFilter(base.OptimizationEquationFilter, metaclass=filters.FilterMe
     def join(
         self, exc: sql.Select[tuple[Equation]], session: Session | None = None
     ) -> sql.Select[tuple[Equation]]:
+        return exc
+
+
+class OptimizationEquationIndexSetAssociationFilter(
+    base.OptimizationEquationIndexSetAssociationFilter, metaclass=filters.FilterMeta
+):
+    def join(
+        self,
+        exc: sql.Select[tuple[EquationIndexsetAssociation]],
+        session: Session | None = None,
+    ) -> sql.Select[tuple[EquationIndexsetAssociation]]:
         return exc

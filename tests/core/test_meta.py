@@ -6,6 +6,8 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import RunLockRequired
 
+from ..utils import CustomException
+
 EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
 
 
@@ -145,10 +147,6 @@ def test_run_meta_numpy(
     # assert that meta values were saved and updated correctly
     run2 = platform.runs.get("Model", "Scenario")
     assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
-
-
-class CustomException(Exception):
-    pass
 
 
 def test_run_meta_rollback(pg_platform: ixmp4.Platform) -> None:

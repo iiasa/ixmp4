@@ -88,6 +88,7 @@ def get_by_id(
 
 class RevertInput(BaseModel):
     transaction__id: int
+    revert_platform: bool
 
 
 @router.post("/{id}/revert/")
@@ -96,7 +97,7 @@ def revert(
     input: RevertInput = Body(),
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
-    backend.runs.revert(id, input.transaction__id)
+    backend.runs.revert(id, input.transaction__id, input.revert_platform)
 
 
 @router.post("/{id}/lock/", response_model=api.Run)
