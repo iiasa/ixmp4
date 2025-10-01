@@ -181,6 +181,9 @@ class EquationRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        # Manually ensure associations are deleted first to fix order of version updates
+        associations_to_delete = self._associations.tabulate(equation_id=id)
+        self._associations.bulk_delete(associations_to_delete)
         super().delete(id=id)
 
     @guard("view")

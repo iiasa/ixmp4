@@ -698,10 +698,6 @@ class TestCoreEquation:
                     {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
                 ]
 
-                # NOTE See note in table tests about changing values.
-                if isinstance(pg_platform.backend, RestTestBackend):
-                    expected = expected.replace({22: 23, 22.0: 23.0})
-
                 utils.assert_unordered_equality(
                     expected, vdf.drop(columns="data"), check_dtype=False
                 )

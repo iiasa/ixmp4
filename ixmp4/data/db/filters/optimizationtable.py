@@ -24,5 +24,6 @@ class OptimizationTableIndexSetAssociationFilter(
     filters.BaseFilter, metaclass=filters.FilterMeta
 ):
     id: filters.Id | None = filters.Field(None)
+    table__id: filters.Integer | None = filters.Field(None, alias="table_id")
 
     sqla_model: ClassVar[type] = TableIndexsetAssociation

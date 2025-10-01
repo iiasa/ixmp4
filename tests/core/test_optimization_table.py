@@ -606,13 +606,6 @@ class TestCoreTable:
                     {"Indexset 2": ["bar"]},
                 ]
 
-                # NOTE In the server layer, fastapi uses pydantic to convert a DB.table
-                # to an API.table. This requires loading the association relationship,
-                # which gets DELETEd first iif it's loaded. Thus, the transaction_id
-                # changes from postgres to rest-postgres.
-                if isinstance(pg_platform.backend, RestTestBackend):
-                    expected = expected.replace({22: 23, 22.0: 23.0})
-
                 utils.assert_unordered_equality(
                     expected, vdf.drop(columns="data"), check_dtype=False
                 )

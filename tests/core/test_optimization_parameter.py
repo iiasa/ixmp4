@@ -682,10 +682,6 @@ class TestCoreParameter:
                     {"Indexset 2": ["bar"], "values": [5], "units": [unit_2.name]},
                 ]
 
-                # NOTE See note in table tests about changing values.
-                if isinstance(pg_platform.backend, RestTestBackend):
-                    expected = expected.replace({24: 25, 24.0: 25.0})
-
                 utils.assert_unordered_equality(
                     expected, vdf.drop(columns="data"), check_dtype=False
                 )

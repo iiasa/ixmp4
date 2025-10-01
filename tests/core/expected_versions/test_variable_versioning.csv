@@ -4,5 +4,5 @@ Variable 1,1,1,@unknown,16,17,1
 Variable 1,1,1,@unknown,17,None,1
 Variable 2,2,1,@unknown,18,20,0
 Variable 2,2,1,@unknown,20,21,1
-Variable 2,2,1,@unknown,21,22,1
-Variable 2,2,1,@unknown,22,None,2
+Variable 2,2,1,@unknown,21,23,1
+Variable 2,2,1,@unknown,23,None,2

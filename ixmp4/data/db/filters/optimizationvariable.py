@@ -26,5 +26,6 @@ class OptimizationVariableIndexSetAssociationFilter(
     filters.BaseFilter, metaclass=filters.FilterMeta
 ):
     id: filters.Id | None = filters.Field(None)
+    variable__id: filters.Integer | None = filters.Field(None, alias="variable_id")
 
     sqla_model: ClassVar[type] = VariableIndexsetAssociation

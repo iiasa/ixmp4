@@ -24,5 +24,6 @@ class OptimizationParameterIndexSetAssociationFilter(
     filters.BaseFilter, metaclass=filters.FilterMeta
 ):
     id: filters.Id | None = filters.Field(None)
+    parameter__id: filters.Integer | None = filters.Field(None, alias="parameter_id")
 
     sqla_model: ClassVar[type] = ParameterIndexsetAssociation
