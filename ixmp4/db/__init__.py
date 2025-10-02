@@ -68,6 +68,7 @@ from sqlalchemy.orm import (
     Session,
     aliased,
     backref,
+    declared_attr,
     mapped_column,
     relationship,
     validates,
@@ -82,7 +83,7 @@ EquationIdType = Annotated[
     int,
     Column(
         Integer,
-        ForeignKey("optimization_equation.id", ondelete="CASCADE"),
+        ForeignKey("opt_equ.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     ),
@@ -92,13 +93,13 @@ EquationIdType = Annotated[
 # it's used anywhere else
 IndexSetIdType = Annotated[
     int,
-    Column(Integer, ForeignKey("optimization_indexset.id"), nullable=False, index=True),
+    Column(Integer, ForeignKey("opt_idx.id"), nullable=False, index=True),
 ]
 IndexSet__IdType = Annotated[
     int,
     Column(
         Integer,
-        ForeignKey("optimization_indexset.id", ondelete="CASCADE"),
+        ForeignKey("opt_idx.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     ),
@@ -114,7 +115,7 @@ OptimizationVariableIdType = Annotated[
     int,
     Column(
         Integer,
-        ForeignKey("optimization_optimizationvariable.id", ondelete="CASCADE"),
+        ForeignKey("opt_var.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     ),
@@ -123,7 +124,7 @@ ParameterIdType = Annotated[
     int,
     Column(
         Integer,
-        ForeignKey("optimization_parameter.id", ondelete="CASCADE"),
+        ForeignKey("opt_par.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     ),
@@ -136,7 +137,7 @@ TableIdType = Annotated[
     int,
     Column(
         Integer,
-        ForeignKey("optimization_table.id", ondelete="CASCADE"),
+        ForeignKey("opt_tab.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     ),

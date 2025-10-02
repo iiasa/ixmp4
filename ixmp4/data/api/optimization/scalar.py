@@ -2,9 +2,6 @@ from collections.abc import Iterable, Mapping
 from datetime import datetime
 from typing import TYPE_CHECKING, Any, ClassVar, cast
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend.api import RestBackend
-
 import pandas as pd
 
 # TODO Import this from typing when dropping support for Python 3.11
@@ -15,6 +12,9 @@ from ixmp4.data import abstract
 from .. import base
 from ..docs import Docs, DocsRepository
 from ..unit import Unit
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 
 class Scalar(base.BaseModel):

@@ -11,6 +11,8 @@ class OptimizationScalarFilter(filters.BaseFilter, metaclass=filters.FilterMeta)
     run__id: filters.Integer | None = filters.Field(None, alias="run_id")
     unit__id: filters.Integer | None = filters.Field(None, alias="unit_id")
 
+    # revert_platform: filters.Boolean = filters.Field(False)
+
     sqla_model: ClassVar[type] = Scalar
 
     def join(

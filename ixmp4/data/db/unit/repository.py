@@ -1,24 +1,21 @@
 from typing import TYPE_CHECKING
 
 import pandas as pd
-from sqlalchemy.exc import NoResultFound
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
-
-from .. import versions
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 from ixmp4 import db
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.db.filters import BaseFilter
 
-from .. import base
+from .. import base, versions
 from .docs import UnitDocsRepository
 from .model import Unit, UnitVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
 class UnitVersionRepository(versions.VersionRepository[UnitVersion]):
@@ -38,6 +35,8 @@ class UnitRepository(
     base.Deleter[Unit],
     base.Retriever[Unit],
     base.Enumerator[Unit],
+    base.BulkDeleter[Unit],
+    base.BulkUpserter[Unit],
     abstract.UnitRepository,
 ):
     docs: UnitDocsRepository
@@ -71,7 +70,7 @@ class UnitRepository(
         exc = db.select(Unit).where(Unit.name == name)
         try:
             return self.session.execute(exc).scalar_one()
-        except NoResultFound:
+        except db.NoResultFound:
             raise Unit.NotFound
 
     @guard("view")

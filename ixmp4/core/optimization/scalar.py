@@ -1,11 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
-
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
@@ -15,6 +10,11 @@ from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
 
 from .base import Deleter, Lister, OptimizationBaseModelFacade, Retriever, Tabulator
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
+    from . import InitKwargs
 
 
 class Scalar(OptimizationBaseModelFacade):
@@ -40,9 +40,7 @@ class Scalar(OptimizationBaseModelFacade):
         self._run.require_lock()
         self._model.value = value
         self.backend.optimization.scalars.update(
-            id=self._model.id,
-            value=self._model.value,
-            unit_id=self._model.unit.id,
+            id=self._model.id, value=self._model.value
         )
 
     @property
@@ -57,9 +55,7 @@ class Scalar(OptimizationBaseModelFacade):
             unit_model = self.backend.units.get(value)
             value = Unit(_backend=self.backend, _model=unit_model)
         self._model = self.backend.optimization.scalars.update(
-            id=self._model.id,
-            value=self._model.value,
-            unit_id=value.id,
+            id=self._model.id, unit_id=value.id
         )
 
     @property
@@ -120,7 +116,7 @@ class ScalarRepository(
         else:
             # TODO: provide logging information about None-units being converted
             # if unit is None, assume that this is a dimensionless scalar (unit = "")
-            dimensionless_unit = self.backend.units.create(name="")
+            dimensionless_unit = self.backend.units.get_or_create(name="")
             unit_name = dimensionless_unit.name
 
         try:

@@ -1,11 +1,5 @@
 from typing import TYPE_CHECKING, Generic, TypeVar
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
-
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -14,6 +8,11 @@ from typing_extensions import TypedDict, Unpack
 from ixmp4.core.base import BaseFacade, BaseModelFacade
 from ixmp4.data import abstract
 from ixmp4.data.backend import Backend
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
+    from . import InitKwargs
 
 
 class BaseModelFacadeKwargs(TypedDict, total=False):

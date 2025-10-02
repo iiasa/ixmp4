@@ -2,26 +2,66 @@ import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociationRepository,
+    BaseIndexSetAssociationReverter,
+    BaseIndexSetAssociationVersionRepository,
+)
 
 from .. import base
 from .docs import OptimizationVariableDocsRepository
 from .model import OptimizationVariable as Variable
-from .model import VariableIndexsetAssociation
+from .model import (
+    VariableIndexsetAssociation,
+    VariableIndexsetAssociationVersion,
+    VariableVersion,
+)
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 logger = logging.getLogger(__name__)
+
+
+class VariableVersionRepository(versions.VersionRepository[VariableVersion]):
+    model_class = VariableVersion
+
+
+class VariableIndexSetAssociationVersionRepository(
+    BaseIndexSetAssociationVersionRepository[VariableIndexsetAssociationVersion]
+):
+    model_class = VariableIndexsetAssociationVersion
+    parent_version = VariableVersion
+    _item_id_column = "variable__id"
+
+
+class VariableIndexSetAssociationRepository(
+    BaseIndexSetAssociationRepository[
+        VariableIndexsetAssociation, VariableIndexsetAssociationVersion
+    ]
+):
+    model_class = VariableIndexsetAssociation
+    versions: VariableIndexSetAssociationVersionRepository
+
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.versions = VariableIndexSetAssociationVersionRepository(backend)
+
+        from .filter import OptimizationVariableIndexSetAssociationFilter
+
+        self.filter_class = OptimizationVariableIndexSetAssociationFilter
 
 
 class VariableRepository(
@@ -29,11 +69,16 @@ class VariableRepository(
     base.Deleter[Variable],
     base.Retriever[Variable],
     base.Enumerator[Variable],
+    BaseIndexSetAssociationReverter[
+        VariableIndexsetAssociation, VariableIndexsetAssociationVersion
+    ],
     abstract.VariableRepository,
 ):
     model_class = Variable
 
     UsageError = OptimizationItemUsageError
+
+    versions: VariableVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -42,6 +87,12 @@ class VariableRepository(
         from .filter import OptimizationVariableFilter
 
         self.filter_class = OptimizationVariableFilter
+
+        self.versions = VariableVersionRepository(*args)
+
+        self._associations = VariableIndexSetAssociationRepository(*args)
+
+        self._item_id_column = "variable__id"
 
     def add(
         self,
@@ -131,6 +182,9 @@ class VariableRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        # Manually ensure associations are deleted first to fix order of version updates
+        associations_to_delete = self._associations.tabulate(variable_id=id)
+        self._associations.bulk_delete(associations_to_delete)
         super().delete(id=id)
 
     @guard("view")
@@ -224,3 +278,12 @@ class VariableRepository(
             variable.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
 
         self.session.commit()
+
+    @guard("edit")
+    def revert(self, transaction__id: int, run__id: int) -> None:
+        super().revert(transaction__id=transaction__id, run__id=run__id)
+
+        # Revert VariableIndexSetAssociation
+        self._revert_indexset_association(
+            repo=self, transaction__id=transaction__id, run__id=run__id
+        )

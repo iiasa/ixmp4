@@ -77,7 +77,7 @@ class SqlAlchemyBackend(Backend):
     checkpoints: CheckpointRepository
     transactions: TransactionRepository
 
-    Session = sessionmaker(autocommit=False, autoflush=False, future=True)
+    Session = sessionmaker(autocommit=False, autoflush=False)
     auth_context: AuthorizationContext | None = None
     event_handler: SqlaEventHandler
 

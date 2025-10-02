@@ -1,11 +1,26 @@
 from .meta import RunMetaEntryFilter
 from .model import ModelFilter
-from .optimizationequation import OptimizationEquationFilter
-from .optimizationindexset import OptimizationIndexSetFilter
-from .optimizationparameter import OptimizationParameterFilter
+from .optimizationequation import (
+    OptimizationEquationFilter,
+    OptimizationEquationIndexSetAssociationFilter,
+)
+from .optimizationindexset import (
+    OptimizationIndexSetDataFilter,
+    OptimizationIndexSetFilter,
+)
+from .optimizationparameter import (
+    OptimizationParameterFilter,
+    OptimizationParameterIndexSetAssociationFilter,
+)
 from .optimizationscalar import OptimizationScalarFilter
-from .optimizationtable import OptimizationTableFilter
-from .optimizationvariable import OptimizationVariableFilter
+from .optimizationtable import (
+    OptimizationTableFilter,
+    OptimizationTableIndexSetAssociationFilter,
+)
+from .optimizationvariable import (
+    OptimizationVariableFilter,
+    OptimizationVariableIndexSetAssociationFilter,
+)
 from .region import RegionFilter
 from .run import RunFilter
 from .scenario import ScenarioFilter

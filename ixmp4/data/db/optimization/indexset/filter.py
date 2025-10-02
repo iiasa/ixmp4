@@ -2,7 +2,7 @@ from ixmp4.data.db import filters as base
 from ixmp4.data.db.run import Run
 from ixmp4.db import Session, filters, sql, utils
 
-from .model import IndexSet
+from .model import IndexSet, IndexSetData
 
 
 class RunFilter(base.RunFilter, metaclass=filters.FilterMeta):
@@ -20,4 +20,13 @@ class OptimizationIndexSetFilter(
     def join(
         self, exc: sql.Select[tuple[IndexSet]], session: Session | None = None
     ) -> sql.Select[tuple[IndexSet]]:
+        return exc
+
+
+class OptimizationIndexSetDataFilter(
+    base.OptimizationIndexSetDataFilter, metaclass=filters.FilterMeta
+):
+    def join(
+        self, exc: sql.Select[tuple[IndexSetData]], session: Session | None = None
+    ) -> sql.Select[tuple[IndexSetData]]:
         return exc

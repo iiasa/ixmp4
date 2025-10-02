@@ -1,5 +1,6 @@
 from typing import ClassVar
 
+from ixmp4.data.db.optimization.equation.model import EquationIndexsetAssociation
 from ixmp4.db import Session, filters, sql
 
 from .. import Equation, Run
@@ -17,3 +18,12 @@ class OptimizationEquationFilter(filters.BaseFilter, metaclass=filters.FilterMet
     ) -> sql.Select[tuple[Equation]]:
         exc = exc.join(Run, onclause=Equation.run__id == Run.id)
         return exc
+
+
+class OptimizationEquationIndexSetAssociationFilter(
+    filters.BaseFilter, metaclass=filters.FilterMeta
+):
+    id: filters.Id | None = filters.Field(None)
+    equation__id: filters.Integer | None = filters.Field(None, alias="equation_id")
+
+    sqla_model: ClassVar[type] = EquationIndexsetAssociation

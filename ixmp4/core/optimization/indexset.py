@@ -1,11 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
-
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
@@ -20,6 +15,11 @@ from .base import (
     Retriever,
     Tabulator,
 )
+
+if TYPE_CHECKING:
+    from ixmp4.core.run import Run
+
+    from . import InitKwargs
 
 
 class IndexSet(OptimizationBaseModelFacade):

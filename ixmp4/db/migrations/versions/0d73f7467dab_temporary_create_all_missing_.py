@@ -139,9 +139,7 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["dimension__id"],
             ["optimization_equation.id"],
-            name=op.f(
-                "fk_optimization_equation_docs_dimension__id_optimization_equation"
-            ),
+            name=op.f("fk_optimization_equation_docs_dimension__id_optimizatio_bb11"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_optimization_equation_docs")),
         sa.UniqueConstraint(
@@ -161,9 +159,7 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["dimension__id"],
             ["optimization_optimizationvariable.id"],
-            name=op.f(
-                "fk_optimization_optimizationvariable_docs_dimension__id_optimization_optimizationvariable"
-            ),
+            name=op.f("fk_optimization_optimizationvariable_docs_dimension__id_ba30"),
         ),
         sa.PrimaryKeyConstraint(
             "id", name=op.f("pk_optimization_optimizationvariable_docs")
@@ -186,9 +182,7 @@ def upgrade():
         sa.ForeignKeyConstraint(
             ["dimension__id"],
             ["optimization_parameter.id"],
-            name=op.f(
-                "fk_optimization_parameter_docs_dimension__id_optimization_parameter"
-            ),
+            name=op.f("fk_optimization_parameter_docs_dimension__id_optimizati_898e"),
         ),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_optimization_parameter_docs")),
         sa.UniqueConstraint(

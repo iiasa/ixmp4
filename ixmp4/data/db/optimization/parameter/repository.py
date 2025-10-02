@@ -1,29 +1,68 @@
+import logging
 from collections.abc import Iterable
 from typing import TYPE_CHECKING, Any, cast
 
+import pandas as pd
+
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
-
-import logging
-
-import pandas as pd
 
 from ixmp4 import db
 from ixmp4.core.exceptions import OptimizationItemUsageError
 from ixmp4.data import types
 from ixmp4.data.abstract import optimization as abstract
 from ixmp4.data.auth.decorators import guard
+from ixmp4.data.db import versions
+from ixmp4.data.db.optimization.associations import (
+    BaseIndexSetAssociationRepository,
+    BaseIndexSetAssociationReverter,
+    BaseIndexSetAssociationVersionRepository,
+)
 from ixmp4.data.db.unit import Unit
 
 from .. import base
 from .docs import ParameterDocsRepository
-from .model import Parameter, ParameterIndexsetAssociation
+from .model import (
+    Parameter,
+    ParameterIndexsetAssociation,
+    ParameterIndexsetAssociationVersion,
+    ParameterVersion,
+)
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 logger = logging.getLogger(__name__)
+
+
+class ParameterVersionRepository(versions.VersionRepository[ParameterVersion]):
+    model_class = ParameterVersion
+
+
+class ParameterIndexSetAssociationVersionRepository(
+    BaseIndexSetAssociationVersionRepository[ParameterIndexsetAssociationVersion]
+):
+    model_class = ParameterIndexsetAssociationVersion
+    parent_version = ParameterVersion
+    _item_id_column = "parameter__id"
+
+
+class ParameterIndexSetAssociationRepository(
+    BaseIndexSetAssociationRepository[
+        ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
+    ]
+):
+    model_class = ParameterIndexsetAssociation
+    versions: ParameterIndexSetAssociationVersionRepository
+
+    def __init__(self, backend: "SqlAlchemyBackend") -> None:
+        super().__init__(backend)
+
+        self.versions = ParameterIndexSetAssociationVersionRepository(backend)
+
+        from .filter import OptimizationParameterIndexSetAssociationFilter
+
+        self.filter_class = OptimizationParameterIndexSetAssociationFilter
 
 
 class ParameterRepository(
@@ -31,11 +70,16 @@ class ParameterRepository(
     base.Deleter[Parameter],
     base.Retriever[Parameter],
     base.Enumerator[Parameter],
+    BaseIndexSetAssociationReverter[
+        ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
+    ],
     abstract.ParameterRepository,
 ):
     model_class = Parameter
 
     UsageError = OptimizationItemUsageError
+
+    versions: ParameterVersionRepository
 
     def __init__(self, *args: "SqlAlchemyBackend") -> None:
         super().__init__(*args)
@@ -44,6 +88,12 @@ class ParameterRepository(
         from .filter import OptimizationParameterFilter
 
         self.filter_class = OptimizationParameterFilter
+
+        self.versions = ParameterVersionRepository(*args)
+
+        self._associations = ParameterIndexSetAssociationRepository(*args)
+
+        self._item_id_column = "parameter__id"
 
     def add(
         self,
@@ -121,6 +171,9 @@ class ParameterRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        # Manually ensure associations are deleted first to fix order of version updates
+        associations_to_delete = self._associations.tabulate(parameter_id=id)
+        self._associations.bulk_delete(associations_to_delete)
         super().delete(id=id)
 
     @guard("view")
@@ -207,3 +260,14 @@ class ParameterRepository(
             remaining_data.reset_index(inplace=True)
 
         parameter.data = cast(types.JsonDict, remaining_data.to_dict(orient="list"))
+
+        self.session.commit()
+
+    @guard("edit")
+    def revert(self, transaction__id: int, run__id: int) -> None:
+        super().revert(transaction__id=transaction__id, run__id=run__id)
+
+        # Revert ParameterIndexSetAssociation
+        self._revert_indexset_association(
+            repo=self, transaction__id=transaction__id, run__id=run__id
+        )

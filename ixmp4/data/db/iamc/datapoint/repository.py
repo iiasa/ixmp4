@@ -22,6 +22,7 @@ from ixmp4.data.db.run import Run, RunRepository
 from ixmp4.data.db.scenario import Scenario
 from ixmp4.data.db.unit import Unit, UnitVersion
 from ixmp4.db.filters import BaseFilter
+from ixmp4.db.utils.revert import where_valid_at_transaction
 
 from .. import base
 from ..measurand import Measurand, MeasurandVersion
@@ -132,19 +133,19 @@ class DatapointVersionRepository(versions.VersionRepository[UniversalDataPointVe
         )
 
         if transaction__id is not None:
-            for vclass in [
+            for vclass in {
                 self.model_class,
                 RegionVersion,
                 MeasurandVersion,
                 UnitVersion,
                 VariableVersion,
-            ]:
-                exc = self.where_valid_at_transaction(exc, transaction__id, vclass)
+            }:
+                exc = where_valid_at_transaction(exc, transaction__id, vclass)
 
         if run__id is not None:
             exc = exc.where(TimeSeriesVersion.run__id == run__id)
 
-        exc = self.where_matches_kwargs(exc, **kwargs)
+        exc = db.utils.where_matches_kwargs(exc, model_class=self.model_class, **kwargs)
         return exc.distinct()
 
 
