@@ -4,7 +4,7 @@ authors = [
     "Fridolin Glatter <glatter@iiasa.ac.at>",
     "Daniel Huppmann <huppmann@iiasa.ac.at>",
     "Philip Hackstock <hackstock@iiasa.ac.at>",
-    "Pino Mussak <mussak@iiasa.ac.at>",
+    "Pino Mussak <mussak@iiasa.ac.at>"
 ]
 name = "ixmp4"
 version = "0.0.0"
@@ -36,7 +36,6 @@ toml = ">=0.10.2"
 psycopg = { extras = ["binary"], version = ">=3.1.12" }
 pydantic-settings = ">=2.1.0"
 rich = ">=13.5.2"
-scse-toolkit = { git = "https://github.com/iiasa/scse-toolkit.git", branch = "enhancement/db-repositories" }
 
 [tool.poetry.group.docs]
 optional = true

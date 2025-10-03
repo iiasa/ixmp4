@@ -34,7 +34,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class VariableVersionRepository(versions.RunLinkedVersionRepository[VariableVersion]):
+class VariableVersionRepository(versions.VersionRepository[VariableVersion]):
     model_class = VariableVersion
 
 
@@ -70,7 +70,7 @@ class VariableRepository(
     base.Retriever[Variable],
     base.Enumerator[Variable],
     BaseIndexSetAssociationReverter[
-        Variable, VariableIndexsetAssociation, VariableIndexsetAssociationVersion
+        VariableIndexsetAssociation, VariableIndexsetAssociationVersion
     ],
     abstract.VariableRepository,
 ):
@@ -182,6 +182,9 @@ class VariableRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        # Manually ensure associations are deleted first to fix order of version updates
+        associations_to_delete = self._associations.tabulate(variable_id=id)
+        self._associations.bulk_delete(associations_to_delete)
         super().delete(id=id)
 
     @guard("view")
@@ -282,5 +285,5 @@ class VariableRepository(
 
         # Revert VariableIndexSetAssociation
         self._revert_indexset_association(
-            transaction__id=transaction__id, run__id=run__id
+            repo=self, transaction__id=transaction__id, run__id=run__id
         )

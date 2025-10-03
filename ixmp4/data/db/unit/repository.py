@@ -18,7 +18,7 @@ if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
-class UnitVersionRepository(versions.NamedVersionRepository[UnitVersion]):
+class UnitVersionRepository(versions.VersionRepository[UnitVersion]):
     model_class = UnitVersion
 
 
@@ -37,7 +37,6 @@ class UnitRepository(
     base.Enumerator[Unit],
     base.BulkDeleter[Unit],
     base.BulkUpserter[Unit],
-    base.NamedSelecter[Unit],
     abstract.UnitRepository,
 ):
     docs: UnitDocsRepository

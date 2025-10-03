@@ -25,7 +25,7 @@ class EquationIndexsetAssociation(BaseIndexSetAssociation):
     )
 
 
-class Equation(base.RunLinkedBaseModel):
+class Equation(base.BaseModel):
     __tablename__ = "opt_equ"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -34,6 +34,7 @@ class Equation(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Equation.DeletionPrevented
 
+    run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -84,7 +85,7 @@ class Equation(base.RunLinkedBaseModel):
         return {"levels", "marginals"}
 
 
-class EquationVersion(versions.RunLinkedVersionModel):
+class EquationVersion(versions.DefaultVersionModel):
     __tablename__ = "opt_equ_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)

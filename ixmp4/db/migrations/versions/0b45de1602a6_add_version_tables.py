@@ -394,7 +394,12 @@ def upgrade():
 
     op.create_table(
         "transaction",
-        sa.Column("id", sa.BigInteger(), autoincrement=True, nullable=False),
+        sa.Column(
+            "id",
+            sa.BigInteger(),
+            sa.Identity(always=False, on_null=True, start=2, increment=1),
+            nullable=False,
+        ),
         sa.Column("remote_addr", sa.String(length=50), nullable=True),
         sa.Column("issued_at", sa.DateTime(), nullable=True),
         sa.PrimaryKeyConstraint("id", name=op.f("pk_transaction")),

@@ -13,17 +13,8 @@ from .ddl import (
     UpdateTrigger,
     VersionProcedure,
 )
-from .model import (
-    DefaultVersionModel,
-    NamedVersionModel,
-    Operation,
-    RunLinkedVersionModel,
-)
-from .repository import (
-    NamedVersionRepository,
-    RunLinkedVersionRepository,
-    VersionRepository,
-)
+from .model import DefaultVersionModel, Operation
+from .repository import VersionRepository
 from .transaction import Transaction, TransactionRepository
 
 logger = logging.getLogger(__name__)

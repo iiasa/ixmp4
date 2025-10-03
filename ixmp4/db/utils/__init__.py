@@ -1,6 +1,5 @@
 from collections.abc import Iterable
 from contextlib import suppress
-from copy import copy
 from functools import reduce
 from typing import TYPE_CHECKING, Any, TypeVar
 
@@ -45,12 +44,10 @@ def get_columns(
 def _maybe_add_pk_column_to_collection(
     columns: ColumnCollection[str, ColumnElement[int]], column: ColumnElement[Any]
 ) -> ColumnCollection[str, ColumnElement[int]]:
-    _columns = copy(columns)
-
     if column.primary_key:
-        _columns.add(column)
+        columns.add(column)
 
-    return _columns
+    return columns
 
 
 def get_pk_columns(
@@ -66,13 +63,10 @@ def get_pk_columns(
 def _maybe_add_fk_column_to_collection(
     columns: ColumnCollection[str, ColumnElement[int]], column: ColumnElement[Any]
 ) -> ColumnCollection[str, ColumnElement[int]]:
-    # TODO Does this copy deep enough?
-    _columns = copy(columns)
-
     if len(column.foreign_keys) > 0:
-        _columns.add(column)
+        columns.add(column)
 
-    return _columns
+    return columns
 
 
 def get_foreign_columns(
@@ -95,16 +89,24 @@ def create_id_map_subquery(
     )
 
 
-def _maybe_add_column_to_collection(
-    collection: ColumnCollection[str, ColumnElement[Any]],
-    column: tuple[str, ColumnElement[Any]],
-    exclude: Iterable[str],
+def collect_columns_to_select(
+    columns: ColumnCollection[str, ColumnElement[Any]], exclude: Iterable[str]
 ) -> ColumnCollection[str, ColumnElement[Any]]:
-    _collection = copy(collection)
+    # NOTE we only get ReadOnlyCollections, so can't just remove() items
+    columns_to_collect: ColumnCollection[str, ColumnElement[Any]] = ColumnCollection()
 
-    key = column[0]
+    for name, column in columns.items():
+        if name not in exclude:
+            columns_to_collect.add(column=column, key=name)
 
-    if key not in exclude:
-        _collection.add(column[1], key=key)
+    return columns_to_collect
 
-    return _collection
+
+def where_matches_kwargs(
+    exc: sql.Select[Any], model_class: type["BaseModel"], **kwargs: Any
+) -> sql.Select[Any]:
+    for key in kwargs:
+        columns = get_columns(model_class)
+        if key in columns:
+            exc = exc.where(columns[key] == kwargs[key])
+    return exc

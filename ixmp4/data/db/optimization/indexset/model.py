@@ -11,7 +11,7 @@ from ixmp4.data.db import versions
 from .. import base
 
 
-class IndexSet(base.RunLinkedBaseModel):
+class IndexSet(base.BaseModel):
     __tablename__ = "opt_idx"
 
     NotFound: ClassVar = abstract.IndexSet.NotFound
@@ -42,6 +42,8 @@ class IndexSet(base.RunLinkedBaseModel):
 
     updateable_columns = ["_data_type"]
 
+    run__id: types.RunId
+
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
 
@@ -55,7 +57,7 @@ class IndexSetData(base.RootBaseModel):
     __table_args__ = (db.UniqueConstraint("indexset__id", "value"),)
 
 
-class IndexSetVersion(versions.RunLinkedVersionModel):
+class IndexSetVersion(versions.DefaultVersionModel):
     __tablename__ = "opt_idx_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)

@@ -26,9 +26,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
         # which doesn't like lists
         [
             [
+                table.run_id,
                 table.data,
                 table.name,
-                table.run_id,
                 table.id,
                 table.created_at,
                 table.created_by,
@@ -36,9 +36,9 @@ def df_from_list(tables: list[Table]) -> pd.DataFrame:
             for table in tables
         ],
         columns=[
+            "run__id",
             "data",
             "name",
-            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -605,13 +605,6 @@ class TestCoreTable:
                     {"Indexset 2": ["bar"]},
                     {"Indexset 2": ["bar"]},
                 ]
-
-                # NOTE In the server layer, fastapi uses pydantic to convert a DB.table
-                # to an API.table. This requires loading the association relationship,
-                # which gets DELETEd first iif it's loaded. Thus, the transaction_id
-                # changes from postgres to rest-postgres.
-                if isinstance(pg_platform.backend, RestTestBackend):
-                    expected = expected.replace({22: 23, 22.0: 23.0})
 
                 utils.assert_unordered_equality(
                     expected, vdf.drop(columns="data"), check_dtype=False

@@ -5,15 +5,10 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4 import db
 from ixmp4.core.exceptions import IxmpError
 from ixmp4.data import types
 from ixmp4.data.abstract.annotations import HasIdFilter, HasNameFilter, HasRunIdFilter
-from ixmp4.data.db.versions.repository import (
-    RunLinkedVersionRepository,
-    VersionRepository,
-)
-from ixmp4.db import utils
+from ixmp4.data.db.versions.repository import VersionRepository
 from ixmp4.db.filters import BaseFilter
 
 from .. import mixins
@@ -27,13 +22,8 @@ from ..base import (
     Lister,
     ModelType,
     Retriever,
-    RunLinkedModelType,
-    RunLinkedSelecter,
     Selecter,
     Tabulator,
-)
-from ..base import (
-    RunLinkedBaseModel as RootRunLinkedBaseModel,
 )
 
 
@@ -44,10 +34,6 @@ class BaseModel(RootBaseModel, mixins.HasCreationInfo):
     __abstract__ = True
 
     name: types.Name
-
-
-class RunLinkedBaseModel(BaseModel, RootRunLinkedBaseModel):
-    __abstract__ = True
 
 
 class EnumerateKwargs(HasIdFilter, HasNameFilter, HasRunIdFilter, total=False):
@@ -119,22 +105,3 @@ class Reverter(BulkDeleter[ModelType], BulkUpserter[ModelType]):
             self.bulk_update(versions_to_update)
 
         self.session.commit()
-
-
-class RunLinkedReverter(
-    Reverter[RunLinkedModelType],
-    RunLinkedSelecter[RunLinkedModelType],
-):
-    versions: RunLinkedVersionRepository[Any]
-
-    def _create_id_map_subquery(
-        self, transaction__id: int, run__id: int
-    ) -> db.sql.Subquery:
-        old_items_subquery = self.versions._select_for_id_map(
-            transaction__id=transaction__id, run__id=run__id
-        ).subquery()
-        new_items_subquery = self._select_for_id_map(run__id=run__id).subquery()
-
-        return utils.create_id_map_subquery(
-            old_exc=old_items_subquery, new_exc=new_items_subquery
-        )

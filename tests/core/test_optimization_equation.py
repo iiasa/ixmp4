@@ -26,9 +26,9 @@ def df_from_list(equations: list[Equation]) -> pd.DataFrame:
     return pd.DataFrame(
         [
             [
+                equation.run_id,
                 equation.data,
                 equation.name,
-                equation.run_id,
                 equation.id,
                 equation.created_at,
                 equation.created_by,
@@ -36,9 +36,9 @@ def df_from_list(equations: list[Equation]) -> pd.DataFrame:
             for equation in equations
         ],
         columns=[
+            "run__id",
             "data",
             "name",
-            "run__id",
             "id",
             "created_at",
             "created_by",
@@ -697,10 +697,6 @@ class TestCoreEquation:
                     {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
                     {"Indexset 2": ["bar"], "levels": [5], "marginals": [0]},
                 ]
-
-                # NOTE See note in table tests about changing values.
-                if isinstance(pg_platform.backend, RestTestBackend):
-                    expected = expected.replace({22: 23, 22.0: 23.0})
 
                 utils.assert_unordered_equality(
                     expected, vdf.drop(columns="data"), check_dtype=False

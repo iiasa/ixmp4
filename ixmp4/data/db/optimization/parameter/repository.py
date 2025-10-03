@@ -35,7 +35,7 @@ if TYPE_CHECKING:
 logger = logging.getLogger(__name__)
 
 
-class ParameterVersionRepository(versions.RunLinkedVersionRepository[ParameterVersion]):
+class ParameterVersionRepository(versions.VersionRepository[ParameterVersion]):
     model_class = ParameterVersion
 
 
@@ -71,7 +71,7 @@ class ParameterRepository(
     base.Retriever[Parameter],
     base.Enumerator[Parameter],
     BaseIndexSetAssociationReverter[
-        Parameter, ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
+        ParameterIndexsetAssociation, ParameterIndexsetAssociationVersion
     ],
     abstract.ParameterRepository,
 ):
@@ -171,6 +171,9 @@ class ParameterRepository(
 
     @guard("edit")
     def delete(self, id: int) -> None:
+        # Manually ensure associations are deleted first to fix order of version updates
+        associations_to_delete = self._associations.tabulate(parameter_id=id)
+        self._associations.bulk_delete(associations_to_delete)
         super().delete(id=id)
 
     @guard("view")
@@ -266,5 +269,5 @@ class ParameterRepository(
 
         # Revert ParameterIndexSetAssociation
         self._revert_indexset_association(
-            transaction__id=transaction__id, run__id=run__id
+            repo=self, transaction__id=transaction__id, run__id=run__id
         )

@@ -27,7 +27,7 @@ class VariableIndexsetAssociation(BaseIndexSetAssociation):
     )
 
 
-class OptimizationVariable(base.RunLinkedBaseModel):
+class OptimizationVariable(base.BaseModel):
     __tablename__ = "opt_var"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -36,6 +36,7 @@ class OptimizationVariable(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Variable.DeletionPrevented
 
+    run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -87,7 +88,7 @@ class OptimizationVariable(base.RunLinkedBaseModel):
         return {"levels", "marginals"}
 
 
-class VariableVersion(versions.RunLinkedVersionModel):
+class VariableVersion(versions.DefaultVersionModel):
     __tablename__ = "opt_var_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)

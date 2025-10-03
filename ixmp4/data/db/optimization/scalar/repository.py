@@ -15,6 +15,7 @@ from ixmp4.data.db import versions
 from ixmp4.data.db.unit.model import Unit, UnitVersion
 from ixmp4.data.db.utils import map_existing
 from ixmp4.db import utils
+from ixmp4.db.utils.revert import apply_transaction__id, select_for_id_map
 
 from .. import base
 from .docs import ScalarDocsRepository
@@ -22,6 +23,7 @@ from .model import Scalar, ScalarVersion
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
+    from ixmp4.data.db.versions.model import DefaultVersionModel
 
 
 class EnumerateKwargs(base.EnumerateKwargs, HasUnitIdFilter, total=False): ...
@@ -37,6 +39,7 @@ class ScalarVersionRepository(
         transaction__id: int | None = None,
         run__id: int | None = None,
         valid: Literal["at_transaction", "after_transaction"] = "at_transaction",
+        revert_platform: bool = False,
         **kwargs: Any,
     ) -> db.sql.Select[Any]:
         exc = db.select(self.bundle, UnitVersion.name.label("unit")).select_from(
@@ -45,16 +48,21 @@ class ScalarVersionRepository(
 
         exc = exc.join(UnitVersion, onclause=ScalarVersion.unit__id == UnitVersion.id)
 
-        apply_transaction__id = partial(
-            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        _apply_transaction__id = partial(
+            apply_transaction__id, transaction__id=transaction__id, valid=valid
         )
 
-        exc = reduce(apply_transaction__id, {self.model_class, UnitVersion}, exc)
+        # NOTE If not reverting Units, don't limit the selection because of them
+        models_to_consider: set[type["DefaultVersionModel"]] = {self.model_class}
+        if revert_platform:
+            models_to_consider.add(UnitVersion)
+
+        exc = reduce(_apply_transaction__id, models_to_consider, exc)
 
         if run__id is not None:
             exc = exc.where(ScalarVersion.run__id == run__id)
 
-        exc = self.where_matches_kwargs(exc, **kwargs)
+        exc = utils.where_matches_kwargs(exc, model_class=self.model_class, **kwargs)
         return exc.distinct()
 
 
@@ -163,25 +171,22 @@ class ScalarRepository(
     def revert(
         self, transaction__id: int, run__id: int, revert_platform: bool = False
     ) -> None:
-        correct_versions: pd.DataFrame | None = None
+        correct_versions: pd.DataFrame
         if revert_platform:
-            old_unit_subquery = self.backend.units.versions._select_for_id_map(
-                transaction__id=transaction__id
+            old_unit_subquery = select_for_id_map(
+                model_class=UnitVersion, run__id=None, transaction__id=transaction__id
             ).subquery()
-            new_unit_subquery = self.backend.units._select_for_id_map().subquery()
+            new_unit_subquery = select_for_id_map(
+                model_class=Unit, run__id=None
+            ).subquery()
 
             unit_map_subquery = utils.create_id_map_subquery(
                 old_exc=old_unit_subquery, new_exc=new_unit_subquery
             )
 
-            _columns = utils.get_columns(self.versions.model_class)
-            maybe_add_column_to_collection = partial(
-                utils._maybe_add_column_to_collection, exclude={"unit__id"}
-            )
-            columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
-                maybe_add_column_to_collection,
-                _columns.items(),
-                db.sql.ColumnCollection(),
+            columns = utils.collect_columns_to_select(
+                columns=utils.get_columns(self.versions.model_class),
+                exclude={"unit__id"},
             )
 
             select_correct_versions = (
@@ -195,13 +200,17 @@ class ScalarRepository(
                 )
             )
 
-            select_correct_versions = self.versions._apply_transaction__id(
+            select_correct_versions = apply_transaction__id(
                 exc=select_correct_versions,
-                vclass=self.versions.model_class,
+                model_class=self.versions.model_class,
                 transaction__id=transaction__id,
             ).order_by(self.versions.model_class.id.asc())
 
             correct_versions = self.tabulate_query(select_correct_versions)
+        else:
+            correct_versions = self.versions.tabulate(
+                transaction__id=transaction__id, revert_platform=revert_platform
+            )
 
         return super().revert(
             transaction__id=transaction__id,

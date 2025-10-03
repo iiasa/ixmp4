@@ -27,6 +27,7 @@ from ixmp4.data.db.optimization.variable.model import (
 )
 from ixmp4.data.db.optimization.variable.repository import VariableRepository
 from ixmp4.data.db.utils import map_existing
+from ixmp4.db.utils.revert import apply_transaction__id
 
 from .. import base, utils
 from .docs import IndexSetDocsRepository
@@ -38,7 +39,7 @@ if TYPE_CHECKING:
 log = logging.getLogger(__name__)
 
 
-class IndexSetVersionRepository(versions.RunLinkedVersionRepository[IndexSetVersion]):
+class IndexSetVersionRepository(versions.VersionRepository[IndexSetVersion]):
     model_class = IndexSetVersion
 
 
@@ -61,16 +62,16 @@ class IndexSetDataVersionRepository(versions.VersionRepository[IndexSetDataVersi
             onclause=IndexSetDataVersion.indexset__id == IndexSetVersion.id,
         )
 
-        apply_transaction__id = partial(
-            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        _apply_transaction__id = partial(
+            apply_transaction__id, transaction__id=transaction__id, valid=valid
         )
 
-        exc = reduce(apply_transaction__id, {self.model_class, IndexSetVersion}, exc)
+        exc = reduce(_apply_transaction__id, {self.model_class, IndexSetVersion}, exc)
 
         if indexset__ids is not None:
             exc = exc.where(IndexSetDataVersion.indexset__id.in_(indexset__ids))
 
-        exc = self.where_matches_kwargs(exc, **kwargs)
+        exc = db.utils.where_matches_kwargs(exc, model_class=self.model_class, **kwargs)
         return exc.distinct()
 
     def select_ids(
@@ -89,16 +90,16 @@ class IndexSetDataVersionRepository(versions.VersionRepository[IndexSetDataVersi
             onclause=IndexSetDataVersion.indexset__id == IndexSetVersion.id,
         )
 
-        apply_transaction__id = partial(
-            self._apply_transaction__id, transaction__id=transaction__id, valid=valid
+        _apply_transaction__id = partial(
+            apply_transaction__id, transaction__id=transaction__id, valid=valid
         )
 
-        exc = reduce(apply_transaction__id, {self.model_class, IndexSetVersion}, exc)
+        exc = reduce(_apply_transaction__id, {self.model_class, IndexSetVersion}, exc)
 
         if indexset__ids is not None:
             exc = exc.where(IndexSetDataVersion.indexset__id.in_(indexset__ids))
 
-        exc = self.where_matches_kwargs(exc, **kwargs)
+        exc = db.utils.where_matches_kwargs(exc, **kwargs)
         return exc.distinct()
 
 
@@ -129,7 +130,7 @@ class IndexSetRepository(
     base.Deleter[IndexSet],
     base.Retriever[IndexSet],
     base.Enumerator[IndexSet],
-    base.RunLinkedReverter[IndexSet],
+    base.Reverter[IndexSet],
     abstract.IndexSetRepository,
 ):
     model_class = IndexSet
@@ -412,18 +413,13 @@ class IndexSetRepository(
 
         # Revert IndexSetData: map indexset ids (and their data) from before
         # transaction__id to after
-        indexset_map_subquery = self._create_id_map_subquery(
-            transaction__id=transaction__id, run__id=run__id
+        indexset_map_subquery = utils.create_id_map_subquery(
+            repo=self, transaction__id=transaction__id, run__id=run__id
         )
 
-        _columns = db.utils.get_columns(self._data.versions.model_class)
-        maybe_add_column_to_collection = partial(
-            db.utils._maybe_add_column_to_collection, exclude={"indexset__id"}
-        )
-        columns: db.sql.ColumnCollection[str, db.sql.ColumnElement[Any]] = reduce(
-            maybe_add_column_to_collection,
-            _columns.items(),
-            db.sql.ColumnCollection(),
+        columns = db.utils.collect_columns_to_select(
+            db.utils.get_columns(self._data.versions.model_class),
+            exclude={"indexset__id"},
         )
 
         select_correct_versions = (
@@ -438,9 +434,9 @@ class IndexSetRepository(
             )
         )
 
-        select_correct_versions = self._data.versions._apply_transaction__id(
+        select_correct_versions = apply_transaction__id(
             exc=select_correct_versions,
-            vclass=self._data.versions.model_class,
+            model_class=self._data.versions.model_class,
             transaction__id=transaction__id,
         ).order_by(self._data.versions.model_class.id.asc())
 

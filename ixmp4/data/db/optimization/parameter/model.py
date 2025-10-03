@@ -25,7 +25,7 @@ class ParameterIndexsetAssociation(BaseIndexSetAssociation):
     )
 
 
-class Parameter(base.RunLinkedBaseModel):
+class Parameter(base.BaseModel):
     __tablename__ = "opt_par"
 
     # NOTE: These might be mixin-able, but would require some abstraction
@@ -34,6 +34,7 @@ class Parameter(base.RunLinkedBaseModel):
     DataInvalid: ClassVar = OptimizationDataValidationError
     DeletionPrevented: ClassVar = abstract.Parameter.DeletionPrevented
 
+    run__id: types.RunId
     data: types.JsonDict = db.Column(db.JsonType, nullable=False, default={})
 
     @db.validates("data")
@@ -81,7 +82,7 @@ class Parameter(base.RunLinkedBaseModel):
     __table_args__ = (db.UniqueConstraint("name", "run__id"),)
 
 
-class ParameterVersion(versions.RunLinkedVersionModel):
+class ParameterVersion(versions.DefaultVersionModel):
     __tablename__ = "opt_par_version"
 
     name: types.String = db.Column(db.String(255), nullable=False)
