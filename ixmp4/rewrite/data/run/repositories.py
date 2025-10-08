@@ -2,32 +2,50 @@ from typing import cast
 
 import sqlalchemy as sa
 from toolkit import db
-from toolkit.exceptions import BadRequest, NotFound, NotUnique, ProgrammingError
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.data.model.db import Model
+from ixmp4.rewrite.data.scenario.db import Scenario
+from ixmp4.rewrite.exceptions import (
+    BadRequest,
+    ConstraintViolated,
+    NotFound,
+    NotUnique,
+    ProgrammingError,
+    registry,
+)
 
 from .db import Run
 from .filter import RunFilter
 
 
+@registry.register()
 class RunNotFound(NotFound):
     pass
 
 
+@registry.register()
 class RunNotUnique(NotUnique):
     pass
 
 
-class RunDeletionPrevented(DeletionPrevented):
+@registry.register()
+class RunDeletionPrevented(ConstraintViolated):
     pass
 
 
+@registry.register()
 class NoDefaultRunVersion(BadRequest):
     message = "No default version available for this run."
 
 
+@registry.register()
 class RunIsLocked(BadRequest):
     message = "This run is already locked."
+
+
+@registry.register()
+class RunLockRequired(BadRequest):
+    http_error_name = "run_lock_required"
 
 
 class ItemRepository(db.r.ItemRepository[Run]):
@@ -50,7 +68,7 @@ class ItemRepository(db.r.ItemRepository[Run]):
             if isinstance(result, sa.CursorResult):
                 return cast(int, result.lastrowid)
             else:
-                raise ProgrammingError("Expected CursorResult")
+                raise ProgrammingError("Expected CursorResult")  # TODO
 
     def set_as_default_version(self, id: int) -> None:
         run = self.get_by_pk({"id": id})
@@ -97,5 +115,11 @@ class ItemRepository(db.r.ItemRepository[Run]):
 class PandasRepository(db.r.PandasRepository):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
-    target = db.r.ModelTarget(Run)
     filter = db.r.Filter(RunFilter, Run)
+    target = db.r.ExtendedTarget(
+        Run,
+        {
+            "model": (Run.model, Model.name),
+            "scenario": (Run.scenario, Scenario.name),
+        },
+    )

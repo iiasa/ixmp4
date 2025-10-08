@@ -1,9 +1,8 @@
 from typing import TYPE_CHECKING
 
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import Unit
 from .filter import UnitFilter
@@ -12,14 +11,17 @@ if TYPE_CHECKING:
     pass
 
 
+@registry.register()
 class UnitNotFound(NotFound):
     pass
 
 
+@registry.register()
 class UnitNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class UnitDeletionPrevented(DeletionPrevented):
     pass
 

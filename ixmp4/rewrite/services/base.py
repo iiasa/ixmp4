@@ -8,10 +8,10 @@ from typing import (
 )
 
 import fastapi as fa
-from toolkit.auth import AuthorizationContext
+from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 
-from .transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
 
 if TYPE_CHECKING:
     from .procedures import ServiceProcedure

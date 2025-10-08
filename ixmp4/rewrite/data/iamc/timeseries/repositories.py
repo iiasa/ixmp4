@@ -1,22 +1,23 @@
 # from .filter import TimeSeriesFilter
-from typing import Any
 
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import TimeSeries
 
 
+@registry.register()
 class TimeSeriesNotFound(NotFound):
     pass
 
 
+@registry.register()
 class TimeSeriesNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class TimeSeriesDeletionPrevented(DeletionPrevented):
     pass
 
@@ -34,7 +35,7 @@ class PandasRepository(db.r.PandasRepository):
     target = db.r.ModelTarget(TimeSeries)
 
     # filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
-    def delete_orphans(self) -> Any:
+    def delete_orphans(self) -> int | None:
         exc = self.target.delete_statement()
         exc = exc.where(~TimeSeries.datapoints.any())
 

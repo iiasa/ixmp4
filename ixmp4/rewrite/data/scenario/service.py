@@ -5,6 +5,7 @@ from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 from ixmp4.rewrite.services import (
     DirectTransport,
@@ -136,7 +137,7 @@ class ScenarioService(Service):
         )
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[ScenarioFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[ScenarioFilter]) -> SerializableDataFrame:
         r"""Tabulates scenarios by specified criteria.
 
         Parameters

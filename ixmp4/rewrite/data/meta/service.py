@@ -1,10 +1,10 @@
 from typing import List
 
-import pandas as pd
 from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 from ixmp4.rewrite.data.run.repositories import ItemRepository as RunRepository
 from ixmp4.rewrite.services import (
@@ -88,6 +88,29 @@ class RunMetaEntryService(Service):
             self.items.get({"run__id": run__id, "key": key})
         )
 
+    @procedure(methods=["POST"])
+    def delete(self, id: int) -> None:
+        """Deletes a metadata entry.
+
+        Parameters
+        ----------
+        id: int
+            Unique integer id of the entry to delete
+
+        Raises
+        ------
+        :class:`RunMetaEntryNotFound`:
+            If the metadata entry with `id` was not found.
+
+        """
+        entry = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": entry.run__id})
+        self.auth_ctx.has_edit_permission(
+            self.platform, models=[run.model.name], raise_exc=Unauthorized
+        )
+
+        self.items.delete_by_pk({"id": id})
+
     @paginated_procedure(methods=["PATCH"])
     def list(self, **kwargs: Unpack[RunMetaEntryFilter]) -> list[RunMetaEntry]:
         r"""Lists metadata entries by specified criteria.
@@ -144,7 +167,7 @@ class RunMetaEntryService(Service):
     @paginated_procedure(methods=["PATCH"])
     def tabulate(
         self, join_run_index: bool = False, **kwargs: Unpack[RunMetaEntryFilter]
-    ) -> pd.DataFrame:
+    ) -> SerializableDataFrame:
         r"""Tabulates metadata entries by specified criteria.
 
         Parameters
@@ -170,7 +193,7 @@ class RunMetaEntryService(Service):
         pagination: Pagination,
         join_run_index: bool = False,
         **kwargs: Unpack[RunMetaEntryFilter],
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
         return PaginatedResult(
@@ -185,7 +208,7 @@ class RunMetaEntryService(Service):
         )
 
     @procedure(methods=["PATCH"])
-    def bulk_upsert(self, df: pd.DataFrame) -> None:
+    def bulk_upsert(self, df: SerializableDataFrame) -> None:
         """Upserts a dataframe of run meta indicator entries.
 
         Parameters
@@ -202,7 +225,7 @@ class RunMetaEntryService(Service):
         self.pandas.upsert(df)
 
     @procedure(methods=["PATCH"])
-    def bulk_delete(self, df: pd.DataFrame) -> None:
+    def bulk_delete(self, df: SerializableDataFrame) -> None:
         """Deletes run meta indicator entries as specified per dataframe.
         Warning: No recovery of deleted data shall be possible via ixmp
         after the execution of this function.

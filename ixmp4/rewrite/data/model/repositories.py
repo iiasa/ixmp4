@@ -1,20 +1,27 @@
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.exceptions import (
+    DeletionPrevented,
+    NotFound,
+    NotUnique,
+    registry,
+)
 
 from .db import Model
 from .filter import ModelFilter
 
 
+@registry.register()
 class ModelNotFound(NotFound):
     pass
 
 
+@registry.register()
 class ModelNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class ModelDeletionPrevented(DeletionPrevented):
     pass
 

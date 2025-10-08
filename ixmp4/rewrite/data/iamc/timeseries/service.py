@@ -3,6 +3,7 @@ from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.iamc.measurand.repositories import (
     PandasRepository as MeasurandPandasRepository,
 )
@@ -43,7 +44,7 @@ class TimeSeriesService(Service):
         self.variables = VariablePandasRepository(self.executor)
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[TimeSeriesFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[TimeSeriesFilter]) -> SerializableDataFrame:
         r"""Tabulates timeseries by specified criteria.
 
         Parameters
@@ -64,7 +65,7 @@ class TimeSeriesService(Service):
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[TimeSeriesFilter]
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
         return PaginatedResult(
@@ -141,7 +142,7 @@ class TimeSeriesService(Service):
         return merged_df.drop(columns=["variable__id", "unit__id"])
 
     @procedure(methods=["POST"])
-    def bulk_upsert(self, df: pd.DataFrame) -> None:
+    def bulk_upsert(self, df: SerializableDataFrame) -> None:
         # TODO: get list of models from list of run__ids
         self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
 

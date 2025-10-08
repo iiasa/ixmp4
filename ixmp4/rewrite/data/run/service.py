@@ -1,11 +1,11 @@
 from contextlib import suppress
 from typing import List
 
-import pandas as pd
 from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.model.repositories import ItemRepository as ModelRepository
 from ixmp4.rewrite.data.model.repositories import ModelNotUnique
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
@@ -15,11 +15,11 @@ from ixmp4.rewrite.data.scenario.repositories import (
 from ixmp4.rewrite.data.scenario.repositories import ScenarioNotUnique
 from ixmp4.rewrite.data.versions.transaction import TransactionRepository
 from ixmp4.rewrite.services import (
-    DirectTransport,
     Service,
     paginated_procedure,
     procedure,
 )
+from ixmp4.rewrite.transport import DirectTransport
 
 from .dto import Run
 from .filter import RunFilter
@@ -257,7 +257,7 @@ class RunService(Service):
         )
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[RunFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[RunFilter]) -> SerializableDataFrame:
         r"""Tabulate runs by specified criteria.
 
         Parameters
@@ -281,7 +281,7 @@ class RunService(Service):
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[RunFilter]
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
         return PaginatedResult(

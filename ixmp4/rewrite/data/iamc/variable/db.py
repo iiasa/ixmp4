@@ -3,7 +3,7 @@ from sqlalchemy import orm
 from toolkit import db
 
 from ixmp4.rewrite.data import versions
-from ixmp4.rewrite.data.base import BaseModel, HasCreationInfo
+from ixmp4.rewrite.data.base.db import BaseModel, HasCreationInfo
 
 
 class Variable(BaseModel, HasCreationInfo):

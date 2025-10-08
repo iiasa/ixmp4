@@ -1,8 +1,8 @@
-import pandas as pd
 from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.iamc.timeseries.repositories import (
     PandasRepository as TimeSeriesPandasRepository,
 )
@@ -29,7 +29,7 @@ class DataPointService(Service):
         self.timeseries = TimeSeriesPandasRepository(self.executor)
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[DataPointFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[DataPointFilter]) -> SerializableDataFrame:
         r"""Tabulates datapoints by specified criteria.
 
         Parameters
@@ -51,7 +51,7 @@ class DataPointService(Service):
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[DataPointFilter]
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         # TODO: get list of models from list of timeseries__ids
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
@@ -64,13 +64,13 @@ class DataPointService(Service):
         )
 
     @procedure(methods=["POST"])
-    def bulk_upsert(self, df: pd.DataFrame) -> None:
+    def bulk_upsert(self, df: SerializableDataFrame) -> None:
         # TODO: get list of models from list of timeseries__ids
         self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
         self.pandas.upsert(df)
 
     @procedure(methods=["DELETE"])
-    def bulk_delete(self, df: pd.DataFrame) -> None:
+    def bulk_delete(self, df: SerializableDataFrame) -> None:
         # TODO: get list of models from list of timeseries__ids
         self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
         self.pandas.delete(df)

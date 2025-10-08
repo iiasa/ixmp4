@@ -27,9 +27,9 @@ from fastapi.params import Depends
 from toolkit.exceptions import ProgrammingError
 
 from ixmp4.rewrite.data import dataframe
+from ixmp4.rewrite.transport import DirectTransport, HttpxTransport
 
 from ..base import Service
-from ..transport import DirectTransport, HttpxTransport
 
 ReturnT = TypeVar("ReturnT")
 Params = ParamSpec("Params")
@@ -102,7 +102,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
 
         return_type = self.signature.return_annotation
         if return_type is pd.DataFrame:
-            return_type = dataframe.DataFrame
+            return_type = dataframe.DataFrameTypeAdapter
 
         self.return_type_adapter = pyd.TypeAdapter(return_type)
 

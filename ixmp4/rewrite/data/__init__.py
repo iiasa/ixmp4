@@ -1,6 +1,5 @@
+from . import iamc as iamc
 from .checkpoint.service import CheckpointService as CheckpointService
-from .iamc.datapoint.service import DataPointService as DataPointService
-from .iamc.timeseries.service import TimeSeriesService as TimeSeriesService
 from .meta.service import RunMetaEntryService as RunMetaEntryService
 from .model.service import ModelService as ModelService
 from .region.service import RegionService as RegionService

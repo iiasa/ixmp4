@@ -1,19 +1,21 @@
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import Variable
 
 
+@registry.register()
 class VariableNotFound(NotFound):
     pass
 
 
+@registry.register()
 class VariableNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class VariableDeletionPrevented(DeletionPrevented):
     pass
 

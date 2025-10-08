@@ -1,20 +1,22 @@
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import Scenario
 from .filter import ScenarioFilter
 
 
+@registry.register()
 class ScenarioNotFound(NotFound):
     pass
 
 
+@registry.register()
 class ScenarioNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class ScenarioDeletionPrevented(DeletionPrevented):
     pass
 

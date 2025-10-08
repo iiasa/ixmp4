@@ -1,10 +1,10 @@
 from typing import List
 
-import pandas as pd
 from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 from ixmp4.rewrite.services import (
     DirectTransport,
@@ -156,7 +156,7 @@ class UnitService(Service):
         )
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[UnitFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[UnitFilter]) -> SerializableDataFrame:
         r"""Tabulates units by specified criteria.
 
         Parameters
@@ -178,7 +178,7 @@ class UnitService(Service):
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[UnitFilter]
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
         return PaginatedResult(

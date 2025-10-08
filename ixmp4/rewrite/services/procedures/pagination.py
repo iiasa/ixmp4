@@ -16,7 +16,7 @@ import fastapi as fa
 import pandas as pd
 from toolkit.exceptions import ProgrammingError
 
-from ixmp4.rewrite.data.dataframe import DataFrame
+from ixmp4.rewrite.data.dataframe import DataFrameTypeAdapter
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 
 from .base import (
@@ -170,7 +170,9 @@ class PaginatedServiceProcedureClient(
 
     @overload
     def merge_results(
-        self, results: list[DataFrame], result_type: type[DataFrame]
+        self,
+        results: list[DataFrameTypeAdapter],
+        result_type: type[DataFrameTypeAdapter],
     ) -> pd.DataFrame: ...
 
     @overload
@@ -179,10 +181,12 @@ class PaginatedServiceProcedureClient(
     ) -> list[Any]: ...
 
     def merge_results(
-        self, results: list[list[Any]] | list[DataFrame], result_type: type[Any]
+        self,
+        results: list[list[Any]] | list[DataFrameTypeAdapter],
+        result_type: type[Any],
     ) -> list[Any] | pd.DataFrame:
-        if issubclass(result_type, DataFrame):
-            return self.merge_dataframes(cast(list[DataFrame], results))
+        if issubclass(result_type, DataFrameTypeAdapter):
+            return self.merge_dataframes(cast(list[DataFrameTypeAdapter], results))
         elif issubclass(result_type, list):
             return self.merge_lists(cast(list[list[Any]], results))
         else:
@@ -190,7 +194,7 @@ class PaginatedServiceProcedureClient(
                 f"Unable to merge paginated results of type `{result_type}`."
             )
 
-    def merge_dataframes(self, results: list[DataFrame]) -> pd.DataFrame:
+    def merge_dataframes(self, results: list[DataFrameTypeAdapter]) -> pd.DataFrame:
         return pd.concat([res.to_pandas() for res in results])
 
     def merge_lists(self, results: list[list[Any]]) -> list[Any]:

@@ -1,10 +1,10 @@
 from typing import List
 
-import pandas as pd
 from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 from ixmp4.rewrite.services import (
     DirectTransport,
@@ -192,7 +192,7 @@ class RegionService(Service):
         )
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[RegionFilter]) -> SerializableDataFrame:
         r"""Tabulates regions by specified criteria.
 
         Parameters
@@ -214,7 +214,7 @@ class RegionService(Service):
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[RegionFilter]
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
         return PaginatedResult(

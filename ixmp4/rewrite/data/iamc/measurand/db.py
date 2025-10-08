@@ -1,11 +1,15 @@
+from typing import TYPE_CHECKING
+
 import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
 
 from ixmp4.rewrite.data import versions
-from ixmp4.rewrite.data.base import BaseModel, HasCreationInfo
-from ixmp4.rewrite.data.iamc.variable.db import Variable
-from ixmp4.rewrite.data.unit.db import Unit
+from ixmp4.rewrite.data.base.db import BaseModel, HasCreationInfo
+
+if TYPE_CHECKING:
+    from ixmp4.rewrite.data.iamc.variable.db import Variable
+    from ixmp4.rewrite.data.unit.db import Unit
 
 
 class Measurand(BaseModel, HasCreationInfo):
@@ -15,7 +19,7 @@ class Measurand(BaseModel, HasCreationInfo):
     variable__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("iamc_variable.id"), nullable=False, index=True
     )
-    variable: orm.Mapped[Variable] = orm.relationship(
+    variable: orm.Mapped["Variable"] = orm.relationship(
         "Variable",
         backref="measurands",
         foreign_keys=[variable__id],
@@ -25,7 +29,7 @@ class Measurand(BaseModel, HasCreationInfo):
     unit__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("unit.id"), nullable=False, index=True
     )
-    unit: orm.Mapped[Unit] = orm.relationship(
+    unit: orm.Mapped["Unit"] = orm.relationship(
         "Unit",
         backref="measurands",
         foreign_keys=[unit__id],

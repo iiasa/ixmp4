@@ -6,8 +6,8 @@ logger = logging.getLogger(__name__)
 
 
 class IamcSubobject(object):
-    datapoints: data.DataPointService
-    timeseries: data.TimeSeriesService
+    datapoints: data.iamc.DataPointService
+    timeseries: data.iamc.TimeSeriesService
     # variables: VariableRepository
 
 
@@ -46,5 +46,5 @@ class Backend(object):
         self.scenarios = data.ScenarioService(transport)
         self.units = data.UnitService(transport)
         self.checkpoints = data.CheckpointService(transport)
-        self.iamc.datapoints = data.DataPointService(transport)
-        self.iamc.timeseries = data.TimeSeriesService(transport)
+        self.iamc.datapoints = data.iamc.DataPointService(transport)
+        self.iamc.timeseries = data.iamc.TimeSeriesService(transport)

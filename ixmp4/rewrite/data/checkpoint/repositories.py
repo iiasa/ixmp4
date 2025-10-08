@@ -1,25 +1,22 @@
-from typing import TYPE_CHECKING
-
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
+from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import Checkpoint
 from .filter import CheckpointFilter
 
-if TYPE_CHECKING:
-    pass
 
-
+@registry.register()
 class CheckpointNotFound(NotFound):
     pass
 
 
+@registry.register()
 class CheckpointNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class CheckpointDeletionPrevented(DeletionPrevented):
     pass
 

@@ -3,12 +3,17 @@ from typing import Any, Collection, Mapping, Sequence, cast
 import pandas as pd
 import sqlalchemy as sa
 from toolkit import db
-from toolkit.exceptions import BadRequest, NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
 from ixmp4.rewrite.data.model.db import Model
 from ixmp4.rewrite.data.run.db import Run
 from ixmp4.rewrite.data.scenario.db import Scenario
+from ixmp4.rewrite.exceptions import (
+    BadRequest,
+    DeletionPrevented,
+    NotFound,
+    NotUnique,
+    registry,
+)
 
 from .db import RunMetaEntry
 from .dto import MetaValueType
@@ -16,18 +21,22 @@ from .filter import RunMetaEntryFilter
 from .type import Type
 
 
+@registry.register()
 class RunMetaEntryNotFound(NotFound):
     pass
 
 
+@registry.register()
 class RunMetaEntryNotUnique(NotUnique):
     pass
 
 
+@registry.register()
 class RunMetaEntryDeletionPrevented(DeletionPrevented):
     pass
 
 
+@registry.register()
 class InvalidRunMeta(BadRequest):
     message = "Invalid run meta entry."
 

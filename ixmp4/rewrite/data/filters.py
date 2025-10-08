@@ -48,8 +48,8 @@ class TransactionIdFilter(TypedDict, total=False):
 
 
 class TimeSeriesIdFilter(TypedDict, total=False):
-    timeseries__id: int
-    timeseries__id__in: list[int]
+    time_series__id: int
+    time_series__id__in: list[int]
 
 
 class DataPointTypeFilter(TypedDict, total=False):
@@ -102,6 +102,20 @@ class DataPointFilter(
 
 
 class CheckpointFilter(IdFilter, RunIdFilter, TransactionIdFilter, total=True):
+    pass
+
+
+class KeyFilter(TypedDict, total=False):
+    key: str
+    key__in: list[str]
+
+
+class DtypeFilter(TypedDict, total=False):
+    dtype: str
+    dtype__in: list[str]
+
+
+class RunMetaEntryFilter(IdFilter, KeyFilter, RunIdFilter, DtypeFilter, total=False):
     pass
 
 

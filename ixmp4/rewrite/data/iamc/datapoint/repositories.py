@@ -1,7 +1,5 @@
 from toolkit import db
-from toolkit.exceptions import NotFound, NotUnique
 
-from ixmp4.core.exceptions import DeletionPrevented
 from ixmp4.rewrite.data.iamc.timeseries.db import TimeSeries
 from ixmp4.rewrite.data.iamc.variable.db import Variable
 from ixmp4.rewrite.data.model.db import Model
@@ -9,26 +7,30 @@ from ixmp4.rewrite.data.region.db import Region
 from ixmp4.rewrite.data.run.db import Run
 from ixmp4.rewrite.data.scenario.db import Scenario
 from ixmp4.rewrite.data.unit.db import Unit
+from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import DataPoint
 from .filter import DataPointFilter
 
 
-class MeasurandNotFound(NotFound):
+@registry.register()
+class DataPointNotFound(NotFound):
     pass
 
 
-class MeasurandNotUnique(NotUnique):
+@registry.register()
+class DataPointNotUnique(NotUnique):
     pass
 
 
-class MeasurandDeletionPrevented(DeletionPrevented):
+@registry.register()
+class DataPointDeletionPrevented(DeletionPrevented):
     pass
 
 
 class PandasRepository(db.r.PandasRepository):
-    NotFound = MeasurandNotFound
-    NotUnique = MeasurandNotUnique
+    NotFound = DataPointNotFound
+    NotUnique = DataPointNotUnique
     target = db.r.ExtendedTarget(
         DataPoint,
         {

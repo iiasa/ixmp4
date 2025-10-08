@@ -1,11 +1,12 @@
 from typing import List
 
-import pandas as pd
 from toolkit import db
 from toolkit.exceptions import Unauthorized
 from typing_extensions import Unpack
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
+from ixmp4.rewrite.data.versions.transaction import TransactionRepository
 from ixmp4.rewrite.services import (
     DirectTransport,
     Service,
@@ -28,32 +29,45 @@ class CheckpointService(Service):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        self.transactions = TransactionRepository(self.executor)
 
     @procedure(methods=["POST"])
-    def create(self, name: str) -> Checkpoint:
+    def create(
+        self, run__id: int, message: str, transaction__id: int | None = None
+    ) -> Checkpoint:
         """Creates a checkpoint.
 
         Parameters
         ----------
-        name : str
-            The name of the model.
+        run__id : int
+            Id of the run the checkpoint is connected to.
+        message : str
+            The checkpoints message.
+        transaction__id : int, optional
+            Id of the transaction the checkpoint references.
 
         Raises
         ------
         :class:`CheckpointNotUnique`:
             If the checkpoint with `name` is not unique.
 
-
         Returns
         -------
         :class:`Checkpoint`:
             The created checkpoint.
         """
+        if transaction__id is None:
+            transaction__id = self.transactions.latest().id
+
         # TODO: check run permission
         self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
 
-        self.items.create({"name": name})
-        return Checkpoint.model_validate(self.items.get({"name": name}))
+        result = self.items.create(
+            {"run__id": run__id, "transaction__id": transaction__id, "message": message}
+        )
+        return Checkpoint.model_validate(
+            self.items.get_by_pk({"id": result.inserted_primary_key.id})
+        )
 
     @procedure(methods=["DELETE"])
     def delete(self, id: int) -> None:
@@ -134,7 +148,7 @@ class CheckpointService(Service):
         )
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[CheckpointFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[CheckpointFilter]) -> SerializableDataFrame:
         r"""Tabulates checkpoints by specified criteria.
 
         Parameters
@@ -158,7 +172,7 @@ class CheckpointService(Service):
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[CheckpointFilter]
-    ) -> PaginatedResult[pd.DataFrame]:
+    ) -> PaginatedResult[SerializableDataFrame]:
         self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
 
         return PaginatedResult(

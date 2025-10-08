@@ -6,12 +6,14 @@ from toolkit import db
 
 from ixmp4.rewrite.data import versions
 from ixmp4.rewrite.data.base.db import BaseModel
-from ixmp4.rewrite.data.region.db import Region
 
-from ..measurand.db import Measurand, Unit, Variable
+from ..measurand.db import Measurand
 
 if TYPE_CHECKING:
     from ixmp4.rewrite.data.iamc.datapoint.db import DataPoint
+    from ixmp4.rewrite.data.iamc.variable.db import Variable
+    from ixmp4.rewrite.data.region.db import Region
+    from ixmp4.rewrite.data.unit.db import Unit
 
 
 class TimeSeries(BaseModel):
@@ -27,7 +29,7 @@ class TimeSeries(BaseModel):
     region__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("region.id"), nullable=False, index=True
     )
-    region: orm.Mapped[Region] = orm.relationship(
+    region: orm.Mapped["Region"] = orm.relationship(
         "Region", foreign_keys=[region__id], lazy="select"
     )
 

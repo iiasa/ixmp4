@@ -1,14 +1,20 @@
-import pandas as pd
+import typer
 
-import ixmp4
+app = typer.Typer()
 
-an = pd.read_csv("tests/fixtures/small/annual.csv")
+users_app = typer.Typer()
+app.add_typer(users_app, name="users")
 
-mp = ixmp4.Platform("dev-private")
-run = mp.runs.get("versioning", "test", 1)
-run.set_as_default()
 
-with run.transact("remove annual data again"):
-    run.iamc.remove(an, type=ixmp4.DataPoint.Type.ANNUAL)
+@users_app.callback()
+def users_callback(hierarchy: str) -> None:
+    print("Running a users command on hierarchy " + hierarchy)
 
-print(run.iamc.tabulate())
+
+@users_app.command()
+def create(name: str) -> None:
+    print(f"Creating user: {name}")
+
+
+if __name__ == "__main__":
+    app()
