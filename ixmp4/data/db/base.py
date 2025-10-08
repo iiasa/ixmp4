@@ -139,7 +139,7 @@ class Creator(BaseRepository[ModelType], abstract.Creator):
             self.session.commit()
         except IntegrityError:
             self.session.rollback()
-            raise self.model_class.NotUnique(*args)
+            raise self.model_class.NotUnique(" | ".join([str(arg) for arg in args]))
 
         return model
 
