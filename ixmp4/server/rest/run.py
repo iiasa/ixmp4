@@ -1,3 +1,5 @@
+from typing import Annotated
+
 from fastapi import APIRouter, Body, Depends, Path, Query
 from pydantic import Field
 
@@ -16,13 +18,13 @@ router: APIRouter = APIRouter(
 
 
 class RunInput(BaseModel):
-    name_of_model: str = Field(..., alias="model_name")
+    name_of_model: Annotated[str, Field(alias="model_name")]
     scenario_name: str
 
 
 class CloneInput(BaseModel):
     run_id: int
-    name_of_model: str | None = Field(None, alias="model_name")
+    name_of_model: Annotated[str | None, Field(alias="model_name")] = None
     scenario_name: str | None = Field(None)
     keep_solution: bool = Field(True)
 
