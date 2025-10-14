@@ -10,7 +10,6 @@ from ixmp4.rewrite.exceptions import (
     ConstraintViolated,
     NotFound,
     NotUnique,
-    ProgrammingError,
     registry,
 )
 
@@ -56,19 +55,26 @@ class ItemRepository(db.r.ItemRepository[Run]):
 
     def create(self, model_id: int, scenario_id: int) -> int:
         exc = self.target.insert_statement()
-        exc = exc.values(model__id=model_id, scenario__id=scenario_id)
         version_query = (
-            sa.select(sa.func.max(Run.version) | 1)
+            # run creation logic in a single query
+            # to forego potential concurrency bugs
+            sa.select(
+                sa.literal(model_id),
+                sa.literal(scenario_id),
+                sa.func.coalesce(sa.func.max(Run.version), sa.literal(0))
+                + sa.literal(1),
+            )
             .where(Run.model__id == model_id)
             .where(Run.scenario__id == scenario_id)
         )
-        exc = exc.from_select(["version"], version_query)
+        exc = exc.from_select(
+            ["model__id", "scenario__id", "version"],
+            version_query,
+        ).returning(Run.id)
 
-        with self.executor.insert(exc) as result:
-            if isinstance(result, sa.CursorResult):
-                return cast(int, result.lastrowid)
-            else:
-                raise ProgrammingError("Expected CursorResult")  # TODO
+        with self.wrap_executor_exception():
+            with self.executor.insert_one(exc) as result:
+                return cast(int, result.scalar_one())
 
     def set_as_default_version(self, id: int) -> None:
         run = self.get_by_pk({"id": id})
