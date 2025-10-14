@@ -1,11 +1,14 @@
 from typing import List
 
 from toolkit import db
-from toolkit.exceptions import Unauthorized
+from toolkit.auth.context import AuthorizationContext
+from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
 from ixmp4.rewrite.data.dataframe import SerializableDataFrame
+from ixmp4.rewrite.data.docs.service import DocsService
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
+from ixmp4.rewrite.exceptions import Forbidden
 from ixmp4.rewrite.services import (
     DirectTransport,
     Service,
@@ -13,13 +16,16 @@ from ixmp4.rewrite.services import (
     procedure,
 )
 
+from .db import UnitDocs
 from .dto import Unit
 from .filter import UnitFilter
 from .repositories import ItemRepository, PandasRepository
 
 
-class UnitService(Service):
+class UnitService(DocsService, Service):
     router_prefix = "/units"
+    router_tags = ["units"]
+
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
@@ -28,6 +34,7 @@ class UnitService(Service):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        DocsService.__init_direct__(self, transport, docs_model=UnitDocs)
 
     @procedure(methods=["POST"])
     def create(self, name: str) -> Unit:
@@ -49,12 +56,15 @@ class UnitService(Service):
         :class:`Unit`:
             The created unit.
         """
-        self.auth_ctx.has_management_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
         self.items.create({"name": name})
         return Unit.model_validate(self.items.get({"name": name}))
 
-    @procedure(methods=["DELETE"])
+    @procedure(path="/{id}/", methods=["DELETE"])
     def delete(self, id: int) -> None:
         """Deletes a unit.
 
@@ -70,7 +80,10 @@ class UnitService(Service):
         :class:`UnitDeletionPrevented`:
             If the unit with `id` is used in the database, preventing it's deletion.
         """
-        self.auth_ctx.has_management_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
         self.items.delete_by_pk({"id": id})
 
@@ -93,11 +106,14 @@ class UnitService(Service):
         :class:`ixmp4.data.base.iamc.Unit`:
             The retrieved unit.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Unit.model_validate(self.items.get({"name": name}))
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Unit:
         """Retrieves a unit by its id.
 
@@ -116,7 +132,10 @@ class UnitService(Service):
         :class:`ixmp4.data.base.iamc.Unit`:
             The retrieved unit.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Unit.model_validate(self.items.get_by_pk({"id": id}))
 
@@ -134,7 +153,10 @@ class UnitService(Service):
         Iterable[:class:`Unit`]:
             List of units.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return [Unit.model_validate(i) for i in self.items.list(values=kwargs)]
 
@@ -142,7 +164,9 @@ class UnitService(Service):
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[UnitFilter]
     ) -> PaginatedResult[List[Unit]]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=[
@@ -171,7 +195,10 @@ class UnitService(Service):
                 - id
                 - name
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return self.pandas.tabulate(values=kwargs)
 
@@ -179,7 +206,9 @@ class UnitService(Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[UnitFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=self.pandas.tabulate(

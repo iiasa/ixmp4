@@ -2,7 +2,8 @@ from contextlib import suppress
 from typing import List
 
 from toolkit import db
-from toolkit.exceptions import Unauthorized
+from toolkit.auth.context import AuthorizationContext
+from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
 from ixmp4.rewrite.data.dataframe import SerializableDataFrame
@@ -14,6 +15,7 @@ from ixmp4.rewrite.data.scenario.repositories import (
 )
 from ixmp4.rewrite.data.scenario.repositories import ScenarioNotUnique
 from ixmp4.rewrite.data.versions.transaction import TransactionRepository
+from ixmp4.rewrite.exceptions import Forbidden
 from ixmp4.rewrite.services import (
     Service,
     paginated_procedure,
@@ -34,6 +36,8 @@ from .repositories import (
 
 class RunService(Service):
     router_prefix = "/runs"
+    router_tags = ["runs"]
+
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
@@ -67,9 +71,13 @@ class RunService(Service):
         :class:`Run`:
             The created run.
         """
-        self.auth_ctx.has_edit_permission(
-            self.platform, models=[model_name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(
+                self.platform, models=[model_name], raise_exc=Forbidden
+            )
+
         with suppress(ModelNotUnique):
             self.models.create({"name": model_name})
         model = self.models.get({"name": model_name})
@@ -81,7 +89,7 @@ class RunService(Service):
         id_ = self.items.create(model.id, scenario.id)
         return Run.model_validate(self.items.get_by_pk({"id": id_}))
 
-    @procedure(methods=["DELETE"])
+    @procedure(path="/{id}/", methods=["DELETE"])
     def delete(self, id: int) -> None:
         """Deletes a run and **all associated iamc, optimization and meta data**.
 
@@ -95,7 +103,11 @@ class RunService(Service):
         :class:`RunNotFound`:
             If the run with `id` does not exist.
         """
-        self.auth_ctx.has_management_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
+
         self.items.delete_by_pk({"id": id})
 
     @procedure(methods=["POST"])
@@ -121,9 +133,12 @@ class RunService(Service):
         :class:`Run`:
             The retrieved run.
         """
-        self.auth_ctx.has_view_permission(
-            self.platform, models=[model_name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(
+                self.platform, models=[model_name], raise_exc=Forbidden
+            )
 
         result = self.items.get(
             {
@@ -150,9 +165,12 @@ class RunService(Service):
         :class:`Run`:
             The retrieved or created run.
         """
-        self.auth_ctx.has_edit_permission(
-            self.platform, models=[model_name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(
+                self.platform, models=[model_name], raise_exc=Forbidden
+            )
 
         try:
             return self.get_default_version(model_name, scenario_name)
@@ -180,9 +198,12 @@ class RunService(Service):
         :class:`Run`:
             The retrieved run.
         """
-        self.auth_ctx.has_view_permission(
-            self.platform, models=[model_name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(
+                self.platform, models=[model_name], raise_exc=Forbidden
+            )
 
         try:
             result = self.items.get(
@@ -197,7 +218,7 @@ class RunService(Service):
 
         return Run.model_validate(result)
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Run:
         """Retrieves a Run by its id.
 
@@ -235,7 +256,9 @@ class RunService(Service):
             List of runs.
         """
 
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return [Run.model_validate(i) for i in self.items.list(values=kwargs)]
 
@@ -243,7 +266,9 @@ class RunService(Service):
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[RunFilter]
     ) -> PaginatedResult[List[Run]]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=[
@@ -274,7 +299,10 @@ class RunService(Service):
                 - model__id
                 - scenario__id
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return self.pandas.tabulate(values=kwargs)
 
@@ -282,7 +310,9 @@ class RunService(Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[RunFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=self.pandas.tabulate(
@@ -308,9 +338,12 @@ class RunService(Service):
 
         """
         run = self.items.get_by_pk({"id": id})
-        self.auth_ctx.has_edit_permission(
-            self.platform, models=[run.model.name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(
+                self.platform, models=[run.model.name], raise_exc=Forbidden
+            )
 
         self.items.set_as_default_version(id)
 
@@ -333,9 +366,12 @@ class RunService(Service):
 
         """
         run = self.items.get_by_pk({"id": id})
-        self.auth_ctx.has_edit_permission(
-            self.platform, models=[run.model.name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(
+                self.platform, models=[run.model.name], raise_exc=Forbidden
+            )
 
         self.items.unset_as_default_version(id)
 
@@ -379,9 +415,13 @@ class RunService(Service):
 
         """
         run = self.items.get_by_pk({"id": id})
-        self.auth_ctx.has_edit_permission(
-            self.platform, models=[run.model.name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(
+                self.platform, models=[run.model.name], raise_exc=Forbidden
+            )
+
         if run.lock_transaction is not None:
             raise RunIsLocked()
 
@@ -404,9 +444,13 @@ class RunService(Service):
             If no run with the `id` exists.
         """
         run = self.items.get_by_pk({"id": id})
-        self.auth_ctx.has_edit_permission(
-            self.platform, models=[run.model.name], raise_exc=Unauthorized
-        )
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(
+                self.platform, models=[run.model.name], raise_exc=Forbidden
+            )
+
         self.items.update_by_pk({"id": id, "lock_transaction": None})
         return Run.model_validate(self.items.get_by_pk({"id": id}))
 
@@ -437,4 +481,5 @@ class RunService(Service):
         :class:`Run`:
             The clone of the base run.
         """
+        # TODO
         raise NotImplementedError

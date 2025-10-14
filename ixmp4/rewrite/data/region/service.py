@@ -1,11 +1,14 @@
 from typing import List
 
 from toolkit import db
-from toolkit.exceptions import Unauthorized
+from toolkit.auth.context import AuthorizationContext
+from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
 from ixmp4.rewrite.data.dataframe import SerializableDataFrame
+from ixmp4.rewrite.data.docs.service import DocsService
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
+from ixmp4.rewrite.exceptions import Forbidden
 from ixmp4.rewrite.services import (
     DirectTransport,
     Service,
@@ -13,6 +16,7 @@ from ixmp4.rewrite.services import (
     procedure,
 )
 
+from .db import RegionDocs
 from .dto import Region
 from .filter import RegionFilter
 from .repositories import (
@@ -23,8 +27,10 @@ from .repositories import (
 )
 
 
-class RegionService(Service):
+class RegionService(DocsService, Service):
     router_prefix = "/regions"
+    router_tags = ["regions"]
+
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
@@ -33,6 +39,7 @@ class RegionService(Service):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        DocsService.__init_direct__(self, transport, docs_model=RegionDocs)
 
     @procedure(methods=["POST"])
     def create(self, name: str, hierarchy: str) -> Region:
@@ -57,12 +64,15 @@ class RegionService(Service):
         :class:`Region`:
             The created region.
         """
-        self.auth_ctx.has_management_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
         self.items.create({"name": name, "hierarchy": hierarchy})
         return Region.model_validate(self.items.get({"name": name}))
 
-    @procedure(methods=["DELETE"])
+    @procedure(path="/{id}/", methods=["DELETE"])
     def delete(self, id: int) -> None:
         """Deletes a region.
 
@@ -81,7 +91,10 @@ class RegionService(Service):
             If the current user is not authorized to perform this action.
 
         """
-        self.auth_ctx.has_management_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
         self.items.delete_by_pk({"id": id})
 
@@ -106,11 +119,14 @@ class RegionService(Service):
         :class:`Region`:
             The retrieved region.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Region.model_validate(self.items.get({"name": name}))
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Region:
         """Retrieves a region by its id.
 
@@ -131,7 +147,10 @@ class RegionService(Service):
         :class:`Region`:
             The retrieved region.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Region.model_validate(self.items.get_by_pk({"id": id}))
 
@@ -170,7 +189,10 @@ class RegionService(Service):
         list[:class:`Region`]:
             List of regions.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return [Region.model_validate(i) for i in self.items.list(values=kwargs)]
 
@@ -178,7 +200,9 @@ class RegionService(Service):
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[RegionFilter]
     ) -> PaginatedResult[List[Region]]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=[
@@ -207,7 +231,10 @@ class RegionService(Service):
                 - id
                 - name
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return self.pandas.tabulate(values=kwargs)
 
@@ -215,7 +242,9 @@ class RegionService(Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[RegionFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=self.pandas.tabulate(

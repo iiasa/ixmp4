@@ -1,12 +1,14 @@
 from typing import List
 
 from toolkit import db
-from toolkit.exceptions import Unauthorized
+from toolkit.auth.context import AuthorizationContext
+from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
 from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 from ixmp4.rewrite.data.versions.transaction import TransactionRepository
+from ixmp4.rewrite.exceptions import Forbidden
 from ixmp4.rewrite.services import (
     DirectTransport,
     Service,
@@ -21,6 +23,8 @@ from .repositories import ItemRepository, PandasRepository
 
 class CheckpointService(Service):
     router_prefix = "/checkpoints"
+    router_tags = ["checkpoints"]
+
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
@@ -60,7 +64,9 @@ class CheckpointService(Service):
             transaction__id = self.transactions.latest().id
 
         # TODO: check run permission
-        self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
         result = self.items.create(
             {"run__id": run__id, "transaction__id": transaction__id, "message": message}
@@ -69,7 +75,7 @@ class CheckpointService(Service):
             self.items.get_by_pk({"id": result.inserted_primary_key.id})
         )
 
-    @procedure(methods=["DELETE"])
+    @procedure(path="/{id}/", methods=["DELETE"])
     def delete(self, id: int) -> None:
         """Deletes a checkpoint.
 
@@ -83,12 +89,15 @@ class CheckpointService(Service):
         :class:`CheckpointNotFound`:
             If the checkpoint with `id` does not exist.
         """
+
         # TODO: check run permission
-        self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
         self.items.delete_by_pk({"id": id})
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Checkpoint:
         """Retrieves a checkpoint by its id.
 
@@ -107,8 +116,11 @@ class CheckpointService(Service):
         :class:`ixmp4.data.base.iamc.Checkpoint`:
             The retrieved checkpoint.
         """
+
         # TODO: check run permission
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Checkpoint.model_validate(self.items.get_by_pk({"id": id}))
 
@@ -126,7 +138,10 @@ class CheckpointService(Service):
         Iterable[:class:`Checkpoint`]:
             List of checkpoints.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return [Checkpoint.model_validate(i) for i in self.items.list(values=kwargs)]
 
@@ -134,7 +149,9 @@ class CheckpointService(Service):
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[CheckpointFilter]
     ) -> PaginatedResult[List[Checkpoint]]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=[
@@ -165,7 +182,10 @@ class CheckpointService(Service):
                 - transcation__id
                 - message
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return self.pandas.tabulate(values=kwargs)
 
@@ -173,7 +193,9 @@ class CheckpointService(Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[CheckpointFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=self.pandas.tabulate(

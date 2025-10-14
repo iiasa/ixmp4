@@ -1,6 +1,7 @@
 import pandas as pd
 from toolkit import db
-from toolkit.exceptions import Unauthorized
+from toolkit.auth.context import AuthorizationContext
+from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
 from ixmp4.rewrite.data.dataframe import SerializableDataFrame
@@ -19,6 +20,7 @@ from ixmp4.rewrite.data.unit.repositories import (
     PandasRepository as UnitPandasRepository,
 )
 from ixmp4.rewrite.data.unit.repositories import UnitNotFound
+from ixmp4.rewrite.exceptions import Forbidden
 from ixmp4.rewrite.services import (
     DirectTransport,
     Service,
@@ -32,6 +34,8 @@ from .repositories import PandasRepository
 
 class TimeSeriesService(Service):
     router_prefix = "/iamc/timeseries"
+    router_tags = ["iamc", "timeseries"]
+
     executor: db.r.SessionExecutor
     pandas: PandasRepository
 
@@ -58,7 +62,10 @@ class TimeSeriesService(Service):
             A data frame with the columns:
                 - TODO
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return self.pandas.tabulate(values=kwargs)
 
@@ -66,7 +73,9 @@ class TimeSeriesService(Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[TimeSeriesFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=self.pandas.tabulate(
@@ -144,7 +153,9 @@ class TimeSeriesService(Service):
     @procedure(methods=["POST"])
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         # TODO: get list of models from list of run__ids
-        self.auth_ctx.has_edit_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
         if "region" in df.columns:
             df = self.merge_regions(df)

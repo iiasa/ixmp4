@@ -1,11 +1,14 @@
 from typing import List
 
 from toolkit import db
-from toolkit.exceptions import Unauthorized
+from toolkit.auth.context import AuthorizationContext
+from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
 from ixmp4.rewrite.data.dataframe import SerializableDataFrame
+from ixmp4.rewrite.data.docs.service import DocsService
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
+from ixmp4.rewrite.exceptions import Forbidden
 from ixmp4.rewrite.services import (
     DirectTransport,
     Service,
@@ -13,13 +16,16 @@ from ixmp4.rewrite.services import (
     procedure,
 )
 
+from .db import ModelDocs
 from .dto import Model
 from .filter import ModelFilter
 from .repositories import ItemRepository, PandasRepository
 
 
-class ModelService(Service):
+class ModelService(DocsService, Service):
     router_prefix = "/models"
+    router_tags = ["models"]
+
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
@@ -28,6 +34,7 @@ class ModelService(Service):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        DocsService.__init_direct__(self, transport, docs_model=ModelDocs)
 
     @procedure(methods=["POST"])
     def create(self, name: str) -> Model:
@@ -49,7 +56,10 @@ class ModelService(Service):
         :class:`Model`:
             The created model.
         """
-        self.auth_ctx.has_management_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
         self.items.create({"name": name})
         return Model.model_validate(self.items.get({"name": name}))
@@ -73,11 +83,14 @@ class ModelService(Service):
         :class:`ixmp4.data.base.iamc.Model`:
             The retrieved model.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Model.model_validate(self.items.get({"name": name}))
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Model:
         """Retrieves a model by its id.
 
@@ -96,7 +109,10 @@ class ModelService(Service):
         :class:`ixmp4.data.base.iamc.Model`:
             The retrieved model.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return Model.model_validate(self.items.get_by_pk({"id": id}))
 
@@ -114,7 +130,10 @@ class ModelService(Service):
         Iterable[:class:`Model`]:
             List of models.
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return [Model.model_validate(i) for i in self.items.list(values=kwargs)]
 
@@ -122,7 +141,9 @@ class ModelService(Service):
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[ModelFilter]
     ) -> PaginatedResult[List[Model]]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=[
@@ -151,7 +172,10 @@ class ModelService(Service):
                 - id
                 - name
         """
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return self.pandas.tabulate(values=kwargs)
 
@@ -159,7 +183,9 @@ class ModelService(Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[ModelFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        self.auth_ctx.has_view_permission(self.platform, raise_exc=Unauthorized)
+        @self.auth_check
+        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
+            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
         return PaginatedResult(
             results=self.pandas.tabulate(
