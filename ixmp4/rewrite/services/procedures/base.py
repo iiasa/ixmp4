@@ -1,7 +1,9 @@
 import functools
 import inspect
 from enum import Enum
+from string import Formatter
 from typing import (
+    Annotated,
     Any,
     Callable,
     Concatenate,
@@ -21,12 +23,10 @@ from typing import (
 
 import fastapi as fa
 import httpx
-import pandas as pd
 import pydantic as pyd
 from fastapi.params import Depends
 from toolkit.exceptions import ProgrammingError
 
-from ixmp4.rewrite.data import dataframe
 from ixmp4.rewrite.transport import DirectTransport, HttpxTransport
 
 from ..base import Service
@@ -41,6 +41,7 @@ EndpointFunc = Callable[[fa.APIRouter, Callable[..., Any]], None]
 ClientFunc = Callable[Params, ReturnT]
 ServiceT = TypeVar("ServiceT", bound="Service")
 ClientFuncGetter = Callable[[ServiceT, httpx.Client], ClientFunc[Params, ReturnT]]
+AnyFuncArgs = tuple[tuple[Any, ...], dict[str, Any]]
 
 
 class BaseFastApiEndpointOptions(TypedDict, total=False):
@@ -68,13 +69,18 @@ class FastApiEndpointOptions(BaseFastApiEndpointOptions, total=False):
 
 
 class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
+    varargs_key: str = "__varargs__"
+
     func: Callable[Concatenate[ServiceT, Params], ReturnT]
     signature: inspect.Signature
+    has_required_parameters: bool
+    "Indicates whether the functions has postional args without defaults."
 
     return_type_adapter: pyd.TypeAdapter[ReturnT]
-    payload_model: type[pyd.BaseModel]
     fastapi_options: FastApiEndpointOptions
-    varargs_key: str = "__varargs__"
+
+    path_model: type[pyd.BaseModel] | None
+    parameters_model: type[pyd.BaseModel] | None
 
     def __init__(
         self,
@@ -82,29 +88,28 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         fastapi_options: IncompleteFastApiEndpointOptions,
     ):
         self.func = func
+        self.signature = self.get_signature(self.func)
+        self.has_required_parameters = self.determine_required_params(self.signature)
+        self.return_type_adapter = pyd.TypeAdapter(self.signature.return_annotation)
 
-        if fastapi_options.get("path", None) is None:
-            kebab_func_name = self.func.__name__.replace("_", "-")
-            fastapi_options["path"] = "/" + kebab_func_name
-        if fastapi_options.get("name", None) is None:
-            fastapi_options["name"] = self.func.__name__
         if (
             fastapi_options.get("methods", None) is None
             or len(fastapi_options["methods"]) == 0
         ):
             fastapi_options["methods"] = ["POST"]
-        if fastapi_options.get("response_class", None) is None:
-            fastapi_options["response_class"] = fa.responses.JSONResponse
+
+        kebab_func_name = self.func.__name__.replace("_", "-")
+        fastapi_options.setdefault("path", "/" + kebab_func_name)
+        fastapi_options.setdefault("name", self.func.__name__)
+        fastapi_options.setdefault("response_class", fa.responses.JSONResponse)
+        fastapi_options.setdefault("description", func.__doc__)
 
         self.fastapi_options = cast(FastApiEndpointOptions, fastapi_options)
-        self.signature = self.get_signature(self.func)
-        self.payload_model = self.build_payload_model()
-
-        return_type = self.signature.return_annotation
-        if return_type is pd.DataFrame:
-            return_type = dataframe.DataFrameTypeAdapter
-
-        self.return_type_adapter = pyd.TypeAdapter(return_type)
+        self.path_fields = self.get_path_fields()
+        self.path_model = self.build_path_model()
+        self.parameters_model = self.get_parameters_model(
+            self.get_model_name("Params"),
+        )
 
     def __call__(self, *args: Params.args, **kwds: Params.kwargs) -> ReturnT:
         raise ProgrammingError("`ServiceProcedure` cannot be called directly.")
@@ -131,42 +136,129 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
                 return client
             else:
                 raise ProgrammingError(
-                    f"Transport class `{obj.transport.__class__.__name__}` is not supported"
+                    f"Transport class `{obj.transport.__class__.__name__}` "
+                    "is not supported."
                 )
         else:
             return self
 
+    def has_fields(self, model_class: type[pyd.BaseModel]):
+        return len(model_class.model_fields.keys()) != 0
+
+    def get_dep_annotation(
+        self,
+        model_class: type[pyd.BaseModel],
+        dep_func: type[fa.Path] | type[fa.Query] | type[fa.Body],
+    ):
+        include_in_schema = required = self.has_fields(model_class)
+
+        if required:
+            required = self.has_required_parameters
+
+        return Annotated[
+            model_class,
+            dep_func(include_in_schema=include_in_schema, required=required),
+        ]
+
+    def get_path_depedency(self) -> Callable[..., pyd.BaseModel | None]:
+        if self.path_model is not None:
+            PathParam = Annotated[self.path_model, fa.Path()]
+
+            async def depedency(
+                request: fa.Request,
+                path: PathParam,  # type: ignore[reportInvalidTypeForm]
+            ) -> pyd.BaseModel:
+                request.state.path_params = path
+                return path
+        else:
+
+            async def depedency(
+                request: fa.Request,
+            ) -> None:
+                request.state.path_params = None
+                return None
+
+        return depedency
+
+    def get_params_depedency(self) -> Callable[..., pyd.BaseModel | None]:
+        if self.parameters_model is not None:
+            if self.supports_body():
+                Params = Annotated[
+                    self.parameters_model,
+                    fa.Body(),
+                ]
+            else:
+                Params = Annotated[
+                    self.parameters_model,
+                    fa.Query(),
+                ]
+
+            if self.has_required_parameters:
+
+                async def depedency(
+                    params: Params,  # type: ignore[reportInvalidTypeForm]
+                ) -> pyd.BaseModel:
+                    return params
+            else:
+
+                async def depedency(
+                    params: Params = None,  # type: ignore[reportInvalidTypeForm]
+                ) -> pyd.BaseModel:
+                    return params
+        else:
+
+            async def depedency() -> None:
+                return None
+
+        return depedency
+
+    def get_endpoint_dependency(self) -> Callable[..., AnyFuncArgs]:
+        async def depedency(
+            path: Any = fa.Depends(self.get_path_depedency()),
+            params: Any = fa.Depends(self.get_params_depedency()),
+        ) -> AnyFuncArgs:
+            args, kwargs = self.build_endpoint_func_params([path, params])
+            return args, kwargs
+
+        return depedency
+
     def register_endpoint(
         self, router: fa.APIRouter, svc_dep: Callable[..., Any]
     ) -> None:
-        func_name = self.func.__name__
         endpoint_options = self.fastapi_options.copy()
+        endpoint_options.setdefault("response_model", self.signature.return_annotation)
 
         @router.api_route(**endpoint_options)
         def endpoint(
+            params: AnyFuncArgs = fa.Depends(self.get_endpoint_dependency()),
             svc: "Service" = fa.Depends(svc_dep),
-            any_payload: dict[str, Any] = fa.Body(),
-        ) -> Any:
-            payload = self.payload_model(**any_payload).model_dump(exclude_none=True)
-            svc_func = getattr(svc, func_name)
-            args = self.build_args(self.signature, payload)
-            kwargs = self.build_kwargs(self.signature, payload)
+        ) -> object:
+            svc_func = self.get_service_func(svc)
+            args, kwargs = params
             result = svc_func(*args, **kwargs)
             return result
 
-    def build_payload_model(self) -> type[pyd.BaseModel]:
-        func_name = self.func.__name__
-        payload_model_name = func_name.title().replace("_", "") + "Payload"
+    def get_path_fields(self) -> list[str]:
+        return [
+            name
+            for (_, name, *_) in Formatter().parse(self.fastapi_options["path"])
+            if name is not None
+        ]
+
+    def supports_body(self):
+        return not (
+            "GET" in self.fastapi_options["methods"]
+            or "HEAD" in self.fastapi_options["methods"]
+        )
+
+    def get_parameters_model(self, model_name: str) -> type[pyd.BaseModel] | None:
         fields = {}
         model_config = pyd.ConfigDict()
-
         param_dict = self.signature.parameters.items()
 
         for name, param in param_dict:
-            if param.annotation == inspect.Parameter.empty:
-                raise ProgrammingError(
-                    f"Parameter `{name}` of `{func_name}` requires a type annotation."
-                )
+            if name in self.path_fields:
+                continue  # skip parameter if it is supplied via the endpoint path
 
             if param.kind == inspect.Parameter.VAR_KEYWORD:
                 origin = get_origin(param.annotation)
@@ -180,31 +272,87 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
                             annots[key] = (type_ | None, None)
                     fields.update(annots)
                 elif param.annotation != inspect.Parameter.empty:
-                    # we received a function with **kwargs: Any, so anything goes.
+                    # we received a function with **kwargs: <T>, so anything goes.
                     model_config["extra"] = "allow"
                 else:
                     raise ProgrammingError(
                         f"Cannot handle `{origin.__name__}` annotation "
-                        f"for variadic keyword arguments of `{func_name}`."
+                        f"for variadic keyword arguments of `{self.func.__name__}`."
                     )
             elif param.kind == inspect.Parameter.VAR_POSITIONAL:
                 elem_type: type[object] = param.annotation
-                # TODO: test if this works
+                # equivaltent to list[type] but works dynamically
                 fields[self.varargs_key] = list.__class_getitem__(elem_type)
             elif param.default == inspect.Parameter.empty:
                 fields[name] = param.annotation
             else:
                 fields[name] = (param.annotation, param.default)
 
-        return pyd.create_model(payload_model_name, __config__=model_config, **fields)
+        if len(fields) == 0:
+            return None
+
+        return pyd.create_model(
+            model_name,
+            __module__=self.func.__module__,
+            __config__=model_config,
+            **fields,
+        )
+
+    def build_path_model(self) -> type[pyd.BaseModel] | None:
+        fields = {}
+        for name, param in self.signature.parameters.items():
+            if name in self.path_fields:
+                fields[name] = (param.annotation, param.default)
+
+        if len(fields) == 0:
+            return None  # no path_fields match func signature
+
+        return pyd.create_model(
+            self.get_model_name("PathParams"),
+            __module__=self.func.__module__,
+            **fields,
+        )
+
+    def get_model_name(self, suffix: str):
+        func_name = self.func.__name__
+        return func_name.title().replace("_", "") + suffix
+
+    def determine_required_params(self, sig: inspect.Signature) -> bool:
+        has_required_params = False
+        param_dict = sig.parameters.items()
+
+        for _, param in param_dict:
+            if param.default == inspect.Parameter.empty and (
+                param.kind
+                in [
+                    inspect.Parameter.POSITIONAL_ONLY,
+                    inspect.Parameter.POSITIONAL_OR_KEYWORD,
+                ]
+            ):
+                has_required_params = True
+        return has_required_params
 
     def get_signature(
         self, func: Callable[Concatenate[ServiceT, Params], ReturnT]
     ) -> inspect.Signature:
         org_sig = inspect.signature(func)
-        params_without_self = [p for n, p in org_sig.parameters.items() if n != "self"]
+        valid_params = []
+        param_dict = org_sig.parameters.items()
+
+        for name, param in param_dict:
+            if name == "self":
+                continue  # skip self parameter as it will not be bound yet
+
+            if param.annotation == inspect.Parameter.empty:
+                raise ProgrammingError(
+                    f"Parameter `{name}` of `{func.__name__}` requires "
+                    "a type annotation."
+                )
+
+            valid_params.append(param)
+
         return inspect.Signature(
-            params_without_self, return_annotation=org_sig.return_annotation
+            valid_params, return_annotation=org_sig.return_annotation
         )
 
     def get_client(self, service: Service) -> Callable[Params, ReturnT]:
@@ -246,6 +394,21 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
                 kwargs.update(payload)
                 break  # should always be last anyway
         return kwargs
+
+    def build_endpoint_func_params(
+        self, sources: Sequence[pyd.BaseModel | None]
+    ) -> AnyFuncArgs:
+        payload = {}
+        for s in sources:
+            if s is not None:
+                payload.update(s.model_dump(exclude_unset=True))
+
+        args = self.build_args(self.signature, payload)
+        kwargs = self.build_kwargs(self.signature, payload)
+        return (args, kwargs)
+
+    def get_service_func(self, svc: Service):
+        return getattr(svc, self.func.__name__)
 
 
 class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):

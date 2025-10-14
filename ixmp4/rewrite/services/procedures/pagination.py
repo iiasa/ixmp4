@@ -1,3 +1,4 @@
+import inspect
 from concurrent import futures
 from typing import (
     TYPE_CHECKING,
@@ -16,7 +17,7 @@ import fastapi as fa
 import pandas as pd
 from toolkit.exceptions import ProgrammingError
 
-from ixmp4.rewrite.data.dataframe import DataFrameTypeAdapter
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.pagination import PaginatedResult, Pagination
 
 from .base import (
@@ -30,7 +31,7 @@ from .base import (
 )
 
 if TYPE_CHECKING:
-    from .base import Service
+    from .base import AnyFuncArgs, Service
 
 PaginationT = TypeVar("PaginationT", contravariant=True)
 ResultT = TypeVar("ResultT", covariant=True)
@@ -55,11 +56,12 @@ DefaultPaginatedFunction = PaginatedFunction[
     ServiceT, Params, Pagination, PaginatedResult[Any]
 ]
 
-PaginatedReturnT = TypeVar("PaginatedReturnT", bound=list[Any] | pd.DataFrame)
+PaginatedReturnT = TypeVar("PaginatedReturnT", bound=list[Any] | SerializableDataFrame)
 
 
 class PaginatedProcedure(ServiceProcedure[ServiceT, Params, PaginatedReturnT]):
     paginated_func: DefaultPaginatedFunction[ServiceT, Params]
+    paginated_signature: inspect.Signature
 
     def __init__(
         self,
@@ -70,26 +72,22 @@ class PaginatedProcedure(ServiceProcedure[ServiceT, Params, PaginatedReturnT]):
 
     def register_endpoint(
         self, router: fa.APIRouter, svc_dep: Callable[..., Any]
-    ) -> Callable[..., Any]:
-        func_name = self.paginated_func.__name__
+    ) -> None:
         endpoint_options = self.fastapi_options.copy()
+        endpoint_options.setdefault(
+            "response_model", self.paginated_signature.return_annotation
+        )
 
         @router.api_route(**endpoint_options)
         def endpoint(
+            params: "AnyFuncArgs" = fa.Depends(self.get_endpoint_dependency()),
             svc: "Service" = fa.Depends(svc_dep),
-            pagination: Pagination = fa.Depends(),
-            any_payload: dict[str, Any] = fa.Body(),
+            pagination: Pagination = fa.Query(),
         ) -> Any:
-            payload = self.payload_model(**any_payload).model_dump(exclude_none=True)
-            svc_func: Callable[Concatenate[PaginationT, Params], Any] = getattr(
-                svc, func_name
-            )
-            args = self.build_args(self.signature, payload)
-            kwargs = self.build_kwargs(self.signature, payload)
+            args, kwargs = params
+            svc_func = self.get_service_func(svc)
             result = svc_func(pagination, *args, **kwargs)
             return result
-
-        return endpoint
 
     def get_client(self, service: Service) -> Callable[Params, PaginatedReturnT]:
         if not isinstance(service.transport, HttpxTransport):
@@ -115,6 +113,7 @@ class PaginatedProcedure(ServiceProcedure[ServiceT, Params, PaginatedReturnT]):
             paginated_func: DefaultPaginatedFunction[ServiceT, Params],
         ) -> DefaultPaginatedFunction[ServiceT, Params]:
             self.paginated_func = paginated_func
+            self.paginated_signature = self.get_signature(paginated_func)
             return paginated_func
 
         return decorator
@@ -124,8 +123,11 @@ class PaginatedProcedure(ServiceProcedure[ServiceT, Params, PaginatedReturnT]):
             raise ProgrammingError(
                 "`PaginatedProcedure` requires a paginated version "
                 "of the main function. Did you forget to use "
-                f"`@{self.__class__.__name__}.paginated_procedure()`?"
+                f"`@{self.func.__name__}.paginated_procedure()`?"
             )
+
+    def get_service_func(self, svc: Service):
+        return getattr(svc, self.paginated_func.__name__)
 
 
 class PaginatedServiceProcedureClient(
@@ -171,8 +173,8 @@ class PaginatedServiceProcedureClient(
     @overload
     def merge_results(
         self,
-        results: list[DataFrameTypeAdapter],
-        result_type: type[DataFrameTypeAdapter],
+        results: list[SerializableDataFrame],
+        result_type: type[SerializableDataFrame],
     ) -> pd.DataFrame: ...
 
     @overload
@@ -182,11 +184,11 @@ class PaginatedServiceProcedureClient(
 
     def merge_results(
         self,
-        results: list[list[Any]] | list[DataFrameTypeAdapter],
+        results: list[list[Any]] | list[SerializableDataFrame],
         result_type: type[Any],
     ) -> list[Any] | pd.DataFrame:
-        if issubclass(result_type, DataFrameTypeAdapter):
-            return self.merge_dataframes(cast(list[DataFrameTypeAdapter], results))
+        if issubclass(result_type, SerializableDataFrame):
+            return self.merge_dataframes(cast(list[SerializableDataFrame], results))
         elif issubclass(result_type, list):
             return self.merge_lists(cast(list[list[Any]], results))
         else:
@@ -194,8 +196,8 @@ class PaginatedServiceProcedureClient(
                 f"Unable to merge paginated results of type `{result_type}`."
             )
 
-    def merge_dataframes(self, results: list[DataFrameTypeAdapter]) -> pd.DataFrame:
-        return pd.concat([res.to_pandas() for res in results])
+    def merge_dataframes(self, results: list[SerializableDataFrame]) -> pd.DataFrame:
+        return pd.concat(results)
 
     def merge_lists(self, results: list[list[Any]]) -> list[Any]:
         return [i for page in results for i in page]
