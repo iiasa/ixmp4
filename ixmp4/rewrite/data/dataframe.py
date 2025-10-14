@@ -3,9 +3,6 @@ from typing import Annotated, Any, TypedDict
 
 import pandas as pd
 import pydantic as pyd
-from pydantic import GetCoreSchemaHandler, GetJsonSchemaHandler
-from pydantic.json_schema import JsonSchemaValue
-from pydantic_core import core_schema
 
 
 class DataFrameDict(TypedDict):
@@ -86,21 +83,4 @@ class DataFrameTypeAdapter(pyd.BaseModel):
         return df
 
 
-class _SerializableDataFrameAnnotation:
-    @classmethod
-    def __get_pydantic_core_schema__(
-        cls,
-        _source_type: Any,
-        _handler: GetCoreSchemaHandler,
-    ) -> core_schema.CoreSchema:
-        return DataFrameTypeAdapter.__get_pydantic_core_schema__(_source_type, _handler)
-
-    @classmethod
-    def __get_pydantic_json_schema__(
-        cls, _core_schema: core_schema.CoreSchema, _handler: GetJsonSchemaHandler
-    ) -> JsonSchemaValue:
-        # Use the same schema that would be used for `int`
-        return DataFrameTypeAdapter.__get_pydantic_json_schema__(_core_schema, _handler)
-
-
-SerializableDataFrame = Annotated[pd.DataFrame, _SerializableDataFrameAnnotation]
+SerializableDataFrame = Annotated[pd.DataFrame, DataFrameTypeAdapter]
