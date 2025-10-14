@@ -36,7 +36,7 @@ def backends(request: pytest.FixtureRequest) -> Backends:
 
 @pytest.fixture()
 def alembic(
-    request: pytest.FixtureRequest, backends: Backends
+    request: pytest.FixtureRequest, backends: Backends, alembic_config: dict[str, Any]
 ) -> Generator[MigrationContext, Any, None]:
     bctx: (
         _GeneratorContextManager[PostgresTestBackend, None, None]
@@ -50,7 +50,7 @@ def alembic(
     elif request.param == "sqlite":
         bctx = backends.sqlite()
 
-    config = Config.from_raw_config(None)
+    config = Config.from_raw_config(alembic_config)
     with bctx as backend:
         backend.teardown()
         with backend.engine.connect() as conn:
