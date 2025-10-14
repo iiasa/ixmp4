@@ -105,6 +105,9 @@ class CheckpointFilter(IdFilter, RunIdFilter, TransactionIdFilter, total=True):
     pass
 
 
+# Meta
+
+
 class KeyFilter(TypedDict, total=False):
     key: str
     key__in: list[str]
@@ -136,3 +139,15 @@ class VersionFilter(TypedDict, total=False):
 class RunFilter(IdFilter, VersionFilter, total=False):
     is_default: bool
     default_only: Annotated[bool, filter_by_default_only]
+
+
+# Docs
+
+
+class DimensionIdFilter(TypedDict, total=False):
+    dimension__id: int
+    dimension__id__in: list[int]
+
+
+class DocsFilter(IdFilter, DimensionIdFilter, total=False):
+    pass
