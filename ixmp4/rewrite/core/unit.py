@@ -4,9 +4,9 @@ from datetime import datetime
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.rewrite.backend import Backend
 from ixmp4.rewrite.core.base import BaseFacade
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 from ixmp4.rewrite.data.unit.dto import Unit as UnitModel
 from ixmp4.rewrite.data.unit.filter import UnitFilter
 from ixmp4.rewrite.data.unit.repositories import (
@@ -48,23 +48,23 @@ class Unit(BaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.units.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.units.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.units.docs.delete(self.id)
+            self._backend.units.delete_docs(self.id)
         else:
-            self._backend.units.docs.set(self.id, description)
+            self._backend.units.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.units.docs.delete(self.id)
+            self._backend.units.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -119,8 +119,8 @@ class UnitRepository(BaseFacade):
         if unit_id is None:
             return None
         try:
-            return self._backend.units.docs.get(dimension_id=unit_id).description
-        except DocsModel.NotFound:
+            return self._backend.units.get_docs(dimension__id=unit_id).description
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -130,8 +130,8 @@ class UnitRepository(BaseFacade):
         unit_id = self._get_unit_id(name)
         if unit_id is None:
             return None
-        return self._backend.units.docs.set(
-            dimension_id=unit_id, description=description
+        return self._backend.units.set_docs(
+            dimension__id=unit_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -140,9 +140,9 @@ class UnitRepository(BaseFacade):
         if unit_id is None:
             return None
         try:
-            self._backend.units.docs.delete(dimension_id=unit_id)
+            self._backend.units.delete_docs(dimension__id=unit_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -150,7 +150,7 @@ class UnitRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self._backend.units.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.units.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

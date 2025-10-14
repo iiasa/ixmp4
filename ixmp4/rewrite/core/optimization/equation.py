@@ -7,7 +7,7 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.data.abstract import Equation as EquationModel
-from ixmp4.rewrite.data.docs.dto import Docs as DocsModel
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 
 from .base import (
     Creator,
@@ -91,23 +91,23 @@ class Equation(OptimizationBaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.optimization.equations.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.equations.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.optimization.equations.docs.delete(self.id)
+            self._backend.optimization.equations.delete_docs(self.id)
         else:
-            self._backend.optimization.equations.docs.set(self.id, description)
+            self._backend.optimization.equations.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.optimization.equations.docs.delete(self.id)
+            self._backend.optimization.equations.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:

@@ -3,9 +3,9 @@ from datetime import datetime
 
 import pandas as pd
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.rewrite.backend import Backend
 from ixmp4.rewrite.core.base import BaseFacade
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 from ixmp4.rewrite.data.scenario.dto import Scenario as ScenarioModel
 
 
@@ -35,23 +35,23 @@ class Scenario(BaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.scenarios.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.scenarios.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.scenarios.docs.delete(self.id)
+            self._backend.scenarios.delete_docs(self.id)
         else:
-            self._backend.scenarios.docs.set(self.id, description)
+            self._backend.scenarios.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.scenarios.docs.delete(self.id)
+            self._backend.scenarios.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -90,10 +90,10 @@ class ScenarioRepository(BaseFacade):
         if scenario_id is None:
             return None
         try:
-            return self._backend.scenarios.docs.get(
-                dimension_id=scenario_id
+            return self._backend.scenarios.get_docs(
+                dimension__id=scenario_id
             ).description
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -103,8 +103,8 @@ class ScenarioRepository(BaseFacade):
         scenario_id = self._get_scenario_id(name)
         if scenario_id is None:
             return None
-        return self._backend.scenarios.docs.set(
-            dimension_id=scenario_id, description=description
+        return self._backend.scenarios.set_docs(
+            dimension__id=scenario_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -113,9 +113,9 @@ class ScenarioRepository(BaseFacade):
         if scenario_id is None:
             return None
         try:
-            self._backend.scenarios.docs.delete(dimension_id=scenario_id)
+            self._backend.scenarios.delete_docs(dimension__id=scenario_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -123,7 +123,7 @@ class ScenarioRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self._backend.scenarios.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.scenarios.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

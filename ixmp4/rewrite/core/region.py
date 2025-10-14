@@ -4,8 +4,8 @@ from datetime import datetime
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.rewrite.backend import Backend
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 from ixmp4.rewrite.data.region.dto import Region as RegionModel
 from ixmp4.rewrite.data.region.filter import RegionFilter
 
@@ -49,23 +49,23 @@ class Region(BaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.regions.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.regions.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.regions.docs.delete(self.id)
+            self._backend.regions.delete_docs(self.id)
         else:
-            self._backend.regions.docs.set(self.id, description)
+            self._backend.regions.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.regions.docs.delete(self.id)
+            self._backend.regions.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -123,8 +123,8 @@ class RegionRepository(BaseFacade):
         if region_id is None:
             return None
         try:
-            return self._backend.regions.docs.get(dimension_id=region_id).description
-        except DocsModel.NotFound:
+            return self._backend.regions.get_docs(dimension__id=region_id).description
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -134,8 +134,8 @@ class RegionRepository(BaseFacade):
         region_id = self._get_region_id(name)
         if region_id is None:
             return None
-        return self._backend.regions.docs.set(
-            dimension_id=region_id, description=description
+        return self._backend.regions.set_docs(
+            dimension__id=region_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -144,9 +144,9 @@ class RegionRepository(BaseFacade):
         if region_id is None:
             return None
         try:
-            self._backend.regions.docs.delete(dimension_id=region_id)
+            self._backend.regions.delete_docs(dimension__id=region_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -154,7 +154,7 @@ class RegionRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self._backend.regions.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.regions.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

@@ -5,7 +5,7 @@ import pandas as pd
 
 from ixmp4.rewrite.backend import Backend
 from ixmp4.rewrite.core.base import BaseFacade
-from ixmp4.rewrite.data.docs.dto import Docs as DocsModel
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 from ixmp4.rewrite.data.iamc.variable.dto import Variable as VariableModel
 
 
@@ -35,23 +35,23 @@ class Variable(BaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.iamc.variables.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.iamc.variables.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.iamc.variables.docs.delete(self.id)
+            self._backend.iamc.variables.delete_docs(self.id)
         else:
-            self._backend.iamc.variables.docs.set(self.id, description)
+            self._backend.iamc.variables.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.iamc.variables.docs.delete(self.id)
+            self._backend.iamc.variables.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -87,10 +87,10 @@ class VariableRepository(BaseFacade):
         if variable_id is None:
             return None
         try:
-            return self._backend.iamc.variables.docs.get(
-                dimension_id=variable_id
+            return self._backend.iamc.variables.get_docs(
+                dimension__id=variable_id
             ).description
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -100,8 +100,8 @@ class VariableRepository(BaseFacade):
         variable_id = self._get_variable_id(name)
         if variable_id is None:
             return None
-        return self._backend.iamc.variables.docs.set(
-            dimension_id=variable_id, description=description
+        return self._backend.iamc.variables.set_docs(
+            dimension__id=variable_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -110,9 +110,9 @@ class VariableRepository(BaseFacade):
         if variable_id is None:
             return None
         try:
-            self._backend.iamc.variables.docs.delete(dimension_id=variable_id)
+            self._backend.iamc.variables.delete_docs(dimension__id=variable_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -120,7 +120,7 @@ class VariableRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self._backend.iamc.variables.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.iamc.variables.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

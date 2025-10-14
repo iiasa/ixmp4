@@ -4,10 +4,10 @@ from typing import TYPE_CHECKING
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
 from ixmp4.rewrite.core.unit import Unit
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 
 from .base import Deleter, Lister, OptimizationBaseFacade, Retriever, Tabulator
 
@@ -71,23 +71,23 @@ class Scalar(OptimizationBaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.optimization.scalars.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.scalars.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.optimization.scalars.docs.delete(self.id)
+            self._backend.optimization.scalars.delete_docs(self.id)
         else:
-            self._backend.optimization.scalars.docs.set(self.id, description)
+            self._backend.optimization.scalars.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.optimization.scalars.docs.delete(self.id)
+            self._backend.optimization.scalars.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:

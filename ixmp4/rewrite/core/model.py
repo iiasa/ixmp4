@@ -6,7 +6,7 @@ from typing_extensions import Unpack
 
 from ixmp4.rewrite.backend import Backend
 from ixmp4.rewrite.core.base import BaseFacade
-from ixmp4.rewrite.data.docs.dto import Docs as DocsModel
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 from ixmp4.rewrite.data.model.dto import Model as ModelModel
 from ixmp4.rewrite.data.model.filter import ModelFilter
 
@@ -37,23 +37,23 @@ class Model(BaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.models.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.models.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.models.docs.delete(self.id)
+            self._backend.models.delete_docs(self.id)
         else:
-            self._backend.models.docs.set(self.id, description)
+            self._backend.models.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.models.docs.delete(self.id)
+            self._backend.models.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -92,8 +92,8 @@ class ModelRepository(BaseFacade):
         if model_id is None:
             return None
         try:
-            return self._backend.models.docs.get(dimension_id=model_id).description
-        except DocsModel.NotFound:
+            return self._backend.models.get_docs(dimension__id=model_id).description
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -103,8 +103,8 @@ class ModelRepository(BaseFacade):
         model_id = self._get_model_id(name)
         if model_id is None:
             return None
-        return self._backend.models.docs.set(
-            dimension_id=model_id, description=description
+        return self._backend.models.set_docs(
+            dimension__id=model_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -113,9 +113,9 @@ class ModelRepository(BaseFacade):
         if model_id is None:
             return None
         try:
-            self._backend.models.docs.delete(dimension_id=model_id)
+            self._backend.models.delete_docs(dimension__id=model_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -123,7 +123,7 @@ class ModelRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self._backend.models.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.models.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

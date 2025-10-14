@@ -6,8 +6,8 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Parameter as ParameterModel
+from ixmp4.rewrite.data.docs.repository import DocsNotFound
 
 from .base import (
     Creator,
@@ -89,23 +89,23 @@ class Parameter(OptimizationBaseFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.optimization.parameters.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.parameters.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.optimization.parameters.docs.delete(self.id)
+            self._backend.optimization.parameters.delete_docs(self.id)
         else:
-            self._backend.optimization.parameters.docs.set(self.id, description)
+            self._backend.optimization.parameters.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.optimization.parameters.docs.delete(self.id)
+            self._backend.optimization.parameters.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:

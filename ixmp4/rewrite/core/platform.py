@@ -31,7 +31,6 @@ from ixmp4.rewrite.backend import Backend
 from ixmp4.rewrite.conf import settings
 from ixmp4.rewrite.conf.platforms import PlatformConnectionInfo
 from ixmp4.rewrite.exceptions import PlatformNotFound
-from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
 
 from .iamc import PlatformIamcData
 from .meta import MetaRepository
@@ -68,10 +67,10 @@ class Platform(object):
             if name is None:
                 raise TypeError("__init__() is missing required argument 'name'")
 
-            ci = self.get_toml_platform(name)
+            ci = self.get_toml_platform_ci(name)
 
             if ci is None:
-                ci = self.get_manager_platform(name)
+                ci = self.get_manager_platform_ci(name)
 
             if ci is None:
                 raise PlatformNotFound(f"Platform '{name}' was not found.")
@@ -88,14 +87,7 @@ class Platform(object):
         self.units = UnitRepository(backend=self.backend)
         self.meta = MetaRepository(backend=self.backend)
 
-    def get_transport(self, ci: PlatformConnectionInfo) -> Transport:
-        if ci.dsn.startswith("http"):
-            auth = settings.get_client_auth()
-            return HttpxTransport.from_url(ci.dsn, auth=auth)
-        else:
-            return DirectTransport.from_dsn(ci.dsn)
-
-    def get_toml_platform(self, name: str) -> PlatformConnectionInfo | None:
+    def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
         toml = settings.get_toml_platforms()
 
         try:
@@ -103,7 +95,7 @@ class Platform(object):
         except PlatformNotFound:
             return None
 
-    def get_manager_platform(self, name: str) -> PlatformConnectionInfo | None:
+    def get_manager_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
         manager = settings.get_manager_platforms()
 
         try:
