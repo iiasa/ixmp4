@@ -36,7 +36,7 @@ class Run(BaseModel, HasUpdateInfo):
         backref="run",
         foreign_keys=[scenario__id],
     )
-    timeseries: db.t.Mapped["TimeSeries"] = orm.relationship()
+    timeseries: db.t.Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
 
     # equations: db.t.Mapped[list["Equation"]] = orm.relationship()
     # indexsets: db.t.Mapped[list["IndexSet"]] = orm.relationship()
