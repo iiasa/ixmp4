@@ -209,7 +209,9 @@ class ScalarRepository(
             correct_versions = self.tabulate_query(select_correct_versions)
         else:
             correct_versions = self.versions.tabulate(
-                transaction__id=transaction__id, revert_platform=revert_platform
+                transaction__id=transaction__id,
+                run__id=run__id,
+                revert_platform=revert_platform,
             )
 
         return super().revert(
