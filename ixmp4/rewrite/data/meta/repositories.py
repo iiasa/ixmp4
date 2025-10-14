@@ -4,6 +4,7 @@ import pandas as pd
 import sqlalchemy as sa
 from toolkit import db
 
+from ixmp4.rewrite.data.dataframe import SerializableDataFrame
 from ixmp4.rewrite.data.model.db import Model
 from ixmp4.rewrite.data.run.db import Run
 from ixmp4.rewrite.data.scenario.db import Scenario
@@ -108,13 +109,13 @@ class PandasRepository(db.r.PandasRepository):
         columns: Sequence[str] | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ) -> pd.DataFrame:
+    ) -> SerializableDataFrame:
         df = super().tabulate(values, columns, limit, offset)
         return self.merge_value_columns(df)
 
     def upsert(
         self,
-        df: pd.DataFrame,
+        df: SerializableDataFrame,
         key: Collection[str] | None = None,
     ) -> Any:
         unique_keys = df["key"].unique()

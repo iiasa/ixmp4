@@ -6,6 +6,7 @@ from toolkit import db
 
 from ixmp4.rewrite.data import versions
 from ixmp4.rewrite.data.base.db import BaseModel, HasCreationInfo
+from ixmp4.rewrite.data.docs.db import docs_model
 
 if TYPE_CHECKING:
     from ixmp4.rewrite.data.run.db import Run
@@ -16,7 +17,10 @@ class Scenario(BaseModel, HasCreationInfo):
 
     name: db.t.String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
 
-    runs: db.t.Mapped["Run"] = orm.relationship()
+    runs: db.t.Mapped[list["Run"]] = orm.relationship(viewonly=True)
+
+
+ScenarioDocs = docs_model(Scenario)
 
 
 class ScenarioVersion(versions.BaseVersionModel):

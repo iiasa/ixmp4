@@ -6,6 +6,7 @@ from toolkit import db
 
 from ixmp4.rewrite.data import versions
 from ixmp4.rewrite.data.base.db import BaseModel, HasCreationInfo
+from ixmp4.rewrite.data.docs.db import docs_model
 from ixmp4.rewrite.data.iamc.measurand.db import Measurand
 
 if TYPE_CHECKING:
@@ -18,8 +19,11 @@ class Unit(BaseModel, HasCreationInfo):
     name: db.t.String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
 
     timeseries: db.t.Mapped["TimeSeries"] = orm.relationship(
-        secondary=Measurand.__table__
+        secondary=Measurand.__table__, viewonly=True
     )
+
+
+UnitDocs = docs_model(Unit)
 
 
 class UnitVersion(versions.BaseVersionModel):

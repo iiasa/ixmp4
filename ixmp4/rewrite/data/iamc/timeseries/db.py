@@ -24,7 +24,7 @@ class TimeSeries(BaseModel):
     run__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("run.id"), nullable=False, index=True
     )
-    run = orm.relationship("Run", foreign_keys=[run__id], lazy="select")
+    run = orm.relationship("Run", foreign_keys=[run__id], lazy="select", viewonly=True)
 
     region__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("region.id"), nullable=False, index=True
@@ -40,8 +40,12 @@ class TimeSeries(BaseModel):
         "Measurand", foreign_keys=[measurand__id], lazy="select"
     )
 
-    variable: db.t.Mapped["Variable"] = orm.relationship(secondary=Measurand.__table__)
-    unit: db.t.Mapped["Unit"] = orm.relationship(secondary=Measurand.__table__)
+    variable: db.t.Mapped["Variable"] = orm.relationship(
+        secondary=Measurand.__table__, viewonly=True
+    )
+    unit: db.t.Mapped["Unit"] = orm.relationship(
+        secondary=Measurand.__table__, viewonly=True
+    )
     datapoints: db.t.Mapped[list["DataPoint"]] = orm.relationship()
 
 

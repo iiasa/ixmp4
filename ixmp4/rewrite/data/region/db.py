@@ -5,6 +5,7 @@ from sqlalchemy import orm
 from toolkit import db
 
 from ixmp4.rewrite.data.base.db import BaseModel, HasCreationInfo
+from ixmp4.rewrite.data.docs.db import docs_model
 
 from .. import versions
 
@@ -18,7 +19,10 @@ class Region(BaseModel, HasCreationInfo):
     name: db.t.String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
     hierarchy: db.t.String = orm.mapped_column(sa.String(1023), nullable=False)
 
-    timeseries: db.t.Mapped["TimeSeries"] = orm.relationship()
+    timeseries: db.t.Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
+
+
+RegionDocs = docs_model(Region)
 
 
 class RegionVersion(versions.BaseVersionModel):

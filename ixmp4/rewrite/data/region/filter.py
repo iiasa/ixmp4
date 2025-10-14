@@ -23,13 +23,13 @@ def filter_by_iamc(
     repo: db.r.BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
     if value is True:
-        return exc.where(Region.timeseries.has())
+        return exc.where(Region.timeseries.any())
     elif value is False:
-        return exc.where(~Region.timeseries.has())
+        return exc.where(~Region.timeseries.any())
     elif value is None:
         return exc
     else:
-        return exc.where(Region.timeseries.has())
+        return exc.where(Region.timeseries.any())
 
 
 class RegionFilter(base.RegionFilter, total=False):

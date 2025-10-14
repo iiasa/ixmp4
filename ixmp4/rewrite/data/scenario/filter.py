@@ -29,13 +29,13 @@ def filter_by_iamc(
     repo: db.r.BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
     if value is True:
-        return exc.where(Scenario.runs.has(Run.timeseries.has()))
+        return exc.where(Scenario.runs.any(Run.timeseries.any()))
     elif value is False:
-        return exc.where(~Scenario.runs.has(Run.timeseries.has()))
+        return exc.where(~Scenario.runs.any(Run.timeseries.any()))
     elif value is None:
         return exc
     else:
-        return exc.where(Scenario.runs.has(Run.timeseries.has()))
+        return exc.where(Scenario.runs.any(Run.timeseries.any()))
 
 
 class ScenarioFilter(base.ScenarioFilter, total=False):

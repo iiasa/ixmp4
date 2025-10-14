@@ -1,6 +1,11 @@
+from typing import TYPE_CHECKING
+
 import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
+
+if TYPE_CHECKING:
+    from ixmp4.rewrite.data.run.db import Run
 
 # TODO Import this from typing when dropping Python 3.11
 from ixmp4.rewrite.data import versions
@@ -33,7 +38,7 @@ class RunMetaEntry(BaseModel):
         nullable=False,
         index=True,
     )
-    run = orm.relationship(
+    run: db.t.Mapped["Run"] = orm.relationship(
         "Run",
         backref="meta",
         foreign_keys=[run__id],
