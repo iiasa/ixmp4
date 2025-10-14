@@ -7,7 +7,9 @@ from typing import Any, Literal
 
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from toolkit.client.auth import ManagerAuth, SelfSignedAuth
+from toolkit.auth.context import AuthorizationContext
+from toolkit.auth.user import User
+from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.manager.client import ManagerClient
 
 from ixmp4 import __file__ as __root__file__
@@ -83,7 +85,6 @@ class Settings(BaseSettings):
         return TomlPlatforms(platform_config)
 
     def get_client_auth(self) -> ManagerAuth | SelfSignedAuth | None:
-        # TODO: Log Messages...
         if self.secret_hs256 is not None:
             logger.debug(
                 "Using self-signed http authentication strategy because the"
@@ -119,7 +120,7 @@ class Settings(BaseSettings):
     def setup_directories(self) -> None:
         self.storage_directory.mkdir(parents=True, exist_ok=True)
 
-        self.database_dir = self.storage_directory / "databases"
+        self.database_dir = self.get_database_dir()
         self.database_dir.mkdir(exist_ok=True)
 
         self.log_dir = self.storage_directory / "log"
@@ -149,3 +150,39 @@ class Settings(BaseSettings):
         with open(logging_config) as file:
             config_dict = json.load(file)
         logging.config.dictConfig(config_dict)
+
+    def get_database_dir(self) -> Path:
+        """Returns the path to the local sqlite database directory."""
+        return self.storage_directory / "databases"
+
+    def get_database_path(self, name: str) -> Path:
+        """Returns a :class:`Path` object for a given sqlite database name.
+        Does not check whether or not the file actually exists."""
+
+        file_name = name + ".sqlite3"
+        return self.get_database_dir() / file_name
+
+    def get_manager_user(self, manager_client: ManagerClient) -> User | None:
+        default_auth = manager_client.auth
+        if default_auth is None or not isinstance(default_auth, Auth):
+            user = None
+        elif getattr(default_auth, "access_token", None) is None:
+            user = None
+        else:
+            user = default_auth.access_token.user
+
+        return user
+
+    def get_local_user(self) -> User | None:
+        credentials = self.get_credentials()
+        if default_creds := credentials.get("default") is not None:
+            username = default_creds["username"]
+        else:
+            username = "@unknown"
+
+        return User(id=-1, username=username, email="", is_superuser=True)
+
+    def get_manager_auth_context(self) -> AuthorizationContext:
+        manager_client = self.get_manager_client()
+        user = self.get_manager_user(manager_client)
+        return AuthorizationContext(user, manager_client)

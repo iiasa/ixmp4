@@ -2,55 +2,30 @@ import re
 from collections.abc import Generator, Iterator
 from itertools import cycle
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
+import sqlalchemy as sa
 import typer
+from rich import box
 from rich.console import Console
 from rich.progress import Progress, track
-from rich.table import Table
-from toolkit.db.alembic import AlembicCli, AlembicController
+from rich.table import Column, Table
+from typing_extensions import Annotated
 
 from ixmp4.rewrite.conf import settings
-from ixmp4.rewrite.conf.platforms import PlatformConnectionInfo
 from ixmp4.rewrite.core.platform import Platform
 from ixmp4.rewrite.data.generator import MockDataGenerator
 from ixmp4.rewrite.db import __file__ as db_module_dir
-from ixmp4.rewrite.db import sqlite
-from ixmp4.rewrite.db.models import get_metadata
-from ixmp4.rewrite.exceptions import PlatformNotFound
+from ixmp4.rewrite.exceptions import PlatformNotFound, ServiceException
 
 from . import utils
+from .alembic import get_alembic_controller
+
+migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
+
 
 app = typer.Typer()
 console = Console()
-
-migration_script_directory = (
-    Path(db_module_dir) / "migrations" / "versions"
-).absolute()
-
-
-@app.command()
-def alembic_(ctx: typer.Context, name: str) -> None:
-    toml_platforms = settings.get_toml_platforms()
-    platform: PlatformConnectionInfo
-    try:
-        platform = toml_platforms.get_platform(name)
-    except PlatformNotFound:
-        manager_platforms = settings.get_manager_platforms()
-        platform = manager_platforms.get_platform(name)
-
-    if platform.dsn.startswith("http"):
-        raise typer.BadParameter(
-            f"Platform '{name}' is an http platform and cannot be migrated."
-        )
-
-    controller = AlembicController(
-        platform.dsn,
-        str(migration_script_directory),
-        f"{get_metadata.__module__}:{get_metadata.__name__}",
-    )
-    alembic_cli = AlembicCli(controller=controller)
-    alembic_cli()
 
 
 def validate_name(name: str) -> str:
@@ -74,8 +49,9 @@ def validate_dsn(dsn: str | None) -> str | None:
 
 
 def prompt_sqlite_dsn(name: str) -> str:
-    path = sqlite.get_database_path(name)
-    dsn = sqlite.get_dsn(path)
+    path = settings.get_database_path(name)
+    dsn = path.absolute().as_uri().replace("file://", "sqlite:///")
+
     if path.exists():
         if typer.confirm(
             f"A file at the standard filesystem location for name '{name}' already "
@@ -89,13 +65,10 @@ def prompt_sqlite_dsn(name: str) -> str:
             f"No file at the standard filesystem location for name '{name}' exists. "
             "Do you want to create a new database?"
         ):
-            utils.echo("Creating the database and running migrations...")
+            utils.echo("Creating the database and running migrations... \n")
 
-            controller = AlembicController(
-                dsn,
-                str(migration_script_directory),
-                f"{get_metadata.__module__}:{get_metadata.__name__}",
-            )
+            settings.configure_logging("alembic")
+            controller = get_alembic_controller(dsn)
             controller.upgrade_database("head")
 
             return dsn
@@ -105,16 +78,20 @@ def prompt_sqlite_dsn(name: str) -> str:
 
 @app.command(help="Adds a new platform to ixmp4's toml registry.")
 def add(
-    name: str = typer.Argument(
-        ...,
-        help="The string identifier of the platform to add. Must be slug-like.",
-        callback=validate_name,
-    ),
-    dsn: Optional[str] = typer.Option(
-        None,
-        help="Data source name. Can be a http(s) URL or a database connection string.",
-        callback=validate_dsn,
-    ),
+    name: Annotated[
+        str,
+        typer.Argument(
+            help="The string identifier of the platform to add. Must be slug-like.",
+            callback=validate_name,
+        ),
+    ],
+    dsn: Annotated[
+        str | None,
+        typer.Option(
+            help="Data source name. Can be a http(s) URL or a database connection string.",
+            callback=validate_dsn,
+        ),
+    ] = None,
 ) -> None:
     toml_platforms = settings.get_toml_platforms()
     try:
@@ -150,9 +127,10 @@ def prompt_sqlite_removal(dsn: str) -> None:
 
 @app.command(help="Removes a platform from ixmp4's toml registry.")
 def remove(
-    name: str = typer.Argument(
-        ..., help="The string identifier of the platform to remove."
-    ),
+    name: Annotated[
+        str,
+        typer.Argument(help="The string identifier of the platform to remove."),
+    ],
 ) -> None:
     toml_platforms = settings.get_toml_platforms()
     try:
@@ -175,30 +153,56 @@ def list_() -> None:
     toml_platforms = settings.get_toml_platforms()
 
     toml_path_str = typer.style(toml_platforms.path, fg=typer.colors.CYAN)
-    utils.echo(f"\nPlatforms registered in '{toml_path_str}':")
+    toml_results = toml_platforms.list_platforms()
 
-    toml_table = Table("Name", "DSN")
-    for tp in toml_platforms.list_platforms():
-        toml_table.add_row(tp.name, tp.dsn)
-    console.print(toml_table)
-    utils.echo(
-        "Total: " + typer.style(str(toml_table.row_count), fg=typer.colors.GREEN)
+    toml_table = Table(
+        "Name",
+        "DSN",
+        box=box.SIMPLE,
+        title="via toml file " + toml_path_str,
+        title_justify="left",
+        caption="Total: " + typer.style(str(len(toml_results)), fg=typer.colors.GREEN),
+        caption_justify="left",
     )
+    for tp in toml_results:
+        toml_table.add_row(tp.name, sa.make_url(tp.dsn).render_as_string())
+
+    console.print()
+    console.print(toml_table)
 
     # Manager Platforms
-    manager_platforms = settings.get_manager_platforms()
+    try:
+        manager_platforms = settings.get_manager_platforms()
+        manager_results = manager_platforms.list_platforms()
+    except ServiceException as e:
+        utils.echo(
+            "Exception occured during manager request, cannot access manager platforms:"
+        )
+        utils.error(str(e))
+        raise typer.Exit()
 
     manager_url_str = typer.style(settings.manager_url, fg=typer.colors.CYAN)
-    utils.echo(f"\nPlatforms accessible via '{manager_url_str}':")
+    utils.echo()
 
-    manager_table = Table("Name", "Access", "Notice")
-    for mp in manager_platforms.list_platforms():
-        manager_table.add_row(mp.name, mp.accessibility.value.lower(), mp.notice)
-
-    console.print(manager_table)
-    utils.echo(
-        "Total: " + typer.style(str(manager_table.row_count), fg=typer.colors.GREEN)
+    manager_table = Table(
+        "Slug",
+        Column("Name", max_width=24, no_wrap=True),
+        "Access",
+        Column("Notice", max_width=48, no_wrap=True),
+        box=box.SIMPLE,
+        title="via manager api " + manager_url_str,
+        title_justify="left",
+        caption="Total: "
+        + typer.style(str(len(manager_results)), fg=typer.colors.GREEN),
+        caption_justify="left",
     )
+    for mp in manager_results:
+        manager_table.add_row(
+            mp.slug, mp.name, str(mp.accessibility).lower(), mp.notice
+        )
+    console.print()
+    console.print(manager_table)
+    console.print()
 
 
 @app.command(
@@ -207,22 +211,26 @@ def list_() -> None:
 )
 def generate(
     platform_name: str,
-    num_models: int = typer.Option(
-        10, "--models", help="Number of mock models to generate."
-    ),
-    num_runs: int = typer.Option(40, "--runs", help="Number of mock runs to generate."),
-    num_regions: int = typer.Option(
-        200, "--regions", help="Number of mock regions to generate."
-    ),
-    num_variables: int = typer.Option(
-        1000, "--variables", help="Number of mock variables to generate."
-    ),
-    num_units: int = typer.Option(
-        40, "--units", help="Number of mock units to generate."
-    ),
-    num_datapoints: int = typer.Option(
-        30_000, "--datapoints", help="Number of mock datapoints to generate."
-    ),
+    num_models: Annotated[
+        int, typer.Option("--models", help="Number of mock models to generate.")
+    ] = 10,
+    num_runs: Annotated[
+        int, typer.Option("--runs", help="Number of mock runs to generate.")
+    ] = 40,
+    num_regions: Annotated[
+        int, typer.Option("--regions", help="Number of mock regions to generate.")
+    ] = 200,
+    num_variables: Annotated[
+        int,
+        typer.Option("--variables", help="Number of mock variables to generate."),
+    ] = 1000,
+    num_units: Annotated[
+        int, typer.Option("--units", help="Number of mock units to generate.")
+    ] = 40,
+    num_datapoints: Annotated[
+        int,
+        typer.Option("--datapoints", help="Number of mock datapoints to generate."),
+    ] = 30_000,
 ) -> None:
     try:
         platform = Platform(platform_name)

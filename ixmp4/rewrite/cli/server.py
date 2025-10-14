@@ -5,8 +5,8 @@ import typer
 import uvicorn
 from fastapi.openapi.utils import get_openapi
 
-from ixmp4.conf import settings
-from ixmp4.server import v1
+from ixmp4.rewrite.conf import settings
+from ixmp4.rewrite.server import v1
 
 from . import utils
 
@@ -23,7 +23,7 @@ def start(
     """Starts the ixmp4 web api."""
     log_config = settings.get_server_logconf()
     uvicorn.run(
-        "ixmp4.server:app",
+        "ixmp4.rewrite.server:app",
         host=host,
         port=port,
         reload=reload,

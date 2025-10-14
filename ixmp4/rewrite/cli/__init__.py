@@ -10,28 +10,19 @@ Check the CLI help command on how to use it:
 
 """
 
-from typing import Optional
-
 import typer
 from toolkit.client.auth import ManagerAuth
 from toolkit.exceptions import InvalidCredentials
 
-from ixmp4.rewrite.cli import platforms
+from ixmp4.rewrite.cli import alembic, platforms, server
 from ixmp4.rewrite.conf import settings
 
 from . import utils
 
-# TODO: TK Migration Commands
 app = typer.Typer()
 app.add_typer(platforms.app, name="platforms")
-
-try:
-    from . import server
-
-    app.add_typer(server.app, name="server")
-except ImportError:
-    # No server installed
-    pass
+app.add_typer(alembic.app, name="alembic")
+app.add_typer(server.app, name="server")
 
 
 @app.command()
@@ -84,9 +75,9 @@ try:
     )
     def test(
         ctx: typer.Context,
-        with_backend: Optional[bool] = False,
-        with_benchmarks: Optional[bool] = False,
-        dry: Optional[bool] = False,
+        with_backend: bool = typer.Argument(False),
+        with_benchmarks: bool = typer.Argument(False),
+        dry: bool = typer.Argument(False),
     ) -> None:
         opts = [
             "--cov-report",
