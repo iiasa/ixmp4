@@ -12,7 +12,7 @@ import logging
 import sqlalchemy as sa
 from alembic import op
 
-from ixmp4.data.db.versions import PostgresVersionTriggers
+from ixmp4.rewrite.data.versions import PostgresVersionTriggers
 
 logger = logging.getLogger(__name__)
 # Revision identifiers, used by Alembic.

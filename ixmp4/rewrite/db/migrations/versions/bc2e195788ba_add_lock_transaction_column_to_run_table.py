@@ -10,7 +10,7 @@ Create Date: 2025-03-13 16:57:24.338393
 import sqlalchemy as sa
 from alembic import op
 
-from ixmp4.db.migrations import utils
+from ixmp4.rewrite.db.migrations import utils
 
 # Revision identifiers, used by Alembic.
 revision = "bc2e195788ba"
