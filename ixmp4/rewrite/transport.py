@@ -2,6 +2,7 @@ import abc
 import logging
 from concurrent.futures import ThreadPoolExecutor
 from functools import lru_cache
+from typing import Any
 
 import httpx
 import sqlalchemy as sa
@@ -9,6 +10,7 @@ from fastapi.testclient import TestClient
 from sqlalchemy import orm
 from toolkit.auth.context import AuthorizationContext
 from toolkit.client.auth import Auth, ManagerAuth
+from toolkit.manager.models import Ixmp4Instance
 
 from ixmp4.rewrite.conf import settings
 
@@ -31,52 +33,63 @@ Session = orm.sessionmaker(autocommit=False, autoflush=False)
 
 class DirectTransport(Transport):
     session: orm.Session
-    auth_ctx: AuthorizationContext
 
     def __init__(
         self,
-        auth_ctx: AuthorizationContext,
         session: orm.Session,
     ):
-        self.auth_ctx = auth_ctx
         self.session = session
 
     @classmethod
-    def from_dsn(
-        cls, dsn: str, auth_ctx: AuthorizationContext | None = None
-    ) -> "DirectTransport":
-        # if auth_ctx is None:
-        #     manager_client = settings.get_manager_client()
-        #     default_auth = manager_client.auth
-        #     if default_auth is None or not isinstance(default_auth, ManagerAuth):
-        #         user = None
-        #     elif getattr(default_auth, "access_token", None) is None:
-        #         user = None
-        #     else:
-        #         user = default_auth.access_token.user
-
-        #     auth_ctx = AuthorizationContext(user, settings.load_manager_client())
-
+    def check_dsn(cls, dsn: str) -> str:
         if dsn.startswith("postgresql://"):
             logger.debug(
                 "Replacing the platform dsn prefix to use the new `psycopg` driver."
             )
             dsn = dsn.replace("postgresql://", "postgresql+psycopg://")
+        return dsn
 
+    @classmethod
+    def from_dsn(cls, dsn: str, *args: Any, **kwargs: Any) -> "DirectTransport":
+        dsn = cls.check_dsn(dsn)
         engine = cached_create_engine(dsn)
         session = Session(bind=engine)
-        return cls(auth_ctx, session)
+        return cls(session, *args, **kwargs)
 
-    def __str__(self) -> str:
+    def get_engine_info(self) -> str:
         if self.session.bind is None:
-            engine_info = ""
+            return ""
         else:
             dialect = self.session.bind.engine.dialect.name
             host = self.session.bind.engine.url.host
             database = self.session.bind.engine.url.database
-            engine_info = f"dialect={dialect} database={database} host={host}"
+            return f"dialect={dialect} database={database} host={host}"
 
-        return f"<DirectTransport {engine_info} user={self.auth_ctx.user}>"
+    def __str__(self) -> str:
+        return f"<{self.__class__.__name__} {self.get_engine_info()}>"
+
+
+class AuthorizedTransport(DirectTransport):
+    platform: Ixmp4Instance
+    auth_ctx: AuthorizationContext
+
+    def __init__(
+        self,
+        session: orm.Session,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+    ):
+        super().__init__(
+            session,
+        )
+        self.auth_ctx = auth_ctx
+        self.platform = platform
+
+    def __str__(self) -> str:
+        return (
+            f"<{self.__class__.__name__} {self.get_engine_info()} "
+            f"user={self.auth_ctx.user} platform={self.platform.slug}>"
+        )
 
 
 class HttpxTransport(Transport):
@@ -92,7 +105,7 @@ class HttpxTransport(Transport):
         self.client = client
 
     @classmethod
-    def from_url(cls, url: str, auth: Auth | None = None) -> "HttpxTransport":
+    def from_url(cls, url: str, auth: Auth | None) -> "HttpxTransport":
         timeout = httpx.Timeout(settings.client_timeout, connect=60.0)
         client = httpx.Client(
             base_url=url,

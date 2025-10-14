@@ -3,10 +3,13 @@
 
 from toolkit.exceptions import BadRequest as BadRequest
 from toolkit.exceptions import ConstraintViolated as ConstraintViolated
+from toolkit.exceptions import Forbidden as Forbidden
 from toolkit.exceptions import NotFound as NotFound
 from toolkit.exceptions import NotUnique as NotUnique
+from toolkit.exceptions import PlatformNotFound as PlatformNotFound
 from toolkit.exceptions import ProgrammingError as ProgrammingError
 from toolkit.exceptions import ServiceException as ServiceException
+from toolkit.exceptions import Unauthorized as Unauthorized
 from toolkit.exceptions import registry as tk_registry
 
 registry = tk_registry.copy()
@@ -36,12 +39,6 @@ class UnknownApiError(ServiceException):
 @registry.register()
 class ApiEncumbered(ServiceException):
     http_error_name = "api_encumbered"
-
-
-@registry.register()
-class PlatformNotFound(ServiceException):
-    http_status_code = 404
-    http_error_name = "platform_not_found"
 
 
 @registry.register()

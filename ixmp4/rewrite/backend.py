@@ -1,6 +1,9 @@
 import logging
 
 from ixmp4.rewrite import data, services
+from ixmp4.rewrite.conf import settings
+from ixmp4.rewrite.conf.platforms import PlatformConnectionInfo
+from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
 
 logger = logging.getLogger(__name__)
 
@@ -22,6 +25,8 @@ class OptimizationSubobject(object):
 
 
 class Backend(object):
+    transport: Transport
+
     iamc: IamcSubobject
     optimization: OptimizationSubobject
 
@@ -36,6 +41,7 @@ class Backend(object):
 
     def __init__(self, transport: services.Transport) -> None:
         logger.info(f"Creating backend class with transport: {transport}")
+        self.transport = transport
         self.optimization = OptimizationSubobject()
         self.iamc = IamcSubobject()
 
@@ -48,3 +54,24 @@ class Backend(object):
         self.checkpoints = data.CheckpointService(transport)
         self.iamc.datapoints = data.iamc.DataPointService(transport)
         self.iamc.timeseries = data.iamc.TimeSeriesService(transport)
+
+    @classmethod
+    def from_connection_info(cls, ci: PlatformConnectionInfo) -> "Backend":
+        transport = cls.get_transport(ci)
+        return cls(transport)
+
+    @classmethod
+    def get_transport(cls, ci: PlatformConnectionInfo) -> Transport:
+        if ci.dsn.startswith("http"):
+            auth = settings.get_client_auth()
+            return HttpxTransport.from_url(ci.dsn, auth)
+        else:
+            try:
+                auth_context = settings.get_local_auth_context()
+                return DirectTransport.from_dsn(ci.dsn, auth_context)
+            except Exception as e:
+                logger.debug("Intiating transport failed with exception: " + str(e))
+                if ci.url is not None:
+                    logger.debug("Retrying with http transport.")
+                    auth = settings.get_client_auth()
+                    return HttpxTransport.from_url(ci.url, auth)
