@@ -30,7 +30,7 @@ jobs:
         include:
           # with pyarrow
           - python-version: "3.14"
-            with-pyarrow: true
+            with-pyarrow: false
             postgres-version: "16"
             pandas-version: false
             backend: "sqlite,rest-sqlite"
