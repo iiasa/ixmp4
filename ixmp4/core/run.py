@@ -122,6 +122,39 @@ class Run(BaseModelFacade):
                 sleep_time = min(sleep_time, remaining_time)
                 time.sleep(sleep_time)
 
+    def _find_target_transaction(self) -> int:
+        """Find the latest :obj:`transaction__id` targeting this Run."""
+        checkpoint_df = self.checkpoints.tabulate()
+        if checkpoint_df.empty:
+            checkpoint_transaction = -1
+        else:
+            max_tx_id = checkpoint_df["transaction__id"].max()
+            if pd.isnull(max_tx_id):
+                checkpoint_transaction = -1
+            else:
+                checkpoint_transaction = int(max_tx_id)
+
+        assert self._model.lock_transaction is not None
+
+        return max(checkpoint_transaction, self._model.lock_transaction)
+
+    def _revert_changes(
+        self, target_transaction: int, revert_platform_on_error: bool = False
+    ) -> None:
+        """Revert Run (and optionally Platform) to the state of `target_transaction`."""
+        try:
+            self.backend.runs.revert(
+                self._model.id,
+                target_transaction,
+                revert_platform=revert_platform_on_error,
+            )
+        except OperationNotSupported as ons_exc:
+            warnings.warn(
+                "An exception occurred but the `Run` "
+                "was not reverted because versioning "
+                "is not supported by this platform: " + ons_exc.message
+            )
+
     @contextmanager
     def transact(
         self,
@@ -168,33 +201,11 @@ class Run(BaseModelFacade):
         try:
             yield
         except Exception as e:
-            checkpoint_df = self.checkpoints.tabulate()
-            if checkpoint_df.empty:
-                checkpoint_transaction = -1
-            else:
-                max_tx_id = checkpoint_df["transaction__id"].max()
-                if pd.isnull(max_tx_id):
-                    checkpoint_transaction = -1
-                else:
-                    checkpoint_transaction = int(max_tx_id)
-
-            assert self._model.lock_transaction is not None
-
-            target_transaction = max(
-                checkpoint_transaction, self._model.lock_transaction
+            target_transaction = self._find_target_transaction()
+            self._revert_changes(
+                target_transaction=target_transaction,
+                revert_platform_on_error=revert_platform_on_error,
             )
-            try:
-                self.backend.runs.revert(
-                    self._model.id,
-                    target_transaction,
-                    revert_platform=revert_platform_on_error,
-                )
-            except OperationNotSupported as ons_exc:
-                warnings.warn(
-                    "An exception occurred but the `Run` "
-                    "was not reverted because versioning "
-                    "is not supported by this platform: " + ons_exc.message
-                )
 
             self._meta.refetch_data()
             self._unlock()

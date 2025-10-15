@@ -217,7 +217,6 @@ class RunMetaEntryRepository(
                 - run__id
                 - key
                 - value
-                - type
         """
         ...
 

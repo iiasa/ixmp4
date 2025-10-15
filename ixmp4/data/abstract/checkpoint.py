@@ -49,10 +49,6 @@ class CheckpointRepository(
         ----------
         run__id: int
             Id of associated run.
-
-        transaction__id: int
-            Id of associated transaction.
-
         message: str
             Checkpoint message.
 

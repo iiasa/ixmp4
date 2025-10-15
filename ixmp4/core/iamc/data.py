@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -7,6 +6,11 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
+from ixmp4.data.abstract.annotations import (
+    HasRegionFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
 from ixmp4.data.backend import Backend
 from ixmp4.data.db.iamc.utils import (
@@ -78,9 +82,9 @@ class RunIamcData(BaseFacade):
     def tabulate(
         self,
         *,
-        variable: dict[str, str | Iterable[str]] | None = None,
-        region: dict[str, str | Iterable[str]] | None = None,
-        unit: dict[str, str | Iterable[str]] | None = None,
+        variable: HasVariableFilter | None = None,
+        region: HasRegionFilter | None = None,
+        unit: HasUnitFilter | None = None,
         raw: bool = False,
     ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(

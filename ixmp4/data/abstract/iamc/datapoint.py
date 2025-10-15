@@ -9,6 +9,14 @@ import pandas as pd
 from typing_extensions import TypedDict, Unpack
 
 from .. import base
+from ..annotations import (
+    HasModelFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasScenarioFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 
 
 class DataPoint(base.BaseModel, Protocol):
@@ -63,12 +71,12 @@ class EnumerateKwargs(TypedDict, total=False):
     time_series__id__lt: int
     time_series__id__gte: int
     time_series__id__lte: int
-    region: dict[str, str | Iterable[str]] | None
-    unit: dict[str, str | Iterable[str]] | None
-    variable: dict[str, str | Iterable[str]] | None
-    model: dict[str, str | Iterable[str]] | None
-    scenario: dict[str, str | Iterable[str]] | None
-    run: dict[str, bool | int | Iterable[int]]
+    region: HasRegionFilter | None
+    unit: HasUnitFilter | None
+    variable: HasVariableFilter | None
+    model: HasModelFilter | None
+    scenario: HasScenarioFilter | None
+    run: HasRunFilter | None
 
 
 class DataPointRepository(

@@ -1,3 +1,5 @@
+from datetime import datetime, timedelta, timezone
+
 import pandas as pd
 import pandas.testing as pdt
 import pytest
@@ -415,3 +417,22 @@ class TestCoreRun:
             equation.remove_data()
             variable.add({"levels": [2025], "marginals": [1.5]})
         assert run.optimization.has_solution()
+
+    def test_run_updated_at(self, platform: ixmp4.Platform) -> None:
+        # New Run has no last update date
+        run = platform.runs.create("Model", "Scenario")
+
+        assert run._model.updated_at is None
+
+        with run.transact("Test Run updated_at"):
+            run.checkpoints.create("")
+
+        # After creating a checkpoint, updated_at is set
+        last_update = run._model.updated_at
+        assert last_update is not None
+
+        # NOTE Mypy can't realize that _model is updated in the background
+        # TODO How does this work on both kinds of backends?
+        assert abs(  # type: ignore[unreachable]
+            last_update.replace(tzinfo=timezone.utc) - datetime.now(tz=timezone.utc)
+        ) < timedelta(seconds=1)

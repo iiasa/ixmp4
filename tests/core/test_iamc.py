@@ -1,6 +1,6 @@
 import asyncio
 import warnings
-from collections.abc import Iterable
+from typing import TypedDict
 
 import numpy as np
 import pandas as pd
@@ -10,10 +10,21 @@ import ixmp4
 from ixmp4 import DataPoint
 from ixmp4.conf import settings
 from ixmp4.core.exceptions import RunLockRequired, SchemaError
+from ixmp4.data.abstract.annotations import (
+    HasRegionFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 from ixmp4.data.backend import SqlAlchemyBackend
 
 from .. import utils
 from ..fixtures import FilterIamcDataset, SmallIamcDataset
+
+
+class DataPointTabulateFilters(TypedDict, total=False):
+    region: HasRegionFilter
+    unit: HasUnitFilter
+    variable: HasVariableFilter
 
 
 class TestCoreIamc:
@@ -218,7 +229,7 @@ class TestCoreIamc:
     def test_run_tabulate_with_filter_raw(
         self,
         platform: ixmp4.Platform,
-        filters: dict[str, dict[str, str | Iterable[str]]],
+        filters: DataPointTabulateFilters,
         run: tuple[str, str, int],
         exp_len: int,
     ) -> None:
