@@ -17,7 +17,8 @@ jobs:
           - "3.10" # Earliest version supported by ixmp4
           - "3.11"
           - "3.12" 
-          - "3.13" # Latest version supported by ixmp4
+          - "3.13" 
+          - "3.14" # Latest version supported by ixmp4
         with-pyarrow:
           - false
         postgres-version:
@@ -28,18 +29,23 @@ jobs:
           - "sqlite,rest-sqlite,postgres,rest-postgres"
         include:
           # with pyarrow
-          - python-version: "3.13"
+          - python-version: "3.14"
             with-pyarrow: true
             postgres-version: "16"
             pandas-version: false
             backend: "sqlite,rest-sqlite"
           # pgsql 15
-          - python-version: "3.13"
+          - python-version: "3.14"
             with-pyarrow: false
             postgres-version: "15"
             pandas-version: false
             backend: "postgres,rest-postgres"
           # with pyarrow
+          - python-version: "3.13"
+            with-pyarrow: true
+            postgres-version: "16"
+            pandas-version: false
+            backend: "sqlite,rest-sqlite"
           - python-version: "3.12"
             with-pyarrow: true
             postgres-version: "16"
@@ -163,7 +169,7 @@ jobs:
           fetch-depth: 0
       - uses: actions/setup-python@v5
         with:
-          python-version: "3.13"
+          python-version: "3.14"
 
       #------------------------------
       #  install & configure poetry
