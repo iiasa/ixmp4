@@ -13,7 +13,6 @@ from typing import (
 )
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
-from pydantic._internal._typing_extra import safe_get_annotations
 from pydantic.fields import FieldInfo
 
 # TODO Import these from typing when dropping support for 3.10
@@ -138,13 +137,77 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         namespace: dict[str, Any],
         **kwargs: Any,
     ) -> type["BaseFilter"]:
-        annots = safe_get_annotations(cls=cls).copy()
+        annots: dict[str, type]
+        # Use Any since annotationlib is only available on Python 3.14
+        wrapped_annotate: Callable[[Any], dict[str, Any]] | None
+
+        if sys.version_info >= (3, 14):
+            import annotationlib
+
+            if annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                annots = annotationlib.call_annotate_function(
+                    annotate, format=annotationlib.Format.FORWARDREF
+                )
+
+                namespace["__filter_names__"]: dict[str, type] = {}
+
+                def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+                    _annots = annotationlib.call_annotate_function(
+                        annotate, format, owner=new_cls
+                    )
+                    combined_annots = {
+                        **namespace.get("__filter_names__", {}),
+                        **_annots,
+                    }
+                    print("combined_annots: ")
+                    print(combined_annots)
+                    return combined_annots
+            else:
+                annots = {}
+                wrapped_annotate = None
+
+        else:
+            annots = namespace.get("__annotations__", {}).copy()
+            wrapped_annotate = None
         for _name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
             cls.process_field(namespace, _name, annot)
 
-        return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
+        if name == "ModelFilter":
+            assert False, f"{namespace} \n {annots}"
+
+        if sys.version_info >= (3, 14):
+            for filter_name, annotation in namespace.get(
+                "__filter_names__", {}
+            ).items():
+                namespace[filter_name].annotation = annotation
+
+            def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+                _annots = annotationlib.call_annotate_function(annotate, format)
+                combined_annots = {**namespace.get("__filter_names__", {}), **_annots}
+                print("combined_annots: ")
+                print(combined_annots)
+                return combined_annots
+
+            namespace["__annotate_func__"] = wrapped_annotate
+            print("namespace after filter_name:")
+            print(namespace)
+            _annotate = annotationlib.get_annotate_from_class_namespace(namespace)
+            _raw_annots = annotationlib.call_annotate_function(
+                _annotate, format=annotationlib.Format.FORWARDREF
+            )
+            print("raw annotations:")
+            print(_raw_annots)
+
+        new_cls = cast(
+            FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs)
+        )
+
+        if wrapped_annotate is not None:
+            new_cls.__annotate__ = wrapped_annotate
+
+        return new_cls
 
     @classmethod
     def build_lookups(
@@ -252,7 +315,11 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 else name + argument_seperator + lookup_alias
             )
 
-            namespace["__annotations__"][filter_name] = Optional[type_]
+            if sys.version_info < (3, 14):
+                namespace["__annotations__"][filter_name] = Optional[type_]
+            else:
+                namespace["__filter_names__"][filter_name] = Optional[type_]
+
             func_name = get_filter_func_name(filter_name)
 
             FilterType = TypeVar("FilterType")
