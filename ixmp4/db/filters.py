@@ -153,8 +153,8 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             print(annot)
             cls.process_field(namespace, _name, annot)
 
-        if name == "ModelFilter":
-            assert False, f"{namespace}"
+        # if name == "ModelFilter":
+        #     assert False, f"{namespace}"
         return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
 
     @classmethod
