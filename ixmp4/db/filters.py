@@ -184,8 +184,8 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             print(annot)
             cls.process_field(namespace, _name, annot)
 
-        if name == "ModelFilter":
-            assert False, f"{namespace} \n {annots}"
+        # if name == "ModelFilter":
+        #     assert False, f"{namespace} \n {annots}"
 
         if sys.version_info >= (3, 14):
             for filter_name, annotation in namespace.get(
