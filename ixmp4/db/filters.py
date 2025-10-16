@@ -1,3 +1,4 @@
+import logging
 import operator
 from collections.abc import Callable, Iterable
 from types import GenericAlias, UnionType
@@ -22,6 +23,8 @@ from ixmp4 import db
 from ixmp4.core.exceptions import BadFilterArguments, ProgrammingError
 
 in_Type = TypeVar("in_Type")
+
+logger = logging.Logger(__name__)
 
 
 class RemotePathStep(TypedDict):
@@ -141,8 +144,16 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         for _name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
+            print("namespace:")
+            print(namespace)
+            print("name:")
+            print(_name)
+            print("annot:")
+            print(annot)
             cls.process_field(namespace, _name, annot)
 
+        if name == "ModelFilter":
+            assert False, f"{annots}"
         return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
 
     @classmethod
@@ -531,6 +542,8 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     ) -> db.sql.Select[tuple[FilterType]]:
         """Apply a field-level filter."""
         func_name = get_filter_func_name(name)
+        print(self.__dict__)
+        print(self.__annotations__)
         filter_func = getattr(self, func_name, None)
         if filter_func is None:
             raise ProgrammingError
