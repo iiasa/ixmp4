@@ -13,6 +13,7 @@ from typing import (
 )
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
+from pydantic._internal._typing_extra import safe_get_annotations
 from pydantic.fields import FieldInfo
 
 # TODO Import these from typing when dropping support for 3.10
@@ -137,7 +138,7 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         namespace: dict[str, Any],
         **kwargs: Any,
     ) -> type["BaseFilter"]:
-        annots = namespace.get("__annotations__", {}).copy()
+        annots = safe_get_annotations(cls=cls).copy()
         for _name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
