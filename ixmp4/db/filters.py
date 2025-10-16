@@ -1,5 +1,6 @@
 import logging
 import operator
+import sys
 from collections.abc import Callable, Iterable
 from types import GenericAlias, UnionType
 from typing import (
@@ -153,8 +154,16 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             print(annot)
             cls.process_field(namespace, _name, annot)
 
-        # if name == "ModelFilter":
-        #     assert False, f"{namespace}"
+        if name == "ModelFilter":
+            if sys.version_info >= (3, 14):
+                import annotationlib
+
+                annotate = annotationlib.get_annotate_from_class_namespace(namespace)
+                annotations = annotationlib.call_annotate_function(
+                    annotate, format=annotationlib.Format.FORWARDREF
+                )
+
+                assert False, f"{namespace} \n {annots} \n {annotations}"
         return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
 
     @classmethod
