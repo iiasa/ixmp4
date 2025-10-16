@@ -66,31 +66,12 @@ def escape_wildcard(v: str) -> str:
     return v.replace("%", "\\%").replace("*", "%")
 
 
-class Integer(int):
-    """An explicit proxy type for `int`."""
-
-    pass
-
-
-class Float(float):
-    """An explicit proxy type for `float`."""
-
-    pass
-
-
-class Id(int):
-    """A no-op type for a reduced set of `Integer` lookups."""
-
-    pass
-
-
-class String(str):
-    """An explicit proxy type for `str`."""
-
-    pass
-
-
 Boolean = bool
+Float = float  # An explicit proxy type for `float`.
+Id = int  # A no-op type for a reduced set of `Integer` lookups.
+Integer = int  # An explicit proxy type for `int`.
+String = str  # An explicit proxy type for `str`.
+
 
 argument_seperator = "__"
 filter_func_prefix = "filter_"
