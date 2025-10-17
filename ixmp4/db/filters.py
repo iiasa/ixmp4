@@ -184,35 +184,35 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             # print(annot)
             cls.process_field(namespace, _name, annot)
 
-        # if sys.version_info >= (3, 14):
-        #     for filter_name, annotation in namespace.get(
-        #         "__filter_names__", {}
-        #     ).items():
-        #         namespace[filter_name].annotation = annotation
+        if sys.version_info >= (3, 14):
+            #     for filter_name, annotation in namespace.get(
+            #         "__filter_names__", {}
+            #     ).items():
+            #         namespace[filter_name].annotation = annotation
 
-        #     if annotate:
+            #     if annotate:
 
-        #         def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
-        #             _annots = annotationlib.call_annotate_function(annotate, format)
-        #             combined_annots = {
-        #                 **namespace.get("__filter_names__", {}),
-        #                 **_annots,
-        #             }
-        #             # print("combined_annots: ")
-        #             # print(combined_annots)
-        #             return combined_annots
+            #         def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+            #             _annots = annotationlib.call_annotate_function(annotate, format)
+            #             combined_annots = {
+            #                 **namespace.get("__filter_names__", {}),
+            #                 **_annots,
+            #             }
+            #             # print("combined_annots: ")
+            #             # print(combined_annots)
+            #             return combined_annots
 
-        #         namespace["__annotate_func__"] = wrapped_annotate
-        # print("namespace after filter_name:")
-        # print(namespace)
-        # if _annotate := annotationlib.get_annotate_from_class_namespace(namespace):
-        #     _raw_annots = annotationlib.call_annotate_function(
-        #         _annotate, format=annotationlib.Format.FORWARDREF
-        #     )
-        # else:
-        #     _raw_annots = {}
-        # print("raw annotations:")
-        # print(_raw_annots)
+            #         namespace["__annotate_func__"] = wrapped_annotate
+            print("namespace after filter_name:")
+            print(namespace)
+            if _annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                _raw_annots = annotationlib.call_annotate_function(
+                    _annotate, format=annotationlib.Format.FORWARDREF
+                )
+            else:
+                _raw_annots = {}
+            print("raw annotations:")
+            print(_raw_annots)
 
         new_cls = cast(
             FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs)
