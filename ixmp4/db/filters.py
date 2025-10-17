@@ -1,4 +1,6 @@
+import logging
 import operator
+import sys
 from collections.abc import Callable, Iterable
 from types import GenericAlias, UnionType
 from typing import (
@@ -22,6 +24,8 @@ from ixmp4 import db
 from ixmp4.core.exceptions import BadFilterArguments, ProgrammingError
 
 in_Type = TypeVar("in_Type")
+
+logger = logging.Logger(__name__)
 
 
 class RemotePathStep(TypedDict):
@@ -66,31 +70,12 @@ def escape_wildcard(v: str) -> str:
     return v.replace("%", "\\%").replace("*", "%")
 
 
-class Integer(int):
-    """An explicit proxy type for `int`."""
-
-    pass
-
-
-class Float(float):
-    """An explicit proxy type for `float`."""
-
-    pass
-
-
-class Id(int):
-    """A no-op type for a reduced set of `Integer` lookups."""
-
-    pass
-
-
-class String(str):
-    """An explicit proxy type for `str`."""
-
-    pass
-
-
 Boolean = bool
+Float = float  # An explicit proxy type for `float`.
+Id = int  # A no-op type for a reduced set of `Integer` lookups.
+Integer = int  # An explicit proxy type for `int`.
+String = str  # An explicit proxy type for `str`.
+
 
 argument_seperator = "__"
 filter_func_prefix = "filter_"
@@ -156,13 +141,99 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         namespace: dict[str, Any],
         **kwargs: Any,
     ) -> type["BaseFilter"]:
-        annots = namespace.get("__annotations__", {}).copy()
+        annots: dict[str, type]
+        # Use Any since annotationlib is only available on Python 3.14
+        wrapped_annotate: Callable[[Any], dict[str, Any]] | None
+
+        if sys.version_info >= (3, 14):
+            import annotationlib
+
+            if annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                annots = annotationlib.call_annotate_function(
+                    annotate, format=annotationlib.Format.FORWARDREF
+                )
+
+                # namespace["__filter_names__"]: dict[str, type] = {}
+
+                def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+                    _annots = annotationlib.call_annotate_function(
+                        annotate, format, owner=new_cls
+                    )
+
+                    dynamic_annots = {
+                        name: field_info.annotation
+                        for name, field_info in namespace.items()
+                        if isinstance(field_info, FieldInfo)
+                    }
+
+                    combined_annots = {
+                        # **namespace.get("__filter_names__", {}),
+                        **dynamic_annots,
+                        **_annots,
+                    }
+                    # print("combined_annots: ")
+                    # print(combined_annots)
+                    return combined_annots
+            else:
+                annots = {}
+                wrapped_annotate = None
+
+        else:
+            annots = namespace.get("__annotations__", {}).copy()
+            wrapped_annotate = None
         for _name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
+            # print("namespace:")
+            # print(namespace)
+            # print("name:")
+            # print(_name)
+            # print("annot:")
+            # print(annot)
             cls.process_field(namespace, _name, annot)
 
-        return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
+        if sys.version_info >= (3, 14):
+            #     for filter_name, annotation in namespace.get(
+            #         "__filter_names__", {}
+            #     ).items():
+            #         namespace[filter_name].annotation = annotation
+
+            if annotate:
+                # NOTE This definition is necessary only to enable the below debugging
+                def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+                    _annots = annotationlib.call_annotate_function(annotate, format)
+                    dynamic_annots = {
+                        name: field_info.annotation
+                        for name, field_info in namespace.items()
+                        if isinstance(field_info, FieldInfo)
+                    }
+                    combined_annots = {**dynamic_annots, **_annots}
+                    # print("combined_annots: ")
+                    # print(combined_annots)
+                    return combined_annots
+
+                namespace["__annotate_func__"] = wrapped_annotate
+
+            # NOTE The following lines are just for debugging until new_cls
+            print("namespace after filter_name:")
+            print(namespace)
+            if _annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                _raw_annots = annotationlib.call_annotate_function(
+                    _annotate, format=annotationlib.Format.FORWARDREF
+                )
+            else:
+                _raw_annots = {}
+            print("raw annotations:")
+            print(_raw_annots)
+
+        new_cls = cast(
+            FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs)
+        )
+
+        if wrapped_annotate is not None:
+            new_cls.__annotate__ = wrapped_annotate
+
+        return new_cls
 
     @classmethod
     def build_lookups(
@@ -270,7 +341,11 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 else name + argument_seperator + lookup_alias
             )
 
-            namespace["__annotations__"][filter_name] = Optional[type_]
+            if sys.version_info < (3, 14):
+                namespace["__annotations__"][filter_name] = Optional[type_]
+            # else:
+            #     namespace["__filter_names__"][filter_name] = Optional[type_]
+
             func_name = get_filter_func_name(filter_name)
 
             FilterType = TypeVar("FilterType")
@@ -308,6 +383,10 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             json_schema_extra = {"sqla_column": name}
             field.json_schema_extra = json_schema_extra
             field._attributes_set["json_schema_extra"] = json_schema_extra
+
+            if sys.version_info >= (3, 14):
+                field.annotation = Optional[type_]
+
             namespace[filter_name] = field
 
 
@@ -550,6 +629,8 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     ) -> db.sql.Select[tuple[FilterType]]:
         """Apply a field-level filter."""
         func_name = get_filter_func_name(name)
+        print(self.__dict__)
+        print(self.__annotations__)
         filter_func = getattr(self, func_name, None)
         if filter_func is None:
             raise ProgrammingError

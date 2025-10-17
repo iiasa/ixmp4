@@ -1,41 +1,50 @@
 [tool.poetry]
-authors = [
-    "Max Wolschlager <wolschlager@iiasa.ac.at>",
-    "Fridolin Glatter <glatter@iiasa.ac.at>",
-    "Daniel Huppmann <huppmann@iiasa.ac.at>",
-    "Philip Hackstock <hackstock@iiasa.ac.at>",
-    "Pino Mussak <mussak@iiasa.ac.at>"
-]
-name = "ixmp4"
+packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
+requires-poetry = ">=2.0,<3.0"
 version = "0.0.0"
+
+[project]
+name = "ixmp4"
+authors = [
+    { name = "Max Wolschlager", email = "<wolschlager@iiasa.ac.at>" },
+    { name = "Fridolin Glatter", email = "<glatter@iiasa.ac.at>" },
+    { name = "Daniel Huppmann", email = "<huppmann@iiasa.ac.at>" },
+    { name = "Philip Hackstock", email = "<hackstock@iiasa.ac.at>" },
+    { name = "Pino Mussak", email = "<mussak@iiasa.ac.at>" }
+]
 description = "a data warehouse for scenario analysis"
+dynamic = [ "version" ]
 license = "MIT"
 readme = "README.md"
-packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
+requires-python = ">=3.10, <3.15"
+dependencies = [
+    "alembic>=1.12.0",
+    "fastapi>=0.100.0",
+    "httpx[http2]>=0.25.0",
+    "openpyxl>=3.0.9",
+    # remove legacy-handling in timeseries- and meta-repositories when dropping pandas < 2.2
+    "pandas>=2.1.1",
+    "pandera>=0.24.0",
+    "psycopg[binary]>=3.1.12",
+    "pydantic>=2.3.0",
+    "pydantic-settings>=2.1.0",
+    "PyJWT>=2.4.0",
+    "python-dotenv>=1.0.1",
+    "rich>=13.5.2",
+    "SQLAlchemy[mypy]>=2.0.22",
+    "SQLAlchemy-Utils>=0.41.0",
+    "toml>=0.10.2",
+    "typer>=0.9.0",
+]
+
+[project.scripts]
+ixmp4 = "ixmp4.__main__:app"
+
+[project.urls]
+documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
 homepage = "https://software.ece.iiasa.ac.at"
 repository = "https://github.com/iiasa/ixmp4"
-documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
-requires-poetry = ">=2.0,<3.0"
 
-[tool.poetry.dependencies]
-PyJWT = ">=2.4.0"
-SQLAlchemy = { extras = ["mypy"], version = ">=2.0.22" }
-SQLAlchemy-Utils = ">=0.41.0"
-alembic = ">=1.12.0"
-fastapi = ">=0.100.0"
-httpx = { extras = ["http2"], version = ">=0.25.0" }
-openpyxl = ">=3.0.9"
-# remove legacy-handling in timeseries- and meta-repositories when dropping pandas < 2.2
-pandas = ">=2.1.1"
-pandera = ">=0.24.0"
-pydantic = ">=2.3.0"
-python = ">=3.10, <3.14"
-python-dotenv = ">=1.0.1"
-typer = ">=0.9.0"
-toml = ">=0.10.2"
-psycopg = { extras = ["binary"], version = ">=3.1.12" }
-pydantic-settings = ">=2.1.0"
-rich = ">=13.5.2"
 
 [tool.poetry.group.docs]
 optional = true
@@ -76,9 +85,6 @@ optional = true
 
 [tool.poetry.group.tutorial.dependencies]
 ipykernel = ">=6.27.1"
-
-[tool.poetry.scripts]
-ixmp4 = "ixmp4.__main__:app"
 
 [build-system]
 build-backend = "poetry_dynamic_versioning.backend"

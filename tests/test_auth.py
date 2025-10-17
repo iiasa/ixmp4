@@ -366,6 +366,8 @@ class TestAuthContext:
                 assert mp.scenarios.tabulate().empty
 
 
+# TODO Remove this mark once the outage is resolved and the link works again
+@pytest.mark.skip(reason="Bad Gateway error due to ICT outage.")
 def test_invalid_credentials() -> None:
     # TODO: Use testing instance once available.
     # Using dev for now to reduce load on production environment.
