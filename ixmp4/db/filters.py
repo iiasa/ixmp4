@@ -193,20 +193,27 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             ).items():
                 namespace[filter_name].annotation = annotation
 
-            def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
-                _annots = annotationlib.call_annotate_function(annotate, format)
-                combined_annots = {**namespace.get("__filter_names__", {}), **_annots}
-                print("combined_annots: ")
-                print(combined_annots)
-                return combined_annots
+            if annotate:
 
-            namespace["__annotate_func__"] = wrapped_annotate
+                def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+                    _annots = annotationlib.call_annotate_function(annotate, format)
+                    combined_annots = {
+                        **namespace.get("__filter_names__", {}),
+                        **_annots,
+                    }
+                    print("combined_annots: ")
+                    print(combined_annots)
+                    return combined_annots
+
+                namespace["__annotate_func__"] = wrapped_annotate
             print("namespace after filter_name:")
             print(namespace)
-            _annotate = annotationlib.get_annotate_from_class_namespace(namespace)
-            _raw_annots = annotationlib.call_annotate_function(
-                _annotate, format=annotationlib.Format.FORWARDREF
-            )
+            if _annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                _raw_annots = annotationlib.call_annotate_function(
+                    _annotate, format=annotationlib.Format.FORWARDREF
+                )
+            else:
+                _raw_annots = {}
             print("raw annotations:")
             print(_raw_annots)
 
