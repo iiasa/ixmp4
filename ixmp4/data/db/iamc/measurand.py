@@ -11,14 +11,13 @@ from ixmp4.data import abstract, types
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db import mixins
 
+from .. import versions
 from ..unit import Unit
+from . import base
+from .variable import Variable
 
 if TYPE_CHECKING:
     from ixmp4.data.backend.db import SqlAlchemyBackend
-
-from .. import versions
-from . import base
-from .variable import Variable
 
 
 class Measurand(base.BaseModel, mixins.HasCreationInfo):

@@ -6,9 +6,6 @@ from sqlalchemy.exc import NoResultFound
 # TODO Adapt import when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
 from ixmp4 import db
 from ixmp4.core.exceptions import (
     Forbidden,
@@ -26,6 +23,9 @@ from .. import base, versions
 from ..model import Model, ModelRepository
 from ..scenario import Scenario, ScenarioRepository
 from .model import Run, RunVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
 class RunVersionRepository(versions.VersionRepository[RunVersion]):
