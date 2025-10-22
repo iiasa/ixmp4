@@ -1,9 +1,6 @@
 from collections.abc import Mapping
 from typing import TYPE_CHECKING, Any, Generic, Protocol, TypeVar
 
-if TYPE_CHECKING:
-    from ixmp4.data.db.timeseries import CreateKwargs
-
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -17,6 +14,9 @@ from ..annotations import (
     HasUnitFilter,
     HasVariableFilter,
 )
+
+if TYPE_CHECKING:
+    from ixmp4.data.db.timeseries import CreateKwargs
 
 
 class TimeSeries(base.BaseModel, Protocol):

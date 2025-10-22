@@ -5,20 +5,18 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
-from .. import versions
-
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
 from ixmp4 import db
 from ixmp4.data import abstract
 from ixmp4.data.auth.decorators import guard
 from ixmp4.data.db.model.model import Model
 from ixmp4.db.filters import BaseFilter
 
-from .. import base
+from .. import base, versions
 from .docs import ScenarioDocsRepository
 from .model import Scenario, ScenarioVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
 class ScenarioVersionRepository(versions.VersionRepository[ScenarioVersion]):
