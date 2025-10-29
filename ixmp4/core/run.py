@@ -241,6 +241,21 @@ class Run(BaseModelFacade):
             ),
         )
 
+    def has_solution(self) -> bool:
+        return self.iamc.has_solution() or self.optimization.has_solution()
+
+    def remove_solution(self) -> None:
+        """Remove solution data from this Run.
+
+        Solution data are:
+
+         - levels and marginals of Equations and Variables
+         - IAMC datapoints/timeseries data marked with `is_input == False`
+        """
+        self.require_lock()
+        self.iamc.remove_solution()
+        self.optimization.remove_solution()
+
 
 class RunRepository(BaseFacade):
     def create(self, model: str, scenario: str) -> Run:
