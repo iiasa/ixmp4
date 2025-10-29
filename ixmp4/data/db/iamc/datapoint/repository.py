@@ -44,6 +44,8 @@ class RemoveDataPointFrameSchema(DataFrameModel):
     )
     step_category: Series[pa.String] | None = pa.Field(nullable=True)
 
+    is_input: Series[pa.Bool] | None = pa.Field()
+
     time_series__id: Series[pa.Int] = pa.Field(coerce=True)
 
     @pa.dataframe_check

@@ -36,6 +36,9 @@ class DataPoint(base.BaseModel, Protocol):
     step_datetime: datetime | None
     "A datetime object required by data points of type `DATETIME`."
 
+    is_input: bool
+    "Whether the datapoint is input (as opposed to solution, e.g. for remove_solution)."
+
     class Type(str, enum.Enum):
         BASE = "BASE"
         ANNUAL = "ANNUAL"
@@ -71,6 +74,7 @@ class EnumerateKwargs(TypedDict, total=False):
     time_series__id__lt: int
     time_series__id__gte: int
     time_series__id__lte: int
+    is_input: bool | None
     region: HasRegionFilter | None
     unit: HasUnitFilter | None
     variable: HasVariableFilter | None
@@ -156,6 +160,7 @@ class DataPointRepository(
                 - step_datetime
                     if it contains data points of type `DATETIME`
                 - run__id (if `join_run_id` is set to `True`)
+                - is_input
                 - ... misc parameter columns if `join_parameters` is set to `True`
         """
         ...
@@ -177,6 +182,7 @@ class DataPointRepository(
                     if it contains data points of type `CATEGORICAL`
                 - step_datetime
                     if it contains data points of type `DATETIME`
+                - is_input
         """
         ...
 

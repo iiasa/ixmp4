@@ -17,6 +17,8 @@ class RemoveDataPointFrameSchema(DataFrameModel):
     )
     step_category: Series[pa.String] | None = pa.Field(nullable=True)
 
+    is_input: Series[pa.Bool] | None = pa.Field()
+
     region: Series[pa.String] | None = pa.Field(coerce=True)
     unit: Series[pa.String] | None = pa.Field(coerce=True)
     variable: Series[pa.String] | None = pa.Field(coerce=True)
