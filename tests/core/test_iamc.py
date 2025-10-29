@@ -115,6 +115,8 @@ class TestCoreIamc:
         ret = run.iamc.tabulate(raw=raw)
         if raw:
             ret = ret.drop(columns=["id", "type"])
+        else:
+            data = data.drop(columns=["is_input"])
         utils.assert_unordered_equality(data, ret, check_like=True)
 
         # If not set as default, retrieve from database
@@ -262,7 +264,7 @@ class TestCoreIamc:
             run.iamc.add(data)
 
         remove_data = data.head(len(data) // 2).drop(columns=["value"])
-        remaining_data = data.tail(len(data) // 2)
+        remaining_data = data.tail(len(data) // 2).drop(columns=["is_input"])
 
         with warnings.catch_warnings(record=True) as w:
             try:
@@ -305,7 +307,9 @@ class TestCoreIamc:
             pass
 
         ret = run.iamc.tabulate()
-        utils.assert_unordered_equality(data, ret, check_like=True)
+        utils.assert_unordered_equality(
+            data.drop(columns=["is_input"]), ret, check_like=True
+        )
 
         with run.transact("Partial Removal"):
             run.iamc.remove(remove_data)
@@ -322,7 +326,9 @@ class TestCoreIamc:
 
         remaining_data = data.tail(len(data) // 2)
         ret = run.iamc.tabulate()
-        utils.assert_unordered_equality(remaining_data, ret, check_like=True)
+        utils.assert_unordered_equality(
+            remaining_data.drop(columns=["is_input"]), ret, check_like=True
+        )
 
     def test_iamc_rollback_to_checkpoint(self, pg_platform: ixmp4.Platform) -> None:
         self.small.load_regions(pg_platform)
@@ -343,7 +349,9 @@ class TestCoreIamc:
             pass
 
         ret = run.iamc.tabulate()
-        utils.assert_unordered_equality(data, ret, check_like=True)
+        utils.assert_unordered_equality(
+            data.drop(columns=["is_input"]), ret, check_like=True
+        )
 
         assert len(run.checkpoints.tabulate()) == 1
 
@@ -358,6 +366,52 @@ class TestCoreIamc:
         # Attempt to remove data without owning a lock
         with pytest.raises(RunLockRequired):
             run.iamc.remove(self.small.annual.copy())
+
+    def test_iamc_tabulate_is_input(self, platform: ixmp4.Platform) -> None:
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+        data = self.small.annual.copy().rename(columns={"step_year": "year"})
+        run = platform.runs.create("Model", "Scenario")
+
+        with run.transact("Add datapoints to test is_input filtering"):
+            run.iamc.add(data)
+
+        # Test specifying the default explicitly
+        all_datapoints = run.iamc.tabulate(is_input=None)
+        utils.assert_unordered_equality(data.drop(columns=["is_input"]), all_datapoints)
+
+        # Test loading only solution data
+        solution_datapoints = run.iamc.tabulate(is_input=False)
+        utils.assert_unordered_equality(
+            data[~data["is_input"]].drop(columns=["is_input"]), solution_datapoints
+        )
+
+        # Test loading only input data
+        input_datapoints = run.iamc.tabulate(is_input=True)
+        utils.assert_unordered_equality(
+            data[data["is_input"]].drop(columns=["is_input"]), input_datapoints
+        )
+
+    def test_iamc_addition_without_is_input(self, platform: ixmp4.Platform) -> None:
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+        data = self.small.annual.copy().drop(columns=["is_input"])
+        run = platform.runs.create("Model", "Scenario")
+
+        # Test addition without is_input column works
+        with run.transact("Add datapoints without is_input"):
+            run.iamc.add(data, type=DataPoint.Type.ANNUAL)
+
+        datapoints = platform.backend.iamc.datapoints.tabulate(
+            join_parameters=True,
+            join_runs=False,
+            run={"id": run.id, "default_only": False},
+        )
+
+        # Test default value of is_input is False (after conversion from np.False_)
+        utils.assert_unordered_equality(data, datapoints[data.columns])
+        assert len(datapoints["is_input"].unique()) == 1
+        assert bool(datapoints["is_input"][0]) is False
 
 
 class TestCoreIamcReadOnly:

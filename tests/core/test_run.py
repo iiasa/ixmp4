@@ -26,7 +26,10 @@ def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.Da
 def assert_cloned_run(original: Run, clone: Run, kept_solution: bool) -> None:
     """Asserts that a Run and its clone contain the same data."""
     # Assert IAMC data are equal
-    pdt.assert_frame_equal(original.iamc.tabulate(), clone.iamc.tabulate())
+    pdt.assert_frame_equal(
+        original.iamc.tabulate(is_input=None if kept_solution else True),
+        clone.iamc.tabulate(),
+    )
 
     # Assert indexset names and data are equal
     for original_indexset, cloned_indexset in zip(
@@ -234,6 +237,44 @@ class TestCoreRun:
             if not datetime.empty:
                 run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
 
+    def test_run_has_solution(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+
+        # Test that empty Run has no solution
+        assert run.has_solution() is False
+
+        # Prepare some IAMC test data
+        test_data_annual = self.small.annual.copy()
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+
+        with run.transact("Add IAMC data"):
+            run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
+
+        # Test Run with datapoints with `is_input=False` has a solution
+        assert run.has_solution() is True
+
+        # Test Run is updated when emptied
+        self.delete_all_datapoints(run=run)
+        assert run.has_solution() is False
+
+        # Test Run is still unsolved as long as optimization items are empty
+        with run.transact("Add optimization solution containers"):
+            equation = run.optimization.equations.create("Equation")
+            variable = run.optimization.variables.create("Variable")
+        assert run.has_solution() is False
+
+        # Test solution data in single Equation is registered
+        with run.transact("Add simulated solution to Equation"):
+            equation.add({"levels": [1], "marginals": [0]})
+        assert run.has_solution() is True
+
+        # Test solution data in single Variable is registered
+        with run.transact("Replace Equation solution with Variable solution"):
+            equation.remove_data()
+            variable.add({"levels": [2.0], "marginals": [3.1]})
+        assert run.has_solution() is True
+
     def test_run_remove_solution(self, platform: ixmp4.Platform) -> None:
         run = platform.runs.create("Model", "Scenario")
         test_data = {
@@ -241,7 +282,13 @@ class TestCoreRun:
             "levels": [2.5, 1],
             "marginals": [0, 6.9],
         }
-        with run.transact("Test Run.opt.remove_solution()"):
+        # Prepare some IAMC test data
+        test_data_annual = self.small.annual.copy()
+        self.small.load_regions(platform)
+        self.small.load_units(platform)
+
+        with run.transact("Prepare run with test data"):
+            run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
             indexset = run.optimization.indexsets.create("Indexset")
             indexset.add(["foo", "bar"])
             run.optimization.equations.create(
@@ -253,14 +300,26 @@ class TestCoreRun:
                 constrained_to_indexsets=[indexset.name],
             ).add(test_data)
 
-            run.optimization.remove_solution()
+        with run.transact("Test Run.opt.remove_solution()"):
+            run.remove_solution()
 
-        # Need to fetch them here even if fetched before because API layer might not
-        # forward changes automatically
+        # Test that optimization data was removed completely
+        # NOTE: need to fetch them here even if fetched before because API layer might
+        # not forward changes automatically
         equation = run.optimization.equations.get("Equation")
         variable = run.optimization.variables.get("Variable")
         assert equation.data == {}
         assert variable.data == {}
+
+        # Test that only IAMC data with `is_input=False` was removed
+        datapoints = run.iamc.tabulate()
+        expected = (
+            test_data_annual[test_data_annual["is_input"]]
+            .drop(columns=["is_input"])
+            .rename(columns={"step_year": "year"})
+            .reset_index(drop=True)
+        )
+        pdt.assert_frame_equal(datapoints, expected)
 
     def test_run_delete_locked_run(self, platform: ixmp4.Platform) -> None:
         self.small.load_dataset(platform)
@@ -279,6 +338,14 @@ class TestCoreRun:
         run2 = platform.runs.get("Model 2", "Scenario 2")
 
         for run in [run1, run2]:
+            with run.transact("Add data to-be-deleted"):
+                indexset = run.optimization.indexsets.create("Indexset")
+                run.optimization.tables.create(
+                    "Table", constrained_to_indexsets=[indexset.name]
+                )
+                run.optimization.parameters.create(
+                    "Parameter", constrained_to_indexsets=[indexset.name]
+                )
             run.delete()
             self.assert_run_data_deleted(platform, run)
 
@@ -288,6 +355,8 @@ class TestCoreRun:
         run2 = platform.runs.get("Model 2", "Scenario 2")
 
         for run in [run1, run2]:
+            with run.transact("Add data to-be-deleted"):
+                run.optimization.scalars.create("Scalar", value=1)
             platform.runs.delete(run.id)
             self.assert_run_data_deleted(platform, run)
 
@@ -297,6 +366,9 @@ class TestCoreRun:
         run2 = platform.runs.get("Model 2", "Scenario 2")
 
         for run in [run1, run2]:
+            with run.transact("Add data to be deleted"):
+                run.optimization.equations.create("Equation")
+                run.optimization.variables.create("Variable")
             platform.runs.delete(run)
             self.assert_run_data_deleted(platform, run)
 
@@ -315,7 +387,25 @@ class TestCoreRun:
         )
         assert ret_iamc_dps.empty
 
-        # TODO: check if optimization data is deleted. @glatterf42
+        ret_scalars = platform.backend.optimization.scalars.tabulate(run_id=run.id)
+        assert ret_scalars.empty
+
+        ret_indexsets = platform.backend.optimization.indexsets.tabulate(run_id=run.id)
+        assert ret_indexsets.empty
+
+        ret_tables = platform.backend.optimization.tables.tabulate(run_id=run.id)
+        assert ret_tables.empty
+
+        ret_parameters = platform.backend.optimization.parameters.tabulate(
+            run_id=run.id
+        )
+        assert ret_parameters.empty
+
+        ret_equations = platform.backend.optimization.equations.tabulate(run_id=run.id)
+        assert ret_equations.empty
+
+        ret_variables = platform.backend.optimization.variables.tabulate(run_id=run.id)
+        assert ret_variables.empty
 
     def test_run_clone(self, platform: ixmp4.Platform) -> None:
         # Prepare test data and platform
@@ -390,33 +480,6 @@ class TestCoreRun:
         # Mypy doesn't know that set_as_default() reloads the underlying run._model
         run.unset_as_default()  # type: ignore[unreachable]
         assert not run.is_default
-
-    def test_run_has_solution(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-
-        with run.transact("Test Run.opt.has_solution()"):
-            # Set up an equation and a variable
-            indexset = run.optimization.indexsets.create("Indexset")
-            indexset.add(["foo"])
-            equation = run.optimization.equations.create(
-                name="Equation",
-                constrained_to_indexsets=[indexset.name],
-            )
-            variable = run.optimization.variables.create("Variable")
-
-        # Without data in them, the run has no solution
-        assert not run.optimization.has_solution()
-
-        # Add data to equation to simulate having a solution
-        with run.transact("Test Run.opt.has_solution() with equ data"):
-            equation.add({indexset.name: ["foo"], "levels": [1], "marginals": [0]})
-        assert run.optimization.has_solution()
-
-        # Check this also works for having data just in the variable
-        with run.transact("Test Run.opt.has_solution() with var data"):
-            equation.remove_data()
-            variable.add({"levels": [2025], "marginals": [1.5]})
-        assert run.optimization.has_solution()
 
     def test_run_updated_at(self, platform: ixmp4.Platform) -> None:
         # New Run has no last update date
