@@ -82,6 +82,7 @@ class RunIamcData(BaseFacade):
     def tabulate(
         self,
         *,
+        is_input: bool | None = None,
         variable: HasVariableFilter | None = None,
         region: HasRegionFilter | None = None,
         unit: HasUnitFilter | None = None,
@@ -91,11 +92,18 @@ class RunIamcData(BaseFacade):
             join_parameters=True,
             join_runs=False,
             run={"id": self.run.id, "default_only": False},
+            is_input=is_input,
             variable=variable,
             region=region,
             unit=unit,
         ).dropna(how="all", axis="columns")
         return normalize_df(df, raw, False, False)
+
+    def has_solution(self) -> bool:
+        return not self.tabulate(is_input=False).empty
+
+    def remove_solution(self) -> None:
+        self.remove(df=self.tabulate(is_input=False))
 
 
 class PlatformIamcData(BaseFacade):
