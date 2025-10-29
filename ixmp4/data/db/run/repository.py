@@ -98,7 +98,30 @@ class RunRepository(
         return run
 
     def delete_optimization_data(self, id: int) -> None:
-        pass  # TODO: Implement this. @glatterf42
+        scalars = self.backend.optimization.scalars.tabulate(run_id=id)
+        if not scalars.empty:
+            self.backend.optimization.scalars.bulk_delete(scalars)
+
+        tables = self.backend.optimization.tables.tabulate(run_id=id)
+        if not tables.empty:
+            self.backend.optimization.tables.bulk_delete(tables)
+
+        parameters = self.backend.optimization.parameters.tabulate(run_id=id)
+        if not parameters.empty:
+            self.backend.optimization.parameters.bulk_delete(parameters)
+
+        equations = self.backend.optimization.equations.tabulate(run_id=id)
+        if not equations.empty:
+            self.backend.optimization.equations.bulk_delete(equations)
+
+        variables = self.backend.optimization.variables.tabulate(run_id=id)
+        if not variables.empty:
+            self.backend.optimization.variables.bulk_delete(variables)
+
+        # NOTE IndexSets need to come last because other items might be linked to them!
+        indexsets = self.backend.optimization.indexsets.tabulate(run_id=id)
+        if not indexsets.empty:
+            self.backend.optimization.indexsets.bulk_delete(indexsets)
 
     def delete_meta_data(self, id: int) -> None:
         current_meta = self.backend.meta.tabulate(
@@ -165,7 +188,7 @@ class RunRepository(
         )
 
         try:
-            obj: Run = self.session.execute(exc).scalar_one()
+            obj = self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Run.NotFound(id=id)
 
@@ -462,6 +485,7 @@ class RunRepository(
                 join_parameters=True,
                 join_runs=False,
                 run={"id": base_run.id, "default_only": False},
+                is_input=None if keep_solution else True,
             ),
             raw=False,
             join_runs=False,
