@@ -99,6 +99,12 @@ class TestCoreRun:
         # getting a specific version works even if no default version is assigned
         assert run1.id == platform.runs.get("Model", "Scenario", version=1).id
 
+        # get_max_as_default works when no default version is assigned
+        assert (
+            run2.id
+            == platform.runs.get("Model", "Scenario", get_max_as_default=True).id
+        )
+
         # getting the table and list for all runs works
         run_list = platform.runs.list(default_only=False)
         assert len(run_list) == 2
@@ -216,6 +222,14 @@ class TestCoreRun:
         )
         assert sorted(res["model"].tolist()) == []
         assert sorted(res["scenario"].tolist()) == []
+
+        # get_max_as_default still works after new versions
+        with run2.transact("Test get_max_as_default"):
+            run2.checkpoints.create("get_max_as_default test")
+        assert (
+            run2.id
+            == platform.runs.get("Model", "Scenario", get_max_as_default=True).id
+        )
 
     def delete_all_datapoints(self, run: ixmp4.Run) -> None:
         remove_data = run.iamc.tabulate(raw=True)

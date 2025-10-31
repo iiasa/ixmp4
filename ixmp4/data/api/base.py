@@ -281,7 +281,7 @@ class BaseRepository(Generic[ModelType]):
             raise UnknownApiError(res.text)
 
     def _get_by_id(self, id: int) -> dict[str, Any]:
-        # we can assume this type on create endpoints
+        # we can assume this type on get endpoints
         return self._request("GET", self.prefix + str(id) + "/")  # type: ignore[return-value]
 
     def _request_enumeration(

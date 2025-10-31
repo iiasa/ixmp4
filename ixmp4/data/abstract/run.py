@@ -146,7 +146,9 @@ class RunRepository(
         except Run.NoDefaultVersion:
             return self.create(model_name, scenario_name)
 
-    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
+    def get_default_version(
+        self, model_name: str, scenario_name: str, get_max_as_default: bool = False
+    ) -> Run:
         """Retrieves a run's default version.
 
         Parameters
@@ -155,11 +157,14 @@ class RunRepository(
             The name of a model.
         scenario_name : str
             The name of a scenario.
+        get_max_as_default : bool
+            Whether to return the maximum version of a Run when no default has been set.
+            Optional, default :obj:`False`.
 
         Raises
         ------
         :class:`ixmp4.core.exceptions.NoDefaultRunVersion`:
-            If no runs with `model_name`, `scenario_name` and `is_default=True` exist.
+            If no runs with `model_name`, `scenario_name` exist.
 
         Returns
         -------
