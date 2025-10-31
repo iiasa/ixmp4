@@ -194,17 +194,37 @@ class RunRepository(
 
         return obj
 
-    @guard("view")
-    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
-        exc = self.select(
-            model={"name": model_name},
-            scenario={"name": scenario_name},
+    def _get_run_with_max_id(self, model_name: str, scenario_name: str) -> Run:
+        exc = (
+            self.select(
+                model={"name": model_name},
+                scenario={"name": scenario_name},
+                default_only=False,
+            )
+            .order_by(self.model_class.id.desc())
+            .limit(1)
         )
 
         try:
             return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise NoDefaultRunVersion
+
+    @guard("view")
+    def get_default_version(
+        self, model_name: str, scenario_name: str, get_max_as_default: bool = False
+    ) -> Run:
+        exc = self.select(model={"name": model_name}, scenario={"name": scenario_name})
+
+        try:
+            return self.session.execute(exc).scalar_one()
+        except NoResultFound:
+            if get_max_as_default:
+                return self._get_run_with_max_id(
+                    model_name=model_name, scenario_name=scenario_name
+                )
+            else:
+                raise NoDefaultRunVersion
 
     @guard("view")
     def tabulate(self, **kwargs: Unpack[abstract.run.EnumerateKwargs]) -> pd.DataFrame:

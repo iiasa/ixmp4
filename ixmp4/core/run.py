@@ -273,9 +273,17 @@ class RunRepository(BaseFacade):
 
         self.backend.runs.delete(id)
 
-    def get(self, model: str, scenario: str, version: int | None = None) -> Run:
+    def get(
+        self,
+        model: str,
+        scenario: str,
+        version: int | None = None,
+        get_max_as_default: bool = False,
+    ) -> Run:
         _model = (
-            self.backend.runs.get_default_version(model, scenario)
+            self.backend.runs.get_default_version(
+                model, scenario, get_max_as_default=get_max_as_default
+            )
             if version is None
             else self.backend.runs.get(model, scenario, version)
         )

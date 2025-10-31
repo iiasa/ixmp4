@@ -97,15 +97,20 @@ class RunRepository(
         json = cast(JsonType, kwargs)
         return super()._tabulate(json=json)
 
-    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
-        try:
-            return super().get(
-                model={"name": model_name},
-                scenario={"name": scenario_name},
-                is_default=True,
-            )
-        except Run.NotFound:
-            raise Run.NoDefaultVersion
+    def get_default_version(
+        self, model_name: str, scenario_name: str, get_max_as_default: bool = False
+    ) -> Run:
+        # we can assume this type on get endpoints
+        res: dict[str, Any] = self._request(
+            "GET",
+            self.prefix + "default/",
+            json={
+                "model_name": model_name,
+                "scenario_name": scenario_name,
+                "get_max_as_default": get_max_as_default,
+            },
+        )  # type: ignore[assignment]
+        return Run(**res)
 
     def set_as_default_version(self, id: int) -> None:
         self._request(
