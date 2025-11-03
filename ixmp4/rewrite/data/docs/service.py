@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext
@@ -51,11 +51,18 @@ class DocsService(Service):
             If the current user is not authorized to perform this action.
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return Docs.model_validate(self.docs.get({"dimension__id": dimension__id}))
+
+    # TODO: check run permission
+    @get_docs.auth_check()
+    def get_docs_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(methods=["POST"])
     def set_docs(self, dimension__id: int, description: str) -> Docs:
@@ -75,13 +82,6 @@ class DocsService(Service):
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
         """
-
-        # self.auth_ctx.has_management_permission(platform,             raise_exc=Forbidden)
-        # NOTE: Any edit permission suffices to delete any docs row, is this intended?
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         row_id: int
         try:
             row_id = self.docs.get({"dimension__id": dimension__id}).id
@@ -93,6 +93,18 @@ class DocsService(Service):
             row_id = result.inserted_primary_key.id
 
         return Docs.model_validate(self.docs.get_by_pk({"id": row_id}))
+
+    # NOTE: Any edit permission suffices to delete any docs row, is this intended?
+    @set_docs.auth_check()
+    def set_docs_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        # self.auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{dimension__id}/", methods=["DELETE"])
     def delete_docs(self, dimension__id: int) -> None:
@@ -111,14 +123,19 @@ class DocsService(Service):
             If the current user is not authorized to perform this action.
         """
 
-        # self.auth_ctx.has_management_permission(platform,             raise_exc=Forbidden)
-        # NOTE: Any edit permission suffices to delete any docs row, is this intended?
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         docs = self.docs.get({"dimension__id": dimension__id})
         self.docs.delete_by_pk({"id": docs.id})
+
+    # NOTE: Any edit permission suffices to delete any docs row, is this intended?
+    @delete_docs.auth_check()
+    def delete_docs_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
     @paginated_procedure(methods=["PATCH"])
     def list_docs(self, **kwargs: Unpack[DocsFilter]) -> list[Docs]:
@@ -140,20 +157,22 @@ class DocsService(Service):
             List of docs entries.
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return [Docs.model_validate(i) for i in self.docs.list(values=kwargs)]
+
+    @list_docs.auth_check()
+    def list_docs_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @list_docs.paginated()
     def paginated_list_docs(
         self, pagination: Pagination, **kwargs: Unpack[DocsFilter]
     ) -> PaginatedResult[List[Docs]]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=[
                 Docs.model_validate(i)

@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext
@@ -57,12 +57,17 @@ class ScenarioService(DocsService, Service):
             The created scenario.
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
-
         self.items.create({"name": name})
         return Scenario.model_validate(self.items.get({"name": name}))
+
+    @create.auth_check()
+    def create_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        name: str,
+    ) -> None:
+        auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
     @procedure(methods=["POST"])
     def get_by_name(self, name: str) -> Scenario:
@@ -84,11 +89,16 @@ class ScenarioService(DocsService, Service):
             The retrieved scenario.
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return Scenario.model_validate(self.items.get({"name": name}))
+
+    @get_by_name.auth_check()
+    def get_by_name_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        name: str,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Scenario:
@@ -110,11 +120,16 @@ class ScenarioService(DocsService, Service):
             The retrieved scenario.
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return Scenario.model_validate(self.items.get_by_pk({"id": id}))
+
+    @get_by_id.auth_check()
+    def get_by_id_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        id: int,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @paginated_procedure(methods=["PATCH"])
     def list(self, **kwargs: Unpack[ScenarioFilter]) -> list[Scenario]:
@@ -130,21 +145,22 @@ class ScenarioService(DocsService, Service):
         Iterable[:class:`Scenario`]:
             List of scenarios.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return [Scenario.model_validate(i) for i in self.items.list(values=kwargs)]
+
+    @list.auth_check()
+    def list_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @list.paginated()
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[ScenarioFilter]
     ) -> PaginatedResult[List[Scenario]]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=[
                 Scenario.model_validate(i)
@@ -172,21 +188,22 @@ class ScenarioService(DocsService, Service):
                 - id
                 - name
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return self.pandas.tabulate(values=kwargs)
+
+    @tabulate.auth_check()
+    def tabulate_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[ScenarioFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset

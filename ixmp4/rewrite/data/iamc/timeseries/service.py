@@ -1,3 +1,5 @@
+from typing import Any
+
 import pandas as pd
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext
@@ -62,21 +64,22 @@ class TimeSeriesService(Service):
             A data frame with the columns:
                 - TODO
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return self.pandas.tabulate(values=kwargs)
+
+    @tabulate.auth_check()
+    def tabulate_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[TimeSeriesFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
@@ -152,11 +155,6 @@ class TimeSeriesService(Service):
 
     @procedure(methods=["POST"])
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
-        # TODO: get list of models from list of run__ids
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         if "region" in df.columns:
             df = self.merge_regions(df)
         if "unit" in df.columns:
@@ -167,3 +165,14 @@ class TimeSeriesService(Service):
             df = self.merge_measurands(df)
 
         self.pandas.upsert(df)
+
+    @bulk_upsert.auth_check()
+    def bulk_upsert_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        # TODO: get list of models from list of run__ids
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)

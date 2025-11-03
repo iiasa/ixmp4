@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext
@@ -55,17 +55,24 @@ class RunMetaEntryService(Service):
         :class:`RunMetaEntry`:
             The created metadata entry.
         """
-        run = self.runs.get_by_pk({"id": run__id})
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(
-                self.platform, models=[run.model.name], raise_exc=Forbidden
-            )
-
+        self.runs.get_by_pk({"id": run__id})
         self.items.create(run__id, key, value)
         return RunMetaEntry.model_validate(
             self.items.get({"run__id": run__id, "key": key})
+        )
+
+    @create.auth_check()
+    def create_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        run__id: int,
+        key: str,
+        value: MetaValueType,
+    ) -> None:
+        run = self.runs.get_by_pk({"id": run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
         )
 
     @procedure(methods=["POST"])
@@ -86,16 +93,21 @@ class RunMetaEntryService(Service):
         :class:`RunMetaEntry`:
             The retrieved metadata entry.
         """
-        run = self.runs.get_by_pk({"id": run__id})
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(
-                self.platform, models=[run.model.name], raise_exc=Forbidden
-            )
-
         return RunMetaEntry.model_validate(
             self.items.get({"run__id": run__id, "key": key})
+        )
+
+    @get.auth_check()
+    def get_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        run__id: int,
+        key: str,
+    ) -> None:
+        run = self.runs.get_by_pk({"id": run__id})
+        auth_ctx.has_view_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
         )
 
     @procedure(path="/{id}/", methods=["DELETE"])
@@ -113,16 +125,21 @@ class RunMetaEntryService(Service):
             If the metadata entry with `id` was not found.
 
         """
+        self.items.delete_by_pk({"id": id})
+
+    @delete.auth_check()
+    def delete_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        id: int,
+    ) -> None:
         entry = self.items.get_by_pk({"id": id})
         run = self.runs.get_by_pk({"id": entry.run__id})
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(
-                self.platform, models=[run.model.name], raise_exc=Forbidden
-            )
-
-        self.items.delete_by_pk({"id": id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @paginated_procedure(methods=["PATCH"])
     def list(self, **kwargs: Unpack[RunMetaEntryFilter]) -> list[RunMetaEntry]:
@@ -138,21 +155,22 @@ class RunMetaEntryService(Service):
         Iterable[:class:`RunMetaEntry`]:
             List of metadata entries.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return [RunMetaEntry.model_validate(i) for i in self.items.list(values=kwargs)]
+
+    @list.auth_check()
+    def list_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @list.paginated()
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[RunMetaEntryFilter]
     ) -> PaginatedResult[List[RunMetaEntry]]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=[
                 RunMetaEntry.model_validate(i)
@@ -199,14 +217,19 @@ class RunMetaEntryService(Service):
             A data frame with the columns:
                 - TODO
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return self.pandas.tabulate(
             values=kwargs, columns=self.get_requested_columns(join_run_index)
         )
+
+    @tabulate.auth_check()
+    def tabulate_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @tabulate.paginated()
     def paginated_tabulate(
@@ -215,10 +238,6 @@ class RunMetaEntryService(Service):
         join_run_index: bool = False,
         **kwargs: Unpack[RunMetaEntryFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=self.pandas.tabulate(
                 values=kwargs,
@@ -244,12 +263,18 @@ class RunMetaEntryService(Service):
                 - type
         """
 
-        # TODO check run__ids
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         self.pandas.upsert(df)
+
+    @bulk_upsert.auth_check()
+    def bulk_upsert_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        # TODO check run__ids
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
     @procedure(methods=["DELETE"])
     def bulk_delete(self, df: SerializableDataFrame) -> None:
@@ -266,9 +291,15 @@ class RunMetaEntryService(Service):
 
         """
 
-        # TODO check run__ids
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         self.pandas.delete(df)
+
+    @bulk_delete.auth_check()
+    def bulk_delete_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        # TODO check run__ids
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)

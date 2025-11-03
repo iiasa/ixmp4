@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext
@@ -63,17 +63,23 @@ class CheckpointService(Service):
         if transaction__id is None:
             transaction__id = self.transactions.latest().id
 
-        # TODO: check run permission
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         result = self.items.create(
             {"run__id": run__id, "transaction__id": transaction__id, "message": message}
         )
         return Checkpoint.model_validate(
             self.items.get_by_pk({"id": result.inserted_primary_key.id})
         )
+
+    # TODO: check run permission
+    @create.auth_check()
+    def create_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["DELETE"])
     def delete(self, id: int) -> None:
@@ -90,12 +96,18 @@ class CheckpointService(Service):
             If the checkpoint with `id` does not exist.
         """
 
-        # TODO: check run permission
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
-
         self.items.delete_by_pk({"id": id})
+
+    # TODO: check run permission
+    @delete.auth_check()
+    def delete_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Checkpoint:
@@ -117,12 +129,18 @@ class CheckpointService(Service):
             The retrieved checkpoint.
         """
 
-        # TODO: check run permission
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return Checkpoint.model_validate(self.items.get_by_pk({"id": id}))
+
+    # TODO: check run permission
+    @get_by_id.auth_check()
+    def get_by_id_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @paginated_procedure(methods=["PATCH"])
     def list(self, **kwargs: Unpack[CheckpointFilter]) -> list[Checkpoint]:
@@ -139,20 +157,22 @@ class CheckpointService(Service):
             List of checkpoints.
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return [Checkpoint.model_validate(i) for i in self.items.list(values=kwargs)]
+
+    @list.auth_check()
+    def list_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @list.paginated()
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[CheckpointFilter]
     ) -> PaginatedResult[List[Checkpoint]]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=[
                 Checkpoint.model_validate(i)
@@ -183,20 +203,22 @@ class CheckpointService(Service):
                 - message
         """
 
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return self.pandas.tabulate(values=kwargs)
+
+    @tabulate.auth_check()
+    def tabulate_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @tabulate.paginated()
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[CheckpointFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset

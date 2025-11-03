@@ -7,7 +7,7 @@ from ixmp4.rewrite.exceptions import (
     registry,
 )
 
-from .db import Region
+from .db import Region, RegionVersion
 from .filter import RegionFilter
 
 
@@ -38,3 +38,10 @@ class PandasRepository(db.r.PandasRepository):
     NotUnique = RegionNotUnique
     target = db.r.ModelTarget(Region)
     filter = db.r.Filter(RegionFilter, Region)
+
+
+class VersionPandasRepository(db.r.PandasRepository):
+    NotFound = RegionNotFound
+    NotUnique = RegionNotUnique
+    target = db.r.ModelTarget(RegionVersion)
+    filter = db.r.Filter(RegionFilter, RegionVersion)

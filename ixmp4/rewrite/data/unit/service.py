@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext
@@ -56,13 +56,18 @@ class UnitService(DocsService, Service):
         :class:`Unit`:
             The created unit.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
-
         self.items.create({"name": name})
         return Unit.model_validate(self.items.get({"name": name}))
+
+    @create.auth_check()
+    def create_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["DELETE"])
     def delete(self, id: int) -> None:
@@ -80,12 +85,17 @@ class UnitService(DocsService, Service):
         :class:`UnitDeletionPrevented`:
             If the unit with `id` is used in the database, preventing it's deletion.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
-
         self.items.delete_by_pk({"id": id})
+
+    @delete.auth_check()
+    def delete_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
     @procedure(methods=["POST"])
     def get_by_name(self, name: str) -> Unit:
@@ -106,12 +116,17 @@ class UnitService(DocsService, Service):
         :class:`ixmp4.data.base.iamc.Unit`:
             The retrieved unit.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return Unit.model_validate(self.items.get({"name": name}))
+
+    @get_by_name.auth_check()
+    def get_by_name_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["GET"])
     def get_by_id(self, id: int) -> Unit:
@@ -132,12 +147,17 @@ class UnitService(DocsService, Service):
         :class:`ixmp4.data.base.iamc.Unit`:
             The retrieved unit.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return Unit.model_validate(self.items.get_by_pk({"id": id}))
+
+    @get_by_id.auth_check()
+    def get_by_id_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @paginated_procedure(methods=["PATCH"])
     def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
@@ -153,12 +173,17 @@ class UnitService(DocsService, Service):
         Iterable[:class:`Unit`]:
             List of units.
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return [Unit.model_validate(i) for i in self.items.list(values=kwargs)]
+
+    @list.auth_check()
+    def list_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @list.paginated()
     def paginated_list(
@@ -195,12 +220,17 @@ class UnitService(DocsService, Service):
                 - id
                 - name
         """
-
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return self.pandas.tabulate(values=kwargs)
+
+    @tabulate.auth_check()
+    def tabulate_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @tabulate.paginated()
     def paginated_tabulate(

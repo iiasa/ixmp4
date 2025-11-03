@@ -7,7 +7,7 @@ from ixmp4.rewrite.exceptions import (
     registry,
 )
 
-from .db import Model
+from .db import Model, ModelVersion
 from .filter import ModelFilter
 
 
@@ -38,3 +38,10 @@ class PandasRepository(db.r.PandasRepository):
     NotUnique = ModelNotUnique
     target = db.r.ModelTarget(Model)
     filter = db.r.Filter(ModelFilter, Model)
+
+
+class VersionPandasRepository(db.r.PandasRepository):
+    NotFound = ModelNotFound
+    NotUnique = ModelNotUnique
+    target = db.r.ModelTarget(ModelVersion)
+    filter = db.r.Filter(ModelFilter, ModelVersion)
