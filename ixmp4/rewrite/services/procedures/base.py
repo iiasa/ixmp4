@@ -1,4 +1,3 @@
-import functools
 import inspect
 from enum import Enum
 from string import Formatter
@@ -25,7 +24,9 @@ import fastapi as fa
 import httpx
 import pydantic as pyd
 from fastapi.params import Depends
+from toolkit.auth.context import AuthorizationContext
 from toolkit.exceptions import ProgrammingError
+from toolkit.manager.models import Ixmp4Instance
 
 from ixmp4.rewrite.transport import DirectTransport, HttpxTransport
 
@@ -75,6 +76,13 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     signature: inspect.Signature
     has_required_parameters: bool
     "Indicates whether the functions has postional args without defaults."
+
+    auth_check_func: (
+        Callable[
+            Concatenate[ServiceT, AuthorizationContext, Ixmp4Instance, Params], ReturnT
+        ]
+        | None
+    ) = None
 
     return_type_adapter: pyd.TypeAdapter[ReturnT]
     fastapi_options: FastApiEndpointOptions
@@ -126,11 +134,9 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
 
     def __get__(self, obj: Any, cls: type[Any] | None = None) -> Any:
         if isinstance(obj, Service):
-            obj = cast(ServiceT, obj)
-
             if isinstance(obj.transport, DirectTransport):
-                bound_func = functools.partial(self.func, obj)
-                return bound_func
+                return obj.bind_service_func(self.func, self.auth_check_func)
+
             elif isinstance(obj.transport, HttpxTransport):
                 client = self.get_client(obj)
                 return client
@@ -407,8 +413,36 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         kwargs = self.build_kwargs(self.signature, payload)
         return (args, kwargs)
 
-    def get_service_func(self, svc: Service):
-        return getattr(svc, self.func.__name__)
+    def get_service_func(self, svc: Service) -> Callable[..., ReturnT]:
+        return svc.bind_service_func(self.func, self.auth_check_func)
+
+    def auth_check(
+        self,
+    ) -> Callable[
+        [
+            Callable[
+                Concatenate[ServiceT, AuthorizationContext, Ixmp4Instance, Params],
+                ReturnT,
+            ]
+        ],
+        Callable[
+            Concatenate[ServiceT, AuthorizationContext, Ixmp4Instance, Params],
+            ReturnT,
+        ],
+    ]:
+        def decorator(
+            auth_check: Callable[
+                Concatenate[ServiceT, AuthorizationContext, Ixmp4Instance, Params],
+                ReturnT,
+            ],
+        ) -> Callable[
+            Concatenate[ServiceT, AuthorizationContext, Ixmp4Instance, Params],
+            ReturnT,
+        ]:
+            self.auth_check_func = auth_check
+            return auth_check
+
+        return decorator
 
 
 class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
@@ -429,17 +463,38 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         self.method = procedure.fastapi_options["methods"][0]
 
     def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
-        payload = self.build_payload(self.procedure.signature, args, kwargs)
-        res = self.transport.client.request(self.method, self.path, json=payload)
-
+        body_payload = self.build_body_payload(self.procedure.signature, args, kwargs)
+        path_payload = self.build_path_payload(self.procedure.signature, args, kwargs)
+        res = self.transport.http_client.request(
+            self.method, self.path.format(**path_payload), json=body_payload
+        )
+        self.transport.raise_service_exception(res)
         return self.procedure.return_type_adapter.validate_python(res.json())
 
-    def build_payload(
+    def build_body_payload(
         self, sig: inspect.Signature, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> dict[str, Any]:
         payload = {}
         for p_item, argval in zip(sig.parameters.items(), args):
             name, param = p_item
+            if name in self.procedure.path_fields:
+                continue
+
+            payload[name] = argval
+
+        payload.update(kwargs)
+        # TODO: Raise sane exceptions for wrong arguments
+        return payload
+
+    def build_path_payload(
+        self, sig: inspect.Signature, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        payload = {}
+        for p_item, argval in zip(sig.parameters.items(), args):
+            name, param = p_item
+            if name not in self.procedure.path_fields:
+                continue
+
             payload[name] = argval
 
         payload.update(kwargs)

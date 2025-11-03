@@ -1,9 +1,13 @@
 import abc
+import functools
+from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
     Callable,
     ClassVar,
+    Concatenate,
+    ParamSpec,
     TypeVar,
 )
 
@@ -23,6 +27,8 @@ if TYPE_CHECKING:
 
 
 TransportT = TypeVar("TransportT", bound=Transport)
+ReturnT = TypeVar("ReturnT")
+Params = ParamSpec("Params")
 
 
 class Service(abc.ABC):
@@ -43,13 +49,60 @@ class Service(abc.ABC):
     def __init_httpx__(self, transport: HttpxTransport) -> None:
         pass
 
-    def auth_check(
-        self,
-        func: Callable[[AuthorizationContext, Ixmp4Instance], Any],
-    ) -> Callable[[AuthorizationContext, Ixmp4Instance], Any]:
+    def get_datetime(self) -> datetime:
+        return datetime.now(tz=timezone.utc)
+
+    def get_username(self):
         if isinstance(self.transport, AuthorizedTransport):
-            func(self.transport.auth_ctx, self.transport.platform)
-        return func
+            user = self.transport.auth_ctx.user
+            if user is None:
+                username = "@anonymous"
+            else:
+                username = user.username
+
+        else:
+            username = "@unknown"
+        return username
+
+    def get_creation_info(self) -> dict[str, str | datetime]:
+        return {
+            "created_by": self.get_username(),
+            "created_at": self.get_datetime(),
+        }
+
+    def get_update_info(self) -> dict[str, str | datetime]:
+        return {
+            "updated_by": self.get_username(),
+            "updated_at": self.get_datetime(),
+        }
+
+    def bind_service_func(
+        self,
+        func: Callable[Concatenate["Service", Params], ReturnT],
+        auth_check_func: Callable[
+            Concatenate["Service", AuthorizationContext, Ixmp4Instance, Params], Any
+        ]
+        | None,
+    ) -> Callable[Params, ReturnT]:
+        bound_func = functools.partial(func, self)
+        transport = self.transport
+
+        if isinstance(transport, AuthorizedTransport) and auth_check_func is not None:
+
+            @functools.wraps(bound_func)
+            def auth_wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
+                auth_check_func(
+                    self,
+                    transport.auth_ctx,
+                    transport.platform,
+                    *args,
+                    **kwargs,
+                )
+                return bound_func(*args, **kwargs)
+
+            return auth_wrapper
+        else:
+            return bound_func
 
     @classmethod
     def build_router(
