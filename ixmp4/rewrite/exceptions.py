@@ -1,72 +1,136 @@
 # TODO Import this from typing when dropping support for 3.10
 
-
-from toolkit.exceptions import BadRequest as BadRequest
-from toolkit.exceptions import ConstraintViolated as ConstraintViolated
-from toolkit.exceptions import Forbidden as Forbidden
-from toolkit.exceptions import NotFound as NotFound
-from toolkit.exceptions import NotUnique as NotUnique
+from toolkit.exceptions import BadGateway as BaseBadGateway
+from toolkit.exceptions import BadRequest as BaseBadRequest
+from toolkit.exceptions import ConstraintViolated as BaseConstraintViolated
+from toolkit.exceptions import Forbidden as BaseForbidden
+from toolkit.exceptions import NotFound as BaseNotFound
+from toolkit.exceptions import NotUnique as BaseNotUnique
 from toolkit.exceptions import PlatformNotFound as PlatformNotFound
 from toolkit.exceptions import ProgrammingError as ProgrammingError
-from toolkit.exceptions import ServiceException as ServiceException
-from toolkit.exceptions import Unauthorized as Unauthorized
-from toolkit.exceptions import registry as tk_registry
+from toolkit.exceptions import ServerError as BaseServerError
+from toolkit.exceptions import ServiceException
+from toolkit.exceptions import ServiceUnavailable as BaseServiceUnavailable
+from toolkit.exceptions import Unauthorized as BaseUnauthorized
+from toolkit.exceptions.registry import ServiceExceptionRegistry
 
-registry = tk_registry.copy()
+registry = ServiceExceptionRegistry()
+
+registry.register()(ServiceException)
 
 
 @registry.register()
-class InconsistentIamcType(ServiceException):
+class Ixmp4Error(ServiceException):
+    pass
+
+
+@registry.register(default_for_status_code=500)
+class ServerError(BaseServerError, Ixmp4Error):
+    pass
+
+
+@registry.register(default_for_status_code=502)
+class BadGateway(BaseBadGateway, Ixmp4Error):
+    pass
+
+
+@registry.register(default_for_status_code=503)
+class ServiceUnavailable(BaseServiceUnavailable, Ixmp4Error):
+    pass
+
+
+@registry.register(default_for_status_code=400)
+class BadRequest(BaseBadRequest, Ixmp4Error):
+    pass
+
+
+@registry.register(default_for_status_code=401)
+class Unauthorized(BaseUnauthorized, Ixmp4Error):
+    pass
+
+
+@registry.register(default_for_status_code=403)
+class Forbidden(BaseForbidden, Ixmp4Error):
+    pass
+
+
+@registry.register(default_for_status_code=404)
+class NotFound(BaseNotFound, Ixmp4Error):
+    message = "Not found."
+    http_status_code = 404
+
+
+@registry.register()
+class NotUnique(BaseNotUnique, Ixmp4Error):
+    message = "Not unique."
+    http_status_code = 409
+
+
+@registry.register()
+class ConstraintViolated(BaseConstraintViolated, Ixmp4Error):
+    message = "Database constraint violated."
+    http_status_code = 400
+
+
+@registry.register()
+class InvalidToken(Unauthorized):
+    message = "The supplied token is invalid."
+    http_status_code = 401
+
+
+@registry.register()
+class InvalidCredentials(Unauthorized):
+    message = "Authentication credentials rejected."
+    http_status_code = 401
+
+
+@registry.register()
+class InconsistentIamcType(Ixmp4Error):
     http_status_code = 400
     http_error_name = "inconsistent_iamc_type"
 
 
 @registry.register()
-class ImproperlyConfigured(ServiceException):
+class ImproperlyConfigured(Ixmp4Error):
     http_error_name = "improperly_configured"
 
 
 @registry.register()
-class ManagerApiError(ServiceException):
-    http_error_name = "manager_api_error"
-
-
-@registry.register()
-class UnknownApiError(ServiceException):
+class UnknownApiError(Ixmp4Error):
     http_error_name = "unknown_api_error"
 
 
 @registry.register()
-class ApiEncumbered(ServiceException):
+class ApiEncumbered(Ixmp4Error):
     http_error_name = "api_encumbered"
 
 
 @registry.register()
-class PlatformNotUnique(ServiceException):
+class PlatformNotUnique(Ixmp4Error):
     http_status_code = 409
     http_error_name = "platform_not_unique"
 
 
 @registry.register()
-class OperationNotSupported(ServiceException):
+class OperationNotSupported(Ixmp4Error):
     http_status_code = 400
     http_error_name = "operation_not_supported"
 
 
 @registry.register()
-class SchemaError(ServiceException):
+class SchemaError(Ixmp4Error):
     http_status_code = 422
     http_error_name = "schema_error"
 
 
 @registry.register()
-class DeletionPrevented(ServiceException):
+class DeletionPrevented(Ixmp4Error):
     http_status_code = 400
 
 
 # == Filters ==
 @registry.register()
-class BadFilterArguments(ServiceException):
+class BadFilterArguments(Ixmp4Error):
     message = "The provided filter arguments are malformed."
     http_status_code = 400
     http_error_name = "bad_filter_arguments"
@@ -77,12 +141,12 @@ class BadFilterArguments(ServiceException):
 
 # == Optimization ==
 @registry.register()
-class OptimizationDataValidationError(ServiceException):
+class OptimizationDataValidationError(Ixmp4Error):
     http_status_code = 422
     http_error_name = "optimization_data_validation_error"
 
 
 @registry.register()
-class OptimizationItemUsageError(ServiceException):
+class OptimizationItemUsageError(Ixmp4Error):
     http_status_code = 422
     http_error_name = "optimization_item_usage_error"
