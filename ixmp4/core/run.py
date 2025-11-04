@@ -242,7 +242,9 @@ class Run(BaseModelFacade):
         )
 
     def has_solution(self) -> bool:
-        return self.iamc.has_solution() or self.optimization.has_solution()
+        # NOTE Even though datapoints with is_input are retained during
+        # remove_solution(), they are not considered when determining has_solution()
+        return self.optimization.has_solution()
 
     def remove_solution(self) -> None:
         """Remove solution data from this Run.
