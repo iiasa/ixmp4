@@ -246,16 +246,23 @@ class Run(BaseModelFacade):
         # remove_solution(), they are not considered when determining has_solution()
         return self.optimization.has_solution()
 
-    def remove_solution(self) -> None:
+    def remove_solution(self, from_year: int | None = None) -> None:
         """Remove solution data from this Run.
 
         Solution data are:
 
          - levels and marginals of Equations and Variables
          - IAMC datapoints/timeseries data marked with `is_input == False`
+
+        Parameters
+        ----------
+
+        from_year: int or None
+            If given, remove only IAMC datapoints with 'year' >= from_year.
+            Default :obj:`None`.
         """
         self.require_lock()
-        self.iamc.remove_solution()
+        self.iamc.remove_solution(from_year=from_year)
         self.optimization.remove_solution()
 
 

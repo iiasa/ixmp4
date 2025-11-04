@@ -265,11 +265,7 @@ class TestCoreRun:
         with run.transact("Add IAMC data"):
             run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
 
-        # Test Run with datapoints with `is_input=False` has a solution
-        assert run.has_solution() is True
-
-        # Test Run is updated when emptied
-        self.delete_all_datapoints(run=run)
+        # Test IAMC datapoints are never considered as a solution
         assert run.has_solution() is False
 
         # Test Run is still unsolved as long as optimization items are empty
@@ -314,8 +310,8 @@ class TestCoreRun:
                 constrained_to_indexsets=[indexset.name],
             ).add(test_data)
 
-        with run.transact("Test Run.opt.remove_solution()"):
-            run.remove_solution()
+        with run.transact("Test partial Run.opt.remove_solution()"):
+            run.remove_solution(from_year=2020)
 
         # Test that optimization data was removed completely
         # NOTE: need to fetch them here even if fetched before because API layer might
@@ -325,7 +321,23 @@ class TestCoreRun:
         assert equation.data == {}
         assert variable.data == {}
 
-        # Test that only IAMC data with `is_input=False` was removed
+        # Test that only IAMC data with year >= 2020 was removed
+        datapoints = run.iamc.tabulate()
+        expected = (
+            test_data_annual[
+                (test_data_annual["step_year"] < 2020) | test_data_annual["is_input"]
+            ]
+            .rename(columns={"step_year": "year"})
+            .drop(columns=["is_input"])
+            .reset_index(drop=True)
+        )
+
+        pdt.assert_frame_equal(datapoints, expected)
+
+        with run.transact("Test full Run.opt.remove_solution()"):
+            run.remove_solution()
+
+        # Test that only IAMC data with `is_input=True` remains
         datapoints = run.iamc.tabulate()
         expected = (
             test_data_annual[test_data_annual["is_input"]]
