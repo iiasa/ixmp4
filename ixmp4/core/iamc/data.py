@@ -103,7 +103,9 @@ class RunIamcData(BaseFacade):
         return not self.tabulate(is_input=False).empty
 
     def remove_solution(self) -> None:
-        self.remove(df=self.tabulate(is_input=False))
+        solution_data = self.tabulate(is_input=False)
+        if not solution_data.empty:
+            self.remove(df=solution_data)
 
 
 class PlatformIamcData(BaseFacade):
