@@ -26,9 +26,14 @@ def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.Da
 def assert_cloned_run(original: Run, clone: Run, kept_solution: bool) -> None:
     """Asserts that a Run and its clone contain the same data."""
     # Assert IAMC data are equal
+    cloned_datapoints = clone.backend.iamc.datapoints.tabulate()
+    if not cloned_datapoints.empty:
+        assert "is_input" in cloned_datapoints.columns
     pdt.assert_frame_equal(
-        original.iamc.tabulate(is_input=None if kept_solution else True),
-        clone.iamc.tabulate(),
+        original.backend.iamc.datapoints.tabulate(
+            is_input=None if kept_solution else True
+        ),
+        cloned_datapoints,
     )
 
     # Assert indexset names and data are equal
