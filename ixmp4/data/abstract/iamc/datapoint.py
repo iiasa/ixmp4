@@ -52,28 +52,28 @@ class DataPoint(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     step_year: int | None
     step_year__in: Iterable[int]
-    step_year__gt: int
-    step_year__lt: int
-    step_year__gte: int
-    step_year__lte: int
+    step_year__gt: int | None
+    step_year__lt: int | None
+    step_year__gte: int | None
+    step_year__lte: int | None
     year: int | None
     year__in: Iterable[int]
-    year__gt: int
-    year__lt: int
-    year__gte: int
-    year__lte: int
+    year__gt: int | None
+    year__lt: int | None
+    year__gte: int | None
+    year__lte: int | None
     time_series_id: int | None
     time_series_id__in: Iterable[int]
-    time_series_id__gt: int
-    time_series_id__lt: int
-    time_series_id__gte: int
-    time_series_id__lte: int
+    time_series_id__gt: int | None
+    time_series_id__lt: int | None
+    time_series_id__gte: int | None
+    time_series_id__lte: int | None
     time_series__id: int | None
     time_series__id__in: Iterable[int]
-    time_series__id__gt: int
-    time_series__id__lt: int
-    time_series__id__gte: int
-    time_series__id__lte: int
+    time_series__id__gt: int | None
+    time_series__id__lt: int | None
+    time_series__id__gte: int | None
+    time_series__id__lte: int | None
     is_input: bool | None
     region: HasRegionFilter | None
     unit: HasUnitFilter | None
