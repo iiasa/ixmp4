@@ -479,7 +479,7 @@ class RunRepository(
         self.session.commit()
         return run
 
-    # TODO improve performance
+    # TODO improve performance and refactor
     # Suggestion by meksor: write a (single) query to load all objects with run_id to a
     # (single) dataframe, change the run_id, then write all back (does that work at
     # once/with one query?)
@@ -487,7 +487,7 @@ class RunRepository(
     # that commit is only called once at the end (so that either all changes make it or
     # none and to avoid multiple transactions with the DB)
     @guard("edit")
-    def clone(
+    def clone(  # noqa: C901
         self,
         run_id: int,
         model_name: str | None = None,
@@ -499,6 +499,11 @@ class RunRepository(
             model_name=model_name if model_name else base_run.model.name,
             scenario_name=scenario_name if scenario_name else base_run.scenario.name,
         )
+
+        # ixmp_source assumes that when a cloned Run exists only in one version, that
+        # should be the default
+        if run.version == 1:
+            run.is_default = True
 
         datapoints = normalize_df(
             df=self.backend.iamc.datapoints.tabulate(
