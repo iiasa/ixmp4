@@ -3,6 +3,7 @@ from typing import Annotated, Any, TypedDict
 
 import pandas as pd
 import pydantic as pyd
+from pandas._libs.tslibs.nattype import NaTType
 
 
 class DataFrameDict(TypedDict):
@@ -16,12 +17,12 @@ class DataFrameDict(TypedDict):
             | int
             | float
             | str
-            | datetime
             | dict[str, Any]
             | list[float]
             | list[int]
             | list[str]
             | None
+            | NaTType
         ]
     ]
 
@@ -43,12 +44,16 @@ class DataFrameTypeAdapter(pyd.BaseModel):
                 | list[int]
                 | list[str]
                 | None
+                | NaTType
             ]
         ]
         | None
     )
 
-    model_config = pyd.ConfigDict(json_encoders={pd.Timestamp: lambda x: x.isoformat()})
+    model_config = pyd.ConfigDict(
+        arbitrary_types_allowed=True,
+        json_encoders={pd.Timestamp: lambda x: x.isoformat(), NaTType: lambda x: "NaT"},
+    )
 
     @pyd.model_validator(mode="before")
     @classmethod
