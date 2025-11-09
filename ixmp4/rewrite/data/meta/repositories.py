@@ -85,11 +85,10 @@ class PandasRepository(db.r.PandasRepository):
             type_str = df.name
             type_ = Type(type_str)
             col = Type.column_for_type(type_)
-            df["value"] = df[col]
-            df["dtype"] = type_str
+            df["value"] = df[col].astype(Type.pd_dtype_for_type(type_))
             return df.drop(columns=Type.columns())
 
-        type_df = df.groupby("dtype", group_keys=False)
+        type_df = df.groupby("dtype", group_keys=True)
 
         # ensure compatibility with pandas y 2.2
         # TODO remove legacy-handling when dropping support for pandas < 2.2
@@ -97,11 +96,12 @@ class PandasRepository(db.r.PandasRepository):
         if pd.__version__[0:3] in ["2.0", "2.1"]:
             df_with_value = type_df.apply(map_value_column)
         else:
-            df_with_value = type_df.apply(map_value_column, include_groups=True)  # type: ignore[call-overload]
+            df_with_value = type_df.apply(map_value_column, include_groups=False)  # type: ignore[call-overload]
 
-        return df_with_value.drop(
-            columns=["value_int", "value_str", "value_float", "value_bool"]
-        )
+        if df_with_value.empty:
+            df_with_value["value"] = None
+
+        return df_with_value.reset_index()[["id", "key", "value", "dtype", "run__id"]]
 
     def tabulate(
         self,
@@ -134,4 +134,4 @@ class PandasRepository(db.r.PandasRepository):
             for nc in null_cols:
                 type_df[nc] = None
 
-            super().upsert(df, key)
+            super().upsert(type_df, key)
