@@ -1,3 +1,4 @@
+import importlib.resources
 import json
 import logging
 import logging.config
@@ -12,11 +13,10 @@ from toolkit.auth.user import User
 from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.manager.client import ManagerClient
 
-from ixmp4 import __file__ as __root__file__
-
 from .credentials import Credentials
 from .platforms import ManagerPlatforms, TomlPlatforms
 
+__root__file__ = importlib.resources.files("ixmp4").__fspath__()
 logger = logging.getLogger(__name__)
 
 here = Path(__file__).parent
@@ -134,7 +134,7 @@ class Settings(BaseSettings):
 
         # handle relative dev paths
         if not v.is_absolute():
-            v = root / v
+            v = Path.cwd() / v
 
         return v
 
