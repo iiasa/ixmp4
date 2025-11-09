@@ -12,9 +12,11 @@ from typing import (
 )
 
 import fastapi as fa
+import sqlalchemy as sa
 from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 
+from ixmp4.rewrite.exceptions import ProgrammingError
 from ixmp4.rewrite.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -48,6 +50,15 @@ class Service(abc.ABC):
 
     def __init_httpx__(self, transport: HttpxTransport) -> None:
         pass
+
+    def get_dialect(self) -> sa.Dialect:
+        if isinstance(self.transport, DirectTransport):
+            return self.transport.session.bind.engine.dialect
+        else:
+            raise ProgrammingError(
+                f"{self.transport} is not a `DirectTransport` "
+                "instance and thus does not hold database dialect information."
+            )
 
     def get_datetime(self) -> datetime:
         return datetime.now(tz=timezone.utc)
