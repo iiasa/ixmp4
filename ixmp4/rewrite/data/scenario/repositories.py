@@ -2,7 +2,7 @@ from toolkit import db
 
 from ixmp4.rewrite.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
-from .db import Scenario
+from .db import Scenario, ScenarioVersion
 from .filter import ScenarioFilter
 
 
@@ -33,3 +33,10 @@ class PandasRepository(db.r.PandasRepository):
     NotUnique = ScenarioNotUnique
     target = db.r.ModelTarget(Scenario)
     filter = db.r.Filter(ScenarioFilter, Scenario)
+
+
+class VersionPandasRepository(db.r.PandasRepository):
+    NotFound = ScenarioNotFound
+    NotUnique = ScenarioNotUnique
+    target = db.r.ModelTarget(ScenarioVersion)
+    filter = db.r.Filter(ScenarioFilter, ScenarioVersion)

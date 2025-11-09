@@ -19,7 +19,7 @@ from ixmp4.rewrite.services import (
 from .db import ScenarioDocs
 from .dto import Scenario
 from .filter import ScenarioFilter
-from .repositories import ItemRepository, PandasRepository
+from .repositories import ItemRepository, PandasRepository, VersionPandasRepository
 
 
 class ScenarioService(DocsService, Service):
@@ -29,11 +29,13 @@ class ScenarioService(DocsService, Service):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
+    pandas_versions: VersionPandasRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        self.pandas_versions = VersionPandasRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=ScenarioDocs)
 
     @procedure(methods=["POST"])
@@ -57,7 +59,7 @@ class ScenarioService(DocsService, Service):
             The created scenario.
         """
 
-        self.items.create({"name": name})
+        self.items.create({"name": name, **self.get_creation_info()})
         return Scenario.model_validate(self.items.get({"name": name}))
 
     @create.auth_check()
@@ -66,6 +68,37 @@ class ScenarioService(DocsService, Service):
         auth_ctx: AuthorizationContext,
         platform: Ixmp4Instance,
         name: str,
+    ) -> None:
+        auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
+
+    @procedure(path="/{id}/", methods=["DELETE"])
+    def delete_by_id(self, id: int) -> None:
+        """Deletes a scenario.
+
+        Parameters
+        ----------
+        id : int
+            The unique integer id of the scenario.
+
+        Raises
+        ------
+        :class:`ScenarioNotFound`:
+            If the scenario with `id` does not exist.
+        :class:`ScenarioDeletionPrevented`:
+            If the scenario with `id` is used in the database, preventing it's deletion.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        """
+        self.items.delete_by_pk({"id": id})
+
+    @delete_by_id.auth_check()
+    def delete_by_id_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
