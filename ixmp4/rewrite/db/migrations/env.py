@@ -19,7 +19,7 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.schema import SchemaItem
 
-from ixmp4.conf import settings
+from ixmp4.rewrite.conf import settings
 from ixmp4.rewrite.db.models import BaseModel
 
 # this is the Alembic Config object, which provides
