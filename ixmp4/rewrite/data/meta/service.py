@@ -111,7 +111,7 @@ class RunMetaEntryService(Service):
         )
 
     @procedure(path="/{id}/", methods=["DELETE"])
-    def delete(self, id: int) -> None:
+    def delete_by_id(self, id: int) -> None:
         """Deletes a metadata entry.
 
         Parameters
@@ -127,7 +127,7 @@ class RunMetaEntryService(Service):
         """
         self.items.delete_by_pk({"id": id})
 
-    @delete.auth_check()
+    @delete_by_id.auth_check()
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
