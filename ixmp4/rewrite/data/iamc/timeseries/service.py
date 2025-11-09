@@ -93,31 +93,31 @@ class TimeSeriesService(Service):
         regions = self.regions.tabulate(
             values={"name__in": region_names}, columns=["id", "name"]
         )
-        regions = regions.rename({"name": "region", "id": "region__id"})
+        regions = regions.rename(columns={"name": "region", "id": "region__id"})
         merged_df = df.merge(
             regions,
             how="left",
             on=["region"],
         )
-        missing_regions = merged_df.where(pd.isna(merged_df["region__id"]))
+        missing_regions = merged_df[pd.isna(merged_df["region__id"])]
         if not missing_regions.empty:
             missing_region_names = missing_regions["region"].unique()
             raise RegionNotFound(", ".join(missing_region_names))
 
-        return merged_df.drop("region")
+        return merged_df.drop(columns=["region"])
 
     def merge_units(self, df: pd.DataFrame) -> pd.DataFrame:
         unit_names = list(df["unit"].unique())
         units = self.units.tabulate(
             values={"name__in": unit_names}, columns=["id", "name"]
         )
-        units = units.rename({"name": "unit", "id": "unit__id"})
+        units = units.rename(columns={"name": "unit", "id": "unit__id"})
         merged_df = df.merge(
             units,
             how="left",
             on=["unit"],
         )
-        missing_units = merged_df.where(pd.isna(merged_df["unit__id"]))
+        missing_units = merged_df[pd.isna(merged_df["unit__id"])]
         if not missing_units.empty:
             missing_unit_names = missing_units["unit"].unique()
             raise UnitNotFound(", ".join(missing_unit_names))
@@ -125,14 +125,15 @@ class TimeSeriesService(Service):
         return merged_df.drop(columns=["unit"])
 
     def merge_variables(self, df: pd.DataFrame) -> pd.DataFrame:
-        variable_names = list(df["variable"].unique())
-        variable_df = df[["variable"]].rename({"variable": "name"})
-        self.variables.upsert(variable_df)
+        variable_df = df[["variable"]].rename(columns={"variable": "name"})
+        variable_df = variable_df.drop_duplicates()
+        variable_names = variable_df["name"].to_list()
+        self.variables.upsert(variable_df, insert_values=self.get_creation_info())
 
         variables = self.variables.tabulate(
             values={"name__in": variable_names}, columns=["id", "name"]
         )
-        variables = variables.rename({"name": "variable", "id": "variable__id"})
+        variables = variables.rename(columns={"name": "variable", "id": "variable__id"})
         merged_df = df.merge(
             variables,
             how="left",
@@ -142,10 +143,12 @@ class TimeSeriesService(Service):
 
     def merge_measurands(self, df: pd.DataFrame) -> pd.DataFrame:
         measurand_df = df[["variable__id", "unit__id"]].drop_duplicates()
-        self.measurands.upsert(measurand_df)
+        self.measurands.upsert(measurand_df, insert_values=self.get_creation_info())
 
-        measurand_df = self.measurands.tabulate_by_df(measurand_df)
-        measurand_df = measurand_df.rename({"id": "measurand__id"})
+        measurand_df = self.measurands.tabulate_by_df(
+            measurand_df, columns=["id", "variable__id", "unit__id"]
+        )
+        measurand_df = measurand_df.rename(columns={"id": "measurand__id"})
         merged_df = df.merge(
             measurand_df,
             how="left",
@@ -155,6 +158,9 @@ class TimeSeriesService(Service):
 
     @procedure(methods=["POST"])
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
+        if df.empty:
+            return None
+
         if "region" in df.columns:
             df = self.merge_regions(df)
         if "unit" in df.columns:
