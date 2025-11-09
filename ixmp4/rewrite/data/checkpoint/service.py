@@ -60,7 +60,9 @@ class CheckpointService(Service):
         :class:`Checkpoint`:
             The created checkpoint.
         """
-        if transaction__id is None:
+        if transaction__id is None and self.get_dialect().name == "postgres":
+            # fill the latest transaction as default for
+            # postgres dbs which support versioning
             transaction__id = self.transactions.latest().id
 
         result = self.items.create(
@@ -82,7 +84,7 @@ class CheckpointService(Service):
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["DELETE"])
-    def delete(self, id: int) -> None:
+    def delete_by_id(self, id: int) -> None:
         """Deletes a checkpoint.
 
         Parameters
@@ -99,7 +101,7 @@ class CheckpointService(Service):
         self.items.delete_by_pk({"id": id})
 
     # TODO: check run permission
-    @delete.auth_check()
+    @delete_by_id.auth_check()
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
