@@ -1,5 +1,7 @@
 from ixmp4.rewrite.data.base.dto import BaseModel
 
+from .type import Type
+
 MetaValueType = bool | float | int | str
 
 
@@ -10,7 +12,7 @@ class RunMetaEntry(BaseModel):
     "Foreign unique integer id of a run."
     key: str
     "Key for the entry. Unique for each `run__id`."
-    dtype: str
+    dtype: Type
     "Datatype of the entry's value."
     value: MetaValueType
     "Value of the entry."
