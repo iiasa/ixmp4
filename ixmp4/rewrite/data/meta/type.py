@@ -16,8 +16,15 @@ class Type(str, Enum):
         return _column_map[type_]
 
     @classmethod
+    def pd_dtype_for_type(cls, type_: "Type") -> str:
+        return _pd_dtype_map[type_]
+
+    @classmethod
     def columns(cls) -> list[str]:
         return list(_column_map.values())
+
+    def __str__(self) -> str:
+        return self.value
 
 
 _type_map: dict[type, Type] = {
@@ -32,4 +39,11 @@ _column_map: dict[str, str] = {
     Type.STR: "value_str",
     Type.FLOAT: "value_float",
     Type.BOOL: "value_bool",
+}
+
+_pd_dtype_map: dict[str, str] = {
+    Type.INT: "Int64",
+    Type.STR: "str",
+    Type.FLOAT: "float64",
+    Type.BOOL: "boolean",
 }
