@@ -101,7 +101,7 @@ class DataPointFilter(
     pass
 
 
-class CheckpointFilter(IdFilter, RunIdFilter, TransactionIdFilter, total=True):
+class CheckpointFilter(IdFilter, RunIdFilter, TransactionIdFilter, total=False):
     pass
 
 
