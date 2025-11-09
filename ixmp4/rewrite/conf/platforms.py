@@ -20,11 +20,11 @@ class PlatformConnectionInfo(Protocol):
 class PlatformConnections(abc.ABC):
     @abc.abstractmethod
     def list_platforms(self) -> list[PlatformConnectionInfo]:
-        pass
+        raise NotImplementedError
 
     @abc.abstractmethod
     def get_platform(self, name: str) -> PlatformConnectionInfo:
-        pass
+        raise NotImplementedError
 
 
 class TomlPlatform(BaseModel):
