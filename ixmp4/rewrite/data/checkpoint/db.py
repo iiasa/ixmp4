@@ -19,6 +19,4 @@ class Checkpoint(BaseModel):
         nullable=True,
         index=True,
     )
-    message: db.t.String = orm.mapped_column(
-        sa.String(1023), nullable=False, unique=True
-    )
+    message: db.t.String = orm.mapped_column(sa.String(1023), nullable=False)
