@@ -19,7 +19,7 @@ from ixmp4.rewrite.services import (
 from .db import UnitDocs
 from .dto import Unit
 from .filter import UnitFilter
-from .repositories import ItemRepository, PandasRepository
+from .repositories import ItemRepository, PandasRepository, VersionPandasRepository
 
 
 class UnitService(DocsService, Service):
@@ -29,11 +29,13 @@ class UnitService(DocsService, Service):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
+    pandas_versions: VersionPandasRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        self.pandas_versions = VersionPandasRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=UnitDocs)
 
     @procedure(methods=["POST"])
@@ -56,7 +58,7 @@ class UnitService(DocsService, Service):
         :class:`Unit`:
             The created unit.
         """
-        self.items.create({"name": name})
+        self.items.create({"name": name, **self.get_creation_info()})
         return Unit.model_validate(self.items.get({"name": name}))
 
     @create.auth_check()
@@ -70,7 +72,7 @@ class UnitService(DocsService, Service):
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
     @procedure(path="/{id}/", methods=["DELETE"])
-    def delete(self, id: int) -> None:
+    def delete_by_id(self, id: int) -> None:
         """Deletes a unit.
 
         Parameters
@@ -87,7 +89,7 @@ class UnitService(DocsService, Service):
         """
         self.items.delete_by_pk({"id": id})
 
-    @delete.auth_check()
+    @delete_by_id.auth_check()
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
@@ -189,10 +191,6 @@ class UnitService(DocsService, Service):
     def paginated_list(
         self, pagination: Pagination, **kwargs: Unpack[UnitFilter]
     ) -> PaginatedResult[List[Unit]]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=[
                 Unit.model_validate(i)
@@ -236,10 +234,6 @@ class UnitService(DocsService, Service):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[UnitFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        @self.auth_check
-        def auth_check(auth_ctx: AuthorizationContext, platform: Ixmp4Instance):
-            auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
-
         return PaginatedResult(
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
