@@ -2,6 +2,7 @@ from typing import cast
 
 import sqlalchemy as sa
 from toolkit import db
+from toolkit.db.repository.base import Values
 
 from ixmp4.rewrite.data.model.db import Model
 from ixmp4.rewrite.data.scenario.db import Scenario
@@ -13,7 +14,7 @@ from ixmp4.rewrite.exceptions import (
     registry,
 )
 
-from .db import Run
+from .db import Run, RunVersion
 from .filter import RunFilter
 
 
@@ -53,7 +54,7 @@ class ItemRepository(db.r.ItemRepository[Run]):
     target = db.r.ModelTarget(Run)
     filter = db.r.Filter(RunFilter, Run)
 
-    def create(self, model_id: int, scenario_id: int) -> int:
+    def create(self, model_id: int, scenario_id: int, values: Values | None) -> int:
         exc = self.target.insert_statement()
         version_query = (
             # run creation logic in a single query
@@ -63,12 +64,13 @@ class ItemRepository(db.r.ItemRepository[Run]):
                 sa.literal(scenario_id),
                 sa.func.coalesce(sa.func.max(Run.version), sa.literal(0))
                 + sa.literal(1),
+                *(sa.literal(v) for v in values.values()),
             )
             .where(Run.model__id == model_id)
             .where(Run.scenario__id == scenario_id)
         )
         exc = exc.from_select(
-            ["model__id", "scenario__id", "version"],
+            ["model__id", "scenario__id", "version", *values.keys()],
             version_query,
         ).returning(Run.id)
 
@@ -124,6 +126,19 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(RunFilter, Run)
     target = db.r.ExtendedTarget(
         Run,
+        {
+            "model": (Run.model, Model.name),
+            "scenario": (Run.scenario, Scenario.name),
+        },
+    )
+
+
+class PandasVersionRepository(db.r.PandasRepository):
+    NotFound = RunNotFound
+    NotUnique = RunNotUnique
+    filter = db.r.Filter(RunFilter, Run)
+    target = db.r.ExtendedTarget(
+        RunVersion,
         {
             "model": (Run.model, Model.name),
             "scenario": (Run.scenario, Scenario.name),

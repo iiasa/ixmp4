@@ -29,6 +29,7 @@ from .repositories import (
     ItemRepository,
     NoDefaultRunVersion,
     PandasRepository,
+    PandasVersionRepository,
     RunIsLocked,
     RunNotFound,
 )
@@ -45,10 +46,26 @@ class RunService(Service):
     scenarios: ScenarioRepository
     transactions: TransactionRepository
 
+    default_columns = [
+        "id",
+        "model",
+        "scenario",
+        "model__id",
+        "scenario__id",
+        "version",
+        "lock_transaction",
+        "is_default",
+        "created_by",
+        "created_at",
+        "updated_by",
+        "updated_at",
+    ]
+
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
+        self.pandas_versions = PandasVersionRepository(self.executor)
         self.models = ModelRepository(self.executor)
         self.scenarios = ScenarioRepository(self.executor)
         self.transactions = TransactionRepository(self.executor)
@@ -71,15 +88,16 @@ class RunService(Service):
         :class:`Run`:
             The created run.
         """
+        creation_info = self.get_creation_info()
         with suppress(ModelNotUnique):
-            self.models.create({"name": model_name})
+            self.models.create({"name": model_name, **creation_info})
         model = self.models.get({"name": model_name})
 
         with suppress(ScenarioNotUnique):
-            self.scenarios.create({"name": scenario_name})
+            self.scenarios.create({"name": scenario_name, **creation_info})
         scenario = self.scenarios.get({"name": scenario_name})
 
-        id_ = self.items.create(model.id, scenario.id)
+        id_ = self.items.create(model.id, scenario.id, values=creation_info)
         return Run.model_validate(self.items.get_by_pk({"id": id_}))
 
     @create.auth_check()
@@ -319,7 +337,7 @@ class RunService(Service):
                 - model__id
                 - scenario__id
         """
-        return self.pandas.tabulate(values=kwargs)
+        return self.pandas.tabulate(values=kwargs, columns=self.default_columns)
 
     @tabulate.auth_check()
     def tabulate_auth_check(
@@ -337,7 +355,10 @@ class RunService(Service):
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult(
             results=self.pandas.tabulate(
-                values=kwargs, limit=pagination.limit, offset=pagination.offset
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+                columns=self.default_columns,
             ),
             total=self.pandas.count(values=kwargs),
             pagination=pagination,
