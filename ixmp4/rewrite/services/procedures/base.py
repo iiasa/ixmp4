@@ -1,4 +1,5 @@
 import inspect
+from contextlib import suppress
 from enum import Enum
 from string import Formatter
 from typing import (
@@ -378,10 +379,12 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     ) -> tuple[Any, ...]:
         args = []
         for name, param in sig.parameters.items():
-            if param.kind in [
-                inspect.Parameter.POSITIONAL_ONLY,
-                inspect.Parameter.POSITIONAL_OR_KEYWORD,
-            ]:
+            if param.kind == inspect.Parameter.POSITIONAL_ONLY:
+                args.append(payload.pop(name))
+            elif (
+                param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+                and param.default == inspect.Parameter.empty
+            ):
                 args.append(payload.pop(name))
 
         varargs = payload.pop(self.varargs_key, None)
@@ -394,9 +397,15 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     ) -> dict[str, Any]:
         kwargs = {}
         for name, param in sig.parameters.items():
-            if param.kind == inspect.Parameter.KEYWORD_ONLY:
+            if (
+                param.kind == inspect.Parameter.POSITIONAL_OR_KEYWORD
+                and param.default != inspect.Parameter.empty
+            ):
+                with suppress(KeyError):
+                    kwargs[name] = payload.pop(name)
+            elif param.kind == inspect.Parameter.KEYWORD_ONLY:
                 kwargs[name] = payload.pop(name)
-            if param.kind == inspect.Parameter.VAR_KEYWORD:
+            elif param.kind == inspect.Parameter.VAR_KEYWORD:
                 kwargs.update(payload)
                 break  # should always be last anyway
         return kwargs
@@ -407,7 +416,10 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         payload = {}
         for s in sources:
             if s is not None:
-                payload.update(s.model_dump(exclude_unset=True))
+                for field in s.__class__.model_fields:
+                    val = getattr(s, field)
+                    if val is not None:
+                        payload[field] = val
 
         args = self.build_args(self.signature, payload)
         kwargs = self.build_kwargs(self.signature, payload)
@@ -463,15 +475,13 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         self.method = procedure.fastapi_options["methods"][0]
 
     def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
-        body_payload = self.build_body_payload(self.procedure.signature, args, kwargs)
-        path_payload = self.build_path_payload(self.procedure.signature, args, kwargs)
-        res = self.transport.http_client.request(
-            self.method, self.path.format(**path_payload), json=body_payload
-        )
+        path = self.get_request_path(args, kwargs)
+        param_kwargs = self.get_param_request_kwargs(args, kwargs)
+        res = self.transport.http_client.request(self.method, path, **param_kwargs)
         self.transport.raise_service_exception(res)
         return self.procedure.return_type_adapter.validate_python(res.json())
 
-    def build_body_payload(
+    def build_parameters_payload(
         self, sig: inspect.Signature, args: tuple[Any, ...], kwargs: dict[str, Any]
     ) -> dict[str, Any]:
         payload = {}
@@ -483,8 +493,21 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
             payload[name] = argval
 
         payload.update(kwargs)
-        # TODO: Raise sane exceptions for wrong arguments
-        return payload
+        return self.procedure.parameters_model.model_validate(payload).model_dump()
+
+    def get_param_request_kwargs(
+        self, args: tuple[Any, ...], kwargs: dict[str, Any]
+    ) -> dict[str, Any]:
+        if self.procedure.parameters_model is None:
+            return {}
+
+        parameters_payload = self.build_parameters_payload(
+            self.procedure.signature, args, kwargs
+        )
+        if self.procedure.supports_body():
+            return {"json": parameters_payload}
+        else:
+            return {"params": parameters_payload}
 
     def build_path_payload(
         self, sig: inspect.Signature, args: tuple[Any, ...], kwargs: dict[str, Any]
@@ -498,8 +521,16 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
             payload[name] = argval
 
         payload.update(kwargs)
-        # TODO: Raise sane exceptions for wrong arguments
-        return payload
+        return self.procedure.path_model.model_validate(payload).model_dump()
+
+    def get_request_path(self, args: tuple[Any, ...], kwargs: dict[str, Any]) -> str:
+        if self.procedure.path_model is not None:
+            path_payload = self.build_path_payload(
+                self.procedure.signature, args, kwargs
+            )
+            return self.path.format(**path_payload)
+        else:
+            return self.path
 
 
 def procedure(

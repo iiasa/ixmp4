@@ -156,10 +156,9 @@ class PaginatedServiceProcedureClient(
         self.method = procedure.fastapi_options["methods"][0]
 
     def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> PaginatedReturnT:
-        body_payload = self.build_body_payload(self.procedure.signature, args, kwargs)
-        path_payload = self.build_path_payload(self.procedure.signature, args, kwargs)
-        path = self.path.format(**path_payload)
-        res = self.transport.http_client.request(self.method, path, json=body_payload)
+        path = self.get_request_path(args, kwargs)
+        param_kwargs = self.get_param_request_kwargs(args, kwargs)
+        res = self.transport.http_client.request(self.method, path, **param_kwargs)
         self.transport.raise_service_exception(res)
 
         paginated_result = self.procedure.paginated_return_type_adapter.validate_python(
@@ -178,7 +177,7 @@ class PaginatedServiceProcedureClient(
                 paginated_result.total,
                 paginated_result.pagination.limit,
                 paginated_result.pagination.limit,
-                json=body_payload,
+                **param_kwargs,
             )
 
         return cast(PaginatedReturnT, self.merge_results(result_items, result_type))
@@ -210,8 +209,7 @@ class PaginatedServiceProcedureClient(
             )
 
     def merge_dataframes(self, results: list[SerializableDataFrame]) -> pd.DataFrame:
-        dfs = [r.to_pandas() for r in results]
-        return pd.concat(dfs)
+        return pd.concat(results)
 
     def merge_lists(self, results: list[list[Any]]) -> list[Any]:
         return [i for page in results for i in page]
