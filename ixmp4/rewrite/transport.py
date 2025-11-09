@@ -10,9 +10,13 @@ from fastapi.testclient import TestClient
 from sqlalchemy import orm
 from toolkit.auth.context import AuthorizationContext
 from toolkit.client.auth import Auth, ManagerAuth
+from toolkit.client.base import ServiceClient
 from toolkit.manager.models import Ixmp4Instance
+from toolkit.utils import ttl_cache
 
 from ixmp4.rewrite.conf import settings
+from ixmp4.rewrite.exceptions import ProgrammingError
+from ixmp4.rewrite.exceptions import registry as exception_registry
 
 
 class Transport(abc.ABC):
@@ -23,9 +27,11 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache()
-def cached_create_engine(dsn: str) -> sa.Engine:
+def cached_create_engine(dsn: str, **kwargs: Any) -> sa.Engine:
     # max_identifier_length=63 to avoid exceeding postgres' default maximum
-    return sa.create_engine(dsn, poolclass=sa.NullPool, max_identifier_length=63)
+    return sa.create_engine(
+        dsn, poolclass=sa.StaticPool, max_identifier_length=63, **kwargs
+    )
 
 
 Session = orm.sessionmaker(autocommit=False, autoflush=False)
@@ -52,9 +58,27 @@ class DirectTransport(Transport):
     @classmethod
     def from_dsn(cls, dsn: str, *args: Any, **kwargs: Any) -> "DirectTransport":
         dsn = cls.check_dsn(dsn)
-        engine = cached_create_engine(dsn)
+        if dsn.startswith("sqlite"):
+            engine = cls.create_sqlite_engine(dsn)
+        elif dsn.startswith("postgresql"):
+            engine = cls.create_postgresql_engine(dsn)
+        else:
+            raise ProgrammingError("Unsupported database dialect for DSN: " + dsn)
         session = Session(bind=engine)
         return cls(session, *args, **kwargs)
+
+    @classmethod
+    def create_postgresql_engine(cls, dsn: str) -> sa.Engine:
+        return sa.create_engine(dsn, poolclass=sa.StaticPool, max_identifier_length=63)
+
+    @classmethod
+    def create_sqlite_engine(cls, dsn: str) -> sa.Engine:
+        return sa.create_engine(
+            dsn,
+            poolclass=sa.StaticPool,
+            max_identifier_length=63,
+            connect_args={"check_same_thread": False},
+        )
 
     def get_engine_info(self) -> str:
         if self.session.bind is None:
@@ -64,6 +88,11 @@ class DirectTransport(Transport):
             host = self.session.bind.engine.url.host
             database = self.session.bind.engine.url.database
             return f"dialect={dialect} database={database} host={host}"
+
+    def close(self):
+        self.session.rollback()
+        self.session.close()
+        self.session.bind.engine.dispose()
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} {self.get_engine_info()}>"
@@ -92,17 +121,24 @@ class AuthorizedTransport(DirectTransport):
         )
 
 
-class HttpxTransport(Transport):
-    client: httpx.Client | TestClient
+class HttpxTransport(Transport, ServiceClient):
+    http_client: httpx.Client | TestClient
     executor: ThreadPoolExecutor
+    exception_registry = exception_registry
+    direct: DirectTransport | None = None
 
     def __init__(
         self,
         client: httpx.Client | TestClient,
         max_concurrent_requests: int = settings.client_max_concurrent_requests,
+        cache_ttl: int = 60 * 15,
+        direct: DirectTransport | None = None,
     ):
+        self.url = client.base_url
         self.executor = ThreadPoolExecutor(max_workers=max_concurrent_requests)
-        self.client = client
+        self.http_client = client
+        self.ttl_cache = ttl_cache(cache_ttl)
+        self.direct = direct
 
     @classmethod
     def from_url(cls, url: str, auth: Auth | None) -> "HttpxTransport":
@@ -115,12 +151,28 @@ class HttpxTransport(Transport):
         )
         return cls(client)
 
+    @classmethod
+    def from_direct(
+        cls, direct: DirectTransport, raise_server_exceptions: bool = False
+    ):
+        # avoid circular import
+        # this usually only used in testing contexts
+        from ixmp4.rewrite.server import get_app
+
+        app = get_app(lambda: direct)
+        client = TestClient(
+            app=app,
+            base_url="http://testserver/v1/direct/",
+            raise_server_exceptions=raise_server_exceptions,
+        )
+        return cls(client, direct=direct)
+
     def __str__(self) -> str:
         if (
-            isinstance(self.client.auth, ManagerAuth)
-            and self.client.auth.access_token.user is not None
+            isinstance(self.http_client.auth, ManagerAuth)
+            and self.http_client.auth.access_token.user is not None
         ):
-            user = self.client.auth.access_token.user
+            user = self.http_client.auth.access_token.user
         else:
             user = None
-        return f"<HttpxTransport base_url={self.client.base_url} user={user}>"
+        return f"<HttpxTransport base_url={self.http_client.base_url} user={user}>"

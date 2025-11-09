@@ -1,6 +1,6 @@
 import logging
 
-from ixmp4.rewrite import data, services
+from ixmp4.rewrite import data
 from ixmp4.rewrite.conf import settings
 from ixmp4.rewrite.conf.platforms import PlatformConnectionInfo
 from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
@@ -39,7 +39,7 @@ class Backend(object):
     units: data.UnitService
     checkpoints: data.CheckpointService
 
-    def __init__(self, transport: services.Transport) -> None:
+    def __init__(self, transport: Transport) -> None:
         logger.info(f"Creating backend class with transport: {transport}")
         self.transport = transport
         self.optimization = OptimizationSubobject()
