@@ -12,11 +12,14 @@ from typing import (
 )
 
 import fastapi as fa
+import pandas as pd
+import pandera.pandas as pa
 import sqlalchemy as sa
+from pandera.errors import SchemaError
 from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 
-from ixmp4.rewrite.exceptions import ProgrammingError
+from ixmp4.rewrite.exceptions import InvalidDataFrame, ProgrammingError
 from ixmp4.rewrite.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -140,3 +143,11 @@ class Service(abc.ABC):
                 procedures.append(val)
 
         return procedures
+
+    def validate_df_or_raise(
+        self, df: pd.DataFrame, model: type[pa.DataFrameModel]
+    ) -> pd.DataFrame:
+        try:
+            return model.validate(df)
+        except SchemaError as e:
+            raise InvalidDataFrame(str(e))
