@@ -9,6 +9,14 @@ import pandas as pd
 from typing_extensions import TypedDict, Unpack
 
 from .. import base
+from ..annotations import (
+    HasModelFilter,
+    HasRegionFilter,
+    HasRunFilter,
+    HasScenarioFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 
 
 class DataPoint(base.BaseModel, Protocol):
@@ -28,6 +36,9 @@ class DataPoint(base.BaseModel, Protocol):
     step_datetime: datetime | None
     "A datetime object required by data points of type `DATETIME`."
 
+    is_input: bool
+    "Whether the datapoint is input (as opposed to solution, e.g. for remove_solution)."
+
     class Type(str, enum.Enum):
         BASE = "BASE"
         ANNUAL = "ANNUAL"
@@ -41,34 +52,35 @@ class DataPoint(base.BaseModel, Protocol):
 class EnumerateKwargs(TypedDict, total=False):
     step_year: int | None
     step_year__in: Iterable[int]
-    step_year__gt: int
-    step_year__lt: int
-    step_year__gte: int
-    step_year__lte: int
+    step_year__gt: int | None
+    step_year__lt: int | None
+    step_year__gte: int | None
+    step_year__lte: int | None
     year: int | None
     year__in: Iterable[int]
-    year__gt: int
-    year__lt: int
-    year__gte: int
-    year__lte: int
+    year__gt: int | None
+    year__lt: int | None
+    year__gte: int | None
+    year__lte: int | None
     time_series_id: int | None
     time_series_id__in: Iterable[int]
-    time_series_id__gt: int
-    time_series_id__lt: int
-    time_series_id__gte: int
-    time_series_id__lte: int
+    time_series_id__gt: int | None
+    time_series_id__lt: int | None
+    time_series_id__gte: int | None
+    time_series_id__lte: int | None
     time_series__id: int | None
     time_series__id__in: Iterable[int]
-    time_series__id__gt: int
-    time_series__id__lt: int
-    time_series__id__gte: int
-    time_series__id__lte: int
-    region: dict[str, str | Iterable[str]] | None
-    unit: dict[str, str | Iterable[str]] | None
-    variable: dict[str, str | Iterable[str]] | None
-    model: dict[str, str | Iterable[str]] | None
-    scenario: dict[str, str | Iterable[str]] | None
-    run: dict[str, bool | int | Iterable[int]]
+    time_series__id__gt: int | None
+    time_series__id__lt: int | None
+    time_series__id__gte: int | None
+    time_series__id__lte: int | None
+    is_input: bool | None
+    region: HasRegionFilter | None
+    unit: HasUnitFilter | None
+    variable: HasVariableFilter | None
+    model: HasModelFilter | None
+    scenario: HasScenarioFilter | None
+    run: HasRunFilter | None
 
 
 class DataPointRepository(
@@ -148,6 +160,7 @@ class DataPointRepository(
                 - step_datetime
                     if it contains data points of type `DATETIME`
                 - run__id (if `join_run_id` is set to `True`)
+                - is_input
                 - ... misc parameter columns if `join_parameters` is set to `True`
         """
         ...
@@ -169,6 +182,7 @@ class DataPointRepository(
                     if it contains data points of type `CATEGORICAL`
                 - step_datetime
                     if it contains data points of type `DATETIME`
+                - is_input
         """
         ...
 

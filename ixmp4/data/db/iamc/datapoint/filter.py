@@ -141,6 +141,8 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
         Filter for unit name
     variable : VariableFilter, Optional
         Filter for variable name
+    is_input : filters.Boolean, Optional
+        Filter for datapoint nature; corresponds to ixmp_source's meta parameter
     model : ModelFilter, Optional
         Filter for model name
     scenario : ScenarioFilter, Optional
@@ -177,6 +179,7 @@ class DataPointFilter(filters.BaseFilter, metaclass=filters.FilterMeta):
     region: RegionFilter | None = filters.Field(None)
     unit: UnitFilter | None = filters.Field(None)
     variable: VariableFilter | None = filters.Field(None)
+    is_input: filters.Boolean | None = filters.Field(None)
     model: ModelFilter | None = filters.Field(None)
     scenario: ScenarioFilter | None = filters.Field(None)
     run: RunFilter = filters.Field(RunFilter())

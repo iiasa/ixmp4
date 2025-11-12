@@ -1,14 +1,13 @@
 from collections.abc import Sequence
 from typing import TYPE_CHECKING, Any, ClassVar, Protocol, _ProtocolMeta
 
+import pandas as pd
 from typing_extensions import Unpack
+
+from ixmp4.core.exceptions import DeletionPrevented, IxmpError, NotFound, NotUnique
 
 if TYPE_CHECKING:
     from ixmp4.data.db.base import EnumerateKwargs
-
-import pandas as pd
-
-from ixmp4.core.exceptions import DeletionPrevented, IxmpError, NotFound, NotUnique
 
 
 class BaseMeta(_ProtocolMeta):

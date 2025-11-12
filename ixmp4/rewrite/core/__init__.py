@@ -1,4 +1,4 @@
-from .iamc.variable import Variable as Variable
+from . import iamc as iamc
 from .model import Model as Model
 
 # from .optimization.equation import Equation as Equation

@@ -1,7 +1,16 @@
 import operator
 from collections.abc import Callable, Iterable
 from types import GenericAlias, UnionType
-from typing import Any, ClassVar, Optional, TypeVar, Union, cast, get_args, get_origin
+from typing import (
+    Any,
+    ClassVar,
+    Optional,
+    TypeVar,
+    Union,
+    cast,
+    get_args,
+    get_origin,
+)
 
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 from pydantic.fields import FieldInfo
@@ -148,10 +157,10 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         **kwargs: Any,
     ) -> type["BaseFilter"]:
         annots = namespace.get("__annotations__", {}).copy()
-        for name, annot in annots.items():
+        for _name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
-            cls.process_field(namespace, name, annot)
+            cls.process_field(namespace, _name, annot)
 
         return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
 
@@ -296,7 +305,9 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 field = namespace.get(filter_name, Field(None))
             # NOTE field should always be pydantic FieldInfo, convince type checker
             assert field is not None
-            field.json_schema_extra = {"sqla_column": name}
+            json_schema_extra = {"sqla_column": name}
+            field.json_schema_extra = json_schema_extra
+            field._attributes_set["json_schema_extra"] = json_schema_extra
             namespace[filter_name] = field
 
 
@@ -308,7 +319,8 @@ class BaseFilter(BaseModel, metaclass=FilterMeta):
     model_config = ConfigDict(
         arbitrary_types_allowed=True,
         extra="forbid",
-        populate_by_name=True,
+        validate_by_alias=True,
+        validate_by_name=True,
     )
     sqla_model: ClassVar[type | None] = None
 

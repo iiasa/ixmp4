@@ -44,7 +44,7 @@ class Region(BaseFacade):
 
     def delete(self) -> None:
         """Deletes the region from the database."""
-        self._backend.regions.delete(self.dto.id)
+        self._backend.regions.delete_by_id(self.dto.id)
 
     @property
     def docs(self) -> str | None:
@@ -109,7 +109,7 @@ class RegionRepository(BaseFacade):
         else:
             raise TypeError("Invalid argument: Must be `Region`, `int` or `str`.")
 
-        self._backend.regions.delete(id)
+        self._backend.regions.delete_by_id(id)
 
     def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
         regions = self._backend.regions.list(**kwargs)

@@ -42,9 +42,9 @@ class RunIamcData(BaseFacade):
 
     def _get_or_create_ts(self, df: pd.DataFrame) -> pd.DataFrame:
         id_cols = ["region", "variable", "unit", "run__id"]
-        # create set of unqiue timeseries (if missing)
+        # upsert set of unqiue timeseries
         ts_df = df[id_cols].drop_duplicates()
-        self._backend.iamc.timeseries.bulk_upsert(ts_df, create_related=True)
+        self._backend.iamc.timeseries.bulk_upsert(ts_df)
 
         # retrieve them again to get database ids
         ts_df = self._backend.iamc.timeseries.tabulate(

@@ -22,6 +22,7 @@ class DataPoint(base.BaseModel):
     time_series__id: int
     value: float
     type: str
+    is_input: bool
 
     step_category: str | None
     step_year: int | None

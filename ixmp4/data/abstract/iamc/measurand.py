@@ -1,11 +1,11 @@
 from typing import TYPE_CHECKING, Protocol
 
-if TYPE_CHECKING:
-    from .. import Unit, Variable
-
 import pandas as pd
 
 from .. import base
+
+if TYPE_CHECKING:
+    from .. import Unit, Variable
 
 
 class Measurand(base.BaseModel, Protocol):

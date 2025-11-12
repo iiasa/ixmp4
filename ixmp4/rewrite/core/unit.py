@@ -43,7 +43,7 @@ class Unit(BaseFacade):
         return self.dto.created_by
 
     def delete(self) -> None:
-        self._backend.units.delete(self.dto.id)
+        self._backend.units.delete_by_id(self.dto.id)
 
     @property
     def docs(self) -> str | None:
@@ -93,7 +93,7 @@ class UnitRepository(BaseFacade):
         else:
             raise TypeError("Invalid argument: Must be `Unit`, `int` or `str`.")
 
-        self._backend.units.delete(id)
+        self._backend.units.delete_by_id(id)
 
     def get(self, name: str) -> Unit:
         dto = self._backend.units.get_by_name(name)

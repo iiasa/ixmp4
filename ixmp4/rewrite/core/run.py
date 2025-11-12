@@ -206,7 +206,7 @@ class Run(BaseFacade):
         :class:`ixmp4.rewrite.core.exceptions.RunIsLocked`:
             If the run is already locked by this or another object.
         """
-        self._backend.runs.delete(self.dto.id)
+        self._backend.runs.delete_by_id(self.dto.id)
 
     def clone(
         self,
@@ -239,7 +239,7 @@ class RunRepository(BaseFacade):
         else:
             raise TypeError("Invalid argument: Must be `Run` or `int`.")
 
-        self._backend.runs.delete(id)
+        self._backend.runs.delete_by_id(id)
 
     def get(self, model: str, scenario: str, version: int | None = None) -> Run:
         dto = (
@@ -315,7 +315,7 @@ class RunMetaFacade(BaseFacade, UserDict[str, MetaValueType | None]):
     def __delitem__(self, key: str) -> None:
         self.run.require_lock()
         id = dict(zip(self.df["key"], self.df["id"]))[key]
-        self._backend.meta.delete(id)
+        self._backend.meta.delete_by_id(id)
         self.df, self.data = self._get()
 
 
