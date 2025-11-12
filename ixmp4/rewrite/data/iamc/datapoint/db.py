@@ -17,6 +17,8 @@ class DataPoint(BaseModel):
     __table_args__ = (
         sa.UniqueConstraint("time_series__id", "step_year", "step_category"),
         sa.UniqueConstraint("time_series__id", "step_datetime"),
+        # sa.CheckConstraint("(step_datetime IS NOT NULL) OR (step_year IS NOT NULL)
+        # AND (step_datetime IS NULL OR step_year IS NULL)"),
     )
 
     time_series__id: db.t.Integer = orm.mapped_column(
@@ -27,19 +29,21 @@ class DataPoint(BaseModel):
     )
     timeseries: db.t.Mapped["TimeSeries"] = orm.relationship(viewonly=True)
 
-    value: db.t.Float = orm.mapped_column(sa.Float)
+    value: db.t.Float
 
     type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
-    step_category: db.t.String = orm.mapped_column(sa.String(1023), index=True)
-    step_year: db.t.Integer = orm.mapped_column(sa.Integer, index=True)
-    step_datetime: db.t.DateTime = orm.mapped_column(sa.DateTime, index=True)
+    step_category: db.t.String = orm.mapped_column(
+        sa.String(1023), index=True, nullable=True
+    )
+    step_year: db.t.Integer = orm.mapped_column(index=True, nullable=True)
+    step_datetime: db.t.DateTime = orm.mapped_column(index=True, nullable=True)
 
 
 class DataPointVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_datapoint_universal_version"
 
-    value: db.t.Float = orm.mapped_column(sa.Float)
+    value: db.t.Float
     type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
     time_series__id: db.t.Integer = orm.mapped_column(
@@ -48,9 +52,11 @@ class DataPointVersion(versions.BaseVersionModel):
         index=True,
     )
 
-    step_category: db.t.String = orm.mapped_column(sa.String(1023), index=True)
-    step_year: db.t.Integer = orm.mapped_column(sa.Integer, index=True)
-    step_datetime: db.t.DateTime = orm.mapped_column(sa.DateTime, index=True)
+    step_category: db.t.String = orm.mapped_column(
+        sa.String(1023), index=True, nullable=True
+    )
+    step_year: db.t.Integer = orm.mapped_column(index=True, nullable=True)
+    step_datetime: db.t.DateTime = orm.mapped_column(index=True, nullable=True)
 
 
 version_triggers = versions.PostgresVersionTriggers(
