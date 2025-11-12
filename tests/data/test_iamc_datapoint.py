@@ -107,3 +107,19 @@ def test_join_run_id_and_join_runs(platform: ixmp4.Platform) -> None:
         assert "model" in df.columns
         assert "scenario" in df.columns
         assert "version" in df.columns
+
+
+# FIXME I'd expect the following to work, but validate_type() of
+# RemoveDataPointFrameSchema raises an error for types == []
+# def test_bulk_delete_empty_df(platform: ixmp4.Platform) -> None:
+#     filter_dataset.load_dataset(platform=platform)
+
+#     # Ensure there are datapoints
+#     df = platform.backend.iamc.datapoints.tabulate()
+#     assert not df.empty
+
+#     # Ensure passing an empty dataframe is a noop
+#     platform.backend.iamc.datapoints.bulk_delete(
+#         pd.DataFrame(columns=["time_series__id", "type"])
+#     )
+#     assert_unordered_equality(df, platform.backend.iamc.datapoints.tabulate())
