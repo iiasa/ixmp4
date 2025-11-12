@@ -18,6 +18,7 @@ from ixmp4.rewrite.services import (
     procedure,
 )
 
+from .df_schemas import DeleteDataPointFrameSchema, UpsertDataPointFrameSchema
 from .filter import DataPointFilter
 from .repositories import PandasRepository
 
@@ -28,6 +29,14 @@ class DataPointService(Service):
 
     executor: db.r.SessionExecutor
     pandas: PandasRepository
+
+    full_key = {
+        "time_series__id",
+        "type",
+        "step_year",
+        "step_category",
+        "step_datetime",
+    }
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
@@ -76,7 +85,8 @@ class DataPointService(Service):
 
     @procedure(methods=["POST"])
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
-        self.pandas.upsert(df)
+        df = self.validate_df_or_raise(df, UpsertDataPointFrameSchema)
+        self.pandas.upsert(df, key=self.full_key & set(df.columns))
 
     @bulk_upsert.auth_check()
     def bulk_upsert_auth_check(
@@ -91,7 +101,8 @@ class DataPointService(Service):
 
     @procedure(methods=["DELETE"])
     def bulk_delete(self, df: SerializableDataFrame) -> None:
-        self.pandas.delete(df)
+        df = self.validate_df_or_raise(df, DeleteDataPointFrameSchema)
+        self.pandas.delete(df, key=self.full_key & set(df.columns))
         self.timeseries.delete_orphans()
 
     @bulk_delete.auth_check()
