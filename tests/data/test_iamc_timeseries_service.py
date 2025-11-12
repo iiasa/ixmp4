@@ -288,7 +288,7 @@ class TestTimeseriesBulkUpsertRelatedNotFound(TimeSeriesServiceTest):
         assert ret_df.empty
 
 
-class TestpytestTimeseriesTabulate(TimeSeriesServiceTest):
+class TestTimeseriesTabulate(TimeSeriesServiceTest):
     @pytest.fixture(scope="class")
     def test_df(
         self,
@@ -318,4 +318,48 @@ class TestpytestTimeseriesTabulate(TimeSeriesServiceTest):
     ) -> None:
         service.bulk_upsert(test_df)
         ret_df = service.tabulate()
+        pdt.assert_frame_equal(test_df_expected, ret_df, check_like=True)
+
+
+class TestTimeseriesTabulateByDf(TimeSeriesServiceTest):
+    @pytest.fixture(scope="class")
+    def test_df(
+        self,
+        run: Run,
+        regions: RegionService,
+        units: UnitService,
+        fake_time: datetime.datetime,
+    ) -> pd.DataFrame:
+        self.create_related(regions, units)
+
+        return pd.DataFrame(
+            [
+                [run.id, "Region 1", "Variable 1", "Unit 1"],
+                [run.id, "Region 1", "Variable 2", "Unit 2"],
+                [run.id, "Region 2", "Variable 1", "Unit 1"],
+            ],
+            columns=["run__id", "region", "variable", "unit"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_df_expected(self, run: Run, fake_time: datetime.datetime) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [1, run.id, "Region 1", "Variable 1", "Unit 1"],
+                [2, run.id, "Region 1", "Variable 2", "Unit 2"],
+                [3, run.id, "Region 2", "Variable 1", "Unit 1"],
+            ],
+            columns=["id", "run__id", "region", "variable", "unit"],
+        )
+
+    def test_timeseries_tabulate_by_df(
+        self,
+        service: TimeSeriesService,
+        run: Run,
+        fake_time: datetime.datetime,
+        test_df: pd.DataFrame,
+        test_df_expected: pd.DataFrame,
+    ) -> None:
+        service.bulk_upsert(test_df)
+        ret_df = service.tabulate_by_df(test_df)
         pdt.assert_frame_equal(test_df_expected, ret_df, check_like=True)

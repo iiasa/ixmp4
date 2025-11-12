@@ -5,9 +5,6 @@ import pandas.testing as pdt
 import pytest
 
 from ixmp4.rewrite.data.iamc.timeseries.service import TimeSeriesService
-from ixmp4.rewrite.data.iamc.variable.repositories import (
-    ItemRepository as VariableRepository,
-)
 from ixmp4.rewrite.data.iamc.variable.service import VariableService
 from ixmp4.rewrite.data.region.service import RegionService
 from ixmp4.rewrite.data.run.dto import Run
@@ -45,7 +42,7 @@ class VariableServiceTest(ServiceTest[VariableService]):
         return RegionService(transport)
 
     @pytest.fixture(scope="class")
-    def timeseries(self, transport: Transport) -> VariableRepository:
+    def timeseries(self, transport: Transport) -> TimeSeriesService:
         return TimeSeriesService(transport)
 
     def create_related(
