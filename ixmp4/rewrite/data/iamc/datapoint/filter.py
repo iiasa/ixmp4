@@ -7,7 +7,7 @@ from ixmp4.rewrite.data.run.db import Run
 from .db import DataPoint
 
 
-class DataPointFilter(base.DataPointFilter, total=True):
+class DataPointFilter(base.DataPointFilter, total=False):
     region: Annotated[base.RegionFilter, (DataPoint.timeseries, TimeSeries.region)]
     variable: Annotated[
         base.VariableFilter, (DataPoint.timeseries, TimeSeries.variable)
