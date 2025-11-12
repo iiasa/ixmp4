@@ -49,6 +49,37 @@ class TimeSeriesService(Service):
         self.units = UnitPandasRepository(self.executor)
         self.variables = VariablePandasRepository(self.executor)
 
+    @procedure(methods=["PATCH"])
+    def tabulate_by_df(self, df: SerializableDataFrame) -> SerializableDataFrame:
+        r"""Tabulates timeseries by values in a supplied dataframe.
+
+        Parameters
+        ----------
+        df: `pd.DataFramea`
+            DataFrame containing rows of timeseries keys to tabulate.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - TODO
+        """
+        return self.pandas.tabulate_by_df(
+            df,
+            key=["run__id", "region", "variable", "unit"],
+            columns=["id", "run__id", "region", "variable", "unit"],
+        )
+
+    @tabulate_by_df.auth_check()
+    def tabulate_by_df_auth_check(
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: Ixmp4Instance,
+        *args: Any,
+        **kwargs: Any,
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
     @paginated_procedure(methods=["PATCH"])
     def tabulate(self, **kwargs: Unpack[TimeSeriesFilter]) -> SerializableDataFrame:
         r"""Tabulates timeseries by specified criteria.
