@@ -150,3 +150,8 @@ class OptimizationDataValidationError(Ixmp4Error):
 class OptimizationItemUsageError(Ixmp4Error):
     http_status_code = 422
     http_error_name = "optimization_item_usage_error"
+
+
+@registry.register()
+class InvalidDataFrame(BadRequest):
+    message = "The provided dataframe is invalid."
