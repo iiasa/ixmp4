@@ -262,7 +262,7 @@ class DataPointRepository(
         if _raw:
             return super().tabulate(*args, **kwargs)
         df = super().tabulate(*args, **kwargs)
-        df["value"] = df["value"].astype(np.float64)
+        df.loc[:, "value"] = df["value"].astype(np.float64)
         df = df.sort_values(
             by=["time_series__id", "step_year", "step_category", "step_datetime"]
         )

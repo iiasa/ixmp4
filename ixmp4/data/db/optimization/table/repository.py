@@ -103,6 +103,11 @@ class TableRepository(
     ) -> Table:
         table = Table(name=name, run__id=run_id)
 
+        ### TODO
+        ###
+        ### tabulate indexsets and iterate here to create a dataframe which we can then
+        ### bulk_insert to associations
+
         # TODO fix this for other items and add tests for all, too
         indexsets = {
             indexset: self.backend.optimization.indexsets.get(

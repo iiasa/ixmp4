@@ -395,12 +395,6 @@ class BulkOperator(Tabulator[ModelType]):
             - set(primary_key_columns.keys())  # no pk columns
         )  # = all columns that are constant and provided during creation
 
-        for x in existing_df.select_dtypes(include=["datetime64"]).columns.tolist():
-            existing_df.loc[:, x] = existing_df[x].astype(object)
-
-        for x in df.select_dtypes(include=["datetime64"]).columns.tolist():
-            df.loc[:, x] = df[x].astype(object)
-
         return df.merge(
             existing_df,
             how="left",
@@ -514,7 +508,7 @@ class BulkUpserter(BulkOperator[ModelType]):
             self.bulk_insert(df, skip_validation=True)
         else:
             df = self.merge_existing(df, existing_df)
-            df["exists"] = np.where(pd.notnull(df["id"]), True, False)
+            df.loc[:, "exists"] = np.where(pd.notnull(df["id"]), True, False)
             cond = []
             for col in self.model_class.updateable_columns:
                 updated_col = col + self.merge_suffix
@@ -528,7 +522,7 @@ class BulkUpserter(BulkOperator[ModelType]):
                     both_are_na = pd.isna(df[col]) & pd.isna(df[updated_col])
                     cond.append(~both_are_na | are_not_equal)
 
-            df["differs"] = np.where(np.logical_or.reduce(cond), True, False)
+            df.loc[:, "differs"] = np.where(np.logical_or.reduce(cond), True, False)
 
             insert_df = self.drop_merge_artifacts(
                 df.where(~df["exists"]), extra_columns=["id", "differs", "exists"]
@@ -583,7 +577,7 @@ class BulkDeleter(BulkOperator[ModelType]):
             return
 
         df = self.merge_existing(df, existing_df)
-        df["exists"] = np.where(pd.notnull(df["id"]), True, False)
+        df.loc[:, "exists"] = np.where(pd.notnull(df["id"]), True, False)
         delete_df = df.where(df["exists"])
         id_df = delete_df[["id"]]
 

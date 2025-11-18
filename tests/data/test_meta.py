@@ -190,7 +190,7 @@ class TestDataMeta:
         true_entries2 = TEST_ENTRIES_DF.copy()
         true_entries2["run__id"] = run2.id
         # Each entry enters the DB this much after those from run1
-        true_entries2["id"] += len(TEST_ENTRIES)
+        true_entries2.loc[:, "id"] += len(TEST_ENTRIES)
 
         expected = pd.concat([true_entries1, true_entries2], ignore_index=True)
 

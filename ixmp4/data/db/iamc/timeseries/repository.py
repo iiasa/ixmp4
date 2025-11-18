@@ -145,16 +145,16 @@ class TimeSeriesRepository(
         if len(missing) > 0:
             raise Unit.NotFound(", ".join(missing))
 
-        df["measurand__id"] = np.nan
+        df.loc[:, "measurand__id"] = np.nan
 
         def map_measurand(df: pd.DataFrame) -> pd.DataFrame:
             variable_name, unit__id = df.name
             measurand = self.measurands.get_or_create(
                 variable_name=variable_name, unit__id=int(unit__id)
             )
-            df["measurand__id"] = measurand.id
-            df["variable"] = variable_name
-            df["unit__id"] = unit__id
+            df.loc[:, "measurand__id"] = measurand.id
+            df.loc[:, "variable"] = variable_name
+            df.loc[:, "unit__id"] = unit__id
             return df
 
         # ensure compatibility with pandas < 2.2

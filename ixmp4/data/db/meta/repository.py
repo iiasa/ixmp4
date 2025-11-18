@@ -211,8 +211,8 @@ class RunMetaEntryRepository(
             type_str = df.name
             type_ = RunMetaEntry.Type(type_str)
             col = RunMetaEntry._column_map[type_]
-            df["value"] = df[col]
-            df["dtype"] = type_str
+            df.loc[:, "value"] = df[col]
+            df.loc[:, "dtype"] = type_str
             return df.drop(columns=RunMetaEntry._column_map.values())
 
         # ensure compatibility with pandas y 2.2
@@ -240,7 +240,7 @@ class RunMetaEntryRepository(
             # This cast should always be a no-op
             col = RunMetaEntry._column_map[cast(str, type_)]
             null_cols = set(RunMetaEntry._column_map.values()) - set([col])
-            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)
+            type_df.loc[:, "dtype"] = type_df["dtype"].map(lambda x: x.value)
             type_df = type_df.rename(columns={"value": col})
 
             # ensure all other columns are overwritten
