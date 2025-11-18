@@ -145,9 +145,10 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             import annotationlib
 
             if annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                # NOTE This seems to be on annotationlib
                 annots = annotationlib.call_annotate_function(
                     annotate, format=annotationlib.Format.FORWARDREF
-                )
+                )  # type: ignore[assignment]
 
                 # namespace["__filter_names__"]: dict[str, type] = {}
 
