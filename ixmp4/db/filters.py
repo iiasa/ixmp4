@@ -1,4 +1,5 @@
 import operator
+import sys
 from collections.abc import Callable, Iterable
 from types import GenericAlias, UnionType
 from typing import (
@@ -150,8 +151,6 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                     annotate, format=annotationlib.Format.FORWARDREF
                 )  # type: ignore[assignment]
 
-                # namespace["__filter_names__"]: dict[str, type] = {}
-
                 def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
                     _annots = annotationlib.call_annotate_function(annotate, format)
 
@@ -161,14 +160,7 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                         if isinstance(field_info, FieldInfo)
                     }
 
-                    combined_annots = {
-                        # **namespace.get("__filter_names__", {}),
-                        **dynamic_annots,
-                        **_annots,
-                    }
-                    # print("combined_annots: ")
-                    # print(combined_annots)
-                    return combined_annots
+                    return {**dynamic_annots, **_annots}
             else:
                 annots = {}
                 wrapped_annotate = None
@@ -181,39 +173,9 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 continue
             cls.process_field(namespace, _name, annot)
 
-            # if sys.version_info >= (3, 14):
-            #     for filter_name, annotation in namespace.get(
-            #         "__filter_names__", {}
-            #     ).items():
-            #         namespace[filter_name].annotation = annotation
-
+        if sys.version_info >= (3, 14):
             if annotate:
-                # NOTE This definition is necessary only to enable the below debugging
-                def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
-                    _annots = annotationlib.call_annotate_function(annotate, format)
-                    dynamic_annots = {
-                        name: field_info.annotation
-                        for name, field_info in namespace.items()
-                        if isinstance(field_info, FieldInfo)
-                    }
-                    combined_annots = {**dynamic_annots, **_annots}
-                    # print("combined_annots: ")
-                    # print(combined_annots)
-                    return combined_annots
-
                 namespace["__annotate_func__"] = wrapped_annotate
-
-            # NOTE The following lines are just for debugging until new_cls
-            print("namespace after filter_name:")
-            print(namespace)
-            if _annotate := annotationlib.get_annotate_from_class_namespace(namespace):
-                _raw_annots = annotationlib.call_annotate_function(
-                    _annotate, format=annotationlib.Format.FORWARDREF
-                )
-            else:
-                _raw_annots = {}
-            print("raw annotations:")
-            print(_raw_annots)
 
         new_cls = cast(
             FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs)
@@ -332,8 +294,6 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
 
             if sys.version_info < (3, 14):
                 namespace["__annotations__"][filter_name] = Optional[type_]
-            # else:
-            #     namespace["__filter_names__"][filter_name] = Optional[type_]
 
             func_name = get_filter_func_name(filter_name)
 
