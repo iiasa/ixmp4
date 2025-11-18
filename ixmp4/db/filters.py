@@ -152,9 +152,7 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 # namespace["__filter_names__"]: dict[str, type] = {}
 
                 def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
-                    _annots = annotationlib.call_annotate_function(
-                        annotate, format, owner=new_cls
-                    )
+                    _annots = annotationlib.call_annotate_function(annotate, format)
 
                     dynamic_annots = {
                         name: field_info.annotation
