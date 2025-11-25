@@ -29,6 +29,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.exceptions import ProgrammingError
 from toolkit.manager.models import Ixmp4Instance
 
+from ixmp4.rewrite.exceptions import InvalidArguments
 from ixmp4.rewrite.transport import DirectTransport, HttpxTransport
 
 from ..base import Service
@@ -493,7 +494,14 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
             payload[name] = argval
 
         payload.update(kwargs)
-        return self.procedure.parameters_model.model_validate(payload).model_dump()
+        try:
+            valid_payload = self.procedure.parameters_model.model_validate(
+                payload, strict=True
+            )
+        except pyd.ValidationError as e:
+            raise InvalidArguments(e)
+
+        return valid_payload.model_dump()
 
     def get_param_request_kwargs(
         self, args: tuple[Any, ...], kwargs: dict[str, Any]
