@@ -35,6 +35,6 @@ class HasUpdateInfo(HasCreationInfo):
     """
 
     updated_at: db.t.DateTime = orm.mapped_column(
-        sa.DateTime(timezone=True), nullable=True
+        sa.DateTime(timezone=False), nullable=True
     )
     updated_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
