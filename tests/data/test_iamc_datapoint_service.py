@@ -4,14 +4,14 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.rewrite.data.iamc.datapoint.service import DataPointService
-from ixmp4.rewrite.data.iamc.datapoint.type import Type
-from ixmp4.rewrite.data.iamc.timeseries.service import TimeSeriesService
-from ixmp4.rewrite.data.region.service import RegionService
-from ixmp4.rewrite.data.run.dto import Run
-from ixmp4.rewrite.data.run.service import RunService
-from ixmp4.rewrite.data.unit.service import UnitService
-from ixmp4.rewrite.transport import Transport
+from ixmp4.data.iamc.datapoint.service import DataPointService
+from ixmp4.data.iamc.datapoint.type import Type
+from ixmp4.data.iamc.timeseries.service import TimeSeriesService
+from ixmp4.data.region.service import RegionService
+from ixmp4.data.run.dto import Run
+from ixmp4.data.run.service import RunService
+from ixmp4.data.unit.service import UnitService
+from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
 

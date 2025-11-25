@@ -4,16 +4,16 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.rewrite.data.optimization.indexset.service import IndexSetService
-from ixmp4.rewrite.data.optimization.scalar.repositories import (
+from ixmp4.data.optimization.indexset.service import IndexSetService
+from ixmp4.data.optimization.scalar.repositories import (
     ScalarNotFound,
     ScalarNotUnique,
 )
-from ixmp4.rewrite.data.optimization.scalar.service import ScalarService
-from ixmp4.rewrite.data.run.dto import Run
-from ixmp4.rewrite.data.run.service import RunService
-from ixmp4.rewrite.data.unit.service import Unit, UnitService
-from ixmp4.rewrite.transport import Transport
+from ixmp4.data.optimization.scalar.service import ScalarService
+from ixmp4.data.run.dto import Run
+from ixmp4.data.run.service import RunService
+from ixmp4.data.unit.service import Unit, UnitService
+from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
 

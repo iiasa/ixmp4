@@ -2,7 +2,7 @@ from typing import Generic, NoReturn, TypeVar
 
 import pytest
 
-from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 
 ServiceT = TypeVar("ServiceT")
 

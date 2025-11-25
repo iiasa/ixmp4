@@ -1,55 +1,57 @@
 from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
 
 import pandas as pd
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Variable as VariableModel
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseFacade
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.iamc.variable.dto import Variable as VariableModel
 
 
-class Variable(BaseModelFacade):
-    _model: VariableModel
-    NotFound: ClassVar = VariableModel.NotFound
-    NotUnique: ClassVar = VariableModel.NotUnique
+class Variable(BaseFacade):
+    dto: VariableModel
+
+    def __init__(self, backend: Backend, dto: VariableModel) -> None:
+        super().__init__(backend)
+        self.dto = dto
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self.dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self.dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self.dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self.dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.iamc.variables.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.iamc.variables.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.iamc.variables.docs.delete(self.id)
+            self._backend.iamc.variables.delete_docs(self.id)
         else:
-            self.backend.iamc.variables.docs.set(self.id, description)
+            self._backend.iamc.variables.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.iamc.variables.docs.delete(self.id)
+            self._backend.iamc.variables.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -58,24 +60,24 @@ class Variable(BaseModelFacade):
 
 class VariableRepository(BaseFacade):
     def create(self, name: str) -> Variable:
-        model = self.backend.iamc.variables.create(name)
-        return Variable(_backend=self.backend, _model=model)
+        model = self._backend.iamc.variables.create(name)
+        return Variable(backend=self._backend, dto=model)
 
     def get(self, name: str) -> Variable:
-        model = self.backend.iamc.variables.get(name)
-        return Variable(_backend=self.backend, _model=model)
+        model = self._backend.iamc.variables.get(name)
+        return Variable(backend=self._backend, dto=model)
 
     def list(self, name: str | None = None) -> list[Variable]:
-        variables = self.backend.iamc.variables.list(name=name)
-        return [Variable(_backend=self.backend, _model=v) for v in variables]
+        variables = self._backend.iamc.variables.list(name=name)
+        return [Variable(backend=self._backend, dto=v) for v in variables]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.iamc.variables.tabulate(name=name)
+        return self._backend.iamc.variables.tabulate(name=name)
 
     def _get_variable_id(self, variable: str) -> int | None:
         # NOTE leaving this check for users without mypy
         if isinstance(variable, str):
-            obj = self.backend.iamc.variables.get(variable)
+            obj = self._backend.iamc.variables.get(variable)
             return obj.id
         else:
             raise ValueError(f"Invalid reference to variable: {variable}")
@@ -85,10 +87,10 @@ class VariableRepository(BaseFacade):
         if variable_id is None:
             return None
         try:
-            return self.backend.iamc.variables.docs.get(
-                dimension_id=variable_id
+            return self._backend.iamc.variables.get_docs(
+                dimension__id=variable_id
             ).description
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -98,8 +100,8 @@ class VariableRepository(BaseFacade):
         variable_id = self._get_variable_id(name)
         if variable_id is None:
             return None
-        return self.backend.iamc.variables.docs.set(
-            dimension_id=variable_id, description=description
+        return self._backend.iamc.variables.set_docs(
+            dimension__id=variable_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -108,9 +110,9 @@ class VariableRepository(BaseFacade):
         if variable_id is None:
             return None
         try:
-            self.backend.iamc.variables.docs.delete(dimension_id=variable_id)
+            self._backend.iamc.variables.delete_docs(dimension__id=variable_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -118,7 +120,7 @@ class VariableRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self.backend.iamc.variables.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.iamc.variables.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

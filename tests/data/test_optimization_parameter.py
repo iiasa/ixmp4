@@ -5,18 +5,18 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.rewrite.data.optimization.indexset.service import IndexSet, IndexSetService
-from ixmp4.rewrite.data.optimization.parameter.repositories import (
+from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
+from ixmp4.data.optimization.parameter.repositories import (
     ParameterDataInvalid,
     ParameterNotFound,
     ParameterNotUnique,
 )
-from ixmp4.rewrite.data.optimization.parameter.service import ParameterService
-from ixmp4.rewrite.data.run.dto import Run
-from ixmp4.rewrite.data.run.service import RunService
-from ixmp4.rewrite.data.unit.service import Unit, UnitService
-from ixmp4.rewrite.exceptions import OptimizationItemUsageError
-from ixmp4.rewrite.transport import Transport
+from ixmp4.data.optimization.parameter.service import ParameterService
+from ixmp4.data.run.dto import Run
+from ixmp4.data.run.service import RunService
+from ixmp4.data.unit.service import Unit, UnitService
+from ixmp4.exceptions import OptimizationItemUsageError
+from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
 

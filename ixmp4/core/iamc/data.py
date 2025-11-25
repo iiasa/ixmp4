@@ -1,3 +1,4 @@
+from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -5,19 +6,14 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import DataPoint as DataPointModel
-from ixmp4.data.abstract.annotations import (
-    HasRegionFilter,
-    HasUnitFilter,
-    HasVariableFilter,
-)
-from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
-from ixmp4.data.backend import Backend
-from ixmp4.data.db.iamc.utils import (
-    AddDataPointFrameSchema,
-    RemoveDataPointFrameSchema,
-    normalize_df,
-)
+# from ixmp4.data.db.iamc.utils import (
+#     AddDataPointFrameSchema,
+#     RemoveDataPointFrameSchema,
+#     normalize_df,
+# )
+from ixmp4.backend import Backend
+from ixmp4.data.iamc.datapoint.filter import DataPointFilter
+from ixmp4.data.iamc.datapoint.type import Type
 
 from ..base import BaseFacade
 from ..utils import substitute_type
@@ -40,18 +36,18 @@ class RunIamcData(BaseFacade):
 
     run: "Run"
 
-    def __init__(self, run: "Run", **kwargs: Backend | None) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, backend: Backend, run: "Run") -> None:
+        super().__init__(backend)
         self.run = run
 
     def _get_or_create_ts(self, df: pd.DataFrame) -> pd.DataFrame:
         id_cols = ["region", "variable", "unit", "run__id"]
-        # create set of unqiue timeseries (if missing)
+        # upsert set of unqiue timeseries
         ts_df = df[id_cols].drop_duplicates()
-        self.backend.iamc.timeseries.bulk_upsert(ts_df, create_related=True)
+        self._backend.iamc.timeseries.bulk_upsert(ts_df)
 
         # retrieve them again to get database ids
-        ts_df = self.backend.iamc.timeseries.tabulate(
+        ts_df = self._backend.iamc.timeseries.tabulate(
             join_parameters=True,
             run={"id": self.run.id, "default_only": False},
         )
@@ -62,60 +58,49 @@ class RunIamcData(BaseFacade):
             df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")
         )  # tada, df with 'time_series__id' added from the database.
 
-    def add(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
+    def add(self, df: pd.DataFrame, type: Type | None = None) -> None:
         self.run.require_lock()
-        df = AddDataPointFrameSchema.validate(df)
+        # df = AddDataPointFrameSchema.validate(df) TODO
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
-        self.backend.iamc.datapoints.bulk_upsert(df)
+        self._backend.iamc.datapoints.bulk_upsert(df)
 
-    def remove(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
+    def remove(self, df: pd.DataFrame, type: Type | None = None) -> None:
         self.run.require_lock()
-        df = RemoveDataPointFrameSchema.validate(df)
+        # df = RemoveDataPointFrameSchema.validate(df) TODO
         df["run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
         df = df.drop(columns=["unit", "variable", "region"])
-        self.backend.iamc.datapoints.bulk_delete(df)
+        self._backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(
         self,
         *,
-        is_input: bool | None = None,
-        variable: HasVariableFilter | None = None,
-        region: HasRegionFilter | None = None,
-        unit: HasUnitFilter | None = None,
-        year__gte: int | None = None,
+        variable: dict[str, str | Iterable[str]] | None = None,
+        region: dict[str, str | Iterable[str]] | None = None,
+        unit: dict[str, str | Iterable[str]] | None = None,
         raw: bool = False,
     ) -> pd.DataFrame:
-        df = self.backend.iamc.datapoints.tabulate(
+        df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=False,
             run={"id": self.run.id, "default_only": False},
-            is_input=is_input,
             variable=variable,
             region=region,
             unit=unit,
-            year__gte=year__gte,
         ).dropna(how="all", axis="columns")
-        return normalize_df(df, raw, False, False)
-
-    def has_solution(self) -> bool:
-        return not self.tabulate(is_input=False).empty
-
-    def remove_solution(self, from_year: int | None = None) -> None:
-        solution_data = self.tabulate(is_input=False, year__gte=from_year)
-        if not solution_data.empty:
-            self.remove(df=solution_data)
+        # return normalize_df(df, raw, False, False)
+        return df
 
 
 class PlatformIamcData(BaseFacade):
     variables: VariableRepository
 
-    def __init__(self, _backend: Backend | None = None) -> None:
-        self.variables = VariableRepository(_backend=_backend)
-        super().__init__(_backend=_backend)
+    def __init__(self, backend: Backend) -> None:
+        self.variables = VariableRepository(backend=backend)
+        super().__init__(backend)
 
     def tabulate(
         self,
@@ -123,12 +108,14 @@ class PlatformIamcData(BaseFacade):
         join_runs: bool = True,
         join_run_id: bool = False,
         raw: bool = False,
-        **kwargs: Unpack[EnumerateKwargs],
+        **kwargs: Unpack[DataPointFilter],
     ) -> pd.DataFrame:
-        df = self.backend.iamc.datapoints.tabulate(
+        df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=join_runs,
             join_run_id=join_run_id,
             **kwargs,
         ).dropna(how="all", axis="columns")
-        return normalize_df(df, raw, join_runs, join_run_id)
+
+        return df
+        # return normalize_df(df, raw, join_runs, join_run_id)

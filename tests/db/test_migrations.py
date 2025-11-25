@@ -19,7 +19,7 @@ from pytest_alembic.tests import (
 )
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
-from ixmp4.rewrite.transport import DirectTransport
+from ixmp4.transport import DirectTransport
 from tests import backends
 from tests.fixtures import get_migration_data
 
@@ -32,7 +32,7 @@ def at_revision_c71efc396d2b() -> dict[str, Any]:
 @pytest.fixture
 def alembic_config(at_revision_c71efc396d2b) -> dict[str, Any]:
     return {
-        "script_location": "ixmp4/rewrite/db/migrations",
+        "script_location": "ixmp4/db/migrations",
         "at_revision_data": {"c71efc396d2b": at_revision_c71efc396d2b},
     }
 

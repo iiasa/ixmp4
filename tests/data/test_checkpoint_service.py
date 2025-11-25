@@ -4,12 +4,12 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.rewrite.data.checkpoint.repositories import (
+from ixmp4.data.checkpoint.repositories import (
     CheckpointNotFound,
 )
-from ixmp4.rewrite.data.checkpoint.service import CheckpointService
-from ixmp4.rewrite.data.run.service import RunService
-from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.data.checkpoint.service import CheckpointService
+from ixmp4.data.run.service import RunService
+from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 from tests import backends
 from tests.data.base import ServiceTest
 

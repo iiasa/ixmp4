@@ -1,17 +1,17 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import IndexSet as IndexSetModel
+from ixmp4.data.docs.repository import DocsNotFound
 
 from .base import (
     Creator,
     Deleter,
     Lister,
-    OptimizationBaseModelFacade,
+    OptimizationBaseFacade,
     Retriever,
     Tabulator,
 )
@@ -22,10 +22,8 @@ if TYPE_CHECKING:
     from . import InitKwargs
 
 
-class IndexSet(OptimizationBaseModelFacade):
+class IndexSet(OptimizationBaseFacade):
     _model: IndexSetModel
-    NotFound: ClassVar = IndexSetModel.NotFound
-    NotUnique: ClassVar = IndexSetModel.NotUnique
 
     @property
     def id(self) -> int:
@@ -44,8 +42,8 @@ class IndexSet(OptimizationBaseModelFacade):
     ) -> None:
         """Adds data to an existing IndexSet."""
         self._run.require_lock()
-        self.backend.optimization.indexsets.add_data(id=self._model.id, data=data)
-        self._model = self.backend.optimization.indexsets.get(
+        self._backend.optimization.indexsets.add_data(id=self._model.id, data=data)
+        self._model = self._backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
         )
 
@@ -56,10 +54,10 @@ class IndexSet(OptimizationBaseModelFacade):
     ) -> None:
         """Removes data from an existing IndexSet."""
         self._run.require_lock()
-        self.backend.optimization.indexsets.remove_data(
+        self._backend.optimization.indexsets.remove_data(
             id=self._model.id, data=data, remove_dependent_data=remove_dependent_data
         )
-        self._model = self.backend.optimization.indexsets.get(
+        self._model = self._backend.optimization.indexsets.get(
             run_id=self._model.run__id, name=self._model.name
         )
 
@@ -78,23 +76,23 @@ class IndexSet(OptimizationBaseModelFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.optimization.indexsets.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.indexsets.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.optimization.indexsets.docs.delete(self.id)
+            self._backend.optimization.indexsets.delete_docs(self.id)
         else:
-            self.backend.optimization.indexsets.docs.set(self.id, description)
+            self._backend.optimization.indexsets.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.optimization.indexsets.docs.delete(self.id)
+            self._backend.optimization.indexsets.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -110,7 +108,7 @@ class IndexSetRepository(
 ):
     def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self.backend.optimization.indexsets
+        self._backend_repository = self._backend.optimization.indexsets
         self._model_type = IndexSet
 
     def create(self, name: str) -> IndexSet:

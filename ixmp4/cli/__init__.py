@@ -10,27 +10,19 @@ Check the CLI help command on how to use it:
 
 """
 
-from typing import Optional
-
 import typer
+from toolkit.client.auth import ManagerAuth
+from toolkit.exceptions import InvalidCredentials
 
-from ixmp4.cli import platforms
+from ixmp4.cli import alembic, platforms, server
 from ixmp4.conf import settings
-from ixmp4.conf.auth import ManagerAuth
-from ixmp4.core.exceptions import InvalidCredentials
 
 from . import utils
 
 app = typer.Typer()
 app.add_typer(platforms.app, name="platforms")
-
-try:
-    from . import server
-
-    app.add_typer(server.app, name="server")
-except ImportError:
-    # No server installed
-    pass
+app.add_typer(alembic.app, name="alembic")
+app.add_typer(server.app, name="server")
 
 
 @app.command()
@@ -45,7 +37,9 @@ def login(
 ) -> None:
     try:
         auth = ManagerAuth(username, password, str(settings.manager_url))
-        user = auth.get_user()
+        user = auth.access_token.user
+        assert user is not None
+
         utils.good(f"Successfully authenticated as user '{user.username}'.")
         if typer.confirm(
             text=(
@@ -53,7 +47,9 @@ def login(
                 "future use?"
             )
         ):
-            settings.credentials.set("default", username, password)
+            credentials = settings.get_credentials()
+            credentials.set("default", username, password)
+            utils.good("Done.")
 
     except InvalidCredentials:
         raise typer.BadParameter(
@@ -66,7 +62,9 @@ def logout() -> None:
     if typer.confirm(
         "Are you sure you want to log out and delete locally saved credentials?"
     ):
-        settings.credentials.clear("default")
+        credentials = settings.get_credentials()
+        credentials.clear("default")
+        utils.good("Done.")
 
 
 try:
@@ -77,9 +75,9 @@ try:
     )
     def test(
         ctx: typer.Context,
-        with_backend: Optional[bool] = False,
-        with_benchmarks: Optional[bool] = False,
-        dry: Optional[bool] = False,
+        with_backend: bool = typer.Argument(False),
+        with_benchmarks: bool = typer.Argument(False),
+        dry: bool = typer.Argument(False),
     ) -> None:
         opts = [
             "--cov-report",

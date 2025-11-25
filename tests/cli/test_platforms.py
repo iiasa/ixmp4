@@ -2,8 +2,8 @@ from pathlib import Path
 
 from typer.testing import CliRunner
 
-from ixmp4.rewrite.cli import app
-from ixmp4.rewrite.conf import settings
+from ixmp4.cli import app
+from ixmp4.conf import settings
 
 runner = CliRunner()
 

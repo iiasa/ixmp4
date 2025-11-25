@@ -1,3 +1,4 @@
+import importlib.resources
 import json
 import logging
 import logging.config
@@ -5,19 +6,17 @@ import sys
 from pathlib import Path
 from typing import Any, Literal
 
-from httpx import ConnectError
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
+from toolkit.auth.context import AuthorizationContext
+from toolkit.auth.user import User
+from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
+from toolkit.manager.client import ManagerClient
 
-from ixmp4 import __file__ as __root__file__
-from ixmp4.core.exceptions import InvalidCredentials
-
-from .auth import AnonymousAuth, ManagerAuth
 from .credentials import Credentials
-from .manager import ManagerConfig
-from .toml import TomlConfig
-from .user import local_user
+from .platforms import ManagerPlatforms, TomlPlatforms
 
+__root__file__ = importlib.resources.files("ixmp4").__fspath__()
 logger = logging.getLogger(__name__)
 
 here = Path(__file__).parent
@@ -37,10 +36,14 @@ class Settings(BaseSettings):
         "production"
     )
     storage_directory: Path = Field(Path("~/.local/share/ixmp4/"))
-    secret_hs256: str = "default_secret_hs256"
+
+    secret_hs256: str | None = None
     migration_db_uri: str = "sqlite:///./run/db.sqlite"
     manager_url: HttpUrl = Field(HttpUrl("https://api.manager.ece.iiasa.ac.at/v1"))
-    managed: bool = True
+
+    # deprecated
+    managed: bool | None = None
+
     max_page_size: int = 10_000
     default_page_size: int = 5_000
     client_default_upload_chunk_size: int = 10_000
@@ -48,6 +51,7 @@ class Settings(BaseSettings):
     client_max_request_retries: int = Field(3)
     client_backoff_factor: int = Field(5)
     client_timeout: int = Field(30)
+
     model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
 
     # We don't pass any args or kwargs, so allow all to flow through
@@ -59,106 +63,80 @@ class Settings(BaseSettings):
         if self.is_in_interactive_mode():
             self.configure_logging(self.mode)
 
-        self._credentials: Credentials | None = None
-        self._toml: TomlConfig | None = None
-        self._default_auth: ManagerAuth | AnonymousAuth | None = None
-        self._manager: ManagerConfig | None = None
-
         logger.debug(f"Settings loaded: {self}")
 
     def is_in_interactive_mode(self) -> bool:
         return _sys_has_ps1 or _in_ipython_session
 
-    @property
-    def credentials(self) -> Credentials:
-        if self._credentials is None:
-            self.load_credentials()
-        # For this and similar below, mypy doesn't realize that the attribute will not
-        # be None after the load() call
-        return self._credentials  # type: ignore[return-value]
+    def get_credentials_path(self) -> Path:
+        return self.storage_directory / "credentials.toml"
 
-    @property
-    def default_credentials(self) -> tuple[str, str] | None:
-        try:
-            return self.credentials.get("default")
-        except KeyError:
-            return None
+    def get_credentials(self) -> Credentials:
+        credentials_config = self.get_credentials_path()
+        credentials_config.touch()
+        return Credentials(credentials_config)
 
-    @property
-    def toml(self) -> TomlConfig:
-        if self._toml is None:
-            self.load_toml_config()
-        return self._toml  # type: ignore[return-value]
+    def get_toml_platforms_path(self) -> Path:
+        return self.storage_directory / "platforms.toml"
 
-    @property
-    def default_auth(self) -> ManagerAuth | AnonymousAuth | None:
-        if self._default_auth is None:
-            self.get_auth()
-        return self._default_auth
+    def get_toml_platforms(self) -> TomlPlatforms:
+        platform_config = self.get_toml_platforms_path()
+        platform_config.touch()
+        return TomlPlatforms(platform_config)
 
-    @property
-    def manager(self) -> ManagerConfig:
-        if self._manager is None:
-            self.load_manager_config()
-        return self._manager  # type: ignore[return-value]
+    def get_client_auth(self) -> ManagerAuth | SelfSignedAuth | None:
+        if self.secret_hs256 is not None:
+            logger.debug(
+                "Using self-signed http authentication strategy because the"
+                "environment variable `IXMP4_SECRET_HS256` is set."
+            )
+            return SelfSignedAuth(self.secret_hs256, issuer="ixmp4")
+        else:
+            credentials = self.get_credentials()
+            default_creds = credentials.get("default")
+            if default_creds is None:
+                logger.debug(
+                    "Using anonymous http authentication strategy "
+                    "because no local credentials were found."
+                )
+                return None
+            else:
+                logger.debug(
+                    "Using manager http authentication strategy "
+                    "because local credentials were found."
+                )
+                return ManagerAuth(
+                    default_creds["username"],
+                    default_creds["password"],
+                    str(self.manager_url),
+                )
+
+    def get_manager_client(self) -> ManagerClient:
+        return ManagerClient(str(self.manager_url), self.get_client_auth())
+
+    def get_manager_platforms(self) -> ManagerPlatforms:
+        return ManagerPlatforms(self.get_manager_client())
 
     def setup_directories(self) -> None:
-        self.storage_directory = Path.expanduser(self.storage_directory)
-
-        if not self.storage_directory.is_absolute():
-            self.storage_directory = root / self.storage_directory
-
         self.storage_directory.mkdir(parents=True, exist_ok=True)
 
-        self.database_dir = self.storage_directory / "databases"
+        self.database_dir = self.get_database_dir()
         self.database_dir.mkdir(exist_ok=True)
 
         self.log_dir = self.storage_directory / "log"
         self.log_dir.mkdir(exist_ok=True)
 
-    def load_credentials(self) -> None:
-        credentials_config = self.storage_directory / "credentials.toml"
-        credentials_config.touch()
-        self._credentials = Credentials(credentials_config)
-
-    def get_auth(self) -> None:
-        if self.default_credentials is not None:
-            try:
-                self._default_auth = ManagerAuth(
-                    *self.default_credentials, str(self.manager_url)
-                )
-                logger.info(
-                    f"Connecting as user '{self._default_auth.get_user().username}'."
-                )
-            except InvalidCredentials:
-                logger.warning(f"Invalid credentials for {self.manager_url}.")
-            except ConnectError:
-                logger.warning(f"Unable to connect to {self.manager_url}.")
-
-        else:
-            self._default_auth = AnonymousAuth()
-
-    def load_manager_config(self) -> None:
-        self._manager = ManagerConfig(
-            str(self.manager_url), self.default_auth, remote=True
-        )
-
-    def load_toml_config(self) -> None:
-        if self.default_auth is not None:
-            toml_user = self.default_auth.get_user()
-            if not toml_user.is_authenticated:
-                toml_user = local_user
-        else:  # if no connection to manager
-            toml_user = local_user
-
-        toml_config = self.storage_directory / "platforms.toml"
-        toml_config.touch()
-        self._toml = TomlConfig(toml_config, toml_user)
-
     @field_validator("storage_directory")
-    def expand_user(cls, v: Path) -> Path:
+    @classmethod
+    def validate_storage_dir(cls, v: Path) -> Path:
         # translate ~/asdf into /home/user/asdf
-        return Path.expanduser(v)
+        v = Path.expanduser(v)
+
+        # handle relative dev paths
+        if not v.is_absolute():
+            v = Path.cwd() / v
+
+        return v
 
     def get_server_logconf(self) -> Path:
         return here / "./logging/server.json"
@@ -173,7 +151,38 @@ class Settings(BaseSettings):
             config_dict = json.load(file)
         logging.config.dictConfig(config_dict)
 
-    def check_credentials(self) -> None:
-        if self.default_credentials is not None:
-            username, password = self.default_credentials
-            ManagerAuth(username, password, str(self.manager_url))
+    def get_database_dir(self) -> Path:
+        """Returns the path to the local sqlite database directory."""
+        return self.storage_directory / "databases"
+
+    def get_database_path(self, name: str) -> Path:
+        """Returns a :class:`Path` object for a given sqlite database name.
+        Does not check whether or not the file actually exists."""
+
+        file_name = name + ".sqlite3"
+        return self.get_database_dir() / file_name
+
+    def get_manager_user(self, manager_client: ManagerClient) -> User | None:
+        default_auth = manager_client.auth
+        if default_auth is None or not isinstance(default_auth, Auth):
+            user = None
+        elif getattr(default_auth, "access_token", None) is None:
+            user = None
+        else:
+            user = default_auth.access_token.user
+
+        return user
+
+    def get_local_user(self) -> User | None:
+        credentials = self.get_credentials()
+        if default_creds := credentials.get("default") is not None:
+            username = default_creds["username"]
+        else:
+            username = "@unknown"
+
+        return User(id=-1, username=username, email="", is_superuser=True)
+
+    def get_manager_auth_context(self) -> AuthorizationContext:
+        manager_client = self.get_manager_client()
+        user = self.get_manager_user(manager_client)
+        return AuthorizationContext(user, manager_client)

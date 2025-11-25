@@ -5,10 +5,10 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError
 
-from ixmp4.rewrite.backend import Backend
-from ixmp4.rewrite.core.platform import Platform
-from ixmp4.rewrite.db.models import get_metadata
-from ixmp4.rewrite.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.backend import Backend
+from ixmp4.core.platform import Platform
+from ixmp4.db.models import get_metadata
+from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 
@@ -46,12 +46,14 @@ def get_sorted_tables(meta: sa.MetaData, tables: list[str] | None):
     return sorted_tables
 
 
-def create_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
+def create_model_tables(
+    bind: sa.Engine | sa.Connection, tables: list[str] | None = None
+):
     meta = get_metadata()
     meta.create_all(bind=bind, tables=meta.sorted_tables, checkfirst=True)
 
 
-def drop_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
+def drop_model_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
     meta = get_metadata()
     print(list(reversed(get_sorted_tables(meta, tables))))
     meta.drop_all(
@@ -67,10 +69,10 @@ def postgresql_transport(
 ) -> Generator[DirectTransport, None, None]:
     pgsql = DirectTransport.from_dsn(dsn)
     if create_tables:
-        create_tables(pgsql.session.bind.engine)
+        create_model_tables(pgsql.session.bind.engine)
     yield pgsql
     pgsql.close()
-    drop_tables(pgsql.session.bind.engine, dirty_tables)
+    drop_model_tables(pgsql.session.bind.engine, dirty_tables)
 
 
 @contextlib.contextmanager
@@ -80,10 +82,10 @@ def sqlite_transport(
 ) -> Generator[DirectTransport, None, None]:
     sqlite = DirectTransport.from_dsn("sqlite:///:memory:")
     if create_tables:
-        create_tables(sqlite.session.bind.engine)
+        create_model_tables(sqlite.session.bind.engine)
     yield sqlite
     sqlite.close()
-    drop_tables(sqlite.session.bind.engine, dirty_tables)
+    drop_model_tables(sqlite.session.bind.engine, dirty_tables)
 
 
 @contextlib.contextmanager

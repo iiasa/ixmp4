@@ -4,8 +4,8 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.rewrite.data.model.repositories import ModelNotFound, ModelNotUnique
-from ixmp4.rewrite.data.model.service import ModelService
+from ixmp4.data.model.repositories import ModelNotFound, ModelNotUnique
+from ixmp4.data.model.service import ModelService
 from tests import backends
 from tests.data.base import ServiceTest
 

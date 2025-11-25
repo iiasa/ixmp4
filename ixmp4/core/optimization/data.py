@@ -27,12 +27,12 @@ class OptimizationData(BaseFacade):
 
     def __init__(self, run: "Run", **kwargs: Backend) -> None:
         super().__init__(**kwargs)
-        self.equations = EquationRepository(_backend=self.backend, _run=run)
-        self.indexsets = IndexSetRepository(_backend=self.backend, _run=run)
-        self.parameters = ParameterRepository(_backend=self.backend, _run=run)
-        self.scalars = ScalarRepository(_backend=self.backend, _run=run)
-        self.tables = TableRepository(_backend=self.backend, _run=run)
-        self.variables = VariableRepository(_backend=self.backend, _run=run)
+        self.equations = EquationRepository(_backend=self._backend, _run=run)
+        self.indexsets = IndexSetRepository(_backend=self._backend, _run=run)
+        self.parameters = ParameterRepository(_backend=self._backend, _run=run)
+        self.scalars = ScalarRepository(_backend=self._backend, _run=run)
+        self.tables = TableRepository(_backend=self._backend, _run=run)
+        self.variables = VariableRepository(_backend=self._backend, _run=run)
 
     # TODO Improve performance by writing dedicated queries
     def remove_solution(self) -> None:

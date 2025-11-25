@@ -2,40 +2,33 @@ import time
 import warnings
 from collections import UserDict
 from contextlib import contextmanager
-from typing import ClassVar, Generator, cast
+from typing import Generator, cast
 
 import numpy as np
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict, Unpack
+from typing_extensions import Unpack
 
-from ixmp4.core.exceptions import OperationNotSupported
-from ixmp4.data.abstract import Model as ModelModel
-from ixmp4.data.abstract import Run as RunModel
-from ixmp4.data.abstract import Scenario as ScenarioModel
-from ixmp4.data.abstract.annotations import PrimitiveTypes
-from ixmp4.data.abstract.run import EnumerateKwargs
-from ixmp4.data.backend import Backend
+from ixmp4.backend import Backend
+from ixmp4.data.meta.dto import MetaValueType
+from ixmp4.data.model.dto import Model as ModelModel
+from ixmp4.data.run.dto import Run as RunModel
+from ixmp4.data.run.filter import RunFilter
+from ixmp4.data.run.repositories import RunIsLocked, RunLockRequired
+from ixmp4.data.scenario.dto import Scenario as ScenarioModel
+from ixmp4.exceptions import OperationNotSupported
 
-from .base import BaseFacade, BaseModelFacade
+from .base import BaseFacade
 from .checkpoints import RunCheckpoints
-from .exceptions import RunLockRequired
 from .iamc import RunIamcData
-from .optimization import OptimizationData
+
+# from .optimization import OptimizationData
 
 
-class RunKwargs(TypedDict):
-    _backend: Backend
-    _model: RunModel
-
-
-class Run(BaseModelFacade):
-    _model: RunModel
+class Run(BaseFacade):
+    dto: RunModel
     _meta: "RunMetaFacade"
-    NoDefaultVersion: ClassVar = RunModel.NoDefaultVersion
-    NotFound: ClassVar = RunModel.NotFound
-    NotUnique: ClassVar = RunModel.NotUnique
 
     checkpoints: RunCheckpoints
 
@@ -43,30 +36,33 @@ class Run(BaseModelFacade):
     minimum_lock_timeout: float = 0.1
     maximum_lock_timeout: float = 5
 
-    def __init__(self, **kwargs: Unpack[RunKwargs]) -> None:
-        super().__init__(**kwargs)
-
-        self.version = self._model.version
-
-        self.iamc = RunIamcData(_backend=self.backend, run=self)
-        self._meta = RunMetaFacade(_backend=self.backend, run=self)
-        self.optimization = OptimizationData(_backend=self.backend, run=self)
-        self.checkpoints = RunCheckpoints(_backend=self.backend, run=self)
+    def __init__(self, backend: Backend, dto: RunModel) -> None:
+        super().__init__(backend)
+        self.dto = dto
+        self.iamc = RunIamcData(backend=self._backend, run=self)
+        self._meta = RunMetaFacade(backend=self._backend, run=self)
+        # self.optimization = OptimizationData(_backend=self._backend, run=self)
+        self.checkpoints = RunCheckpoints(backend=self._backend, run=self)
 
     @property
     def model(self) -> ModelModel:
         """Associated model."""
-        return self._model.model
+        return self.dto.model
 
     @property
     def scenario(self) -> ScenarioModel:
         """Associated scenario."""
-        return self._model.scenario
+        return self.dto.scenario
+
+    @property
+    def version(self) -> int:
+        """Run version."""
+        return self.dto.version
 
     @property
     def id(self) -> int:
         """Unique id."""
-        return self._model.id
+        return self.dto.id
 
     @property
     def meta(self) -> "RunMetaFacade":
@@ -74,34 +70,34 @@ class Run(BaseModelFacade):
         return self._meta
 
     @meta.setter
-    def meta(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
+    def meta(self, meta: dict[str, MetaValueType | np.generic | None]) -> None:
         self._meta._set(meta)
 
     @property
     def is_default(self) -> bool:
-        return self._model.is_default
+        return self.dto.is_default
 
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
         combination."""
-        self.backend.runs.set_as_default_version(self._model.id)
-        self._model = self.backend.runs.get_by_id(self._model.id)
+        self._backend.runs.set_as_default_version(self.dto.id)
+        self.dto = self._backend.runs.get_by_id(self.dto.id)
 
     def unset_as_default(self) -> None:
         """Unsets this run as the default version."""
-        self.backend.runs.unset_as_default_version(self._model.id)
-        self._model = self.backend.runs.get_by_id(self._model.id)
+        self._backend.runs.unset_as_default_version(self.dto.id)
+        self.dto = self._backend.runs.get_by_id(self.dto.id)
 
     def require_lock(self) -> None:
         if not self.owns_lock:
             raise RunLockRequired()
 
     def _lock(self) -> None:
-        self._model = self.backend.runs.lock(self._model.id)
+        self.dto = self._backend.runs.lock(self.dto.id)
         self.owns_lock = True
 
     def _unlock(self) -> None:
-        self._model = self.backend.runs.unlock(self._model.id)
+        self.dto = self._backend.runs.unlock(self.dto.id)
         self.owns_lock = False
 
     def _lock_with_timeout(self, timeout: float) -> None:
@@ -111,7 +107,7 @@ class Run(BaseModelFacade):
             try:
                 self._lock()
                 break
-            except RunModel.IsLocked as e:
+            except RunIsLocked as e:
                 elapsed_time = time.time() - start_time
                 if elapsed_time > timeout:
                     raise e
@@ -121,39 +117,6 @@ class Run(BaseModelFacade):
                 sleep_time = max(sleep_time, self.minimum_lock_timeout)
                 sleep_time = min(sleep_time, remaining_time)
                 time.sleep(sleep_time)
-
-    def _find_target_transaction(self) -> int:
-        """Find the latest :obj:`transaction__id` targeting this Run."""
-        checkpoint_df = self.checkpoints.tabulate()
-        if checkpoint_df.empty:
-            checkpoint_transaction = -1
-        else:
-            max_tx_id = checkpoint_df["transaction__id"].max()
-            if pd.isnull(max_tx_id):
-                checkpoint_transaction = -1
-            else:
-                checkpoint_transaction = int(max_tx_id)
-
-        assert self._model.lock_transaction is not None
-
-        return max(checkpoint_transaction, self._model.lock_transaction)
-
-    def _revert_changes(
-        self, target_transaction: int, revert_platform_on_error: bool = False
-    ) -> None:
-        """Revert Run (and optionally Platform) to the state of `target_transaction`."""
-        try:
-            self.backend.runs.revert(
-                self._model.id,
-                target_transaction,
-                revert_platform=revert_platform_on_error,
-            )
-        except OperationNotSupported as ons_exc:
-            warnings.warn(
-                "An exception occurred but the `Run` "
-                "was not reverted because versioning "
-                "is not supported by this platform: " + ons_exc.message
-            )
 
     @contextmanager
     def transact(
@@ -201,11 +164,31 @@ class Run(BaseModelFacade):
         try:
             yield
         except Exception as e:
-            target_transaction = self._find_target_transaction()
-            self._revert_changes(
-                target_transaction=target_transaction,
-                revert_platform_on_error=revert_platform_on_error,
-            )
+            checkpoint_df = self.checkpoints.tabulate()
+            if checkpoint_df.empty:
+                checkpoint_transaction = -1
+            else:
+                max_tx_id = checkpoint_df["transaction__id"].max()
+                if pd.isnull(max_tx_id):
+                    checkpoint_transaction = -1
+                else:
+                    checkpoint_transaction = int(max_tx_id)
+
+            assert self.dto.lock_transaction is not None
+
+            target_transaction = max(checkpoint_transaction, self.dto.lock_transaction)
+            try:
+                self._backend.runs.revert(
+                    self.dto.id,
+                    target_transaction,
+                    revert_platform=revert_platform_on_error,
+                )
+            except OperationNotSupported as ons_exc:
+                warnings.warn(
+                    "An exception occurred but the `Run` "
+                    "was not reverted because versioning "
+                    "is not supported by this platform: " + str(ons_exc.message)
+                )
 
             self._meta.refetch_data()
             self._unlock()
@@ -223,7 +206,7 @@ class Run(BaseModelFacade):
         :class:`ixmp4.core.exceptions.RunIsLocked`:
             If the run is already locked by this or another object.
         """
-        self.backend.runs.delete(self._model.id)
+        self._backend.runs.delete_by_id(self.dto.id)
 
     def clone(
         self,
@@ -232,8 +215,8 @@ class Run(BaseModelFacade):
         keep_solution: bool = True,
     ) -> "Run":
         return Run(
-            _backend=self.backend,
-            _model=self.backend.runs.clone(
+            backend=self._backend,
+            dto=self._backend.runs.clone(
                 run_id=self.id,
                 model_name=model,
                 scenario_name=scenario,
@@ -241,35 +224,11 @@ class Run(BaseModelFacade):
             ),
         )
 
-    def has_solution(self) -> bool:
-        # NOTE Even though datapoints with is_input are retained during
-        # remove_solution(), they are not considered when determining has_solution()
-        return self.optimization.has_solution()
-
-    def remove_solution(self, from_year: int | None = None) -> None:
-        """Remove solution data from this Run.
-
-        Solution data are:
-
-         - levels and marginals of Equations and Variables
-         - IAMC datapoints/timeseries data marked with `is_input == False`
-
-        Parameters
-        ----------
-
-        from_year: int or None
-            If given, remove only IAMC datapoints with 'year' >= from_year.
-            Default :obj:`None`.
-        """
-        self.require_lock()
-        self.iamc.remove_solution(from_year=from_year)
-        self.optimization.remove_solution()
-
 
 class RunRepository(BaseFacade):
     def create(self, model: str, scenario: str) -> Run:
         return Run(
-            _backend=self.backend, _model=self.backend.runs.create(model, scenario)
+            backend=self._backend, dto=self._backend.runs.create(model, scenario)
         )
 
     def delete(self, x: Run | int) -> None:
@@ -280,74 +239,67 @@ class RunRepository(BaseFacade):
         else:
             raise TypeError("Invalid argument: Must be `Run` or `int`.")
 
-        self.backend.runs.delete(id)
+        self._backend.runs.delete_by_id(id)
 
-    def get(
-        self,
-        model: str,
-        scenario: str,
-        version: int | None = None,
-        get_max_as_default: bool = False,
-    ) -> Run:
-        _model = (
-            self.backend.runs.get_default_version(
-                model, scenario, get_max_as_default=get_max_as_default
-            )
+    def get(self, model: str, scenario: str, version: int | None = None) -> Run:
+        dto = (
+            self._backend.runs.get_default_version(model, scenario)
             if version is None
-            else self.backend.runs.get(model, scenario, version)
+            else self._backend.runs.get(model, scenario, version)
         )
-        return Run(_backend=self.backend, _model=_model)
+        return Run(backend=self._backend, dto=dto)
 
-    def list(self, **kwargs: Unpack[EnumerateKwargs]) -> list[Run]:
+    def list(self, **kwargs: Unpack[RunFilter]) -> list[Run]:
         return [
-            Run(_backend=self.backend, _model=r)
-            for r in self.backend.runs.list(**kwargs)
+            Run(backend=self._backend, dto=r) for r in self._backend.runs.list(**kwargs)
         ]
 
     def tabulate(
-        self, audit_info: bool = False, **kwargs: Unpack[EnumerateKwargs]
+        self, audit_info: bool = False, **kwargs: Unpack[RunFilter]
     ) -> pd.DataFrame:
-        runs = self.backend.runs.tabulate(**kwargs)
-        runs["model"] = runs["model__id"].map(self.backend.models.map())
-        runs["scenario"] = runs["scenario__id"].map(self.backend.scenarios.map())
+        runs = self._backend.runs.tabulate(**kwargs)
+        runs["model"] = runs["model__id"].map(self._backend.models.map())
+        runs["scenario"] = runs["scenario__id"].map(self._backend.scenarios.map())
         columns = ["model", "scenario", "version", "is_default"]
         if audit_info:
             columns += ["updated_at", "updated_by", "created_at", "created_by", "id"]
         return runs[columns]
 
 
-class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
+class RunMetaFacade(BaseFacade, UserDict[str, MetaValueType | None]):
     run: Run
 
-    def __init__(self, run: Run, **kwargs: Backend) -> None:
-        super().__init__(**kwargs)
+    def __init__(self, backend: Backend, run: Run) -> None:
+        super().__init__(backend)
         self.run = run
         self.refetch_data()
 
     def refetch_data(self) -> None:
         self.df, self.data = self._get()
 
-    def _get(self) -> tuple[pd.DataFrame, dict[str, PrimitiveTypes | None]]:
-        df = self.backend.meta.tabulate(run_id=self.run.id, run={"default_only": False})
+    def _get(self) -> tuple[pd.DataFrame, dict[str, MetaValueType | None]]:
+        df = self._backend.meta.tabulate(
+            run__id=self.run.id, run={"default_only": False}
+        )
         if df.empty:
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
 
-    def _set(self, meta: dict[str, PrimitiveTypes | np.generic | None]) -> None:
+    def _set(self, meta: dict[str, MetaValueType | np.generic | None]) -> None:
         self.run.require_lock()
 
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
-        self.backend.meta.bulk_delete(df)
+        self._backend.meta.bulk_delete(df)
         df = pd.DataFrame(
             {"key": meta.keys(), "value": [numpy_to_pytype(v) for v in meta.values()]}
         )
         df.dropna(axis=0, inplace=True)
         df["run__id"] = self.run.id
-        self.backend.meta.bulk_upsert(df)
+        self._backend.meta.bulk_upsert(df)
         self.df, self.data = self._get()
 
-    def __setitem__(self, key: str, value: PrimitiveTypes | np.generic | None) -> None:
+    def __setitem__(self, key: str, value: MetaValueType | np.generic | None) -> None:
         self.run.require_lock()
 
         try:
@@ -357,23 +309,23 @@ class RunMetaFacade(BaseFacade, UserDict[str, PrimitiveTypes | None]):
 
         py_value = numpy_to_pytype(value)
         if py_value is not None:
-            self.backend.meta.create(self.run.id, key, py_value)
+            self._backend.meta.create(self.run.id, key, py_value)
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
         self.run.require_lock()
         id = dict(zip(self.df["key"], self.df["id"]))[key]
-        self.backend.meta.delete(id)
+        self._backend.meta.delete_by_id(id)
         self.df, self.data = self._get()
 
 
 def numpy_to_pytype(
-    value: PrimitiveTypes | np.generic | None,
-) -> PrimitiveTypes | None:
+    value: MetaValueType | np.generic | None,
+) -> MetaValueType | None:
     """Cast numpy-types to basic Python types"""
     if value is np.nan:  # np.nan is cast to 'float', not None
         return None
     elif isinstance(value, np.generic):
-        return cast(PrimitiveTypes, value.item())
+        return cast(MetaValueType, value.item())
     else:
         return value

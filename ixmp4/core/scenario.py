@@ -1,55 +1,57 @@
 from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
 
 import pandas as pd
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Scenario as ScenarioModel
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseFacade
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.scenario.dto import Scenario as ScenarioModel
 
 
-class Scenario(BaseModelFacade):
-    _model: ScenarioModel
-    NotFound: ClassVar = ScenarioModel.NotFound
-    NotUnique: ClassVar = ScenarioModel.NotUnique
+class Scenario(BaseFacade):
+    dto: ScenarioModel
+
+    def __init__(self, backend: Backend, dto: ScenarioModel) -> None:
+        super().__init__(backend)
+        self.dto = dto
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self.dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self.dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self.dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self.dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.scenarios.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.scenarios.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.scenarios.docs.delete(self.id)
+            self._backend.scenarios.delete_docs(self.id)
         else:
-            self.backend.scenarios.docs.set(self.id, description)
+            self._backend.scenarios.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.scenarios.docs.delete(self.id)
+            self._backend.scenarios.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -61,24 +63,24 @@ class ScenarioRepository(BaseFacade):
         self,
         name: str,
     ) -> Scenario:
-        model = self.backend.scenarios.create(name)
-        return Scenario(_backend=self.backend, _model=model)
+        scen = self._backend.scenarios.create(name)
+        return Scenario(backend=self._backend, dto=scen)
 
     def get(self, name: str) -> Scenario:
-        model = self.backend.scenarios.get(name)
-        return Scenario(_backend=self.backend, _model=model)
+        scen = self._backend.scenarios.get(name)
+        return Scenario(backend=self._backend, dto=scen)
 
     def list(self, name: str | None = None) -> list[Scenario]:
-        scenarios = self.backend.scenarios.list(name=name)
-        return [Scenario(_backend=self.backend, _model=s) for s in scenarios]
+        scenarios = self._backend.scenarios.list(name=name)
+        return [Scenario(backend=self._backend, dto=s) for s in scenarios]
 
     def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.scenarios.tabulate(name=name)
+        return self._backend.scenarios.tabulate(name=name)
 
     def _get_scenario_id(self, scenario: str) -> int | None:
         # NOTE leaving this check for users without mypy
         if isinstance(scenario, str):
-            obj = self.backend.scenarios.get(scenario)
+            obj = self._backend.scenarios.get_by_name(scenario)
             return obj.id
         else:
             raise ValueError(f"Invalid reference to scenario: {scenario}")
@@ -88,8 +90,10 @@ class ScenarioRepository(BaseFacade):
         if scenario_id is None:
             return None
         try:
-            return self.backend.scenarios.docs.get(dimension_id=scenario_id).description
-        except DocsModel.NotFound:
+            return self._backend.scenarios.get_docs(
+                dimension__id=scenario_id
+            ).description
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -99,8 +103,8 @@ class ScenarioRepository(BaseFacade):
         scenario_id = self._get_scenario_id(name)
         if scenario_id is None:
             return None
-        return self.backend.scenarios.docs.set(
-            dimension_id=scenario_id, description=description
+        return self._backend.scenarios.set_docs(
+            dimension__id=scenario_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -109,9 +113,9 @@ class ScenarioRepository(BaseFacade):
         if scenario_id is None:
             return None
         try:
-            self.backend.scenarios.docs.delete(dimension_id=scenario_id)
+            self._backend.scenarios.delete_docs(dimension__id=scenario_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -119,7 +123,7 @@ class ScenarioRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self.backend.scenarios.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.scenarios.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

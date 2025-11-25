@@ -1,16 +1,33 @@
 import abc
 import json
 from pathlib import Path
-from typing import Any
+from typing import Any, Protocol, Sequence
 
 import toml
 from pydantic import BaseModel, ConfigDict
 from toolkit.manager.client import ManagerClient
+from toolkit.manager.models import Ixmp4Instance
 
-from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
+from ixmp4.exceptions import PlatformNotFound, PlatformNotUnique
 
 
-class PlatformConnectionInfo(BaseModel):
+class PlatformConnectionInfo(Protocol):
+    name: str
+    dsn: str
+    url: Any
+
+
+class PlatformConnections(abc.ABC):
+    @abc.abstractmethod
+    def list_platforms(self) -> list[PlatformConnectionInfo]:
+        raise NotImplementedError
+
+    @abc.abstractmethod
+    def get_platform(self, name: str) -> PlatformConnectionInfo:
+        raise NotImplementedError
+
+
+class TomlPlatform(BaseModel):
     name: str
     dsn: str
     url: str | None = None
@@ -18,18 +35,8 @@ class PlatformConnectionInfo(BaseModel):
     model_config = ConfigDict(from_attributes=True)
 
 
-class Platforms(abc.ABC):
-    @abc.abstractmethod
-    def list_platforms(self) -> list[PlatformConnectionInfo]:
-        pass
-
-    @abc.abstractmethod
-    def get_platform(self, name: str) -> PlatformConnectionInfo:
-        pass
-
-
-class TomlPlatforms(Platforms):
-    platforms: dict[str, PlatformConnectionInfo]
+class TomlPlatforms(PlatformConnections):
+    platforms: dict[str, TomlPlatform]
 
     def __init__(self, toml_file: Path) -> None:
         self.path = toml_file
@@ -38,7 +45,7 @@ class TomlPlatforms(Platforms):
     def load(self) -> None:
         dict_ = toml.load(self.path)
         list_: list[dict[str, Any]] = [{"name": k, **v} for k, v in dict_.items()]
-        self.platforms = {x["name"]: PlatformConnectionInfo(**x) for x in list_}
+        self.platforms = {x["name"]: TomlPlatform(**x) for x in list_}
 
     def dump(self) -> None:
         obj = {}
@@ -50,10 +57,10 @@ class TomlPlatforms(Platforms):
         f = self.path.open("w+")
         toml.dump(obj, f)
 
-    def list_platforms(self) -> list[PlatformConnectionInfo]:
+    def list_platforms(self) -> Sequence[TomlPlatform]:
         return list(self.platforms.values())
 
-    def get_platform(self, name: str) -> PlatformConnectionInfo:
+    def get_platform(self, name: str) -> TomlPlatform:
         try:
             return self.platforms[name]
         except KeyError as e:
@@ -63,7 +70,7 @@ class TomlPlatforms(Platforms):
         try:
             self.get_platform(name)
         except PlatformNotFound:
-            self.platforms[name] = PlatformConnectionInfo(name=name, dsn=dsn)
+            self.platforms[name] = TomlPlatform(name=name, dsn=dsn)
             self.dump()
             return
         raise PlatformNotUnique(f"Platform '{name}' already exists, remove it first.")
@@ -76,20 +83,19 @@ class TomlPlatforms(Platforms):
         self.dump()
 
 
-class ManagerPlatforms(Platforms):
+class ManagerPlatforms(PlatformConnections):
     manager_client: ManagerClient
 
     def __init__(self, manager_client: ManagerClient):
         self.manager_client = manager_client
 
-    def list_platforms(self) -> list[PlatformConnectionInfo]:
-        ixmp4_inst = self.manager_client.ixmp4.cached_list()
-        return [PlatformConnectionInfo.model_validate(i) for i in ixmp4_inst]
+    def list_platforms(self) -> Sequence[Ixmp4Instance]:
+        return self.manager_client.ixmp4.cached_list()
 
-    def get_platform(self, name: str) -> PlatformConnectionInfo:
+    def get_platform(self, name: str) -> Ixmp4Instance:
         ixmp4_inst = self.manager_client.ixmp4.cached_list()
         for i in ixmp4_inst:
             if i.name == name:
-                return PlatformConnectionInfo.model_validate(i)
+                return i
         else:
             raise PlatformNotFound(f"Platform '{name}' was not found.")

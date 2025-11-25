@@ -8,7 +8,7 @@ from unittest import mock
 
 import pytest
 
-from ixmp4.rewrite.conf import settings
+from ixmp4.conf import settings
 from tests.backends import clean_postgres_database as clean_postgres_database
 
 settings.configure_logging("debug")
@@ -36,9 +36,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 def fake_time():
     frozen_time = datetime.now(tz=timezone.utc)
 
-    with mock.patch(
-        "ixmp4.rewrite.services.Service.get_datetime", lambda s: frozen_time
-    ):
+    with mock.patch("ixmp4.services.Service.get_datetime", lambda s: frozen_time):
         yield frozen_time
 
 

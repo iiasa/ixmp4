@@ -1,19 +1,19 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Parameter as ParameterModel
+from ixmp4.data.docs.repository import DocsNotFound
 
 from .base import (
     Creator,
     Deleter,
     Lister,
-    OptimizationBaseModelFacade,
+    OptimizationBaseFacade,
     Retriever,
     Tabulator,
 )
@@ -24,10 +24,8 @@ if TYPE_CHECKING:
     from . import InitKwargs
 
 
-class Parameter(OptimizationBaseModelFacade):
+class Parameter(OptimizationBaseFacade):
     _model: ParameterModel
-    NotFound: ClassVar = ParameterModel.NotFound
-    NotUnique: ClassVar = ParameterModel.NotUnique
 
     @property
     def id(self) -> int:
@@ -48,8 +46,8 @@ class Parameter(OptimizationBaseModelFacade):
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Parameter."""
         self._run.require_lock()
-        self.backend.optimization.parameters.add_data(id=self._model.id, data=data)
-        self._model = self.backend.optimization.parameters.get(
+        self._backend.optimization.parameters.add_data(id=self._model.id, data=data)
+        self._model = self._backend.optimization.parameters.get(
             run_id=self._model.run__id, name=self._model.name
         )
 
@@ -59,8 +57,8 @@ class Parameter(OptimizationBaseModelFacade):
         The data must specify all indexed columns. All other keys/columns are ignored.
         """
         self._run.require_lock()
-        self.backend.optimization.parameters.remove_data(id=self._model.id, data=data)
-        self._model = self.backend.optimization.parameters.get(
+        self._backend.optimization.parameters.remove_data(id=self._model.id, data=data)
+        self._model = self._backend.optimization.parameters.get(
             run_id=self._model.run__id, name=self._model.name
         )
 
@@ -91,23 +89,23 @@ class Parameter(OptimizationBaseModelFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.optimization.parameters.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.parameters.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.optimization.parameters.docs.delete(self.id)
+            self._backend.optimization.parameters.delete_docs(self.id)
         else:
-            self.backend.optimization.parameters.docs.set(self.id, description)
+            self._backend.optimization.parameters.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.optimization.parameters.docs.delete(self.id)
+            self._backend.optimization.parameters.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -123,7 +121,7 @@ class ParameterRepository(
 ):
     def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self.backend.optimization.parameters
+        self._backend_repository = self._backend.optimization.parameters
         self._model_type = Parameter
 
     def create(

@@ -11,7 +11,7 @@ from typing_extensions import Unpack
 
 from ixmp4.data.abstract.base import BaseRepository
 
-from .exceptions import SchemaError
+from ..exceptions import SchemaError
 
 T = TypeVar("T")
 

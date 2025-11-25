@@ -6,7 +6,7 @@ import uvicorn
 from fastapi.openapi.utils import get_openapi
 
 from ixmp4.conf import settings
-from ixmp4.server import v1
+from ixmp4.server import get_app
 
 from . import utils
 
@@ -23,7 +23,7 @@ def start(
     """Starts the ixmp4 web api."""
     log_config = settings.get_server_logconf()
     uvicorn.run(
-        "ixmp4.server:app",
+        get_app(),
         host=host,
         port=port,
         reload=reload,
@@ -36,12 +36,13 @@ def start(
 def dump_schema(
     output_file: Optional[typer.FileTextWrite] = typer.Option(None, "-o"),
 ) -> None:
+    app = get_app()
     schema = get_openapi(
-        title=v1.title,
-        version=v1.version,
-        openapi_version=v1.openapi_version,
-        description=v1.description,
-        routes=v1.routes,
+        title=app.title,
+        version=app.version,
+        openapi_version=app.openapi_version,
+        description=app.description,
+        routes=app.routes,
     )
     if output_file is None:
         utils.echo(json.dumps(schema))

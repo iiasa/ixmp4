@@ -1,19 +1,19 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, ClassVar
+from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Table as TableModel
+from ixmp4.data.docs.repository import DocsNotFound
 
 from .base import (
     Creator,
     Deleter,
     Lister,
-    OptimizationBaseModelFacade,
+    OptimizationBaseFacade,
     Retriever,
     Tabulator,
 )
@@ -24,10 +24,8 @@ if TYPE_CHECKING:
     from . import InitKwargs
 
 
-class Table(OptimizationBaseModelFacade):
+class Table(OptimizationBaseFacade):
     _model: TableModel
-    NotFound: ClassVar = TableModel.NotFound
-    NotUnique: ClassVar = TableModel.NotUnique
 
     @property
     def id(self) -> int:
@@ -48,8 +46,8 @@ class Table(OptimizationBaseModelFacade):
     def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Table."""
         self._run.require_lock()
-        self.backend.optimization.tables.add_data(id=self._model.id, data=data)
-        self._model = self.backend.optimization.tables.get(
+        self._backend.optimization.tables.add_data(id=self._model.id, data=data)
+        self._model = self._backend.optimization.tables.get(
             run_id=self._model.run__id, name=self._model.name
         )
 
@@ -59,8 +57,8 @@ class Table(OptimizationBaseModelFacade):
         The data must specify all indexed columns. All other keys/columns are ignored.
         """
         self._run.require_lock()
-        self.backend.optimization.tables.remove_data(id=self._model.id, data=data)
-        self._model = self.backend.optimization.tables.get(
+        self._backend.optimization.tables.remove_data(id=self._model.id, data=data)
+        self._model = self._backend.optimization.tables.get(
             run_id=self._model.run__id, name=self._model.name
         )
 
@@ -83,23 +81,23 @@ class Table(OptimizationBaseModelFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.optimization.tables.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.tables.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.optimization.tables.docs.delete(self.id)
+            self._backend.optimization.tables.delete_docs(self.id)
         else:
-            self.backend.optimization.tables.docs.set(self.id, description)
+            self._backend.optimization.tables.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.optimization.tables.docs.delete(self.id)
+            self._backend.optimization.tables.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -115,7 +113,7 @@ class TableRepository(
 ):
     def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self.backend.optimization.tables
+        self._backend_repository = self._backend.optimization.tables
         self._model_type = Table
 
     def create(

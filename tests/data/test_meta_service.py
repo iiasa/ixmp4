@@ -4,15 +4,15 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.rewrite.data.meta.dto import MetaValueType, RunMetaEntry
-from ixmp4.rewrite.data.meta.repositories import (
+from ixmp4.data.meta.dto import MetaValueType, RunMetaEntry
+from ixmp4.data.meta.repositories import (
     RunMetaEntryNotFound,
 )
-from ixmp4.rewrite.data.meta.service import RunMetaEntryService
-from ixmp4.rewrite.data.meta.type import Type
-from ixmp4.rewrite.data.run.dto import Run
-from ixmp4.rewrite.data.run.service import RunService
-from ixmp4.rewrite.transport import Transport
+from ixmp4.data.meta.service import RunMetaEntryService
+from ixmp4.data.meta.type import Type
+from ixmp4.data.run.dto import Run
+from ixmp4.data.run.service import RunService
+from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
 
