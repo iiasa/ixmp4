@@ -1,5 +1,6 @@
 # TODO Import this from typing when dropping support for 3.10
 
+from pydantic import ValidationError
 from toolkit.exceptions import BadGateway as BaseBadGateway
 from toolkit.exceptions import BadRequest as BaseBadRequest
 from toolkit.exceptions import ConstraintViolated as BaseConstraintViolated
@@ -155,3 +156,19 @@ class OptimizationItemUsageError(Ixmp4Error):
 @registry.register()
 class InvalidDataFrame(BadRequest):
     message = "The provided dataframe is invalid."
+
+
+# == Filters ==
+@registry.register()
+class InvalidArguments(BadRequest):
+    message = "The provided function arguments are invalid."
+    http_status_code = 400
+    http_error_name = "invalid_arguments"
+
+    def __init__(self, validation_error: ValidationError, **data):
+        super().__init__(
+            message=self.message
+            + " Original validation error: \n"
+            + str(validation_error),
+            **data,
+        )
