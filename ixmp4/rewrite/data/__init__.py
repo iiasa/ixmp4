@@ -1,4 +1,5 @@
 from . import iamc as iamc
+from . import optimization as optimization
 from .checkpoint.service import CheckpointService as CheckpointService
 from .meta.service import RunMetaEntryService as RunMetaEntryService
 from .model.service import ModelService as ModelService
