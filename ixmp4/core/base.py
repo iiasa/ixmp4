@@ -1,26 +1,8 @@
-from ixmp4.data.abstract import BaseModel
-from ixmp4.data.backend import Backend
+from ixmp4.backend import Backend
 
 
 class BaseFacade(object):
-    backend: Backend
+    _backend: Backend
 
-    def __init__(self, _backend: Backend | None = None) -> None:
-        if _backend is None:
-            raise ValueError(
-                f"Cannot initialize `{self.__class__.__name__}` without `_backend`."
-            )
-        self.backend = _backend
-
-
-class BaseModelFacade(BaseFacade):
-    backend: Backend
-    _model: BaseModel
-
-    def __init__(
-        self, _model: BaseModel | None = None, **kwargs: Backend | None
-    ) -> None:
-        super().__init__(**kwargs)
-
-        if _model is not None:
-            self._model = _model
+    def __init__(self, backend: Backend) -> None:
+        self._backend = backend

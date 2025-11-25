@@ -1,15 +1,15 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
 from ixmp4.core.unit import Unit
-from ixmp4.data.abstract import Docs as DocsModel
 from ixmp4.data.abstract import Scalar as ScalarModel
 from ixmp4.data.abstract import Unit as UnitModel
+from ixmp4.data.docs.repository import DocsNotFound
 
-from .base import Deleter, Lister, OptimizationBaseModelFacade, Retriever, Tabulator
+from .base import Deleter, Lister, OptimizationBaseFacade, Retriever, Tabulator
 
 if TYPE_CHECKING:
     from ixmp4.core.run import Run
@@ -17,10 +17,8 @@ if TYPE_CHECKING:
     from . import InitKwargs
 
 
-class Scalar(OptimizationBaseModelFacade):
+class Scalar(OptimizationBaseFacade):
     _model: ScalarModel
-    NotFound: ClassVar = ScalarModel.NotFound
-    NotUnique: ClassVar = ScalarModel.NotUnique
 
     @property
     def id(self) -> int:
@@ -39,7 +37,7 @@ class Scalar(OptimizationBaseModelFacade):
     def value(self, value: float) -> None:
         self._run.require_lock()
         self._model.value = value
-        self.backend.optimization.scalars.update(
+        self._backend.optimization.scalars.update(
             id=self._model.id, value=self._model.value
         )
 
@@ -52,9 +50,9 @@ class Scalar(OptimizationBaseModelFacade):
     def unit(self, value: str | Unit) -> None:
         self._run.require_lock()
         if isinstance(value, str):
-            unit_model = self.backend.units.get(value)
-            value = Unit(_backend=self.backend, _model=unit_model)
-        self._model = self.backend.optimization.scalars.update(
+            unit_model = self._backend.units.get(value)
+            value = Unit(_backend=self._backend, _model=unit_model)
+        self._model = self._backend.optimization.scalars.update(
             id=self._model.id, unit_id=value.id
         )
 
@@ -73,23 +71,23 @@ class Scalar(OptimizationBaseModelFacade):
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.optimization.scalars.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.optimization.scalars.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.optimization.scalars.docs.delete(self.id)
+            self._backend.optimization.scalars.delete_docs(self.id)
         else:
-            self.backend.optimization.scalars.docs.set(self.id, description)
+            self._backend.optimization.scalars.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.optimization.scalars.docs.delete(self.id)
+            self._backend.optimization.scalars.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -104,7 +102,7 @@ class ScalarRepository(
 ):
     def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
         super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self.backend.optimization.scalars
+        self._backend_repository = self._backend.optimization.scalars
         self._model_type = Scalar
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
@@ -116,11 +114,11 @@ class ScalarRepository(
         else:
             # TODO: provide logging information about None-units being converted
             # if unit is None, assume that this is a dimensionless scalar (unit = "")
-            dimensionless_unit = self.backend.units.get_or_create(name="")
+            dimensionless_unit = self._backend.units.get_or_create(name="")
             unit_name = dimensionless_unit.name
 
         try:
-            model = self.backend.optimization.scalars.create(
+            model = self._backend.optimization.scalars.create(
                 name=name, value=value, unit_name=unit_name, run_id=self._run.id
             )
         except Scalar.NotUnique as e:
@@ -128,4 +126,4 @@ class ScalarRepository(
                 message=f"Scalar '{name}' already exists! Did you mean to call "
                 "run.optimization.scalars.update()?"
             ) from e
-        return Scalar(_backend=self.backend, _model=model, _run=self._run)
+        return Scalar(_backend=self._backend, _model=model, _run=self._run)

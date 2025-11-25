@@ -1,55 +1,59 @@
 from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Model as ModelModel
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseFacade
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.model.dto import Model as ModelModel
+from ixmp4.data.model.filter import ModelFilter
 
 
-class Model(BaseModelFacade):
-    _model: ModelModel  # smh
-    NotFound: ClassVar = ModelModel.NotFound
-    NotUnique: ClassVar = ModelModel.NotUnique
+class Model(BaseFacade):
+    dto: ModelModel  # smh
+
+    def __init__(self, backend: Backend, dto: "ModelModel") -> None:
+        super().__init__(backend)
+        self.dto = dto
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self.dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self.dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self.dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self.dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.models.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._backend.models.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.models.docs.delete(self.id)
+            self._backend.models.delete_docs(self.id)
         else:
-            self.backend.models.docs.set(self.id, description)
+            self._backend.models.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.models.docs.delete(self.id)
+            self._backend.models.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def __str__(self) -> str:
@@ -61,24 +65,24 @@ class ModelRepository(BaseFacade):
         self,
         name: str,
     ) -> Model:
-        model = self.backend.models.create(name)
-        return Model(_backend=self.backend, _model=model)
+        model = self._backend.models.create(name)
+        return Model(backend=self._backend, dto=model)
 
     def get(self, name: str) -> Model:
-        model = self.backend.models.get(name)
-        return Model(_backend=self.backend, _model=model)
+        model = self._backend.models.get_by_name(name)
+        return Model(backend=self._backend, dto=model)
 
-    def list(self, name: str | None = None) -> list[Model]:
-        models = self.backend.models.list(name=name)
-        return [Model(_backend=self.backend, _model=m) for m in models]
+    def list(self, **kwargs: Unpack[ModelFilter]) -> list[Model]:
+        models = self._backend.models.list(**kwargs)
+        return [Model(backend=self._backend, dto=m) for m in models]
 
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.models.tabulate(name=name)
+    def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
+        return self._backend.models.tabulate(**kwargs)
 
     def _get_model_id(self, model: str) -> int | None:
         # NOTE leaving this check for users without mypy
         if isinstance(model, str):
-            obj = self.backend.models.get(model)
+            obj = self._backend.models.get_by_name(model)
             return obj.id
         else:
             raise ValueError(f"Invalid reference to model: {model}")
@@ -88,8 +92,8 @@ class ModelRepository(BaseFacade):
         if model_id is None:
             return None
         try:
-            return self.backend.models.docs.get(dimension_id=model_id).description
-        except DocsModel.NotFound:
+            return self._backend.models.get_docs(dimension__id=model_id).description
+        except DocsNotFound:
             return None
 
     def set_docs(self, name: str, description: str | None) -> str | None:
@@ -99,8 +103,8 @@ class ModelRepository(BaseFacade):
         model_id = self._get_model_id(name)
         if model_id is None:
             return None
-        return self.backend.models.docs.set(
-            dimension_id=model_id, description=description
+        return self._backend.models.set_docs(
+            dimension__id=model_id, description=description
         ).description
 
     def delete_docs(self, name: str) -> None:
@@ -109,9 +113,9 @@ class ModelRepository(BaseFacade):
         if model_id is None:
             return None
         try:
-            self.backend.models.docs.delete(dimension_id=model_id)
+            self._backend.models.delete_docs(dimension__id=model_id)
             return None
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
     def list_docs(
@@ -119,7 +123,7 @@ class ModelRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self.backend.models.docs.list(
-                dimension_id=id, dimension_id__in=id__in
+            for item in self._backend.models.list_docs(
+                dimension__id=id, dimension__id__in=id__in
             )
         ]

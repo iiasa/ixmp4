@@ -11,10 +11,16 @@ This will start ixmp4’s asgi server. Check
 
 """
 
+from typing import Any, Callable
+
 from fastapi import FastAPI
 
-from .rest import v1
+from . import v1
+from .deps import get_direct_toml_transport
 
-app = FastAPI()
 
-app.mount("/v1/{platform}", v1)
+def get_app(transport_dep: Callable[..., Any] = get_direct_toml_transport) -> FastAPI:
+    app = FastAPI()
+
+    app.mount("/v1/{platform}", v1.get_app(transport_dep))
+    return app

@@ -5,7 +5,7 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
+from ixmp4.core.base import BaseFacade
 from ixmp4.data import abstract
 from ixmp4.data.backend import Backend
 
@@ -15,15 +15,15 @@ if TYPE_CHECKING:
     from . import InitKwargs
 
 
-class BaseModelFacadeKwargs(TypedDict, total=False):
+class BaseFacadeKwargs(TypedDict, total=False):
     _model: abstract.BaseModel | None
     _backend: Backend | None
 
 
-class OptimizationBaseModelFacade(BaseModelFacade):
+class OptimizationBaseFacade(BaseFacade):
     _run: "Run"
 
-    def __init__(self, _run: "Run", **kwargs: Unpack[BaseModelFacadeKwargs]) -> None:
+    def __init__(self, _run: "Run", **kwargs: Unpack[BaseFacadeKwargs]) -> None:
         """Initialize an optimization item instance.
 
         Parameters
@@ -41,7 +41,7 @@ class OptimizationBaseModelFacade(BaseModelFacade):
 
 
 FacadeOptimizationModelType = TypeVar(
-    "FacadeOptimizationModelType", bound=OptimizationBaseModelFacade
+    "FacadeOptimizationModelType", bound=OptimizationBaseFacade
 )
 AbstractOptimizationModelType = TypeVar(
     "AbstractOptimizationModelType", bound=abstract.BaseModel
@@ -73,7 +73,7 @@ class Creator(
         model = self._backend_repository.create(
             run_id=self._run.id, name=name, **kwargs
         )
-        return self._model_type(_backend=self.backend, _model=model, _run=self._run)
+        return self._model_type(_backend=self._backend, _model=model, _run=self._run)
 
 
 class Deleter(
@@ -103,7 +103,7 @@ class Retriever(
 ):
     def get(self, name: str) -> FacadeOptimizationModelType:
         model = self._backend_repository.get(run_id=self._run.id, name=name)
-        return self._model_type(_backend=self.backend, _model=model, _run=self._run)
+        return self._model_type(_backend=self._backend, _model=model, _run=self._run)
 
 
 class Lister(
@@ -115,7 +115,7 @@ class Lister(
     def list(self, name: str | None = None) -> list[FacadeOptimizationModelType]:
         models = self._backend_repository.list(run_id=self._run.id, name=name)
         return [
-            self._model_type(_backend=self.backend, _model=m, _run=self._run)
+            self._model_type(_backend=self._backend, _model=m, _run=self._run)
             for m in models
         ]
 

@@ -1,148 +1,490 @@
+import datetime
+
 import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-import ixmp4
-from ixmp4.data.abstract import Scalar
+from ixmp4.data.optimization.indexset.service import IndexSetService
+from ixmp4.data.optimization.scalar.repositories import (
+    ScalarNotFound,
+    ScalarNotUnique,
+)
+from ixmp4.data.optimization.scalar.service import ScalarService
+from ixmp4.data.run.dto import Run
+from ixmp4.data.run.service import RunService
+from ixmp4.data.unit.service import Unit, UnitService
+from ixmp4.transport import Transport
+from tests import backends
+from tests.data.base import ServiceTest
+
+transport = backends.get_transport_fixture(scope="class")
 
 
-def df_from_list(scalars: list[Scalar]) -> pd.DataFrame:
-    return pd.DataFrame(
-        [
-            [
-                scalar.run__id,
-                scalar.value,
-                scalar.unit.id,
-                scalar.name,
-                scalar.id,
-                scalar.created_at,
-                scalar.created_by,
-            ]
-            for scalar in scalars
-        ],
-        columns=[
-            "run__id",
-            "value",
-            "unit__id",
-            "name",
-            "id",
-            "created_at",
-            "created_by",
-        ],
-    )
+class ScalarServiceTest(ServiceTest[ScalarService]):
+    service_class = ScalarService
+
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        return RunService(transport)
+
+    @pytest.fixture(scope="class")
+    def run(
+        self,
+        runs: RunService,
+    ) -> Run:
+        run = runs.create("Model", "Scenario")
+        assert run.id == 1
+        return run
+
+    @pytest.fixture(scope="class")
+    def units(self, transport: Transport) -> UnitService:
+        return UnitService(transport)
+
+    @pytest.fixture(scope="class")
+    def unit(self, units: UnitService) -> Unit:
+        unit = units.create("Unit")
+        assert unit.id == 1
+        return unit
 
 
-class TestDataOptimizationScalar:
-    def test_create_scalar(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        unit = platform.backend.units.create("Unit")
-        unit2 = platform.backend.units.create("Unit 2")
-        scalar = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_name="Unit"
+class TestScalarCreate(ScalarServiceTest):
+    def test_scalar_create(
+        self,
+        service: ScalarService,
+        run: Run,
+        fake_time: datetime.datetime,
+        unit: Unit,
+    ) -> None:
+        scalar = service.create(
+            run.id,
+            "Scalar",
+            13,
+            "Unit",
         )
         assert scalar.run__id == run.id
         assert scalar.name == "Scalar"
-        assert scalar.value == 1
-        assert scalar.unit__id == unit.id
+        assert scalar.value == 13
+        assert scalar.unit__id == 1
+        assert scalar.unit.name == "Unit"
 
-        with pytest.raises(Scalar.NotUnique):
-            _ = platform.backend.optimization.scalars.create(
-                run_id=run.id, name="Scalar", value=2, unit_name=unit2.name
+        assert scalar.created_at == fake_time.replace(tzinfo=None)
+        assert scalar.created_by == "@unknown"
+
+    def test_scalar_create_versioning(
+        self,
+        versioning_service: ScalarService,
+        run: Run,
+        fake_time: datetime.datetime,
+    ) -> None:
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    run.id,
+                    "Scalar",
+                    13.0,
+                    1,
+                    fake_time.replace(tzinfo=None),
+                    "@unknown",
+                    5,
+                    None,
+                    0,
+                ],
+            ],
+            columns=[
+                "id",
+                "run__id",
+                "name",
+                "value",
+                "unit__id",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = versioning_service.pandas_versions.tabulate()
+        pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
+
+
+class TestScalarDeleteById(ScalarServiceTest):
+    def test_scalar_delete_by_id(
+        self,
+        service: ScalarService,
+        run: Run,
+        unit: Unit,
+        fake_time: datetime.datetime,
+    ) -> None:
+        scalar = service.create(
+            run.id,
+            "Scalar",
+            13,
+            "Unit",
+        )
+        service.delete_by_id(scalar.id)
+        assert service.tabulate().empty
+
+    def test_scalar_delete_by_id_versioning(
+        self,
+        versioning_service: ScalarService,
+        run: Run,
+        fake_time: datetime.datetime,
+    ) -> None:
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    1,
+                    run.id,
+                    "Scalar",
+                    13.0,
+                    1,
+                    fake_time.replace(tzinfo=None),
+                    "@unknown",
+                    5,
+                    6,
+                    0,
+                ],
+                [
+                    1,
+                    run.id,
+                    "Scalar",
+                    13.0,
+                    1,
+                    fake_time.replace(tzinfo=None),
+                    "@unknown",
+                    6,
+                    None,
+                    2,
+                ],
+            ],
+            columns=[
+                "id",
+                "run__id",
+                "name",
+                "value",
+                "unit__id",
+                "created_at",
+                "created_by",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
+        )
+        vdf = versioning_service.pandas_versions.tabulate()
+        pdt.assert_frame_equal(
+            expected_versions,
+            vdf,
+            check_like=True,
+        )
+        # TODO Association Versions
+
+
+class TestScalarUnique(ScalarServiceTest):
+    def test_scalar_unique(self, service: ScalarService, run: Run, unit: Unit) -> None:
+        service.create(
+            run.id,
+            "Scalar",
+            13,
+            "Unit",
+        )
+
+        with pytest.raises(ScalarNotUnique):
+            service.create(
+                run.id,
+                "Scalar",
+                42,
+                "Unit",
             )
 
-    def test_delete_scalar(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        unit = platform.backend.units.create("Unit")
-        scalar_1 = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=3.14, unit_name=unit.name
+
+class TestScalarGetByName(ScalarServiceTest):
+    def test_scalar_get(self, service: ScalarService, run: Run, unit: Unit) -> None:
+        scalar1 = service.create(
+            run.id,
+            "Scalar",
+            13,
+            "Unit",
         )
 
-        # Test unknown id raises
-        with pytest.raises(Scalar.NotFound):
-            platform.backend.optimization.scalars.delete(id=(scalar_1.id + 1))
+        scalar2 = service.get(run.id, "Scalar")
+        assert scalar1 == scalar2
 
-        # TODO How to check that DeletionPrevented is raised?
 
-        # Test normal deletion
-        platform.backend.optimization.scalars.delete(id=scalar_1.id)
-
-        assert platform.backend.optimization.scalars.tabulate().empty
-
-    def test_get_scalar(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        unit = platform.backend.units.create("Unit")
-        scalar = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
+class TestScalarGetById(ScalarServiceTest):
+    def test_scalar_get_by_id(
+        self, service: ScalarService, run: Run, unit: Unit
+    ) -> None:
+        scalar1 = service.create(
+            run.id,
+            "Scalar",
+            13,
+            "Unit",
         )
-        assert scalar == platform.backend.optimization.scalars.get(
-            run_id=run.id, name="Scalar"
-        )
+        scalar2 = service.get_by_id(1)
+        assert scalar1 == scalar2
 
-        with pytest.raises(Scalar.NotFound):
-            _ = platform.backend.optimization.scalars.get(
-                run_id=run.id, name="Scalar 2"
-            )
 
-    def test_update_scalar(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        unit = platform.backend.units.create("Unit")
-        unit2 = platform.backend.units.create("Unit 2")
-        scalar = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
-        )
-        assert scalar.id == 1
-        assert scalar.unit__id == unit.id
+class TestScalarNotFound(ScalarServiceTest):
+    def test_scalar_not_found(self, service: ScalarService, run: Run) -> None:
+        with pytest.raises(ScalarNotFound):
+            service.get(run.id, "Scalar")
 
-        ret = platform.backend.optimization.scalars.update(
-            scalar.id, unit_id=unit2.id, value=20
-        )
+        with pytest.raises(ScalarNotFound):
+            service.get_by_id(1)
 
-        assert ret.id == scalar.id == 1
-        assert ret.unit__id == unit2.id
-        assert ret.value == 20
 
-    def test_list_scalars(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        unit = platform.backend.units.create("Unit")
-        unit2 = platform.backend.units.create("Unit 2")
-        scalar_1 = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
-        )
-        scalar_2 = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar 2", value=2, unit_name=unit2.name
-        )
-        assert [scalar_1] == platform.backend.optimization.scalars.list(name="Scalar")
-        assert [scalar_1, scalar_2] == platform.backend.optimization.scalars.list()
-
-    def test_tabulate_scalars(self, platform: ixmp4.Platform) -> None:
-        run = platform.backend.runs.create("Model", "Scenario")
-        unit = platform.backend.units.create("Unit")
-        unit2 = platform.backend.units.create("Unit 2")
-        scalar_1 = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar", value=1, unit_name=unit.name
-        )
-        scalar_2 = platform.backend.optimization.scalars.create(
-            run_id=run.id, name="Scalar 2", value=2, unit_name=unit2.name
-        )
-        expected = df_from_list(scalars=[scalar_1, scalar_2])
-        pdt.assert_frame_equal(
-            expected, platform.backend.optimization.scalars.tabulate()
+class ScalarDataTest(ScalarServiceTest):
+    def test_scalar_update(
+        self,
+        service: ScalarService,
+        run: Run,
+        test_data: tuple[int | float, str],
+        test_data_units: list[Unit],
+        fake_time: datetime.datetime,
+    ) -> None:
+        value, unit = test_data
+        scalar = service.create(
+            run.id,
+            "Scalar",
+            value,
+            unit,
         )
 
-        expected = df_from_list(scalars=[scalar_1])
-        pdt.assert_frame_equal(
-            expected, platform.backend.optimization.scalars.tabulate(name="Scalar")
+        assert scalar.value == value
+        assert scalar.unit.name == unit
+
+    def test_scalar_value_update(
+        self,
+        service: ScalarService,
+        run: Run,
+        test_data_value_update: int | float,
+        fake_time: datetime.datetime,
+    ) -> None:
+        scalar = service.get(run.id, "Scalar")
+        service.update_by_id(scalar.id, value=test_data_value_update)
+        scalar = service.get_by_id(scalar.id)
+        assert scalar.value == test_data_value_update
+
+    def test_scalar_full_update(
+        self,
+        service: ScalarService,
+        run: Run,
+        test_data_update: tuple[int | float, str],
+        fake_time: datetime.datetime,
+    ) -> None:
+        value, unit = test_data_update
+        scalar = service.get(run.id, "Scalar")
+        service.update_by_id(scalar.id, value=value, unit_name=unit)
+        scalar = service.get_by_id(scalar.id)
+        assert scalar.value == value
+
+    def test_scalar_data_versioning(
+        self,
+        versioning_service: IndexSetService,
+        run: Run,
+        test_data: tuple[int | float, str],
+        test_data_value_update: int | float,
+        test_data_update: tuple[int | float, str],
+        fake_time: datetime.datetime,
+    ) -> None:
+        value, _ = test_data
+        full_update_value, _ = test_data_update
+        # compute transaction ids
+        create_tx = 6
+        update_tx = create_tx + 1
+        full_update_tx = update_tx + 1
+
+        expected_versions = pd.DataFrame(
+            [
+                [
+                    value,
+                    1,
+                    create_tx,
+                    update_tx,
+                    0,
+                ],
+                [
+                    test_data_value_update,
+                    1,
+                    update_tx,
+                    full_update_tx,
+                    1,
+                ],
+                [
+                    full_update_value,
+                    2,
+                    full_update_tx,
+                    None,
+                    1,
+                ],
+            ],
+            columns=[
+                "value",
+                "unit__id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            ],
         )
 
-        # Test tabulation of scalars of particular run only
-        run_2 = platform.backend.runs.create("Model", "Scenario")
-        scalar_3 = platform.backend.optimization.scalars.create(
-            run_id=run_2.id, name="Scalar", value=1, unit_name=unit.name
+        expected_versions["value"] = expected_versions["value"].astype("float64")
+        expected_versions["id"] = 1
+        expected_versions["run__id"] = run.id
+        expected_versions["name"] = "Scalar"
+        expected_versions["created_at"] = pd.Timestamp(
+            fake_time.replace(tzinfo=None)
+        ).as_unit("ns")
+        expected_versions["created_by"] = "@unknown"
+
+        vdf = versioning_service.pandas_versions.tabulate()
+        pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
+
+
+class TestScalarDataInteger(ScalarDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_units(self, units: UnitService) -> list[Unit]:
+        return [
+            units.create("Unit 1"),
+            units.create("Unit 2"),
+        ]
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> tuple[int | float, str]:
+        return 13, "Unit 1"
+
+    @pytest.fixture(scope="class")
+    def test_data_value_update(self) -> int | float:
+        return 42
+
+    @pytest.fixture(scope="class")
+    def test_data_update(self) -> tuple[int | float, str]:
+        return 1337, "Unit 2"
+
+
+class TestScalarDataMixed(ScalarDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_units(self, units: UnitService) -> list[Unit]:
+        return [
+            units.create("Unit 1"),
+            units.create("Unit 2"),
+        ]
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> tuple[int | float, str]:
+        return 1.3, "Unit 1"
+
+    @pytest.fixture(scope="class")
+    def test_data_value_update(self) -> int | float:
+        return 42
+
+    @pytest.fixture(scope="class")
+    def test_data_update(self) -> tuple[int | float, str]:
+        return 13.37, "Unit 2"
+
+
+class TestScalarDataFloat(ScalarDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_units(self, units: UnitService) -> list[Unit]:
+        return [
+            units.create("Unit 1"),
+            units.create("Unit 2"),
+        ]
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> tuple[int | float, str]:
+        return 1.3, "Unit 1"
+
+    @pytest.fixture(scope="class")
+    def test_data_value_update(self) -> int | float:
+        return 42.13
+
+    @pytest.fixture(scope="class")
+    def test_data_update(self) -> tuple[int | float, str]:
+        return 13.37, "Unit 2"
+
+
+class TestScalarList(ScalarServiceTest):
+    def test_scalar_list(
+        self,
+        service: ScalarService,
+        run: Run,
+        units: UnitService,
+        fake_time: datetime.datetime,
+    ) -> None:
+        units.create("Unit 1")
+        units.create("Unit 2")
+
+        service.create(
+            run.id,
+            "Scalar 1",
+            13,
+            "Unit 1",
         )
-        scalar_4 = platform.backend.optimization.scalars.create(
-            run_id=run_2.id, name="Scalar 2", value=2, unit_name=unit2.name
+
+        service.create(
+            run.id,
+            "Scalar 2",
+            13.37,
+            "Unit 2",
         )
-        expected = df_from_list(scalars=[scalar_3, scalar_4])
-        pdt.assert_frame_equal(
-            expected, platform.backend.optimization.scalars.tabulate(run_id=run_2.id)
+
+        scalars = service.list()
+
+        assert scalars[0].id == 1
+        assert scalars[0].run__id == run.id
+        assert scalars[0].name == "Scalar 1"
+        assert scalars[0].value == 13
+        assert scalars[0].unit__id == 1
+        assert scalars[0].created_by == "@unknown"
+        assert scalars[0].created_at == fake_time.replace(tzinfo=None)
+
+        assert scalars[1].id == 2
+        assert scalars[1].run__id == run.id
+        assert scalars[1].name == "Scalar 2"
+        assert scalars[1].value == 13.37
+        assert scalars[1].unit__id == 2
+        assert scalars[1].created_by == "@unknown"
+        assert scalars[1].created_at == fake_time.replace(tzinfo=None)
+
+
+class TestScalarTabulate(ScalarServiceTest):
+    def test_scalar_tabulate(
+        self,
+        service: ScalarService,
+        run: Run,
+        units: UnitService,
+        fake_time: datetime.datetime,
+    ) -> None:
+        units.create("Unit 1")
+        units.create("Unit 2")
+
+        service.create(
+            run.id,
+            "Scalar 1",
+            13,
+            "Unit 1",
         )
+
+        service.create(
+            run.id,
+            "Scalar 2",
+            13.37,
+            "Unit 2",
+        )
+
+        expected_scalars = pd.DataFrame(
+            [
+                [1, "Scalar 1", 13, 1],
+                [2, "Scalar 2", 13.37, 2],
+            ],
+            columns=["id", "name", "value", "unit__id"],
+        )
+        expected_scalars["run__id"] = run.id
+        expected_scalars["created_at"] = pd.Timestamp(
+            fake_time.replace(tzinfo=None)
+        ).as_unit("ns")
+        expected_scalars["created_by"] = "@unknown"
+
+        scalars = service.tabulate()
+        pdt.assert_frame_equal(scalars, expected_scalars, check_like=True)

@@ -25,11 +25,12 @@ In development mode additional commands are available:
 
 """
 
+from toolkit.client.auth import Auth
+
+from ixmp4.backend import Backend
 from ixmp4.conf import settings
-from ixmp4.conf.auth import BaseAuth
-from ixmp4.conf.base import PlatformInfo
-from ixmp4.core.exceptions import PlatformNotFound
-from ixmp4.data.backend import Backend, RestBackend, SqlAlchemyBackend
+from ixmp4.conf.platforms import PlatformConnectionInfo
+from ixmp4.exceptions import PlatformNotFound
 
 from .iamc import PlatformIamcData
 from .meta import MetaRepository
@@ -60,32 +61,44 @@ class Platform(object):
         self,
         name: str | None = None,
         _backend: Backend | None = None,
-        _auth: BaseAuth | None = None,
+        _auth: Auth | None = None,
     ) -> None:
-        if name is not None:
-            if name in settings.toml.platforms:
-                config: PlatformInfo = settings.toml.get_platform(name)
-            else:
-                settings.check_credentials()
-                if settings.manager is not None:
-                    config = settings.manager.get_platform(name)
-                else:
-                    raise PlatformNotFound(f"Platform '{name}' was not found.")
+        if _backend is None:
+            if name is None:
+                raise TypeError("__init__() is missing required argument 'name'")
 
-            self.backend = (
-                RestBackend(config, auth=_auth)
-                if config.dsn.startswith("http")
-                else SqlAlchemyBackend(config)
-            )
-        elif _backend is not None:
-            self.backend = _backend
+            ci = self.get_toml_platform_ci(name)
+
+            if ci is None:
+                ci = self.get_manager_platform_ci(name)
+
+            if ci is None:
+                raise PlatformNotFound(f"Platform '{name}' was not found.")
+
+            self.backend = Backend()
         else:
-            raise TypeError("__init__() is missing required argument 'name'")
+            self.backend = _backend
 
-        self.runs = RunRepository(_backend=self.backend)
-        self.iamc = PlatformIamcData(_backend=self.backend)
-        self.models = ModelRepository(_backend=self.backend)
-        self.regions = RegionRepository(_backend=self.backend)
-        self.scenarios = ScenarioRepository(_backend=self.backend)
-        self.units = UnitRepository(_backend=self.backend)
-        self.meta = MetaRepository(_backend=self.backend)
+        self.runs = RunRepository(backend=self.backend)
+        self.iamc = PlatformIamcData(backend=self.backend)
+        self.models = ModelRepository(backend=self.backend)
+        self.regions = RegionRepository(backend=self.backend)
+        self.scenarios = ScenarioRepository(backend=self.backend)
+        self.units = UnitRepository(backend=self.backend)
+        self.meta = MetaRepository(backend=self.backend)
+
+    def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
+        toml = settings.get_toml_platforms()
+
+        try:
+            return toml.get_platform(name)
+        except PlatformNotFound:
+            return None
+
+    def get_manager_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
+        manager = settings.get_manager_platforms()
+
+        try:
+            return manager.get_platform(name)
+        except PlatformNotFound:
+            return None
