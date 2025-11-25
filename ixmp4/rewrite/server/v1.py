@@ -59,6 +59,12 @@ def get_app(transport_dep: Callable[..., Any]) -> FastAPI:
         data.iamc.VariableService,
         data.iamc.TimeSeriesService,
         data.iamc.DataPointService,
+        data.optimization.EquationService,
+        data.optimization.IndexSetService,
+        data.optimization.ParameterService,
+        data.optimization.ScalarService,
+        data.optimization.TableService,
+        data.optimization.VariableService,
     ]
 
     for service in v1_services:
