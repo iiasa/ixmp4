@@ -19,7 +19,12 @@ from ixmp4.rewrite.services import (
 from .db import UnitDocs
 from .dto import Unit
 from .filter import UnitFilter
-from .repositories import ItemRepository, PandasRepository, VersionPandasRepository
+from .repositories import (
+    ItemRepository,
+    PandasRepository,
+    UnitNotFound,
+    VersionPandasRepository,
+)
 
 
 class UnitService(DocsService, Service):
@@ -160,6 +165,12 @@ class UnitService(DocsService, Service):
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    def get_or_create(self, name: str) -> Unit:
+        try:
+            return self.get_by_name(name)
+        except UnitNotFound:
+            return self.create(name)
 
     @paginated_procedure(methods=["PATCH"])
     def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
