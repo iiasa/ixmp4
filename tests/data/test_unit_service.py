@@ -135,6 +135,17 @@ class TestUnitNotFound(UnitServiceTest):
             service.get_by_id(1)
 
 
+class TestUnitGetOrCreate(UnitServiceTest):
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        unit1 = service.get_or_create("Unit")
+        assert unit1.id == 1
+        assert unit1.name == "Unit"
+
+        unit2 = service.get_or_create("Unit")
+        assert unit2.id == unit1.id
+        assert unit2.name == unit1.name
+
+
 class TestUnitList(UnitServiceTest):
     def test_unit_list(
         self, service: UnitService, fake_time: datetime.datetime
