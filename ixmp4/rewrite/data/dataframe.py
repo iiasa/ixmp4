@@ -98,7 +98,10 @@ class SerializableDataFrame(pd.DataFrame):
         if isinstance(v, dict):
             dtypes = v.pop("dtypes", None)
             columns = v.get("columns", None)
-            df = pd.DataFrame(**v)
+            try:
+                df = pd.DataFrame(**v)
+            except TypeError as e:
+                raise ValueError(f"Not a valid dataframe dict: {str(e)}")
 
             if dtypes and columns:
                 for c, dt in zip(columns, dtypes):
