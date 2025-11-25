@@ -14,7 +14,7 @@ from ixmp4.rewrite.conf.platforms import (
     PlatformNotFound,
     TomlPlatform,
 )
-from ixmp4.rewrite.exceptions import Forbidden
+from ixmp4.rewrite.exceptions import BadRequest, Forbidden
 from ixmp4.rewrite.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -35,7 +35,14 @@ async def validate_token(
     if authorization is None:
         return None  # anonymous user
 
-    encoded_jwt = authorization.split(" ")[1]
+    try:
+        bearer, encoded_jwt = authorization.split(" ")
+    except ValueError:
+        raise BadRequest(
+            "Invalid 'Authorization' header. "
+            "Make sure its value has the format of: 'Bearer <token>'"
+        )
+
     return verify(encoded_jwt, settings.secret_hs256)
 
 
