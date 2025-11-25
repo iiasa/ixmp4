@@ -1,11 +1,6 @@
-from typing import TYPE_CHECKING
-
 import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
-
-if TYPE_CHECKING:
-    pass
 
 
 class BaseModel(db.m.DeclarativeBase, db.m.HasConventionalMetadata):
