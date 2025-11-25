@@ -1,10 +1,7 @@
 from pathlib import Path
 
-import click
-import sqlalchemy as sa
 import typer
 from toolkit.db.alembic import AlembicCli, AlembicController
-from typer.main import get_group
 from typing_extensions import Annotated
 
 from ixmp4.rewrite.conf import settings
@@ -18,7 +15,6 @@ from . import utils
 migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
 
 app = AlembicCli()
-app_group = get_group(app)
 
 
 def get_alembic_controller(dsn: str) -> AlembicController:
@@ -87,9 +83,7 @@ def collect_targets(
     return targets
 
 
-@app.callback(
-    context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
-)
+@app.callback(invoke_without_command=True)
 def alembic(
     ctx: typer.Context,
     platform: Annotated[
@@ -126,32 +120,6 @@ def alembic(
             "'--platform/-p', '--toml', '--manager'?"
         )
 
-    for target in targets:
-        controller = get_alembic_controller(target.dsn)
-        cmd = app_group.get_command(ctx, ctx.invoked_subcommand)
-        new_ctx = click.Context(
-            cmd,
-            info_name=ctx.invoked_subcommand,
-            parent=ctx,
-            allow_extra_args=True,  # allow extra args because of target options
-        )
-
-        new_ctx.ensure_object(dict)
-        new_ctx.obj["controller"] = controller
-
-        # preserve any args passed to the original invocation
-        if hasattr(ctx, "args"):
-            new_ctx.args = list(ctx.args)
-
-        utils.echo(
-            f"Running '{ctx.invoked_subcommand}' command on platform '{target.name}' "
-            f"with DSN '{sa.make_url(target.dsn).render_as_string()}'... \n"
-        )
-
-        # invoke the subcommand with the fresh context
-        cmd.invoke(new_ctx)
-
-        utils.echo()
-
-    # exit here so the original invocation does not continue
-    raise typer.Exit()
+    controllers = [get_alembic_controller(target.dsn) for target in targets]
+    ctx.ensure_object(dict)
+    ctx.obj["controllers"] = controllers
