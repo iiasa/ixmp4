@@ -39,7 +39,10 @@ class VariableIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_var_idx_association"
 
     variable__id: db.t.Integer = orm.mapped_column(
-        sa.Integer, sa.ForeignKey("opt_var.id"), nullable=False, index=True
+        sa.Integer,
+        sa.ForeignKey("opt_var.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     variable: orm.Mapped[Variable] = orm.relationship(Variable)

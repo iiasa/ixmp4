@@ -34,7 +34,10 @@ class TableIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_tab_idx_association"
 
     table__id: db.t.Integer = orm.mapped_column(
-        sa.Integer, sa.ForeignKey("opt_tab.id"), nullable=False, index=True
+        sa.Integer,
+        sa.ForeignKey("opt_tab.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     table: orm.Mapped["Table"] = orm.relationship()

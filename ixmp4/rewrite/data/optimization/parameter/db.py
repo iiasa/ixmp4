@@ -34,7 +34,10 @@ class ParameterIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_par_idx_association"
 
     parameter__id: db.t.Integer = orm.mapped_column(
-        sa.Integer, sa.ForeignKey("opt_par.id"), nullable=False, index=True
+        sa.Integer,
+        sa.ForeignKey("opt_par.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     parameter: orm.Mapped["Parameter"] = orm.relationship()

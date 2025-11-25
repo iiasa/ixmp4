@@ -65,7 +65,10 @@ class IndexSetData(BaseModel):
     __table_args__ = (sa.UniqueConstraint("indexset__id", "value"),)
 
     indexset__id: db.t.Integer = orm.mapped_column(
-        sa.Integer, sa.ForeignKey("opt_idx.id"), nullable=False, index=True
+        sa.Integer,
+        sa.ForeignKey("opt_idx.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
     indexset: orm.Mapped["IndexSet"] = orm.relationship(back_populates="data_entries")
     value: db.t.String = orm.mapped_column(nullable=False)

@@ -29,7 +29,8 @@ class DataPoint(BaseModel):
     )
     timeseries: db.t.Mapped["TimeSeries"] = orm.relationship(viewonly=True)
 
-    value: db.t.Float
+    # TODO: Should this column really be nullable?
+    value: db.t.Float = orm.mapped_column(nullable=True)
 
     type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
@@ -43,7 +44,7 @@ class DataPoint(BaseModel):
 class DataPointVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_datapoint_universal_version"
 
-    value: db.t.Float
+    value: db.t.Float = orm.mapped_column(nullable=True)
     type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
     time_series__id: db.t.Integer = orm.mapped_column(

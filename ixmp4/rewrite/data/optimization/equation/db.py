@@ -34,7 +34,10 @@ class EquationIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_equ_idx_association"
 
     equation__id: db.t.Integer = orm.mapped_column(
-        sa.Integer, sa.ForeignKey("opt_equ.id"), nullable=False, index=True
+        sa.Integer,
+        sa.ForeignKey("opt_equ.id", ondelete="CASCADE"),
+        nullable=False,
+        index=True,
     )
 
     equation: orm.Mapped["Equation"] = orm.relationship()

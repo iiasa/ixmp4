@@ -9,7 +9,7 @@ if TYPE_CHECKING:
 
 
 class BaseModel(db.m.DeclarativeBase, db.m.HasConventionalMetadata):
-    id: db.t.IntegerId
+    id: db.t.IntegerId = orm.mapped_column(info={"skip_autogenerate": True})
 
 
 BaseModel.reset_metadata()
