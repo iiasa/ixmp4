@@ -13,6 +13,7 @@ if TYPE_CHECKING:
     from ixmp4.rewrite.data.iamc.datapoint.db import DataPoint
     from ixmp4.rewrite.data.iamc.variable.db import Variable
     from ixmp4.rewrite.data.region.db import Region
+    from ixmp4.rewrite.data.run.db import Run
     from ixmp4.rewrite.data.unit.db import Unit
 
 
@@ -24,7 +25,9 @@ class TimeSeries(BaseModel):
     run__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("run.id"), nullable=False, index=True
     )
-    run = orm.relationship("Run", foreign_keys=[run__id], lazy="select", viewonly=True)
+    run: orm.Mapped["Run"] = orm.relationship(
+        "Run", foreign_keys=[run__id], lazy="select", viewonly=True
+    )
 
     region__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("region.id"), nullable=False, index=True
@@ -40,13 +43,13 @@ class TimeSeries(BaseModel):
         "Measurand", foreign_keys=[measurand__id], lazy="select"
     )
 
-    variable: db.t.Mapped["Variable"] = orm.relationship(
+    variable: orm.Mapped["Variable"] = orm.relationship(
         secondary=Measurand.__table__, viewonly=True
     )
-    unit: db.t.Mapped["Unit"] = orm.relationship(
+    unit: orm.Mapped["Unit"] = orm.relationship(
         secondary=Measurand.__table__, viewonly=True
     )
-    datapoints: db.t.Mapped[list["DataPoint"]] = orm.relationship()
+    datapoints: orm.Mapped[list["DataPoint"]] = orm.relationship()
 
 
 class TimeSeriesVersion(versions.BaseVersionModel):

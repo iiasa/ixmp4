@@ -20,7 +20,7 @@ class Measurand(BaseModel, HasCreationInfo):
         sa.Integer, sa.ForeignKey("iamc_variable.id"), nullable=False, index=True
     )
     variable: orm.Mapped["Variable"] = orm.relationship(
-        "Variable",
+        "ixmp4.rewrite.data.iamc.variable.db.Variable",
         backref="measurands",
         foreign_keys=[variable__id],
         lazy="select",

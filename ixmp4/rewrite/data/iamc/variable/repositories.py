@@ -6,17 +6,17 @@ from .db import Variable, VariableVersion
 from .filter import VariableFilter
 
 
-@registry.register()
+@registry.register(name="IamcVariableNotFound")
 class VariableNotFound(NotFound):
     pass
 
 
-@registry.register()
+@registry.register(name="IamcVariableNotUnique")
 class VariableNotUnique(NotUnique):
     pass
 
 
-@registry.register()
+@registry.register(name="IamcVariableDeletionPrevented")
 class VariableDeletionPrevented(DeletionPrevented):
     pass
 
