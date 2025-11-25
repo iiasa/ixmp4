@@ -18,6 +18,7 @@ def docs_model(model: type[BaseModel]) -> type[AbstractDocs]:
     )
 
     table_dict = {
+        "__module__": model.__module__,
         "__tablename__": model.__tablename__ + "_docs",
         "dimension__id": dimension__id,
     }
