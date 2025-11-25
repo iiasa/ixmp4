@@ -35,59 +35,84 @@ def get_active_backends(
     return list(set(cand) & set(get_requested_backends(request)))
 
 
-def create_tables(bind: sa.Engine | sa.Connection):
-    get_metadata().create_all(bind=bind)
+def get_sorted_tables(meta: sa.MetaData, tables: list[str] | None):
+    if tables is None:
+        return meta.sorted_tables
+
+    sorted_tables = []
+    for table in meta.sorted_tables:
+        if table.name in tables:
+            sorted_tables.append(table)
+    return sorted_tables
 
 
-def drop_tables(bind: sa.Engine | sa.Connection):
+def create_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
     meta = get_metadata()
-    meta.drop_all(bind=bind, tables=reversed(meta.sorted_tables), checkfirst=True)
+    meta.create_all(bind=bind, tables=meta.sorted_tables, checkfirst=True)
+
+
+def drop_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
+    meta = get_metadata()
+    print(list(reversed(get_sorted_tables(meta, tables))))
+    meta.drop_all(
+        bind=bind, tables=reversed(get_sorted_tables(meta, tables)), checkfirst=True
+    )
 
 
 @contextlib.contextmanager
-def postgresql_transport(dsn: str) -> Generator[DirectTransport, None, None]:
+def postgresql_transport(
+    dsn: str, dirty_tables: list[str] | None = None
+) -> Generator[DirectTransport, None, None]:
     pgsql = DirectTransport.from_dsn(dsn)
     create_tables(pgsql.session.bind.engine)
     yield pgsql
     pgsql.close()
-    drop_tables(pgsql.session.bind.engine)
+    drop_tables(pgsql.session.bind.engine, dirty_tables)
 
 
 @contextlib.contextmanager
-def sqlite_transport() -> Generator[DirectTransport, None, None]:
+def sqlite_transport(
+    dirty_tables: list[str] | None = None,
+) -> Generator[DirectTransport, None, None]:
     sqlite = DirectTransport.from_dsn("sqlite:///:memory:")
     create_tables(sqlite.session.bind.engine)
     yield sqlite
     sqlite.close()
-    drop_tables(sqlite.session.bind.engine)
+    drop_tables(sqlite.session.bind.engine, dirty_tables)
 
 
 @contextlib.contextmanager
-def httpx_sqlite_transport() -> Generator[HttpxTransport, None, None]:
-    with sqlite_transport() as direct:
+def httpx_sqlite_transport(
+    dirty_tables: list[str] | None = None,
+) -> Generator[HttpxTransport, None, None]:
+    with sqlite_transport(dirty_tables=dirty_tables) as direct:
         httpx_sqlite = HttpxTransport.from_direct(direct)
         yield httpx_sqlite
 
 
 @contextlib.contextmanager
-def httpx_postgresql_transport(dsn: str) -> Generator[HttpxTransport, None, None]:
-    with postgresql_transport(dsn) as direct:
+def httpx_postgresql_transport(
+    dsn: str, dirty_tables: list[str] | None = None
+) -> Generator[HttpxTransport, None, None]:
+    with postgresql_transport(dsn, dirty_tables=dirty_tables) as direct:
         httpx_pgsql = HttpxTransport.from_direct(direct)
         yield httpx_pgsql
 
 
-def transport(request: pytest.FixtureRequest) -> Generator[Transport, None, None]:
+def transport(
+    request: pytest.FixtureRequest, dirty_tables: list[str] | None = None
+) -> Generator[Transport, None, None]:
     postgres_dsn = request.config.option.postgres_dsn
     type = request.param
 
     if type == "rest-sqlite":
-        tpt_ctx = httpx_sqlite_transport()
+        tpt_ctx = httpx_sqlite_transport(dirty_tables=dirty_tables)
     elif type == "rest-postgres":
-        tpt_ctx = httpx_postgresql_transport(postgres_dsn)
+        tpt_ctx = httpx_postgresql_transport(postgres_dsn, dirty_tables=dirty_tables)
     elif type == "sqlite":
-        tpt_ctx = sqlite_transport()
+        tpt_ctx = sqlite_transport(dirty_tables=dirty_tables)
     elif type == "postgres":
-        tpt_ctx = postgresql_transport(postgres_dsn)
+        tpt_ctx = postgresql_transport(postgres_dsn, dirty_tables=dirty_tables)
 
     return tpt_ctx
 
@@ -96,7 +121,9 @@ default_backends = ["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
 
 
 def get_transport_fixture(
-    backends: Sequence[str] | None = None, scope: str = "function"
+    backends: Sequence[str] | None = None,
+    scope: str = "function",
+    dirty_tables: list[str] | None = None,
 ):
     if backends is None:
         backends = default_backends.copy()
@@ -105,7 +132,7 @@ def get_transport_fixture(
         request: pytest.FixtureRequest, clean_postgres_database: None
     ) -> Generator[Platform, None, None]:
         try:
-            with transport(request) as t:
+            with transport(request, dirty_tables=dirty_tables) as t:
                 yield t
         except OperationalError as e:
             pytest.skip("Database is not reachable: " + str(e))
