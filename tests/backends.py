@@ -61,10 +61,13 @@ def drop_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None
 
 @contextlib.contextmanager
 def postgresql_transport(
-    dsn: str, dirty_tables: list[str] | None = None
+    dsn: str,
+    dirty_tables: list[str] | None = None,
+    create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
     pgsql = DirectTransport.from_dsn(dsn)
-    create_tables(pgsql.session.bind.engine)
+    if create_tables:
+        create_tables(pgsql.session.bind.engine)
     yield pgsql
     pgsql.close()
     drop_tables(pgsql.session.bind.engine, dirty_tables)
@@ -73,9 +76,11 @@ def postgresql_transport(
 @contextlib.contextmanager
 def sqlite_transport(
     dirty_tables: list[str] | None = None,
+    create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
     sqlite = DirectTransport.from_dsn("sqlite:///:memory:")
-    create_tables(sqlite.session.bind.engine)
+    if create_tables:
+        create_tables(sqlite.session.bind.engine)
     yield sqlite
     sqlite.close()
     drop_tables(sqlite.session.bind.engine, dirty_tables)
@@ -84,35 +89,52 @@ def sqlite_transport(
 @contextlib.contextmanager
 def httpx_sqlite_transport(
     dirty_tables: list[str] | None = None,
+    create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
-    with sqlite_transport(dirty_tables=dirty_tables) as direct:
+    with sqlite_transport(
+        dirty_tables=dirty_tables, create_tables=create_tables
+    ) as direct:
         httpx_sqlite = HttpxTransport.from_direct(direct)
         yield httpx_sqlite
 
 
 @contextlib.contextmanager
 def httpx_postgresql_transport(
-    dsn: str, dirty_tables: list[str] | None = None
+    dsn: str,
+    dirty_tables: list[str] | None = None,
+    create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
-    with postgresql_transport(dsn, dirty_tables=dirty_tables) as direct:
+    with postgresql_transport(
+        dsn, dirty_tables=dirty_tables, create_tables=create_tables
+    ) as direct:
         httpx_pgsql = HttpxTransport.from_direct(direct)
         yield httpx_pgsql
 
 
 def transport(
-    request: pytest.FixtureRequest, dirty_tables: list[str] | None = None
+    request: pytest.FixtureRequest,
+    dirty_tables: list[str] | None = None,
+    create_tables: bool = True,
 ) -> Generator[Transport, None, None]:
     postgres_dsn = request.config.option.postgres_dsn
     type = request.param
 
     if type == "rest-sqlite":
-        tpt_ctx = httpx_sqlite_transport(dirty_tables=dirty_tables)
+        tpt_ctx = httpx_sqlite_transport(
+            dirty_tables=dirty_tables, create_tables=create_tables
+        )
     elif type == "rest-postgres":
-        tpt_ctx = httpx_postgresql_transport(postgres_dsn, dirty_tables=dirty_tables)
+        tpt_ctx = httpx_postgresql_transport(
+            postgres_dsn, dirty_tables=dirty_tables, create_tables=create_tables
+        )
     elif type == "sqlite":
-        tpt_ctx = sqlite_transport(dirty_tables=dirty_tables)
+        tpt_ctx = sqlite_transport(
+            dirty_tables=dirty_tables, create_tables=create_tables
+        )
     elif type == "postgres":
-        tpt_ctx = postgresql_transport(postgres_dsn, dirty_tables=dirty_tables)
+        tpt_ctx = postgresql_transport(
+            postgres_dsn, dirty_tables=dirty_tables, create_tables=create_tables
+        )
 
     return tpt_ctx
 
@@ -124,6 +146,7 @@ def get_transport_fixture(
     backends: Sequence[str] | None = None,
     scope: str = "function",
     dirty_tables: list[str] | None = None,
+    create_tables: bool = True,
 ):
     if backends is None:
         backends = default_backends.copy()
@@ -132,7 +155,9 @@ def get_transport_fixture(
         request: pytest.FixtureRequest, clean_postgres_database: None
     ) -> Generator[Platform, None, None]:
         try:
-            with transport(request, dirty_tables=dirty_tables) as t:
+            with transport(
+                request, dirty_tables=dirty_tables, create_tables=create_tables
+            ) as t:
                 yield t
         except OperationalError as e:
             pytest.skip("Database is not reachable: " + str(e))
