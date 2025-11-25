@@ -4,13 +4,14 @@ import sqlalchemy as sa
 from toolkit import db
 
 from ixmp4.rewrite.data import filters as base
+from ixmp4.rewrite.data.filters import iamc as iamc
 from ixmp4.rewrite.data.iamc.timeseries.db import TimeSeries
 
 from .db import Unit
 
 
 class IamcUnitFilter(base.UnitFilter, total=False):
-    variable: Annotated[base.VariableFilter, (Unit.timeseries, TimeSeries.variable)]
+    variable: Annotated[iamc.VariableFilter, (Unit.timeseries, TimeSeries.variable)]
     region: Annotated[base.RegionFilter, (Unit.timeseries, TimeSeries.region)]
     run: Annotated[base.RunFilter, (Unit.timeseries, TimeSeries.run)]
 
