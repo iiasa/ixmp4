@@ -1,5 +1,5 @@
-region,variable,unit,step_datetime,value
-Region 1,Variable 1,Unit 1,2005-01-01 00:00:00,0.5
-Region 1,Variable 1,Unit 1,2010-01-01 00:00:00,1.0
-Region 1,Variable 3,Unit 3,2005-01-01 19:00:00,1.5
-Region 1,Variable 3,Unit 3,2010-01-01 19:00:00,1.5
+region,variable,unit,step_datetime,value,is_input
+Region 1,Variable 1,Unit 1,2005-01-01 00:00:00,0.5,true
+Region 1,Variable 1,Unit 1,2010-01-01 00:00:00,1.0,true
+Region 1,Variable 3,Unit 3,2005-01-01 19:00:00,1.5,false
+Region 1,Variable 3,Unit 3,2010-01-01 19:00:00,1.5,false

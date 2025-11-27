@@ -1,5 +1,5 @@
-region,variable,unit,step_year,value
-Region 1,Variable 1,Unit 1,2000,0.5
-Region 1,Variable 1,Unit 2,2010,1.0
-Region 3,Variable 3,Unit 3,2020,1.5
-Region 3,Variable 4,Unit 2,2020,1.7
+region,variable,unit,step_year,value,is_input
+Region 1,Variable 1,Unit 1,2000,0.5,false
+Region 1,Variable 1,Unit 2,2010,1.0,false
+Region 3,Variable 3,Unit 3,2020,1.5,true
+Region 3,Variable 4,Unit 2,2020,1.7,false

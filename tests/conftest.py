@@ -78,10 +78,7 @@ class Backends:
     @contextmanager
     def postgresql(self) -> Generator[PostgresTestBackend, Any, None]:
         pgsql = PostgresTestBackend(
-            PlatformInfo(
-                name="postgres-test",
-                dsn=self.postgres_dsn,
-            ),
+            PlatformInfo(name="postgres-test", dsn=self.postgres_dsn),
         )
         pgsql.setup()
         yield pgsql

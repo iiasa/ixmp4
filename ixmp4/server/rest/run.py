@@ -29,6 +29,12 @@ class CloneInput(BaseModel):
     keep_solution: bool = Field(True)
 
 
+class GetDefaultVersionInput(BaseModel):
+    name_of_model: Annotated[str, Field(alias="model_name")]
+    scenario_name: str
+    get_max_as_default: bool
+
+
 @router.patch("/", response_model=EnumerationOutput[api.Run])
 def query(
     filter: RunFilter = Body(RunFilter()),
@@ -78,6 +84,13 @@ def unset_as_default_version(
     backend: Backend = Depends(deps.get_backend),
 ) -> None:
     backend.runs.unset_as_default_version(id)
+
+
+@router.get("/default/", response_model=api.Run)
+def get_default_version(
+    run: GetDefaultVersionInput, backend: Backend = Depends(deps.get_backend)
+) -> Run:
+    return backend.runs.get_default_version(**run.model_dump(by_alias=True))
 
 
 @router.get("/{id}/", response_model=api.Run)

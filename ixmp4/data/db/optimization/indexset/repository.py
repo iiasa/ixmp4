@@ -244,6 +244,7 @@ class IndexSetRepository(
         data: float | int | str | List[float] | List[int] | List[str],
         remove_dependent_data: bool = True,
     ) -> None:
+        # NOTE Should remove_dependent_data be removed, changed, see https://github.com/iiasa/ixmp4/issues/136
         if not bool(data):
             return
 

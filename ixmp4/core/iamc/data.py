@@ -1,4 +1,3 @@
-from collections.abc import Iterable
 from typing import TYPE_CHECKING
 
 import pandas as pd
@@ -7,6 +6,11 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.data.abstract import DataPoint as DataPointModel
+from ixmp4.data.abstract.annotations import (
+    HasRegionFilter,
+    HasUnitFilter,
+    HasVariableFilter,
+)
 from ixmp4.data.abstract.iamc.datapoint import EnumerateKwargs
 from ixmp4.data.backend import Backend
 from ixmp4.data.db.iamc.utils import (
@@ -78,20 +82,32 @@ class RunIamcData(BaseFacade):
     def tabulate(
         self,
         *,
-        variable: dict[str, str | Iterable[str]] | None = None,
-        region: dict[str, str | Iterable[str]] | None = None,
-        unit: dict[str, str | Iterable[str]] | None = None,
+        is_input: bool | None = None,
+        variable: HasVariableFilter | None = None,
+        region: HasRegionFilter | None = None,
+        unit: HasUnitFilter | None = None,
+        year__gte: int | None = None,
         raw: bool = False,
     ) -> pd.DataFrame:
         df = self.backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=False,
             run={"id": self.run.id, "default_only": False},
+            is_input=is_input,
             variable=variable,
             region=region,
             unit=unit,
+            year__gte=year__gte,
         ).dropna(how="all", axis="columns")
         return normalize_df(df, raw, False, False)
+
+    def has_solution(self) -> bool:
+        return not self.tabulate(is_input=False).empty
+
+    def remove_solution(self, from_year: int | None = None) -> None:
+        solution_data = self.tabulate(is_input=False, year__gte=from_year)
+        if not solution_data.empty:
+            self.remove(df=solution_data)
 
 
 class PlatformIamcData(BaseFacade):

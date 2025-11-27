@@ -6,9 +6,6 @@ from sqlalchemy.exc import NoResultFound
 # TODO Adapt import when dropping Python 3.11
 from typing_extensions import TypedDict, Unpack
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend.db import SqlAlchemyBackend
-
 from ixmp4 import db
 from ixmp4.core.exceptions import (
     Forbidden,
@@ -26,6 +23,9 @@ from .. import base, versions
 from ..model import Model, ModelRepository
 from ..scenario import Scenario, ScenarioRepository
 from .model import Run, RunVersion
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.db import SqlAlchemyBackend
 
 
 class RunVersionRepository(versions.VersionRepository[RunVersion]):
@@ -98,7 +98,30 @@ class RunRepository(
         return run
 
     def delete_optimization_data(self, id: int) -> None:
-        pass  # TODO: Implement this. @glatterf42
+        scalars = self.backend.optimization.scalars.tabulate(run_id=id)
+        if not scalars.empty:
+            self.backend.optimization.scalars.bulk_delete(scalars)
+
+        tables = self.backend.optimization.tables.tabulate(run_id=id)
+        if not tables.empty:
+            self.backend.optimization.tables.bulk_delete(tables)
+
+        parameters = self.backend.optimization.parameters.tabulate(run_id=id)
+        if not parameters.empty:
+            self.backend.optimization.parameters.bulk_delete(parameters)
+
+        equations = self.backend.optimization.equations.tabulate(run_id=id)
+        if not equations.empty:
+            self.backend.optimization.equations.bulk_delete(equations)
+
+        variables = self.backend.optimization.variables.tabulate(run_id=id)
+        if not variables.empty:
+            self.backend.optimization.variables.bulk_delete(variables)
+
+        # NOTE IndexSets need to come last because other items might be linked to them!
+        indexsets = self.backend.optimization.indexsets.tabulate(run_id=id)
+        if not indexsets.empty:
+            self.backend.optimization.indexsets.bulk_delete(indexsets)
 
     def delete_meta_data(self, id: int) -> None:
         current_meta = self.backend.meta.tabulate(
@@ -165,23 +188,43 @@ class RunRepository(
         )
 
         try:
-            obj: Run = self.session.execute(exc).scalar_one()
+            obj = self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise Run.NotFound(id=id)
 
         return obj
 
-    @guard("view")
-    def get_default_version(self, model_name: str, scenario_name: str) -> Run:
-        exc = self.select(
-            model={"name": model_name},
-            scenario={"name": scenario_name},
+    def _get_run_with_max_id(self, model_name: str, scenario_name: str) -> Run:
+        exc = (
+            self.select(
+                model={"name": model_name},
+                scenario={"name": scenario_name},
+                default_only=False,
+            )
+            .order_by(self.model_class.id.desc())
+            .limit(1)
         )
 
         try:
             return self.session.execute(exc).scalar_one()
         except NoResultFound:
             raise NoDefaultRunVersion
+
+    @guard("view")
+    def get_default_version(
+        self, model_name: str, scenario_name: str, get_max_as_default: bool = False
+    ) -> Run:
+        exc = self.select(model={"name": model_name}, scenario={"name": scenario_name})
+
+        try:
+            return self.session.execute(exc).scalar_one()
+        except NoResultFound:
+            if get_max_as_default:
+                return self._get_run_with_max_id(
+                    model_name=model_name, scenario_name=scenario_name
+                )
+            else:
+                raise NoDefaultRunVersion
 
     @guard("view")
     def tabulate(self, **kwargs: Unpack[abstract.run.EnumerateKwargs]) -> pd.DataFrame:
@@ -436,7 +479,7 @@ class RunRepository(
         self.session.commit()
         return run
 
-    # TODO improve performance
+    # TODO improve performance and refactor
     # Suggestion by meksor: write a (single) query to load all objects with run_id to a
     # (single) dataframe, change the run_id, then write all back (does that work at
     # once/with one query?)
@@ -444,7 +487,7 @@ class RunRepository(
     # that commit is only called once at the end (so that either all changes make it or
     # none and to avoid multiple transactions with the DB)
     @guard("edit")
-    def clone(
+    def clone(  # noqa: C901
         self,
         run_id: int,
         model_name: str | None = None,
@@ -457,15 +500,22 @@ class RunRepository(
             scenario_name=scenario_name if scenario_name else base_run.scenario.name,
         )
 
+        # ixmp_source assumes that when a cloned Run exists only in one version, that
+        # should be the default
+        if run.version == 1:
+            run.is_default = True
+
         datapoints = normalize_df(
             df=self.backend.iamc.datapoints.tabulate(
                 join_parameters=True,
                 join_runs=False,
                 run={"id": base_run.id, "default_only": False},
+                is_input=None if keep_solution else True,
             ),
             raw=False,
             join_runs=False,
             join_run_id=False,
+            keep_is_input=True,
         )
         if not datapoints.empty:
             datapoints["run__id"] = run.id

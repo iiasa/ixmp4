@@ -33,6 +33,8 @@ class DataPoint(base.BaseModel):
     step_year = db.Column(db.Integer, index=True)
     step_datetime = db.Column(db.DateTime, index=True)
 
+    is_input = db.Column(db.Boolean, default=False)
+
 
 class UniversalDataPoint(DataPoint):
     __tablename__ = "iamc_datapoint_universal"
@@ -63,6 +65,8 @@ class UniversalDataPointVersion(versions.DefaultVersionModel):
     step_category = db.Column(db.String(1023), index=True)
     step_year = db.Column(db.Integer, index=True)
     step_datetime = db.Column(db.DateTime, index=True)
+
+    is_input = db.Column(db.Boolean, default=False)
 
 
 version_triggers = versions.PostgresVersionTriggers(

@@ -1,9 +1,6 @@
 from datetime import datetime
 from typing import TYPE_CHECKING, ClassVar, cast
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend.api import RestBackend
-
 import pandas as pd
 from pydantic import Field
 
@@ -14,6 +11,9 @@ from ixmp4.data import abstract
 
 from . import base
 from .docs import Docs, DocsRepository
+
+if TYPE_CHECKING:
+    from ixmp4.data.backend.api import RestBackend
 
 
 class Scenario(base.BaseModel):

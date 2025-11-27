@@ -62,31 +62,31 @@ class HasHierarchyFilter(TypedDict, total=False):
 class HasRunIdFilter(TypedDict, total=False):
     run_id: int | None
     run_id__in: Iterable[int]
-    run_id__gt: int
-    run_id__lt: int
-    run_id__gte: int
-    run_id__lte: int
+    run_id__gt: int | None
+    run_id__lt: int | None
+    run_id__gte: int | None
+    run_id__lte: int | None
     run__id: int | None
     run__id__in: Iterable[int]
-    run__id__gt: int
-    run__id__lt: int
-    run__id__gte: int
-    run__id__lte: int
+    run__id__gt: int | None
+    run__id__lt: int | None
+    run__id__gte: int | None
+    run__id__lte: int | None
 
 
 class HasUnitIdFilter(TypedDict, total=False):
     unit_id: int | None
     unit_id__in: Iterable[int]
-    unit_id__gt: int
-    unit_id__lt: int
-    unit_id__gte: int
-    unit_id__lte: int
+    unit_id__gt: int | None
+    unit_id__lt: int | None
+    unit_id__gte: int | None
+    unit_id__lte: int | None
     unit__id: int | None
     unit__id__in: Iterable[int]
-    unit__id__gt: int
-    unit__id__lt: int
-    unit__id__gte: int
-    unit__id__lte: int
+    unit__id__gt: int | None
+    unit__id__lt: int | None
+    unit__id__gte: int | None
+    unit__id__lte: int | None
 
 
 class HasRegionFilter(HasHierarchyFilter, HasIdFilter, HasNameFilter, total=False): ...
@@ -159,16 +159,16 @@ class HasPaginationArgs(TypedDict, total=False):
 class HasTransactionIdFilter(TypedDict, total=False):
     transaction_id: int | None
     transaction_id__in: Iterable[int]
-    transaction_id__gt: int
-    transaction_id__lt: int
-    transaction_id__gte: int
-    transaction_id__lte: int
+    transaction_id__gt: int | None
+    transaction_id__lt: int | None
+    transaction_id__gte: int | None
+    transaction_id__lte: int | None
     transaction__id: int | None
     transaction__id__in: Iterable[int]
-    transaction__id__gt: int
-    transaction__id__lt: int
-    transaction__id__gte: int
-    transaction__id__lte: int
+    transaction__id__gt: int | None
+    transaction__id__lt: int | None
+    transaction__id__gte: int | None
+    transaction__id__lte: int | None
 
 
 class TabulateVersionsKwargs(HasPaginationArgs, total=False):
