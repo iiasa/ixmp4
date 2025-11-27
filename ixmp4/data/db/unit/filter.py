@@ -69,7 +69,7 @@ class IamcUnitFilter(
 
 
 class UnitFilter(base.UnitFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: IamcUnitFilter | filters.Boolean
+    iamc: IamcUnitFilter | filters.Boolean | None = filters.Field(None)
 
     def filter_iamc(
         self,

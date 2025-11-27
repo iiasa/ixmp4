@@ -72,7 +72,7 @@ class IamcScenarioFilter(
 
 
 class ScenarioFilter(base.ScenarioFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: IamcScenarioFilter | filters.Boolean
+    iamc: IamcScenarioFilter | filters.Boolean | None = filters.Field(None)
 
     def filter_iamc(
         self,

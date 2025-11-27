@@ -35,8 +35,8 @@ class AuthorizationContext(object):
         def convert_to_like(m: str) -> str:
             return m.replace("*", "%").replace("_", "[_]")
 
-        df["regex"] = df["model"].apply(convert_to_regex)
-        df["like"] = df["model"].apply(convert_to_like)
+        df.loc[:, "regex"] = df.loc[:, "model"].apply(convert_to_regex)
+        df.loc[:, "like"] = df.loc[:, "model"].apply(convert_to_like)
         return df
 
     ApplyType = TypeVar("ApplyType", bound=db.sql.Select[tuple[Any]])

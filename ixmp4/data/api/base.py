@@ -135,14 +135,15 @@ class DataFrame(PydanticBaseModel):
 
     def to_pandas(self) -> pd.DataFrame:
         df = pd.DataFrame(
-            index=self.index or None,
-            columns=self.columns,
-            data=self.data,
+            index=self.index or None, columns=self.columns, data=self.data
         )
-        if self.columns and self.dtypes:
-            for c, dt in zip(self.columns, self.dtypes):
-                # there seems to be a type incompatbility between StrDtypeArg and str
-                df[c] = df[c].astype(dt)  # type: ignore[call-overload]
+        # NOTE Somehow, the dtype of "step_datetime" and some other columns
+        # (datetime64[ns]) gets converted to "object" in pd.DataFrame(); convert back
+        if self.columns:
+            for name in {"step_datetime", "created_at", "updated_at"}:
+                if name in self.columns:
+                    df[name] = pd.to_datetime(df[name])
+
         return df
 
 

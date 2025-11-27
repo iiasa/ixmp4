@@ -61,7 +61,7 @@ class RunIamcData(BaseFacade):
     def add(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
         self.run.require_lock()
         df = AddDataPointFrameSchema.validate(df)
-        df["run__id"] = self.run.id
+        df.loc[:, "run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
         self.backend.iamc.datapoints.bulk_upsert(df)
@@ -69,7 +69,7 @@ class RunIamcData(BaseFacade):
     def remove(self, df: pd.DataFrame, type: DataPointModel.Type | None = None) -> None:
         self.run.require_lock()
         df = RemoveDataPointFrameSchema.validate(df)
-        df["run__id"] = self.run.id
+        df.loc[:, "run__id"] = self.run.id
         df = self._get_or_create_ts(df)
         substitute_type(df, type)
         df = df.drop(columns=["unit", "variable", "region"])

@@ -72,7 +72,7 @@ class IamcModelFilter(
 
 
 class ModelFilter(base.ModelFilter, BaseIamcFilter, metaclass=filters.FilterMeta):
-    iamc: IamcModelFilter | filters.Boolean
+    iamc: IamcModelFilter | filters.Boolean | None = filters.Field(None)
 
     def filter_iamc(
         self,

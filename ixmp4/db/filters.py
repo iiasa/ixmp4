@@ -1,4 +1,5 @@
 import operator
+import sys
 from collections.abc import Callable, Iterable
 from types import GenericAlias, UnionType
 from typing import (
@@ -66,31 +67,12 @@ def escape_wildcard(v: str) -> str:
     return v.replace("%", "\\%").replace("*", "%")
 
 
-class Integer(int):
-    """An explicit proxy type for `int`."""
-
-    pass
-
-
-class Float(float):
-    """An explicit proxy type for `float`."""
-
-    pass
-
-
-class Id(int):
-    """A no-op type for a reduced set of `Integer` lookups."""
-
-    pass
-
-
-class String(str):
-    """An explicit proxy type for `str`."""
-
-    pass
-
-
 Boolean = bool
+Float = float  # An explicit proxy type for `float`.
+Id = int  # A no-op type for a reduced set of `Integer` lookups.
+Integer = int  # An explicit proxy type for `int`.
+String = str  # An explicit proxy type for `str`.
+
 
 argument_seperator = "__"
 filter_func_prefix = "filter_"
@@ -156,13 +138,53 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
         namespace: dict[str, Any],
         **kwargs: Any,
     ) -> type["BaseFilter"]:
-        annots = namespace.get("__annotations__", {}).copy()
+        annots: dict[str, type]
+        # Use Any since annotationlib is only available on Python 3.14
+        wrapped_annotate: Callable[[Any], dict[str, Any]] | None
+
+        if sys.version_info >= (3, 14):
+            import annotationlib
+
+            if annotate := annotationlib.get_annotate_from_class_namespace(namespace):
+                # NOTE This seems to be on annotationlib
+                annots = annotationlib.call_annotate_function(
+                    annotate, format=annotationlib.Format.FORWARDREF
+                )  # type: ignore[assignment]
+
+                def wrapped_annotate(format: annotationlib.Format) -> dict[str, Any]:
+                    _annots = annotationlib.call_annotate_function(annotate, format)
+
+                    dynamic_annots = {
+                        name: field_info.annotation
+                        for name, field_info in namespace.items()
+                        if isinstance(field_info, FieldInfo)
+                    }
+
+                    return {**dynamic_annots, **_annots}
+            else:
+                annots = {}
+                wrapped_annotate = None
+
+        else:
+            annots = namespace.get("__annotations__", {}).copy()
+            wrapped_annotate = None
         for _name, annot in annots.items():
             if get_origin(annot) == ClassVar:
                 continue
             cls.process_field(namespace, _name, annot)
 
-        return cast(FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs))
+        if sys.version_info >= (3, 14):
+            if annotate:
+                namespace["__annotate_func__"] = wrapped_annotate
+
+        new_cls = cast(
+            FilterMeta, super().__new__(cls, name, bases, namespace, **kwargs)
+        )
+
+        if wrapped_annotate is not None:
+            new_cls.__annotate__ = wrapped_annotate
+
+        return new_cls
 
     @classmethod
     def build_lookups(
@@ -270,7 +292,9 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
                 else name + argument_seperator + lookup_alias
             )
 
-            namespace["__annotations__"][filter_name] = Optional[type_]
+            if sys.version_info < (3, 14):
+                namespace["__annotations__"][filter_name] = Optional[type_]
+
             func_name = get_filter_func_name(filter_name)
 
             FilterType = TypeVar("FilterType")
@@ -308,6 +332,10 @@ class FilterMeta(PydanticMeta):  # type: ignore[misc]
             json_schema_extra = {"sqla_column": name}
             field.json_schema_extra = json_schema_extra
             field._attributes_set["json_schema_extra"] = json_schema_extra
+
+            if sys.version_info >= (3, 14):
+                field.annotation = Optional[type_]
+
             namespace[filter_name] = field
 
 
