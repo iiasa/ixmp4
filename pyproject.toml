@@ -7,7 +7,7 @@ authors = [
     "Pino Mussak <mussak@iiasa.ac.at>",
 ]
 name = "ixmp4"
-version = "0.13.1.post182.dev0+ad03eed"
+version = "0.0.0"
 description = "a data warehouse for scenario analysis"
 license = "MIT"
 readme = "README.md"
@@ -164,6 +164,6 @@ exclude_also = [
 ]
 
 [tool.poetry-dynamic-versioning]
-enable = false
+enable = true
 style = "pep440"
 vcs = "git"
