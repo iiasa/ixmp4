@@ -91,7 +91,7 @@ def alembic(
         typer.Option(
             "--platform",
             "-p",
-            help="Use a platform name(s) as an alembic command target.",
+            help="Use (a) platform name(s) as an alembic command target.",
         ),
     ] = None,
     toml: Annotated[
