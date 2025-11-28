@@ -97,7 +97,7 @@ def alembic(
     toml: Annotated[
         bool,
         typer.Option(
-            help=("Use platforms from the platfroms.toml file as alembic targets."),
+            help=("Use platforms from the platforms.toml file as alembic targets."),
         ),
     ] = False,
     manager: Annotated[
