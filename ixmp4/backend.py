@@ -11,17 +11,16 @@ logger = logging.getLogger(__name__)
 class IamcSubobject(object):
     datapoints: data.iamc.DataPointService
     timeseries: data.iamc.TimeSeriesService
-    # variables: VariableRepository
+    variables: data.iamc.VariableService
 
 
 class OptimizationSubobject(object):
-    # equations: EquationRepository
-    # indexsets: IndexSetRepository
-    # parameters: ParameterRepository
-    # scalars: ScalarRepository
-    # tables: TableRepository
-    # variables: OptimizationVariableRepository
-    pass
+    equations: data.optimization.EquationService
+    indexsets: data.optimization.IndexSetService
+    parameters: data.optimization.ParameterService
+    scalars: data.optimization.ScalarService
+    tables: data.optimization.TableService
+    variables: data.optimization.VariableService
 
 
 class Backend(object):
@@ -54,6 +53,13 @@ class Backend(object):
         self.checkpoints = data.CheckpointService(transport)
         self.iamc.datapoints = data.iamc.DataPointService(transport)
         self.iamc.timeseries = data.iamc.TimeSeriesService(transport)
+        self.iamc.variables = data.iamc.VariableService(transport)
+        self.optimization.equations = data.optimization.EquationService(transport)
+        self.optimization.indexsets = data.optimization.IndexSetService(transport)
+        self.optimization.parameters = data.optimization.ParameterService(transport)
+        self.optimization.scalars = data.optimization.ScalarService(transport)
+        self.optimization.tables = data.optimization.TableService(transport)
+        self.optimization.variables = data.optimization.VariableService(transport)
 
     @classmethod
     def from_connection_info(cls, ci: PlatformConnectionInfo) -> "Backend":
