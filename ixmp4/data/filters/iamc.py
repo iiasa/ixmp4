@@ -23,7 +23,29 @@ class StepYearFilter(TypedDict, total=False):
     step_year__in: list[int]
 
 
+class UnitIdFilter(TypedDict, total=False):
+    unit__id: int
+    unit__id__lte: int
+    unit__id__lt: int
+    unit__id__gte: int
+    unit__id__gt: int
+    unit__id__in: list[int]
+
+
+class VariableIdFilter(TypedDict, total=False):
+    variable__id: int
+    variable__id__lte: int
+    variable__id__lt: int
+    variable__id__gte: int
+    variable__id__gt: int
+    variable__id__in: list[int]
+
+
 class VariableFilter(IdFilter, NameFilter, total=False):
+    pass
+
+
+class MeasurandFilter(IdFilter, UnitIdFilter, VariableIdFilter, total=False):
     pass
 
 
