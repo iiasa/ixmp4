@@ -167,7 +167,7 @@ class PaginatedServiceProcedureClient(
         result_type = self.procedure.signature.return_annotation
         result_items = [paginated_result.results]
 
-        if paginated_result.total <= (
+        if paginated_result.total >= (
             paginated_result.pagination.offset + paginated_result.pagination.limit
         ):
             # TODO: We could check if the `total` changed
