@@ -55,7 +55,6 @@ def create_model_tables(
 
 def drop_model_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
     meta = get_metadata()
-    print(list(reversed(get_sorted_tables(meta, tables))))
     meta.drop_all(
         bind=bind, tables=reversed(get_sorted_tables(meta, tables)), checkfirst=True
     )
