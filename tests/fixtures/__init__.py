@@ -1,6 +1,8 @@
 import json
 from datetime import datetime
-from typing import Any, cast
+from typing import Any, Literal, cast
+
+import pandas as pd
 
 from tests.conftest import fixture_dir
 
@@ -28,3 +30,8 @@ def get_migration_data(name: str) -> list[dict[str, Any]]:
         return cast(
             list[dict[str, Any]], json.load(f, object_hook=json_timestamp_decoder)
         )
+
+
+def get_csv_data(size: Literal["big"], name: str) -> pd.DataFrame:
+    """Get the csv data as a dataframe."""
+    return pd.read_csv(fixture_dir / size / (name + ".csv"))
