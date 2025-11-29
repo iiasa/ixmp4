@@ -221,6 +221,29 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         ret_df = service.tabulate()
         pdt.assert_frame_equal(expected_df, ret_df, check_like=True)
 
+    def test_datapoint_tabulate(
+        self,
+        service: DataPointService,
+        test_df: pd.DataFrame,
+        expected_df: pd.DataFrame,
+        infer_type: bool,
+    ):
+        ret_df = service.tabulate()
+        pdt.assert_frame_equal(expected_df, ret_df, check_like=True)
+
+        ret_df = service.tabulate(join_parameters=True)
+        assert "region" in ret_df.columns
+        assert "variable" in ret_df.columns
+        assert "unit" in ret_df.columns
+
+        ret_df = service.tabulate(join_runs=True)
+        assert "model" in ret_df.columns
+        assert "scenario" in ret_df.columns
+        assert "version" in ret_df.columns
+
+        ret_df = service.tabulate(join_run_id=True)
+        assert "run__id" in ret_df.columns
+
     def test_datapoint_bulk_update(
         self,
         service: DataPointService,
