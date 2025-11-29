@@ -31,6 +31,7 @@ from ixmp4.backend import Backend
 from ixmp4.conf import settings
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.exceptions import PlatformNotFound
+from ixmp4.transport import DirectTransport, HttpxTransport
 
 from .iamc import PlatformIamcData
 from .meta import MetaRepository
@@ -75,7 +76,12 @@ class Platform(object):
             if ci is None:
                 raise PlatformNotFound(f"Platform '{name}' was not found.")
 
-            self.backend = Backend()
+            if ci.dsn.startswith("http"):
+                self.backend = Backend(
+                    HttpxTransport.from_url(ci.dsn, settings.get_client_auth())
+                )
+            else:
+                self.backend = Backend(DirectTransport.from_dsn(ci.dsn))
         else:
             self.backend = _backend
 
