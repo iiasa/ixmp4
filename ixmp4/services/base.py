@@ -19,7 +19,7 @@ from pandera.errors import SchemaError
 from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 
-from ixmp4.exceptions import InvalidDataFrame, ProgrammingError
+from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -138,7 +138,8 @@ class Service(abc.ABC):
         from .procedures import ServiceProcedure
 
         procedures = []
-        for _, val in vars(cls).items():
+        for attrname in dir(cls):
+            val = getattr(cls, attrname)
             if isinstance(val, ServiceProcedure):
                 procedures.append(val)
 
