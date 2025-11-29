@@ -1,115 +1,141 @@
 from datetime import datetime
-from typing import TYPE_CHECKING
 
-# TODO Import this from typing when dropping Python 3.11
+import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import IndexSet as IndexSetModel
 from ixmp4.data.docs.repository import DocsNotFound
-
-from .base import (
-    Creator,
-    Deleter,
-    Lister,
-    OptimizationBaseFacade,
-    Retriever,
-    Tabulator,
+from ixmp4.data.optimization.indexset.dto import IndexSet as IndexSetDto
+from ixmp4.data.optimization.indexset.filter import IndexSetFilter
+from ixmp4.data.optimization.indexset.repositories import (
+    IndexSetDataInvalid,
+    IndexSetDeletionPrevented,
+    IndexSetNotFound,
+    IndexSetNotUnique,
 )
+from ixmp4.data.optimization.indexset.service import IndexSetService
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
+from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
-class IndexSet(OptimizationBaseFacade):
-    _model: IndexSetModel
+class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
+    NotUnique = IndexSetNotUnique
+    NotFound = IndexSetNotFound
+    DeletionPrevented = IndexSetDeletionPrevented
+    DataInvalid = IndexSetDataInvalid
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self.dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
-
-    @property
-    def data(self) -> list[float] | list[int] | list[str]:
-        return self._model.data
-
-    def add(
-        self, data: float | int | str | list[float] | list[int] | list[str]
-    ) -> None:
-        """Adds data to an existing IndexSet."""
-        self._run.require_lock()
-        self._backend.optimization.indexsets.add_data(id=self._model.id, data=data)
-        self._model = self._backend.optimization.indexsets.get(
-            run_id=self._model.run__id, name=self._model.name
-        )
-
-    def remove(
-        self,
-        data: float | int | str | list[float] | list[int] | list[str],
-        remove_dependent_data: bool = True,
-    ) -> None:
-        """Removes data from an existing IndexSet."""
-        self._run.require_lock()
-        self._backend.optimization.indexsets.remove_data(
-            id=self._model.id, data=data, remove_dependent_data=remove_dependent_data
-        )
-        self._model = self._backend.optimization.indexsets.get(
-            run_id=self._model.run__id, name=self._model.name
-        )
+        return self.dto.name
 
     @property
     def run_id(self) -> int:
-        return self._model.run__id
+        return self.dto.run__id
+
+    @property
+    def data(self) -> list[float] | list[int] | list[str]:
+        return self.dto.data
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self.dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self.dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.optimization.indexsets.get_docs(self.id).description
+            return self.service.get_docs(self.id).description
         except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.optimization.indexsets.delete_docs(self.id)
+            self.service.delete_docs(self.id)
         else:
-            self._backend.optimization.indexsets.set_docs(self.id, description)
+            self.service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.optimization.indexsets.delete_docs(self.id)
+            self.service.delete_docs(self.id)
         # TODO: silently failing
         except DocsNotFound:
             return None
+
+    def add_data(
+        self, data: float | int | str | list[float] | list[int] | list[str]
+    ) -> None:
+        """Adds data to the IndexSet."""
+        self.run.require_lock()
+        self.service.add_data(id=self._model.id, data=data)
+        self.refresh()
+
+    def remove_data(
+        self, data: float | int | str | list[float] | list[int] | list[str]
+    ) -> None:
+        """Removes data from the IndexSet.
+
+        If `data` is `None` (the default), remove all data. Otherwise, data must specify
+        all indexed columns. All other keys/columns are ignored.
+        """
+        self.run.require_lock()
+        self.service.remove_data(id=self._model.id, data=data)
+        self.refresh()
+
+    def delete(self) -> None:
+        self.service.delete_by_id(self.dto.id)
 
     def __str__(self) -> str:
         return f"<IndexSet {self.id} name={self.name}>"
 
 
-class IndexSetRepository(
-    Creator[IndexSet, IndexSetModel],
-    Deleter[IndexSet, IndexSetModel],
-    Retriever[IndexSet, IndexSetModel],
-    Lister[IndexSet, IndexSetModel],
-    Tabulator[IndexSet, IndexSetModel],
+class IndexSetServiceFacade(
+    BaseOptimizationServiceFacade[IndexSet | int | str, IndexSetDto, IndexSetService]
 ):
-    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
-        super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self._backend.optimization.indexsets
-        self._model_type = IndexSet
+    def get_item_id(self, key: IndexSet | int | str) -> int:
+        if isinstance(key, IndexSet):
+            id = key.id
+        elif isinstance(key, int):
+            id = key
+        elif isinstance(key, str):
+            dto = self.service.get(self.run.id, key)
+            id = dto.id
+        else:
+            raise TypeError("Invalid argument: Must be `IndexSet`, `int` or `str`.")
 
-    def create(self, name: str) -> IndexSet:
-        return super().create(name=name)
+        return id
+
+    def create(
+        self,
+        name: str,
+        constrained_to_indexsets: list[str] | None = None,
+        column_names: list[str] | None = None,
+    ) -> IndexSet:
+        self.run.require_lock()
+        dto = self.service.create(
+            self.run.id, name, constrained_to_indexsets, column_names
+        )
+        return IndexSet(self.service, dto)
+
+    def delete(self, x: IndexSet | int | str) -> None:
+        self.run.require_lock()
+        id = self.get_item_id(x)
+        self.service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> IndexSet:
+        dto = self.service.get(self.run.id, name)
+        return IndexSet(self.service, dto)
+
+    def list(self, **kwargs: Unpack[IndexSetFilter]) -> list[IndexSet]:
+        indexsets = self.service.list(**kwargs)
+        return [IndexSet(self.service, dto) for dto in indexsets]
+
+    def tabulate(self, **kwargs: Unpack[IndexSetFilter]) -> pd.DataFrame:
+        return self.service.tabulate(**kwargs)

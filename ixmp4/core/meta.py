@@ -4,14 +4,15 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.data.meta.filter import RunMetaEntryFilter
+from ixmp4.data.meta.service import RunMetaEntryService
 
-from .base import BaseFacade
+from .base import BaseServiceFacade
 
 
-class MetaRepository(BaseFacade):
+class RunMetaServiceFacade(BaseServiceFacade[RunMetaEntryService]):
     def tabulate(self, **kwargs: Unpack[RunMetaEntryFilter]) -> pd.DataFrame:
         # TODO: accept list of `Run` instances as arg
         # TODO: expand run-id to model-scenario-version-id columns
-        return self._backend.meta.tabulate(join_run_index=True, **kwargs).drop(
+        return self.service.tabulate(join_run_index=True, **kwargs).drop(
             columns=["id", "dtype"]
         )

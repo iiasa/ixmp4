@@ -1,128 +1,133 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any, cast
+from typing import Any, cast
 
 import pandas as pd
-
-# TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.data.abstract import Parameter as ParameterModel
 from ixmp4.data.docs.repository import DocsNotFound
-
-from .base import (
-    Creator,
-    Deleter,
-    Lister,
-    OptimizationBaseFacade,
-    Retriever,
-    Tabulator,
+from ixmp4.data.optimization.parameter.dto import Parameter as ParameterDto
+from ixmp4.data.optimization.parameter.filter import ParameterFilter
+from ixmp4.data.optimization.parameter.repositories import (
+    ParameterDataInvalid,
+    ParameterDeletionPrevented,
+    ParameterNotFound,
+    ParameterNotUnique,
 )
+from ixmp4.data.optimization.parameter.service import ParameterService
 
-if TYPE_CHECKING:
-    from ixmp4.core.run import Run
-
-    from . import InitKwargs
+from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
-class Parameter(OptimizationBaseFacade):
-    _model: ParameterModel
+class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
+    NotUnique = ParameterNotUnique
+    NotFound = ParameterNotFound
+    DeletionPrevented = ParameterDeletionPrevented
+    DataInvalid = ParameterDataInvalid
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self.dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self.dto.name
 
     @property
     def run_id(self) -> int:
-        return self._model.run__id
+        return self.dto.run__id
 
     @property
     def data(self) -> dict[str, list[float] | list[int] | list[str]]:
-        return self._model.data
-
-    def add(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to the Parameter."""
-        self._run.require_lock()
-        self._backend.optimization.parameters.add_data(id=self._model.id, data=data)
-        self._model = self._backend.optimization.parameters.get(
-            run_id=self._model.run__id, name=self._model.name
-        )
-
-    def remove(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Removes data from the Parameter.
-
-        The data must specify all indexed columns. All other keys/columns are ignored.
-        """
-        self._run.require_lock()
-        self._backend.optimization.parameters.remove_data(id=self._model.id, data=data)
-        self._model = self._backend.optimization.parameters.get(
-            run_id=self._model.run__id, name=self._model.name
-        )
+        return self.dto.data
 
     @property
     def values(self) -> list[float]:
-        return cast(list[float], self._model.data.get("values", []))
+        return cast(list[float], self.dto.data.get("values", []))
 
     @property
     def units(self) -> list[str]:
-        return cast(list[str], self._model.data.get("units", []))
+        return cast(list[str], self.dto.data.get("units", []))
 
     @property
-    def indexset_names(self) -> list[str]:
-        return self._model.indexset_names
+    def indexset_names(self) -> list[str] | None:
+        return self.dto.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:
-        return self._model.column_names
+        return self.dto.column_names
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self.dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self.dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.optimization.parameters.get_docs(self.id).description
+            return self.service.get_docs(self.id).description
         except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.optimization.parameters.delete_docs(self.id)
+            self.service.delete_docs(self.id)
         else:
-            self._backend.optimization.parameters.set_docs(self.id, description)
+            self.service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.optimization.parameters.delete_docs(self.id)
+            self.service.delete_docs(self.id)
         # TODO: silently failing
         except DocsNotFound:
             return None
+
+    def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
+        """Adds data to the Parameter."""
+        self.run.require_lock()
+        self.service.add_data(id=self._model.id, data=data)
+        self._model = self.service.get(
+            run_id=self._model.run__id, name=self._model.name
+        )
+
+    def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
+        """Removes data from the Parameter.
+
+        If `data` is `None` (the default), remove all data. Otherwise, data must specify
+        all indexed columns. All other keys/columns are ignored.
+        """
+        self.run.require_lock()
+        self.service.remove_data(id=self._model.id, data=data)
+        self._model = self.service.get(
+            run_id=self._model.run__id, name=self._model.name
+        )
+
+    def delete(self) -> None:
+        self.service.delete_by_id(self.dto.id)
 
     def __str__(self) -> str:
         return f"<Parameter {self.id} name={self.name}>"
 
 
-class ParameterRepository(
-    Creator[Parameter, ParameterModel],
-    Deleter[Parameter, ParameterModel],
-    Retriever[Parameter, ParameterModel],
-    Lister[Parameter, ParameterModel],
-    Tabulator[Parameter, ParameterModel],
+class ParameterServiceFacade(
+    BaseOptimizationServiceFacade[Parameter | int | str, ParameterDto, ParameterService]
 ):
-    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
-        super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self._backend.optimization.parameters
-        self._model_type = Parameter
+    def get_item_id(self, key: Parameter | int | str) -> int:
+        if isinstance(key, Parameter):
+            id = key.id
+        elif isinstance(key, int):
+            id = key
+        elif isinstance(key, str):
+            dto = self.service.get(self.run.id, key)
+            id = dto.id
+        else:
+            raise TypeError("Invalid argument: Must be `Parameter`, `int` or `str`.")
+
+        return id
 
     def create(
         self,
@@ -130,8 +135,24 @@ class ParameterRepository(
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Parameter:
-        return super().create(
-            name=name,
-            constrained_to_indexsets=constrained_to_indexsets,
-            column_names=column_names,
+        self.run.require_lock()
+        dto = self.service.create(
+            self.run.id, name, constrained_to_indexsets, column_names
         )
+        return Parameter(self.service, dto)
+
+    def delete(self, x: Parameter | int | str) -> None:
+        self.run.require_lock()
+        id = self.get_item_id(x)
+        self.service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> Parameter:
+        dto = self.service.get(self.run.id, name)
+        return Parameter(self.service, dto)
+
+    def list(self, **kwargs: Unpack[ParameterFilter]) -> list[Parameter]:
+        parameters = self.service.list(**kwargs)
+        return [Parameter(self.service, dto) for dto in parameters]
+
+    def tabulate(self, **kwargs: Unpack[ParameterFilter]) -> pd.DataFrame:
+        return self.service.tabulate(**kwargs)

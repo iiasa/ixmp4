@@ -4,27 +4,23 @@ from datetime import datetime
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
-from ixmp4.core.base import BaseFacade
+from ixmp4.core.base import BaseFacadeObject, BaseServiceFacade
 from ixmp4.data.docs.repository import DocsNotFound
-from ixmp4.data.unit.dto import Unit as UnitModel
+from ixmp4.data.unit.dto import Unit as UnitDto
 from ixmp4.data.unit.filter import UnitFilter
 from ixmp4.data.unit.repositories import (
     UnitDeletionPrevented,
     UnitNotFound,
     UnitNotUnique,
 )
+from ixmp4.data.unit.service import UnitService
 
 
-class Unit(BaseFacade):
-    dto: UnitModel
+class Unit(BaseFacadeObject[UnitService, UnitDto]):
+    dto: UnitDto
     NotUnique = UnitNotUnique
     NotFound = UnitNotFound
     DeletionPrevented = UnitDeletionPrevented
-
-    def __init__(self, backend: Backend, dto: UnitModel) -> None:
-        super().__init__(backend)
-        self.dto = dto
 
     @property
     def id(self) -> int:
@@ -43,26 +39,26 @@ class Unit(BaseFacade):
         return self.dto.created_by
 
     def delete(self) -> None:
-        self._backend.units.delete_by_id(self.dto.id)
+        self.service.delete_by_id(self.dto.id)
 
     @property
     def docs(self) -> str | None:
         try:
-            return self._backend.units.get_docs(self.id).description
+            return self.service.get_docs(self.id).description
         except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self._backend.units.delete_docs(self.id)
+            self.service.delete_docs(self.id)
         else:
-            self._backend.units.set_docs(self.id, description)
+            self.service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self._backend.units.delete_docs(self.id)
+            self.service.delete_docs(self.id)
         # TODO: silently failing
         except DocsNotFound:
             return None
@@ -71,7 +67,7 @@ class Unit(BaseFacade):
         return f"<Unit {self.id} name={self.name}>"
 
 
-class UnitRepository(BaseFacade):
+class UnitServiceFacade(BaseServiceFacade[UnitService]):
     def create(self, name: str) -> Unit:
         if name != "" and name.strip() == "":
             raise ValueError("Using a space-only unit name is not allowed.")
@@ -79,8 +75,8 @@ class UnitRepository(BaseFacade):
             raise ValueError(
                 "Unit name 'dimensionless' is reserved, use an empty string '' instead."
             )
-        dto = self._backend.units.create(name)
-        return Unit(backend=self._backend, dto=dto)
+        dto = self.service.create(name)
+        return Unit(self.service, dto)
 
     def delete(self, x: Unit | int | str) -> None:
         if isinstance(x, Unit):
@@ -88,28 +84,28 @@ class UnitRepository(BaseFacade):
         elif isinstance(x, int):
             id = x
         elif isinstance(x, str):
-            dto = self._backend.units.get_by_name(x)
+            dto = self.service.get_by_name(x)
             id = dto.id
         else:
             raise TypeError("Invalid argument: Must be `Unit`, `int` or `str`.")
 
-        self._backend.units.delete_by_id(id)
+        self.service.delete_by_id(id)
 
     def get(self, name: str) -> Unit:
-        dto = self._backend.units.get_by_name(name)
-        return Unit(backend=self._backend, dto=dto)
+        dto = self.service.get_by_name(name)
+        return Unit(self.service, dto)
 
     def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
-        units = self._backend.units.list(**kwargs)
-        return [Unit(backend=self._backend, dto=u) for u in units]
+        units = self.service.list(**kwargs)
+        return [Unit(self.service, dto) for dto in units]
 
     def tabulate(self, **kwargs: Unpack[UnitFilter]) -> pd.DataFrame:
-        return self._backend.units.tabulate(**kwargs)
+        return self.service.tabulate(**kwargs)
 
     def _get_unit_id(self, unit: str) -> int | None:
         # NOTE leaving this check for users without mypy
         if isinstance(unit, str):
-            obj = self._backend.units.get_by_name(unit)
+            obj = self.service.get_by_name(unit)
             return obj.id
         else:
             raise ValueError(f"Invalid reference to unit: {unit}")
@@ -119,7 +115,7 @@ class UnitRepository(BaseFacade):
         if unit_id is None:
             return None
         try:
-            return self._backend.units.get_docs(dimension__id=unit_id).description
+            return self.service.get_docs(dimension__id=unit_id).description
         except DocsNotFound:
             return None
 
@@ -130,7 +126,7 @@ class UnitRepository(BaseFacade):
         unit_id = self._get_unit_id(name)
         if unit_id is None:
             return None
-        return self._backend.units.set_docs(
+        return self.service.set_docs(
             dimension__id=unit_id, description=description
         ).description
 
@@ -140,7 +136,7 @@ class UnitRepository(BaseFacade):
         if unit_id is None:
             return None
         try:
-            self._backend.units.delete_docs(dimension__id=unit_id)
+            self.service.delete_docs(dimension__id=unit_id)
             return None
         except DocsNotFound:
             return None
@@ -150,7 +146,7 @@ class UnitRepository(BaseFacade):
     ) -> Iterable[str]:
         return [
             item.description
-            for item in self._backend.units.list_docs(
+            for item in self.service.list_docs(
                 dimension__id=id, dimension__id__in=id__in
             )
         ]
