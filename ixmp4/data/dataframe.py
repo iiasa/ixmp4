@@ -124,7 +124,7 @@ class SerializableDataFrame(pd.DataFrame):
             index=self.index.to_list(),
             columns=columns,
             dtypes=dtypes,
-            data=self.values.tolist(),
+            data=self.replace({pd.NA: None}).values.tolist(),
         )
         return DataFrameTypeAdapter(**dict_).model_dump()
 
