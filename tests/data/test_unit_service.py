@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.data.unit.repositories import UnitNotFound, UnitNotUnique
+from ixmp4.data.unit.exceptions import UnitNotFound, UnitNotUnique
 from ixmp4.data.unit.service import UnitService
 from tests import backends
 from tests.data.base import ServiceTest
@@ -136,7 +136,7 @@ class TestUnitNotFound(UnitServiceTest):
 
 
 class TestUnitGetOrCreate(UnitServiceTest):
-    def test_unit_get_by_id(self, service: UnitService) -> None:
+    def test_unit_get_or_create(self, service: UnitService) -> None:
         unit1 = service.get_or_create("Unit")
         assert unit1.id == 1
         assert unit1.name == "Unit"

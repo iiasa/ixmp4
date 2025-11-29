@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.data.scenario.repositories import ScenarioNotFound, ScenarioNotUnique
+from ixmp4.data.scenario.exceptions import ScenarioNotFound, ScenarioNotUnique
 from ixmp4.data.scenario.service import ScenarioService
 from tests import backends
 from tests.data.base import ServiceTest

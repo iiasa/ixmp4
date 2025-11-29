@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.data.run.repositories import NoDefaultRunVersion, RunNotFound
+from ixmp4.data.run.exceptions import NoDefaultRunVersion, RunNotFound
 from ixmp4.data.run.service import RunService
 from tests import backends
 from tests.data.base import ServiceTest

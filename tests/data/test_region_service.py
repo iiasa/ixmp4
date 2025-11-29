@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.data.region.repositories import RegionNotFound, RegionNotUnique
+from ixmp4.data.region.exceptions import RegionNotFound, RegionNotUnique
 from ixmp4.data.region.service import RegionService
 from tests import backends
 from tests.data.base import ServiceTest
