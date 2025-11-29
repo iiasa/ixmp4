@@ -47,10 +47,7 @@ class RunIamcData(BaseFacade):
         self._backend.iamc.timeseries.bulk_upsert(ts_df)
 
         # retrieve them again to get database ids
-        ts_df = self._backend.iamc.timeseries.tabulate(
-            join_parameters=True,
-            run={"id": self.run.id, "default_only": False},
-        )
+        ts_df = self._backend.iamc.timeseries.tabulate_by_df(ts_df)
         ts_df = ts_df.rename(columns={"id": "time_series__id"})
 
         # merge on the identity columns
