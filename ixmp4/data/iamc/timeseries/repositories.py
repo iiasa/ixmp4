@@ -8,6 +8,7 @@ from ixmp4.data.unit.db import Unit
 from ixmp4.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import TimeSeries
+from .filter import TimeSeriesFilter
 
 
 @registry.register()
@@ -29,13 +30,13 @@ class ItemRepository(db.r.ItemRepository[TimeSeries]):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
     target = db.r.ModelTarget(TimeSeries)
-    # filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
+    filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
 
 
 class PandasRepository(db.r.PandasRepository):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
-    target = db.r.ModelTarget(TimeSeries)
+    filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
     target = db.r.ExtendedTarget(
         TimeSeries,
         {
@@ -45,7 +46,6 @@ class PandasRepository(db.r.PandasRepository):
         },
     )
 
-    # filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
     def delete_orphans(self) -> int | None:
         exc = self.target.delete_statement()
         exc = exc.where(~TimeSeries.datapoints.any())

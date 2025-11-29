@@ -81,7 +81,9 @@ class TimeSeriesService(Service):
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[TimeSeriesFilter]) -> SerializableDataFrame:
+    def tabulate(
+        self, join_parameters: bool = False, **kwargs: Unpack[TimeSeriesFilter]
+    ) -> SerializableDataFrame:
         r"""Tabulates timeseries by specified criteria.
 
         Parameters
@@ -95,7 +97,12 @@ class TimeSeriesService(Service):
             A data frame with the columns:
                 - TODO
         """
-        return self.pandas.tabulate(values=kwargs)
+        if join_parameters:
+            columns = ["id", "run__id", "region", "variable", "unit"]
+        else:
+            columns = None
+
+        return self.pandas.tabulate(values=kwargs, columns=columns)
 
     @tabulate.auth_check()
     def tabulate_auth_check(
@@ -109,11 +116,22 @@ class TimeSeriesService(Service):
 
     @tabulate.paginated()
     def paginated_tabulate(
-        self, pagination: Pagination, **kwargs: Unpack[TimeSeriesFilter]
+        self,
+        pagination: Pagination,
+        join_parameters: bool = False,
+        **kwargs: Unpack[TimeSeriesFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
+        if join_parameters:
+            columns = ["id", "run__id", "region", "variable", "unit"]
+        else:
+            columns = None
+
         return PaginatedResult(
             results=self.pandas.tabulate(
-                values=kwargs, limit=pagination.limit, offset=pagination.offset
+                values=kwargs,
+                columns=columns,
+                limit=pagination.limit,
+                offset=pagination.offset,
             ),
             total=self.pandas.count(values=kwargs),
             pagination=pagination,

@@ -37,14 +37,48 @@ class DataPointService(Service):
         "step_category",
         "step_datetime",
     }
+    base_columns = {
+        "id",
+        "time_series__id",
+        "type",
+        "step_year",
+        "step_category",
+        "step_datetime",
+        "value",
+    }
+    ts_columns = {"region", "unit", "variable"}
+    run_columns = {"model", "scenario", "version"}
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor)
         self.timeseries = TimeSeriesPandasRepository(self.executor)
 
+    def get_columns(
+        self,
+        join_parameters: bool,
+        join_runs: bool,
+        join_run_id: bool,
+    ) -> set[str] | None:
+        if not any([join_run_id, join_parameters, join_runs]):
+            return None
+        columns = self.base_columns
+        if join_parameters:
+            columns |= self.ts_columns
+        if join_runs:
+            columns |= self.run_columns
+        if join_run_id:
+            columns |= {"run__id"}
+        return columns
+
     @paginated_procedure(methods=["PATCH"])
-    def tabulate(self, **kwargs: Unpack[DataPointFilter]) -> SerializableDataFrame:
+    def tabulate(
+        self,
+        join_parameters: bool | None = False,
+        join_runs: bool = False,
+        join_run_id: bool = False,
+        **kwargs: Unpack[DataPointFilter],
+    ) -> SerializableDataFrame:
         r"""Tabulates datapoints by specified criteria.
 
         Parameters
@@ -59,7 +93,10 @@ class DataPointService(Service):
                 - TODO
         """
 
-        return self.pandas.tabulate(values=kwargs)
+        return self.pandas.tabulate(
+            values=kwargs,
+            columns=self.get_columns(join_parameters, join_runs, join_run_id),
+        )
 
     @tabulate.auth_check()
     def tabulate_auth_check(
@@ -73,11 +110,19 @@ class DataPointService(Service):
 
     @tabulate.paginated()
     def paginated_tabulate(
-        self, pagination: Pagination, **kwargs: Unpack[DataPointFilter]
+        self,
+        pagination: Pagination,
+        join_parameters: bool | None = False,
+        join_runs: bool = False,
+        join_run_id: bool = False,
+        **kwargs: Unpack[DataPointFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult(
             results=self.pandas.tabulate(
-                values=kwargs, limit=pagination.limit, offset=pagination.offset
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+                columns=self.get_columns(join_parameters, join_runs, join_run_id),
             ),
             total=self.pandas.count(values=kwargs),
             pagination=pagination,

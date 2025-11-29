@@ -2,15 +2,16 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
+from sqlalchemy.orm.decl_api import declared_attr
 from toolkit import db
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel
+from ixmp4.data.iamc.datapoint.db import DataPoint
 
 from ..measurand.db import Measurand
 
 if TYPE_CHECKING:
-    from ixmp4.data.iamc.datapoint.db import DataPoint
     from ixmp4.data.iamc.variable.db import Variable
     from ixmp4.data.region.db import Region
     from ixmp4.data.run.db import Run
@@ -49,7 +50,14 @@ class TimeSeries(BaseModel):
     unit: orm.Mapped["Unit"] = orm.relationship(
         secondary=Measurand.__table__, viewonly=True
     )
-    datapoints: orm.Mapped[list["DataPoint"]] = orm.relationship()
+
+    @declared_attr
+    def datapoints(cls) -> orm.Relationship[list["DataPoint"]]:
+        return orm.relationship(
+            "ixmp4.data.iamc.datapoint.db.DataPoint",
+            lazy="select",
+            viewonly=True,
+        )
 
 
 class TimeSeriesVersion(versions.BaseVersionModel):

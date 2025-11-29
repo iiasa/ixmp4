@@ -43,6 +43,8 @@ class PandasRepository(db.r.PandasRepository):
             "region": ((DataPoint.timeseries, TimeSeries.region), Region.name),
             "variable": ((DataPoint.timeseries, TimeSeries.variable), Variable.name),
             "unit": ((DataPoint.timeseries, TimeSeries.unit), Unit.name),
+            "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
     filter = db.r.Filter(DataPointFilter, DataPoint)
+    dtypes = {"step_year": "Int64"}
