@@ -13,7 +13,6 @@ from typing import (
     Sequence,
     TypedDict,
     TypeVar,
-    Unpack,
     cast,
     get_args,
     get_origin,
@@ -28,8 +27,9 @@ from fastapi.params import Depends
 from toolkit.auth.context import AuthorizationContext
 from toolkit.exceptions import ProgrammingError
 from toolkit.manager.models import Ixmp4Instance
+from typing_extensions import Unpack
 
-from ixmp4.exceptions import InvalidArguments
+from ixmp4.base_exceptions import InvalidArguments
 from ixmp4.transport import DirectTransport, HttpxTransport
 
 from ..base import Service

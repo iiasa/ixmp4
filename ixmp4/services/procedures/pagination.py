@@ -8,7 +8,6 @@ from typing import (
     ParamSpec,
     Protocol,
     TypeVar,
-    Unpack,
     cast,
     get_origin,
     overload,
@@ -18,6 +17,7 @@ import fastapi as fa
 import pandas as pd
 import pydantic as pyd
 from toolkit.exceptions import ProgrammingError
+from typing_extensions import Unpack
 
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
