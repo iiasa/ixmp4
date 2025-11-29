@@ -120,6 +120,9 @@ def transport(
 ) -> Generator[Transport, None, None]:
     postgres_dsn = request.config.option.postgres_dsn
     type = request.param
+    active_backends = get_active_backends([type], request)
+    if type not in active_backends:
+        pytest.skip("Transport backend is not active. ")
 
     if type == "rest-sqlite":
         tpt_ctx = httpx_sqlite_transport(
@@ -151,7 +154,7 @@ def get_transport_fixture(
     create_tables: bool = True,
 ):
     if backends is None:
-        backends = default_backends.copy()
+        backends = default_backends
 
     def transport_fixture(
         request: pytest.FixtureRequest, clean_postgres_database: None
