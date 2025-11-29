@@ -10,6 +10,7 @@ import pytest
 
 from ixmp4.conf import settings
 from tests.backends import clean_postgres_database as clean_postgres_database
+from tests.profiling import profiled as profiled
 
 settings.configure_logging("debug")
 test_dir = pathlib.Path(__file__).parent
