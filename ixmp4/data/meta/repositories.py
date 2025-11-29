@@ -8,39 +8,12 @@ from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.model.db import Model
 from ixmp4.data.run.db import Run
 from ixmp4.data.scenario.db import Scenario
-from ixmp4.exceptions import (
-    BadRequest,
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    registry,
-)
 
 from .db import RunMetaEntry
 from .dto import MetaValueType
+from .exceptions import InvalidRunMeta, RunMetaEntryNotFound, RunMetaEntryNotUnique
 from .filter import RunMetaEntryFilter
 from .type import Type
-
-
-@registry.register()
-class RunMetaEntryNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class RunMetaEntryNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class RunMetaEntryDeletionPrevented(DeletionPrevented):
-    pass
-
-
-@registry.register()
-class InvalidRunMeta(BadRequest):
-    message = "Invalid run meta entry."
-
 
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 

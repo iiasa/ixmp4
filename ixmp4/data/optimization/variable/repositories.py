@@ -1,36 +1,14 @@
 from toolkit import db
 
 from ixmp4.data.optimization.base.repositories import IndexedRepository
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    OptimizationDataValidationError,
-    registry,
-)
 
 from .db import Variable, VariableIndexsetAssociation, VariableVersion
+from .exceptions import (
+    VariableDataInvalid,
+    VariableNotFound,
+    VariableNotUnique,
+)
 from .filter import VariableFilter
-
-
-@registry.register(name="OptimizationVariableNotFound")
-class VariableNotFound(NotFound):
-    pass
-
-
-@registry.register(name="OptimizationVariableNotUnique")
-class VariableNotUnique(NotUnique):
-    pass
-
-
-@registry.register(name="OptimizationVariableDeletionPrevented")
-class VariableDeletionPrevented(DeletionPrevented):
-    pass
-
-
-@registry.register(name="OptimizationVariableDataInvalid")
-class VariableDataInvalid(OptimizationDataValidationError):
-    pass
 
 
 class ItemRepository(IndexedRepository[Variable, VariableIndexsetAssociation]):

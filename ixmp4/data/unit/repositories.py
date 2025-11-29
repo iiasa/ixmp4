@@ -2,27 +2,11 @@ from typing import TYPE_CHECKING
 
 from toolkit import db
 
-from ixmp4.exceptions import DeletionPrevented, NotFound, NotUnique, registry
-
 from .db import Unit, UnitVersion
+from .exceptions import UnitNotFound, UnitNotUnique
 from .filter import UnitFilter
 
 if TYPE_CHECKING:
-    pass
-
-
-@registry.register()
-class UnitNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class UnitNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class UnitDeletionPrevented(DeletionPrevented):
     pass
 
 

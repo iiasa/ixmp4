@@ -7,25 +7,10 @@ from ixmp4.data.region.db import Region
 from ixmp4.data.run.db import Run
 from ixmp4.data.scenario.db import Scenario
 from ixmp4.data.unit.db import Unit
-from ixmp4.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import DataPoint
+from .exceptions import DataPointNotFound, DataPointNotUnique
 from .filter import DataPointFilter
-
-
-@registry.register()
-class DataPointNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class DataPointNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class DataPointDeletionPrevented(DeletionPrevented):
-    pass
 
 
 class PandasRepository(db.r.PandasRepository):

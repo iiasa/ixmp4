@@ -1,36 +1,10 @@
 from toolkit import db
 
 from ixmp4.data.optimization.base.repositories import IndexedRepository
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    OptimizationDataValidationError,
-    registry,
-)
 
 from .db import Parameter, ParameterIndexsetAssociation, ParameterVersion
+from .exceptions import ParameterDataInvalid, ParameterNotFound, ParameterNotUnique
 from .filter import ParameterFilter
-
-
-@registry.register()
-class ParameterNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class ParameterNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class ParameterDeletionPrevented(DeletionPrevented):
-    pass
-
-
-@registry.register()
-class ParameterDataInvalid(OptimizationDataValidationError):
-    pass
 
 
 class ItemRepository(IndexedRepository[Parameter, ParameterIndexsetAssociation]):

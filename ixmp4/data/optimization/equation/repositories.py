@@ -1,36 +1,10 @@
 from toolkit import db
 
 from ixmp4.data.optimization.base.repositories import IndexedRepository
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    OptimizationDataValidationError,
-    registry,
-)
 
 from .db import Equation, EquationIndexsetAssociation, EquationVersion
+from .exceptions import EquationDataInvalid, EquationNotFound, EquationNotUnique
 from .filter import EquationFilter
-
-
-@registry.register()
-class EquationNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class EquationNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class EquationDeletionPrevented(DeletionPrevented):
-    pass
-
-
-@registry.register()
-class EquationDataInvalid(OptimizationDataValidationError):
-    pass
 
 
 class ItemRepository(IndexedRepository[Equation, EquationIndexsetAssociation]):

@@ -1,24 +1,8 @@
 from toolkit import db
 
-from ixmp4.exceptions import DeletionPrevented, NotFound, NotUnique, registry
-
 from .db import Scenario, ScenarioVersion
+from .exceptions import ScenarioNotFound, ScenarioNotUnique
 from .filter import ScenarioFilter
-
-
-@registry.register()
-class ScenarioNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class ScenarioNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class ScenarioDeletionPrevented(DeletionPrevented):
-    pass
 
 
 class ItemRepository(db.r.ItemRepository[Scenario]):

@@ -1,24 +1,8 @@
 from toolkit import db
 
-from ixmp4.exceptions import DeletionPrevented, NotFound, NotUnique, registry
-
 from .db import Variable, VariableVersion
+from .exceptions import VariableNotFound, VariableNotUnique
 from .filter import VariableFilter
-
-
-@registry.register(name="IamcVariableNotFound")
-class VariableNotFound(NotFound):
-    pass
-
-
-@registry.register(name="IamcVariableNotUnique")
-class VariableNotUnique(NotUnique):
-    pass
-
-
-@registry.register(name="IamcVariableDeletionPrevented")
-class VariableDeletionPrevented(DeletionPrevented):
-    pass
 
 
 class ItemRepository(db.r.ItemRepository[Variable]):

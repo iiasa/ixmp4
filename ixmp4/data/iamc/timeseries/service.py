@@ -6,6 +6,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.iamc.measurand.repositories import (
     PandasRepository as MeasurandPandasRepository,
@@ -14,15 +15,14 @@ from ixmp4.data.iamc.variable.repositories import (
     PandasRepository as VariablePandasRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
+from ixmp4.data.region.exceptions import RegionNotFound
 from ixmp4.data.region.repositories import (
     PandasRepository as RegionPandasRepository,
 )
-from ixmp4.data.region.repositories import RegionNotFound
+from ixmp4.data.unit.exceptions import UnitNotFound
 from ixmp4.data.unit.repositories import (
     PandasRepository as UnitPandasRepository,
 )
-from ixmp4.data.unit.repositories import UnitNotFound
-from ixmp4.exceptions import Forbidden
 from ixmp4.services import (
     DirectTransport,
     Service,

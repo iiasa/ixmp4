@@ -1,36 +1,10 @@
 from toolkit import db
 
 from ixmp4.data.optimization.base.repositories import IndexedRepository
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    OptimizationDataValidationError,
-    registry,
-)
 
 from .db import Table, TableIndexsetAssociation, TableVersion
+from .exceptions import TableDataInvalid, TableNotFound, TableNotUnique
 from .filter import TableFilter
-
-
-@registry.register()
-class TableNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class TableNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class TableDeletionPrevented(DeletionPrevented):
-    pass
-
-
-@registry.register()
-class TableDataInvalid(OptimizationDataValidationError):
-    pass
 
 
 class ItemRepository(IndexedRepository[Table, TableIndexsetAssociation]):

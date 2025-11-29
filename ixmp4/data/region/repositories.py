@@ -1,29 +1,8 @@
 from toolkit import db
 
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    registry,
-)
-
 from .db import Region, RegionVersion
+from .exceptions import RegionNotFound, RegionNotUnique
 from .filter import RegionFilter
-
-
-@registry.register()
-class RegionNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class RegionNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class RegionDeletionPrevented(DeletionPrevented):
-    pass
 
 
 class ItemRepository(db.r.ItemRepository[Region]):

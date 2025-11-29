@@ -6,16 +6,16 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
+from ixmp4.data.model.exceptions import ModelNotUnique
 from ixmp4.data.model.repositories import ItemRepository as ModelRepository
-from ixmp4.data.model.repositories import ModelNotUnique
 from ixmp4.data.pagination import PaginatedResult, Pagination
+from ixmp4.data.scenario.exceptions import ScenarioNotUnique
 from ixmp4.data.scenario.repositories import (
     ItemRepository as ScenarioRepository,
 )
-from ixmp4.data.scenario.repositories import ScenarioNotUnique
 from ixmp4.data.versions.transaction import TransactionRepository
-from ixmp4.exceptions import Forbidden
 from ixmp4.services import (
     Service,
     paginated_procedure,

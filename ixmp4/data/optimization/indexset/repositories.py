@@ -3,49 +3,18 @@ import logging
 import sqlalchemy as sa
 from toolkit import db
 
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    OptimizationDataValidationError,
-    registry,
-)
-
 from .db import IndexSet, IndexSetData, IndexSetVersion
+from .exceptions import (
+    IndexSetDataInvalid,
+    IndexSetDataNotFound,
+    IndexSetDataNotUnique,
+    IndexSetNotFound,
+    IndexSetNotUnique,
+)
 from .filter import IndexSetFilter
 from .type import Type
 
 logger = logging.getLogger(__name__)
-
-
-@registry.register()
-class IndexSetNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class IndexSetNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class IndexSetDeletionPrevented(DeletionPrevented):
-    pass
-
-
-@registry.register()
-class IndexSetDataInvalid(OptimizationDataValidationError):
-    pass
-
-
-@registry.register()
-class IndexSetDataNotFound(NotFound, IndexSetDataInvalid):
-    pass
-
-
-@registry.register()
-class IndexSetDataNotUnique(NotUnique, IndexSetDataInvalid):
-    pass
 
 
 class ItemRepository(db.r.ItemRepository[IndexSet]):

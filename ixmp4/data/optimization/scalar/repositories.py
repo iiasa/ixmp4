@@ -1,29 +1,8 @@
 from toolkit import db
 
-from ixmp4.exceptions import (
-    DeletionPrevented,
-    NotFound,
-    NotUnique,
-    registry,
-)
-
 from .db import Scalar, ScalarVersion
+from .exceptions import ScalarNotFound, ScalarNotUnique
 from .filter import ScalarFilter
-
-
-@registry.register()
-class ScalarNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class ScalarNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class ScalarDeletionPrevented(DeletionPrevented):
-    pass
 
 
 class ItemRepository(db.r.ItemRepository[Scalar]):

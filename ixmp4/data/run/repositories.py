@@ -6,46 +6,10 @@ from toolkit.db.repository.base import Values
 
 from ixmp4.data.model.db import Model
 from ixmp4.data.scenario.db import Scenario
-from ixmp4.exceptions import (
-    BadRequest,
-    ConstraintViolated,
-    NotFound,
-    NotUnique,
-    registry,
-)
 
 from .db import Run, RunVersion
+from .exceptions import RunNotFound, RunNotUnique
 from .filter import RunFilter
-
-
-@registry.register()
-class RunNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class RunNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class RunDeletionPrevented(ConstraintViolated):
-    pass
-
-
-@registry.register()
-class NoDefaultRunVersion(BadRequest):
-    message = "No default version available for this run."
-
-
-@registry.register()
-class RunIsLocked(BadRequest):
-    message = "This run is already locked."
-
-
-@registry.register()
-class RunLockRequired(BadRequest):
-    http_error_name = "run_lock_required"
 
 
 class ItemRepository(db.r.ItemRepository[Run]):

@@ -5,25 +5,10 @@ from toolkit import db
 from ixmp4.data.iamc.variable.db import Variable
 from ixmp4.data.region.db import Region
 from ixmp4.data.unit.db import Unit
-from ixmp4.exceptions import DeletionPrevented, NotFound, NotUnique, registry
 
 from .db import TimeSeries
+from .exceptions import TimeSeriesNotFound, TimeSeriesNotUnique
 from .filter import TimeSeriesFilter
-
-
-@registry.register()
-class TimeSeriesNotFound(NotFound):
-    pass
-
-
-@registry.register()
-class TimeSeriesNotUnique(NotUnique):
-    pass
-
-
-@registry.register()
-class TimeSeriesDeletionPrevented(DeletionPrevented):
-    pass
 
 
 class ItemRepository(db.r.ItemRepository[TimeSeries]):
