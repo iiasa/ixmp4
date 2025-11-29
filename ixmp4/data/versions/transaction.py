@@ -1,3 +1,5 @@
+from datetime import datetime, timezone
+
 import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
@@ -32,5 +34,9 @@ class TransactionRepository(db.r.ItemRepository[Transaction]):
         # limit 1 to avoid the dbapi backend loading all rows
         exc = exc.order_by(Transaction.id.desc()).limit(1)
 
-        with self.executor.select(exc) as result, self.expect_one_result():
-            return self.target.get_single_item(result)
+        try:
+            with self.executor.select(exc) as result, self.expect_one_result():
+                return self.target.get_single_item(result)
+        except self.NotFound:
+            result = self.create({"issued_at": datetime.now(tz=timezone.utc)})
+            return self.get_by_pk({"id": result.inserted_primary_key.id})
