@@ -176,7 +176,7 @@ def list_() -> None:
         manager_results = manager_platforms.list_platforms()
     except ServiceException as e:
         utils.echo(
-            "Exception occured during manager request, cannot access manager platforms:"
+            "Exception occurred during manager request, cannot access manager platforms:"
         )
         utils.error(str(e))
         raise typer.Exit()
