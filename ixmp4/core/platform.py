@@ -57,6 +57,8 @@ class Platform(object):
     meta: RunMetaServiceFacade
 
     backend: Backend
+    connection_info: PlatformConnectionInfo
+
     """Provides a unified data interface for the platform.
     Using it directly is not recommended."""
 
@@ -77,6 +79,8 @@ class Platform(object):
 
             if ci is None:
                 raise PlatformNotFound(f"Platform '{name}' was not found.")
+
+            self.connection_info = ci
 
             if ci.dsn.startswith("http"):
                 self.backend = Backend(
