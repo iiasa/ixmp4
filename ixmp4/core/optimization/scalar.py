@@ -4,14 +4,15 @@ from typing import TYPE_CHECKING, Any
 import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.scalar.dto import Scalar as ScalarDto
-from ixmp4.data.optimization.scalar.filter import ScalarFilter
-from ixmp4.data.optimization.scalar.repositories import (
+from ixmp4.data.optimization.scalar.exceptions import (
     ScalarDeletionPrevented,
     ScalarNotFound,
     ScalarNotUnique,
 )
+from ixmp4.data.optimization.scalar.filter import ScalarFilter
 from ixmp4.data.optimization.scalar.service import ScalarService
 from ixmp4.data.unit.dto import Unit as UnitDto
 from ixmp4.data.unit.service import UnitService
@@ -27,12 +28,9 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     NotFound = ScalarNotFound
     DeletionPrevented = ScalarDeletionPrevented
 
-    def __init__(
-        self, service: ScalarService, units: UnitService, dto: ScalarDto, run: "Run"
-    ):
-        super().__init__(service)
-        self.units = units
-        self.run = run
+    def __init__(self, backend: Backend, dto: ScalarDto, run: "Run"):
+        super().__init__(backend, dto, run)
+        self.units = backend.units
 
     @property
     def id(self) -> int:
@@ -118,7 +116,11 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
         self.dto = self.service.get(run_id=self.dto.run__id, name=self.dto.name)
 
     def delete(self) -> None:
+        self.run.require_lock()
         self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> ScalarService:
+        return backend.optimization.scalars
 
     def __str__(self) -> str:
         return f"<Scalar {self.id} name={self.name}>"
@@ -129,10 +131,12 @@ class ScalarServiceFacade(
 ):
     units: UnitService
 
-    def __init__(self, service: ScalarService, units: UnitService, run: "Run"):
-        super().__init__(service)
-        self.units = units
-        self.run = run
+    def __init__(self, backend: Backend, run: "Run"):
+        super().__init__(backend, run)
+        self.units = backend.units
+
+    def get_service(self, backend: Backend) -> ScalarService:
+        return backend.optimization.scalars
 
     def get_item_id(self, key: Scalar | int | str) -> int:
         if isinstance(key, Scalar):
@@ -170,7 +174,7 @@ class ScalarServiceFacade(
                 message=f"Scalar '{name}' already exists! Did you mean to call "
                 "run.optimization.scalars.update()?"
             ) from e
-        return Scalar(self.service, self.units, dto, self.run)
+        return Scalar(self.backend, dto, run=self.run)
 
     def delete(self, x: Scalar | int | str) -> None:
         id = self.get_item_id(x)
@@ -178,11 +182,13 @@ class ScalarServiceFacade(
 
     def get_by_name(self, name: str) -> Scalar:
         dto = self.service.get(self.run.id, name)
-        return Scalar(self.service, self.units, dto, self.run)
+        return Scalar(self.backend, dto, run=self.run)
 
     def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:
         scalars = self.service.list(**kwargs)
-        return [Scalar(self.service, self.units, dto, self.run) for dto in scalars]
+        return [Scalar(self.backend, dto, run=self.run) for dto in scalars]
 
     def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+            columns=["run__id"]
+        )

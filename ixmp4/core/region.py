@@ -1,9 +1,9 @@
-from collections.abc import Iterable
 from datetime import datetime
 
 import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.region.dto import Region as RegionDto
 from ixmp4.data.region.exceptions import (
@@ -14,7 +14,7 @@ from ixmp4.data.region.exceptions import (
 from ixmp4.data.region.filter import RegionFilter
 from ixmp4.data.region.service import RegionService
 
-from .base import BaseFacadeObject, BaseServiceFacade
+from .base import BaseDocsServiceFacade, BaseFacadeObject
 
 
 class Region(BaseFacadeObject[RegionService, RegionDto]):
@@ -45,10 +45,6 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
     def created_by(self) -> str | None:
         return self.dto.created_by
 
-    def delete(self) -> None:
-        """Deletes the region from the database."""
-        self.service.delete_by_id(self.dto.id)
-
     @property
     def docs(self) -> str | None:
         try:
@@ -71,23 +67,33 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
         except DocsNotFound:
             return None
 
+    def delete(self) -> None:
+        """Deletes the region from the database."""
+        self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> RegionService:
+        return backend.regions
+
     def __str__(self) -> str:
-        return f"<Region {self.id} name={self.name}>"
+        return f"<Region {self.id} name='{self.name}' hierarchy='{self.hierarchy}'>"
 
 
-class RegionServiceFacade(BaseServiceFacade[RegionService]):
-    def _get_region_id(self, region: str | int | Region | None) -> int | None:
-        if region is None:
-            return None
-        elif isinstance(region, str):
-            obj = self.service.get_by_name(region)
-            return obj.id
-        elif isinstance(region, int):
-            return region
-        elif isinstance(region, Region):
-            return region.id
+class RegionServiceFacade(
+    BaseDocsServiceFacade[Region | int | str, Region, RegionService]
+):
+    def get_service(self, backend: Backend) -> RegionService:
+        return backend.regions
+
+    def get_item_id(self, ref: Region | int | str) -> int:
+        if isinstance(ref, Region):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self.service.get_by_name(ref)
+            return dto.id
         else:
-            raise ValueError(f"Invalid reference to region: {region}")
+            raise ValueError(f"Invalid reference to region: {ref}")
 
     def create(
         self,
@@ -95,69 +101,19 @@ class RegionServiceFacade(BaseServiceFacade[RegionService]):
         hierarchy: str,
     ) -> Region:
         dto = self.service.create(name, hierarchy)
-        return Region(self.service, dto)
+        return Region(self.backend, dto)
 
-    def get(self, name: str) -> Region:
+    def get_by_name(self, name: str) -> Region:
         dto = self.service.get_by_name(name)
-        return Region(self.service, dto)
+        return Region(self.backend, dto)
 
-    def delete(self, x: Region | int | str) -> None:
-        if isinstance(x, Region):
-            id = x.id
-        elif isinstance(x, int):
-            id = x
-        elif isinstance(x, str):
-            dto = self.service.get_by_name(x)
-            id = dto.id
-        else:
-            raise TypeError("Invalid argument: Must be `Region`, `int` or `str`.")
-
+    def delete(self, ref: Region | int | str) -> None:
+        id = self.get_item_id(ref)
         self.service.delete_by_id(id)
 
     def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
         regions = self.service.list(**kwargs)
-        return [Region(self.service, dto) for dto in regions]
+        return [Region(self.backend, dto) for dto in regions]
 
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
         return self.service.tabulate(**kwargs)
-
-    def get_docs(self, name: str) -> str | None:
-        region_id = self._get_region_id(name)
-        if region_id is None:
-            return None
-        try:
-            return self.service.get_docs(dimension__id=region_id).description
-        except DocsNotFound:
-            return None
-
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        region_id = self._get_region_id(name)
-        if region_id is None:
-            return None
-        return self.service.set_docs(
-            dimension__id=region_id, description=description
-        ).description
-
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        region_id = self._get_region_id(name)
-        if region_id is None:
-            return None
-        try:
-            self.service.delete_docs(dimension__id=region_id)
-            return None
-        except DocsNotFound:
-            return None
-
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.service.list_docs(
-                dimension__id=id, dimension__id__in=id__in
-            )
-        ]

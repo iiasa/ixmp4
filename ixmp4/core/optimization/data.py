@@ -27,14 +27,12 @@ class RunOptimizationData(BaseBackendFacade):
 
     def __init__(self, backend: Backend, run: "Run") -> None:
         super().__init__(backend)
-        self.equations = EquationServiceFacade(backend.optimization.equations, run)
-        self.indexsets = IndexSetServiceFacade(backend.optimization.indexsets, run)
-        self.parameters = ParameterServiceFacade(backend.optimization.parameters, run)
-        self.scalars = ScalarServiceFacade(
-            backend.optimization.scalars, backend.units, run
-        )
-        self.tables = TableServiceFacade(backend.optimization.tables, run)
-        self.variables = VariableServiceFacade(backend.optimization.variables, run)
+        self.equations = EquationServiceFacade(backend, run)
+        self.indexsets = IndexSetServiceFacade(backend, run)
+        self.parameters = ParameterServiceFacade(backend, run)
+        self.scalars = ScalarServiceFacade(backend, run)
+        self.tables = TableServiceFacade(backend, run)
+        self.variables = VariableServiceFacade(backend, run)
 
     # TODO Improve performance by writing dedicated queries
     def remove_solution(self) -> None:

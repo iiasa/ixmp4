@@ -2,6 +2,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
+from ixmp4.backend import Backend
 from ixmp4.data.checkpoint.dto import Checkpoint
 from ixmp4.data.checkpoint.exceptions import (
     CheckpointDeletionPrevented,
@@ -23,9 +24,12 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
     NotUnique = CheckpointNotUnique
     DeletionPrevented = CheckpointDeletionPrevented
 
-    def __init__(self, service: CheckpointService, run: "Run") -> None:
-        super().__init__(service)
+    def __init__(self, backend: Backend, run: "Run") -> None:
+        super().__init__(backend)
         self.run = run
+
+    def get_service(self, backend: Backend) -> CheckpointService:
+        return backend.checkpoints
 
     def tabulate(self) -> pd.DataFrame:
         return self.service.tabulate(run__id=self.run.id)

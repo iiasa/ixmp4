@@ -10,6 +10,7 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.base_exceptions import OperationNotSupported
 from ixmp4.data.meta.dto import MetaValueType
 from ixmp4.data.meta.service import RunMetaEntryService
@@ -52,12 +53,17 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     minimum_lock_timeout: float = 0.1
     maximum_lock_timeout: float = 5
 
-    def __init__(self, service: RunService, dto: RunDto) -> None:
-        super().__init__(service, dto)
-        self.iamc = RunIamcData(backend=self._backend, run=self)
-        self._meta = RunMetaFacade(backend=self._backend, run=self)
-        self.optimization = RunOptimizationData(_backend=self._backend, run=self)
-        self.checkpoints = RunCheckpoints(backend=self._backend, run=self)
+    def __init__(self, backend: Backend, dto: RunDto) -> None:
+        super().__init__(backend, dto)
+        self.iamc = RunIamcData(backend, run=self)
+        self._meta = RunMetaFacade(backend, run=self)
+        self.optimization = RunOptimizationData(backend, run=self)
+        self.checkpoints = RunCheckpoints(backend, run=self)
+
+    @property
+    def id(self) -> int:
+        """Unique id."""
+        return self.dto.id
 
     @property
     def model(self) -> ModelDto:
@@ -73,11 +79,6 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def version(self) -> int:
         """Run version."""
         return self.dto.version
-
-    @property
-    def id(self) -> int:
-        """Unique id."""
-        return self.dto.id
 
     @property
     def meta(self) -> "RunMetaFacade":
@@ -239,10 +240,16 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             ),
         )
 
+    def get_service(self, backend: Backend) -> RunService:
+        return backend.runs
+
 
 class RunServiceFacade(BaseServiceFacade[RunService]):
+    def get_service(self, backend: Backend) -> RunService:
+        return backend.runs
+
     def create(self, model: str, scenario: str) -> Run:
-        return Run(self.service, self.service.create(model, scenario))
+        return Run(self.backend, self.service.create(model, scenario))
 
     def delete(self, x: Run | int) -> None:
         if isinstance(x, Run):
@@ -260,10 +267,10 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
             if version is None
             else self.service.get(model, scenario, version)
         )
-        return Run(self.service, dto)
+        return Run(self.backend, dto)
 
     def list(self, **kwargs: Unpack[RunFilter]) -> list[Run]:
-        return [Run(backend=self.service, dto=r) for r in self.service.list(**kwargs)]
+        return [Run(self.backend, dto) for dto in self.service.list(**kwargs)]
 
     def tabulate(
         self, audit_info: bool = False, **kwargs: Unpack[RunFilter]
@@ -280,8 +287,11 @@ class RunMetaFacade(
 ):
     run: Run
 
-    def __init__(self, service: RunMetaEntryService, run: Run) -> None:
-        super().__init__(service)
+    def get_service(self, backend: Backend) -> RunMetaEntryService:
+        return backend.meta
+
+    def __init__(self, backend: Backend, run: Run) -> None:
+        super().__init__(backend)
         self.run = run
         self.refresh()
 

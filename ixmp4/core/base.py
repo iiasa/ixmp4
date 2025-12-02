@@ -2,8 +2,11 @@ import abc
 from collections.abc import Iterable
 from typing import Generic, TypeVar
 
+from typing_extensions import Unpack
+
 from ixmp4.backend import Backend
 from ixmp4.data.base.dto import BaseModel
+from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.docs.service import DocsService
 from ixmp4.services.base import Service
@@ -21,33 +24,35 @@ KeyT = TypeVar("KeyT")
 ItemT = TypeVar("ItemT")
 
 
-class ItemLookupFacade(abc.ABC[KeyT, ItemT]):
+class ItemLookupFacade(abc.ABC, Generic[KeyT, ItemT]):
     @abc.abstractmethod
-    def get_item_id(self, key: KeyT) -> int:
+    def get_item_id(self, ref: KeyT) -> int:
         raise NotImplementedError
 
 
 ServiceT = TypeVar("ServiceT", bound=Service)
 
 
-class BaseServiceFacade(Generic[ServiceT]):
+class BaseServiceFacade(abc.ABC, BaseBackendFacade, Generic[ServiceT]):
     service: ServiceT
 
-    def __init__(self, service: ServiceT) -> None:
-        self.service = service
+    def __init__(self, backend: Backend) -> None:
+        BaseBackendFacade.__init__(self, backend)
+        self.service = self.get_service(backend)
+
+    @abc.abstractmethod
+    def get_service(self, backend: Backend) -> ServiceT:
+        raise NotImplementedError
 
 
 DocsServiceT = TypeVar("DocsServiceT", bound=DocsService)
 
 
 class BaseDocsServiceFacade(
-    ItemLookupFacade[KeyT, ItemT], Generic[KeyT, ItemT, DocsServiceT]
+    ItemLookupFacade[KeyT, ItemT],
+    BaseServiceFacade[DocsServiceT],
+    Generic[KeyT, ItemT, DocsServiceT],
 ):
-    service: DocsServiceT
-
-    def __init__(self, service: DocsServiceT) -> None:
-        self.service = service
-
     def get_docs(self, x: KeyT) -> str | None:
         equation_id = self.get_item_id(x)
         if equation_id is None:
@@ -79,27 +84,22 @@ class BaseDocsServiceFacade(
         except DocsNotFound:
             return None
 
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.service.list_docs(
-                dimension__id=id, dimension__id__in=id__in
-            )
-        ]
+    def list_docs(self, **kwargs: Unpack[DocsFilter]) -> Iterable[str]:
+        return [item.description for item in self.service.list_docs(**kwargs)]
 
 
 DtoT = TypeVar("DtoT", bound=BaseModel)
 GetByIdServiceT = TypeVar("GetByIdServiceT", bound=GetByIdService[DtoT])
 
 
-class BaseFacadeObject(Generic[GetByIdServiceT, DtoT]):
+class BaseFacadeObject(
+    BaseServiceFacade[GetByIdServiceT], Generic[GetByIdServiceT, DtoT]
+):
     service: GetByIdServiceT
     dto: DtoT
 
-    def __init__(self, service: GetByIdServiceT, dto: DtoT) -> None:
-        self.service = service
+    def __init__(self, backend: Backend, dto: DtoT) -> None:
+        BaseServiceFacade.__init__(self, backend)
         self.dto = dto
 
     def refresh(self):

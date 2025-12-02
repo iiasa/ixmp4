@@ -4,15 +4,16 @@ from typing import Any, cast
 import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.variable.dto import Variable as VariableDto
-from ixmp4.data.optimization.variable.filter import VariableFilter
-from ixmp4.data.optimization.variable.repositories import (
+from ixmp4.data.optimization.variable.exceptions import (
     VariableDataInvalid,
     VariableDeletionPrevented,
     VariableNotFound,
     VariableNotUnique,
 )
+from ixmp4.data.optimization.variable.filter import VariableFilter
 from ixmp4.data.optimization.variable.service import VariableService
 
 from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
@@ -89,7 +90,7 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Variable."""
         self.run.require_lock()
-        self.service.add_data(id=self._model.id, data=data)
+        self.service.add_data(id=self.dto.id, data=data)
         self.refresh()
 
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
@@ -99,11 +100,15 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
         all indexed columns. All other keys/columns are ignored.
         """
         self.run.require_lock()
-        self.service.remove_data(id=self._model.id, data=data)
+        self.service.remove_data(id=self.dto.id, data=data)
         self.refresh()
 
     def delete(self) -> None:
+        self.run.require_lock()
         self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> VariableService:
+        return backend.optimization.variables
 
     def __str__(self) -> str:
         return f"<Variable {self.id} name={self.name}>"
@@ -112,6 +117,9 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
 class VariableServiceFacade(
     BaseOptimizationServiceFacade[Variable | int | str, VariableDto, VariableService]
 ):
+    def get_service(self, backend: Backend) -> VariableService:
+        return backend.optimization.variables
+
     def get_item_id(self, key: Variable | int | str) -> int:
         if isinstance(key, Variable):
             id = key.id
@@ -135,7 +143,7 @@ class VariableServiceFacade(
         dto = self.service.create(
             self.run.id, name, constrained_to_indexsets, column_names
         )
-        return Variable(self.service, dto)
+        return Variable(self.backend, dto, run=self.run)
 
     def delete(self, x: Variable | int | str) -> None:
         self.run.require_lock()
@@ -144,11 +152,13 @@ class VariableServiceFacade(
 
     def get_by_name(self, name: str) -> Variable:
         dto = self.service.get(self.run.id, name)
-        return Variable(self.service, dto)
+        return Variable(self.backend, dto, run=self.run)
 
     def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
         variables = self.service.list(**kwargs)
-        return [Variable(self.service, dto) for dto in variables]
+        return [Variable(self.backend, dto, run=self.run) for dto in variables]
 
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+            columns=["run__id"]
+        )

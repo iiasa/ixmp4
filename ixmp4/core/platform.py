@@ -87,13 +87,13 @@ class Platform(object):
         else:
             self.backend = _backend
 
-        self.runs = RunServiceFacade(backend=self.backend)
-        self.iamc = PlatformIamcData(backend=self.backend)
-        self.models = ModelServiceFacade(backend=self.backend)
-        self.regions = RegionServiceFacade(backend=self.backend)
-        self.scenarios = ScenarioServiceFacade(backend=self.backend)
-        self.units = UnitServiceFacade(backend=self.backend)
-        self.meta = RunMetaServiceFacade(backend=self.backend)
+        self.runs = RunServiceFacade(self.backend)
+        self.iamc = PlatformIamcData(self.backend)
+        self.models = ModelServiceFacade(self.backend)
+        self.regions = RegionServiceFacade(self.backend)
+        self.scenarios = ScenarioServiceFacade(self.backend)
+        self.units = UnitServiceFacade(self.backend)
+        self.meta = RunMetaServiceFacade(self.backend)
 
     def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
         toml = settings.get_toml_platforms()

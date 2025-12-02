@@ -4,15 +4,16 @@ from typing import Any, cast
 import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.equation.dto import Equation as EquationDto
-from ixmp4.data.optimization.equation.filter import EquationFilter
-from ixmp4.data.optimization.equation.repositories import (
+from ixmp4.data.optimization.equation.exceptions import (
     EquationDataInvalid,
     EquationDeletionPrevented,
     EquationNotFound,
     EquationNotUnique,
 )
+from ixmp4.data.optimization.equation.filter import EquationFilter
 from ixmp4.data.optimization.equation.service import EquationService
 
 from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
@@ -89,7 +90,7 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Equation."""
         self.run.require_lock()
-        self.service.add_data(id=self._model.id, data=data)
+        self.service.add_data(id=self.dto.id, data=data)
         self.refresh()
 
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
@@ -99,11 +100,15 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
         all indexed columns. All other keys/columns are ignored.
         """
         self.run.require_lock()
-        self.service.remove_data(id=self._model.id, data=data)
+        self.service.remove_data(id=self.dto.id, data=data)
         self.refresh()
 
     def delete(self) -> None:
+        self.run.require_lock()
         self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> EquationService:
+        return backend.optimization.equations
 
     def __str__(self) -> str:
         return f"<Equation {self.id} name={self.name}>"
@@ -112,6 +117,9 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
 class EquationServiceFacade(
     BaseOptimizationServiceFacade[Equation | int | str, EquationDto, EquationService]
 ):
+    def get_service(self, backend: Backend) -> EquationService:
+        return backend.optimization.equations
+
     def get_item_id(self, key: Equation | int | str) -> int:
         if isinstance(key, Equation):
             id = key.id
@@ -133,9 +141,12 @@ class EquationServiceFacade(
     ) -> Equation:
         self.run.require_lock()
         dto = self.service.create(
-            self.run.id, name, constrained_to_indexsets, column_names
+            self.run.id,
+            name,
+            constrained_to_indexsets=constrained_to_indexsets,
+            column_names=column_names,
         )
-        return Equation(self.service, dto)
+        return Equation(self.backend, dto, run=self.run)
 
     def delete(self, x: Equation | int | str) -> None:
         self.run.require_lock()
@@ -144,11 +155,13 @@ class EquationServiceFacade(
 
     def get_by_name(self, name: str) -> Equation:
         dto = self.service.get(self.run.id, name)
-        return Equation(self.service, dto)
+        return Equation(self.backend, dto, run=self.run)
 
     def list(self, **kwargs: Unpack[EquationFilter]) -> list[Equation]:
         equations = self.service.list(**kwargs)
-        return [Equation(self.service, dto) for dto in equations]
+        return [Equation(self.backend, dto, run=self.run) for dto in equations]
 
     def tabulate(self, **kwargs: Unpack[EquationFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+            columns=["run__id"]
+        )

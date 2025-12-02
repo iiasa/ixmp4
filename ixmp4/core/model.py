@@ -1,10 +1,10 @@
-from collections.abc import Iterable
 from datetime import datetime
 
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacadeObject, BaseServiceFacade
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.model.dto import Model as ModelDto
 from ixmp4.data.model.exceptions import (
@@ -59,74 +59,49 @@ class Model(BaseFacadeObject[ModelService, ModelDto]):
         except DocsNotFound:
             return None
 
+    def delete(self) -> None:
+        self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> ModelService:
+        return backend.models
+
     def __str__(self) -> str:
-        return f"<Model {self.id} name={self.name}>"
+        return f"<Model {self.id} name='{self.name}'>"
 
 
-class ModelServiceFacade(BaseServiceFacade[ModelService]):
+class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelService]):
+    def get_service(self, backend: Backend) -> ModelService:
+        return backend.models
+
+    def get_item_id(self, ref: Model | int | str) -> int:
+        if isinstance(ref, Model):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self.service.get_by_name(ref)
+            return dto.id
+        else:
+            raise ValueError(f"Invalid reference to model: {ref}")
+
     def create(
         self,
         name: str,
     ) -> Model:
         dto = self.service.create(name)
-        return Model(self.service, dto)
+        return Model(self.backend, dto)
 
-    def get(self, name: str) -> Model:
+    def delete(self, ref: Model | int | str) -> None:
+        id = self.get_item_id(ref)
+        self.service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> Model:
         dto = self.service.get_by_name(name)
-        return Model(self.service, dto)
+        return Model(self.backend, dto)
 
     def list(self, **kwargs: Unpack[ModelFilter]) -> list[Model]:
         models = self.service.list(**kwargs)
-        return [Model(self.service, dto) for dto in models]
+        return [Model(self.backend, dto) for dto in models]
 
     def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
         return self.service.tabulate(**kwargs)
-
-    def _get_model_id(self, model: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(model, str):
-            obj = self.service.get_by_name(model)
-            return obj.id
-        else:
-            raise ValueError(f"Invalid reference to model: {model}")
-
-    def get_docs(self, name: str) -> str | None:
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        try:
-            return self.service.get_docs(dimension__id=model_id).description
-        except DocsNotFound:
-            return None
-
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        return self.service.set_docs(
-            dimension__id=model_id, description=description
-        ).description
-
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        try:
-            self.service.delete_docs(dimension__id=model_id)
-            return None
-        except DocsNotFound:
-            return None
-
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.service.list_docs(
-                dimension__id=id, dimension__id__in=id__in
-            )
-        ]

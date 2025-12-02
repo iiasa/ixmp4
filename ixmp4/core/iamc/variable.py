@@ -1,9 +1,10 @@
-from collections.abc import Iterable
 from datetime import datetime
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacadeObject, BaseServiceFacade
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.iamc.variable.dto import Variable as VariableDto
 from ixmp4.data.iamc.variable.exceptions import (
@@ -11,6 +12,7 @@ from ixmp4.data.iamc.variable.exceptions import (
     VariableNotFound,
     VariableNotUnique,
 )
+from ixmp4.data.iamc.variable.filter import VariableFilter
 from ixmp4.data.iamc.variable.service import VariableService
 
 
@@ -57,71 +59,49 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
         except DocsNotFound:
             return None
 
+    def delete(self) -> None:
+        """Deletes the variable from the database."""
+        self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> VariableService:
+        return backend.iamc.variables
+
     def __str__(self) -> str:
-        return f"<Variable {self.id} name={self.name}>"
+        return f"<Variable {self.id} name='{self.name}'>"
 
 
-class VariableServiceFacade(BaseServiceFacade[VariableService]):
+class VariableServiceFacade(
+    BaseDocsServiceFacade[Variable | int | str, Variable, VariableService]
+):
+    def get_service(self, backend: Backend) -> VariableService:
+        return backend.iamc.variables
+
+    def get_item_id(self, ref: Variable | int | str) -> int:
+        if isinstance(ref, Variable):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self.service.get_by_name(ref)
+            return dto.id
+        else:
+            raise ValueError(f"Invalid reference to variable: {ref}")
+
     def create(self, name: str) -> Variable:
         dto = self.service.create(name)
-        return Variable(self.service, dto)
+        return Variable(self.backend, dto)
+
+    def delete(self, ref: Variable | int | str) -> None:
+        id = self.get_item_id(ref)
+        self.service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Variable:
         dto = self.service.get_by_name(name)
-        return Variable(self.service, dto)
+        return Variable(self.backend, dto)
 
-    def list(self, name: str | None = None) -> list[Variable]:
-        variables = self.service.list(name=name)
-        return [Variable(self.service, dto) for dto in variables]
+    def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
+        units = self.service.list(**kwargs)
+        return [Variable(self.backend, dto) for dto in units]
 
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.service.tabulate(name=name)
-
-    def _get_variable_id(self, variable: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(variable, str):
-            obj = self.service.get_by_name(variable)
-            return obj.id
-        else:
-            raise ValueError(f"Invalid reference to variable: {variable}")
-
-    def get_docs(self, name: str) -> str | None:
-        variable_id = self._get_variable_id(name)
-        if variable_id is None:
-            return None
-        try:
-            return self.service.get_docs(dimension__id=variable_id).description
-        except DocsNotFound:
-            return None
-
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        variable_id = self._get_variable_id(name)
-        if variable_id is None:
-            return None
-        return self.service.set_docs(
-            dimension__id=variable_id, description=description
-        ).description
-
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        variable_id = self._get_variable_id(name)
-        if variable_id is None:
-            return None
-        try:
-            self.service.delete_docs(dimension__id=variable_id)
-            return None
-        except DocsNotFound:
-            return None
-
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.service.list_docs(
-                dimension__id=id, dimension__id__in=id__in
-            )
-        ]
+    def tabulate(self, **kwargs: Unpack[VariableFilter]) -> pd.DataFrame:
+        return self.service.tabulate(**kwargs)

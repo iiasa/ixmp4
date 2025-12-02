@@ -4,15 +4,16 @@ from typing import Any, cast
 import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.parameter.dto import Parameter as ParameterDto
-from ixmp4.data.optimization.parameter.filter import ParameterFilter
-from ixmp4.data.optimization.parameter.repositories import (
+from ixmp4.data.optimization.parameter.exceptions import (
     ParameterDataInvalid,
     ParameterDeletionPrevented,
     ParameterNotFound,
     ParameterNotUnique,
 )
+from ixmp4.data.optimization.parameter.filter import ParameterFilter
 from ixmp4.data.optimization.parameter.service import ParameterService
 
 from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
@@ -89,10 +90,8 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Parameter."""
         self.run.require_lock()
-        self.service.add_data(id=self._model.id, data=data)
-        self._model = self.service.get(
-            run_id=self._model.run__id, name=self._model.name
-        )
+        self.service.add_data(id=self.dto.id, data=data)
+        self.dto = self.service.get(run_id=self.dto.run__id, name=self.dto.name)
 
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
         """Removes data from the Parameter.
@@ -101,13 +100,15 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
         all indexed columns. All other keys/columns are ignored.
         """
         self.run.require_lock()
-        self.service.remove_data(id=self._model.id, data=data)
-        self._model = self.service.get(
-            run_id=self._model.run__id, name=self._model.name
-        )
+        self.service.remove_data(id=self.dto.id, data=data)
+        self.dto = self.service.get(run_id=self.dto.run__id, name=self.dto.name)
 
     def delete(self) -> None:
+        self.run.require_lock()
         self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> ParameterService:
+        return backend.optimization.parameters
 
     def __str__(self) -> str:
         return f"<Parameter {self.id} name={self.name}>"
@@ -116,6 +117,9 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
 class ParameterServiceFacade(
     BaseOptimizationServiceFacade[Parameter | int | str, ParameterDto, ParameterService]
 ):
+    def get_service(self, backend: Backend) -> ParameterService:
+        return backend.optimization.parameters
+
     def get_item_id(self, key: Parameter | int | str) -> int:
         if isinstance(key, Parameter):
             id = key.id
@@ -139,7 +143,7 @@ class ParameterServiceFacade(
         dto = self.service.create(
             self.run.id, name, constrained_to_indexsets, column_names
         )
-        return Parameter(self.service, dto)
+        return Parameter(self.backend, dto, run=self.run)
 
     def delete(self, x: Parameter | int | str) -> None:
         self.run.require_lock()
@@ -148,11 +152,13 @@ class ParameterServiceFacade(
 
     def get_by_name(self, name: str) -> Parameter:
         dto = self.service.get(self.run.id, name)
-        return Parameter(self.service, dto)
+        return Parameter(self.backend, dto, run=self.run)
 
     def list(self, **kwargs: Unpack[ParameterFilter]) -> list[Parameter]:
         parameters = self.service.list(**kwargs)
-        return [Parameter(self.service, dto) for dto in parameters]
+        return [Parameter(self.backend, dto, run=self.run) for dto in parameters]
 
     def tabulate(self, **kwargs: Unpack[ParameterFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+            columns=["run__id"]
+        )

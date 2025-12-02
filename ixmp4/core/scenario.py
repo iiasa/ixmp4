@@ -1,9 +1,10 @@
-from collections.abc import Iterable
 from datetime import datetime
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacadeObject, BaseServiceFacade
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.scenario.dto import Scenario as ScenarioDto
 from ixmp4.data.scenario.exceptions import (
@@ -11,6 +12,7 @@ from ixmp4.data.scenario.exceptions import (
     ScenarioNotFound,
     ScenarioNotUnique,
 )
+from ixmp4.data.scenario.filter import ScenarioFilter
 from ixmp4.data.scenario.service import ScenarioService
 
 
@@ -57,74 +59,51 @@ class Scenario(BaseFacadeObject[ScenarioService, ScenarioDto]):
         except DocsNotFound:
             return None
 
+    def delete(self) -> None:
+        self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> ScenarioService:
+        return backend.scenarios
+
     def __str__(self) -> str:
-        return f"<Scenario {self.id} name={self.name}>"
+        return f"<Scenario {self.id} name='{self.name}'>"
 
 
-class ScenarioServiceFacade(BaseServiceFacade[ScenarioService]):
+class ScenarioServiceFacade(
+    BaseDocsServiceFacade[Scenario | int | str, Scenario, ScenarioService]
+):
+    def get_service(self, backend: Backend) -> ScenarioService:
+        return backend.scenarios
+
+    def get_item_id(self, ref: Scenario | int | str) -> int:
+        if isinstance(ref, Scenario):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self.service.get_by_name(ref)
+            return dto.id
+        else:
+            raise ValueError(f"Invalid reference to scenario: {ref}")
+
     def create(
         self,
         name: str,
     ) -> Scenario:
         scen = self.service.create(name)
-        return Scenario(backend=self._backend, dto=scen)
+        return Scenario(backend=self.backend, dto=scen)
 
-    def get(self, name: str) -> Scenario:
+    def delete(self, ref: Scenario | int | str) -> None:
+        id = self.get_item_id(ref)
+        self.service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> Scenario:
         scen = self.service.get_by_name(name)
-        return Scenario(self.service, scen)
+        return Scenario(self.backend, scen)
 
-    def list(self, name: str | None = None) -> list[Scenario]:
-        scenarios = self.service.list(name=name)
-        return [Scenario(self.service, s) for s in scenarios]
+    def list(self, **kwargs: Unpack[ScenarioFilter]) -> list[Scenario]:
+        units = self.service.list(**kwargs)
+        return [Scenario(self.backend, dto) for dto in units]
 
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.service.tabulate(name=name)
-
-    def _get_scenario_id(self, scenario: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(scenario, str):
-            obj = self.service.get_by_name(scenario)
-            return obj.id
-        else:
-            raise ValueError(f"Invalid reference to scenario: {scenario}")
-
-    def get_docs(self, name: str) -> str | None:
-        scenario_id = self._get_scenario_id(name)
-        if scenario_id is None:
-            return None
-        try:
-            return self.service.get_docs(dimension__id=scenario_id).description
-        except DocsNotFound:
-            return None
-
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        scenario_id = self._get_scenario_id(name)
-        if scenario_id is None:
-            return None
-        return self.service.set_docs(
-            dimension__id=scenario_id, description=description
-        ).description
-
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        scenario_id = self._get_scenario_id(name)
-        if scenario_id is None:
-            return None
-        try:
-            self.service.delete_docs(dimension__id=scenario_id)
-            return None
-        except DocsNotFound:
-            return None
-
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.service.list_docs(
-                dimension__id=id, dimension__id__in=id__in
-            )
-        ]
+    def tabulate(self, **kwargs: Unpack[ScenarioFilter]) -> pd.DataFrame:
+        return self.service.tabulate(**kwargs)

@@ -4,15 +4,16 @@ from typing import Any
 import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.table.dto import Table as TableDto
-from ixmp4.data.optimization.table.filter import TableFilter
-from ixmp4.data.optimization.table.repositories import (
+from ixmp4.data.optimization.table.exceptions import (
     TableDataInvalid,
     TableDeletionPrevented,
     TableNotFound,
     TableNotUnique,
 )
+from ixmp4.data.optimization.table.filter import TableFilter
 from ixmp4.data.optimization.table.service import TableService
 
 from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
@@ -81,7 +82,7 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Table."""
         self.run.require_lock()
-        self.service.add_data(id=self._model.id, data=data)
+        self.service.add_data(id=self.dto.id, data=data)
         self.refresh()
 
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
@@ -95,7 +96,11 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
         self.refresh()
 
     def delete(self) -> None:
+        self.run.require_lock()
         self.service.delete_by_id(self.dto.id)
+
+    def get_service(self, backend: Backend) -> TableService:
+        return backend.optimization.tables
 
     def __str__(self) -> str:
         return f"<Table {self.id} name={self.name}>"
@@ -104,6 +109,9 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
 class TableServiceFacade(
     BaseOptimizationServiceFacade[Table | int | str, TableDto, TableService]
 ):
+    def get_service(self, backend: Backend) -> TableService:
+        return backend.optimization.tables
+
     def get_item_id(self, key: Table | int | str) -> int:
         if isinstance(key, Table):
             id = key.id
@@ -127,7 +135,7 @@ class TableServiceFacade(
         dto = self.service.create(
             self.run.id, name, constrained_to_indexsets, column_names
         )
-        return Table(self.service, dto)
+        return Table(self.backend, dto, run=self.run)
 
     def delete(self, x: Table | int | str) -> None:
         self.run.require_lock()
@@ -136,11 +144,13 @@ class TableServiceFacade(
 
     def get_by_name(self, name: str) -> Table:
         dto = self.service.get(self.run.id, name)
-        return Table(self.service, dto)
+        return Table(self.backend, dto, run=self.run)
 
     def list(self, **kwargs: Unpack[TableFilter]) -> list[Table]:
         tables = self.service.list(**kwargs)
-        return [Table(self.service, dto) for dto in tables]
+        return [Table(self.backend, dto, run=self.run) for dto in tables]
 
     def tabulate(self, **kwargs: Unpack[TableFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+            columns=["run__id"]
+        )
