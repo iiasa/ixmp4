@@ -71,7 +71,7 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
         """Deletes the region from the database."""
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> RegionService:
+    def _get_service(self, backend: Backend) -> RegionService:
         return backend.regions
 
     def __str__(self) -> str:
@@ -81,16 +81,16 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
 class RegionServiceFacade(
     BaseDocsServiceFacade[Region | int | str, Region, RegionService]
 ):
-    def get_service(self, backend: Backend) -> RegionService:
+    def _get_service(self, backend: Backend) -> RegionService:
         return backend.regions
 
-    def get_item_id(self, ref: Region | int | str) -> int:
+    def _get_item_id(self, ref: Region | int | str) -> int:
         if isinstance(ref, Region):
             return ref.id
         elif isinstance(ref, int):
             return ref
         elif isinstance(ref, str):
-            dto = self.service.get_by_name(ref)
+            dto = self._service.get_by_name(ref)
             return dto.id
         else:
             raise ValueError(f"Invalid reference to region: {ref}")
@@ -100,20 +100,20 @@ class RegionServiceFacade(
         name: str,
         hierarchy: str,
     ) -> Region:
-        dto = self.service.create(name, hierarchy)
-        return Region(self.backend, dto)
+        dto = self._service.create(name, hierarchy)
+        return Region(self._backend, dto)
 
     def get_by_name(self, name: str) -> Region:
-        dto = self.service.get_by_name(name)
-        return Region(self.backend, dto)
+        dto = self._service.get_by_name(name)
+        return Region(self._backend, dto)
 
     def delete(self, ref: Region | int | str) -> None:
-        id = self.get_item_id(ref)
-        self.service.delete_by_id(id)
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
     def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
-        regions = self.service.list(**kwargs)
-        return [Region(self.backend, dto) for dto in regions]
+        regions = self._service.list(**kwargs)
+        return [Region(self._backend, dto) for dto in regions]
 
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self._service.tabulate(**kwargs)

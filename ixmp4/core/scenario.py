@@ -62,7 +62,7 @@ class Scenario(BaseFacadeObject[ScenarioService, ScenarioDto]):
     def delete(self) -> None:
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> ScenarioService:
+    def _get_service(self, backend: Backend) -> ScenarioService:
         return backend.scenarios
 
     def __str__(self) -> str:
@@ -72,16 +72,16 @@ class Scenario(BaseFacadeObject[ScenarioService, ScenarioDto]):
 class ScenarioServiceFacade(
     BaseDocsServiceFacade[Scenario | int | str, Scenario, ScenarioService]
 ):
-    def get_service(self, backend: Backend) -> ScenarioService:
+    def _get_service(self, backend: Backend) -> ScenarioService:
         return backend.scenarios
 
-    def get_item_id(self, ref: Scenario | int | str) -> int:
+    def _get_item_id(self, ref: Scenario | int | str) -> int:
         if isinstance(ref, Scenario):
             return ref.id
         elif isinstance(ref, int):
             return ref
         elif isinstance(ref, str):
-            dto = self.service.get_by_name(ref)
+            dto = self._service.get_by_name(ref)
             return dto.id
         else:
             raise ValueError(f"Invalid reference to scenario: {ref}")
@@ -90,20 +90,20 @@ class ScenarioServiceFacade(
         self,
         name: str,
     ) -> Scenario:
-        scen = self.service.create(name)
-        return Scenario(backend=self.backend, dto=scen)
+        scen = self._service.create(name)
+        return Scenario(backend=self._backend, dto=scen)
 
     def delete(self, ref: Scenario | int | str) -> None:
-        id = self.get_item_id(ref)
-        self.service.delete_by_id(id)
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Scenario:
-        scen = self.service.get_by_name(name)
-        return Scenario(self.backend, scen)
+        scen = self._service.get_by_name(name)
+        return Scenario(self._backend, scen)
 
     def list(self, **kwargs: Unpack[ScenarioFilter]) -> list[Scenario]:
-        units = self.service.list(**kwargs)
-        return [Scenario(self.backend, dto) for dto in units]
+        units = self._service.list(**kwargs)
+        return [Scenario(self._backend, dto) for dto in units]
 
     def tabulate(self, **kwargs: Unpack[ScenarioFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self._service.tabulate(**kwargs)

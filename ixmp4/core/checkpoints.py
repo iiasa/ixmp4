@@ -28,12 +28,12 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
         super().__init__(backend)
         self.run = run
 
-    def get_service(self, backend: Backend) -> CheckpointService:
+    def _get_service(self, backend: Backend) -> CheckpointService:
         return backend.checkpoints
 
     def tabulate(self) -> pd.DataFrame:
-        return self.service.tabulate(run__id=self.run.id)
+        return self._service.tabulate(run__id=self.run.id)
 
     def create(self, message: str) -> Checkpoint:
         self.run.require_lock()
-        return self.service.create(run__id=self.run.id, message=message)
+        return self._service.create(run__id=self.run.id, message=message)

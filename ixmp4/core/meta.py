@@ -11,12 +11,12 @@ from .base import BaseServiceFacade
 
 
 class RunMetaServiceFacade(BaseServiceFacade[RunMetaEntryService]):
-    def get_service(self, backend: Backend) -> RunMetaEntryService:
+    def _get_service(self, backend: Backend) -> RunMetaEntryService:
         return backend.meta
 
     def tabulate(self, **kwargs: Unpack[RunMetaEntryFilter]) -> pd.DataFrame:
         # TODO: accept list of `Run` instances as arg
         # TODO: expand run-id to model-scenario-version-id columns
-        return self.service.tabulate(join_run_index=True, **kwargs).drop(
+        return self._service.tabulate(join_run_index=True, **kwargs).drop(
             columns=["id", "dtype"]
         )

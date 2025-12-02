@@ -63,7 +63,7 @@ class Unit(BaseFacadeObject[UnitService, UnitDto]):
     def delete(self) -> None:
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> UnitService:
+    def _get_service(self, backend: Backend) -> UnitService:
         return backend.units
 
     def __str__(self) -> str:
@@ -71,16 +71,16 @@ class Unit(BaseFacadeObject[UnitService, UnitDto]):
 
 
 class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitService]):
-    def get_service(self, backend: Backend) -> UnitService:
+    def _get_service(self, backend: Backend) -> UnitService:
         return backend.units
 
-    def get_item_id(self, ref: Unit | int | str) -> int:
+    def _get_item_id(self, ref: Unit | int | str) -> int:
         if isinstance(ref, Unit):
             return ref.id
         elif isinstance(ref, int):
             return ref
         elif isinstance(ref, str):
-            dto = self.service.get_by_name(ref)
+            dto = self._service.get_by_name(ref)
             return dto.id
         else:
             raise ValueError(f"Invalid reference to unit: {ref}")
@@ -92,20 +92,20 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
             raise ValueError(
                 "Unit name 'dimensionless' is reserved, use an empty string '' instead."
             )
-        dto = self.service.create(name)
-        return Unit(self.backend, dto)
+        dto = self._service.create(name)
+        return Unit(self._backend, dto)
 
     def delete(self, ref: Unit | int | str) -> None:
-        id = self.get_item_id(ref)
-        self.service.delete_by_id(id)
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Unit:
-        dto = self.service.get_by_name(name)
-        return Unit(self.backend, dto)
+        dto = self._service.get_by_name(name)
+        return Unit(self._backend, dto)
 
     def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
-        units = self.service.list(**kwargs)
-        return [Unit(self.backend, dto) for dto in units]
+        units = self._service.list(**kwargs)
+        return [Unit(self._backend, dto) for dto in units]
 
     def tabulate(self, **kwargs: Unpack[UnitFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self._service.tabulate(**kwargs)

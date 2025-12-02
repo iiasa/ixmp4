@@ -32,20 +32,20 @@ class RunIamcData(BaseBackendFacade):
         Model run.
     """
 
-    run: "Run"
+    _run: "Run"
 
     def __init__(self, backend: Backend, run: "Run") -> None:
         super().__init__(backend)
-        self.run = run
+        self._run = run
 
     def _get_or_create_ts(self, df: pd.DataFrame) -> pd.DataFrame:
         id_cols = ["region", "variable", "unit", "run__id"]
         # upsert set of unqiue timeseries
         ts_df = df[id_cols].drop_duplicates()
-        self.backend.iamc.timeseries.bulk_upsert(ts_df)
+        self._backend.iamc.timeseries.bulk_upsert(ts_df)
 
         # retrieve them again to get database ids
-        ts_df = self.backend.iamc.timeseries.tabulate_by_df(ts_df)
+        ts_df = self._backend.iamc.timeseries.tabulate_by_df(ts_df)
         ts_df = ts_df.rename(columns={"id": "time_series__id"})
 
         # merge on the identity columns
@@ -72,38 +72,38 @@ class RunIamcData(BaseBackendFacade):
         ).drop(columns=["id", "time_series__id"])
 
     def add(self, df: pd.DataFrame, type: Type | None = None) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         # df = AddDataPointFrameSchema.validate(df) TODO
         df = self._rename_arg_cols(df)
-        df["run__id"] = self.run.id
+        df["run__id"] = self._run.id
         df = self._get_or_create_ts(df)
 
         if type is not None:
             df["type"] = type
 
-        self.backend.iamc.datapoints.bulk_upsert(df)
+        self._backend.iamc.datapoints.bulk_upsert(df)
 
     def remove(self, df: pd.DataFrame, type: Type | None = None) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         # df = RemoveDataPointFrameSchema.validate(df) TODO
         df = self._rename_arg_cols(df)
-        df["run__id"] = self.run.id
+        df["run__id"] = self._run.id
         df = self._get_or_create_ts(df)
         if type is not None:
             df["type"] = type
 
         df = df.drop(columns=["unit", "variable", "region"])
-        self.backend.iamc.datapoints.bulk_delete(df)
+        self._backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(
         self,
         raw: bool = False,
         **kwargs: Unpack[DataPointFilter],
     ) -> pd.DataFrame:
-        df = self.backend.iamc.datapoints.tabulate(
+        df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=False,
-            run={"id": self.run.id, "default_only": False},
+            run={"id": self._run.id, "default_only": False},
             **kwargs,
         )
         # return normalize_df(df, raw, False, False)
@@ -134,7 +134,7 @@ class PlatformIamcData(BaseBackendFacade):
         raw: bool = False,
         **kwargs: Unpack[DataPointFilter],
     ) -> pd.DataFrame:
-        df = self.backend.iamc.datapoints.tabulate(
+        df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=join_runs,
             join_run_id=join_run_id,

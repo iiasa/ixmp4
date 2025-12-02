@@ -62,7 +62,7 @@ class Model(BaseFacadeObject[ModelService, ModelDto]):
     def delete(self) -> None:
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> ModelService:
+    def _get_service(self, backend: Backend) -> ModelService:
         return backend.models
 
     def __str__(self) -> str:
@@ -70,16 +70,16 @@ class Model(BaseFacadeObject[ModelService, ModelDto]):
 
 
 class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelService]):
-    def get_service(self, backend: Backend) -> ModelService:
+    def _get_service(self, backend: Backend) -> ModelService:
         return backend.models
 
-    def get_item_id(self, ref: Model | int | str) -> int:
+    def _get_item_id(self, ref: Model | int | str) -> int:
         if isinstance(ref, Model):
             return ref.id
         elif isinstance(ref, int):
             return ref
         elif isinstance(ref, str):
-            dto = self.service.get_by_name(ref)
+            dto = self._service.get_by_name(ref)
             return dto.id
         else:
             raise ValueError(f"Invalid reference to model: {ref}")
@@ -88,20 +88,20 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
         self,
         name: str,
     ) -> Model:
-        dto = self.service.create(name)
-        return Model(self.backend, dto)
+        dto = self._service.create(name)
+        return Model(self._backend, dto)
 
     def delete(self, ref: Model | int | str) -> None:
-        id = self.get_item_id(ref)
-        self.service.delete_by_id(id)
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Model:
-        dto = self.service.get_by_name(name)
-        return Model(self.backend, dto)
+        dto = self._service.get_by_name(name)
+        return Model(self._backend, dto)
 
     def list(self, **kwargs: Unpack[ModelFilter]) -> list[Model]:
-        models = self.service.list(**kwargs)
-        return [Model(self.backend, dto) for dto in models]
+        models = self._service.list(**kwargs)
+        return [Model(self._backend, dto) for dto in models]
 
     def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
-        return self.service.tabulate(**kwargs)
+        return self._service.tabulate(**kwargs)

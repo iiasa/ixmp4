@@ -14,10 +14,10 @@ from ixmp4.services.protocols import GetByIdService
 
 
 class BaseBackendFacade(object):
-    backend: Backend
+    _backend: Backend
 
     def __init__(self, backend: Backend) -> None:
-        self.backend = backend
+        self._backend = backend
 
 
 KeyT = TypeVar("KeyT")
@@ -26,7 +26,7 @@ ItemT = TypeVar("ItemT")
 
 class ItemLookupFacade(abc.ABC, Generic[KeyT, ItemT]):
     @abc.abstractmethod
-    def get_item_id(self, ref: KeyT) -> int:
+    def _get_item_id(self, ref: KeyT) -> int:
         raise NotImplementedError
 
 
@@ -34,14 +34,14 @@ ServiceT = TypeVar("ServiceT", bound=Service)
 
 
 class BaseServiceFacade(abc.ABC, BaseBackendFacade, Generic[ServiceT]):
-    service: ServiceT
+    _service: ServiceT
 
     def __init__(self, backend: Backend) -> None:
         BaseBackendFacade.__init__(self, backend)
-        self.service = self.get_service(backend)
+        self._service = self._get_service(backend)
 
     @abc.abstractmethod
-    def get_service(self, backend: Backend) -> ServiceT:
+    def _get_service(self, backend: Backend) -> ServiceT:
         raise NotImplementedError
 
 
@@ -54,11 +54,11 @@ class BaseDocsServiceFacade(
     Generic[KeyT, ItemT, DocsServiceT],
 ):
     def get_docs(self, x: KeyT) -> str | None:
-        equation_id = self.get_item_id(x)
+        equation_id = self._get_item_id(x)
         if equation_id is None:
             return None
         try:
-            return self.service.get_docs(dimension__id=equation_id).description
+            return self._service.get_docs(dimension__id=equation_id).description
         except DocsNotFound:
             return None
 
@@ -66,26 +66,26 @@ class BaseDocsServiceFacade(
         if description is None:
             self.delete_docs(x)
             return None
-        equation_id = self.get_item_id(x)
+        equation_id = self._get_item_id(x)
         if equation_id is None:
             return None
-        return self.service.set_docs(
+        return self._service.set_docs(
             dimension__id=equation_id, description=description
         ).description
 
     def delete_docs(self, x: KeyT) -> None:
         # TODO: this function is failing silently, which we should avoid
-        equation_id = self.get_item_id(x)
+        equation_id = self._get_item_id(x)
         if equation_id is None:
             return None
         try:
-            self.service.delete_docs(dimension__id=equation_id)
+            self._service.delete_docs(dimension__id=equation_id)
             return None
         except DocsNotFound:
             return None
 
     def list_docs(self, **kwargs: Unpack[DocsFilter]) -> Iterable[str]:
-        return [item.description for item in self.service.list_docs(**kwargs)]
+        return [item.description for item in self._service.list_docs(**kwargs)]
 
 
 DtoT = TypeVar("DtoT", bound=BaseModel)

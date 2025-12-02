@@ -52,7 +52,7 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
 
     @value.setter
     def value(self, value: float) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.update(self.dto.id, value)
         self.dto.value = value
 
@@ -63,7 +63,7 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
 
     @unit.setter
     def unit(self, value: str | UnitDto) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         if isinstance(value, str):
             unit = self.units.get_by_name(value)
         else:
@@ -104,15 +104,15 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
         self, value: int | float | None = None, unit_name: str | None = None
     ) -> None:
         """Adds data to the Scalar."""
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.update_by_id(self.dto.id, value=value, unit_name=unit_name)
         self.refresh()
 
     def delete(self) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> ScalarService:
+    def _get_service(self, backend: Backend) -> ScalarService:
         return backend.optimization.scalars
 
     def __str__(self) -> str:
@@ -128,16 +128,16 @@ class ScalarServiceFacade(
         super().__init__(backend, run)
         self.units = backend.units
 
-    def get_service(self, backend: Backend) -> ScalarService:
+    def _get_service(self, backend: Backend) -> ScalarService:
         return backend.optimization.scalars
 
-    def get_item_id(self, key: Scalar | int | str) -> int:
+    def _get_item_id(self, key: Scalar | int | str) -> int:
         if isinstance(key, Scalar):
             id = key.id
         elif isinstance(key, int):
             id = key
         elif isinstance(key, str):
-            dto = self.service.get(self.run.id, key)
+            dto = self._service.get(self._run.id, key)
             id = dto.id
         else:
             raise TypeError("Invalid argument: Must be `Scalar`, `int` or `str`.")
@@ -145,7 +145,7 @@ class ScalarServiceFacade(
         return id
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
-        self.run.require_lock()
+        self._run.require_lock()
         if isinstance(unit, Unit):
             unit_name = unit.name
         elif isinstance(unit, str):
@@ -157,30 +157,30 @@ class ScalarServiceFacade(
             unit_name = dimensionless_unit.name
 
         try:
-            dto = self.service.create(
-                self.run.id, name, value=value, unit_name=unit_name
+            dto = self._service.create(
+                self._run.id, name, value=value, unit_name=unit_name
             )
         except Scalar.NotUnique as e:
             raise Scalar.NotUnique(
                 message=f"Scalar '{name}' already exists! "
                 "Did you mean to call Scalar.update()?"
             ) from e
-        return Scalar(self.backend, dto, run=self.run)
+        return Scalar(self._backend, dto, run=self._run)
 
     def delete(self, x: Scalar | int | str) -> None:
-        self.run.require_lock()
-        id = self.get_item_id(x)
-        self.service.delete_by_id(id)
+        self._run.require_lock()
+        id = self._get_item_id(x)
+        self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Scalar:
-        dto = self.service.get(self.run.id, name)
-        return Scalar(self.backend, dto, run=self.run)
+        dto = self._service.get(self._run.id, name)
+        return Scalar(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:
-        scalars = self.service.list(**kwargs)
-        return [Scalar(self.backend, dto, run=self.run) for dto in scalars]
+        scalars = self._service.list(**kwargs)
+        return [Scalar(self._backend, dto, run=self._run) for dto in scalars]
 
     def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> pd.DataFrame:
-        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+        return self._service.tabulate(run__id=self._run.id, **kwargs).drop(
             columns=["run__id"]
         )

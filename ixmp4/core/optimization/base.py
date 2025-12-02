@@ -16,16 +16,16 @@ if TYPE_CHECKING:
 
 
 class BaseOptimizationFacadeObject(BaseFacadeObject[GetByIdServiceT, DtoT]):
-    run: "Run"
+    _run: "Run"
 
     def __init__(self, backend: Backend, dto: DtoT, run: "Run"):
         super().__init__(backend, dto)
-        self.run = run
+        self._run = run
 
 
 class BaseOptimizationServiceFacade(BaseDocsServiceFacade[KeyT, ItemT, DocsServiceT]):
-    run: "Run"
+    _run: "Run"
 
     def __init__(self, backend: Backend, run: "Run"):
         super().__init__(backend)
-        self.run = run
+        self._run = run

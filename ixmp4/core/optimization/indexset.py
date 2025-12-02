@@ -74,7 +74,7 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
         self, data: float | int | str | list[float] | list[int] | list[str]
     ) -> None:
         """Adds data to the IndexSet."""
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.add_data(id=self.dto.id, data=data)
         self.refresh()
 
@@ -86,15 +86,15 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
         """
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.remove_data(self.dto.id, data)
         self.refresh()
 
     def delete(self) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> IndexSetService:
+    def _get_service(self, backend: Backend) -> IndexSetService:
         return backend.optimization.indexsets
 
     def __str__(self) -> str:
@@ -104,16 +104,16 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
 class IndexSetServiceFacade(
     BaseOptimizationServiceFacade[IndexSet | int | str, IndexSetDto, IndexSetService]
 ):
-    def get_service(self, backend: Backend) -> IndexSetService:
+    def _get_service(self, backend: Backend) -> IndexSetService:
         return backend.optimization.indexsets
 
-    def get_item_id(self, key: IndexSet | int | str) -> int:
+    def _get_item_id(self, key: IndexSet | int | str) -> int:
         if isinstance(key, IndexSet):
             id = key.id
         elif isinstance(key, int):
             id = key
         elif isinstance(key, str):
-            dto = self.service.get(self.run.id, key)
+            dto = self._service.get(self._run.id, key)
             id = dto.id
         else:
             raise TypeError("Invalid argument: Must be `IndexSet`, `int` or `str`.")
@@ -121,24 +121,24 @@ class IndexSetServiceFacade(
         return id
 
     def create(self, name: str) -> IndexSet:
-        self.run.require_lock()
-        dto = self.service.create(self.run.id, name)
-        return IndexSet(self.backend, dto, run=self.run)
+        self._run.require_lock()
+        dto = self._service.create(self._run.id, name)
+        return IndexSet(self._backend, dto, run=self._run)
 
     def delete(self, x: IndexSet | int | str) -> None:
-        self.run.require_lock()
-        id = self.get_item_id(x)
-        self.service.delete_by_id(id)
+        self._run.require_lock()
+        id = self._get_item_id(x)
+        self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> IndexSet:
-        dto = self.service.get(self.run.id, name)
-        return IndexSet(self.backend, dto, run=self.run)
+        dto = self._service.get(self._run.id, name)
+        return IndexSet(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[IndexSetFilter]) -> list[IndexSet]:
-        indexsets = self.service.list(**kwargs)
-        return [IndexSet(self.backend, dto, run=self.run) for dto in indexsets]
+        indexsets = self._service.list(**kwargs)
+        return [IndexSet(self._backend, dto, run=self._run) for dto in indexsets]
 
     def tabulate(self, **kwargs: Unpack[IndexSetFilter]) -> pd.DataFrame:
-        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+        return self._service.tabulate(run__id=self._run.id, **kwargs).drop(
             columns=["run__id"]
         )

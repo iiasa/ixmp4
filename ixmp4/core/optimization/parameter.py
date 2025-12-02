@@ -89,7 +89,7 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
 
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Parameter."""
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.add_data(id=self.dto.id, data=data)
         self.dto = self.service.get(run_id=self.dto.run__id, name=self.dto.name)
 
@@ -99,15 +99,15 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
         """
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.remove_data(id=self.dto.id, data=data)
         self.dto = self.service.get(run_id=self.dto.run__id, name=self.dto.name)
 
     def delete(self) -> None:
-        self.run.require_lock()
+        self._run.require_lock()
         self.service.delete_by_id(self.dto.id)
 
-    def get_service(self, backend: Backend) -> ParameterService:
+    def _get_service(self, backend: Backend) -> ParameterService:
         return backend.optimization.parameters
 
     def __str__(self) -> str:
@@ -117,16 +117,16 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
 class ParameterServiceFacade(
     BaseOptimizationServiceFacade[Parameter | int | str, ParameterDto, ParameterService]
 ):
-    def get_service(self, backend: Backend) -> ParameterService:
+    def _get_service(self, backend: Backend) -> ParameterService:
         return backend.optimization.parameters
 
-    def get_item_id(self, key: Parameter | int | str) -> int:
+    def _get_item_id(self, key: Parameter | int | str) -> int:
         if isinstance(key, Parameter):
             id = key.id
         elif isinstance(key, int):
             id = key
         elif isinstance(key, str):
-            dto = self.service.get(self.run.id, key)
+            dto = self._service.get(self._run.id, key)
             id = dto.id
         else:
             raise TypeError("Invalid argument: Must be `Parameter`, `int` or `str`.")
@@ -139,26 +139,26 @@ class ParameterServiceFacade(
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Parameter:
-        self.run.require_lock()
-        dto = self.service.create(
-            self.run.id, name, constrained_to_indexsets, column_names
+        self._run.require_lock()
+        dto = self._service.create(
+            self._run.id, name, constrained_to_indexsets, column_names
         )
-        return Parameter(self.backend, dto, run=self.run)
+        return Parameter(self._backend, dto, run=self._run)
 
     def delete(self, x: Parameter | int | str) -> None:
-        self.run.require_lock()
-        id = self.get_item_id(x)
-        self.service.delete_by_id(id)
+        self._run.require_lock()
+        id = self._get_item_id(x)
+        self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Parameter:
-        dto = self.service.get(self.run.id, name)
-        return Parameter(self.backend, dto, run=self.run)
+        dto = self._service.get(self._run.id, name)
+        return Parameter(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[ParameterFilter]) -> list[Parameter]:
-        parameters = self.service.list(**kwargs)
-        return [Parameter(self.backend, dto, run=self.run) for dto in parameters]
+        parameters = self._service.list(**kwargs)
+        return [Parameter(self._backend, dto, run=self._run) for dto in parameters]
 
     def tabulate(self, **kwargs: Unpack[ParameterFilter]) -> pd.DataFrame:
-        return self.service.tabulate(run__id=self.run.id, **kwargs).drop(
+        return self._service.tabulate(run__id=self._run.id, **kwargs).drop(
             columns=["run__id"]
         )

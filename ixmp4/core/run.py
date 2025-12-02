@@ -240,16 +240,16 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             ),
         )
 
-    def get_service(self, backend: Backend) -> RunService:
+    def _get_service(self, backend: Backend) -> RunService:
         return backend.runs
 
 
 class RunServiceFacade(BaseServiceFacade[RunService]):
-    def get_service(self, backend: Backend) -> RunService:
+    def _get_service(self, backend: Backend) -> RunService:
         return backend.runs
 
     def create(self, model: str, scenario: str) -> Run:
-        return Run(self.backend, self.service.create(model, scenario))
+        return Run(self._backend, self._service.create(model, scenario))
 
     def delete(self, x: Run | int) -> None:
         if isinstance(x, Run):
@@ -259,23 +259,23 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
         else:
             raise TypeError("Invalid argument: Must be `Run` or `int`.")
 
-        self.service.delete_by_id(id)
+        self._service.delete_by_id(id)
 
     def get(self, model: str, scenario: str, version: int | None = None) -> Run:
         dto = (
-            self.service.get_default_version(model, scenario)
+            self._service.get_default_version(model, scenario)
             if version is None
-            else self.service.get(model, scenario, version)
+            else self._service.get(model, scenario, version)
         )
-        return Run(self.backend, dto)
+        return Run(self._backend, dto)
 
     def list(self, **kwargs: Unpack[RunFilter]) -> list[Run]:
-        return [Run(self.backend, dto) for dto in self.service.list(**kwargs)]
+        return [Run(self._backend, dto) for dto in self._service.list(**kwargs)]
 
     def tabulate(
         self, audit_info: bool = False, **kwargs: Unpack[RunFilter]
     ) -> pd.DataFrame:
-        runs = self.service.tabulate(**kwargs)
+        runs = self._service.tabulate(**kwargs)
         columns = ["model", "scenario", "version", "is_default"]
         if audit_info:
             columns += ["updated_at", "updated_by", "created_at", "created_by", "id"]
@@ -287,7 +287,7 @@ class RunMetaFacade(
 ):
     run: Run
 
-    def get_service(self, backend: Backend) -> RunMetaEntryService:
+    def _get_service(self, backend: Backend) -> RunMetaEntryService:
         return backend.meta
 
     def __init__(self, backend: Backend, run: Run) -> None:
@@ -299,7 +299,7 @@ class RunMetaFacade(
         self.df, self.data = self._get()
 
     def _get(self) -> tuple[pd.DataFrame, dict[str, MetaValueType | None]]:
-        df = self.service.tabulate(run__id=self.run.id, run={"default_only": False})
+        df = self._service.tabulate(run__id=self.run.id, run={"default_only": False})
         if df.empty:
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
@@ -309,13 +309,13 @@ class RunMetaFacade(
 
         df = pd.DataFrame({"key": self.data.keys()})
         df["run__id"] = self.run.id
-        self.service.bulk_delete(df)
+        self._service.bulk_delete(df)
         df = pd.DataFrame(
             {"key": meta.keys(), "value": [numpy_to_pytype(v) for v in meta.values()]}
         )
         df.dropna(axis=0, inplace=True)
         df["run__id"] = self.run.id
-        self.service.bulk_upsert(df)
+        self._service.bulk_upsert(df)
         self.df, self.data = self._get()
 
     def __setitem__(self, key: str, value: MetaValueType | np.generic | None) -> None:
@@ -328,13 +328,13 @@ class RunMetaFacade(
 
         py_value = numpy_to_pytype(value)
         if py_value is not None:
-            self.service.create(self.run.id, key, py_value)
+            self._service.create(self.run.id, key, py_value)
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
         self.run.require_lock()
         id = dict(zip(self.df["key"], self.df["id"]))[key]
-        self.service.delete_by_id(id)
+        self._service.delete_by_id(id)
         self.df, self.data = self._get()
 
 
