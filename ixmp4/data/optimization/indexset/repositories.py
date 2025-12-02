@@ -52,7 +52,8 @@ class ItemRepository(db.r.ItemRepository[IndexSet]):
     def reset_type(self, id: int) -> int | None:
         exc = (
             self.target.update_statement()
-            .where((IndexSet.id == id) and (~IndexSet.data_entries.any()))
+            .where(IndexSet.id == id)
+            .where(~IndexSet.data_entries.any())
             .values(data_type=None)
         )
 
@@ -78,10 +79,8 @@ class IndexSetDataItemRepository(db.r.ItemRepository[IndexSetData]):
                 return None
 
     def remove(self, indexset_id: int, data: list[str]) -> int | None:
-        exc = sa.delete(IndexSetData).where(
-            IndexSetData.indexset__id == indexset_id,
-            IndexSetData.value.in_(data),
-        )
+        exc = sa.delete(IndexSetData).where(IndexSetData.indexset__id == indexset_id)
+        exc = exc.where(IndexSetData.value.in_(data))
         with self.wrap_executor_exception():
             with self.executor.delete(exc) as result:
                 if result == 0:
