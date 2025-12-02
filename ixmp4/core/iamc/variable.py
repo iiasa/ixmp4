@@ -40,28 +40,28 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
     @property
     def docs(self) -> str | None:
         try:
-            return self.service.get_docs(self.id).description
+            return self._service.get_docs(self.id).description
         except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.service.delete_docs(self.id)
+            self._service.delete_docs(self.id)
         else:
-            self.service.set_docs(self.id, description)
+            self._service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.service.delete_docs(self.id)
+            self._service.delete_docs(self.id)
         # TODO: silently failing
         except DocsNotFound:
             return None
 
     def delete(self) -> None:
         """Deletes the variable from the database."""
-        self.service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self.dto.id)
 
     def _get_service(self, backend: Backend) -> VariableService:
         return backend.iamc.variables

@@ -95,7 +95,7 @@ GetByIdServiceT = TypeVar("GetByIdServiceT", bound=GetByIdService[DtoT])
 class BaseFacadeObject(
     BaseServiceFacade[GetByIdServiceT], Generic[GetByIdServiceT, DtoT]
 ):
-    service: GetByIdServiceT
+    _service: GetByIdServiceT
     dto: DtoT
 
     def __init__(self, backend: Backend, dto: DtoT) -> None:
@@ -103,4 +103,4 @@ class BaseFacadeObject(
         self.dto = dto
 
     def refresh(self):
-        self.dto = self.service.get_by_id(self.dto.id)
+        self.dto = self._service.get_by_id(self.dto.id)

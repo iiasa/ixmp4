@@ -96,12 +96,12 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
         combination."""
-        self.service.set_as_default_version(self.dto.id)
+        self._service.set_as_default_version(self.dto.id)
         self.refresh()
 
     def unset_as_default(self) -> None:
         """Unsets this run as the default version."""
-        self.service.unset_as_default_version(self.dto.id)
+        self._service.unset_as_default_version(self.dto.id)
         self.refresh()
 
     def require_lock(self) -> None:
@@ -109,11 +109,11 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             raise RunLockRequired()
 
     def _lock(self) -> None:
-        self.dto = self.service.lock(self.dto.id)
+        self.dto = self._service.lock(self.dto.id)
         self.owns_lock = True
 
     def _unlock(self) -> None:
-        self.dto = self.service.unlock(self.dto.id)
+        self.dto = self._service.unlock(self.dto.id)
         self.owns_lock = False
 
     def _lock_with_timeout(self, timeout: float) -> None:
@@ -194,7 +194,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
             target_transaction = max(checkpoint_transaction, self.dto.lock_transaction)
             try:
-                self.service.revert(
+                self._service.revert(
                     self.dto.id,
                     target_transaction,
                     revert_platform=revert_platform_on_error,
@@ -222,7 +222,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         :class:`ixmp4.core.exceptions.RunIsLocked`:
             If the run is already locked by this or another object.
         """
-        self.service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self.dto.id)
 
     def clone(
         self,
@@ -231,8 +231,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         keep_solution: bool = True,
     ) -> "Run":
         return Run(
-            service=self.service,
-            dto=self.service.clone(
+            service=self._service,
+            dto=self._service.clone(
                 run_id=self.id,
                 model_name=model,
                 scenario_name=scenario,

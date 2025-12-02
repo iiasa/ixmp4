@@ -53,7 +53,7 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     @value.setter
     def value(self, value: float) -> None:
         self._run.require_lock()
-        self.service.update(self.dto.id, value)
+        self._service.update(self.dto.id, value)
         self.dto.value = value
 
     @property
@@ -68,7 +68,7 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
             unit = self.units.get_by_name(value)
         else:
             unit = value
-        self.dto = self.service.update_by_id(self.dto.id, unit_name=unit.name)
+        self.dto = self._service.update_by_id(self.dto.id, unit_name=unit.name)
 
     @property
     def created_at(self) -> datetime | None:
@@ -81,21 +81,21 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     @property
     def docs(self) -> str | None:
         try:
-            return self.service.get_docs(self.id).description
+            return self._service.get_docs(self.id).description
         except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.service.delete_docs(self.id)
+            self._service.delete_docs(self.id)
         else:
-            self.service.set_docs(self.id, description)
+            self._service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.service.delete_docs(self.id)
+            self._service.delete_docs(self.id)
         # TODO: silently failing
         except DocsNotFound:
             return None
@@ -105,12 +105,12 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     ) -> None:
         """Adds data to the Scalar."""
         self._run.require_lock()
-        self.service.update_by_id(self.dto.id, value=value, unit_name=unit_name)
+        self._service.update_by_id(self.dto.id, value=value, unit_name=unit_name)
         self.refresh()
 
     def delete(self) -> None:
         self._run.require_lock()
-        self.service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self.dto.id)
 
     def _get_service(self, backend: Backend) -> ScalarService:
         return backend.optimization.scalars
