@@ -5,8 +5,8 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.exceptions import Forbidden
 from ixmp4.services import Service, paginated_procedure, procedure
 from ixmp4.transport import DirectTransport
 
@@ -34,7 +34,7 @@ class DocsService(Service):
             filter=db.r.Filter(DocsFilter, self.docs_model),
         )
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{dimension__id}/docs/", methods=["GET"])
     def get_docs(self, dimension__id: int) -> Docs:
         """Retrieves a docs entry.
 
@@ -64,7 +64,7 @@ class DocsService(Service):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(path="/{dimension__id}/docs/", methods=["POST"])
     def set_docs(self, dimension__id: int, description: str) -> Docs:
         """Updates a docs entry.
 
@@ -106,7 +106,7 @@ class DocsService(Service):
         # self.auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{dimension__id}/", methods=["DELETE"])
+    @procedure(path="/{dimension__id}/docs/", methods=["DELETE"])
     def delete_docs(self, dimension__id: int) -> None:
         """Deletes a docs entry.
 
@@ -137,7 +137,7 @@ class DocsService(Service):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @paginated_procedure(path="docs/list/", methods=["PATCH"])
     def list_docs(self, **kwargs: Unpack[DocsFilter]) -> list[Docs]:
         r"""Lists docs entries by specified criteria.
 
