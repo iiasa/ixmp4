@@ -65,7 +65,7 @@ class MockDataGenerator(object):
             try:
                 yield self.platform.regions.create(name, "default")
             except Region.NotUnique:
-                yield self.platform.regions.get(name)
+                yield self.platform.regions.get_by_name(name)
 
     def yield_units(self) -> Generator[Unit, Any, None]:
         for i in range(self.num_units):
@@ -73,7 +73,7 @@ class MockDataGenerator(object):
             try:
                 yield self.platform.units.create(name)
             except Unit.NotUnique:
-                yield self.platform.units.get(name)
+                yield self.platform.units.get_by_name(name)
 
     def yield_variable_names(self) -> Generator[str, Any, None]:
         for i in range(self.num_variables):
