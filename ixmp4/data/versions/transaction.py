@@ -4,8 +4,8 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
 
+from ixmp4.base_exceptions import NotFound, NotUnique, registry
 from ixmp4.data.base.db import BaseModel
-from ixmp4.exceptions import NotFound, NotUnique, registry
 
 
 @registry.register()

@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from ixmp4.exceptions import OptimizationItemUsageError
+from ixmp4.base_exceptions import OptimizationItemUsageError
 from ixmp4.services import Service
 
 if TYPE_CHECKING:

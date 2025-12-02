@@ -5,10 +5,10 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
 
+from ixmp4.base_exceptions import ProgrammingError
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasCreationInfo
 from ixmp4.data.docs.db import docs_model
-from ixmp4.exceptions import ProgrammingError
 
 from .type import Type
 

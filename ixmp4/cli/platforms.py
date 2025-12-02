@@ -12,11 +12,11 @@ from rich.progress import Progress, track
 from rich.table import Column, Table
 from typing_extensions import Annotated
 
+from ixmp4.base_exceptions import PlatformNotFound, ServiceException
 from ixmp4.conf import settings
 from ixmp4.core.platform import Platform
 from ixmp4.data.generator import MockDataGenerator
 from ixmp4.db import __file__ as db_module_dir
-from ixmp4.exceptions import PlatformNotFound, ServiceException
 
 from . import utils
 from .alembic import get_alembic_controller

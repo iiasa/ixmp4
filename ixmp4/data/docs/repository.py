@@ -1,6 +1,6 @@
 from toolkit import db
 
-from ixmp4.exceptions import (
+from ixmp4.base_exceptions import (
     NotFound,
     NotUnique,
     registry,

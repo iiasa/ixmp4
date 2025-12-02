@@ -5,12 +5,12 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.iamc.timeseries.repositories import (
     PandasRepository as TimeSeriesPandasRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.exceptions import Forbidden
 from ixmp4.services import (
     DirectTransport,
     Service,
@@ -62,7 +62,7 @@ class DataPointService(Service):
     ) -> set[str] | None:
         if not any([join_run_id, join_parameters, join_runs]):
             return None
-        columns = self.base_columns
+        columns = set(self.base_columns)
         if join_parameters:
             columns |= self.ts_columns
         if join_runs:

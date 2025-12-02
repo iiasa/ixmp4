@@ -6,11 +6,11 @@ import pandas as pd
 import sqlalchemy as sa
 from toolkit import db
 
-from ixmp4.data.optimization.indexset.db import IndexSet
-from ixmp4.exceptions import (
+from ixmp4.base_exceptions import (
     OptimizationDataValidationError,
     OptimizationItemUsageError,
 )
+from ixmp4.data.optimization.indexset.db import IndexSet
 
 from .db import IndexedModel, IndexsetAssociationModel
 

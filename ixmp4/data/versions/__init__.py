@@ -5,7 +5,7 @@ from sqlalchemy import Connection, FromClause, Table, event, schema
 from sqlalchemy.orm import Session
 from sqlalchemy.sql import ColumnCollection, ColumnElement
 
-from ixmp4.exceptions import ProgrammingError
+from ixmp4.base_exceptions import ProgrammingError
 
 from .ddl import (
     DeleteTrigger,

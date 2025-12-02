@@ -24,14 +24,16 @@ from ixmp4.services import (
 from ixmp4.transport import DirectTransport
 
 from .dto import Run
+from .exceptions import (
+    NoDefaultRunVersion,
+    RunIsLocked,
+    RunNotFound,
+)
 from .filter import RunFilter
 from .repositories import (
     ItemRepository,
-    NoDefaultRunVersion,
     PandasRepository,
     PandasVersionRepository,
-    RunIsLocked,
-    RunNotFound,
 )
 
 

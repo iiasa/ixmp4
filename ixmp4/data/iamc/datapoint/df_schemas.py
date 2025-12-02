@@ -2,7 +2,7 @@ import pandas as pd
 import pandera.pandas as pa
 import pandera.typing as pat
 
-from ixmp4.exceptions import InconsistentIamcType
+from ixmp4.base_exceptions import InconsistentIamcType
 
 from .type import Type, TypeColumnsDict
 

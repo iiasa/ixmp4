@@ -13,11 +13,13 @@ from ixmp4.services import DirectTransport, Service, paginated_procedure, proced
 
 from .db import VariableDocs
 from .dto import Variable
+from .exceptions import (
+    VariableNotFound,
+)
 from .filter import VariableFilter
 from .repositories import (
     ItemRepository,
     PandasRepository,
-    VariableNotFound,
     VersionPandasRepository,
 )
 

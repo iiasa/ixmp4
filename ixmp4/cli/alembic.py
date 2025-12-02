@@ -4,11 +4,11 @@ import typer
 from toolkit.db.alembic import AlembicCli, AlembicController
 from typing_extensions import Annotated
 
+from ixmp4.base_exceptions import PlatformNotFound, ServiceException
 from ixmp4.conf import settings
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.db import __file__ as db_module_dir
 from ixmp4.db.models import get_metadata
-from ixmp4.exceptions import PlatformNotFound, ServiceException
 
 from . import utils
 

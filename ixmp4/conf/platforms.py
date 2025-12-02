@@ -8,7 +8,7 @@ from pydantic import BaseModel, ConfigDict
 from toolkit.manager.client import ManagerClient
 from toolkit.manager.models import Ixmp4Instance
 
-from ixmp4.exceptions import PlatformNotFound, PlatformNotUnique
+from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
 
 
 class PlatformConnectionInfo(Protocol):
