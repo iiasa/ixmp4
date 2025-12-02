@@ -108,6 +108,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         test_annual_df: pd.DataFrame,
     ) -> pd.DataFrame:
         exp_df = test_annual_df.copy()
+        exp_df["step_year"] = exp_df["step_year"].astype("Int64")
         exp_df["step_datetime"] = pd.NaT
         exp_df["step_category"] = None
         return exp_df
@@ -141,6 +142,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
     ) -> pd.DataFrame:
         exp_df = test_categorical_df.copy()
         exp_df["step_datetime"] = pd.NaT
+        exp_df["step_year"] = exp_df["step_year"].astype("Int64")
         return exp_df
 
     @pytest.fixture(scope="class")
@@ -165,6 +167,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
     ) -> pd.DataFrame:
         exp_df = test_datetime_df.copy()
         exp_df["step_year"] = None
+        exp_df["step_year"] = exp_df["step_year"].astype("Int64")
         exp_df["step_category"] = None
         return exp_df
 
@@ -204,7 +207,9 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         self,
         test_mixed_df: pd.DataFrame,
     ) -> pd.DataFrame:
-        return test_mixed_df.copy()
+        exp_df = test_mixed_df.copy()
+        exp_df["step_year"] = exp_df["step_year"].astype("Int64")
+        return exp_df
 
     def test_datapoint_bulk_insert(
         self,

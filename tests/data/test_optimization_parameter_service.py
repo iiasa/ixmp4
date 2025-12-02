@@ -5,16 +5,17 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import OptimizationItemUsageError
 from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
-from ixmp4.data.optimization.table.repositories import (
-    TableDataInvalid,
-    TableNotFound,
-    TableNotUnique,
+from ixmp4.data.optimization.parameter.repositories import (
+    ParameterDataInvalid,
+    ParameterNotFound,
+    ParameterNotUnique,
 )
-from ixmp4.data.optimization.table.service import TableService
+from ixmp4.data.optimization.parameter.service import ParameterService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
-from ixmp4.exceptions import OptimizationItemUsageError
+from ixmp4.data.unit.service import Unit, UnitService
 from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
@@ -22,8 +23,8 @@ from tests.data.base import ServiceTest
 transport = backends.get_transport_fixture(scope="class")
 
 
-class TableServiceTest(ServiceTest[TableService]):
-    service_class = TableService
+class ParameterServiceTest(ServiceTest[ParameterService]):
+    service_class = ParameterService
 
     @pytest.fixture(scope="class")
     def runs(self, transport: Transport) -> RunService:
@@ -46,33 +47,34 @@ class TableServiceTest(ServiceTest[TableService]):
     def indexset(self, run: Run, indexsets: IndexSetService) -> IndexSet:
         return indexsets.create(run.id, "IndexSet")
 
+    @pytest.fixture(scope="class")
+    def units(self, transport: Transport) -> UnitService:
+        return UnitService(transport)
 
-class TestTableCreate(TableServiceTest):
-    def test_table_create(
+
+class TestParameterCreate(ParameterServiceTest):
+    def test_parameter_create(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
         fake_time: datetime.datetime,
         indexset: IndexSet,
     ) -> None:
-        table = service.create(
-            run.id,
-            "Table",
-            constrained_to_indexsets=["IndexSet"],
-            column_names=["Column"],
+        parameter = service.create(
+            run.id, "Parameter", constrained_to_indexsets=["IndexSet"]
         )
-        assert table.run__id == run.id
-        assert table.name == "Table"
-        assert table.data == {}
-        assert table.indexset_names == ["IndexSet"]
-        assert table.column_names == ["Column"]
+        assert parameter.run__id == run.id
+        assert parameter.name == "Parameter"
+        assert parameter.data == {}
+        assert parameter.indexset_names == ["IndexSet"]
+        assert parameter.column_names is None
 
-        assert table.created_at == fake_time.replace(tzinfo=None)
-        assert table.created_by == "@unknown"
+        assert parameter.created_at == fake_time.replace(tzinfo=None)
+        assert parameter.created_by == "@unknown"
 
-    def test_table_create_versioning(
+    def test_parameter_create_versioning(
         self,
-        versioning_service: TableService,
+        versioning_service: ParameterService,
         run: Run,
         fake_time: datetime.datetime,
     ) -> None:
@@ -81,7 +83,7 @@ class TestTableCreate(TableServiceTest):
                 [
                     1,
                     run.id,
-                    "Table",
+                    "Parameter",
                     {},
                     fake_time.replace(tzinfo=None),
                     "@unknown",
@@ -106,19 +108,18 @@ class TestTableCreate(TableServiceTest):
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
-class TestTableCreateInvalidArguments(TableServiceTest):
-    def test_table_create_invalid_args(
+class TestParameterCreateInvalidArguments(ParameterServiceTest):
+    def test_parameter_create_invalid_args(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
-        indexsets: IndexSetService,
+        indexset: IndexSet,
         fake_time: datetime.datetime,
     ) -> None:
-        indexsets.create(run.id, "IndexSet")
         with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
             service.create(
                 run.id,
-                "Table",
+                "Parameter",
                 constrained_to_indexsets=["IndexSet"],
                 column_names=["Column 1", "Column 2"],
             )
@@ -128,33 +129,31 @@ class TestTableCreateInvalidArguments(TableServiceTest):
         ):
             service.create(
                 run.id,
-                "Table",
+                "Parameter",
                 constrained_to_indexsets=["IndexSet", "IndexSet"],
                 column_names=["Column 1", "Column 1"],
             )
 
 
-class TestTableDeleteById(TableServiceTest):
-    def test_table_delete_by_id(
+class TestParameterDeleteById(ParameterServiceTest):
+    def test_parameter_delete_by_id(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
-        indexsets: IndexSetService,
+        indexset: IndexSet,
         fake_time: datetime.datetime,
     ) -> None:
-        indexsets.create(run.id, "IndexSet")
-        table = service.create(
+        parameter = service.create(
             run.id,
-            "Table",
+            "Parameter",
             constrained_to_indexsets=["IndexSet"],
-            column_names=["Column"],
         )
-        service.delete_by_id(table.id)
+        service.delete_by_id(parameter.id)
         assert service.tabulate().empty
 
-    def test_table_delete_by_id_versioning(
+    def test_parameter_delete_by_id_versioning(
         self,
-        versioning_service: TableService,
+        versioning_service: ParameterService,
         run: Run,
         fake_time: datetime.datetime,
     ) -> None:
@@ -163,7 +162,7 @@ class TestTableDeleteById(TableServiceTest):
                 [
                     1,
                     run.id,
-                    "Table",
+                    "Parameter",
                     {},
                     fake_time.replace(tzinfo=None),
                     "@unknown",
@@ -174,7 +173,7 @@ class TestTableDeleteById(TableServiceTest):
                 [
                     1,
                     run.id,
-                    "Table",
+                    "Parameter",
                     {},
                     fake_time.replace(tzinfo=None),
                     "@unknown",
@@ -201,100 +200,99 @@ class TestTableDeleteById(TableServiceTest):
             vdf,
             check_like=True,
         )
-        # TODO Association Versions
 
 
-class TestTableUnique(TableServiceTest):
-    def test_table_unique(
-        self, service: TableService, run: Run, indexset: IndexSet
+class TestParameterUnique(ParameterServiceTest):
+    def test_parameter_unique(
+        self, service: ParameterService, run: Run, indexset: IndexSet
     ) -> None:
-        service.create(run.id, "Table", constrained_to_indexsets=["IndexSet"])
+        service.create(run.id, "Parameter", constrained_to_indexsets=["IndexSet"])
 
-        with pytest.raises(TableNotUnique):
-            service.create(
-                run.id,
-                "Table",
-                constrained_to_indexsets=["IndexSet", "IndexSet"],
-                column_names=["Column 1", "Column 2"],
-            )
+        with pytest.raises(ParameterNotUnique):
+            service.create(run.id, "Parameter", constrained_to_indexsets=["IndexSet"])
 
 
-class TestTableGetByName(TableServiceTest):
-    def test_table_get(
-        self, service: TableService, run: Run, indexset: IndexSet
+class TestParameterGetByName(ParameterServiceTest):
+    def test_parameter_get(
+        self, service: ParameterService, run: Run, indexset: IndexSet
     ) -> None:
-        table1 = service.create(run.id, "Table", constrained_to_indexsets=["IndexSet"])
-        table2 = service.get(run.id, "Table")
-        assert table1 == table2
+        parameter1 = service.create(
+            run.id, "Parameter", constrained_to_indexsets=["IndexSet"]
+        )
+        parameter2 = service.get(run.id, "Parameter")
+        assert parameter1 == parameter2
 
 
-class TestTableGetById(TableServiceTest):
-    def test_table_get_by_id(
-        self, service: TableService, run: Run, indexset: IndexSet
+class TestParameterGetById(ParameterServiceTest):
+    def test_parameter_get_by_id(
+        self, service: ParameterService, run: Run, indexset: IndexSet
     ) -> None:
-        table1 = service.create(run.id, "Table", constrained_to_indexsets=["IndexSet"])
-        table2 = service.get_by_id(1)
-        assert table1 == table2
+        parameter1 = service.create(
+            run.id, "Parameter", constrained_to_indexsets=["IndexSet"]
+        )
+        parameter2 = service.get_by_id(1)
+        assert parameter1 == parameter2
 
 
-class TestTableNotFound(TableServiceTest):
-    def test_table_not_found(self, service: TableService, run: Run) -> None:
-        with pytest.raises(TableNotFound):
-            service.get(run.id, "Table")
+class TestParameterNotFound(ParameterServiceTest):
+    def test_parameter_not_found(self, service: ParameterService, run: Run) -> None:
+        with pytest.raises(ParameterNotFound):
+            service.get(run.id, "Parameter")
 
-        with pytest.raises(TableNotFound):
+        with pytest.raises(ParameterNotFound):
             service.get_by_id(1)
 
 
-class TableDataTest(TableServiceTest):
-    def test_table_add_data(
+class ParameterDataTest(ParameterServiceTest):
+    def test_parameter_add_data(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
         test_data_indexsets: list[IndexSet],
+        test_data_units: list[Unit],
         column_names: list[str] | None,
         test_data: dict[str, list[Any]] | pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
-        table = service.create(
+        parameter = service.create(
             run.id,
-            "Table",
+            "Parameter",
             constrained_to_indexsets=[i.name for i in test_data_indexsets],
             column_names=column_names,
         )
-        service.add_data(table.id, test_data)
-        table = service.get_by_id(table.id)
+        service.add_data(parameter.id, test_data)
+        parameter = service.get_by_id(parameter.id)
 
         if isinstance(test_data, pd.DataFrame):
             test_data = test_data.to_dict(orient="list")
 
-        assert table.data == test_data
+        assert parameter.data == test_data
 
-    def test_table_remove_data_partial(
+    def test_parameter_remove_data_partial(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
         partial_test_data: dict[str, list[Any]] | pd.DataFrame,
         remaining_test_data: dict[str, list[Any]],
         fake_time: datetime.datetime,
     ) -> None:
-        table = service.get(run.id, "Table")
-        service.remove_data(table.id, partial_test_data)
-        table = service.get_by_id(table.id)
-        assert table.data == remaining_test_data
+        parameter = service.get(run.id, "Parameter")
+        service.remove_data(parameter.id, partial_test_data)
+        parameter = service.get_by_id(parameter.id)
+        assert parameter.data == remaining_test_data
 
-    def test_table_remove_data_all(
+    def test_parameter_remove_data_all(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
         fake_time: datetime.datetime,
     ) -> None:
-        table = service.get(run.id, "Table")
-        service.remove_data(table.id)
-        table = service.get_by_id(table.id)
-        assert table.data == {}
+        parameter = service.get(run.id, "Parameter")
+        service.remove_data(parameter.id)
+        parameter = service.get_by_id(parameter.id)
+        assert parameter.data == {}
 
-    def test_table_data_versioning(
+    def test_parameter_data_versioning(
         self,
         versioning_service: IndexSetService,
         run: Run,
@@ -311,7 +309,7 @@ class TableDataTest(TableServiceTest):
 
         # compute transaction ids
         is_tx = (
-            5 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
+            7 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
         )
         create_tx = is_tx + 1
         add_data_tx = create_tx + 3
@@ -355,7 +353,7 @@ class TableDataTest(TableServiceTest):
 
         expected_versions["id"] = 1
         expected_versions["run__id"] = run.id
-        expected_versions["name"] = "Table"
+        expected_versions["name"] = "Parameter"
         expected_versions["created_at"] = pd.Timestamp(
             fake_time.replace(tzinfo=None)
         ).as_unit("ns")
@@ -365,7 +363,11 @@ class TableDataTest(TableServiceTest):
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
-class TestTableData(TableDataTest):
+class TestParameterData(ParameterDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_units(self, run: Run, units: UnitService) -> list[Unit]:
+        return [units.create("Unit 1"), units.create("Unit 2")]
+
     @pytest.fixture(scope="class")
     def test_data_indexsets(
         self, run: Run, indexsets: IndexSetService
@@ -385,6 +387,8 @@ class TestTableData(TableDataTest):
     @pytest.fixture(scope="class")
     def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
         return {
+            "units": ["Unit 1", "Unit 1", "Unit 2"],
+            "values": [1.2, 1.5, -3],
             "IndexSet 1": ["do", "re", "mi"],
             "IndexSet 2": [3, 3, 1],
         }
@@ -399,12 +403,18 @@ class TestTableData(TableDataTest):
     @pytest.fixture(scope="class")
     def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
         return {
+            "units": ["Unit 1"],
+            "values": [1.2],
             "IndexSet 1": ["do"],
             "IndexSet 2": [3],
         }
 
 
-class TestTableDataWithColumnNames(TableDataTest):
+class TestParameterDataWithColumnNames(ParameterDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_units(self, run: Run, units: UnitService) -> list[Unit]:
+        return [units.create("Unit 1"), units.create("Unit 2")]
+
     @pytest.fixture(scope="class")
     def test_data_indexsets(
         self, run: Run, indexsets: IndexSetService
@@ -424,6 +434,8 @@ class TestTableDataWithColumnNames(TableDataTest):
     @pytest.fixture(scope="class")
     def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
         return {
+            "units": ["Unit 1", "Unit 1", "Unit 2"],
+            "values": [1.2, 1.5, -3],
             "Column 1": ["do", "re", "mi"],
             "Column 2": [3, 3, 1],
         }
@@ -438,12 +450,18 @@ class TestTableDataWithColumnNames(TableDataTest):
     @pytest.fixture(scope="class")
     def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
         return {
+            "units": ["Unit 1"],
+            "values": [1.2],
             "Column 1": ["do"],
             "Column 2": [3],
         }
 
 
-class TestTableDataDataFrame(TableDataTest):
+class TestParameterDataDataFrame(ParameterDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_units(self, run: Run, units: UnitService) -> list[Unit]:
+        return [units.create("Unit 1"), units.create("Unit 2")]
+
     @pytest.fixture(scope="class")
     def test_data_indexsets(
         self, run: Run, indexsets: IndexSetService
@@ -464,11 +482,11 @@ class TestTableDataDataFrame(TableDataTest):
     def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
         return pd.DataFrame(
             [
-                ["do", 3],
-                ["re", 3],
-                ["mi", 1],
+                ["Unit 1", 1.2, "do", 3],
+                ["Unit 1", 1.5, "re", 3],
+                ["Unit 2", -3, "mi", 1],
             ],
-            columns=["IndexSet 1", "IndexSet 2"],
+            columns=["units", "values", "IndexSet 1", "IndexSet 2"],
         )
 
     @pytest.fixture(scope="class")
@@ -484,54 +502,120 @@ class TestTableDataDataFrame(TableDataTest):
     @pytest.fixture(scope="class")
     def remaining_test_data(self) -> dict[str, list[Any]]:
         return {
+            "units": ["Unit 1"],
+            "values": [1.2],
             "IndexSet 1": ["do"],
             "IndexSet 2": [3],
         }
 
 
-class TestTableInvalidData(TableServiceTest):
-    def test_tables_create(
-        self, service: TableService, indexsets: IndexSetService, run: Run
+class TestParameterInvalidData(ParameterServiceTest):
+    def test_parameters_create(
+        self,
+        service: ParameterService,
+        indexsets: IndexSetService,
+        units: UnitService,
+        run: Run,
     ):
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
         indexsets.add_data(indexset2.id, [3, 1, 4])
 
-        table = service.create(
+        units.create("Unit 1")
+        units.create("Unit 2")
+
+        parameter = service.create(
             run.id,
-            "Table 1",
+            "Parameter 1",
             constrained_to_indexsets=["IndexSet 1", "IndexSet 2"],
         )
-        assert table.id == 1
+        assert parameter.id == 1
 
-    def test_table_add_invalid_data(
+    def test_parameter_add_invalid_data(
         self,
-        service: TableService,
+        service: ParameterService,
     ) -> None:
         with pytest.raises(
-            TableDataInvalid,
+            OptimizationItemUsageError,
+            match=r"Parameter.data must include the column\(s\): values!",
+        ):
+            service.add_data(
+                1,
+                {
+                    "units": ["Unit 1"],
+                    "IndexSet 1": ["do"],
+                    "IndexSet 2": [3],
+                },
+            )
+        with pytest.raises(
+            OptimizationItemUsageError,
+            match=r"Parameter.data must include the column\(s\): units!",
+        ):
+            service.add_data(
+                1,
+                {
+                    "values": [1.2],
+                    "IndexSet 1": ["do"],
+                    "IndexSet 2": [3],
+                },
+            )
+
+        with pytest.raises(
+            OptimizationItemUsageError,
+            match=r"Parameter.data must include the column\(s\): units, values!",
+        ):
+            service.add_data(
+                1,
+                {
+                    "IndexSet 1": ["do"],
+                    "IndexSet 2": [3],
+                },
+            )
+
+        with pytest.raises(
+            ParameterDataInvalid,
             match="All arrays must be of the same length",
         ):
             service.add_data(
                 1,
                 {
+                    "units": ["Unit 1", "Unit 1", "Unit 2"],
+                    "values": [1.2, 1.5, -3],
                     "IndexSet 1": ["do", "re"],  # missing "mi"
                     "IndexSet 2": [3, 3, 1],
                 },
             )
-        with pytest.raises(TableDataInvalid, match="contains duplicate rows"):
+        with pytest.raises(
+            ParameterDataInvalid,
+            match="All arrays must be of the same length",
+        ):
             service.add_data(
                 1,
                 {
+                    "units": [
+                        "Unit 1",
+                    ],  # missing some units
+                    "values": [1.2, 1.5, -3],
+                    "IndexSet 1": ["do", "re", "mi"],
+                    "IndexSet 2": [3, 3, 1],
+                },
+            )
+
+        with pytest.raises(ParameterDataInvalid, match="contains duplicate rows"):
+            service.add_data(
+                1,
+                {
+                    "units": ["Unit 1", "Unit 1", "Unit 2"],
+                    "values": [1.2, 1.5, -3],
                     "IndexSet 1": ["do", "do", "mi"],
                     "IndexSet 2": [3, 3, 1],
                 },
             )
 
-    def test_table_remove_invalid_data(
+    def test_parameter_remove_invalid_data(
         self,
-        service: TableService,
+        service: ParameterService,
         caplog: pytest.LogCaptureFixture,
     ) -> None:
         with pytest.raises(
@@ -543,95 +627,117 @@ class TestTableInvalidData(TableServiceTest):
                     "IndexSet 1": ["do"],
                 },
             )
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            service.remove_data(
+                1,
+                {
+                    "units": ["Unit 1"],
+                    "values": [1.2],
+                },
+            )
 
 
-class TestTableList(TableServiceTest):
-    def test_table_list(
+class TestParameterList(ParameterServiceTest):
+    def test_parameter_list(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
         indexsets: IndexSetService,
+        units: UnitService,
         fake_time: datetime.datetime,
     ) -> None:
+        units.create("Unit 1")
+        units.create("Unit 2")
+
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
         indexsets.add_data(indexset2.id, [3, 1, 4])
 
         service.create(
-            run.id, "Table 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
+            run.id, "Parameter 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
         )
         service.create(
             run.id,
-            "Table 2",
+            "Parameter 2",
             constrained_to_indexsets=["IndexSet 1"],
             column_names=["Column 1"],
         )
 
         test_data1 = {
+            "units": ["Unit 1", "Unit 1", "Unit 2"],
+            "values": [1.2, 1.5, -3],
             "IndexSet 1": ["do", "re", "mi"],
             "IndexSet 2": [3, 3, 1],
         }
         service.add_data(1, test_data1)
 
-        tables = service.list()
+        parameters = service.list()
 
-        assert tables[0].id == 1
-        assert tables[0].run__id == run.id
-        assert tables[0].name == "Table 1"
-        assert tables[0].data == test_data1
-        assert tables[0].created_by == "@unknown"
-        assert tables[0].created_at == fake_time.replace(tzinfo=None)
+        assert parameters[0].id == 1
+        assert parameters[0].run__id == run.id
+        assert parameters[0].name == "Parameter 1"
+        assert parameters[0].data == test_data1
+        assert parameters[0].created_by == "@unknown"
+        assert parameters[0].created_at == fake_time.replace(tzinfo=None)
 
-        assert tables[1].id == 2
-        assert tables[1].run__id == run.id
-        assert tables[1].name == "Table 2"
-        assert tables[1].data == {}
-        assert tables[1].created_by == "@unknown"
-        assert tables[1].created_at == fake_time.replace(tzinfo=None)
+        assert parameters[1].id == 2
+        assert parameters[1].run__id == run.id
+        assert parameters[1].name == "Parameter 2"
+        assert parameters[1].data == {}
+        assert parameters[1].created_by == "@unknown"
+        assert parameters[1].created_at == fake_time.replace(tzinfo=None)
 
 
-class TestTableTabulate(TableServiceTest):
-    def test_table_tabulate(
+class TestParameterTabulate(ParameterServiceTest):
+    def test_parameter_tabulate(
         self,
-        service: TableService,
+        service: ParameterService,
         run: Run,
         indexsets: IndexSetService,
+        units: UnitService,
         fake_time: datetime.datetime,
     ) -> None:
+        units.create("Unit 1")
+        units.create("Unit 2")
+
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
         indexsets.add_data(indexset2.id, [3, 1, 4])
 
         service.create(
-            run.id, "Table 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
+            run.id, "Parameter 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
         )
         service.create(
             run.id,
-            "Table 2",
+            "Parameter 2",
             constrained_to_indexsets=["IndexSet 1"],
             column_names=["Column 1"],
         )
 
         test_data1 = {
+            "units": ["Unit 1", "Unit 1", "Unit 2"],
+            "values": [1.2, 1.5, -3],
             "IndexSet 1": ["do", "re", "mi"],
             "IndexSet 2": [3, 3, 1],
         }
         service.add_data(1, test_data1)
 
-        expected_tables = pd.DataFrame(
+        expected_parameters = pd.DataFrame(
             [
-                [1, "Table 1", test_data1],
-                [2, "Table 2", {}],
+                [1, "Parameter 1", test_data1],
+                [2, "Parameter 2", {}],
             ],
             columns=["id", "name", "data"],
         )
-        expected_tables["run__id"] = run.id
-        expected_tables["created_at"] = pd.Timestamp(
+        expected_parameters["run__id"] = run.id
+        expected_parameters["created_at"] = pd.Timestamp(
             fake_time.replace(tzinfo=None)
         ).as_unit("ns")
-        expected_tables["created_by"] = "@unknown"
+        expected_parameters["created_by"] = "@unknown"
 
-        tables = service.tabulate()
-        pdt.assert_frame_equal(tables, expected_tables, check_like=True)
+        parameters = service.tabulate()
+        pdt.assert_frame_equal(parameters, expected_parameters, check_like=True)

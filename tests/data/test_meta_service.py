@@ -22,18 +22,26 @@ transport = backends.get_transport_fixture(scope="class")
 # TODO: Versions
 class RunMetaEntryServiceTest(ServiceTest[RunMetaEntryService]):
     service_class = RunMetaEntryService
-    test_entries: list[tuple[int, str, MetaValueType, Type]] = [
-        (1, "Boolean", True, Type.BOOL),
-        (2, "Float", 0.2, Type.FLOAT),
-        (3, "Integer", 1, Type.INT),
-        (4, "String", "Value", Type.STR),
-    ]
 
-    @property
-    def test_entries_df(self):
+    @pytest.fixture(scope="class")
+    def test_entries(self) -> list[tuple[int, str, MetaValueType, Type]]:
+        return [
+            (1, "Boolean", True, Type.BOOL),
+            (2, "Float", 0.2, Type.FLOAT),
+            (3, "Integer", 1, Type.INT),
+            (4, "String", "Value", Type.STR),
+        ]
+
+    @pytest.fixture(scope="class")
+    def test_entries_df(
+        self, test_entries: list[tuple[int, str, MetaValueType, Type]], run: Run
+    ) -> pd.DataFrame:
         return pd.DataFrame(
-            [[id, key, val, str(type_)] for id, key, val, type_ in self.test_entries],
-            columns=["id", "key", "value", "dtype"],
+            [
+                [id, run.id, key, val, str(type_)]
+                for id, key, val, type_ in test_entries
+            ],
+            columns=["id", "run__id", "key", "value", "dtype"],
         )
 
     @pytest.fixture(scope="class")
@@ -62,9 +70,10 @@ class TestRunMetaEntryCreateGet(RunMetaEntryServiceTest):
         self,
         service: RunMetaEntryService,
         run: Run,
+        test_entries: list[tuple[int, str, MetaValueType, Type]],
         fake_time: datetime.datetime,
     ) -> None:
-        for entry in self.test_entries:
+        for entry in test_entries:
             id, key, val, type_ = entry
             meta = service.create(run.id, key, val)
 
@@ -78,9 +87,10 @@ class TestRunMetaEntryCreateGet(RunMetaEntryServiceTest):
         self,
         service: RunMetaEntryService,
         run: Run,
+        test_entries: list[tuple[int, str, MetaValueType, Type]],
         fake_time: datetime.datetime,
     ) -> None:
-        for entry in self.test_entries:
+        for entry in test_entries:
             id, key, val, type_ = entry
             meta = service.get(run.id, key)
 
@@ -95,13 +105,14 @@ class TestRunMetaEntryDeleteById(RunMetaEntryServiceTest):
         self,
         service: RunMetaEntryService,
         run: Run,
+        test_entries: list[tuple[int, str, MetaValueType, Type]],
         fake_time: datetime.datetime,
     ) -> None:
-        for entry in self.test_entries:
+        for entry in test_entries:
             id, key, val, type_ = entry
             service.create(run.id, key, val)
 
-        for entry in self.test_entries:
+        for entry in test_entries:
             id, key, val, type_ = entry
             service.delete_by_id(id)
 
@@ -130,9 +141,10 @@ class TestRunMetaEntryList(RunMetaEntryServiceTest):
         self,
         service: RunMetaEntryService,
         run: Run,
+        test_entries: list[tuple[int, str, MetaValueType, Type]],
         fake_time: datetime.datetime,
     ) -> None:
-        for entry in self.test_entries:
+        for entry in test_entries:
             id, key, val, type_ = entry
             service.create(run.id, key, val)
 
@@ -164,55 +176,67 @@ class TestRunMetaEntryTabulate(RunMetaEntryServiceTest):
         self,
         service: RunMetaEntryService,
         run: Run,
+        test_entries: list[tuple[int, str, MetaValueType, Type]],
+        test_entries_df: pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
-        for entry in self.test_entries:
+        for entry in test_entries:
             id, key, val, type_ = entry
             service.create(run.id, key, val)
 
-        expected_metas = self.test_entries_df
-        expected_metas["run__id"] = run.id
-
         metas = service.tabulate()
-        pdt.assert_frame_equal(metas, expected_metas, check_like=True)
+        pdt.assert_frame_equal(metas, test_entries_df, check_like=True)
 
 
 class TestRunMetaEntryBulkOperations(RunMetaEntryServiceTest):
-    def test_meta_bulk_operations(
+    def test_meta_bulk_insert(
         self,
         service: RunMetaEntryService,
-        run: Run,
+        test_entries_df: pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
-        entries = self.test_entries_df
-        entries["run__id"] = run.id
-
         # == Full Addition ==
-        service.bulk_upsert(entries.drop(columns=["id", "dtype"]))
+        service.bulk_upsert(test_entries_df.drop(columns=["id", "dtype"]))
         ret = service.tabulate()
-        pdt.assert_frame_equal(entries, ret)
+        pdt.assert_frame_equal(
+            test_entries_df.sort_values(by=test_entries_df.columns.to_list()),
+            ret.sort_values(by=ret.columns.to_list()),
+            check_like=True,
+        )
 
-        # == Partial Removal ==
-        # Remove half the data
-        remove_data = entries.head(len(entries) // 2).drop(
+    def test_meta_bulk_delete_half(
+        self,
+        service: RunMetaEntryService,
+        test_entries_df: pd.DataFrame,
+        fake_time: datetime.datetime,
+    ) -> None:
+        remove_data = test_entries_df.head(len(test_entries_df) // 2).drop(
             columns=["value", "id", "dtype"]
         )
-        remaining_data = entries.tail(len(entries) // 2).reset_index(drop=True)
+        remaining_data = test_entries_df.tail(len(test_entries_df) // 2).reset_index(
+            drop=True
+        )
         service.bulk_delete(remove_data)
 
         ret = service.tabulate()
-        pdt.assert_frame_equal(remaining_data, ret)
+        pdt.assert_frame_equal(remaining_data, ret, check_like=True)
 
-        # == Partial Update / Partial Addition ==
-        entries["value"] = -9.9
-        entries["id"] = [5, 6, 3, 4]
+    def test_meta_bulk_upsert(
+        self,
+        service: RunMetaEntryService,
+        run: Run,
+        test_entries_df: pd.DataFrame,
+        fake_time: datetime.datetime,
+    ) -> None:
+        test_entries_df["value"] = -9.9
+        test_entries_df["id"] = [5, 6, 3, 4]
 
         updated_entries = pd.DataFrame(
             [
-                [3, "Integer", -9.9, Type.FLOAT],
-                [4, "String", -9.9, Type.FLOAT],
                 [5, "Boolean", -9.9, Type.FLOAT],
                 [6, "Float", -9.9, Type.FLOAT],
+                [3, "Integer", -9.9, Type.FLOAT],
+                [4, "String", -9.9, Type.FLOAT],
             ],
             columns=["id", "key", "value", "dtype"],
         )
@@ -223,8 +247,13 @@ class TestRunMetaEntryBulkOperations(RunMetaEntryServiceTest):
 
         pdt.assert_frame_equal(updated_entries, ret, check_like=True)
 
-        # == Full Removal ==
-        remove_data = entries.drop(columns=["value", "id", "dtype"])
+    def test_meta_bulk_delete_full(
+        self,
+        service: RunMetaEntryService,
+        test_entries_df: pd.DataFrame,
+        fake_time: datetime.datetime,
+    ) -> None:
+        remove_data = test_entries_df.drop(columns=["value", "id", "dtype"])
         service.bulk_delete(remove_data)
 
         ret = service.tabulate()

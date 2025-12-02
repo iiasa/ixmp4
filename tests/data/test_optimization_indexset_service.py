@@ -4,6 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import InvalidArguments
 from ixmp4.data.optimization.equation.service import EquationService
 from ixmp4.data.optimization.indexset.repositories import (
     IndexSetDataInvalid,
@@ -18,7 +19,6 @@ from ixmp4.data.optimization.variable.service import VariableService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import UnitService
-from ixmp4.exceptions import InvalidArguments
 from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
