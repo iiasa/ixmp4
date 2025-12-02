@@ -1,10 +1,11 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING
 
 import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.backend import Backend
+from ixmp4.core.unit import Unit
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.scalar.dto import Scalar as ScalarDto
 from ixmp4.data.optimization.scalar.exceptions import (
@@ -99,21 +100,13 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
         except DocsNotFound:
             return None
 
-    def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
+    def update(
+        self, value: int | float | None = None, unit_name: str | None = None
+    ) -> None:
         """Adds data to the Scalar."""
         self.run.require_lock()
-        self.service.add_data(self.dto.id, data)
-        self.dto = self.service.get(self.dto.run__id, self.dto.name)
-
-    def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
-        """Removes data from the Scalar.
-
-        If `data` is `None` (the default), remove all data. Otherwise, data must specify
-        all indexed columns. All other keys/columns are ignored.
-        """
-        self.run.require_lock()
-        self.service.remove_data(self.dto.id, data)
-        self.dto = self.service.get(run_id=self.dto.run__id, name=self.dto.name)
+        self.service.update_by_id(self.dto.id, value=value, unit_name=unit_name)
+        self.refresh()
 
     def delete(self) -> None:
         self.run.require_lock()
@@ -151,11 +144,9 @@ class ScalarServiceFacade(
 
         return id
 
-    def create(
-        self, name: str, value: float, unit: str | UnitDto | None = None
-    ) -> Scalar:
+    def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
         self.run.require_lock()
-        if isinstance(unit, UnitDto):
+        if isinstance(unit, Unit):
             unit_name = unit.name
         elif isinstance(unit, str):
             unit_name = unit
@@ -171,12 +162,13 @@ class ScalarServiceFacade(
             )
         except Scalar.NotUnique as e:
             raise Scalar.NotUnique(
-                message=f"Scalar '{name}' already exists! Did you mean to call "
-                "run.optimization.scalars.update()?"
+                message=f"Scalar '{name}' already exists! "
+                "Did you mean to call Scalar.update()?"
             ) from e
         return Scalar(self.backend, dto, run=self.run)
 
     def delete(self, x: Scalar | int | str) -> None:
+        self.run.require_lock()
         id = self.get_item_id(x)
         self.service.delete_by_id(id)
 
