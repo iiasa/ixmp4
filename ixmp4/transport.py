@@ -14,9 +14,9 @@ from toolkit.client.base import ServiceClient
 from toolkit.manager.models import Ixmp4Instance
 from toolkit.utils import ttl_cache
 
+from ixmp4.base_exceptions import ProgrammingError
+from ixmp4.base_exceptions import registry as exception_registry
 from ixmp4.conf import settings
-from ixmp4.exceptions import ProgrammingError
-from ixmp4.exceptions import registry as exception_registry
 
 
 class Transport(abc.ABC):
