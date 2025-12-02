@@ -1,4 +1,7 @@
+from typing import Sequence
+
 from toolkit import db
+from toolkit.db.repository.base import Values
 
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.iamc.variable.db import Variable
@@ -33,3 +36,19 @@ class PandasRepository(db.r.PandasRepository):
     )
     filter = db.r.Filter(DataPointFilter, DataPoint)
     dtypes = {"step_year": "Int64"}
+
+    def tabulate(
+        self,
+        values: Values | None = None,
+        columns: Sequence[str] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ):
+        df = super().tabulate(values, columns, limit, offset)
+
+        # drop empty step columns
+        cols_to_check = ["step_year", "step_category", "step_datetime"]
+        cols_to_drop = [
+            col for col in cols_to_check if col in df.columns and df[col].isna().all()
+        ]
+        return df.drop(columns=cols_to_drop)
