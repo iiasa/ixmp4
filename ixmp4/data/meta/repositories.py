@@ -53,13 +53,17 @@ class PandasRepository(db.r.PandasRepository):
     )
     filter = db.r.Filter(RunMetaEntryFilter, RunMetaEntry)
 
+    def default_order_by(self, exc: sa.Select[Any]) -> sa.Select[Any]:
+        return exc.order_by(RunMetaEntry.run__id, RunMetaEntry.key)
+
     def merge_value_columns(self, df: pd.DataFrame) -> pd.DataFrame:
         def map_value_column(df: pd.DataFrame) -> pd.DataFrame:
             type_str = df.name
             type_ = Type(type_str)
             col = Type.column_for_type(type_)
             df["value"] = df[col].astype(Type.pd_dtype_for_type(type_))
-            return df.drop(columns=Type.columns())
+            df["dtype"] = type_str
+            return df.drop(columns=[col])
 
         type_df = df.groupby("dtype", group_keys=True)
 
@@ -73,8 +77,13 @@ class PandasRepository(db.r.PandasRepository):
 
         if df_with_value.empty:
             df_with_value["value"] = None
+            df_with_value["dtype"] = None
 
-        return df_with_value.reset_index()[["id", "key", "value", "dtype", "run__id"]]
+        df_with_value.drop(
+            columns=set(Type.columns()) & set(df_with_value.columns.to_list()),
+            inplace=True,
+        )
+        return df_with_value.reset_index(drop=True)
 
     def tabulate(
         self,
