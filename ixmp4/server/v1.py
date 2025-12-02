@@ -7,8 +7,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 
 from ixmp4 import data
+from ixmp4.base_exceptions import ServiceException, registry
 from ixmp4.conf import settings
-from ixmp4.exceptions import ServiceException, registry
 from ixmp4.services import Service
 
 from .middleware import RequestSizeLoggerMiddleware, RequestTimeLoggerMiddleware

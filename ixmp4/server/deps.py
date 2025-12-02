@@ -7,6 +7,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.models import Ixmp4Instance
 from toolkit.token import PreencodedToken, verify
 
+from ixmp4.base_exceptions import BadRequest, Forbidden
 from ixmp4.conf import settings
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
@@ -14,7 +15,6 @@ from ixmp4.conf.platforms import (
     PlatformNotFound,
     TomlPlatform,
 )
-from ixmp4.exceptions import BadRequest, Forbidden
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
