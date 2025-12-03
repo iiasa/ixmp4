@@ -11,8 +11,10 @@ from ixmp4.data.region.service import RegionService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import UnitService
+from ixmp4.data.versions.model import Operation
 from ixmp4.transport import Transport
 from tests import backends
+from tests.base import DataFrameTest
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -80,7 +82,7 @@ class DataPointServiceTest(ServiceTest[DataPointService]):
         return timeseries.tabulate()
 
 
-class DataPointBulkOperationsTest(DataPointServiceTest):
+class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
     @pytest.fixture(scope="class")
     def test_annual_df(
         self,
@@ -109,8 +111,6 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
     ) -> pd.DataFrame:
         exp_df = test_annual_df.copy()
         exp_df["step_year"] = exp_df["step_year"].astype("Int64")
-        exp_df["step_datetime"] = pd.NaT
-        exp_df["step_category"] = None
         return exp_df
 
     @pytest.fixture(scope="class")
@@ -141,7 +141,6 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         test_categorical_df: pd.DataFrame,
     ) -> pd.DataFrame:
         exp_df = test_categorical_df.copy()
-        exp_df["step_datetime"] = pd.NaT
         exp_df["step_year"] = exp_df["step_year"].astype("Int64")
         return exp_df
 
@@ -166,9 +165,6 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         test_datetime_df: pd.DataFrame,
     ) -> pd.DataFrame:
         exp_df = test_datetime_df.copy()
-        exp_df["step_year"] = None
-        exp_df["step_year"] = exp_df["step_year"].astype("Int64")
-        exp_df["step_category"] = None
         return exp_df
 
     @pytest.fixture(scope="class")
@@ -261,6 +257,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
             update_df = update_df.drop(columns=["type"])
 
         update_df["value"] = -99.99
+        expected_df = expected_df.copy()
         expected_df["value"] = -99.99
         service.bulk_upsert(update_df)
         ret_df = service.tabulate()
@@ -281,7 +278,135 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         ret_df = service.tabulate()
         assert ret_df.empty
 
-    # TODO Versioning Tests
+    @pytest.fixture(scope="class")
+    def tx_after_insert(self, test_df: pd.DataFrame) -> int:
+        return 14 + len(test_df)
+
+    @pytest.fixture(scope="class")
+    def tx_after_update(self, tx_after_insert: int, test_df: pd.DataFrame) -> int:
+        return tx_after_insert + len(test_df)
+
+    @pytest.fixture(scope="class")
+    def tx_after_delete(self, tx_after_update: int) -> int:
+        return tx_after_update + 2
+
+    def test_datapoint_rollback_data(
+        self,
+        versioning_service: DataPointService,
+        tx_after_insert: int,
+        tx_after_update: int,
+        tx_after_delete: int,
+        test_df: pd.DataFrame,
+    ):
+        # insert rollback data
+        expected_insert_rollback_df = test_df.copy()
+
+        expected_insert_rollback_df["rollback_operation_type"] = Operation.DELETE.value
+        rollback_insert_df = versioning_service.versions.tabulate_difference(
+            tx_after_insert, 1
+        ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
+        rollback_insert_df = self.drop_empty_columns(rollback_insert_df)
+        pdt.assert_frame_equal(
+            expected_insert_rollback_df,
+            rollback_insert_df,
+            check_like=True,
+        )
+
+        # update rollback data
+        rollback_update_df = versioning_service.versions.tabulate_difference(
+            tx_after_update, tx_after_insert
+        ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
+        rollback_update_df = self.drop_empty_columns(rollback_update_df)
+
+        expected_rollback_update_df = test_df.copy()
+        expected_rollback_update_df["rollback_operation_type"] = Operation.UPDATE.value
+        pdt.assert_frame_equal(
+            expected_rollback_update_df,
+            rollback_update_df,
+            check_like=True,
+        )
+
+        # delete rollback data
+        rollback_delete_df = versioning_service.versions.tabulate_difference(
+            tx_after_delete, tx_after_update
+        ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
+        rollback_delete_df = self.drop_empty_columns(rollback_delete_df)
+        expected_rollback_delete_df = test_df.copy()
+        expected_rollback_delete_df["rollback_operation_type"] = Operation.INSERT.value
+        expected_rollback_delete_df["value"] = -99.99
+
+        pdt.assert_frame_equal(
+            expected_rollback_delete_df,
+            rollback_delete_df,
+            check_like=True,
+        )
+
+    def test_datapoint_versions(
+        self,
+        versioning_service: DataPointService,
+        tx_after_insert: int,
+        tx_after_update: int,
+        tx_after_delete: int,
+        test_df: pd.DataFrame,
+    ):
+        # insert valid version records
+        insert_versions_df = test_df.copy()
+        insert_versions_df["operation_type"] = Operation.INSERT.value
+        ret_insert_versions_df = versioning_service.versions.tabulate_valid_at_tx(
+            tx_after_insert
+        )
+        ret_insert_versions_df = self.drop_empty_columns(ret_insert_versions_df)
+        ret_insert_versions_df = ret_insert_versions_df.drop(
+            columns=["transaction_id", "end_transaction_id"]
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(insert_versions_df),
+            self.canonical_sort(ret_insert_versions_df),
+            check_like=True,
+        )
+
+        # update valid version records
+        update_versions_df = test_df.copy()
+        update_versions_df["operation_type"] = Operation.UPDATE.value
+        update_versions_df["value"] = -99.99
+
+        ret_update_versions_df = versioning_service.versions.tabulate_valid_at_tx(
+            tx_after_update
+        )
+        ret_update_versions_df = self.drop_empty_columns(ret_update_versions_df)
+        ret_update_versions_df = ret_update_versions_df.drop(
+            columns=["transaction_id", "end_transaction_id"]
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(update_versions_df),
+            self.canonical_sort(ret_update_versions_df),
+            check_like=True,
+        )
+
+        # delete valid version records
+        delete_versions_df = update_versions_df.copy()
+        delete_versions_df["operation_type"] = Operation.DELETE.value
+        ret_delete_versions_df = versioning_service.versions.tabulate_valid_at_tx(
+            tx_after_delete
+        )
+        assert ret_delete_versions_df.empty
+
+        # all version records
+        expected_versions_df = pd.concat(
+            [insert_versions_df, update_versions_df, delete_versions_df],
+            ignore_index=True,
+        )
+        ret_versions_df = (
+            versioning_service.versions.tabulate()
+            .drop(columns=["transaction_id", "end_transaction_id"])
+            .dropna(how="all", axis="columns")
+        )
+
+        pdt.assert_frame_equal(
+            self.canonical_sort(expected_versions_df),
+            self.canonical_sort(ret_versions_df),
+            check_like=True,
+        )
 
 
 class TestDatapointBulkAnnualInferType(DataPointBulkOperationsTest):
