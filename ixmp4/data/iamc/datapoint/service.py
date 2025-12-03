@@ -20,7 +20,7 @@ from ixmp4.services import (
 
 from .df_schemas import DeleteDataPointFrameSchema, UpsertDataPointFrameSchema
 from .filter import DataPointFilter
-from .repositories import PandasRepository
+from .repositories import PandasRepository, VersionRepository
 
 
 class DataPointService(Service):
@@ -29,6 +29,7 @@ class DataPointService(Service):
 
     executor: db.r.SessionExecutor
     pandas: PandasRepository
+    versions: VersionRepository
 
     full_key = {
         "time_series__id",
@@ -53,6 +54,7 @@ class DataPointService(Service):
         self.executor = db.r.SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor)
         self.timeseries = TimeSeriesPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
 
     def get_columns(
         self,

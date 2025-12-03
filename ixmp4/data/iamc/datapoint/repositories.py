@@ -10,8 +10,9 @@ from ixmp4.data.region.db import Region
 from ixmp4.data.run.db import Run
 from ixmp4.data.scenario.db import Scenario
 from ixmp4.data.unit.db import Unit
+from ixmp4.data.versions.repository import BaseVersionRepository
 
-from .db import DataPoint
+from .db import DataPoint, DataPointVersion
 from .exceptions import DataPointNotFound, DataPointNotUnique
 from .filter import DataPointFilter
 
@@ -52,3 +53,8 @@ class PandasRepository(db.r.PandasRepository):
             col for col in cols_to_check if col in df.columns and df[col].isna().all()
         ]
         return df.drop(columns=cols_to_drop)
+
+
+class VersionRepository(BaseVersionRepository):
+    target = db.r.ModelTarget(DataPointVersion)
+    filter = db.r.Filter(DataPointFilter, DataPointVersion)
