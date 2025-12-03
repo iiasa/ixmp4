@@ -20,11 +20,7 @@ from .db import UnitDocs
 from .dto import Unit
 from .exceptions import UnitNotFound
 from .filter import UnitFilter
-from .repositories import (
-    ItemRepository,
-    PandasRepository,
-    VersionPandasRepository,
-)
+from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
 class UnitService(DocsService, Service):
@@ -34,13 +30,13 @@ class UnitService(DocsService, Service):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    versions: VersionRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=UnitDocs)
 
     @procedure(methods=["POST"])

@@ -2,6 +2,8 @@ from typing import TYPE_CHECKING
 
 from toolkit import db
 
+from ixmp4.data.versions.repository import BaseVersionRepository
+
 from .db import Unit, UnitVersion
 from .exceptions import UnitNotFound, UnitNotUnique
 from .filter import UnitFilter
@@ -24,7 +26,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(UnitFilter, Unit)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(BaseVersionRepository):
     NotFound = UnitNotFound
     NotUnique = UnitNotUnique
     target = db.r.ModelTarget(UnitVersion)
