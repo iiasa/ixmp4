@@ -1,5 +1,6 @@
 from typing import NoReturn
 
+import pandas as pd
 import pytest
 
 from ixmp4.transport import DirectTransport, HttpxTransport, Transport
@@ -22,3 +23,14 @@ class TransportTest(object):
     @classmethod
     def skip_transport(cls, transport: Transport, reason: str) -> NoReturn:
         pytest.skip(f"Transport `{transport}` {reason}.")
+
+
+class DataFrameTest(object):
+    @classmethod
+    def drop_empty_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+        return df.dropna(how="all", axis="columns")
+
+    @classmethod
+    def canonical_sort(cls, df: pd.DataFrame) -> pd.DataFrame:
+        sorted_cols = df.columns.sort_values().to_list()
+        return df.sort_values(by=sorted_cols).reset_index(drop=True)

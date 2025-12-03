@@ -5,13 +5,14 @@ import pytest
 
 import ixmp4
 from tests import backends
+from tests.base import DataFrameTest
 
 from .base import PlatformTest
 
 platform = backends.get_platform_fixture(scope="class")
 
 
-class IamcTest(PlatformTest):
+class IamcTest(DataFrameTest, PlatformTest):
     @pytest.fixture(scope="class")
     def run(
         self,
@@ -37,11 +38,6 @@ class IamcTest(PlatformTest):
             platform.regions.create("Region 1", "default"),
             platform.regions.create("Region 2", "default"),
         ]
-
-    def sort_df(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.sort_values(by=df.columns.sort_values().to_list()).reset_index(
-            drop=True
-        )
 
 
 class IamcDataTest(IamcTest):
@@ -123,8 +119,8 @@ class IamcDataTest(IamcTest):
         ret = run.iamc.tabulate()
         ret = ret.drop(columns=["type"])
         pdt.assert_frame_equal(
-            self.sort_df(test_data_upsert),
-            self.sort_df(ret),
+            self.canonical_sort(test_data_upsert),
+            self.canonical_sort(ret),
             check_like=True,
         )
 
@@ -136,8 +132,8 @@ class IamcDataTest(IamcTest):
             columns=["type"]
         )
         pdt.assert_frame_equal(
-            self.sort_df(test_data_platform),
-            self.sort_df(ret_platform),
+            self.canonical_sort(test_data_platform),
+            self.canonical_sort(ret_platform),
             check_like=True,
         )
 
@@ -205,9 +201,11 @@ class IamcDataRollbackTest(IamcTest):
         test_data_add: pd.DataFrame,
         test_data_remove: pd.DataFrame,
     ):
-        ret = run.iamc.tabulate()
+        ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
-            self.sort_df(test_data_add), self.sort_df(ret), check_like=True
+            self.canonical_sort(test_data_add),
+            self.canonical_sort(ret),
+            check_like=True,
         )
 
     def test_iamc_data_non_versioning_after_removal_failure(
@@ -219,7 +217,9 @@ class IamcDataRollbackTest(IamcTest):
     ):
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
-            self.sort_df(test_data_remaining), self.sort_df(ret), check_like=True
+            self.canonical_sort(test_data_remaining),
+            self.canonical_sort(ret),
+            check_like=True,
         )
 
     def test_iamc_data_upsert_failure(
@@ -242,7 +242,9 @@ class IamcDataRollbackTest(IamcTest):
     ):
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
-            self.sort_df(test_data_add), self.sort_df(ret), check_like=True
+            self.canonical_sort(test_data_add),
+            self.canonical_sort(ret),
+            check_like=True,
         )
 
     def test_iamc_data_non_versioning_after_upsert_failure(
@@ -253,7 +255,9 @@ class IamcDataRollbackTest(IamcTest):
     ):
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
-            self.sort_df(test_data_upsert), self.sort_df(ret), check_like=True
+            self.canonical_sort(test_data_upsert),
+            self.canonical_sort(ret),
+            check_like=True,
         )
 
 
