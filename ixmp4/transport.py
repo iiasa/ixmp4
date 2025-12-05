@@ -14,13 +14,14 @@ from toolkit.client.base import ServiceClient
 from toolkit.manager.models import Ixmp4Instance
 from toolkit.utils import ttl_cache
 
-from ixmp4.base_exceptions import ProgrammingError
-from ixmp4.base_exceptions import registry as exception_registry
 from ixmp4.conf import settings
+from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
+from ixmp4.core.exceptions import registry as exception_registry
 
 
 class Transport(abc.ABC):
-    pass
+    def check_versioning_compatiblity(self):
+        raise NotImplementedError
 
 
 logger = logging.getLogger(__name__)
@@ -93,6 +94,12 @@ class DirectTransport(Transport):
         self.session.rollback()
         self.session.close()
         self.session.bind.engine.dispose()
+
+    def check_versioning_compatiblity(self):
+        if self.session.bind.engine.dialect.name != "postgresql":
+            raise OperationNotSupported(
+                "Versioning is only enabled on 'postgresql' platforms..."
+            )
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} {self.get_engine_info()}>"
