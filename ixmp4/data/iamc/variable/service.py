@@ -20,7 +20,7 @@ from .filter import VariableFilter
 from .repositories import (
     ItemRepository,
     PandasRepository,
-    VersionPandasRepository,
+    VersionRepository,
 )
 
 
@@ -31,13 +31,13 @@ class VariableService(DocsService, Service):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    pandas_versions: VersionRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.pandas_versions = VersionRepository(self.executor)
 
         DocsService.__init_direct__(self, transport, docs_model=VariableDocs)
 

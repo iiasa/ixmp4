@@ -2,7 +2,7 @@ from toolkit import db
 
 from .db import Variable, VariableVersion
 from .exceptions import VariableNotFound, VariableNotUnique
-from .filter import VariableFilter
+from .filter import VariableFilter, VariableVersionFilter
 
 
 class ItemRepository(db.r.ItemRepository[Variable]):
@@ -19,7 +19,8 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(VariableFilter, Variable)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
+    filter = db.r.Filter(VariableVersionFilter, VariableVersion)
     target = db.r.ModelTarget(VariableVersion)
