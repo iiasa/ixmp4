@@ -4,8 +4,9 @@ from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.run.db import Run
+from ixmp4.data.versions.filter import VersionFilter
 
-from .db import DataPoint
+from .db import DataPoint, DataPointVersion
 
 
 class DataPointFilter(iamc.DataPointFilter, total=False):
@@ -21,3 +22,7 @@ class DataPointFilter(iamc.DataPointFilter, total=False):
     scenario: Annotated[
         base.ScenarioFilter, (DataPoint.timeseries, TimeSeries.run, Run.scenario)
     ]
+
+
+class DataPointVersionFilter(iamc.DataPointFilter, VersionFilter, total=False):
+    timeseries: Annotated[iamc.TimeSeriesFilter, (DataPointVersion.timeseries)]
