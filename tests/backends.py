@@ -84,7 +84,9 @@ def sqlite_transport(
         create_model_tables(sqlite.session.bind.engine)
     yield sqlite
     sqlite.close()
-    drop_model_tables(sqlite.session.bind.engine, dirty_tables)
+    # dropping tables explicitly on sqlite results in a ResourceWarning.
+    # since the db is in memory, we can just skip dropping the tables.
+    # drop_model_tables(sqlite.session.bind.engine, dirty_tables)
 
 
 @contextlib.contextmanager
