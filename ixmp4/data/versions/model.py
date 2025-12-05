@@ -1,5 +1,7 @@
 import enum
+from typing import Any
 
+import sqlalchemy as sa
 from sqlalchemy import BigInteger, SmallInteger, orm
 from toolkit import db
 
@@ -24,3 +26,18 @@ class BaseVersionModel(BaseModel):
     end_transaction_id: db.t.Integer = orm.mapped_column(
         BigInteger(), nullable=True, index=True
     )
+
+    @classmethod
+    def join_valid_versions(
+        cls, foreign_version_class: type["BaseVersionModel"]
+    ) -> sa.ColumnElement[Any]:
+        return sa.and_(
+            orm.remote(foreign_version_class.transaction_id)
+            <= orm.foreign(cls.transaction_id),
+            orm.remote(foreign_version_class.operation_type) != Operation.DELETE.value,
+            sa.or_(
+                orm.remote(foreign_version_class.end_transaction_id)
+                > orm.foreign(cls.transaction_id),
+                orm.remote(foreign_version_class.end_transaction_id) == sa.null(),
+            ),
+        )
