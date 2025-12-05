@@ -19,7 +19,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(ModelFilter, Model)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
     target = db.r.ModelTarget(ModelVersion)

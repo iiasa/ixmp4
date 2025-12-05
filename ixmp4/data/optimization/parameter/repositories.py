@@ -38,7 +38,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(ParameterFilter, Parameter)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = ParameterNotFound
     NotUnique = ParameterNotUnique
     target = db.r.ModelTarget(ParameterVersion)

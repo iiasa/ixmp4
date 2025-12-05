@@ -35,7 +35,7 @@ from .repositories import (
     IndexSetDataItemRepository,
     ItemRepository,
     PandasRepository,
-    VersionPandasRepository,
+    VersionRepository,
 )
 
 
@@ -47,7 +47,7 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     items: ItemRepository
     data: IndexSetDataItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    versions: VersionRepository
 
     equations: EquationRepository
     parameters: ParameterRepository
@@ -59,7 +59,7 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
         self.data = IndexSetDataItemRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
         self.equations = EquationRepository(self.executor)
         self.parameters = ParameterRepository(self.executor)
         self.tables = TableRepository(self.executor)

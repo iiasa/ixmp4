@@ -19,7 +19,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(ScalarFilter, Scalar)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = ScalarNotFound
     NotUnique = ScalarNotUnique
     target = db.r.ModelTarget(ScalarVersion)

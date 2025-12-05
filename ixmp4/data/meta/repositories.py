@@ -9,7 +9,7 @@ from ixmp4.data.model.db import Model
 from ixmp4.data.run.db import Run
 from ixmp4.data.scenario.db import Scenario
 
-from .db import RunMetaEntry
+from .db import RunMetaEntry, RunMetaEntryVersion
 from .dto import MetaValueType
 from .exceptions import InvalidRunMeta, RunMetaEntryNotFound, RunMetaEntryNotUnique
 from .filter import RunMetaEntryFilter
@@ -117,3 +117,9 @@ class PandasRepository(db.r.PandasRepository):
                 type_df[nc] = None
 
             super().upsert(type_df, key)
+
+
+class VersionRepository(db.r.PandasRepository):
+    NotFound = RunMetaEntryNotFound
+    NotUnique = RunMetaEntryNotUnique
+    target = db.r.ModelTarget(RunMetaEntryVersion)

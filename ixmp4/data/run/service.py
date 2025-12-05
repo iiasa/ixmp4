@@ -8,8 +8,17 @@ from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
+from ixmp4.data.iamc.reverter import run_reverter as iamc_reverter
+from ixmp4.data.meta.repositories import (
+    PandasRepository as MetaRepository,
+)
+from ixmp4.data.meta.repositories import (
+    VersionRepository as MetaVersionRepository,
+)
+from ixmp4.data.meta.reverter import run_reverter as meta_reverter
 from ixmp4.data.model.exceptions import ModelNotUnique
 from ixmp4.data.model.repositories import ItemRepository as ModelRepository
+from ixmp4.data.optimization.reverter import run_reverter as opt_reverter
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.scenario.exceptions import ScenarioNotUnique
 from ixmp4.data.scenario.repositories import (
@@ -33,7 +42,7 @@ from .filter import RunFilter
 from .repositories import (
     ItemRepository,
     PandasRepository,
-    PandasVersionRepository,
+    VersionRepository,
 )
 
 
@@ -44,9 +53,15 @@ class RunService(Service):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
+    versions: VersionRepository
+
     models: ModelRepository
     scenarios: ScenarioRepository
     transactions: TransactionRepository
+
+    # reverters
+    meta: MetaRepository
+    meta_versions: MetaVersionRepository
 
     default_columns = [
         "id",
@@ -67,10 +82,14 @@ class RunService(Service):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = PandasVersionRepository(self.executor)
         self.models = ModelRepository(self.executor)
         self.scenarios = ScenarioRepository(self.executor)
         self.transactions = TransactionRepository(self.executor)
+
+        self.meta = MetaRepository(self.executor)
+        self.meta_versions = MetaVersionRepository(self.executor)
+
+        self.versions = VersionRepository(self.executor)
 
     @procedure(methods=["POST"])
     def create(self, model_name: str, scenario_name: str) -> Run:
@@ -429,6 +448,16 @@ class RunService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
+    def revert_meta(
+        self, id: int, transaction__id: int
+    ) -> None:  # TODO: missing units/regions, revert vars
+        self.meta.revert(
+            self.meta_versions, transaction__id, filter_values={"run__id": id}
+        )
+
+    def revert_iamc_data(self, id: int, transaction__id: int) -> None:
+        iamc_reverter(self.executor, transaction__id, run__id=id)
+
     @procedure(methods=["POST"])
     def revert(
         self, id: int, transaction__id: int, revert_platform: bool = False
@@ -449,7 +478,12 @@ class RunService(Service):
         :class:`RunNotFound`:
             If no run with the `id` exists.
         """
-        ...
+        self.transport.check_versioning_compatiblity()
+        self.items.get_by_pk({"id": id})
+
+        meta_reverter(self.executor, transaction__id, run__id=id)
+        iamc_reverter(self.executor, transaction__id, run__id=id)
+        opt_reverter(self.executor, transaction__id, run__id=id)
 
     @revert.auth_check()
     def revert_auth_check(

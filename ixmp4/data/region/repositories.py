@@ -19,7 +19,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(RegionFilter, Region)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = RegionNotFound
     NotUnique = RegionNotUnique
     target = db.r.ModelTarget(RegionVersion)

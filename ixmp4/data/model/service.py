@@ -19,7 +19,7 @@ from ixmp4.services import (
 from .db import ModelDocs
 from .dto import Model
 from .filter import ModelFilter
-from .repositories import ItemRepository, PandasRepository, VersionPandasRepository
+from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
 class ModelService(DocsService, Service):
@@ -29,13 +29,13 @@ class ModelService(DocsService, Service):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    versions: VersionRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
 
         DocsService.__init_direct__(self, transport, docs_model=ModelDocs)
 

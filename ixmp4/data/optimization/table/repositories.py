@@ -35,7 +35,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(TableFilter, Table)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = TableNotFound
     NotUnique = TableNotUnique
     target = db.r.ModelTarget(TableVersion)

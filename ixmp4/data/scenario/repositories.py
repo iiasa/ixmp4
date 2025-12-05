@@ -19,7 +19,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(ScenarioFilter, Scenario)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = ScenarioNotFound
     NotUnique = ScenarioNotUnique
     target = db.r.ModelTarget(ScenarioVersion)

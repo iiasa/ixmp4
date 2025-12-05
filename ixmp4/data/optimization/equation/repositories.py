@@ -36,7 +36,7 @@ class PandasRepository(db.r.PandasRepository):
     filter = db.r.Filter(EquationFilter, Equation)
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
     target = db.r.ModelTarget(EquationVersion)

@@ -97,14 +97,8 @@ class PandasRepository(db.r.PandasRepository):
     )
 
 
-class PandasVersionRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
     filter = db.r.Filter(RunFilter, Run)
-    target = db.r.ExtendedTarget(
-        RunVersion,
-        {
-            "model": (Run.model, Model.name),
-            "scenario": (Run.scenario, Scenario.name),
-        },
-    )
+    target = db.r.ModelTarget(RunVersion)

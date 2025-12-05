@@ -98,7 +98,7 @@ class IndexSetDataItemRepository(db.r.ItemRepository[IndexSetData]):
                 return result
 
 
-class VersionPandasRepository(db.r.PandasRepository):
+class VersionRepository(db.r.PandasRepository):
     NotFound = IndexSetNotFound
     NotUnique = IndexSetNotUnique
     target = db.r.ModelTarget(IndexSetVersion)

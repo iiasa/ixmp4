@@ -20,11 +20,7 @@ from ixmp4.services import (
 from .db import ScalarDocs
 from .dto import Scalar
 from .filter import ScalarFilter
-from .repositories import (
-    ItemRepository,
-    PandasRepository,
-    VersionPandasRepository,
-)
+from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
 class ScalarService(DocsService, IndexSetAssociatedService):
@@ -34,7 +30,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    versions: VersionRepository
 
     indexsets: UnitRepository
 
@@ -42,7 +38,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
         self.units = UnitRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=ScalarDocs)
 

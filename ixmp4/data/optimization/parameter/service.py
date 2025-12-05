@@ -30,7 +30,7 @@ from .repositories import (
     ItemRepository,
     PandasRepository,
     ParameterDataInvalid,
-    VersionPandasRepository,
+    VersionRepository,
 )
 
 
@@ -41,7 +41,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    versions: VersionRepository
 
     associations: AssociationRepository
     indexsets: IndexSetRepository
@@ -50,7 +50,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
         self.units = UnitRepository(self.executor)
         self.associations = AssociationRepository(self.executor)
         self.indexsets = IndexSetRepository(self.executor)

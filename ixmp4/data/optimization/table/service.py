@@ -29,7 +29,7 @@ from .repositories import (
     ItemRepository,
     PandasRepository,
     TableDataInvalid,
-    VersionPandasRepository,
+    VersionRepository,
 )
 
 logger = logging.getLogger(__name__)
@@ -42,7 +42,7 @@ class TableService(DocsService, IndexSetAssociatedService):
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    pandas_versions: VersionPandasRepository
+    versions: VersionRepository
 
     associations: AssociationRepository
     indexsets: IndexSetRepository
@@ -51,7 +51,7 @@ class TableService(DocsService, IndexSetAssociatedService):
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
         self.pandas = PandasRepository(self.executor)
-        self.pandas_versions = VersionPandasRepository(self.executor)
+        self.versions = VersionRepository(self.executor)
         self.associations = AssociationRepository(self.executor)
         self.indexsets = IndexSetRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=TableDocs)
