@@ -60,7 +60,7 @@ class CheckpointService(Service):
         :class:`Checkpoint`:
             The created checkpoint.
         """
-        if transaction__id is None and self.get_dialect().name == "postgres":
+        if transaction__id is None and self.get_dialect().name == "postgresql":
             # fill the latest transaction as default for
             # postgres dbs which support versioning
             transaction__id = self.transactions.latest().id
