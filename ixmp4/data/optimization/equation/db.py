@@ -59,6 +59,20 @@ class EquationIndexsetAssociationVersion(IndexsetAssociationVersionModel):
 
     equation__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
 
+    @staticmethod
+    def join_equation_versions() -> sa.ColumnElement[bool]:
+        return sa.and_(
+            EquationIndexsetAssociationVersion.equation__id == EquationVersion.id,
+            EquationIndexsetAssociationVersion.join_valid_versions(EquationVersion),
+        )
+
+    equation: orm.Relationship["EquationVersion"] = orm.relationship(
+        EquationVersion,
+        primaryjoin=join_equation_versions,
+        lazy="select",
+        viewonly=True,
+    )
+
 
 version_triggers = versions.PostgresVersionTriggers(
     Equation.__table__, EquationVersion.__table__

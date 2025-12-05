@@ -34,7 +34,7 @@ class TimeSeries(BaseModel):
         sa.Integer, sa.ForeignKey("region.id"), nullable=False, index=True
     )
     region: orm.Mapped["Region"] = orm.relationship(
-        "Region", foreign_keys=[region__id], lazy="select"
+        "Region", foreign_keys=[region__id], lazy="select", viewonly=True
     )
 
     measurand__id: db.t.Integer = orm.mapped_column(

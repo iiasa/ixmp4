@@ -90,6 +90,21 @@ class IndexSetDataVersion(versions.BaseVersionModel):
 
     indexset__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
     value: db.t.String = orm.mapped_column(nullable=False)
+    indexset: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+
+    @staticmethod
+    def join_indexset_versions() -> sa.ColumnElement[bool]:
+        return sa.and_(
+            IndexSetDataVersion.indexset__id == IndexSetVersion.id,
+            IndexSetDataVersion.join_valid_versions(IndexSetVersion),
+        )
+
+    indexset: orm.Relationship["IndexSetVersion"] = orm.relationship(
+        IndexSetVersion,
+        primaryjoin=join_indexset_versions,
+        lazy="select",
+        viewonly=True,
+    )
 
 
 version_triggers = versions.PostgresVersionTriggers(

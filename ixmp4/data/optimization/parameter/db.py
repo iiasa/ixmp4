@@ -52,6 +52,20 @@ class ParameterIndexsetAssociationVersion(IndexsetAssociationVersionModel):
 
     parameter__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
 
+    @staticmethod
+    def join_parameter_versions() -> sa.ColumnElement[bool]:
+        return sa.and_(
+            ParameterIndexsetAssociationVersion.parameter__id == ParameterVersion.id,
+            ParameterIndexsetAssociationVersion.join_valid_versions(ParameterVersion),
+        )
+
+    parameter: orm.Relationship["ParameterVersion"] = orm.relationship(
+        ParameterVersion,
+        primaryjoin=join_parameter_versions,
+        lazy="select",
+        viewonly=True,
+    )
+
 
 version_triggers = versions.PostgresVersionTriggers(
     Parameter.__table__, ParameterVersion.__table__

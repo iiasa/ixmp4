@@ -1,5 +1,3 @@
-from typing import TYPE_CHECKING
-
 import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
@@ -13,9 +11,6 @@ from ixmp4.data.optimization.base.db import (
     IndexsetAssociationModel,
     IndexsetAssociationVersionModel,
 )
-
-if TYPE_CHECKING:
-    pass
 
 
 class Variable(IndexedModel, HasCreationInfo):
@@ -56,6 +51,20 @@ class VariableIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     __tablename__ = "opt_var_idx_association_version"
 
     variable__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+
+    @staticmethod
+    def join_variable_versions() -> sa.ColumnElement[bool]:
+        return sa.and_(
+            VariableIndexsetAssociationVersion.variable__id == VariableVersion.id,
+            VariableIndexsetAssociationVersion.join_valid_versions(VariableVersion),
+        )
+
+    variable: orm.Relationship["VariableVersion"] = orm.relationship(
+        VariableVersion,
+        primaryjoin=join_variable_versions,
+        lazy="select",
+        viewonly=True,
+    )
 
 
 version_triggers = versions.PostgresVersionTriggers(

@@ -52,6 +52,20 @@ class TableIndexsetAssociationVersion(IndexsetAssociationVersionModel):
 
     table__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
 
+    @staticmethod
+    def join_table_versions() -> sa.ColumnElement[bool]:
+        return sa.and_(
+            TableIndexsetAssociationVersion.table__id == TableVersion.id,
+            TableIndexsetAssociationVersion.join_valid_versions(TableVersion),
+        )
+
+    table: orm.Relationship["TableVersion"] = orm.relationship(
+        TableVersion,
+        primaryjoin=join_table_versions,
+        lazy="select",
+        viewonly=True,
+    )
+
 
 version_triggers = versions.PostgresVersionTriggers(
     Table.__table__, TableVersion.__table__

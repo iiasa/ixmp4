@@ -17,8 +17,7 @@ class DataPoint(BaseModel):
     __table_args__ = (
         sa.UniqueConstraint("time_series__id", "step_year", "step_category"),
         sa.UniqueConstraint("time_series__id", "step_datetime"),
-        # sa.CheckConstraint("(step_datetime IS NOT NULL) OR (step_year IS NOT NULL)
-        # AND (step_datetime IS NULL OR step_year IS NULL)"),
+        # sa.CheckConstraint("(step_datetime IS NOT NULL) OR (step_year IS NOT NULL)"),
     )
 
     time_series__id: db.t.Integer = orm.mapped_column(
@@ -58,6 +57,22 @@ class DataPointVersion(versions.BaseVersionModel):
     )
     step_year: db.t.Integer = orm.mapped_column(index=True, nullable=True)
     step_datetime: db.t.DateTime = orm.mapped_column(index=True, nullable=True)
+
+    @staticmethod
+    def join_timeseries_versions() -> sa.ColumnElement[bool]:
+        from ixmp4.data.iamc.timeseries.db import TimeSeriesVersion
+
+        return sa.and_(
+            DataPointVersion.time_series__id == TimeSeriesVersion.id,
+            DataPointVersion.join_valid_versions(TimeSeriesVersion),
+        )
+
+    timeseries: orm.Relationship["TimeSeries"] = orm.relationship(
+        "ixmp4.data.iamc.timeseries.db.TimeSeriesVersion",
+        primaryjoin=join_timeseries_versions,
+        lazy="select",
+        viewonly=True,
+    )
 
 
 version_triggers = versions.PostgresVersionTriggers(
