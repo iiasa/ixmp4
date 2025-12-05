@@ -30,6 +30,9 @@ class PostgresVersionTriggers(object):
     delete_trigger: DeleteTrigger
 
     entities: list[DeleteTrigger | InsertTrigger | UpdateTrigger | VersionProcedure]
+    table: Table | FromClause
+    version_table: Table | FromClause
+    versioned_columns: ColumnCollection[str, ColumnElement[Any]]
 
     def __init__(
         self,
@@ -73,7 +76,7 @@ class PostgresVersionTriggers(object):
 
         self.check_primary_key(table, version_table, transaction_id_column)
 
-        versioned_columns: ColumnCollection[str, ColumnElement[Any]] = (
+        self.versioned_columns: ColumnCollection[str, ColumnElement[Any]] = (
             ColumnCollection()
         )
         for column in table.columns:
@@ -81,13 +84,13 @@ class PostgresVersionTriggers(object):
             if version_column is not None and self.column_corresponds(
                 column, version_column
             ):
-                versioned_columns.add(column)
+                self.versioned_columns.add(column)
 
         self.version_procedure = VersionProcedure(
             table,
             version_table,
             transaction_table,
-            versioned_columns,
+            self.versioned_columns,
             transaction_id_column,
             end_transaction_id_column,
         )
