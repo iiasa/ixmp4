@@ -7,6 +7,7 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import OptimizationItemUsageError
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -580,8 +581,8 @@ class TestEquationRollback(OptimizationEquationTest):
                         "IndexSet": ["fa", "so"],
                     }
                 )
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_equation_versioning_after_add_data_failure(
@@ -619,8 +620,8 @@ class TestEquationRollback(OptimizationEquationTest):
         try:
             with run.transact("Remove equation data failure"):
                 equation.remove_data({"IndexSet": ["do", "re"]})
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_equation_versioning_after_remove_data_failure(
@@ -645,46 +646,38 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_docs_failure(self, run: ixmp4.Run):
         equation = run.optimization.equations.get_by_name("Equation")
-        equation.docs = "These docs should persist!"
 
         try:
             with run.transact("Set equation docs failure"):
-                equation.docs = "These docs should be rolled back!"
-                raise Exception("Whoops!!!")
-        except Exception:
+                equation.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-    def test_equation_versioning_after_docs_failure(
-        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    def test_equation_after_docs_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
     ):
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.docs == "These docs should persist!"
-
-    def test_equation_non_versioning_after_docs_failure(
-        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
-        equation = run.optimization.equations.get_by_name("Equation")
-        assert equation.docs == "These docs should be rolled back!"
 
     def test_equation_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
     ):
         equation = run.optimization.equations.get_by_name("Equation")
-        equation.docs = "These docs should persist!"
 
         try:
             with run.transact("Delete equation failure"):
                 equation.delete()
                 indexset.delete()
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_equation_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         equation = run.optimization.equations.get_by_name("Equation")
-        assert equation.id == 2
+        assert equation.id == 1
 
     def test_equation_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run

@@ -50,7 +50,7 @@ class TestScenarioCreate(ScenarioServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -96,7 +96,7 @@ class TestScenarioDeleteById(ScenarioServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(
             expected_versions,
             vdf,

@@ -6,6 +6,7 @@ import pytest
 
 from ixmp4.data.iamc.datapoint.service import DataPointService
 from ixmp4.data.iamc.datapoint.type import Type
+from ixmp4.data.iamc.reverter import DataPointReverterRepository
 from ixmp4.data.iamc.timeseries.service import TimeSeriesService
 from ixmp4.data.region.service import RegionService
 from ixmp4.data.run.dto import Run
@@ -290,54 +291,57 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
     def tx_after_delete(self, tx_after_update: int) -> int:
         return tx_after_update + 2
 
-    def test_datapoint_rollback_data(
+    def test_datapoint_revert_data(
         self,
         versioning_service: DataPointService,
         tx_after_insert: int,
         tx_after_update: int,
         tx_after_delete: int,
         test_df: pd.DataFrame,
+        run: Run,
     ):
-        # insert rollback data
-        expected_insert_rollback_df = test_df.copy()
+        reverter_repo = DataPointReverterRepository(versioning_service.executor)
 
-        expected_insert_rollback_df["rollback_operation_type"] = Operation.DELETE.value
-        rollback_insert_df = versioning_service.versions.tabulate_difference(
-            tx_after_insert, 1
+        # insert revert data
+        expected_insert_revert_df = test_df.copy()
+
+        expected_insert_revert_df["revert_operation_type"] = Operation.DELETE.value
+        revert_insert_df = reverter_repo.tabulate_revert_ops(
+            tx_after_insert, 1, run__id=run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
-        rollback_insert_df = self.drop_empty_columns(rollback_insert_df)
+        revert_insert_df = self.drop_empty_columns(revert_insert_df)
         pdt.assert_frame_equal(
-            expected_insert_rollback_df,
-            rollback_insert_df,
+            self.canonical_sort(expected_insert_revert_df),
+            self.canonical_sort(revert_insert_df),
             check_like=True,
         )
 
-        # update rollback data
-        rollback_update_df = versioning_service.versions.tabulate_difference(
-            tx_after_update, tx_after_insert
+        # update revert data
+        revert_update_df = reverter_repo.tabulate_revert_ops(
+            tx_after_update, tx_after_insert, run__id=run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
-        rollback_update_df = self.drop_empty_columns(rollback_update_df)
+        revert_update_df = self.drop_empty_columns(revert_update_df)
 
-        expected_rollback_update_df = test_df.copy()
-        expected_rollback_update_df["rollback_operation_type"] = Operation.UPDATE.value
+        expected_revert_update_df = test_df.copy()
+        expected_revert_update_df["revert_operation_type"] = Operation.UPDATE.value
         pdt.assert_frame_equal(
-            expected_rollback_update_df,
-            rollback_update_df,
+            self.canonical_sort(expected_revert_update_df),
+            self.canonical_sort(revert_update_df),
             check_like=True,
         )
 
-        # delete rollback data
-        rollback_delete_df = versioning_service.versions.tabulate_difference(
-            tx_after_delete, tx_after_update
+        # delete revert data
+        revert_delete_df = reverter_repo.tabulate_revert_ops(
+            tx_after_delete, tx_after_update, run__id=run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
-        rollback_delete_df = self.drop_empty_columns(rollback_delete_df)
-        expected_rollback_delete_df = test_df.copy()
-        expected_rollback_delete_df["rollback_operation_type"] = Operation.INSERT.value
-        expected_rollback_delete_df["value"] = -99.99
+        revert_delete_df = self.drop_empty_columns(revert_delete_df)
+        expected_revert_delete_df = test_df.copy()
+        expected_revert_delete_df["revert_operation_type"] = Operation.INSERT.value
+        expected_revert_delete_df["value"] = -99.99
 
         pdt.assert_frame_equal(
-            expected_rollback_delete_df,
-            rollback_delete_df,
+            self.canonical_sort(expected_revert_delete_df),
+            self.canonical_sort(revert_delete_df),
             check_like=True,
         )
 
@@ -349,11 +353,14 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         tx_after_delete: int,
         test_df: pd.DataFrame,
     ):
+        # TODO: Uncommit valid_at_tx tests when version filter is implemented
+
         # insert valid version records
         insert_versions_df = test_df.copy()
         insert_versions_df["operation_type"] = Operation.INSERT.value
-        ret_insert_versions_df = versioning_service.versions.tabulate_valid_at_tx(
-            tx_after_insert
+
+        ret_insert_versions_df = versioning_service.versions.tabulate(
+            {"valid_at_transaction": tx_after_insert}
         )
         ret_insert_versions_df = self.drop_empty_columns(ret_insert_versions_df)
         ret_insert_versions_df = ret_insert_versions_df.drop(
@@ -370,8 +377,8 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         update_versions_df["operation_type"] = Operation.UPDATE.value
         update_versions_df["value"] = -99.99
 
-        ret_update_versions_df = versioning_service.versions.tabulate_valid_at_tx(
-            tx_after_update
+        ret_update_versions_df = versioning_service.versions.tabulate(
+            {"valid_at_transaction": tx_after_update}
         )
         ret_update_versions_df = self.drop_empty_columns(ret_update_versions_df)
         ret_update_versions_df = ret_update_versions_df.drop(
@@ -386,8 +393,8 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         # delete valid version records
         delete_versions_df = update_versions_df.copy()
         delete_versions_df["operation_type"] = Operation.DELETE.value
-        ret_delete_versions_df = versioning_service.versions.tabulate_valid_at_tx(
-            tx_after_delete
+        ret_delete_versions_df = versioning_service.versions.tabulate(
+            {"valid_at_transaction": tx_after_delete}
         )
         assert ret_delete_versions_df.empty
 

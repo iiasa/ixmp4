@@ -102,7 +102,7 @@ class TestTableCreate(TableServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -195,7 +195,7 @@ class TestTableDeleteById(TableServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(
             expected_versions,
             vdf,
@@ -361,7 +361,7 @@ class TableDataTest(TableServiceTest):
         ).as_unit("ns")
         expected_versions["created_by"] = "@unknown"
 
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 

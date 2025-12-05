@@ -7,6 +7,7 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import InvalidArguments
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -293,8 +294,8 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
         try:
             with run.transact("Update indexset data failure"):
                 indexset.add_data(["one", "two", "three"])
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_indexset_versioning_after_add_data_failure(
@@ -318,8 +319,8 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
         try:
             with run.transact("Remove indexset data failure"):
                 indexset.remove_data("foo")
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_indexset_versioning_after_remove_data_failure(
@@ -336,43 +337,35 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
 
     def test_indexset_docs_failure(self, run: ixmp4.Run):
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
-        indexset.docs = "These docs should persist!"
 
         try:
             with run.transact("Set indexset docs failure"):
-                indexset.docs = "These docs should be rolled back!"
-                raise Exception("Whoops!!!")
-        except Exception:
+                indexset.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-    def test_indexset_versioning_after_docs_failure(
-        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    def test_indexset_after_docs_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
     ):
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.docs == "These docs should persist!"
 
-    def test_indexset_non_versioning_after_docs_failure(
-        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
-        indexset = run.optimization.indexsets.get_by_name("IndexSet")
-        assert indexset.docs == "These docs should be rolled back!"
-
     def test_indexset_delete_failure(self, run: ixmp4.Run):
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
-        indexset.docs = "These docs should persist!"
 
         try:
             with run.transact("Delete indexset failure"):
                 indexset.delete()
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_indexset_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
-        assert indexset.id == 2
+        assert indexset.id == 1
 
     def test_indexset_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run

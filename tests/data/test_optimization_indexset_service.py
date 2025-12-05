@@ -86,7 +86,7 @@ class TestIndexSetCreate(IndexSetServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -141,7 +141,7 @@ class TestIndexSetDeleteById(IndexSetServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(
             expected_versions,
             vdf,
@@ -271,7 +271,7 @@ class IndexSetAddRemoveDataTest(IndexSetServiceTest):
                 "operation_type",
             ],
         )
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 

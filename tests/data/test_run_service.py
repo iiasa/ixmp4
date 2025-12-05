@@ -64,7 +64,7 @@ class TestRunCreate(RunServiceTest):
             ],
         )
 
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
     def test_create_run_increment_version(
@@ -129,7 +129,7 @@ class TestRunCreate(RunServiceTest):
             ],
         )
 
-        vdf = versioning_service.pandas_versions.tabulate()
+        vdf = versioning_service.versions.tabulate()
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -172,9 +172,7 @@ class TestRunGetRunVersions(RunServiceTest):
             ],
         )
 
-        vdf = versioning_service.pandas_versions.tabulate(
-            columns=expected_versions.columns
-        )
+        vdf = versioning_service.versions.tabulate(columns=expected_versions.columns)
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 

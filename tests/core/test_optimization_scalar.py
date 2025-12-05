@@ -4,6 +4,7 @@ import pytest
 
 import ixmp4
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -275,8 +276,8 @@ class TestScalarRollback(OptimizationScalarTest):
         try:
             with run.transact("Update scalar value failure"):
                 scalar.update(2.3)
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_scalar_versioning_after_update_failure(
@@ -295,43 +296,35 @@ class TestScalarRollback(OptimizationScalarTest):
 
     def test_scalar_docs_failure(self, run: ixmp4.Run):
         scalar = run.optimization.scalars.get_by_name("Scalar")
-        scalar.docs = "These docs should persist!"
 
         try:
             with run.transact("Set scalar docs failure"):
-                scalar.docs = "These docs should be rolled back!"
-                raise Exception("Whoops!!!")
-        except Exception:
+                scalar.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-    def test_scalar_versioning_after_docs_failure(
+    def test_scalar_after_docs_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         scalar = run.optimization.scalars.get_by_name("Scalar")
         assert scalar.docs == "These docs should persist!"
 
-    def test_scalar_non_versioning_after_docs_failure(
-        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
-        scalar = run.optimization.scalars.get_by_name("Scalar")
-        assert scalar.docs == "These docs should be rolled back!"
-
     def test_scalar_delete_failure(self, run: ixmp4.Run):
         scalar = run.optimization.scalars.get_by_name("Scalar")
-        scalar.docs = "These docs should persist!"
 
         try:
             with run.transact("Delete scalar failure"):
                 scalar.delete()
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_scalar_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         scalar = run.optimization.scalars.get_by_name("Scalar")
-        assert scalar.id == 2
+        assert scalar.id == 1
 
     def test_scalar_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run

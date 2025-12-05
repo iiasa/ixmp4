@@ -5,6 +5,7 @@ import pytest
 
 import ixmp4
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -162,8 +163,8 @@ class TestMetaRollback(MetaTest):
         try:
             with run.transact("Update meta data failure"):
                 run.meta["mfloat"] = 3.14
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_meta_versioning_after_update_failure(
@@ -186,8 +187,8 @@ class TestMetaRollback(MetaTest):
         try:
             with run.transact("Update meta data second failure"):
                 run.meta["mfloat"] = 3.14
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_meta_versioning_after_second_update_failure(

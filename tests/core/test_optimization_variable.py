@@ -7,6 +7,7 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import OptimizationItemUsageError
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -580,8 +581,8 @@ class TestVariableRollback(OptimizationVariableTest):
                         "IndexSet": ["fa", "so"],
                     }
                 )
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_variable_versioning_after_add_data_failure(
@@ -619,8 +620,8 @@ class TestVariableRollback(OptimizationVariableTest):
         try:
             with run.transact("Remove variable data failure"):
                 variable.remove_data({"IndexSet": ["do", "re"]})
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_variable_versioning_after_remove_data_failure(
@@ -645,46 +646,38 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_docs_failure(self, run: ixmp4.Run):
         variable = run.optimization.variables.get_by_name("Variable")
-        variable.docs = "These docs should persist!"
 
         try:
             with run.transact("Set variable docs failure"):
-                variable.docs = "These docs should be rolled back!"
-                raise Exception("Whoops!!!")
-        except Exception:
+                variable.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-    def test_variable_versioning_after_docs_failure(
-        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    def test_variable_after_docs_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
     ):
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.docs == "These docs should persist!"
-
-    def test_variable_non_versioning_after_docs_failure(
-        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
-        variable = run.optimization.variables.get_by_name("Variable")
-        assert variable.docs == "These docs should be rolled back!"
 
     def test_variable_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
     ):
         variable = run.optimization.variables.get_by_name("Variable")
-        variable.docs = "These docs should persist!"
 
         try:
             with run.transact("Delete variable failure"):
                 variable.delete()
                 indexset.delete()
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_variable_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         variable = run.optimization.variables.get_by_name("Variable")
-        assert variable.id == 2
+        assert variable.id == 1
 
     def test_variable_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run

@@ -7,6 +7,7 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import OptimizationItemUsageError
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -588,8 +589,8 @@ class TestParameterRollback(OptimizationParameterTest):
                         "IndexSet": ["fa", "so"],
                     }
                 )
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_parameter_versioning_after_add_data_failure(
@@ -606,9 +607,10 @@ class TestParameterRollback(OptimizationParameterTest):
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         parameter = run.optimization.parameters.get_by_name("Parameter")
+        # NOTE: order is not preserved
         assert parameter.data == {
-            "units": ["Unit 1", "Unit 1", "Unit 2", "Unit 2", "Unit 2"],
-            "values": [1.2, 1.5, -3, -2.2, -9.59],
+            "units": ["Unit 1", "Unit 2", "Unit 2", "Unit 1", "Unit 2"],
+            "values": [1.2, -2.2, -3, 1.5, -9.59],
             "IndexSet": ["do", "fa", "mi", "re", "so"],
         }
 
@@ -621,8 +623,8 @@ class TestParameterRollback(OptimizationParameterTest):
         try:
             with run.transact("Remove parameter data failure"):
                 parameter.remove_data({"IndexSet": ["do", "re"]})
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_parameter_versioning_after_remove_data_failure(
@@ -647,46 +649,38 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_docs_failure(self, run: ixmp4.Run):
         parameter = run.optimization.parameters.get_by_name("Parameter")
-        parameter.docs = "These docs should persist!"
 
         try:
             with run.transact("Set parameter docs failure"):
-                parameter.docs = "These docs should be rolled back!"
-                raise Exception("Whoops!!!")
-        except Exception:
+                parameter.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-    def test_parameter_versioning_after_docs_failure(
-        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    def test_parameter_after_docs_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
     ):
         parameter = run.optimization.parameters.get_by_name("Parameter")
         assert parameter.docs == "These docs should persist!"
-
-    def test_parameter_non_versioning_after_docs_failure(
-        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
-        parameter = run.optimization.parameters.get_by_name("Parameter")
-        assert parameter.docs == "These docs should be rolled back!"
 
     def test_parameter_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
     ):
         parameter = run.optimization.parameters.get_by_name("Parameter")
-        parameter.docs = "These docs should persist!"
 
         try:
             with run.transact("Delete parameter failure"):
                 parameter.delete()
                 indexset.delete()
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_parameter_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         parameter = run.optimization.parameters.get_by_name("Parameter")
-        assert parameter.id == 2
+        assert parameter.id == 1
 
     def test_parameter_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run

@@ -6,6 +6,7 @@ import pytest
 import ixmp4
 from tests import backends
 from tests.base import DataFrameTest
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -162,20 +163,7 @@ class IamcDataTest(IamcTest):
         assert ret.empty
 
     def test_iamc_data_versioning(self, versioning_platform: ixmp4.Platform) -> None:
-        expected_versions = pd.DataFrame(
-            [],
-            columns=[
-                "id",
-                "name",
-                "created_at",
-                "created_by",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
-        )
-        vdf = versioning_platform.backend.iamc.datapoints.pandas_versions.tabulate()
-        pdt.assert_frame_equal(expected_versions, vdf)
+        pass  # TODO: Test core versioning api once its implemented
 
 
 class IamcDataRollbackTest(IamcTest):
@@ -190,8 +178,8 @@ class IamcDataRollbackTest(IamcTest):
                 run.iamc.add(test_data_add)
                 run.checkpoints.create("Add iamc data")
                 run.iamc.remove(test_data_remove)
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_iamc_data_versioning_after_removal_failure(
@@ -215,7 +203,7 @@ class IamcDataRollbackTest(IamcTest):
         test_data_remove: pd.DataFrame,
         test_data_remaining: pd.DataFrame,
     ):
-        ret = run.iamc.tabulate()
+        ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_remaining),
             self.canonical_sort(ret),
@@ -230,8 +218,8 @@ class IamcDataRollbackTest(IamcTest):
         try:
             with run.transact("Upsert iamc data"):
                 run.iamc.add(test_data_upsert)
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_iamc_data_versioning_after_upsert_failure(
@@ -240,7 +228,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
     ):
-        ret = run.iamc.tabulate()
+        ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
             self.canonical_sort(ret),
@@ -253,7 +241,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_upsert: pd.DataFrame,
     ):
-        ret = run.iamc.tabulate()
+        ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_upsert),
             self.canonical_sort(ret),

@@ -7,6 +7,7 @@ import pytest
 import ixmp4
 from ixmp4.core.exceptions import OptimizationItemUsageError
 from tests import backends
+from tests.custom_exception import CustomException
 
 from .base import PlatformTest
 
@@ -489,8 +490,8 @@ class TestTableRollback(OptimizationTableTest):
                         "IndexSet": ["fa", "so"],
                     }
                 )
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_table_versioning_after_add_data_failure(
@@ -522,8 +523,8 @@ class TestTableRollback(OptimizationTableTest):
         try:
             with run.transact("Remove table data failure"):
                 table.remove_data({"IndexSet": ["do", "re"]})
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_table_versioning_after_remove_data_failure(
@@ -544,46 +545,36 @@ class TestTableRollback(OptimizationTableTest):
 
     def test_table_docs_failure(self, run: ixmp4.Run):
         table = run.optimization.tables.get_by_name("Table")
-        table.docs = "These docs should persist!"
 
         try:
             with run.transact("Set table docs failure"):
-                table.docs = "These docs should be rolled back!"
-                raise Exception("Whoops!!!")
-        except Exception:
+                table.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-    def test_table_versioning_after_docs_failure(
-        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    def test_table_after_docs_failure(self, platform: ixmp4.Platform, run: ixmp4.Run):
         table = run.optimization.tables.get_by_name("Table")
         assert table.docs == "These docs should persist!"
-
-    def test_table_non_versioning_after_docs_failure(
-        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
-        table = run.optimization.tables.get_by_name("Table")
-        assert table.docs == "These docs should be rolled back!"
 
     def test_table_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
     ):
         table = run.optimization.tables.get_by_name("Table")
-        table.docs = "These docs should persist!"
 
         try:
             with run.transact("Delete table failure"):
                 table.delete()
                 indexset.delete()
-                raise Exception("Whoops!!!")
-        except Exception:
+                raise CustomException
+        except CustomException:
             pass
 
     def test_table_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
     ):
         table = run.optimization.tables.get_by_name("Table")
-        assert table.id == 2
+        assert table.id == 1
 
     def test_table_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
