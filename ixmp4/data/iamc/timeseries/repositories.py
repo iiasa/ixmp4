@@ -6,9 +6,9 @@ from ixmp4.data.iamc.variable.db import Variable
 from ixmp4.data.region.db import Region
 from ixmp4.data.unit.db import Unit
 
-from .db import TimeSeries
+from .db import TimeSeries, TimeSeriesVersion
 from .exceptions import TimeSeriesNotFound, TimeSeriesNotUnique
-from .filter import TimeSeriesFilter
+from .filter import TimeSeriesFilter, TimeSeriesVersionFilter
 
 
 class ItemRepository(db.r.ItemRepository[TimeSeries]):
@@ -37,3 +37,10 @@ class PandasRepository(db.r.PandasRepository):
 
         with self.executor.delete(exc) as rowcount:
             return rowcount
+
+
+class VersionRepository(db.r.PandasRepository):
+    NotFound = TimeSeriesNotFound
+    NotUnique = TimeSeriesNotUnique
+    filter = db.r.Filter(TimeSeriesVersionFilter, TimeSeriesVersion)
+    target = db.r.ModelTarget(TimeSeriesVersion)
