@@ -3382,7 +3382,7 @@ typing-extensions = "^4.15.0"
 
 [package.source]
 type = "git"
-url = "ssh://git@github.com/iiasa/scse-toolkit.git"
+url = "https://github.com/iiasa/scse-toolkit.git"
 reference = "enhancement/db-repositories"
 resolved_reference = "3463f177a34e267956838470e5854139b00952ae"
 
@@ -4524,4 +4524,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.15"
-content-hash = "f201113eecac67bd01e19393832fa409b21ffb506453c251bf4152f1be711211"
+content-hash = "4e83108d105c5e48d87ea2e29dabd0103d94525a451808a6f204ee266673d497"
