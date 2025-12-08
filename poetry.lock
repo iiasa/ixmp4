@@ -130,7 +130,10 @@ files = [
 ]
 
 [package.dependencies]
-cffi = {version = ">=1.0.1", markers = "python_version < \"3.14\""}
+cffi = [
+    {version = ">=1.0.1", markers = "python_version < \"3.14\""},
+    {version = ">=2.0.0b1", markers = "python_version >= \"3.14\""},
+]
 
 [[package]]
 name = "asttokens"
@@ -4520,5 +4523,5 @@ type = ["pytest-mypy"]
 
 [metadata]
 lock-version = "2.1"
-python-versions = ">=3.10, <3.14"
-content-hash = "7d50d0b27c8d0ebfaa55ef15207a4dff7e823c2f0486473ab8b421f5d9673d13"
+python-versions = ">=3.10, <3.15"
+content-hash = "f201113eecac67bd01e19393832fa409b21ffb506453c251bf4152f1be711211"

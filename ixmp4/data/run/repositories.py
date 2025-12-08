@@ -68,8 +68,10 @@ class ItemRepository(db.r.ItemRepository[Run]):
             .where(
                 Run.id == id,
             )
-            .values(is_default=True, **values)
+            .values(is_default=True)
         )
+        if values is not None:
+            exc = exc.values(**values)
 
         with self.executor.update(exc):
             return None
@@ -80,8 +82,10 @@ class ItemRepository(db.r.ItemRepository[Run]):
             .where(
                 Run.id == id,
             )
-            .values(is_default=False, **values)
+            .values(is_default=False)
         )
+        if values is not None:
+            exc = exc.values(**values)
 
         with self.executor.update(exc):
             return None

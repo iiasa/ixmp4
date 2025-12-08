@@ -104,7 +104,7 @@ class IndexedRepository(
     def remove_invalid_linked_data(
         self,
         indexset: IndexSet,
-        data: list[str],
+        data: list[int] | list[float] | list[str],
     ) -> None:
         # get items
         exc = self.target.select_statement().where(
