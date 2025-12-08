@@ -1,4 +1,3 @@
-import importlib.resources
 import json
 import logging
 import logging.config
@@ -9,18 +8,18 @@ from typing import Any, Literal
 from pydantic import Field, HttpUrl, field_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from toolkit.auth.context import AuthorizationContext
-from toolkit.auth.user import User
+from toolkit.auth.user import ServiceAccount, User
 from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.manager.client import ManagerClient
+
+from ixmp4.base_exceptions import ProgrammingError
 
 from .credentials import Credentials
 from .platforms import ManagerPlatforms, TomlPlatforms
 
-__root__file__ = importlib.resources.files("ixmp4").__fspath__()
 logger = logging.getLogger(__name__)
 
 here = Path(__file__).parent
-root = Path(__root__file__).parent.parent
 
 try:
     __IPYTHON__  # type: ignore
@@ -162,27 +161,37 @@ class Settings(BaseSettings):
         file_name = name + ".sqlite3"
         return self.get_database_dir() / file_name
 
-    def get_manager_user(self, manager_client: ManagerClient) -> User | None:
+    def get_manager_user(
+        self, manager_client: ManagerClient
+    ) -> User | ServiceAccount | None:
         default_auth = manager_client.auth
         if default_auth is None or not isinstance(default_auth, Auth):
             user = None
-        elif getattr(default_auth, "access_token", None) is None:
+        elif (
+            getattr(default_auth, "access_token", None) is None
+            or default_auth.access_token is None
+        ):
             user = None
         else:
             user = default_auth.access_token.user
-
         return user
 
-    def get_local_user(self) -> User | None:
+    def get_local_user(self) -> User:
         credentials = self.get_credentials()
-        if default_creds := credentials.get("default") is not None:
+        default_creds = credentials.get("default")
+        if default_creds is not None:
             username = default_creds["username"]
         else:
             username = "@unknown"
 
-        return User(id=-1, username=username, email="", is_superuser=True)
+        return User(id=-1, username=username, email="", groups=[], is_superuser=True)
 
     def get_manager_auth_context(self) -> AuthorizationContext:
         manager_client = self.get_manager_client()
         user = self.get_manager_user(manager_client)
+
+        if isinstance(user, ServiceAccount):
+            raise ProgrammingError(
+                "Cannot make `AuthorizationContext` with `ServiceAccount` as `user`."
+            )
         return AuthorizationContext(user, manager_client)

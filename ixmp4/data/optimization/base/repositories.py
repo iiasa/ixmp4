@@ -15,23 +15,21 @@ from ixmp4.data.optimization.indexset.db import IndexSet
 from .db import IndexedModel, IndexsetAssociationModel
 
 logger = logging.getLogger(__name__)
-AssociationT = TypeVar("AssociationT", bound=IndexsetAssociationModel)
-
-ItemT = TypeVar("ItemT", bound=IndexedModel)
+AssocT = TypeVar("AssocT", bound=IndexsetAssociationModel)
 
 
 class IndexedRepository(
-    abc.ABC, db.r.ItemRepository[ItemT], Generic[ItemT, AssociationT]
+    abc.ABC, db.r.ItemRepository[IndexedModel[AssocT]], Generic[AssocT]
 ):
     executor: db.r.SessionExecutor
-    target: db.r.ModelTarget[ItemT]
-    association_target: db.r.ModelTarget[AssociationT]
+    target: db.r.ModelTarget[IndexedModel[AssocT]]
+    association_target: db.r.ModelTarget[AssocT]
     idxset_target = db.r.ModelTarget(IndexSet)
     DataInvalid: ClassVar[type[OptimizationDataValidationError]]
     extra_data_columns: Collection[str] = {}
     "Extra and required columns for the item's data property."
 
-    def add_data(self, id: int, data: pd.DataFrame):
+    def add_data(self, id: int, data: pd.DataFrame) -> None:
         indexed_item = self.get_by_pk({"id": id})
         index_list = indexed_item.column_names or indexed_item.indexset_names
         existing_data = pd.DataFrame(indexed_item.data)
@@ -50,7 +48,7 @@ class IndexedRepository(
         )
         self.update_by_pk({"id": id, "data": data.to_dict(orient="list")})
 
-    def remove_data(self, id: int, data: pd.DataFrame):
+    def remove_data(self, id: int, data: pd.DataFrame) -> None:
         indexed_item = self.get_by_pk({"id": id})
         index_list = indexed_item.column_names or indexed_item.indexset_names
         if not index_list:
@@ -94,7 +92,7 @@ class IndexedRepository(
         )
 
         with self.executor.select(exc) as result:
-            return result.all()
+            return list(result.scalars().all())
 
     def get_indexset(self, id: int) -> IndexSet:
         exc = self.idxset_target.select_statement()
@@ -115,7 +113,7 @@ class IndexedRepository(
             )
         )
         with self.executor.select(exc) as result:
-            items = result.scalars()
+            items: list[IndexedModel[AssocT]] = list(result.scalars().all())
 
         for item in items:
             # Convert existing data for manipulation
@@ -136,7 +134,9 @@ class IndexedRepository(
 
             self.remove_data(item.id, remove_data)
 
-    def get_constrained_data_columns(self, item: ItemT, name: str) -> list[str]:
+    def get_constrained_data_columns(
+        self, item: IndexedModel[AssocT], name: str
+    ) -> list[str]:
         if not item.column_names:
             # The item's indexset_names must be a unique list of names
             return [name]
@@ -153,7 +153,7 @@ class IndexedRepository(
 
     def validate_data(
         self,
-        item: IndexedModel,
+        item: IndexedModel[AssocT],
         data: pd.DataFrame,
         indexsets: list["IndexSet"],
         column_names: list[str] | None = None,

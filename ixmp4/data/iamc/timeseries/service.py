@@ -2,8 +2,7 @@ from typing import Any
 
 import pandas as pd
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -23,12 +22,7 @@ from ixmp4.data.unit.exceptions import UnitNotFound
 from ixmp4.data.unit.repositories import (
     PandasRepository as UnitPandasRepository,
 )
-from ixmp4.services import (
-    DirectTransport,
-    Service,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, Http, Service, procedure
 
 from .filter import TimeSeriesFilter
 from .repositories import PandasRepository
@@ -49,7 +43,7 @@ class TimeSeriesService(Service):
         self.units = UnitPandasRepository(self.executor)
         self.variables = VariablePandasRepository(self.executor)
 
-    @procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate_by_df(self, df: SerializableDataFrame) -> SerializableDataFrame:
         r"""Tabulates timeseries by values in a supplied dataframe.
 
@@ -74,13 +68,13 @@ class TimeSeriesService(Service):
     def tabulate_by_df_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(
         self, join_parameters: bool = False, **kwargs: Unpack[TimeSeriesFilter]
     ) -> SerializableDataFrame:
@@ -108,7 +102,7 @@ class TimeSeriesService(Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -205,7 +199,7 @@ class TimeSeriesService(Service):
         )
         return merged_df.drop(columns=["variable__id", "unit__id"])
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         if df.empty:
             return None
@@ -225,7 +219,7 @@ class TimeSeriesService(Service):
     def bulk_upsert_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

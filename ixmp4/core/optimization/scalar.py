@@ -35,31 +35,31 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
 
     @property
     def id(self) -> int:
-        return self.dto.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self.dto.name
+        return self._dto.name
 
     @property
     def run_id(self) -> int:
-        return self.dto.run__id
+        return self._dto.run__id
 
     @property
     def value(self) -> float:
         """Associated value."""
-        return self.dto.value
+        return self._dto.value
 
     @value.setter
     def value(self, value: float) -> None:
         self._run.require_lock()
-        self._service.update(self.dto.id, value)
-        self.dto.value = value
+        self._service.update_by_id(self._dto.id, value=value)
+        self._dto.value = value
 
     @property
     def unit(self) -> UnitDto:
         """Associated unit."""
-        return self.dto.unit
+        return self._dto.unit
 
     @unit.setter
     def unit(self, value: str | UnitDto) -> None:
@@ -68,15 +68,15 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
             unit = self.units.get_by_name(value)
         else:
             unit = value
-        self.dto = self._service.update_by_id(self.dto.id, unit_name=unit.name)
+        self._dto = self._service.update_by_id(self._dto.id, unit_name=unit.name)
 
     @property
     def created_at(self) -> datetime | None:
-        return self.dto.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self.dto.created_by
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
@@ -105,12 +105,12 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     ) -> None:
         """Adds data to the Scalar."""
         self._run.require_lock()
-        self._service.update_by_id(self.dto.id, value=value, unit_name=unit_name)
-        self.refresh()
+        self._service.update_by_id(self._dto.id, value=value, unit_name=unit_name)
+        self._refresh()
 
     def delete(self) -> None:
         self._run.require_lock()
-        self._service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self._dto.id)
 
     def _get_service(self, backend: Backend) -> ScalarService:
         return backend.optimization.scalars
@@ -181,6 +181,5 @@ class ScalarServiceFacade(
         return [Scalar(self._backend, dto, run=self._run) for dto in scalars]
 
     def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> pd.DataFrame:
-        return self._service.tabulate(run__id=self._run.id, **kwargs).drop(
-            columns=["run__id"]
-        )
+        kwargs["run__id"] = self._run.id
+        return self._service.tabulate(**kwargs).drop(columns=["run__id"])

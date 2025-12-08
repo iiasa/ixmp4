@@ -42,7 +42,6 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     LockRequired = RunLockRequired
     NoDefaultVersion = NoDefaultRunVersion
 
-    dto: RunDto
     _meta: "RunMetaFacade"
 
     checkpoints: RunCheckpoints
@@ -63,22 +62,22 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     @property
     def id(self) -> int:
         """Unique id."""
-        return self.dto.id
+        return self._dto.id
 
     @property
     def model(self) -> ModelDto:
         """Associated model."""
-        return self.dto.model
+        return self._dto.model
 
     @property
     def scenario(self) -> ScenarioDto:
         """Associated scenario."""
-        return self.dto.scenario
+        return self._dto.scenario
 
     @property
     def version(self) -> int:
         """Run version."""
-        return self.dto.version
+        return self._dto.version
 
     @property
     def meta(self) -> "RunMetaFacade":
@@ -91,29 +90,29 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
     @property
     def is_default(self) -> bool:
-        return self.dto.is_default
+        return self._dto.is_default
 
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
         combination."""
-        self._service.set_as_default_version(self.dto.id)
-        self.refresh()
+        self._service.set_as_default_version(self._dto.id)
+        self._refresh()
 
     def unset_as_default(self) -> None:
         """Unsets this run as the default version."""
-        self._service.unset_as_default_version(self.dto.id)
-        self.refresh()
+        self._service.unset_as_default_version(self._dto.id)
+        self._refresh()
 
     def require_lock(self) -> None:
         if not self.owns_lock:
             raise RunLockRequired()
 
     def _lock(self) -> None:
-        self.dto = self._service.lock(self.dto.id)
+        self._dto = self._service.lock(self._dto.id)
         self.owns_lock = True
 
     def _unlock(self) -> None:
-        self.dto = self._service.unlock(self.dto.id)
+        self._dto = self._service.unlock(self._dto.id)
         self.owns_lock = False
 
     def _lock_with_timeout(self, timeout: float) -> None:
@@ -190,12 +189,12 @@ class Run(BaseFacadeObject[RunService, RunDto]):
                 else:
                     checkpoint_transaction = int(max_tx_id)
 
-            assert self.dto.lock_transaction is not None
+            assert self._dto.lock_transaction is not None
 
-            target_transaction = max(checkpoint_transaction, self.dto.lock_transaction)
+            target_transaction = max(checkpoint_transaction, self._dto.lock_transaction)
             try:
                 self._service.revert(
-                    self.dto.id,
+                    self._dto.id,
                     target_transaction,
                     revert_platform=revert_platform_on_error,
                 )
@@ -206,7 +205,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
                     "is not supported by this platform: " + str(ons_exc.message)
                 )
 
-            self._meta.refresh()
+            self._meta._refresh()
             self._unlock()
             raise e
 
@@ -222,7 +221,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         :class:`ixmp4.core.exceptions.RunIsLocked`:
             If the run is already locked by this or another object.
         """
-        self._service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self._dto.id)
 
     def clone(
         self,
@@ -231,7 +230,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         keep_solution: bool = True,
     ) -> "Run":
         return Run(
-            service=self._service,
+            backend=self._backend,
             dto=self._service.clone(
                 run_id=self.id,
                 model_name=model,
@@ -293,9 +292,9 @@ class RunMetaFacade(
     def __init__(self, backend: Backend, run: Run) -> None:
         super().__init__(backend)
         self.run = run
-        self.refresh()
+        self._refresh()
 
-    def refresh(self) -> None:
+    def _refresh(self) -> None:
         self.df, self.data = self._get()
 
     def _get(self) -> tuple[pd.DataFrame, dict[str, MetaValueType | None]]:

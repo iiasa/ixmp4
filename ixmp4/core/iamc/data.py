@@ -100,10 +100,10 @@ class RunIamcData(BaseBackendFacade):
         raw: bool = False,
         **kwargs: Unpack[DataPointFilter],
     ) -> pd.DataFrame:
+        kwargs["run"] = {"id": self._run.id, "default_only": False}
         df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=False,
-            run={"id": self._run.id, "default_only": False},
             **kwargs,
         )
         # return normalize_df(df, raw, False, False)

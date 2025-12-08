@@ -11,7 +11,7 @@ from .db import (
 )
 
 
-class MetaReverterRepository(ReverterRepository):
+class MetaReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(RunMetaEntry)
     version_target = db.r.ModelTarget(RunMetaEntryVersion)
 

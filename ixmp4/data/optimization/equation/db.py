@@ -13,7 +13,7 @@ from ixmp4.data.optimization.base.db import (
 )
 
 
-class Equation(IndexedModel, HasCreationInfo):
+class Equation(IndexedModel["EquationIndexsetAssociation"], HasCreationInfo):
     __tablename__ = "opt_equ"
     __table_args__ = (sa.UniqueConstraint("name", "run__id"),)
 
@@ -44,7 +44,7 @@ class EquationIndexsetAssociation(IndexsetAssociationModel):
 
     @classmethod
     def get_item_id_column(cls) -> sa.ColumnElement[int]:
-        return cls.equation__id
+        return cls.__table__.c.equation__id
 
 
 class EquationVersion(IndexedVersionModel):

@@ -1,20 +1,14 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
-from ixmp4.services import (
-    DirectTransport,
-    Service,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, Http, Service, procedure
 
 from .dto import MetaValueType, RunMetaEntry
 from .filter import RunMetaEntryFilter
@@ -36,7 +30,7 @@ class RunMetaEntryService(Service):
         self.pandas = PandasRepository(self.executor)
         self.runs = RunRepository(self.executor)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(self, run__id: int, key: str, value: MetaValueType) -> RunMetaEntry:
         """Creates a metadata entry.
 
@@ -65,7 +59,7 @@ class RunMetaEntryService(Service):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         run__id: int,
         key: str,
         value: MetaValueType,
@@ -75,7 +69,7 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, run__id: int, key: str) -> RunMetaEntry:
         """Retrieves a metadata entry by the run id and key.
 
@@ -101,7 +95,7 @@ class RunMetaEntryService(Service):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         run__id: int,
         key: str,
     ) -> None:
@@ -110,7 +104,7 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a metadata entry.
 
@@ -131,7 +125,7 @@ class RunMetaEntryService(Service):
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         id: int,
     ) -> None:
         entry = self.items.get_by_pk({"id": id})
@@ -141,7 +135,7 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[RunMetaEntryFilter]) -> list[RunMetaEntry]:
         r"""Lists metadata entries by specified criteria.
 
@@ -161,7 +155,7 @@ class RunMetaEntryService(Service):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -200,7 +194,7 @@ class RunMetaEntryService(Service):
 
         return columns
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(
         self, join_run_index: bool = False, **kwargs: Unpack[RunMetaEntryFilter]
     ) -> SerializableDataFrame:
@@ -225,7 +219,7 @@ class RunMetaEntryService(Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -249,7 +243,7 @@ class RunMetaEntryService(Service):
             pagination=pagination,
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         """Upserts a dataframe of run meta indicator entries.
 
@@ -269,14 +263,14 @@ class RunMetaEntryService(Service):
     def bulk_upsert_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         # TODO check run__ids
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["DELETE"])
+    @procedure(Http(methods=["DELETE"]))
     def bulk_delete(self, df: SerializableDataFrame) -> None:
         """Deletes run meta indicator entries as specified per dataframe.
         Warning: No recovery of deleted data shall be possible via ixmp
@@ -297,7 +291,7 @@ class RunMetaEntryService(Service):
     def bulk_delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

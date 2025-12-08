@@ -3,7 +3,7 @@ from typing import Any, List
 
 import pandas as pd
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.manager.models import Ixmp4Instance
 from typing_extensions import Unpack
 
@@ -15,11 +15,7 @@ from ixmp4.data.optimization.indexset.repositories import (
     ItemRepository as IndexSetRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import (
-    DirectTransport,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, Http, procedure
 
 from .db import EquationDocs
 from .dto import Equation
@@ -56,7 +52,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
         self.indexsets = IndexSetRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=EquationDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(
         self,
         run_id: int,
@@ -107,10 +103,13 @@ class EquationService(DocsService, IndexSetAssociatedService):
         db_equ = self.items.get({"name": name, "run__id": run_id})
 
         if constrained_to_indexsets:
-            if not column_names:
-                column_names = [None] * len(constrained_to_indexsets)
+            nullable_column_names: list[str] | list[None] = column_names or (
+                [None] * len(constrained_to_indexsets)
+            )
 
-            for idxset_name, col_name in zip(constrained_to_indexsets, column_names):
+            for idxset_name, col_name in zip(
+                constrained_to_indexsets, nullable_column_names
+            ):
                 indexset = self.indexsets.get({"name": idxset_name, "run__id": run_id})
                 self.associations.create(
                     {
@@ -133,7 +132,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, run_id: int, name: str) -> Equation:
         """Retrieves a equation by its name and run_id.
 
@@ -165,13 +164,13 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Equation:
         """Retrieves a equation by its id.
 
@@ -199,13 +198,13 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a equation.
 
@@ -232,13 +231,13 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["POST"])
+    @procedure(Http(path="/{id}/data", methods=["POST"]))
     def add_data(self, id: int, data: SerializableDataFrame | dict[str, Any]) -> None:
         """Adds data to an Equation.
 
@@ -293,13 +292,13 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def add_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["DELETE"])
+    @procedure(Http(path="/{id}/data", methods=["DELETE"]))
     def remove_data(
         self, id: int, data: SerializableDataFrame | dict[str, Any] | None = None
     ) -> None:
@@ -339,13 +338,13 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def remove_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[EquationFilter]) -> list[Equation]:
         r"""Lists equations by specified criteria.
 
@@ -370,7 +369,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -391,7 +390,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[EquationFilter]) -> SerializableDataFrame:
         r"""Tabulates equations by specified criteria.
 
@@ -417,7 +416,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -435,6 +434,6 @@ class EquationService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def revert(self, transaction__id: int, run__id: int) -> None:
         raise NotImplementedError

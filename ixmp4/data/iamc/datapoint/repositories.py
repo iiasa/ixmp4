@@ -1,5 +1,6 @@
 from typing import Sequence
 
+import pandas as pd
 from toolkit import db
 from toolkit.db.repository.base import Values
 
@@ -43,7 +44,7 @@ class PandasRepository(db.r.PandasRepository):
         columns: Sequence[str] | None = None,
         limit: int | None = None,
         offset: int | None = None,
-    ):
+    ) -> pd.DataFrame:
         df = super().tabulate(values, columns, limit, offset)
 
         # drop empty step columns

@@ -13,7 +13,7 @@ from ixmp4.data.optimization.base.db import (
 )
 
 
-class Parameter(IndexedModel, HasCreationInfo):
+class Parameter(IndexedModel["ParameterIndexsetAssociation"], HasCreationInfo):
     __tablename__ = "opt_par"
     __table_args__ = (sa.UniqueConstraint("name", "run__id"),)
 
@@ -41,6 +41,10 @@ class ParameterIndexsetAssociation(IndexsetAssociationModel):
     )
 
     parameter: orm.Mapped["Parameter"] = orm.relationship()
+
+    @classmethod
+    def get_item_id_column(cls) -> sa.ColumnElement[int]:
+        return cls.__table__.c.parameter__id
 
 
 class ParameterVersion(IndexedVersionModel, HasCreationInfo):

@@ -1,21 +1,15 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
-from ixmp4.data.optimization.base.service import IndexSetAssociatedService
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.unit.repositories import ItemRepository as UnitRepository
-from ixmp4.services import (
-    DirectTransport,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import ScalarDocs
 from .dto import Scalar
@@ -23,7 +17,7 @@ from .filter import ScalarFilter
 from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
-class ScalarService(DocsService, IndexSetAssociatedService):
+class ScalarService(DocsService, GetByIdService):
     router_prefix = "/optimization/scalars"
     router_tags = ["optimization", "scalars"]
 
@@ -42,7 +36,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
         self.units = UnitRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=ScalarDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(
         self, run_id: int, name: str, value: float | int, unit_name: str
     ) -> Scalar:
@@ -76,7 +70,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
 
         unit_id = self.units.get({"name": unit_name}).id
 
-        db_sca = self.items.create(
+        self.items.create(
             {
                 "name": name,
                 "run__id": run_id,
@@ -92,14 +86,14 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, run_id: int, name: str) -> Scalar:
         """Retrieves a scalar by its name and run_id.
 
@@ -129,13 +123,13 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Scalar:
         """Retrieves a scalar by its id.
 
@@ -163,13 +157,13 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a scalar.
 
@@ -195,13 +189,13 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["POST"])
+    @procedure(Http(path="/{id}/", methods=["POST"]))
     def update_by_id(
         self, id: int, value: float | int | None = None, unit_name: str | None = None
     ) -> Scalar:
@@ -223,7 +217,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
             The updated Scalar.
         """
 
-        values = {"id": id}
+        values: dict[str, Any] = {"id": id}
 
         if value is not None:
             values["value"] = value
@@ -237,13 +231,13 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def update_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:
         r"""Lists scalars by specified criteria.
 
@@ -268,7 +262,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -289,7 +283,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> SerializableDataFrame:
         r"""Tabulates scalars by specified criteria.
 
@@ -312,7 +306,7 @@ class ScalarService(DocsService, IndexSetAssociatedService):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

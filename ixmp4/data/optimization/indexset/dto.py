@@ -12,7 +12,7 @@ class IndexSet(BaseModel, HasCreationInfo):
     run__id: int
     "Id of the linked run."
 
-    data: float | int | str | list[int] | list[float] | list[str] | None
+    data: list[int] | list[float] | list[str]
     data_type: Type | None
 
     def __str__(self) -> str:

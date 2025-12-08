@@ -25,7 +25,7 @@ def get_alembic_controller(dsn: str) -> AlembicController:
     )
 
 
-def get_target_by_name(name: str) -> PlatformConnectionInfo:
+def get_connection_info(name: str) -> PlatformConnectionInfo:
     toml_platforms = settings.get_toml_platforms()
     platform: PlatformConnectionInfo
     try:
@@ -56,7 +56,7 @@ def collect_targets(
     candidates: list[PlatformConnectionInfo] = []
     if platform is not None:
         for pn in platform:
-            candidates.append(get_target_by_name(pn))
+            candidates.append(get_connection_info(pn))
 
     if toml:
         toml_platforms = settings.get_toml_platforms()
@@ -68,7 +68,7 @@ def collect_targets(
             candidates += manager_platforms.list_platforms()
         except ServiceException as e:
             utils.echo(
-                "Exception occured during manager request, "
+                "Exception occurred during manager request, "
                 "cannot access manager platforms:"
             )
             utils.error(str(e))

@@ -1,20 +1,14 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import (
-    DirectTransport,
-    Service,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import RegionDocs
 from .dto import Region
@@ -26,7 +20,7 @@ from .filter import RegionFilter
 from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
-class RegionService(DocsService, Service):
+class RegionService(DocsService, GetByIdService):
     router_prefix = "/regions"
     router_tags = ["regions"]
 
@@ -43,7 +37,7 @@ class RegionService(DocsService, Service):
 
         DocsService.__init_direct__(self, transport, docs_model=RegionDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(self, name: str, hierarchy: str) -> Region:
         """Creates a region.
 
@@ -75,13 +69,13 @@ class RegionService(DocsService, Service):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a region.
 
@@ -107,13 +101,13 @@ class RegionService(DocsService, Service):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get_by_name(self, name: str) -> Region:
         """Retrieves a region by its name.
 
@@ -140,13 +134,13 @@ class RegionService(DocsService, Service):
     def get_by_name_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Region:
         """Retrieves a region by its id.
 
@@ -174,7 +168,7 @@ class RegionService(DocsService, Service):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -196,7 +190,7 @@ class RegionService(DocsService, Service):
         else:
             return region
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
         r"""Lists regions by specified criteria.
 
@@ -221,7 +215,7 @@ class RegionService(DocsService, Service):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -242,7 +236,7 @@ class RegionService(DocsService, Service):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> SerializableDataFrame:
         r"""Tabulates regions by specified criteria.
 
@@ -265,7 +259,7 @@ class RegionService(DocsService, Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

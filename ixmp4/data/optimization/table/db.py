@@ -13,7 +13,7 @@ from ixmp4.data.optimization.base.db import (
 )
 
 
-class Table(IndexedModel, HasCreationInfo):
+class Table(IndexedModel["TableIndexsetAssociation"], HasCreationInfo):
     __tablename__ = "opt_tab"
     __table_args__ = (sa.UniqueConstraint("name", "run__id"),)
 
@@ -41,6 +41,10 @@ class TableIndexsetAssociation(IndexsetAssociationModel):
     )
 
     table: orm.Mapped["Table"] = orm.relationship()
+
+    @classmethod
+    def get_item_id_column(cls) -> sa.ColumnElement[int]:
+        return cls.__table__.c.table__id
 
 
 class TableVersion(IndexedVersionModel, HasCreationInfo):

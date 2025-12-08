@@ -27,35 +27,35 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
 
     @property
     def id(self) -> int:
-        return self.dto.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self.dto.name
+        return self._dto.name
 
     @property
     def run_id(self) -> int:
-        return self.dto.run__id
+        return self._dto.run__id
 
     @property
     def data(self) -> dict[str, list[float] | list[int] | list[str]]:
-        return self.dto.data
+        return self._dto.data
 
     @property
     def indexset_names(self) -> list[str] | None:
-        return self.dto.indexset_names
+        return self._dto.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:
-        return self.dto.column_names
+        return self._dto.column_names
 
     @property
     def created_at(self) -> datetime | None:
-        return self.dto.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self.dto.created_by
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
@@ -82,8 +82,8 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Table."""
         self._run.require_lock()
-        self._service.add_data(id=self.dto.id, data=data)
-        self.refresh()
+        self._service.add_data(id=self._dto.id, data=data)
+        self._refresh()
 
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
         """Removes data from the Table.
@@ -92,12 +92,12 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
         all indexed columns. All other keys/columns are ignored.
         """
         self._run.require_lock()
-        self._service.remove_data(id=self.dto.id, data=data)
-        self.refresh()
+        self._service.remove_data(id=self._dto.id, data=data)
+        self._refresh()
 
     def delete(self) -> None:
         self._run.require_lock()
-        self._service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self._dto.id)
 
     def _get_service(self, backend: Backend) -> TableService:
         return backend.optimization.tables
@@ -151,6 +151,5 @@ class TableServiceFacade(
         return [Table(self._backend, dto, run=self._run) for dto in tables]
 
     def tabulate(self, **kwargs: Unpack[TableFilter]) -> pd.DataFrame:
-        return self._service.tabulate(run__id=self._run.id, **kwargs).drop(
-            columns=["run__id"]
-        )
+        kwargs["run__id"] = self._run.id
+        return self._service.tabulate(**kwargs).drop(columns=["run__id"])

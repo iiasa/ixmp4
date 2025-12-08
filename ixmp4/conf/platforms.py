@@ -28,9 +28,13 @@ class PlatformConnections(abc.ABC):
 
 
 class TomlPlatform(BaseModel):
+    id: int = -1
     name: str
     dsn: str
     url: str | None = None
+    access_group: int = -1
+    management_group: int = -1
+    accessibility: str = "PUBLIC"
 
     model_config = ConfigDict(from_attributes=True)
 

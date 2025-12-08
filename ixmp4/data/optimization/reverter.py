@@ -37,7 +37,7 @@ from ixmp4.data.optimization.variable.db import (
 from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 
 
-class IndexSetReverterRepository(ReverterRepository):
+class IndexSetReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(IndexSet)
     version_target = db.r.ModelTarget(IndexSetVersion)
 
@@ -45,7 +45,7 @@ class IndexSetReverterRepository(ReverterRepository):
         return sa.select(IndexSetVersion).where(IndexSetVersion.run__id == run__id)
 
 
-class IndexSetDataReverterRepository(ReverterRepository):
+class IndexSetDataReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(IndexSetData)
     version_target = db.r.ModelTarget(IndexSetDataVersion)
 
@@ -55,7 +55,7 @@ class IndexSetDataReverterRepository(ReverterRepository):
         )
 
 
-class EquationReverterRepository(ReverterRepository):
+class EquationReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(Equation)
     version_target = db.r.ModelTarget(EquationVersion)
 
@@ -63,7 +63,7 @@ class EquationReverterRepository(ReverterRepository):
         return sa.select(EquationVersion).where(EquationVersion.run__id == run__id)
 
 
-class EquationIndexsetAssociationReverterRepository(ReverterRepository):
+class EquationIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(EquationIndexsetAssociation)
     version_target = db.r.ModelTarget(EquationIndexsetAssociationVersion)
 
@@ -75,7 +75,7 @@ class EquationIndexsetAssociationReverterRepository(ReverterRepository):
         )
 
 
-class ParameterReverterRepository(ReverterRepository):
+class ParameterReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(Parameter)
     version_target = db.r.ModelTarget(ParameterVersion)
 
@@ -83,7 +83,7 @@ class ParameterReverterRepository(ReverterRepository):
         return sa.select(ParameterVersion).where(ParameterVersion.run__id == run__id)
 
 
-class ParameterIndexsetAssociationReverterRepository(ReverterRepository):
+class ParameterIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(ParameterIndexsetAssociation)
     version_target = db.r.ModelTarget(ParameterIndexsetAssociationVersion)
 
@@ -95,7 +95,7 @@ class ParameterIndexsetAssociationReverterRepository(ReverterRepository):
         )
 
 
-class TableReverterRepository(ReverterRepository):
+class TableReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(Table)
     version_target = db.r.ModelTarget(TableVersion)
 
@@ -103,7 +103,7 @@ class TableReverterRepository(ReverterRepository):
         return sa.select(TableVersion).where(TableVersion.run__id == run__id)
 
 
-class TableIndexsetAssociationReverterRepository(ReverterRepository):
+class TableIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(TableIndexsetAssociation)
     version_target = db.r.ModelTarget(TableIndexsetAssociationVersion)
 
@@ -113,7 +113,7 @@ class TableIndexsetAssociationReverterRepository(ReverterRepository):
         )
 
 
-class VariableReverterRepository(ReverterRepository):
+class VariableReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(Variable)
     version_target = db.r.ModelTarget(VariableVersion)
 
@@ -121,7 +121,7 @@ class VariableReverterRepository(ReverterRepository):
         return sa.select(VariableVersion).where(VariableVersion.run__id == run__id)
 
 
-class VariableIndexsetAssociationReverterRepository(ReverterRepository):
+class VariableIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(VariableIndexsetAssociation)
     version_target = db.r.ModelTarget(VariableIndexsetAssociationVersion)
 
@@ -133,7 +133,7 @@ class VariableIndexsetAssociationReverterRepository(ReverterRepository):
         )
 
 
-class ScalarReverterRepository(ReverterRepository):
+class ScalarReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(Scalar)
     version_target = db.r.ModelTarget(ScalarVersion)
 

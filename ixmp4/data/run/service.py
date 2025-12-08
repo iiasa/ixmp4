@@ -2,8 +2,7 @@ from contextlib import suppress
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -25,11 +24,7 @@ from ixmp4.data.scenario.repositories import (
     ItemRepository as ScenarioRepository,
 )
 from ixmp4.data.versions.transaction import TransactionRepository
-from ixmp4.services import (
-    Service,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import GetByIdService, Http, procedure
 from ixmp4.transport import DirectTransport
 
 from .dto import Run
@@ -46,7 +41,7 @@ from .repositories import (
 )
 
 
-class RunService(Service):
+class RunService(GetByIdService):
     router_prefix = "/runs"
     router_tags = ["runs"]
 
@@ -91,7 +86,7 @@ class RunService(Service):
 
         self.versions = VersionRepository(self.executor)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(self, model_name: str, scenario_name: str) -> Run:
         """Creates a run with an incremented version number or version=1 if no versions
         exist. Will automatically create the models and scenarios if they don't exist
@@ -125,13 +120,13 @@ class RunService(Service):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         model_name: str,
         scenario_name: str,
     ) -> None:
         auth_ctx.has_edit_permission(platform, models=[model_name], raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a run and **all associated iamc, optimization and meta data**.
 
@@ -152,13 +147,13 @@ class RunService(Service):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         """Retrieves a run.
 
@@ -194,9 +189,10 @@ class RunService(Service):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         model_name: str,
         scenario_name: str,
+        version: int,
     ) -> None:
         auth_ctx.has_view_permission(platform, models=[model_name], raise_exc=Forbidden)
 
@@ -222,7 +218,7 @@ class RunService(Service):
         except NoDefaultRunVersion:
             return self.create(model_name, scenario_name)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         """Retrieves a run's default version.
 
@@ -260,13 +256,13 @@ class RunService(Service):
     def get_default_version_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         model_name: str,
         scenario_name: str,
     ) -> None:
         auth_ctx.has_view_permission(platform, models=[model_name], raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Run:
         """Retrieves a Run by its id.
 
@@ -292,13 +288,13 @@ class RunService(Service):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[RunFilter]) -> list[Run]:
         r"""Lists runs by specified criteria.
 
@@ -319,7 +315,7 @@ class RunService(Service):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -340,7 +336,7 @@ class RunService(Service):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[RunFilter]) -> SerializableDataFrame:
         r"""Tabulate runs by specified criteria.
 
@@ -364,7 +360,7 @@ class RunService(Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -385,7 +381,7 @@ class RunService(Service):
             pagination=pagination,
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def set_as_default_version(self, id: int) -> None:
         """Sets a run as the default version for a (model, scenario) combination.
 
@@ -400,13 +396,13 @@ class RunService(Service):
             If no run with the `id` exists.
 
         """
-        self.items.set_as_default_version(id)
+        self.items.set_as_default_version(id, values=self.get_update_info())
 
     @set_as_default_version.auth_check()
     def set_as_default_version_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -415,7 +411,7 @@ class RunService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def unset_as_default_version(self, id: int) -> None:
         """Unsets a run as the default version leaving no
         default version for a (model, scenario) combination.
@@ -433,13 +429,13 @@ class RunService(Service):
             If the run is not set as a default version.
 
         """
-        self.items.unset_as_default_version(id)
+        self.items.unset_as_default_version(id, values=self.get_update_info())
 
     @unset_as_default_version.auth_check()
     def unset_as_default_version_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -448,17 +444,7 @@ class RunService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    def revert_meta(
-        self, id: int, transaction__id: int
-    ) -> None:  # TODO: missing units/regions, revert vars
-        self.meta.revert(
-            self.meta_versions, transaction__id, filter_values={"run__id": id}
-        )
-
-    def revert_iamc_data(self, id: int, transaction__id: int) -> None:
-        iamc_reverter(self.executor, transaction__id, run__id=id)
-
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def revert(
         self, id: int, transaction__id: int, revert_platform: bool = False
     ) -> None:
@@ -481,15 +467,15 @@ class RunService(Service):
         self.transport.check_versioning_compatiblity()
         self.items.get_by_pk({"id": id})
 
-        meta_reverter(self.executor, transaction__id, run__id=id)
-        iamc_reverter(self.executor, transaction__id, run__id=id)
-        opt_reverter(self.executor, transaction__id, run__id=id)
+        meta_reverter(self.executor, transaction__id, id)
+        iamc_reverter(self.executor, transaction__id, id)
+        opt_reverter(self.executor, transaction__id, id)
 
     @revert.auth_check()
     def revert_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         id: int,
         transaction__id: int,
         *args: Any,
@@ -500,7 +486,7 @@ class RunService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def lock(self, id: int) -> Run:
         """Locks a run at the current transaction (via `transaction__id`).
 
@@ -530,7 +516,7 @@ class RunService(Service):
     def lock_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         id: int,
         *args: Any,
         **kwargs: Any,
@@ -540,7 +526,7 @@ class RunService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def unlock(self, id: int) -> Run:
         """Locks a run at the current transaction (via `transaction__id`).
 
@@ -561,7 +547,7 @@ class RunService(Service):
     def unlock_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         id: int,
         *args: Any,
         **kwargs: Any,
@@ -571,7 +557,7 @@ class RunService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def clone(
         self,
         run_id: int,
@@ -605,7 +591,7 @@ class RunService(Service):
     def clone_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         run_id: int,
         model_name: str | None = None,
         scenario_name: str | None = None,

@@ -1,15 +1,14 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import DirectTransport, Service, paginated_procedure, procedure
+from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import VariableDocs
 from .dto import Variable
@@ -24,7 +23,7 @@ from .repositories import (
 )
 
 
-class VariableService(DocsService, Service):
+class VariableService(DocsService, GetByIdService):
     router_prefix = "/iamc/variables"
     router_tags = ["iamc", "variables"]
 
@@ -41,7 +40,7 @@ class VariableService(DocsService, Service):
 
         DocsService.__init_direct__(self, transport, docs_model=VariableDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(self, name: str) -> Variable:
         """Creates a variable.
 
@@ -66,15 +65,11 @@ class VariableService(DocsService, Service):
 
     @create.auth_check()
     def create_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, name: str
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a variable.
 
@@ -96,13 +91,13 @@ class VariableService(DocsService, Service):
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get_by_name(self, name: str) -> Variable:
         """Retrieves a variable by its name.
 
@@ -127,13 +122,13 @@ class VariableService(DocsService, Service):
     def get_by_name_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Variable:
         """Retrieves a variable by its id.
 
@@ -158,7 +153,7 @@ class VariableService(DocsService, Service):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -170,7 +165,7 @@ class VariableService(DocsService, Service):
         except VariableNotFound:
             return self.create(name)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
@@ -191,7 +186,7 @@ class VariableService(DocsService, Service):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -212,7 +207,7 @@ class VariableService(DocsService, Service):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> SerializableDataFrame:
         r"""Tabulates variables by specified criteria.
 
@@ -235,7 +230,7 @@ class VariableService(DocsService, Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

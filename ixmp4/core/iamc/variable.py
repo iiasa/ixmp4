@@ -23,19 +23,19 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
 
     @property
     def id(self) -> int:
-        return self.dto.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self.dto.name
+        return self._dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self.dto.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self.dto.created_by
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
@@ -61,7 +61,7 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
 
     def delete(self) -> None:
         """Deletes the variable from the database."""
-        self._service.delete_by_id(self.dto.id)
+        self._service.delete_by_id(self._dto.id)
 
     def _get_service(self, backend: Backend) -> VariableService:
         return backend.iamc.variables

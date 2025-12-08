@@ -33,8 +33,8 @@ class ItemRepository(db.r.ItemRepository[IndexSet]):
         else:
             data_type = Type(item.data_type)
 
-        for item in data:
-            item_type = type(item)
+        for data_item in data:
+            item_type = type(data_item)
             if data_type is None:
                 data_type = Type.from_pytype(item_type)
                 if data_type is None:

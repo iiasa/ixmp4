@@ -7,7 +7,7 @@ from .exceptions import ParameterDataInvalid, ParameterNotFound, ParameterNotUni
 from .filter import ParameterFilter
 
 
-class ItemRepository(IndexedRepository[Parameter, ParameterIndexsetAssociation]):
+class ItemRepository(IndexedRepository[ParameterIndexsetAssociation]):
     NotFound = ParameterNotFound
     NotUnique = ParameterNotUnique
     DataInvalid = ParameterDataInvalid

@@ -1,4 +1,7 @@
 from enum import Enum
+from typing import Literal
+
+PdDtype = Literal["Int64", "str", "float64", "boolean"]
 
 
 class Type(str, Enum):
@@ -16,7 +19,7 @@ class Type(str, Enum):
         return _column_map[type_]
 
     @classmethod
-    def pd_dtype_for_type(cls, type_: "Type") -> str:
+    def pd_dtype_for_type(cls, type_: "Type") -> PdDtype:
         return _pd_dtype_map[type_]
 
     @classmethod
@@ -41,7 +44,7 @@ _column_map: dict[str, str] = {
     Type.BOOL: "value_bool",
 }
 
-_pd_dtype_map: dict[str, str] = {
+_pd_dtype_map: dict[str, PdDtype] = {
     Type.INT: "Int64",
     Type.STR: "str",
     Type.FLOAT: "float64",

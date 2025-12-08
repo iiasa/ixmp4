@@ -14,7 +14,7 @@ Params = ParamSpec("Params")
 
 
 class ReverterRepository(db.r.PandasRepository, Generic[Params]):
-    target: ClassVar[db.r.ModelTarget[BaseModel]]
+    target: db.r.ModelTarget[BaseModel]
     version_target: ClassVar[db.r.ModelTarget[BaseVersionModel]]
 
     transactions: TransactionRepository
@@ -61,7 +61,7 @@ class ReverterRepository(db.r.PandasRepository, Generic[Params]):
             )
         )
 
-    def check_tx_ids(self, origin_tx_id: int, compare_tx_id: int):
+    def check_tx_ids(self, origin_tx_id: int, compare_tx_id: int) -> None:
         if origin_tx_id < compare_tx_id:
             raise ProgrammingError("`origin_tx_id` must be bigger than `compare_tx_id`")
 
@@ -151,7 +151,7 @@ class ReverterRepository(db.r.PandasRepository, Generic[Params]):
         compare_tx_id: int,
         *args: Params.args,
         **kwargs: Params.kwargs,
-    ) -> int | None:
+    ) -> None:
         self.check_tx_ids(origin_tx_id, compare_tx_id)
 
         base_exc = self.select_versions(*args, **kwargs).with_only_columns(
@@ -234,7 +234,7 @@ class Reverter(Generic[Params]):
         self,
         targets: list[type[ReverterRepository[Params]]],
     ) -> None:
-        def sorted_index(repo_class: type[ReverterRepository[Params]]):
+        def sorted_index(repo_class: type[ReverterRepository[Params]]) -> int:
             return BaseModel.metadata.sorted_tables.index(repo_class.target.table)
 
         self.repo_classes = list(sorted(targets, key=sorted_index))
@@ -245,7 +245,7 @@ class Reverter(Generic[Params]):
         tx_id: int,
         *args: Params.args,
         **kwargs: Params.kwargs,
-    ):
+    ) -> None:
         transactions = TransactionRepository(executor)
         origin_tx_id = transactions.latest().id
         targets: list[ReverterRepository[Params]] = [

@@ -1,13 +1,12 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import Service, paginated_procedure, procedure
+from ixmp4.services import Http, Service, procedure
 from ixmp4.transport import DirectTransport
 
 from .db import AbstractDocs
@@ -34,7 +33,7 @@ class DocsService(Service):
             filter=db.r.Filter(DocsFilter, self.docs_model),
         )
 
-    @procedure(path="/{dimension__id}/docs/", methods=["GET"])
+    @procedure(Http(path="/{dimension__id}/docs/", methods=["GET"]))
     def get_docs(self, dimension__id: int) -> Docs:
         """Retrieves a docs entry.
 
@@ -58,13 +57,13 @@ class DocsService(Service):
     def get_docs_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{dimension__id}/docs/", methods=["POST"])
+    @procedure(Http(path="/{dimension__id}/docs/", methods=["POST"]))
     def set_docs(self, dimension__id: int, description: str) -> Docs:
         """Updates a docs entry.
 
@@ -99,14 +98,14 @@ class DocsService(Service):
     def set_docs_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         # self.auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{dimension__id}/docs/", methods=["DELETE"])
+    @procedure(Http(path="/{dimension__id}/docs/", methods=["DELETE"]))
     def delete_docs(self, dimension__id: int) -> None:
         """Deletes a docs entry.
 
@@ -131,13 +130,13 @@ class DocsService(Service):
     def delete_docs_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(path="docs/list/", methods=["PATCH"])
+    @procedure(Http(path="/docs/list/", methods=["PATCH"]))
     def list_docs(self, **kwargs: Unpack[DocsFilter]) -> list[Docs]:
         r"""Lists docs entries by specified criteria.
 
@@ -163,7 +162,7 @@ class DocsService(Service):
     def list_docs_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

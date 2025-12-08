@@ -3,7 +3,12 @@ import logging
 from ixmp4 import data
 from ixmp4.conf import settings
 from ixmp4.conf.platforms import PlatformConnectionInfo
-from ixmp4.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.core.exceptions import ProgrammingError
+from ixmp4.transport import (
+    AuthorizedTransport,
+    HttpxTransport,
+    Transport,
+)
 
 logger = logging.getLogger(__name__)
 
@@ -73,11 +78,15 @@ class Backend(object):
             return HttpxTransport.from_url(ci.dsn, auth)
         else:
             try:
-                auth_context = settings.get_local_auth_context()
-                return DirectTransport.from_dsn(ci.dsn, auth_context)
-            except Exception as e:
+                auth_context = settings.get_manager_auth_context()
+                return AuthorizedTransport.from_dsn(ci.dsn, auth_context)
+            except Exception as e:  # TODO
                 logger.debug("Intiating transport failed with exception: " + str(e))
                 if ci.url is not None:
                     logger.debug("Retrying with http transport.")
                     auth = settings.get_client_auth()
                     return HttpxTransport.from_url(ci.url, auth)
+                else:
+                    raise ProgrammingError(
+                        f"Could not connect to platform via connection info: {ci}"
+                    )

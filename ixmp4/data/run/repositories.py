@@ -18,7 +18,12 @@ class ItemRepository(db.r.ItemRepository[Run]):
     target = db.r.ModelTarget(Run)
     filter = db.r.Filter(RunFilter, Run)
 
-    def create(self, model_id: int, scenario_id: int, values: Values | None) -> int:
+    def create(
+        self, model_id: int, scenario_id: int, values: Values | None = None
+    ) -> int:
+        if values is None:
+            values = {}
+
         exc = self.target.insert_statement()
         version_query = (
             # run creation logic in a single query
@@ -42,7 +47,7 @@ class ItemRepository(db.r.ItemRepository[Run]):
             with self.executor.insert_one(exc) as result:
                 return cast(int, result.scalar_one())
 
-    def set_as_default_version(self, id: int) -> None:
+    def set_as_default_version(self, id: int, values: Values | None = None) -> None:
         run = self.get_by_pk({"id": id})
 
         unset_exc = (
@@ -63,25 +68,23 @@ class ItemRepository(db.r.ItemRepository[Run]):
             .where(
                 Run.id == id,
             )
-            .values(is_default=True)
+            .values(is_default=True, **values)
         )
 
-        with self.executor.update(exc) as rowcount:
-            if rowcount == 0:
-                raise self.NotFound()
+        with self.executor.update(exc):
+            return None
 
-    def unset_as_default_version(self, id: int) -> None:
+    def unset_as_default_version(self, id: int, values: Values | None = None) -> None:
         exc = (
             self.target.update_statement()
             .where(
                 Run.id == id,
             )
-            .values(is_default=False)
+            .values(is_default=False, **values)
         )
 
-        with self.executor.update(exc) as rowcount:
-            if rowcount == 0:
-                raise self.NotFound()
+        with self.executor.update(exc):
+            return None
 
 
 class PandasRepository(db.r.PandasRepository):

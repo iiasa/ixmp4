@@ -13,7 +13,7 @@ from ixmp4.data.optimization.base.db import (
 )
 
 
-class Variable(IndexedModel, HasCreationInfo):
+class Variable(IndexedModel["VariableIndexsetAssociation"], HasCreationInfo):
     __tablename__ = "opt_var"
     __table_args__ = (sa.UniqueConstraint("name", "run__id"),)
 
@@ -41,6 +41,10 @@ class VariableIndexsetAssociation(IndexsetAssociationModel):
     )
 
     variable: orm.Mapped[Variable] = orm.relationship(Variable)
+
+    @classmethod
+    def get_item_id_column(cls) -> sa.ColumnElement[int]:
+        return cls.__table__.c.variable__id
 
 
 class VariableVersion(IndexedVersionModel, HasCreationInfo):

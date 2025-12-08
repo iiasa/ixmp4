@@ -1,20 +1,14 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import (
-    DirectTransport,
-    Service,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import UnitDocs
 from .dto import Unit
@@ -23,7 +17,7 @@ from .filter import UnitFilter
 from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
-class UnitService(DocsService, Service):
+class UnitService(DocsService, GetByIdService):
     router_prefix = "/units"
     router_tags = ["units"]
 
@@ -39,7 +33,7 @@ class UnitService(DocsService, Service):
         self.versions = VersionRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=UnitDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(self, name: str) -> Unit:
         """Creates a unit.
 
@@ -66,13 +60,13 @@ class UnitService(DocsService, Service):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a unit.
 
@@ -94,13 +88,13 @@ class UnitService(DocsService, Service):
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get_by_name(self, name: str) -> Unit:
         """Retrieves a unit by its name.
 
@@ -125,13 +119,13 @@ class UnitService(DocsService, Service):
     def get_by_name_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Unit:
         """Retrieves a unit by its id.
 
@@ -156,7 +150,7 @@ class UnitService(DocsService, Service):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -168,7 +162,7 @@ class UnitService(DocsService, Service):
         except UnitNotFound:
             return self.create(name)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
         r"""Lists units by specified criteria.
 
@@ -188,7 +182,7 @@ class UnitService(DocsService, Service):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -209,7 +203,7 @@ class UnitService(DocsService, Service):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[UnitFilter]) -> SerializableDataFrame:
         r"""Tabulates units by specified criteria.
 
@@ -231,7 +225,7 @@ class UnitService(DocsService, Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

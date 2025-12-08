@@ -1,20 +1,20 @@
 from typing import TYPE_CHECKING
 
 from ixmp4.base_exceptions import OptimizationItemUsageError
-from ixmp4.services import Service
+from ixmp4.services import GetByIdService
 
 if TYPE_CHECKING:
     pass
 
 
-class IndexSetAssociatedService(Service):
+class IndexSetAssociatedService(GetByIdService):
     def check_optional_column_args(
         self,
         name: str,
         item_type_str: str,
         constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
-    ):
+    ) -> None:
         if column_names:
             if constrained_to_indexsets is None:
                 raise OptimizationItemUsageError(
@@ -34,7 +34,7 @@ class IndexSetAssociatedService(Service):
         item_type_str: str,
         constrained_to_indexsets: list[str],
         column_names: list[str],
-    ):
+    ) -> None:
         if len(column_names) != len(constrained_to_indexsets):
             raise OptimizationItemUsageError(
                 f"While processing {item_type_str} {name}: \n"

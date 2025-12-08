@@ -2,8 +2,7 @@ from typing import Any, List
 
 import pandas as pd
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden, OptimizationItemUsageError
@@ -14,11 +13,7 @@ from ixmp4.data.optimization.indexset.repositories import (
     ItemRepository as IndexSetRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import (
-    DirectTransport,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, Http, procedure
 
 from .db import VariableDocs
 from .dto import Variable
@@ -53,7 +48,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
         self.indexsets = IndexSetRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=VariableDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(
         self,
         run_id: int,
@@ -91,10 +86,13 @@ class VariableService(DocsService, IndexSetAssociatedService):
         db_equ = self.items.get({"name": name, "run__id": run_id})
 
         if constrained_to_indexsets:
-            if not column_names:
-                column_names = [None] * len(constrained_to_indexsets)
+            nullable_column_names: list[str] | list[None] = column_names or (
+                [None] * len(constrained_to_indexsets)
+            )
 
-            for idxset_name, col_name in zip(constrained_to_indexsets, column_names):
+            for idxset_name, col_name in zip(
+                constrained_to_indexsets, nullable_column_names
+            ):
                 indexset = self.indexsets.get({"name": idxset_name, "run__id": run_id})
                 self.associations.create(
                     {
@@ -110,14 +108,14 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, run_id: int, name: str) -> Variable:
         """Retrieves a table by its name and run_id.
 
@@ -149,13 +147,13 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Variable:
         """Retrieves a table by its id.
 
@@ -183,13 +181,13 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a table.
 
@@ -215,13 +213,13 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["POST"])
+    @procedure(Http(path="/{id}/data", methods=["POST"]))
     def add_data(self, id: int, data: dict[str, Any] | SerializableDataFrame) -> None:
         """Adds data to a Variable.
 
@@ -274,13 +272,13 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def add_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["DELETE"])
+    @procedure(Http(path="/{id}/data", methods=["DELETE"]))
     def remove_data(
         self, id: int, data: dict[str, Any] | SerializableDataFrame | None = None
     ) -> None:
@@ -317,13 +315,13 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def remove_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
@@ -348,9 +346,8 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
-        *args: Any,
-        **kwargs: Any,
+        platform: PlatformProtocol,
+        **kwargs: Unpack[VariableFilter],
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -369,7 +366,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> SerializableDataFrame:
         r"""Tabulates variables by specified criteria.
 
@@ -392,7 +389,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

@@ -1,14 +1,12 @@
-from typing import Any, List
+from typing import Any, List, cast
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
-from ixmp4.data.optimization.base.service import IndexSetAssociatedService
 from ixmp4.data.optimization.equation.repositories import (
     ItemRepository as EquationRepository,
 )
@@ -22,11 +20,7 @@ from ixmp4.data.optimization.variable.repositories import (
     ItemRepository as VariableRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import (
-    DirectTransport,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import IndexSetDocs
 from .dto import IndexSet
@@ -39,7 +33,7 @@ from .repositories import (
 )
 
 
-class IndexSetService(DocsService, IndexSetAssociatedService):
+class IndexSetService(DocsService, GetByIdService):
     router_prefix = "/optimization/indexsets"
     router_tags = ["optimization", "indexsets"]
 
@@ -67,7 +61,7 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
 
         DocsService.__init_direct__(self, transport, docs_model=IndexSetDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(
         self,
         run_id: int,
@@ -112,14 +106,14 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, run_id: int, name: str) -> IndexSet:
         """Retrieves an indexset by its name and run_id.
 
@@ -151,13 +145,13 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> IndexSet:
         """Retrieves an indexset by its id.
 
@@ -185,13 +179,13 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes an indexset.
 
@@ -217,16 +211,24 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    def data_to_str_list(self, data: list[float] | list[int] | list[str]) -> list[str]:
+    def data_to_str_list(self, data: List[float] | List[int] | List[str]) -> List[str]:
         return [str(d) for d in data]
 
-    @procedure(path="/{id}/data", methods=["POST"])
+    def data_to_data_list(
+        self, data: float | int | str | List[float] | List[int] | List[str]
+    ) -> List[float] | List[int] | List[str]:
+        if isinstance(data, list):
+            return data
+        else:
+            return cast(List[float] | List[int] | List[str], [data])
+
+    @procedure(Http(path="/{id}/data", methods=["POST"]))
     def add_data(
         self, id: int, data: float | int | str | List[float] | List[int] | List[str]
     ) -> None:
@@ -243,26 +245,26 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
         -------
         None
         """
-        data = data if isinstance(data, list) else [data]
+        data_list = self.data_to_data_list(data)
 
-        if len(data) == 0:
+        if len(data_list) == 0:
             return  # nothing to be done
 
-        data_type = self.items.check_type(id, data)
-        self.data.add(id, self.data_to_str_list(data))
+        data_type = self.items.check_type(id, data_list)
+        self.data.add(id, self.data_to_str_list(data_list))
         self.items.update_by_pk({"id": id, "data_type": data_type})
 
     @add_data.auth_check()
     def add_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["DELETE"])
+    @procedure(Http(path="/{id}/data", methods=["DELETE"]))
     def remove_data(
         self,
         id: int,
@@ -285,21 +287,21 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
         -------
         None
         """
-        data = data if isinstance(data, list) else [data]
+        data_list = self.data_to_data_list(data)
 
         # NOTE Should remove_dependent_data be removed, changed, see https://github.com/iiasa/ixmp4/issues/136
-        if not bool(data):
+        if not bool(data_list):
             return
 
-        self.items.check_type(id, data)
+        self.items.check_type(id, data_list)
 
-        str_list = self.data_to_str_list(data)
+        str_list = self.data_to_str_list(data_list)
         if remove_dependent_data:
             indexset = self.items.get_by_pk({"id": id})
-            self.equations.remove_invalid_linked_data(indexset, data)
-            self.parameters.remove_invalid_linked_data(indexset, data)
-            self.tables.remove_invalid_linked_data(indexset, data)
-            self.variables.remove_invalid_linked_data(indexset, data)
+            self.equations.remove_invalid_linked_data(indexset, data_list)
+            self.parameters.remove_invalid_linked_data(indexset, data_list)
+            self.tables.remove_invalid_linked_data(indexset, data_list)
+            self.variables.remove_invalid_linked_data(indexset, data_list)
 
         self.data.remove(id, str_list)
         self.items.reset_type(id)
@@ -308,13 +310,13 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def remove_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[IndexSetFilter]) -> list[IndexSet]:
         r"""Lists indexsets by specified criteria.
 
@@ -339,7 +341,7 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -360,7 +362,7 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[IndexSetFilter]) -> SerializableDataFrame:
         r"""Tabulates indexsets by specified criteria.
 
@@ -387,7 +389,7 @@ class IndexSetService(DocsService, IndexSetAssociatedService):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

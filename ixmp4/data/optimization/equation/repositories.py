@@ -7,7 +7,7 @@ from .exceptions import EquationDataInvalid, EquationNotFound, EquationNotUnique
 from .filter import EquationFilter
 
 
-class ItemRepository(IndexedRepository[Equation, EquationIndexsetAssociation]):
+class ItemRepository(IndexedRepository[EquationIndexsetAssociation]):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
     DataInvalid = EquationDataInvalid

@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, Generic, TypeVar
 
 import sqlalchemy as sa
 from sqlalchemy import orm
@@ -24,6 +24,7 @@ class IndexsetAssociationModel(BaseModel):
     column_name: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
 
     @declared_attr
+    @classmethod
     def indexset(cls) -> orm.Relationship["IndexSet"]:
         return orm.relationship(
             "IndexSet", foreign_keys=[cls.indexset__id], lazy="select", viewonly=True
@@ -41,7 +42,10 @@ class IndexsetAssociationVersionModel(BaseVersionModel):
     column_name: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
 
 
-class IndexedModel(BaseModel):
+AssocT = TypeVar("AssocT", bound=IndexsetAssociationModel)
+
+
+class IndexedModel(BaseModel, Generic[AssocT]):
     __abstract__ = True
 
     name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
@@ -51,6 +55,7 @@ class IndexedModel(BaseModel):
     )
 
     @declared_attr
+    @classmethod
     def run(cls) -> orm.Relationship["Run"]:
         return orm.relationship(
             "Run", foreign_keys=[cls.run__id], lazy="select", viewonly=True
@@ -62,7 +67,7 @@ class IndexedModel(BaseModel):
         )
     )
 
-    indexset_associations: orm.Relationship[list["IndexsetAssociationModel"]]
+    indexset_associations: orm.Relationship[list["AssocT"]]
     indexsets: AssociationProxy[list["IndexSet"]] = association_proxy(
         "indexset_associations", "indexset"
     )

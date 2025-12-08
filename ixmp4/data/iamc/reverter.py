@@ -18,7 +18,7 @@ from ixmp4.data.iamc.timeseries.db import (
 from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 
 
-class DataPointReverterRepository(ReverterRepository):
+class DataPointReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(DataPoint)
     version_target = db.r.ModelTarget(DataPointVersion)
 
@@ -28,7 +28,7 @@ class DataPointReverterRepository(ReverterRepository):
         )
 
 
-class MeasurandReverterRepository(ReverterRepository):
+class MeasurandReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(Measurand)
     version_target = db.r.ModelTarget(MeasurandVersion)
 
@@ -38,7 +38,7 @@ class MeasurandReverterRepository(ReverterRepository):
         )
 
 
-class TimeSeriesReverterRepository(ReverterRepository):
+class TimeSeriesReverterRepository(ReverterRepository[[int]]):
     target = db.r.ModelTarget(TimeSeries)
     version_target = db.r.ModelTarget(TimeSeriesVersion)
 

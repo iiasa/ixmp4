@@ -11,7 +11,7 @@ from .exceptions import (
 from .filter import VariableFilter
 
 
-class ItemRepository(IndexedRepository[Variable, VariableIndexsetAssociation]):
+class ItemRepository(IndexedRepository[VariableIndexsetAssociation]):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     DataInvalid = VariableDataInvalid

@@ -5,7 +5,6 @@ import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit import db
 
-from ixmp4.base_exceptions import ProgrammingError
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasCreationInfo
 from ixmp4.data.docs.db import docs_model
@@ -43,11 +42,7 @@ class IndexSet(BaseModel, HasCreationInfo):
             pytype = Type(self.data_type).to_pytype()
         return [pytype(d.value) for d in self.data_entries]
 
-    @data.setter
-    def data(self, value: list[float] | list[int] | list[str]) -> None:
-        raise ProgrammingError("Cannot set `IndexSet.data`.")
-
-    data_type: db.t.String = orm.mapped_column(sa.String(63), nullable=True)
+    data_type: db.t.Mapped[str | None] = orm.mapped_column(sa.String(63), nullable=True)
 
     run__id: db.t.Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("run.id"), nullable=False, index=True
@@ -90,7 +85,6 @@ class IndexSetDataVersion(versions.BaseVersionModel):
 
     indexset__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
     value: db.t.String = orm.mapped_column(nullable=False)
-    indexset: db.t.Integer = orm.mapped_column(nullable=False, index=True)
 
     @staticmethod
     def join_indexset_versions() -> sa.ColumnElement[bool]:

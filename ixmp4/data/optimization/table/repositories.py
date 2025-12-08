@@ -7,7 +7,7 @@ from .exceptions import TableDataInvalid, TableNotFound, TableNotUnique
 from .filter import TableFilter
 
 
-class ItemRepository(IndexedRepository[Table, TableIndexsetAssociation]):
+class ItemRepository(IndexedRepository[TableIndexsetAssociation]):
     NotFound = TableNotFound
     NotUnique = TableNotUnique
     DataInvalid = TableDataInvalid

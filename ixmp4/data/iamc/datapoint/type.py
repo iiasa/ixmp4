@@ -17,7 +17,7 @@ class Type(str, enum.Enum):
     def columns_for_type(cls, type_: "Type") -> TypeColumnsDict:
         return _columns_for_types[type_]
 
-    def __str__(self):
+    def __str__(self) -> str:
         return self.value
 
 

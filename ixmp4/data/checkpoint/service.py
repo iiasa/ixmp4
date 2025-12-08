@@ -1,27 +1,21 @@
 from typing import Any, List
 
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.versions.transaction import TransactionRepository
-from ixmp4.services import (
-    DirectTransport,
-    Service,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .dto import Checkpoint
 from .filter import CheckpointFilter
 from .repositories import ItemRepository, PandasRepository
 
 
-class CheckpointService(Service):
+class CheckpointService(GetByIdService):
     router_prefix = "/checkpoints"
     router_tags = ["checkpoints"]
 
@@ -35,7 +29,7 @@ class CheckpointService(Service):
         self.pandas = PandasRepository(self.executor)
         self.transactions = TransactionRepository(self.executor)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(
         self, run__id: int, message: str, transaction__id: int | None = None
     ) -> Checkpoint:
@@ -77,13 +71,13 @@ class CheckpointService(Service):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a checkpoint.
 
@@ -105,13 +99,13 @@ class CheckpointService(Service):
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Checkpoint:
         """Retrieves a checkpoint by its id.
 
@@ -138,13 +132,13 @@ class CheckpointService(Service):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[CheckpointFilter]) -> list[Checkpoint]:
         r"""Lists checkpoints by specified criteria.
 
@@ -165,7 +159,7 @@ class CheckpointService(Service):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -186,7 +180,7 @@ class CheckpointService(Service):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[CheckpointFilter]) -> SerializableDataFrame:
         r"""Tabulates checkpoints by specified criteria.
 
@@ -211,7 +205,7 @@ class CheckpointService(Service):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

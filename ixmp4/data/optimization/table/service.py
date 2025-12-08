@@ -3,8 +3,7 @@ from typing import Any, List
 
 import pandas as pd
 from toolkit import db
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -15,11 +14,7 @@ from ixmp4.data.optimization.indexset.repositories import (
     ItemRepository as IndexSetRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import (
-    DirectTransport,
-    paginated_procedure,
-    procedure,
-)
+from ixmp4.services import DirectTransport, Http, procedure
 
 from .db import TableDocs
 from .dto import Table
@@ -56,7 +51,7 @@ class TableService(DocsService, IndexSetAssociatedService):
         self.indexsets = IndexSetRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=TableDocs)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(path="/", methods=["POST"]))
     def create(
         self,
         run_id: int,
@@ -103,18 +98,23 @@ class TableService(DocsService, IndexSetAssociatedService):
             The created table.
         """
 
+        nullable_column_names: list[str] | list[None]
+
         if column_names:
             self.check_column_args(
                 name, "Table", constrained_to_indexsets, column_names
             )
+            nullable_column_names = column_names
         else:
-            column_names = [None] * len(constrained_to_indexsets)
+            nullable_column_names = [None] * len(constrained_to_indexsets)
 
         self.items.create({"name": name, "run__id": run_id, **self.get_creation_info()})
         db_tab = self.items.get({"name": name, "run__id": run_id})
 
         if constrained_to_indexsets:
-            for idxset_name, col_name in zip(constrained_to_indexsets, column_names):
+            for idxset_name, col_name in zip(
+                constrained_to_indexsets, nullable_column_names
+            ):
                 indexset = self.indexsets.get({"name": idxset_name, "run__id": run_id})
                 self.associations.create(
                     {
@@ -130,14 +130,14 @@ class TableService(DocsService, IndexSetAssociatedService):
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(methods=["POST"])
+    @procedure(Http(methods=["POST"]))
     def get(self, run_id: int, name: str) -> Table:
         """Retrieves a table by its name and run_id.
 
@@ -167,13 +167,13 @@ class TableService(DocsService, IndexSetAssociatedService):
     def get_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["GET"])
+    @procedure(Http(path="/{id}/", methods=["GET"]))
     def get_by_id(self, id: int) -> Table:
         """Retrieves a table by its id.
 
@@ -201,13 +201,13 @@ class TableService(DocsService, IndexSetAssociatedService):
     def get_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/", methods=["DELETE"])
+    @procedure(Http(path="/{id}/", methods=["DELETE"]))
     def delete_by_id(self, id: int) -> None:
         """Deletes a table.
 
@@ -234,13 +234,13 @@ class TableService(DocsService, IndexSetAssociatedService):
     def delete_by_id_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["POST"])
+    @procedure(Http(path="/{id}/data", methods=["POST"]))
     def add_data(self, id: int, data: dict[str, Any] | SerializableDataFrame) -> None:
         """Adds data to a Table.
 
@@ -286,13 +286,13 @@ class TableService(DocsService, IndexSetAssociatedService):
     def add_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(path="/{id}/data", methods=["DELETE"])
+    @procedure(Http(path="/{id}/data", methods=["DELETE"]))
     def remove_data(
         self, id: int, data: dict[str, Any] | SerializableDataFrame | None = None
     ) -> None:
@@ -326,13 +326,13 @@ class TableService(DocsService, IndexSetAssociatedService):
     def remove_data_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def list(self, **kwargs: Unpack[TableFilter]) -> list[Table]:
         r"""Lists tables by specified criteria.
 
@@ -357,7 +357,7 @@ class TableService(DocsService, IndexSetAssociatedService):
     def list_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:
@@ -378,7 +378,7 @@ class TableService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @paginated_procedure(methods=["PATCH"])
+    @procedure(Http(methods=["PATCH"]))
     def tabulate(self, **kwargs: Unpack[TableFilter]) -> SerializableDataFrame:
         r"""Tabulates tables by specified criteria.
 
@@ -405,7 +405,7 @@ class TableService(DocsService, IndexSetAssociatedService):
     def tabulate_auth_check(
         self,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
         *args: Any,
         **kwargs: Any,
     ) -> None:

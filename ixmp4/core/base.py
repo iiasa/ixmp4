@@ -1,6 +1,5 @@
 import abc
-from collections.abc import Iterable
-from typing import Generic, TypeVar
+from typing import Generic, TypeVar, cast
 
 from typing_extensions import Unpack
 
@@ -9,8 +8,7 @@ from ixmp4.data.base.dto import BaseModel
 from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.docs.service import DocsService
-from ixmp4.services.base import Service
-from ixmp4.services.protocols import GetByIdService
+from ixmp4.services.base import GetByIdService, Service
 
 
 class BaseBackendFacade(object):
@@ -55,8 +53,6 @@ class BaseDocsServiceFacade(
 ):
     def get_docs(self, x: KeyT) -> str | None:
         equation_id = self._get_item_id(x)
-        if equation_id is None:
-            return None
         try:
             return self._service.get_docs(dimension__id=equation_id).description
         except DocsNotFound:
@@ -67,8 +63,6 @@ class BaseDocsServiceFacade(
             self.delete_docs(x)
             return None
         equation_id = self._get_item_id(x)
-        if equation_id is None:
-            return None
         return self._service.set_docs(
             dimension__id=equation_id, description=description
         ).description
@@ -76,31 +70,30 @@ class BaseDocsServiceFacade(
     def delete_docs(self, x: KeyT) -> None:
         # TODO: this function is failing silently, which we should avoid
         equation_id = self._get_item_id(x)
-        if equation_id is None:
-            return None
         try:
             self._service.delete_docs(dimension__id=equation_id)
             return None
         except DocsNotFound:
             return None
 
-    def list_docs(self, **kwargs: Unpack[DocsFilter]) -> Iterable[str]:
+    def list_docs(self, **kwargs: Unpack[DocsFilter]) -> list[str]:
         return [item.description for item in self._service.list_docs(**kwargs)]
 
 
 DtoT = TypeVar("DtoT", bound=BaseModel)
-GetByIdServiceT = TypeVar("GetByIdServiceT", bound=GetByIdService[DtoT])
+
+GetByIdServiceT = TypeVar("GetByIdServiceT", bound=GetByIdService)
 
 
 class BaseFacadeObject(
     BaseServiceFacade[GetByIdServiceT], Generic[GetByIdServiceT, DtoT]
 ):
     _service: GetByIdServiceT
-    dto: DtoT
+    _dto: DtoT
 
     def __init__(self, backend: Backend, dto: DtoT) -> None:
         BaseServiceFacade.__init__(self, backend)
-        self.dto = dto
+        self._dto = dto
 
-    def refresh(self):
-        self.dto = self._service.get_by_id(self.dto.id)
+    def _refresh(self) -> None:
+        self._dto = cast(DtoT, self._service.get_by_id(self._dto.id))

@@ -1,14 +1,18 @@
 {
   "version": 1,
-  "disable_existing_loggers": false,
-  "formatters":{
+  "disable_existing_loggers": true,
+  "formatters": {
     "generic": {
       "format": "[%(levelname)s] %(asctime)s - %(name)s: %(message)s",
       "datefmt": "%H:%M:%S"
     }
   },
   "loggers": {
-    "fastapi": {
+    "ixmp4": {
+      "level": "NOTSET",
+      "formatter": "generic"
+    },
+    "starlette": {
       "level": "NOTSET"
     },
     "httpx": {
@@ -30,12 +34,12 @@
   "handlers": {
     "console": {
       "class": "logging.StreamHandler",
-      "level": "INFO",
+      "level": "DEBUG",
       "formatter": "generic"
     }
   },
-  "root": { 
-    "level": "INFO",
+  "root": {
+    "level": "DEBUG",
     "handlers": ["console"]
   }
 }
