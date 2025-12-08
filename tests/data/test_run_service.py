@@ -172,21 +172,25 @@ class TestRunGetRunVersions(RunServiceTest):
             ],
         )
 
-        vdf = versioning_service.versions.tabulate(columns=expected_versions.columns)
+        vdf = versioning_service.versions.tabulate(
+            columns=expected_versions.columns.to_list()
+        )
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
 class TestRunGetRunNoDefaultVersion(RunServiceTest):
     def test_run_no_default_version(
         self, service: RunService, fake_time: datetime.datetime
-    ):
+    ) -> None:
         service.create("Model", "Scenario")
         with pytest.raises(NoDefaultRunVersion):
             service.get_default_version("Model", "Scenario")
 
 
 class TestRunGetOrCreate(RunServiceTest):
-    def test_run_get_or_create(self, service: RunService, fake_time: datetime.datetime):
+    def test_run_get_or_create(
+        self, service: RunService, fake_time: datetime.datetime
+    ) -> None:
         run1 = service.create("Model", "Scenario")
         run2 = service.get_or_create("Model", "Scenario")
 
@@ -202,14 +206,18 @@ class TestRunGetOrCreate(RunServiceTest):
 
 
 class TestRunGetById(RunServiceTest):
-    def test_run_get_by_id(self, service: RunService, fake_time: datetime.datetime):
+    def test_run_get_by_id(
+        self, service: RunService, fake_time: datetime.datetime
+    ) -> None:
         expected = service.create("Model", "Scenario")
         result = service.get_by_id(expected.id)
         assert expected == result
 
 
 class TestRunNotFound(RunServiceTest):
-    def test_run_not_found(self, service: RunService, fake_time: datetime.datetime):
+    def test_run_not_found(
+        self, service: RunService, fake_time: datetime.datetime
+    ) -> None:
         with pytest.raises(RunNotFound):
             service.get_by_id(1)
 
@@ -232,9 +240,8 @@ class TestRunList(RunServiceTest):
         assert runs[0].is_default
         assert runs[0].created_by == "@unknown"
         assert runs[0].created_at == fake_time.replace(tzinfo=None)
-        # TODO: not working yet
-        # assert runs[0].updated_by == "@unknown"
-        # assert runs[0].updated_at == fake_time.replace(tzinfo=None)
+        assert runs[0].updated_by == "@unknown"
+        assert runs[0].updated_at == fake_time.replace(tzinfo=None)
 
         assert runs[1].id == 2
         assert runs[1].model.name == "Model"

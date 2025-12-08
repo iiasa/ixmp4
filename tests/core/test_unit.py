@@ -10,7 +10,9 @@ platform = backends.get_platform_fixture(scope="class")
 
 
 class TestUnit:
-    def test_create_unit(self, platform: ixmp4.Platform, fake_time: datetime.datetime):
+    def test_create_unit(
+        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+    ) -> None:
         unit1 = platform.units.create("Unit 1")
         unit2 = platform.units.create("Unit 2")
         unit3 = platform.units.create("Unit 3")
@@ -27,7 +29,7 @@ class TestUnit:
         assert unit3.id == 3
         assert unit4.id == 4
 
-    def test_tabulate_unit(self, platform: ixmp4.Platform):
+    def test_tabulate_unit(self, platform: ixmp4.Platform) -> None:
         ret_df = platform.units.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -35,24 +37,24 @@ class TestUnit:
         assert "created_at" in ret_df.columns
         assert "created_by" in ret_df.columns
 
-    def test_list_unit(self, platform: ixmp4.Platform):
+    def test_list_unit(self, platform: ixmp4.Platform) -> None:
         assert len(platform.units.list()) == 4
 
-    def test_delete_unit_via_func_obj(self, platform: ixmp4.Platform):
+    def test_delete_unit_via_func_obj(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.units.get_by_name("Unit 1")
         platform.units.delete(unit1)
 
-    def test_delete_unit_via_func_id(self, platform: ixmp4.Platform):
+    def test_delete_unit_via_func_id(self, platform: ixmp4.Platform) -> None:
         platform.units.delete(2)
 
-    def test_delete_unit_via_func_name(self, platform: ixmp4.Platform):
+    def test_delete_unit_via_func_name(self, platform: ixmp4.Platform) -> None:
         platform.units.delete("Unit 3")
 
-    def test_delete_unit_via_obj(self, platform: ixmp4.Platform):
+    def test_delete_unit_via_obj(self, platform: ixmp4.Platform) -> None:
         unit4 = platform.units.get_by_name("Unit 4")
         unit4.delete()
 
-    def test_units_empty(self, platform: ixmp4.Platform):
+    def test_units_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.units.tabulate().empty
         assert len(platform.units.list()) == 0
 

@@ -38,7 +38,7 @@ class TestEquation(OptimizationEquationTest):
         run: ixmp4.Run,
         indexset: ixmp4.optimization.IndexSet,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         with run.transact("Create equations"):
             equation1 = run.optimization.equations.create("Equation 1")
 
@@ -80,7 +80,7 @@ class TestEquation(OptimizationEquationTest):
         assert equation4.indexset_names == ["IndexSet", "IndexSet"]
         assert equation4.column_names == ["Column 1", "Column 2"]
 
-    def test_tabulate_equation(self, run: ixmp4.Run):
+    def test_tabulate_equation(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.equations.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -91,28 +91,28 @@ class TestEquation(OptimizationEquationTest):
 
         assert "run__id" not in ret_df.columns
 
-    def test_list_equation(self, run: ixmp4.Run):
+    def test_list_equation(self, run: ixmp4.Run) -> None:
         assert len(run.optimization.equations.list()) == 4
 
-    def test_delete_equation_via_func_obj(self, run: ixmp4.Run):
+    def test_delete_equation_via_func_obj(self, run: ixmp4.Run) -> None:
         with run.transact("Delete equation 1"):
             equation1 = run.optimization.equations.get_by_name("Equation 1")
             run.optimization.equations.delete(equation1)
 
-    def test_delete_equation_via_func_id(self, run: ixmp4.Run):
+    def test_delete_equation_via_func_id(self, run: ixmp4.Run) -> None:
         with run.transact("Delete equation 2"):
             run.optimization.equations.delete(2)
 
-    def test_delete_equation_via_func_name(self, run: ixmp4.Run):
+    def test_delete_equation_via_func_name(self, run: ixmp4.Run) -> None:
         with run.transact("Delete equation 3"):
             run.optimization.equations.delete("Equation 3")
 
-    def test_delete_equation_via_obj(self, run: ixmp4.Run):
+    def test_delete_equation_via_obj(self, run: ixmp4.Run) -> None:
         equation4 = run.optimization.equations.get_by_name("Equation 4")
         with run.transact("Delete equation 4"):
             equation4.delete()
 
-    def test_equation_empty(self, run: ixmp4.Run):
+    def test_equation_empty(self, run: ixmp4.Run) -> None:
         assert run.optimization.equations.tabulate().empty
         assert len(run.optimization.equations.list()) == 0
 
@@ -330,7 +330,7 @@ class TestEquationDataDataFrame(EquationDataTest):
 
 
 class TestEquationInvalidData(OptimizationEquationTest):
-    def test_equations_create(self, run: ixmp4.Run):
+    def test_equations_create(self, run: ixmp4.Run) -> None:
         with run.transact("Create indexsets"):
             indexset1 = run.optimization.indexsets.create("IndexSet 1")
             indexset2 = run.optimization.indexsets.create("IndexSet 2")
@@ -559,7 +559,7 @@ class TestEquationDocs(OptimizationEquationTest):
 class TestEquationRollback(OptimizationEquationTest):
     def test_equation_add_data_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         with run.transact("Add equation data"):
             equation = run.optimization.equations.create(
                 "Equation", constrained_to_indexsets=[indexset.name]
@@ -587,7 +587,7 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_versioning_after_add_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.data == {
             "marginals": [-2, 1, 1],
@@ -597,7 +597,7 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_non_versioning_after_add_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.data == {
             "marginals": [-2, 1, 1, 1, 1],
@@ -605,7 +605,7 @@ class TestEquationRollback(OptimizationEquationTest):
             "IndexSet": ["do", "fa", "mi", "re", "so"],
         }
 
-    def test_equation_remove_data_failure(self, run: ixmp4.Run):
+    def test_equation_remove_data_failure(self, run: ixmp4.Run) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
 
         with run.transact("Remove equation data"):
@@ -626,7 +626,7 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_versioning_after_remove_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.data == {
             "marginals": [-2, 1, 1],
@@ -636,7 +636,7 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_non_versioning_after_remove_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.data == {
             "marginals": [1],
@@ -644,7 +644,7 @@ class TestEquationRollback(OptimizationEquationTest):
             "IndexSet": ["mi"],
         }
 
-    def test_equation_docs_failure(self, run: ixmp4.Run):
+    def test_equation_docs_failure(self, run: ixmp4.Run) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
 
         try:
@@ -656,13 +656,13 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_after_docs_failure(
         self, platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.docs == "These docs should persist!"
 
     def test_equation_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
 
         try:
@@ -675,12 +675,12 @@ class TestEquationRollback(OptimizationEquationTest):
 
     def test_equation_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         equation = run.optimization.equations.get_by_name("Equation")
         assert equation.id == 1
 
     def test_equation_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         with pytest.raises(ixmp4.optimization.Equation.NotFound):
             run.optimization.equations.get_by_name("Equation")

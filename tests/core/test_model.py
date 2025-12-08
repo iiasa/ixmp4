@@ -10,7 +10,9 @@ platform = backends.get_platform_fixture(scope="class")
 
 
 class TestModel:
-    def test_create_model(self, platform: ixmp4.Platform, fake_time: datetime.datetime):
+    def test_create_model(
+        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+    ) -> None:
         model1 = platform.models.create("Model 1")
         model2 = platform.models.create("Model 2")
         model3 = platform.models.create("Model 3")
@@ -27,7 +29,7 @@ class TestModel:
         assert model3.id == 3
         assert model4.id == 4
 
-    def test_tabulate_model(self, platform: ixmp4.Platform):
+    def test_tabulate_model(self, platform: ixmp4.Platform) -> None:
         ret_df = platform.models.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -35,24 +37,24 @@ class TestModel:
         assert "created_at" in ret_df.columns
         assert "created_by" in ret_df.columns
 
-    def test_list_model(self, platform: ixmp4.Platform):
+    def test_list_model(self, platform: ixmp4.Platform) -> None:
         assert len(platform.models.list()) == 4
 
-    def test_delete_model_via_func_obj(self, platform: ixmp4.Platform):
+    def test_delete_model_via_func_obj(self, platform: ixmp4.Platform) -> None:
         model1 = platform.models.get_by_name("Model 1")
         platform.models.delete(model1)
 
-    def test_delete_model_via_func_id(self, platform: ixmp4.Platform):
+    def test_delete_model_via_func_id(self, platform: ixmp4.Platform) -> None:
         platform.models.delete(2)
 
-    def test_delete_model_via_func_name(self, platform: ixmp4.Platform):
+    def test_delete_model_via_func_name(self, platform: ixmp4.Platform) -> None:
         platform.models.delete("Model 3")
 
-    def test_delete_model_via_obj(self, platform: ixmp4.Platform):
+    def test_delete_model_via_obj(self, platform: ixmp4.Platform) -> None:
         model4 = platform.models.get_by_name("Model 4")
         model4.delete()
 
-    def test_models_empty(self, platform: ixmp4.Platform):
+    def test_models_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.models.tabulate().empty
         assert len(platform.models.list()) == 0
 

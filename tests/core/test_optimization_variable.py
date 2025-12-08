@@ -38,7 +38,7 @@ class TestVariable(OptimizationVariableTest):
         run: ixmp4.Run,
         indexset: ixmp4.optimization.IndexSet,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         with run.transact("Create variables"):
             variable1 = run.optimization.variables.create("Variable 1")
 
@@ -80,7 +80,7 @@ class TestVariable(OptimizationVariableTest):
         assert variable4.indexset_names == ["IndexSet", "IndexSet"]
         assert variable4.column_names == ["Column 1", "Column 2"]
 
-    def test_tabulate_variable(self, run: ixmp4.Run):
+    def test_tabulate_variable(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.variables.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -91,28 +91,28 @@ class TestVariable(OptimizationVariableTest):
 
         assert "run__id" not in ret_df.columns
 
-    def test_list_variable(self, run: ixmp4.Run):
+    def test_list_variable(self, run: ixmp4.Run) -> None:
         assert len(run.optimization.variables.list()) == 4
 
-    def test_delete_variable_via_func_obj(self, run: ixmp4.Run):
+    def test_delete_variable_via_func_obj(self, run: ixmp4.Run) -> None:
         with run.transact("Delete variable 1"):
             variable1 = run.optimization.variables.get_by_name("Variable 1")
             run.optimization.variables.delete(variable1)
 
-    def test_delete_variable_via_func_id(self, run: ixmp4.Run):
+    def test_delete_variable_via_func_id(self, run: ixmp4.Run) -> None:
         with run.transact("Delete variable 2"):
             run.optimization.variables.delete(2)
 
-    def test_delete_variable_via_func_name(self, run: ixmp4.Run):
+    def test_delete_variable_via_func_name(self, run: ixmp4.Run) -> None:
         with run.transact("Delete variable 3"):
             run.optimization.variables.delete("Variable 3")
 
-    def test_delete_variable_via_obj(self, run: ixmp4.Run):
+    def test_delete_variable_via_obj(self, run: ixmp4.Run) -> None:
         variable4 = run.optimization.variables.get_by_name("Variable 4")
         with run.transact("Delete variable 4"):
             variable4.delete()
 
-    def test_variable_empty(self, run: ixmp4.Run):
+    def test_variable_empty(self, run: ixmp4.Run) -> None:
         assert run.optimization.variables.tabulate().empty
         assert len(run.optimization.variables.list()) == 0
 
@@ -330,7 +330,7 @@ class TestVariableDataDataFrame(VariableDataTest):
 
 
 class TestVariableInvalidData(OptimizationVariableTest):
-    def test_variables_create(self, run: ixmp4.Run):
+    def test_variables_create(self, run: ixmp4.Run) -> None:
         with run.transact("Create indexsets"):
             indexset1 = run.optimization.indexsets.create("IndexSet 1")
             indexset2 = run.optimization.indexsets.create("IndexSet 2")
@@ -559,7 +559,7 @@ class TestVariableDocs(OptimizationVariableTest):
 class TestVariableRollback(OptimizationVariableTest):
     def test_variable_add_data_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         with run.transact("Add variable data"):
             variable = run.optimization.variables.create(
                 "Variable", constrained_to_indexsets=[indexset.name]
@@ -587,7 +587,7 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_versioning_after_add_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.data == {
             "marginals": [-2, 1, 1],
@@ -597,7 +597,7 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_non_versioning_after_add_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.data == {
             "marginals": [-2, 1, 1, 1, 1],
@@ -605,7 +605,7 @@ class TestVariableRollback(OptimizationVariableTest):
             "IndexSet": ["do", "fa", "mi", "re", "so"],
         }
 
-    def test_variable_remove_data_failure(self, run: ixmp4.Run):
+    def test_variable_remove_data_failure(self, run: ixmp4.Run) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
 
         with run.transact("Remove variable data"):
@@ -626,7 +626,7 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_versioning_after_remove_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.data == {
             "marginals": [-2, 1, 1],
@@ -636,7 +636,7 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_non_versioning_after_remove_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.data == {
             "marginals": [1],
@@ -644,7 +644,7 @@ class TestVariableRollback(OptimizationVariableTest):
             "IndexSet": ["mi"],
         }
 
-    def test_variable_docs_failure(self, run: ixmp4.Run):
+    def test_variable_docs_failure(self, run: ixmp4.Run) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
 
         try:
@@ -656,13 +656,13 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_after_docs_failure(
         self, platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.docs == "These docs should persist!"
 
     def test_variable_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
 
         try:
@@ -675,12 +675,12 @@ class TestVariableRollback(OptimizationVariableTest):
 
     def test_variable_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         variable = run.optimization.variables.get_by_name("Variable")
         assert variable.id == 1
 
     def test_variable_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         with pytest.raises(ixmp4.optimization.Variable.NotFound):
             run.optimization.variables.get_by_name("Variable")

@@ -301,7 +301,7 @@ class TestIndexSetComplexData(IndexSetServiceTest):
         service: IndexSetService,
         run: Run,
         caplog: pytest.LogCaptureFixture,
-    ):
+    ) -> None:
         test_data1 = ["do", "re", "mi", "fa", "so", "la", "ti"]
         test_data2 = [3, 1, 4]
         indexset1 = service.create(run.id, "IndexSet 1")
@@ -317,7 +317,7 @@ class TestIndexSetComplexData(IndexSetServiceTest):
         self,
         run: Run,
         equations: EquationService,
-    ):
+    ) -> None:
         equation = equations.create(
             run.id,
             "Equation 1",
@@ -340,7 +340,7 @@ class TestIndexSetComplexData(IndexSetServiceTest):
         run: Run,
         parameters: ParameterService,
         units: UnitService,
-    ):
+    ) -> None:
         units.get_or_create("Unit 1")
         units.get_or_create("Unit 2")
         parameter = parameters.create(
@@ -364,7 +364,7 @@ class TestIndexSetComplexData(IndexSetServiceTest):
         self,
         run: Run,
         tables: TableService,
-    ):
+    ) -> None:
         table = tables.create(
             run.id,
             "Table 1",
@@ -384,7 +384,7 @@ class TestIndexSetComplexData(IndexSetServiceTest):
         self,
         run: Run,
         variables: VariableService,
-    ):
+    ) -> None:
         variable = variables.create(
             run.id,
             "Variable 1",
@@ -409,7 +409,7 @@ class TestIndexSetComplexData(IndexSetServiceTest):
         parameters: ParameterService,
         tables: TableService,
         variables: VariableService,
-    ):
+    ) -> None:
         service.remove_data(1, ["mi", "fa"])
 
         equation = equations.get_by_id(1)
@@ -552,11 +552,12 @@ class TestIndexSetAddInvalidType(IndexSetServiceTest):
         # NOTE: Via HTTP, arguments are validated when the call is made from the client
         # meaning add_data will raise InvalidArguments instead of IndexSetDataInvalid.
         with pytest.raises((IndexSetDataInvalid, InvalidArguments)):
-            service.add_data(indexset.id, [True])
+            service.add_data(indexset.id, [True])  # type: ignore[arg-type]
 
         with pytest.raises((IndexSetDataInvalid, InvalidArguments)):
             service.add_data(
-                indexset.id, [datetime.datetime.now(), datetime.datetime.now()]
+                indexset.id,
+                [datetime.datetime.now(), datetime.datetime.now()],  # type: ignore[arg-type]
             )
 
 

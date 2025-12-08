@@ -485,7 +485,7 @@ class TestVariableDataDataFrame(VariableDataTest):
 class TestVariableInvalidData(VariableServiceTest):
     def test_variables_create(
         self, service: VariableService, indexsets: IndexSetService, run: Run
-    ):
+    ) -> None:
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])

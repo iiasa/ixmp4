@@ -38,7 +38,7 @@ class TestParameter(OptimizationParameterTest):
         run: ixmp4.Run,
         indexset: ixmp4.optimization.IndexSet,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         with run.transact("Create parameters"):
             parameter1 = run.optimization.parameters.create(
                 "Parameter 1", constrained_to_indexsets=["IndexSet"]
@@ -82,7 +82,7 @@ class TestParameter(OptimizationParameterTest):
         assert parameter4.indexset_names == ["IndexSet", "IndexSet"]
         assert parameter4.column_names == ["Column 1", "Column 2"]
 
-    def test_tabulate_parameter(self, run: ixmp4.Run):
+    def test_tabulate_parameter(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.parameters.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -93,28 +93,28 @@ class TestParameter(OptimizationParameterTest):
 
         assert "run__id" not in ret_df.columns
 
-    def test_list_parameter(self, run: ixmp4.Run):
+    def test_list_parameter(self, run: ixmp4.Run) -> None:
         assert len(run.optimization.parameters.list()) == 4
 
-    def test_delete_parameter_via_func_obj(self, run: ixmp4.Run):
+    def test_delete_parameter_via_func_obj(self, run: ixmp4.Run) -> None:
         with run.transact("Delete parameter 1"):
             parameter1 = run.optimization.parameters.get_by_name("Parameter 1")
             run.optimization.parameters.delete(parameter1)
 
-    def test_delete_parameter_via_func_id(self, run: ixmp4.Run):
+    def test_delete_parameter_via_func_id(self, run: ixmp4.Run) -> None:
         with run.transact("Delete parameter 2"):
             run.optimization.parameters.delete(2)
 
-    def test_delete_parameter_via_func_name(self, run: ixmp4.Run):
+    def test_delete_parameter_via_func_name(self, run: ixmp4.Run) -> None:
         with run.transact("Delete parameter 3"):
             run.optimization.parameters.delete("Parameter 3")
 
-    def test_delete_parameter_via_obj(self, run: ixmp4.Run):
+    def test_delete_parameter_via_obj(self, run: ixmp4.Run) -> None:
         parameter4 = run.optimization.parameters.get_by_name("Parameter 4")
         with run.transact("Delete parameter 4"):
             parameter4.delete()
 
-    def test_parameter_empty(self, run: ixmp4.Run):
+    def test_parameter_empty(self, run: ixmp4.Run) -> None:
         assert run.optimization.parameters.tabulate().empty
         assert len(run.optimization.parameters.list()) == 0
 
@@ -338,7 +338,7 @@ class TestParameterDataDataFrame(ParameterDataTest):
 
 
 class TestParameterInvalidData(OptimizationParameterTest):
-    def test_parameters_create(self, platform: ixmp4.Platform, run: ixmp4.Run):
+    def test_parameters_create(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
         platform.units.create("Unit 1")
         platform.units.create("Unit 2")
 
@@ -564,7 +564,7 @@ class TestParameterRollback(OptimizationParameterTest):
         platform: ixmp4.Platform,
         run: ixmp4.Run,
         indexset: ixmp4.optimization.IndexSet,
-    ):
+    ) -> None:
         platform.units.create("Unit 1")
         platform.units.create("Unit 2")
 
@@ -595,7 +595,7 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_versioning_after_add_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
         assert parameter.data == {
             "units": ["Unit 1", "Unit 1", "Unit 2"],
@@ -605,7 +605,7 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_non_versioning_after_add_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
         # NOTE: order is not preserved
         assert parameter.data == {
@@ -614,7 +614,7 @@ class TestParameterRollback(OptimizationParameterTest):
             "IndexSet": ["do", "fa", "mi", "re", "so"],
         }
 
-    def test_parameter_remove_data_failure(self, run: ixmp4.Run):
+    def test_parameter_remove_data_failure(self, run: ixmp4.Run) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
 
         with run.transact("Remove parameter data"):
@@ -629,7 +629,7 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_versioning_after_remove_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
         assert parameter.data == {
             "units": ["Unit 1", "Unit 1", "Unit 2"],
@@ -639,7 +639,7 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_non_versioning_after_remove_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
         assert parameter.data == {
             "units": ["Unit 2"],
@@ -647,7 +647,7 @@ class TestParameterRollback(OptimizationParameterTest):
             "IndexSet": ["mi"],
         }
 
-    def test_parameter_docs_failure(self, run: ixmp4.Run):
+    def test_parameter_docs_failure(self, run: ixmp4.Run) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
 
         try:
@@ -659,13 +659,13 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_after_docs_failure(
         self, platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
         assert parameter.docs == "These docs should persist!"
 
     def test_parameter_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
 
         try:
@@ -678,12 +678,12 @@ class TestParameterRollback(OptimizationParameterTest):
 
     def test_parameter_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         parameter = run.optimization.parameters.get_by_name("Parameter")
         assert parameter.id == 1
 
     def test_parameter_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         with pytest.raises(ixmp4.optimization.Parameter.NotFound):
             run.optimization.parameters.get_by_name("Parameter")

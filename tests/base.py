@@ -9,10 +9,11 @@ from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 class TransportTest(object):
     @classmethod
     def transport_is_pgsql(cls, t: DirectTransport) -> bool:
+        assert t.session.bind is not None
         return t.session.bind.dialect.name == "postgresql"
 
     @classmethod
-    def get_direct_or_skip(cls, transport: Transport):
+    def get_direct_or_skip(cls, transport: Transport) -> DirectTransport:
         if isinstance(transport, DirectTransport):
             return transport
         elif isinstance(transport, HttpxTransport) and transport.direct is not None:

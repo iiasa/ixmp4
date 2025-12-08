@@ -12,7 +12,7 @@ platform = backends.get_platform_fixture(scope="class")
 class TestScenario:
     def test_create_scenario(
         self, platform: ixmp4.Platform, fake_time: datetime.datetime
-    ):
+    ) -> None:
         scenario1 = platform.scenarios.create("Scenario 1")
         scenario2 = platform.scenarios.create("Scenario 2")
         scenario3 = platform.scenarios.create("Scenario 3")
@@ -29,7 +29,7 @@ class TestScenario:
         assert scenario3.id == 3
         assert scenario4.id == 4
 
-    def test_tabulate_scenario(self, platform: ixmp4.Platform):
+    def test_tabulate_scenario(self, platform: ixmp4.Platform) -> None:
         ret_df = platform.scenarios.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -37,24 +37,24 @@ class TestScenario:
         assert "created_at" in ret_df.columns
         assert "created_by" in ret_df.columns
 
-    def test_list_scenario(self, platform: ixmp4.Platform):
+    def test_list_scenario(self, platform: ixmp4.Platform) -> None:
         assert len(platform.scenarios.list()) == 4
 
-    def test_delete_scenario_via_func_obj(self, platform: ixmp4.Platform):
+    def test_delete_scenario_via_func_obj(self, platform: ixmp4.Platform) -> None:
         scenario1 = platform.scenarios.get_by_name("Scenario 1")
         platform.scenarios.delete(scenario1)
 
-    def test_delete_scenario_via_func_id(self, platform: ixmp4.Platform):
+    def test_delete_scenario_via_func_id(self, platform: ixmp4.Platform) -> None:
         platform.scenarios.delete(2)
 
-    def test_delete_scenario_via_func_name(self, platform: ixmp4.Platform):
+    def test_delete_scenario_via_func_name(self, platform: ixmp4.Platform) -> None:
         platform.scenarios.delete("Scenario 3")
 
-    def test_delete_scenario_via_obj(self, platform: ixmp4.Platform):
+    def test_delete_scenario_via_obj(self, platform: ixmp4.Platform) -> None:
         scenario4 = platform.scenarios.get_by_name("Scenario 4")
         scenario4.delete()
 
-    def test_scenarios_empty(self, platform: ixmp4.Platform):
+    def test_scenarios_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.scenarios.tabulate().empty
         assert len(platform.scenarios.list()) == 0
 

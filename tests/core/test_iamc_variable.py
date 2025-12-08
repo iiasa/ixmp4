@@ -12,7 +12,7 @@ platform = backends.get_platform_fixture(scope="class")
 class TestVariable:
     def test_create_variable(
         self, platform: ixmp4.Platform, fake_time: datetime.datetime
-    ):
+    ) -> None:
         variable1 = platform.iamc.variables.create("Variable 1")
         variable2 = platform.iamc.variables.create("Variable 2")
         variable3 = platform.iamc.variables.create("Variable 3")
@@ -29,7 +29,7 @@ class TestVariable:
         assert variable3.id == 3
         assert variable4.id == 4
 
-    def test_tabulate_variable(self, platform: ixmp4.Platform):
+    def test_tabulate_variable(self, platform: ixmp4.Platform) -> None:
         ret_df = platform.iamc.variables.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -37,24 +37,24 @@ class TestVariable:
         assert "created_at" in ret_df.columns
         assert "created_by" in ret_df.columns
 
-    def test_list_variable(self, platform: ixmp4.Platform):
+    def test_list_variable(self, platform: ixmp4.Platform) -> None:
         assert len(platform.iamc.variables.list()) == 4
 
-    def test_delete_variable_via_func_obj(self, platform: ixmp4.Platform):
+    def test_delete_variable_via_func_obj(self, platform: ixmp4.Platform) -> None:
         variable1 = platform.iamc.variables.get_by_name("Variable 1")
         platform.iamc.variables.delete(variable1)
 
-    def test_delete_variable_via_func_id(self, platform: ixmp4.Platform):
+    def test_delete_variable_via_func_id(self, platform: ixmp4.Platform) -> None:
         platform.iamc.variables.delete(2)
 
-    def test_delete_variable_via_func_name(self, platform: ixmp4.Platform):
+    def test_delete_variable_via_func_name(self, platform: ixmp4.Platform) -> None:
         platform.iamc.variables.delete("Variable 3")
 
-    def test_delete_variable_via_obj(self, platform: ixmp4.Platform):
+    def test_delete_variable_via_obj(self, platform: ixmp4.Platform) -> None:
         variable4 = platform.iamc.variables.get_by_name("Variable 4")
         variable4.delete()
 
-    def test_variables_empty(self, platform: ixmp4.Platform):
+    def test_variables_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.iamc.variables.tabulate().empty
         assert len(platform.iamc.variables.list()) == 0
 

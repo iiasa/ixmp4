@@ -34,7 +34,7 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 
 
 @pytest.fixture(scope="class")
-def fake_time():
+def fake_time() -> Generator[datetime, None, None]:
     frozen_time = datetime.now(tz=timezone.utc)
 
     with mock.patch("ixmp4.services.Service.get_datetime", lambda s: frozen_time):

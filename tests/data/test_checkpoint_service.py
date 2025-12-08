@@ -9,7 +9,7 @@ from ixmp4.data.checkpoint.repositories import (
 )
 from ixmp4.data.checkpoint.service import CheckpointService
 from ixmp4.data.run.service import RunService
-from ixmp4.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.transport import Transport
 from tests import backends
 from tests.data.base import ServiceTest
 
@@ -25,15 +25,9 @@ class CheckpointServiceTest(ServiceTest[CheckpointService]):
 
     @pytest.fixture(scope="class")
     def transaction__id(self, transport: Transport) -> int | None:
-        dialect = None
-
-        if isinstance(transport, DirectTransport):
-            dialect = transport.session.bind.engine.dialect
-        elif isinstance(transport, HttpxTransport):
-            if transport.direct is not None:
-                dialect = transport.direct.session.bind.engine.dialect
-
-        assert dialect is not None
+        direct = self.get_direct_or_skip(transport)
+        assert direct.session.bind is not None
+        dialect = direct.session.bind.engine.dialect
 
         # versioning only works on pg databases
         if dialect.name == "postgresql":

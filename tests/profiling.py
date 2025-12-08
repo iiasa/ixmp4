@@ -13,7 +13,7 @@ ProfiledContextManager: TypeAlias = Callable[[], ContextManager[None]]
 @pytest.fixture(scope="function")
 def profiled(
     request: pytest.FixtureRequest,
-) -> Generator[Callable[[], ProfiledContextManager]]:
+) -> Generator[ProfiledContextManager]:
     """Use this fixture for profiling tests:
     ```
     def test(profiled):

@@ -1,7 +1,5 @@
 import datetime
-from typing import Any
 
-import pandas as pd
 import pytest
 
 import ixmp4
@@ -30,7 +28,7 @@ class TestIndexSet(OptimizationIndexSetTest):
         self,
         run: ixmp4.Run,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         with run.transact("Create indexsets"):
             indexset1 = run.optimization.indexsets.create("IndexSet 1")
 
@@ -52,7 +50,7 @@ class TestIndexSet(OptimizationIndexSetTest):
 
         assert indexset4.id == 4
 
-    def test_tabulate_indexset(self, run: ixmp4.Run):
+    def test_tabulate_indexset(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.indexsets.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -63,28 +61,28 @@ class TestIndexSet(OptimizationIndexSetTest):
 
         assert "run__id" not in ret_df.columns
 
-    def test_list_indexset(self, run: ixmp4.Run):
+    def test_list_indexset(self, run: ixmp4.Run) -> None:
         assert len(run.optimization.indexsets.list()) == 4
 
-    def test_delete_indexset_via_func_obj(self, run: ixmp4.Run):
+    def test_delete_indexset_via_func_obj(self, run: ixmp4.Run) -> None:
         with run.transact("Delete indexset 1"):
             indexset1 = run.optimization.indexsets.get_by_name("IndexSet 1")
             run.optimization.indexsets.delete(indexset1)
 
-    def test_delete_indexset_via_func_id(self, run: ixmp4.Run):
+    def test_delete_indexset_via_func_id(self, run: ixmp4.Run) -> None:
         with run.transact("Delete indexset 2"):
             run.optimization.indexsets.delete(2)
 
-    def test_delete_indexset_via_func_name(self, run: ixmp4.Run):
+    def test_delete_indexset_via_func_name(self, run: ixmp4.Run) -> None:
         with run.transact("Delete indexset 3"):
             run.optimization.indexsets.delete("IndexSet 3")
 
-    def test_delete_indexset_via_obj(self, run: ixmp4.Run):
+    def test_delete_indexset_via_obj(self, run: ixmp4.Run) -> None:
         indexset4 = run.optimization.indexsets.get_by_name("IndexSet 4")
         with run.transact("Delete indexset 4"):
             indexset4.delete()
 
-    def test_indexset_empty(self, run: ixmp4.Run):
+    def test_indexset_empty(self, run: ixmp4.Run) -> None:
         assert run.optimization.indexsets.tabulate().empty
         assert len(run.optimization.indexsets.list()) == 0
 
@@ -121,9 +119,6 @@ class IndexSetDataTest(OptimizationIndexSetTest):
             indexset = run.optimization.indexsets.create("IndexSet")
             indexset.add_data(test_data)
 
-        if isinstance(test_data, pd.DataFrame):
-            test_data = test_data.to_dict(orient="list")
-
         if isinstance(test_data, list):
             assert indexset.data == test_data
         else:
@@ -155,16 +150,20 @@ class TestIndexSetDataStringList(IndexSetDataTest):
         return ["do", "re", "mi", "fa", "so", "la", "ti"]
 
     @pytest.fixture(scope="class")
-    def test_data_remove(self) -> dict[str, list[Any]] | pd.DataFrame:
+    def test_data_remove(
+        self,
+    ) -> str | int | float | list[str] | list[int] | list[float]:
         return ["do", "mi", "fa", "so"]
 
     @pytest.fixture(scope="class")
-    def test_data_remaining(self) -> dict[str, list[Any]] | pd.DataFrame:
+    def test_data_remaining(
+        self,
+    ) -> str | int | float | list[str] | list[int] | list[float]:
         return ["re", "la", "ti"]
 
 
 class TestIndexSetAddInvalidData(OptimizationIndexSetTest):
-    def test_indexset_add_invalid_data(self, run: ixmp4.Run):
+    def test_indexset_add_invalid_data(self, run: ixmp4.Run) -> None:
         with run.transact("Add invalid data"):
             indexset = run.optimization.indexsets.create("IndexSet 1")
             assert indexset.id == 1
@@ -172,12 +171,12 @@ class TestIndexSetAddInvalidData(OptimizationIndexSetTest):
             with pytest.raises(
                 (ixmp4.optimization.IndexSet.DataInvalid, InvalidArguments)
             ):
-                indexset.add_data([True])
+                indexset.add_data([True])  # type: ignore[arg-type]
 
             with pytest.raises(
                 (ixmp4.optimization.IndexSet.DataInvalid, InvalidArguments)
             ):
-                indexset.add_data([datetime.datetime.now(), datetime.datetime.now()])
+                indexset.add_data([datetime.datetime.now(), datetime.datetime.now()])  # type: ignore[arg-type]
 
 
 class TestIndexSetAppendInvalidData(OptimizationIndexSetTest):
@@ -286,7 +285,7 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
     def test_indexset_add_data_failure(
         self,
         run: ixmp4.Run,
-    ):
+    ) -> None:
         with run.transact("Add indexset data"):
             indexset = run.optimization.indexsets.create("IndexSet")
             indexset.add_data(["foo", "bar", "baz"])
@@ -300,17 +299,17 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
 
     def test_indexset_versioning_after_add_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.data == ["foo", "bar", "baz"]
 
     def test_indexset_non_versioning_after_add_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.data == ["foo", "bar", "baz", "one", "two", "three"]
 
-    def test_indexset_remove_data_failure(self, run: ixmp4.Run):
+    def test_indexset_remove_data_failure(self, run: ixmp4.Run) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
 
         with run.transact("Remove indexset data"):
@@ -325,17 +324,17 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
 
     def test_indexset_versioning_after_remove_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.data == ["foo", "bar", "baz"]
 
     def test_indexset_non_versioning_after_remove_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.data == ["bar", "baz"]
 
-    def test_indexset_docs_failure(self, run: ixmp4.Run):
+    def test_indexset_docs_failure(self, run: ixmp4.Run) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
 
         try:
@@ -347,11 +346,11 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
 
     def test_indexset_after_docs_failure(
         self, platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.docs == "These docs should persist!"
 
-    def test_indexset_delete_failure(self, run: ixmp4.Run):
+    def test_indexset_delete_failure(self, run: ixmp4.Run) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
 
         try:
@@ -363,12 +362,12 @@ class TestIndexSetRollback(OptimizationIndexSetTest):
 
     def test_indexset_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         indexset = run.optimization.indexsets.get_by_name("IndexSet")
         assert indexset.id == 1
 
     def test_indexset_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         with pytest.raises(ixmp4.optimization.IndexSet.NotFound):
             run.optimization.indexsets.get_by_name("IndexSet")

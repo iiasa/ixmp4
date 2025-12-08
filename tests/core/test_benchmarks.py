@@ -1,6 +1,8 @@
 """This module only contains benchmarks, no assertions are made to validate the
 results."""
 
+from typing import Any
+
 import pandas as pd
 import pytest
 from pytest_benchmark.fixture import BenchmarkFixture
@@ -54,13 +56,13 @@ class TestBenchmarks:
         profiled: ProfiledContextManager,
         benchmark: BenchmarkFixture,
         regions: pd.DataFrame,
-    ):
+    ) -> None:
         def run(mp: ixmp4.Platform) -> None:
             with profiled():
                 for name, hierarchy in regions.itertuples(index=False):
                     mp.regions.create(name, hierarchy)
 
-        benchmark.pedantic(run, args=(platform,))
+        benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
 
     @pytest.mark.benchmark(group="create_units")
     def test_create_units_benchmark(
@@ -69,13 +71,13 @@ class TestBenchmarks:
         profiled: ProfiledContextManager,
         benchmark: BenchmarkFixture,
         units: pd.DataFrame,
-    ):
+    ) -> None:
         def run(mp: ixmp4.Platform) -> None:
             with profiled():
                 for name, *_ in units.itertuples(index=False):
                     mp.units.create(name)
 
-        benchmark.pedantic(run, args=(platform,))
+        benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
 
     @pytest.mark.benchmark(group="create_runs")
     def test_create_runs_benchmark(
@@ -84,7 +86,7 @@ class TestBenchmarks:
         profiled: ProfiledContextManager,
         benchmark: BenchmarkFixture,
         runs: pd.DataFrame,
-    ):
+    ) -> None:
         def run(mp: ixmp4.Platform) -> None:
             with profiled():
                 for model, scenario, version, is_default in runs.itertuples(
@@ -96,23 +98,27 @@ class TestBenchmarks:
                     if is_default:
                         run.set_as_default()
 
-        benchmark.pedantic(run, args=(platform,))
+        benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
 
-    def add_datapoints(self, platform: ixmp4.Platform, datapoints: pd.DataFrame):
-        for run, rows in datapoints.groupby(
+    def add_datapoints(
+        self, platform: ixmp4.Platform, datapoints: pd.DataFrame
+    ) -> None:
+        for run_tuple, rows in datapoints.groupby(
             ["model", "scenario", "version"], group_keys=False
         ):
-            model, scenario, version = run
+            model, scenario, version = run_tuple
             # version is ignored, but should be sequential
             run = platform.runs.get(str(model), str(scenario), int(version))
             with run.transact("Benchmark: Add DataPoints Full"):
                 run.iamc.add(rows.drop(columns=["model", "scenario", "version"]))
 
-    def remove_datapoints(self, platform: ixmp4.Platform, datapoints: pd.DataFrame):
-        for run, rows in datapoints.groupby(
+    def remove_datapoints(
+        self, platform: ixmp4.Platform, datapoints: pd.DataFrame
+    ) -> None:
+        for run_tuple, rows in datapoints.groupby(
             ["model", "scenario", "version"], group_keys=False
         ):
-            model, scenario, version = run
+            model, scenario, version = run_tuple
             # version is ignored, but should be sequential
             run = platform.runs.get(str(model), str(scenario), int(version))
             with run.transact("Benchmark: Remove DataPoints Full"):
@@ -134,7 +140,7 @@ class TestBenchmarks:
             with profiled():
                 self.add_datapoints(mp, datapoints_full_insert)
 
-        benchmark.pedantic(run, args=(platform,))
+        benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
 
     @pytest.mark.benchmark(group="remove_datapoints")
     def test_remove_datapoints_benchmark(
@@ -150,7 +156,7 @@ class TestBenchmarks:
             with profiled():
                 self.remove_datapoints(mp, datapoints_full_insert)
 
-        benchmark.pedantic(run, args=(platform,))
+        benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
 
     @pytest.mark.benchmark(group="upsert_datapoints")
     def test_upsert_datapoints_benchmark(
@@ -163,7 +169,7 @@ class TestBenchmarks:
     ) -> None:
         """Benchmarks a full insert of `test_data_big`."""
 
-        def setup() -> None:
+        def setup() -> tuple[tuple[ixmp4.Platform], dict[str, Any]]:
             self.add_datapoints(platform, datapoints_half_insert)
             return ((platform,), {})
 
@@ -171,7 +177,7 @@ class TestBenchmarks:
             with profiled():
                 self.add_datapoints(mp, datapoints_half_insert_half_update)
 
-        benchmark.pedantic(run, setup=setup)
+        benchmark.pedantic(run, setup=setup)  # type: ignore[no-untyped-call]
 
     @pytest.mark.benchmark(group="tabulate_datapoints")
     def test_tabulate_datapoints_benchmark(
@@ -183,9 +189,9 @@ class TestBenchmarks:
     ) -> None:
         """Benchmarks a full insert of `test_data_big`."""
 
-        def run(mp: ixmp4.Platform) -> None:
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
             with profiled():
                 return mp.iamc.tabulate()
 
-        result = benchmark.pedantic(run, args=(platform,))
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result) == len(datapoints_half_insert_half_update)

@@ -516,7 +516,7 @@ class TestParameterInvalidData(ParameterServiceTest):
         indexsets: IndexSetService,
         units: UnitService,
         run: Run,
-    ):
+    ) -> None:
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])

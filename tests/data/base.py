@@ -2,14 +2,15 @@ from typing import Generic, TypeVar
 
 import pytest
 
+from ixmp4.services import Service
 from ixmp4.transport import Transport
 from tests.base import TransportTest
 
-ServiceT = TypeVar("ServiceT")
+ServiceT = TypeVar("ServiceT", bound=Service)
 
 
 class ServiceTest(TransportTest, Generic[ServiceT]):
-    service_class: ServiceT
+    service_class: type[ServiceT]
 
     @pytest.fixture(scope="class")
     def service(self, transport: Transport) -> ServiceT:

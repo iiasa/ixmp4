@@ -12,7 +12,7 @@ platform = backends.get_platform_fixture(scope="class")
 class TestRegion:
     def test_create_region(
         self, platform: ixmp4.Platform, fake_time: datetime.datetime
-    ):
+    ) -> None:
         region1 = platform.regions.create("Region 1", hierarchy="default")
         region2 = platform.regions.create("Region 2", hierarchy="default")
         region3 = platform.regions.create("Region 3", hierarchy="default")
@@ -30,7 +30,7 @@ class TestRegion:
         assert region3.id == 3
         assert region4.id == 4
 
-    def test_tabulate_region(self, platform: ixmp4.Platform):
+    def test_tabulate_region(self, platform: ixmp4.Platform) -> None:
         ret_df = platform.regions.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -39,24 +39,24 @@ class TestRegion:
         assert "created_at" in ret_df.columns
         assert "created_by" in ret_df.columns
 
-    def test_list_region(self, platform: ixmp4.Platform):
+    def test_list_region(self, platform: ixmp4.Platform) -> None:
         assert len(platform.regions.list()) == 4
 
-    def test_delete_region_via_func_obj(self, platform: ixmp4.Platform):
+    def test_delete_region_via_func_obj(self, platform: ixmp4.Platform) -> None:
         region1 = platform.regions.get_by_name("Region 1")
         platform.regions.delete(region1)
 
-    def test_delete_region_via_func_id(self, platform: ixmp4.Platform):
+    def test_delete_region_via_func_id(self, platform: ixmp4.Platform) -> None:
         platform.regions.delete(2)
 
-    def test_delete_region_via_func_name(self, platform: ixmp4.Platform):
+    def test_delete_region_via_func_name(self, platform: ixmp4.Platform) -> None:
         platform.regions.delete("Region 3")
 
-    def test_delete_region_via_obj(self, platform: ixmp4.Platform):
+    def test_delete_region_via_obj(self, platform: ixmp4.Platform) -> None:
         region4 = platform.regions.get_by_name("Region 4")
         region4.delete()
 
-    def test_regions_empty(self, platform: ixmp4.Platform):
+    def test_regions_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.regions.tabulate().empty
         assert len(platform.regions.list()) == 0
 

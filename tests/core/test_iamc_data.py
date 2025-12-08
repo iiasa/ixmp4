@@ -4,6 +4,7 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
+from ixmp4.data.iamc.datapoint.type import Type
 from tests import backends
 from tests.base import DataFrameTest
 from tests.custom_exception import CustomException
@@ -55,8 +56,8 @@ class IamcDataTest(IamcTest):
         self,
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
-        test_data_type: ixmp4.iamc.DataPoint.Type | None,
-    ):
+        test_data_type: Type | None,
+    ) -> None:
         with run.transact("Full Addition"):
             run.iamc.add(test_data_add, type=test_data_type)
 
@@ -65,8 +66,8 @@ class IamcDataTest(IamcTest):
         platform: ixmp4.Platform,
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
-        test_data_type: ixmp4.iamc.DataPoint.Type | None,
-    ):
+        test_data_type: Type | None,
+    ) -> None:
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             test_data_add, ret.drop(columns=["type"]), check_like=True
@@ -86,8 +87,8 @@ class IamcDataTest(IamcTest):
         self,
         run: ixmp4.Run,
         test_data_remove: pd.DataFrame,
-        test_data_type: ixmp4.iamc.DataPoint.Type | None,
-    ):
+        test_data_type: Type | None,
+    ) -> None:
         with run.transact("Partial Removal"):
             run.iamc.remove(test_data_remove, type=test_data_type)
 
@@ -95,8 +96,8 @@ class IamcDataTest(IamcTest):
         self,
         run: ixmp4.Run,
         test_data_remaining: pd.DataFrame,
-        test_data_type: ixmp4.iamc.DataPoint.Type | None,
-    ):
+        test_data_type: Type | None,
+    ) -> None:
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             test_data_remaining, ret.drop(columns=["type"]), check_like=True
@@ -106,8 +107,8 @@ class IamcDataTest(IamcTest):
         self,
         run: ixmp4.Run,
         test_data_upsert: pd.DataFrame,
-        test_data_type: ixmp4.iamc.DataPoint.Type | None,
-    ):
+        test_data_type: Type | None,
+    ) -> None:
         with run.transact("Upsert"):
             run.iamc.add(test_data_upsert, type=test_data_type)
 
@@ -116,7 +117,7 @@ class IamcDataTest(IamcTest):
         platform: ixmp4.Platform,
         run: ixmp4.Run,
         test_data_upsert: pd.DataFrame,
-    ):
+    ) -> None:
         ret = run.iamc.tabulate()
         ret = ret.drop(columns=["type"])
         pdt.assert_frame_equal(
@@ -142,8 +143,8 @@ class IamcDataTest(IamcTest):
         self,
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
-        test_data_type: ixmp4.iamc.DataPoint.Type | None,
-    ):
+        test_data_type: Type | None,
+    ) -> None:
         test_data_remove_full = test_data_add.drop(columns=["value"])
         with run.transact("Full Removal"):
             run.iamc.remove(test_data_remove_full, type=test_data_type)
@@ -151,7 +152,7 @@ class IamcDataTest(IamcTest):
     def test_iamc_data_tabulate_empty(
         self,
         run: ixmp4.Run,
-    ):
+    ) -> None:
         ret = run.iamc.tabulate()
         assert ret.columns.sort_values().to_list() == [
             "region",
@@ -172,7 +173,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
         test_data_remove: pd.DataFrame,
-    ):
+    ) -> None:
         try:
             with run.transact("Add and remove iamc data failure"):
                 run.iamc.add(test_data_add)
@@ -188,7 +189,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
         test_data_remove: pd.DataFrame,
-    ):
+    ) -> None:
         ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
@@ -202,7 +203,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_remove: pd.DataFrame,
         test_data_remaining: pd.DataFrame,
-    ):
+    ) -> None:
         ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_remaining),
@@ -214,7 +215,7 @@ class IamcDataRollbackTest(IamcTest):
         self,
         run: ixmp4.Run,
         test_data_upsert: pd.DataFrame,
-    ):
+    ) -> None:
         try:
             with run.transact("Upsert iamc data"):
                 run.iamc.add(test_data_upsert)
@@ -227,7 +228,7 @@ class IamcDataRollbackTest(IamcTest):
         versioning_platform: ixmp4.Platform,
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
-    ):
+    ) -> None:
         ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
@@ -240,7 +241,7 @@ class IamcDataRollbackTest(IamcTest):
         non_versioning_platform: ixmp4.Platform,
         run: ixmp4.Run,
         test_data_upsert: pd.DataFrame,
-    ):
+    ) -> None:
         ret = run.iamc.tabulate().drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_upsert),
@@ -320,14 +321,14 @@ class IamcDataAnnual:
 
 class TestIamcDataAnnualInferType(IamcDataAnnual, IamcDataTest):
     @pytest.fixture(scope="class")
-    def test_data_type(self) -> ixmp4.iamc.DataPoint.Type | None:
+    def test_data_type(self) -> Type | None:
         return None
 
 
 class TestIamcDataAnnualWithType(IamcDataAnnual, IamcDataTest):
     @pytest.fixture(scope="class")
-    def test_data_type(self) -> ixmp4.iamc.DataPoint.Type | None:
-        return ixmp4.iamc.DataPoint.Type.ANNUAL
+    def test_data_type(self) -> Type | None:
+        return Type.ANNUAL
 
 
 class TestIamcDataAnnualRollback(IamcDataAnnual, IamcDataRollbackTest):

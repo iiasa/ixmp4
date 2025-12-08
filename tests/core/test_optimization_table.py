@@ -38,7 +38,7 @@ class TestTable(OptimizationTableTest):
         run: ixmp4.Run,
         indexset: ixmp4.optimization.IndexSet,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         with run.transact("Create tables"):
             table1 = run.optimization.tables.create(
                 "Table 1", constrained_to_indexsets=["IndexSet"]
@@ -80,7 +80,7 @@ class TestTable(OptimizationTableTest):
         assert table4.indexset_names == ["IndexSet", "IndexSet"]
         assert table4.column_names == ["Column 1", "Column 2"]
 
-    def test_tabulate_table(self, run: ixmp4.Run):
+    def test_tabulate_table(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.tables.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -91,28 +91,28 @@ class TestTable(OptimizationTableTest):
 
         assert "run__id" not in ret_df.columns
 
-    def test_list_table(self, run: ixmp4.Run):
+    def test_list_table(self, run: ixmp4.Run) -> None:
         assert len(run.optimization.tables.list()) == 4
 
-    def test_delete_table_via_func_obj(self, run: ixmp4.Run):
+    def test_delete_table_via_func_obj(self, run: ixmp4.Run) -> None:
         with run.transact("Delete table 1"):
             table1 = run.optimization.tables.get_by_name("Table 1")
             run.optimization.tables.delete(table1)
 
-    def test_delete_table_via_func_id(self, run: ixmp4.Run):
+    def test_delete_table_via_func_id(self, run: ixmp4.Run) -> None:
         with run.transact("Delete table 2"):
             run.optimization.tables.delete(2)
 
-    def test_delete_table_via_func_name(self, run: ixmp4.Run):
+    def test_delete_table_via_func_name(self, run: ixmp4.Run) -> None:
         with run.transact("Delete table 3"):
             run.optimization.tables.delete("Table 3")
 
-    def test_delete_table_via_obj(self, run: ixmp4.Run):
+    def test_delete_table_via_obj(self, run: ixmp4.Run) -> None:
         table4 = run.optimization.tables.get_by_name("Table 4")
         with run.transact("Delete table 4"):
             table4.delete()
 
-    def test_table_empty(self, run: ixmp4.Run):
+    def test_table_empty(self, run: ixmp4.Run) -> None:
         assert run.optimization.tables.tabulate().empty
         assert len(run.optimization.tables.list()) == 0
 
@@ -318,7 +318,7 @@ class TestTableDataDataFrame(TableDataTest):
 
 
 class TestTableInvalidData(OptimizationTableTest):
-    def test_tables_create(self, run: ixmp4.Run):
+    def test_tables_create(self, run: ixmp4.Run) -> None:
         with run.transact("Create indexsets"):
             indexset1 = run.optimization.indexsets.create("IndexSet 1")
             indexset2 = run.optimization.indexsets.create("IndexSet 2")
@@ -472,7 +472,7 @@ class TestTableDocs(OptimizationTableTest):
 class TestTableRollback(OptimizationTableTest):
     def test_table_add_data_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         with run.transact("Add table data"):
             table = run.optimization.tables.create(
                 "Table", constrained_to_indexsets=[indexset.name]
@@ -496,7 +496,7 @@ class TestTableRollback(OptimizationTableTest):
 
     def test_table_versioning_after_add_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
         assert table.data == {
             "IndexSet": ["do", "re", "mi"],
@@ -504,13 +504,13 @@ class TestTableRollback(OptimizationTableTest):
 
     def test_table_non_versioning_after_add_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
         assert table.data == {
             "IndexSet": ["do", "fa", "mi", "re", "so"],
         }
 
-    def test_table_remove_data_failure(self, run: ixmp4.Run):
+    def test_table_remove_data_failure(self, run: ixmp4.Run) -> None:
         table = run.optimization.tables.get_by_name("Table")
 
         with run.transact("Remove table data"):
@@ -529,7 +529,7 @@ class TestTableRollback(OptimizationTableTest):
 
     def test_table_versioning_after_remove_data_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
         assert table.data == {
             "IndexSet": ["do", "re", "mi"],
@@ -537,13 +537,13 @@ class TestTableRollback(OptimizationTableTest):
 
     def test_table_non_versioning_after_remove_data_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
         assert table.data == {
             "IndexSet": ["mi"],
         }
 
-    def test_table_docs_failure(self, run: ixmp4.Run):
+    def test_table_docs_failure(self, run: ixmp4.Run) -> None:
         table = run.optimization.tables.get_by_name("Table")
 
         try:
@@ -553,13 +553,15 @@ class TestTableRollback(OptimizationTableTest):
         except CustomException:
             pass
 
-    def test_table_after_docs_failure(self, platform: ixmp4.Platform, run: ixmp4.Run):
+    def test_table_after_docs_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
         assert table.docs == "These docs should persist!"
 
     def test_table_delete_failure(
         self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
-    ):
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
 
         try:
@@ -572,12 +574,12 @@ class TestTableRollback(OptimizationTableTest):
 
     def test_table_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         table = run.optimization.tables.get_by_name("Table")
         assert table.id == 1
 
     def test_table_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         with pytest.raises(ixmp4.optimization.Table.NotFound):
             run.optimization.tables.get_by_name("Table")

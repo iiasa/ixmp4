@@ -25,12 +25,12 @@ from tests.fixtures import get_migration_data
 
 
 @pytest.fixture(scope="session")
-def at_revision_c71efc396d2b() -> dict[str, Any]:
+def at_revision_c71efc396d2b() -> list[dict[str, Any]]:
     return get_migration_data("c71efc396d2b")
 
 
 @pytest.fixture
-def alembic_config(at_revision_c71efc396d2b) -> dict[str, Any]:
+def alembic_config(at_revision_c71efc396d2b: list[dict[str, Any]]) -> dict[str, Any]:
     return {
         "script_location": "ixmp4/db/migrations",
         "at_revision_data": {"c71efc396d2b": at_revision_c71efc396d2b},
@@ -48,6 +48,7 @@ def alembic(
     transport: DirectTransport,
 ) -> Generator[MigrationContext, Any, None]:
     config = Config.from_raw_config(alembic_config)
+    assert transport.session.bind is not None
     with transport.session.bind.engine.connect() as conn:
         try:
             conn.execute(sa.text("DROP TABLE alembic_version;"))

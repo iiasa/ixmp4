@@ -53,7 +53,7 @@ class DataPointServiceTest(ServiceTest[DataPointService]):
         self,
         regions: RegionService,
         units: UnitService,
-    ):
+    ) -> None:
         # assume regions and units have been created
         # by a manager
         regions.create("Region 1", "default")
@@ -214,7 +214,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         test_df: pd.DataFrame,
         expected_df: pd.DataFrame,
         infer_type: bool,
-    ):
+    ) -> None:
         upsert_df = test_df.drop(columns=["id"])
         if infer_type:
             upsert_df = upsert_df.drop(columns=["type"])
@@ -229,7 +229,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         test_df: pd.DataFrame,
         expected_df: pd.DataFrame,
         infer_type: bool,
-    ):
+    ) -> None:
         ret_df = service.tabulate()
         pdt.assert_frame_equal(expected_df, ret_df, check_like=True)
 
@@ -252,7 +252,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         test_df: pd.DataFrame,
         expected_df: pd.DataFrame,
         infer_type: bool,
-    ):
+    ) -> None:
         update_df = test_df.drop(columns=["id"])
         if infer_type:
             update_df = update_df.drop(columns=["type"])
@@ -270,7 +270,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         test_df: pd.DataFrame,
         expected_df: pd.DataFrame,
         infer_type: bool,
-    ):
+    ) -> None:
         delete_df = test_df.drop(columns=["id", "value"])
         if infer_type:
             delete_df = delete_df.drop(columns=["type"])
@@ -299,7 +299,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         tx_after_delete: int,
         test_df: pd.DataFrame,
         run: Run,
-    ):
+    ) -> None:
         reverter_repo = DataPointReverterRepository(versioning_service.executor)
 
         # insert revert data
@@ -307,7 +307,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
 
         expected_insert_revert_df["revert_operation_type"] = Operation.DELETE.value
         revert_insert_df = reverter_repo.tabulate_revert_ops(
-            tx_after_insert, 1, run__id=run.id
+            tx_after_insert, 1, run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
         revert_insert_df = self.drop_empty_columns(revert_insert_df)
         pdt.assert_frame_equal(
@@ -318,7 +318,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
 
         # update revert data
         revert_update_df = reverter_repo.tabulate_revert_ops(
-            tx_after_update, tx_after_insert, run__id=run.id
+            tx_after_update, tx_after_insert, run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
         revert_update_df = self.drop_empty_columns(revert_update_df)
 
@@ -332,7 +332,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
 
         # delete revert data
         revert_delete_df = reverter_repo.tabulate_revert_ops(
-            tx_after_delete, tx_after_update, run__id=run.id
+            tx_after_delete, tx_after_update, run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
         revert_delete_df = self.drop_empty_columns(revert_delete_df)
         expected_revert_delete_df = test_df.copy()
@@ -352,7 +352,7 @@ class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
         tx_after_update: int,
         tx_after_delete: int,
         test_df: pd.DataFrame,
-    ):
+    ) -> None:
         # TODO: Uncommit valid_at_tx tests when version filter is implemented
 
         # insert valid version records

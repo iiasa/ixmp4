@@ -69,7 +69,7 @@ class TimeSeriesServiceTest(ServiceTest[TimeSeriesService]):
         self,
         regions: RegionService,
         units: UnitService,
-    ):
+    ) -> None:
         # assume regions and units have been created
         # by a manager
         regions.create("Region 1", "default")
@@ -80,7 +80,7 @@ class TimeSeriesServiceTest(ServiceTest[TimeSeriesService]):
     def create_variables(
         self,
         variables: VariableRepository,
-    ):
+    ) -> None:
         # assume vars have been created
         # by prior insertion
         variables.create({"name": "Variable 1"})

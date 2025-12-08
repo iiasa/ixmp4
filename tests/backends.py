@@ -1,5 +1,5 @@
 import contextlib
-from typing import Generator, Sequence
+from typing import Callable, Generator, Literal, Sequence, cast
 
 import pytest
 import sqlalchemy as sa
@@ -11,31 +11,37 @@ from ixmp4.db.models import get_metadata
 from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
+BackendTypeStr = Literal["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
+ScopeStr = Literal["session", "package", "module", "class", "function"]
 
 
-def validate_backend_type(type_: str) -> str:
+def validate_backend_type(
+    type_: str,
+) -> BackendTypeStr:
     if type_ not in backend_choices:
         raise ValueError(
             f"Backend type '{type_}' is not valid. Expected one of: "
             + ", ".join(backend_choices),
         )
     else:
-        return type_
+        return cast(BackendTypeStr, type_)
 
 
-def get_requested_backends(req_or_meta: pytest.FixtureRequest | pytest.Metafunc):
+def get_requested_backends(
+    req_or_meta: pytest.FixtureRequest | pytest.Metafunc,
+) -> list[BackendTypeStr]:
     be_args = req_or_meta.config.option.backend.split(",")
     backend_types = [validate_backend_type(t.strip()) for t in be_args]
     return backend_types
 
 
 def get_active_backends(
-    cand: Sequence[str], request: pytest.FixtureRequest
-) -> list[str]:
+    cand: Sequence[BackendTypeStr], request: pytest.FixtureRequest
+) -> list[BackendTypeStr]:
     return list(set(cand) & set(get_requested_backends(request)))
 
 
-def get_sorted_tables(meta: sa.MetaData, tables: list[str] | None):
+def get_sorted_tables(meta: sa.MetaData, tables: list[str] | None) -> list[sa.Table]:
     if tables is None:
         return meta.sorted_tables
 
@@ -48,15 +54,19 @@ def get_sorted_tables(meta: sa.MetaData, tables: list[str] | None):
 
 def create_model_tables(
     bind: sa.Engine | sa.Connection, tables: list[str] | None = None
-):
+) -> None:
     meta = get_metadata()
     meta.create_all(bind=bind, tables=meta.sorted_tables, checkfirst=True)
 
 
-def drop_model_tables(bind: sa.Engine | sa.Connection, tables: list[str] | None = None):
+def drop_model_tables(
+    bind: sa.Engine | sa.Connection, tables: list[str] | None = None
+) -> None:
     meta = get_metadata()
     meta.drop_all(
-        bind=bind, tables=reversed(get_sorted_tables(meta, tables)), checkfirst=True
+        bind=bind,
+        tables=list(reversed(get_sorted_tables(meta, tables))),
+        checkfirst=True,
     )
 
 
@@ -67,6 +77,7 @@ def postgresql_transport(
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
     pgsql = DirectTransport.from_dsn(dsn)
+    assert pgsql.session.bind is not None
     if create_tables:
         create_model_tables(pgsql.session.bind.engine)
     yield pgsql
@@ -80,6 +91,7 @@ def sqlite_transport(
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
     sqlite = DirectTransport.from_dsn("sqlite:///:memory:")
+    assert sqlite.session.bind is not None
     if create_tables:
         create_model_tables(sqlite.session.bind.engine)
     yield sqlite
@@ -118,31 +130,33 @@ def transport(
     request: pytest.FixtureRequest,
     dirty_tables: list[str] | None = None,
     create_tables: bool = True,
-) -> Generator[Transport, None, None]:
+) -> contextlib._GeneratorContextManager[Transport, None, None]:
     postgres_dsn = request.config.option.postgres_dsn
     type = request.param
     active_backends = get_active_backends([type], request)
+
     if type not in active_backends:
         pytest.skip("Transport backend is not active. ")
 
     if type == "rest-sqlite":
-        tpt_ctx = httpx_sqlite_transport(
+        return httpx_sqlite_transport(
             dirty_tables=dirty_tables, create_tables=create_tables
         )
     elif type == "rest-postgres":
-        tpt_ctx = httpx_postgresql_transport(
+        return httpx_postgresql_transport(
             postgres_dsn, dirty_tables=dirty_tables, create_tables=create_tables
         )
     elif type == "sqlite":
-        tpt_ctx = sqlite_transport(
-            dirty_tables=dirty_tables, create_tables=create_tables
-        )
+        return sqlite_transport(dirty_tables=dirty_tables, create_tables=create_tables)
     elif type == "postgres":
-        tpt_ctx = postgresql_transport(
+        return postgresql_transport(
             postgres_dsn, dirty_tables=dirty_tables, create_tables=create_tables
         )
-
-    return tpt_ctx
+    else:
+        raise ValueError(
+            f"Backend type '{type}' is not valid. Expected one of: "
+            + ", ".join(backend_choices),
+        )
 
 
 default_backends = ["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
@@ -150,16 +164,16 @@ default_backends = ["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
 
 def get_transport_fixture(
     backends: Sequence[str] | None = None,
-    scope: str = "function",
+    scope: ScopeStr = "function",
     dirty_tables: list[str] | None = None,
     create_tables: bool = True,
-):
+) -> Callable[..., Transport]:
     if backends is None:
         backends = default_backends
 
     def transport_fixture(
-        request: pytest.FixtureRequest, clean_postgres_database: None
-    ) -> Generator[Platform, None, None]:
+        request: pytest.FixtureRequest,
+    ) -> Generator[Transport, None, None]:
         try:
             with transport(
                 request, dirty_tables=dirty_tables, create_tables=create_tables
@@ -168,23 +182,23 @@ def get_transport_fixture(
         except OperationalError as e:
             pytest.skip("Database is not reachable: " + str(e))
 
-    return pytest.fixture(params=backends, scope=scope)(transport_fixture)
+    return pytest.fixture(None, params=list(backends), scope=scope)(transport_fixture)
 
 
 def get_platform_fixture(
     backends: Sequence[str] | None = None,
-    scope: str = "function",
-):
+    scope: ScopeStr = "function",
+) -> Callable[..., Platform]:
     if backends is None:
         backends = default_backends.copy()
 
     def platform_fixture(
-        request: pytest.FixtureRequest, clean_postgres_database: None
+        request: pytest.FixtureRequest,
     ) -> Generator[Platform, None, None]:
         with transport(request) as t:
             yield Platform(_backend=Backend(t))
 
-    return pytest.fixture(params=backends, scope=scope)(platform_fixture)
+    return pytest.fixture(params=list(backends), scope=scope)(platform_fixture)
 
 
 @pytest.fixture(scope="session", autouse=True)

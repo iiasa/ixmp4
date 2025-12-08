@@ -485,7 +485,7 @@ class TestEquationDataDataFrame(EquationDataTest):
 class TestEquationInvalidData(EquationServiceTest):
     def test_equations_create(
         self, service: EquationService, indexsets: IndexSetService, run: Run
-    ):
+    ) -> None:
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])

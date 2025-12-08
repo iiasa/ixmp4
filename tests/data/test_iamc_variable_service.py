@@ -49,7 +49,7 @@ class VariableServiceTest(ServiceTest[VariableService]):
         self,
         regions: RegionService,
         units: UnitService,
-    ):
+    ) -> None:
         # assume regions and units have been created
         # by a manager
         regions.create("Region 1", "default")
@@ -94,7 +94,7 @@ class TestVariableTabulate(VariableServiceTest):
         test_ts_df: pd.DataFrame,
         test_df_expected: pd.DataFrame,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         timeseries.bulk_upsert(test_ts_df)
         ret_df = service.tabulate()
         pdt.assert_frame_equal(test_df_expected, ret_df, check_like=True)

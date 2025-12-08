@@ -37,7 +37,7 @@ class TestScalar(OptimizationScalarTest):
         run: ixmp4.Run,
         unit: ixmp4.Unit,
         fake_time: datetime.datetime,
-    ):
+    ) -> None:
         with run.transact("Create scalars"):
             scalar1 = run.optimization.scalars.create("Scalar 1", 1.2, unit)
             scalar2 = run.optimization.scalars.create("Scalar 2", 2.3, None)
@@ -59,7 +59,7 @@ class TestScalar(OptimizationScalarTest):
 
         assert scalar4.id == 4
 
-    def test_tabulate_scalar(self, run: ixmp4.Run):
+    def test_tabulate_scalar(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.scalars.tabulate()
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
@@ -71,28 +71,28 @@ class TestScalar(OptimizationScalarTest):
 
         assert "run__id" not in ret_df.columns
 
-    def test_list_scalar(self, run: ixmp4.Run):
+    def test_list_scalar(self, run: ixmp4.Run) -> None:
         assert len(run.optimization.scalars.list()) == 4
 
-    def test_delete_scalar_via_func_obj(self, run: ixmp4.Run):
+    def test_delete_scalar_via_func_obj(self, run: ixmp4.Run) -> None:
         with run.transact("Delete scalar 1"):
             scalar1 = run.optimization.scalars.get_by_name("Scalar 1")
             run.optimization.scalars.delete(scalar1)
 
-    def test_delete_scalar_via_func_id(self, run: ixmp4.Run):
+    def test_delete_scalar_via_func_id(self, run: ixmp4.Run) -> None:
         with run.transact("Delete scalar 2"):
             run.optimization.scalars.delete(2)
 
-    def test_delete_scalar_via_func_name(self, run: ixmp4.Run):
+    def test_delete_scalar_via_func_name(self, run: ixmp4.Run) -> None:
         with run.transact("Delete scalar 3"):
             run.optimization.scalars.delete("Scalar 3")
 
-    def test_delete_scalar_via_obj(self, run: ixmp4.Run):
+    def test_delete_scalar_via_obj(self, run: ixmp4.Run) -> None:
         scalar4 = run.optimization.scalars.get_by_name("Scalar 4")
         with run.transact("Delete scalar 4"):
             scalar4.delete()
 
-    def test_scalar_empty(self, run: ixmp4.Run):
+    def test_scalar_empty(self, run: ixmp4.Run) -> None:
         assert run.optimization.scalars.tabulate().empty
         assert len(run.optimization.scalars.list()) == 0
 
@@ -269,7 +269,7 @@ class TestScalarRollback(OptimizationScalarTest):
         self,
         run: ixmp4.Run,
         unit: ixmp4.Unit,
-    ):
+    ) -> None:
         with run.transact("Create scalar"):
             scalar = run.optimization.scalars.create("Scalar", 1, unit)
 
@@ -282,19 +282,19 @@ class TestScalarRollback(OptimizationScalarTest):
 
     def test_scalar_versioning_after_update_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run, unit: ixmp4.Unit
-    ):
+    ) -> None:
         scalar = run.optimization.scalars.get_by_name("Scalar")
         assert scalar.value == 1
         assert scalar.unit.name == unit.name
 
     def test_scalar_non_versioning_after_update_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run, unit: ixmp4.Unit
-    ):
+    ) -> None:
         scalar = run.optimization.scalars.get_by_name("Scalar")
         assert scalar.value == 2.3
         assert scalar.unit.name == unit.name
 
-    def test_scalar_docs_failure(self, run: ixmp4.Run):
+    def test_scalar_docs_failure(self, run: ixmp4.Run) -> None:
         scalar = run.optimization.scalars.get_by_name("Scalar")
 
         try:
@@ -306,11 +306,11 @@ class TestScalarRollback(OptimizationScalarTest):
 
     def test_scalar_after_docs_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         scalar = run.optimization.scalars.get_by_name("Scalar")
         assert scalar.docs == "These docs should persist!"
 
-    def test_scalar_delete_failure(self, run: ixmp4.Run):
+    def test_scalar_delete_failure(self, run: ixmp4.Run) -> None:
         scalar = run.optimization.scalars.get_by_name("Scalar")
 
         try:
@@ -322,12 +322,12 @@ class TestScalarRollback(OptimizationScalarTest):
 
     def test_scalar_versioning_after_delete_failure(
         self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         scalar = run.optimization.scalars.get_by_name("Scalar")
         assert scalar.id == 1
 
     def test_scalar_non_versioning_after_delete_failure(
         self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
-    ):
+    ) -> None:
         with pytest.raises(ixmp4.optimization.Scalar.NotFound):
             run.optimization.scalars.get_by_name("Scalar")

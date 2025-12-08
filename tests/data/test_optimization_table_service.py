@@ -492,7 +492,7 @@ class TestTableDataDataFrame(TableDataTest):
 class TestTableInvalidData(TableServiceTest):
     def test_tables_create(
         self, service: TableService, indexsets: IndexSetService, run: Run
-    ):
+    ) -> None:
         indexset1 = indexsets.create(run.id, "IndexSet 1")
         indexset2 = indexsets.create(run.id, "IndexSet 2")
         indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
