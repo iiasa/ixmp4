@@ -1,14 +1,8 @@
-import json
-from typing import Optional
-
 import typer
 import uvicorn
-from fastapi.openapi.utils import get_openapi
 
 from ixmp4.conf import settings
 from ixmp4.server import Ixmp4Server
-
-from . import utils
 
 app = typer.Typer()
 
@@ -36,22 +30,23 @@ def start(
     )
 
 
-@app.command()
-def dump_schema(
-    output_file: Optional[typer.FileTextWrite] = typer.Option(None, "-o"),
-) -> None:
-    app = Ixmp4Server("schema_secret")
-    schema = get_openapi(
-        title=app.title,
-        version=app.version,
-        openapi_version=app.openapi_version,
-        description=app.description,
-        routes=app.routes,
-    )
-    if output_file is None:
-        utils.echo(json.dumps(schema))
-    else:
-        json.dump(
-            schema,
-            output_file,
-        )
+# TODO
+# @app.command()
+# def dump_schema(
+#     output_file: Optional[typer.FileTextWrite] = typer.Option(None, "-o"),
+# ) -> None:
+#     app = Ixmp4Server("schema_secret")
+#     schema = get_openapi(
+#         title=app.title,
+#         version=app.version,
+#         openapi_version=app.openapi_version,
+#         description=app.description,
+#         routes=app.routes,
+#     )
+#     if output_file is None:
+#         utils.echo(json.dumps(schema))
+#     else:
+#         json.dump(
+#             schema,
+#             output_file,
+#         )
