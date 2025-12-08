@@ -1,25 +1,23 @@
 import abc
-import functools
 from datetime import datetime, timezone
 from typing import (
     TYPE_CHECKING,
     Any,
-    Callable,
     ClassVar,
-    Concatenate,
     ParamSpec,
+    Sequence,
     TypeVar,
 )
 
-import fastapi as fa
 import pandas as pd
 import pandera.pandas as pa
 import sqlalchemy as sa
 from pandera.errors import SchemaError
-from toolkit.auth.context import AuthorizationContext
-from toolkit.manager.models import Ixmp4Instance
+from starlette.applications import Starlette
+from starlette.middleware import Middleware
 
 from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
+from ixmp4.data.base.dto import BaseModel
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -27,8 +25,10 @@ from ixmp4.transport import (
     Transport,
 )
 
+from .middleware import ServiceMiddleware
+
 if TYPE_CHECKING:
-    from .procedures import ServiceProcedure
+    from .procedure import ServiceProcedure
 
 
 TransportT = TypeVar("TransportT", bound=Transport)
@@ -37,7 +37,7 @@ Params = ParamSpec("Params")
 
 
 class Service(abc.ABC):
-    router_tags: ClassVar[list[str]] = []
+    router_tags: ClassVar[Sequence[str]] = []
     router_prefix: ClassVar[str]
     transport: Transport
 
@@ -56,6 +56,7 @@ class Service(abc.ABC):
 
     def get_dialect(self) -> sa.Dialect:
         if isinstance(self.transport, DirectTransport):
+            assert self.transport.session.bind is not None
             return self.transport.session.bind.engine.dialect
         else:
             raise ProgrammingError(
@@ -66,7 +67,7 @@ class Service(abc.ABC):
     def get_datetime(self) -> datetime:
         return datetime.now(tz=timezone.utc)
 
-    def get_username(self):
+    def get_username(self) -> str:
         if isinstance(self.transport, AuthorizedTransport):
             user = self.transport.auth_ctx.user
             if user is None:
@@ -90,52 +91,18 @@ class Service(abc.ABC):
             "updated_at": self.get_datetime(),
         }
 
-    def bind_service_func(
-        self,
-        func: Callable[Concatenate["Service", Params], ReturnT],
-        auth_check_func: Callable[
-            Concatenate["Service", AuthorizationContext, Ixmp4Instance, Params], Any
-        ]
-        | None,
-    ) -> Callable[Params, ReturnT]:
-        bound_func = functools.partial(func, self)
-        transport = self.transport
-
-        if isinstance(transport, AuthorizedTransport) and auth_check_func is not None:
-
-            @functools.wraps(bound_func)
-            def auth_wrapper(*args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
-                auth_check_func(
-                    self,
-                    transport.auth_ctx,
-                    transport.platform,
-                    *args,
-                    **kwargs,
-                )
-                return bound_func(*args, **kwargs)
-
-            return auth_wrapper
-        else:
-            return bound_func
-
     @classmethod
-    def build_router(
-        cls,
-        transport_dep: Callable[..., Any],
-    ) -> fa.APIRouter:
-        def svc_dep(
-            transport: DirectTransport = fa.Depends(transport_dep),
-        ) -> Service:
-            return cls(transport)
+    def get_v1_app(cls) -> Starlette:
+        routes = [proc.get_endpoint().get_route() for proc in cls.collect_procedures()]
 
-        router = fa.APIRouter(prefix=cls.router_prefix, tags=[cls.router_tags])
-        for proc in cls.collect_procedures():
-            proc.register_endpoint(router, svc_dep)
-        return router
+        return Starlette(
+            middleware=[Middleware(ServiceMiddleware, cls)],
+            routes=routes,
+        )
 
     @classmethod
     def collect_procedures(cls) -> "list[ServiceProcedure[Any, Any, Any]]":
-        from .procedures import ServiceProcedure
+        from .procedure import ServiceProcedure
 
         procedures = []
         for attrname in dir(cls):
@@ -152,3 +119,9 @@ class Service(abc.ABC):
             return model.validate(df)
         except SchemaError as e:
             raise InvalidDataFrame(str(e))
+
+
+class GetByIdService(Service):
+    @abc.abstractmethod
+    def get_by_id(self, id: int) -> BaseModel:
+        raise NotImplementedError

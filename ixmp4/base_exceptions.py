@@ -1,4 +1,4 @@
-# TODO Import this from typing when dropping support for 3.10
+from typing import cast
 
 from pydantic import ValidationError
 from toolkit.exceptions import BadGateway as BaseBadGateway
@@ -14,6 +14,7 @@ from toolkit.exceptions import ServiceException
 from toolkit.exceptions import ServiceUnavailable as BaseServiceUnavailable
 from toolkit.exceptions import Unauthorized as BaseUnauthorized
 from toolkit.exceptions.registry import ServiceExceptionRegistry
+from toolkit.exceptions.serviceexception import DataItemType
 
 registry = ServiceExceptionRegistry()
 
@@ -161,14 +162,16 @@ class InvalidDataFrame(BadRequest):
 # == Filters ==
 @registry.register()
 class InvalidArguments(BadRequest):
-    message = "The provided function arguments are invalid."
+    message = "The provide arguments are invalid."
     http_status_code = 400
     http_error_name = "invalid_arguments"
 
-    def __init__(self, validation_error: ValidationError, **data):
+    def __init__(self, validation_error: ValidationError, **data: DataItemType) -> None:
         super().__init__(
-            message=self.message
-            + " Original validation error: \n"
-            + str(validation_error),
+            self.message,
+            self.http_status_code,
+            validation_errors=cast(
+                DataItemType, validation_error.errors(include_url=False)
+            ),
             **data,
         )

@@ -6,12 +6,11 @@ from typing import Any
 
 import httpx
 import sqlalchemy as sa
-from fastapi.testclient import TestClient
 from sqlalchemy import orm
-from toolkit.auth.context import AuthorizationContext
+from starlette.testclient import TestClient
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.client.auth import Auth, ManagerAuth
 from toolkit.client.base import ServiceClient
-from toolkit.manager.models import Ixmp4Instance
 from toolkit.utils import ttl_cache
 
 from ixmp4.conf import settings
@@ -20,7 +19,7 @@ from ixmp4.core.exceptions import registry as exception_registry
 
 
 class Transport(abc.ABC):
-    def check_versioning_compatiblity(self):
+    def check_versioning_compatiblity(self) -> None:
         raise NotImplementedError
 
 
@@ -90,12 +89,14 @@ class DirectTransport(Transport):
             database = self.session.bind.engine.url.database
             return f"dialect={dialect} database={database} host={host}"
 
-    def close(self):
+    def close(self) -> None:
         self.session.rollback()
         self.session.close()
+        assert self.session.bind is not None
         self.session.bind.engine.dispose()
 
-    def check_versioning_compatiblity(self):
+    def check_versioning_compatiblity(self) -> None:
+        assert self.session.bind is not None
         if self.session.bind.engine.dialect.name != "postgresql":
             raise OperationNotSupported(
                 "Versioning is only enabled on 'postgresql' platforms..."
@@ -106,14 +107,14 @@ class DirectTransport(Transport):
 
 
 class AuthorizedTransport(DirectTransport):
-    platform: Ixmp4Instance
+    platform: PlatformProtocol
     auth_ctx: AuthorizationContext
 
     def __init__(
         self,
         session: orm.Session,
         auth_ctx: AuthorizationContext,
-        platform: Ixmp4Instance,
+        platform: PlatformProtocol,
     ):
         super().__init__(
             session,
@@ -124,7 +125,7 @@ class AuthorizedTransport(DirectTransport):
     def __str__(self) -> str:
         return (
             f"<{self.__class__.__name__} {self.get_engine_info()} "
-            f"user={self.auth_ctx.user} platform={self.platform.slug}>"
+            f"user={self.auth_ctx.user} platform={self.platform.id}>"
         )
 
 
@@ -141,7 +142,7 @@ class HttpxTransport(Transport, ServiceClient):
         cache_ttl: int = 60 * 15,
         direct: DirectTransport | None = None,
     ):
-        self.url = client.base_url
+        self.url = str(client.base_url)
         self.executor = ThreadPoolExecutor(max_workers=max_concurrent_requests)
         self.http_client = client
         self.ttl_cache = ttl_cache(cache_ttl)
@@ -160,13 +161,13 @@ class HttpxTransport(Transport, ServiceClient):
 
     @classmethod
     def from_direct(
-        cls, direct: DirectTransport, raise_server_exceptions: bool = False
-    ):
+        cls, direct: DirectTransport, raise_server_exceptions: bool = True
+    ) -> "HttpxTransport":
         # avoid circular import
         # this usually only used in testing contexts
-        from ixmp4.server import get_app
+        from ixmp4.server import Ixmp4Server
 
-        app = get_app(lambda: direct)
+        app = Ixmp4Server(None, override_transport=direct)
         client = TestClient(
             app=app,
             base_url="http://testserver/v1/direct/",
