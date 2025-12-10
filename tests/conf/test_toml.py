@@ -1,3 +1,4 @@
+import inspect
 import tempfile
 from pathlib import Path
 from typing import Protocol
@@ -24,21 +25,27 @@ class HasPath(Protocol):
 class TomlTest:
     def assert_toml_file(self, toml_platforms: HasPath, expected_toml: str) -> None:
         with toml_platforms.path.open() as f:
-            assert f.read() == expected_toml
+            assert inspect.cleandoc(f.read()) == inspect.cleandoc(expected_toml)
 
 
 class TestTomlPlatforms(TomlTest):
     def test_add_platform(self, toml_platforms: TomlPlatforms) -> None:
         toml_platforms.add_platform("test", "test://test/")
 
-        expected_toml = '[test]\ndsn = "test://test/"\n'
+        expected_toml = """
+        [test]
+        dsn = "test://test/"
+        """
         self.assert_toml_file(toml_platforms, expected_toml)
 
         toml_platforms.add_platform("test2", "test2://test2/")
+        expected_toml = """
+        [test]
+        dsn = "test://test/"
 
-        expected_toml = (
-            '[test]\ndsn = "test://test/"\n\n[test2]\ndsn = "test2://test2/"\n'
-        )
+        [test2]
+        dsn = "test2://test2/"
+        """
         self.assert_toml_file(toml_platforms, expected_toml)
 
     def test_platform_unique(self, toml_platforms: TomlPlatforms) -> None:
@@ -47,16 +54,16 @@ class TestTomlPlatforms(TomlTest):
 
     def test_remove_platform(self, toml_platforms: TomlPlatforms) -> None:
         toml_platforms.remove_platform("test")
-        expected_toml = '[test2]\ndsn = "test2://test2/"\n'
-
-        with toml_platforms.path.open() as f:
-            assert f.read() == expected_toml
+        expected_toml = """
+        [test2]
+        dsn = "test2://test2/"
+        """
+        self.assert_toml_file(toml_platforms, expected_toml)
 
         toml_platforms.remove_platform("test2")
         expected_toml = ""
 
-        with toml_platforms.path.open() as f:
-            assert f.read() == expected_toml
+        self.assert_toml_file(toml_platforms, expected_toml)
 
     def test_remove_missing_platform(self, toml_platforms: TomlPlatforms) -> None:
         with pytest.raises(PlatformNotFound):
