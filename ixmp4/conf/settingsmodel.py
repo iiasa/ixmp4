@@ -3,9 +3,9 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
-from typing import Any, Literal
+from typing import Literal
 
-from pydantic import Field, HttpUrl, field_validator
+from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from toolkit.auth.context import AuthorizationContext
 from toolkit.auth.user import ServiceAccount, User
@@ -14,7 +14,7 @@ from toolkit.manager.client import ManagerClient
 
 from ixmp4.base_exceptions import ProgrammingError
 
-from .credentials import Credentials
+from .credentials import Credentials, CredentialsDict
 from .platforms import ManagerPlatforms, TomlPlatforms
 
 logger = logging.getLogger(__name__)
@@ -30,39 +30,60 @@ except NameError:
 _sys_has_ps1 = hasattr(sys, "ps1")
 
 
+class ClientSettings(BaseSettings):
+    default_upload_chunk_size: int = 10_000
+    max_concurrent_requests: int = Field(2, le=4)
+    max_request_retries: int = Field(3)
+    backoff_factor: int = Field(5)
+    timeout: int = Field(30)
+    secret_hs256: SecretStr | None = None
+
+
+class ServerSettings(BaseSettings):
+    manager_url: HttpUrl | None = None
+    toml_platforms: Path | None = None
+    secret_hs256: SecretStr | None = None
+
+    max_page_size: int = 10_000
+    default_page_size: int = 5_000
+
+    def get_self_signed_auth(self, secret_hs256: SecretStr) -> SelfSignedAuth:
+        return SelfSignedAuth(secret_hs256.get_secret_value(), issuer="ixmp4")
+
+    def get_manager_client(
+        self, manager_url: HttpUrl, secret_hs256: SecretStr
+    ) -> ManagerClient:
+        return ManagerClient(str(manager_url), self.get_self_signed_auth(secret_hs256))
+
+    def get_toml_platforms(self, toml_platforms: Path) -> TomlPlatforms:
+        return TomlPlatforms(toml_platforms)
+
+
 class Settings(BaseSettings):
     mode: Literal["production"] | Literal["development"] | Literal["debug"] = (
         "production"
     )
-    storage_directory: Path = Field(Path("~/.local/share/ixmp4/"))
+    storage_directory: Path = Path("~/.local/share/ixmp4/")
+    manager_url: HttpUrl = HttpUrl("https://api.manager.ece.iiasa.ac.at/v1")
 
-    secret_hs256: str | None = None
-    migration_db_uri: str = "sqlite:///./run/db.sqlite"
-    manager_url: HttpUrl = Field(HttpUrl("https://api.manager.ece.iiasa.ac.at/v1"))
+    server: ServerSettings = ServerSettings()
+    client: ClientSettings = ClientSettings()
 
-    # deprecated
-    managed: bool | None = None
+    model_config = SettingsConfigDict(
+        env_prefix="ixmp4_",
+        extra="allow",
+        env_file=".env",
+        env_file_encoding="utf-8",
+    )
 
-    max_page_size: int = 10_000
-    default_page_size: int = 5_000
-    client_default_upload_chunk_size: int = 10_000
-    client_max_concurrent_requests: int = Field(2, le=4)
-    client_max_request_retries: int = Field(3)
-    client_backoff_factor: int = Field(5)
-    client_timeout: int = Field(30)
-
-    model_config = SettingsConfigDict(env_prefix="ixmp4_", extra="allow")
-
-    # We don't pass any args or kwargs, so allow all to flow through
-    def __init__(self, *args: Any, **kwargs: Any) -> None:
-        super().__init__(*args, **kwargs)
-
+    @model_validator(mode="after")
+    def setup(self) -> "Settings":
         self.setup_directories()
 
         if self.is_in_interactive_mode():
             self.configure_logging(self.mode)
 
-        logger.debug(f"Settings loaded: {self}")
+        return self
 
     def is_in_interactive_mode(self) -> bool:
         return _sys_has_ps1 or _in_ipython_session
@@ -82,39 +103,6 @@ class Settings(BaseSettings):
         platform_config = self.get_toml_platforms_path()
         platform_config.touch()
         return TomlPlatforms(platform_config)
-
-    def get_client_auth(self) -> ManagerAuth | SelfSignedAuth | None:
-        if self.secret_hs256 is not None:
-            logger.debug(
-                "Using self-signed http authentication strategy because the"
-                "environment variable `IXMP4_SECRET_HS256` is set."
-            )
-            return SelfSignedAuth(self.secret_hs256, issuer="ixmp4")
-        else:
-            credentials = self.get_credentials()
-            default_creds = credentials.get("default")
-            if default_creds is None:
-                logger.debug(
-                    "Using anonymous http authentication strategy "
-                    "because no local credentials were found."
-                )
-                return None
-            else:
-                logger.debug(
-                    "Using manager http authentication strategy "
-                    "because local credentials were found."
-                )
-                return ManagerAuth(
-                    default_creds["username"],
-                    default_creds["password"],
-                    str(self.manager_url),
-                )
-
-    def get_manager_client(self) -> ManagerClient:
-        return ManagerClient(str(self.manager_url), self.get_client_auth())
-
-    def get_manager_platforms(self) -> ManagerPlatforms:
-        return ManagerPlatforms(self.get_manager_client())
 
     def setup_directories(self) -> None:
         self.storage_directory.mkdir(parents=True, exist_ok=True)
@@ -136,9 +124,6 @@ class Settings(BaseSettings):
             v = Path.cwd() / v
 
         return v
-
-    def get_server_logconf(self) -> Path:
-        return here / "./logging/server.json"
 
     def configure_logging(self, config: str) -> None:
         self.access_file = str((self.log_dir / "access.log").absolute())
@@ -176,18 +161,19 @@ class Settings(BaseSettings):
             user = default_auth.access_token.user
         return user
 
-    def get_local_user(self) -> User:
-        credentials = self.get_credentials()
-        default_creds = credentials.get("default")
-        if default_creds is not None:
-            username = default_creds["username"]
+    def get_local_user(self, credentials: str = "default") -> User:
+        cred_dict = self.get_credentials().get(credentials)
+        if cred_dict is not None:
+            username = cred_dict["username"]
         else:
             username = "@unknown"
 
         return User(id=-1, username=username, email="", groups=[], is_superuser=True)
 
-    def get_manager_auth_context(self) -> AuthorizationContext:
-        manager_client = self.get_manager_client()
+    def get_manager_auth_context(
+        self, credentials: str = "default"
+    ) -> AuthorizationContext:
+        manager_client = self.get_manager_client(credentials=credentials)
         user = self.get_manager_user(manager_client)
 
         if isinstance(user, ServiceAccount):
@@ -195,3 +181,45 @@ class Settings(BaseSettings):
                 "Cannot make `AuthorizationContext` with `ServiceAccount` as `user`."
             )
         return AuthorizationContext(user, manager_client)
+
+    def get_client_auth(
+        self, credentials: CredentialsDict | None
+    ) -> ManagerAuth | SelfSignedAuth | None:
+        if self.client.secret_hs256 is not None:
+            logger.debug(
+                "Using self-signed http authentication strategy because the"
+                "environment variable `IXMP4_CLIENT__SECRET_HS256` is set."
+            )
+            return self.get_self_signed_auth(self.client.secret_hs256)
+        else:
+            if credentials is None:
+                logger.debug(
+                    "Using anonymous http authentication strategy "
+                    "because no local credentials were found."
+                )
+                return None
+            else:
+                logger.debug(
+                    "Using manager http authentication strategy "
+                    "because local credentials were found."
+                )
+                return self.get_manager_auth(self.manager_url, credentials)
+
+    def get_self_signed_auth(self, secret_hs256: SecretStr) -> SelfSignedAuth:
+        return SelfSignedAuth(secret_hs256.get_secret_value(), issuer="ixmp4")
+
+    def get_manager_auth(
+        self, manager_url: HttpUrl, credentials: CredentialsDict
+    ) -> ManagerAuth | None:
+        return ManagerAuth(
+            credentials["username"],
+            credentials["password"],
+            str(manager_url),
+        )
+
+    def get_manager_client(self, credentials: str = "default") -> ManagerClient:
+        cred_dict = self.get_credentials().get(credentials)
+        return ManagerClient(str(self.manager_url), self.get_client_auth(cred_dict))
+
+    def get_manager_platforms(self, credentials: str = "default") -> ManagerPlatforms:
+        return ManagerPlatforms(self.get_manager_client(credentials=credentials))

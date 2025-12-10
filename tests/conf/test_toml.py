@@ -4,9 +4,9 @@ from typing import Protocol
 
 import pytest
 
-from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
 from ixmp4.conf.credentials import Credentials
 from ixmp4.conf.platforms import TomlPlatforms
+from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
 
 
 @pytest.fixture(scope="class")

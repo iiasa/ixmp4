@@ -1,7 +1,7 @@
 import typer
 import uvicorn
 
-from ixmp4.conf import settings
+from ixmp4.conf.settingsmodel import Settings
 from ixmp4.server import Ixmp4Server
 
 app = typer.Typer()
@@ -13,20 +13,17 @@ def start(
     port: int = typer.Option(default=9000, help="Requested server port."),
     workers: int = typer.Option(default=1, help="How many worker threads to start."),
     reload: bool = typer.Option(default=False, help="Whether to hot-reload."),
+    debug: bool = typer.Option(default=False, help="Use debug mode."),
 ) -> None:
     """Starts the ixmp4 web api."""
-    log_config = settings.get_server_logconf()
+    settings = Settings()
+    server = Ixmp4Server(settings.server, debug=debug)
     uvicorn.run(
-        Ixmp4Server(
-            settings.secret_hs256,
-            settings.get_toml_platforms_path(),
-            settings.get_manager_client(),
-        ),
+        server.asgi_app,
         host=host,
         port=port,
         reload=reload,
         workers=workers,
-        log_config=str(log_config.absolute()),
     )
 
 

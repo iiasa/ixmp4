@@ -15,7 +15,7 @@ from toolkit.client.auth import ManagerAuth
 from toolkit.exceptions import InvalidCredentials
 
 from ixmp4.cli import alembic, platforms, server
-from ixmp4.conf import settings
+from ixmp4.conf.settingsmodel import Settings
 
 from . import utils
 
@@ -35,6 +35,7 @@ def login(
         hide_input=True,
     ),
 ) -> None:
+    settings = Settings()
     try:
         auth = ManagerAuth(username, password, str(settings.manager_url))
         user = auth.access_token.user
@@ -59,6 +60,7 @@ def login(
 
 @app.command()
 def logout() -> None:
+    settings = Settings()
     if typer.confirm(
         "Are you sure you want to log out and delete locally saved credentials?"
     ):

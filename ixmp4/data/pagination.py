@@ -2,16 +2,18 @@ from typing import Generic, TypeVar
 
 import pydantic as pyd
 
-from ixmp4.conf import settings
+from ixmp4.conf.settingsmodel import Settings
 
 ResultsT = TypeVar("ResultsT")
+
+default_settings = Settings()
 
 
 class Pagination(pyd.BaseModel):
     limit: int = pyd.Field(
-        default=settings.default_page_size,
+        default=default_settings.server.default_page_size,
         ge=0,
-        le=settings.max_page_size,
+        le=default_settings.server.max_page_size,
     )
     offset: int = pyd.Field(default=0, ge=0)
 

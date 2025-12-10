@@ -5,8 +5,8 @@ from toolkit.db.alembic import AlembicCli, AlembicController
 from typing_extensions import Annotated
 
 from ixmp4.base_exceptions import PlatformNotFound, ServiceException
-from ixmp4.conf import settings
 from ixmp4.conf.platforms import PlatformConnectionInfo
+from ixmp4.conf.settingsmodel import Settings
 from ixmp4.db import __file__ as db_module_dir
 from ixmp4.db.models import get_metadata
 
@@ -25,7 +25,7 @@ def get_alembic_controller(dsn: str) -> AlembicController:
     )
 
 
-def get_connection_info(name: str) -> PlatformConnectionInfo:
+def get_connection_info(settings: Settings, name: str) -> PlatformConnectionInfo:
     toml_platforms = settings.get_toml_platforms()
     platform: PlatformConnectionInfo
     try:
@@ -51,12 +51,12 @@ def get_connection_info(name: str) -> PlatformConnectionInfo:
 
 
 def collect_targets(
-    platform: list[str] | None, toml: bool, manager: bool
+    settings: Settings, *, platform: list[str] | None, toml: bool, manager: bool
 ) -> list[PlatformConnectionInfo]:
     candidates: list[PlatformConnectionInfo] = []
     if platform is not None:
         for pn in platform:
-            candidates.append(get_connection_info(pn))
+            candidates.append(get_connection_info(settings, pn))
 
     if toml:
         toml_platforms = settings.get_toml_platforms()
@@ -110,9 +110,9 @@ def alembic(
     """Runs alembic commands on platform databases.
     Requires '--platform/-p', '--toml' or '--manager' to
     choose command targets."""
-
+    settings = Settings()
     settings.configure_logging("alembic")
-    targets = collect_targets(platform, toml, manager)
+    targets = collect_targets(settings, platform=platform, toml=toml, manager=manager)
 
     if len(targets) == 0:
         raise typer.BadParameter(

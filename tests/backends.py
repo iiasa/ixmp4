@@ -6,8 +6,10 @@ import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError
 
 from ixmp4.backend import Backend
+from ixmp4.conf.settingsmodel import Settings
 from ixmp4.core.platform import Platform
 from ixmp4.db.models import get_metadata
+from ixmp4.server import Ixmp4Server
 from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
@@ -52,20 +54,15 @@ def get_sorted_tables(meta: sa.MetaData, tables: list[str] | None) -> list[sa.Ta
     return sorted_tables
 
 
-def create_model_tables(
-    bind: sa.Engine | sa.Connection, tables: list[str] | None = None
-) -> None:
+def create_model_tables(bind: sa.Engine | sa.Connection) -> None:
     meta = get_metadata()
     meta.create_all(bind=bind, tables=meta.sorted_tables, checkfirst=True)
 
 
-def drop_model_tables(
-    bind: sa.Engine | sa.Connection, tables: list[str] | None = None
-) -> None:
+def drop_model_tables(bind: sa.Engine | sa.Connection) -> None:
     meta = get_metadata()
     meta.drop_all(
         bind=bind,
-        tables=list(reversed(get_sorted_tables(meta, tables))),
         checkfirst=True,
     )
 
@@ -73,7 +70,7 @@ def drop_model_tables(
 @contextlib.contextmanager
 def postgresql_transport(
     dsn: str,
-    dirty_tables: list[str] | None = None,
+    settings: Settings,
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
     pgsql = DirectTransport.from_dsn(dsn)
@@ -82,12 +79,12 @@ def postgresql_transport(
         create_model_tables(pgsql.session.bind.engine)
     yield pgsql
     pgsql.close()
-    drop_model_tables(pgsql.session.bind.engine, dirty_tables)
+    drop_model_tables(pgsql.session.bind.engine)
 
 
 @contextlib.contextmanager
 def sqlite_transport(
-    dirty_tables: list[str] | None = None,
+    settings: Settings,
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
     sqlite = DirectTransport.from_dsn("sqlite:///:memory:")
@@ -103,32 +100,46 @@ def sqlite_transport(
 
 @contextlib.contextmanager
 def httpx_sqlite_transport(
-    dirty_tables: list[str] | None = None,
+    settings: Settings,
     create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
-    with sqlite_transport(
-        dirty_tables=dirty_tables, create_tables=create_tables
-    ) as direct:
-        httpx_sqlite = HttpxTransport.from_direct(direct)
+    with sqlite_transport(settings, create_tables=create_tables) as direct:
+
+        async def get_transport() -> DirectTransport:
+            return direct
+
+        server = Ixmp4Server(
+            settings.server, override_transport=get_transport, debug=True
+        )
+
+        httpx_sqlite = HttpxTransport.from_asgi(
+            server.asgi_app, settings.client, direct
+        )
         yield httpx_sqlite
 
 
 @contextlib.contextmanager
 def httpx_postgresql_transport(
     dsn: str,
-    dirty_tables: list[str] | None = None,
+    settings: Settings,
     create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
-    with postgresql_transport(
-        dsn, dirty_tables=dirty_tables, create_tables=create_tables
-    ) as direct:
-        httpx_pgsql = HttpxTransport.from_direct(direct)
+    with postgresql_transport(dsn, settings, create_tables=create_tables) as direct:
+
+        async def get_transport() -> DirectTransport:
+            return direct
+
+        server = Ixmp4Server(
+            settings.server, override_transport=get_transport, debug=True
+        )
+
+        httpx_pgsql = HttpxTransport.from_asgi(server.asgi_app, settings.client, direct)
         yield httpx_pgsql
 
 
 def transport(
     request: pytest.FixtureRequest,
-    dirty_tables: list[str] | None = None,
+    settings: Settings,
     create_tables: bool = True,
 ) -> contextlib._GeneratorContextManager[Transport, None, None]:
     postgres_dsn = request.config.option.postgres_dsn
@@ -139,18 +150,20 @@ def transport(
         pytest.skip("Transport backend is not active. ")
 
     if type == "rest-sqlite":
-        return httpx_sqlite_transport(
-            dirty_tables=dirty_tables, create_tables=create_tables
-        )
+        return httpx_sqlite_transport(settings, create_tables=create_tables)
     elif type == "rest-postgres":
         return httpx_postgresql_transport(
-            postgres_dsn, dirty_tables=dirty_tables, create_tables=create_tables
+            postgres_dsn,
+            settings,
+            create_tables=create_tables,
         )
     elif type == "sqlite":
-        return sqlite_transport(dirty_tables=dirty_tables, create_tables=create_tables)
+        return sqlite_transport(settings, create_tables=create_tables)
     elif type == "postgres":
         return postgresql_transport(
-            postgres_dsn, dirty_tables=dirty_tables, create_tables=create_tables
+            postgres_dsn,
+            settings,
+            create_tables=create_tables,
         )
     else:
         raise ValueError(
@@ -165,7 +178,6 @@ default_backends = ["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
 def get_transport_fixture(
     backends: Sequence[str] | None = None,
     scope: ScopeStr = "function",
-    dirty_tables: list[str] | None = None,
     create_tables: bool = True,
 ) -> Callable[..., Transport]:
     if backends is None:
@@ -173,10 +185,13 @@ def get_transport_fixture(
 
     def transport_fixture(
         request: pytest.FixtureRequest,
+        settings: Settings,
     ) -> Generator[Transport, None, None]:
         try:
             with transport(
-                request, dirty_tables=dirty_tables, create_tables=create_tables
+                request,
+                settings,
+                create_tables=create_tables,
             ) as t:
                 yield t
         except OperationalError as e:
@@ -194,8 +209,9 @@ def get_platform_fixture(
 
     def platform_fixture(
         request: pytest.FixtureRequest,
+        settings: Settings,
     ) -> Generator[Platform, None, None]:
-        with transport(request) as t:
+        with transport(request, settings) as t:
             yield Platform(_backend=Backend(t))
 
     return pytest.fixture(params=list(backends), scope=scope)(platform_fixture)

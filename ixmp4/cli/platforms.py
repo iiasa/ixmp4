@@ -10,10 +10,11 @@ from rich import box
 from rich.console import Console
 from rich.progress import Progress, track
 from rich.table import Column, Table
+from toolkit.exceptions import ServiceException
 from typing_extensions import Annotated
 
-from ixmp4.base_exceptions import PlatformNotFound, ServiceException
-from ixmp4.conf import settings
+from ixmp4.conf.settingsmodel import Settings
+from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.core.platform import Platform
 from ixmp4.data.generator import MockDataGenerator
 from ixmp4.db import __file__ as db_module_dir
@@ -48,8 +49,7 @@ def validate_dsn(dsn: str | None) -> str | None:
         return dsn
 
 
-def prompt_sqlite_dsn(name: str) -> str:
-    path = settings.get_database_path(name)
+def prompt_sqlite_dsn(name: str, path: Path) -> str:
     dsn = path.absolute().as_uri().replace("file://", "sqlite:///")
 
     if path.exists():
@@ -67,7 +67,6 @@ def prompt_sqlite_dsn(name: str) -> str:
         ):
             utils.echo("Creating the database and running migrations... \n")
 
-            settings.configure_logging("alembic")
             controller = get_alembic_controller(dsn)
             controller.upgrade_database("head")
 
@@ -93,7 +92,10 @@ def add(
         ),
     ] = None,
 ) -> None:
+    settings = Settings()
+    settings.configure_logging("alembic")
     toml_platforms = settings.get_toml_platforms()
+
     try:
         toml_platforms.get_platform(name)
         raise typer.BadParameter(
@@ -107,7 +109,8 @@ def add(
         utils.echo(
             "No DSN supplied, assuming you want to add a local sqlite database..."
         )
-        dsn = prompt_sqlite_dsn(name)
+        path = settings.get_database_path(name)
+        dsn = prompt_sqlite_dsn(name, path)
 
     toml_platforms.add_platform(name, dsn)
     utils.good("\nPlatform added successfully.")
@@ -132,6 +135,7 @@ def remove(
         typer.Argument(help="The string identifier of the platform to remove."),
     ],
 ) -> None:
+    settings = Settings()
     toml_platforms = settings.get_toml_platforms()
     try:
         platform = toml_platforms.get_platform(name)
@@ -149,6 +153,7 @@ def remove(
 
 @app.command("list", help="Lists all registered platforms.")
 def list_() -> None:
+    settings = Settings()
     # TOML Platforms
     toml_platforms = settings.get_toml_platforms()
 
