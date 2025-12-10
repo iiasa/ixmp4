@@ -8,10 +8,14 @@ from litestar.middleware import DefineMiddleware
 from sqlalchemy import orm
 from toolkit.auth.context import AuthorizationContext
 from toolkit.auth.user import User
+from toolkit.client.auth import SelfSignedAuth
+from toolkit.manager.client import ManagerClient
 
 from ixmp4 import data
 from ixmp4.conf.platforms import (
+    ManagerPlatforms,
     PlatformConnectionInfo,
+    TomlPlatforms,
 )
 from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
@@ -88,21 +92,39 @@ class V1HttpApi:
             logger.info(f"   Routes: {[route.path for route in service.router.routes]}")
             self.platform_router.register(service.router)
 
-        middleware = []
-        if settings.secret_hs256 is not None and settings.manager_url is not None:
-            auth_mw = DefineMiddleware(
-                AuthenticationMiddleware,
-                secret_hs256=settings.secret_hs256,
-                manager_url=settings.manager_url,
-            )
-            middleware.append(auth_mw)
+        auth_mw = DefineMiddleware(
+            AuthenticationMiddleware,
+            secret_hs256=settings.secret_hs256,
+        )
 
         self.router = Router(
             "/v1",
-            middleware=middleware,
+            middleware=[auth_mw],
             route_handlers=[self.platform_router],
             exception_handlers={Ixmp4Error: self.service_exception_handler},
         )
+
+    def on_startup(self, app: Litestar) -> None:
+        if (
+            self.settings.manager_url is not None
+            and self.settings.secret_hs256 is not None
+        ):
+            self_signed_auth = SelfSignedAuth(
+                self.settings.secret_hs256.get_secret_value(), issuer="ixmp4"
+            )
+            app.state.manager_client = ManagerClient(
+                str(self.settings.manager_url),
+                self_signed_auth,
+            )
+            app.state.manager_platforms = ManagerPlatforms(app.state.manager_client)
+        else:
+            app.state.manager_client = None
+            app.state.manager_platforms = None
+
+        if self.settings.toml_platforms is not None:
+            app.state.toml_platforms = TomlPlatforms(self.settings.toml_platforms)
+        else:
+            app.state.toml_platforms = None
 
     @staticmethod
     def service_exception_handler(

@@ -101,42 +101,37 @@ class Service(abc.ABC):
     def get_router(cls) -> Router:
         from ixmp4.services.procedure import ServiceProcedure
 
-        routes: list[route] = []
-        for attrname in dir(cls):
-            val = getattr(cls, attrname, None)
-            if isinstance(val, ServiceProcedure):
-                val.endpoint = val.get_endpoint()
-                proc_route = cls.get_procedure_route(val.endpoint)
-                routes.append(proc_route)
-
         async def service_dep(transport: DirectTransport) -> Service:
             return cls(transport)
 
-        return Router(
+        router = Router(
             cls.router_prefix,
-            route_handlers=routes,
+            route_handlers=[],
             dependencies={"service": Provide(service_dep)},
             tags=cls.router_tags,
         )
+
+        for attrname in dir(cls):
+            val = getattr(cls, attrname, None)
+            if isinstance(val, ServiceProcedure):
+                val.endpoint = val.get_endpoint(cls)
+                proc_route = cls.get_procedure_route(val.endpoint)
+                routes = router.register(proc_route)
+                val.endpoint.routes = routes
+
+        return router
 
     @classmethod
     def get_procedure_route(
         cls,
         endpoint: HttpProcedureEndpoint[Any, Any, Any],
     ) -> route:
-        qualname = ".".join(
-            [
-                cls.__module__,
-                cls.__name__,
-                endpoint.procedure.func.__name__,
-            ]
-        )
         handler = route(
             endpoint.path,
             http_method=endpoint.methods,
             status_code=200,
             name=endpoint.name,
-            operation_id=qualname,
+            operation_id=endpoint.name,
             description=endpoint.procedure.func.__doc__,
             summary=endpoint.name,
         )

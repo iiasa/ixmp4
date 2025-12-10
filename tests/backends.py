@@ -111,6 +111,7 @@ def httpx_sqlite_transport(
         server = Ixmp4Server(
             settings.server, override_transport=get_transport, debug=True
         )
+        server.simulate_startup()
 
         httpx_sqlite = HttpxTransport.from_asgi(
             server.asgi_app, settings.client, direct
@@ -132,6 +133,7 @@ def httpx_postgresql_transport(
         server = Ixmp4Server(
             settings.server, override_transport=get_transport, debug=True
         )
+        server.simulate_startup()
 
         httpx_pgsql = HttpxTransport.from_asgi(server.asgi_app, settings.client, direct)
         yield httpx_pgsql

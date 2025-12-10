@@ -199,8 +199,10 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     def connect_httpx_service(self, service: ServiceT) -> Callable[Params, ReturnT]:
         return ServiceProcedureClient(self.endpoint, service)
 
-    def get_endpoint(self) -> HttpProcedureEndpoint[ServiceT, Params, ReturnT]:
-        return HttpProcedureEndpoint(self, self.http_config)
+    def get_endpoint(
+        self, service_class: type["Service"]
+    ) -> HttpProcedureEndpoint[ServiceT, Params, ReturnT]:
+        return HttpProcedureEndpoint(self, service_class, self.http_config)
 
 
 def procedure(

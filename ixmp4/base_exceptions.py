@@ -171,12 +171,23 @@ class InvalidArguments(BadRequest):
     http_status_code = 400
     http_error_name = "invalid_arguments"
 
-    def __init__(self, validation_error: ValidationError, **data: DataItemType) -> None:
-        super().__init__(
-            self.message,
-            self.http_status_code,
-            validation_errors=cast(
+    def __init__(
+        self,
+        message: str | None = None,
+        validation_error: ValidationError | None = None,
+        **data: DataItemType,
+    ) -> None:
+        if validation_error is not None:
+            validation_errors = cast(
                 DataItemType, validation_error.errors(include_url=False)
-            ),
+            )
+
+        else:
+            validation_errors = None
+
+        super().__init__(
+            message or self.message,
+            self.http_status_code,
+            validation_errors=validation_errors,
             **data,
         )

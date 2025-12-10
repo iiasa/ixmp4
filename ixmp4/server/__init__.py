@@ -86,27 +86,8 @@ class Ixmp4Server:
             cors_config=cors_config,
             route_handlers=[self.v1.router],
             openapi_config=openapi_config,
-            on_startup=[self.on_startup],
+            on_startup=[self.v1.on_startup],
         )
 
-    async def on_startup(self, app: Litestar) -> None:
-        if (
-            self.settings.manager_url is not None
-            and self.settings.secret_hs256 is not None
-        ):
-            self_signed_auth = SelfSignedAuth(
-                self.settings.secret_hs256.get_secret_value(), issuer="ixmp4"
-            )
-            app.state.manager_client = ManagerClient(
-                str(self.settings.manager_url),
-                self_signed_auth,
-            )
-            app.state.manager_platforms = ManagerPlatforms(app.state.manager_client)
-        else:
-            app.state.manager_client = None
-            app.state.manager_platforms = None
-
-        if self.settings.toml_platforms is not None:
-            app.state.toml_platforms = TomlPlatforms(self.settings.toml_platforms)
-        else:
-            app.state.toml_platforms = None
+    def simulate_startup(self) -> None:
+        self.v1.on_startup(self.asgi_app)

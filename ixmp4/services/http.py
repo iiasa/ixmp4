@@ -22,8 +22,11 @@ from typing import (
 import httpx
 import pandas as pd
 import pydantic as pyd
-from litestar import HttpMethod, Litestar, Request, Response
+from litestar import HttpMethod, Request, Response
 from litestar.handlers import HTTPRouteHandler
+from litestar.routes import BaseRoute
+from litestar.types.internal_types import PathParameterDefinition
+from litestar.utils.path import join_paths
 from typing_extensions import Unpack
 
 from ixmp4.core.exceptions import InvalidArguments, ProgrammingError
@@ -52,7 +55,7 @@ class HttpConfig(TypedDict):
 class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
     service: ServiceT
     endpoint: "HttpProcedureEndpoint[ServiceT, Params, ReturnT]"
-    route: HTTPRouteHandler
+    route_handler: HTTPRouteHandler
     transport: HttpxTransport
     path: str
     method: str
@@ -65,7 +68,7 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         self.endpoint = endpoint
         self.service = service
         self.method = str(endpoint.methods[0])
-        self.route = self.service.get_procedure_route(self.endpoint)
+        self.route_handler = self.service.get_procedure_route(self.endpoint)
 
         if not isinstance(service.transport, HttpxTransport):
             raise ProgrammingError(
@@ -74,10 +77,26 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
 
         self.transport = service.transport
 
+    def reverse_path(self, route: BaseRoute, path_parameters: dict[str, Any]) -> str:
+        output = []
+        for component in route.path_components:
+            if isinstance(component, PathParameterDefinition):
+                val = path_parameters.get(component.name)
+                if not isinstance(val, component.type):
+                    raise InvalidArguments(
+                        f"Expected value of type `{component.type}` "
+                        f"for path parameter '{component.name}', "
+                        f"got argument of type `{type(val)}` instead."
+                    )
+                output.append(str(val))
+            else:
+                output.append(component)
+        return join_paths(output)
+
     def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
         path_params, payload = self.classify_arguments(*args, **kwargs)
-        app = Litestar(route_handlers=[self.service.router])
-        path = app.route_reverse(self.endpoint.name, **path_params)
+        route = self.endpoint.routes[0]
+        path = self.reverse_path(route, path_params)
 
         json = None
         params = None
@@ -124,7 +143,7 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
                 payload_args, strict=True
             )
         except pyd.ValidationError as e:
-            raise InvalidArguments(e)
+            raise InvalidArguments(validation_error=e)
 
         path_params = path_obj.model_dump(mode="json", exclude_unset=True)
         payload = payload_obj.model_dump(mode="json", exclude_unset=True)
@@ -217,11 +236,14 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
 
 class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
     procedure: "ServiceProcedure[ServiceT, Params, ReturnT]"
+    shortname: str
     name: str
     path: str
     methods: Sequence[HttpMethod] | Sequence[HttpMethodLiteral]
     supports_body: bool
     description: str | None
+    service_class: "type[Service]"
+    routes: "list[BaseRoute]"
 
     path_fields: list[str]
     path_model: type[pyd.BaseModel]
@@ -232,11 +254,16 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
     def __init__(
         self,
         procedure: "ServiceProcedure[ServiceT, Params, ReturnT]",
+        service_class: "type[Service]",
         http_config: HttpConfig,
     ):
         self.procedure = procedure
+        self.service_class = service_class
 
-        self.name = http_config.get("name", procedure.func.__name__)
+        self.shortname = http_config.get("name", procedure.func.__name__)
+        self.name = ".".join(
+            [service_class.__module__, service_class.__name__, self.shortname]
+        )
 
         kebab_func_name = procedure.func.__name__.replace("_", "-")
         self.path = http_config.get("path", "/" + kebab_func_name)
@@ -361,7 +388,7 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
                 payload = self.payload_model.model_validate(query, extra="ignore")
 
         except pyd.ValidationError as e:
-            raise InvalidArguments(e)
+            raise InvalidArguments(validation_error=e)
 
         payload_dict = payload.model_dump(mode="python", exclude_unset=True)
         varargs = payload_dict.pop(varargs_key, [])
