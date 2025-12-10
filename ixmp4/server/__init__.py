@@ -20,8 +20,16 @@ from litestar.openapi import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
 from litestar.openapi.spec.security_scheme import SecurityScheme
+from toolkit.auth.user import User
+from toolkit.client.auth import SelfSignedAuth
+from toolkit.manager.client import ManagerClient
 
-from ixmp4 import __version__
+from ixmp4 import __version__, data
+from ixmp4.conf.platforms import (
+    ManagerPlatforms,
+    PlatformConnectionInfo,
+    TomlPlatforms,
+)
 from ixmp4.conf.settingsmodel import ServerSettings
 
 if TYPE_CHECKING:
@@ -41,6 +49,8 @@ cors_config = CORSConfig(
 
 class Ixmp4Server:
     asgi_app: Litestar
+    settings: ServerSettings
+
     v1: V1HttpApi
 
     def __init__(
@@ -50,6 +60,8 @@ class Ixmp4Server:
         override_transport: "Callable[..., Awaitable[DirectTransport]] | None" = None,
         **kwargs: Any,
     ) -> None:
+        self.settings = settings
+
         bearer_scheme = SecurityScheme(
             "http", scheme="bearer", bearer_format="Bearer <token>"
         )
@@ -74,4 +86,27 @@ class Ixmp4Server:
             cors_config=cors_config,
             route_handlers=[self.v1.router],
             openapi_config=openapi_config,
+            on_startup=[self.on_startup],
         )
+
+    async def on_startup(self, app: Litestar) -> None:
+        if (
+            self.settings.manager_url is not None
+            and self.settings.secret_hs256 is not None
+        ):
+            self_signed_auth = SelfSignedAuth(
+                self.settings.secret_hs256.get_secret_value(), issuer="ixmp4"
+            )
+            app.state.manager_client = ManagerClient(
+                str(self.settings.manager_url),
+                self_signed_auth,
+            )
+            app.state.manager_platforms = ManagerPlatforms(app.state.manager_client)
+        else:
+            app.state.manager_client = None
+            app.state.manager_platforms = None
+
+        if self.settings.toml_platforms is not None:
+            app.state.toml_platforms = TomlPlatforms(self.settings.toml_platforms)
+        else:
+            app.state.toml_platforms = None
