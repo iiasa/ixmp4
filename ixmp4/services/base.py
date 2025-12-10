@@ -1,35 +1,24 @@
 import abc
+import inspect
 from datetime import datetime, timezone
-from typing import (
-    TYPE_CHECKING,
-    Any,
-    ClassVar,
-    ParamSpec,
-    Sequence,
-    TypeVar,
-)
+from typing import Any, ClassVar, ParamSpec, Sequence, TypeVar
 
 import pandas as pd
 import pandera.pandas as pa
 import sqlalchemy as sa
+from litestar import Router, route
+from litestar.di import Provide
 from pandera.errors import SchemaError
-from starlette.applications import Starlette
-from starlette.middleware import Middleware
 
 from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
 from ixmp4.data.base.dto import BaseModel
+from ixmp4.services.http import HttpProcedureEndpoint
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
     HttpxTransport,
     Transport,
 )
-
-from .middleware import ServiceMiddleware
-
-if TYPE_CHECKING:
-    from .procedure import ServiceProcedure
-
 
 TransportT = TypeVar("TransportT", bound=Transport)
 ReturnT = TypeVar("ReturnT")
@@ -39,6 +28,7 @@ Params = ParamSpec("Params")
 class Service(abc.ABC):
     router_tags: ClassVar[Sequence[str]] = []
     router_prefix: ClassVar[str]
+    router: ClassVar[Router]
     transport: Transport
 
     def __init__(self, transport: Transport):
@@ -47,6 +37,14 @@ class Service(abc.ABC):
             self.__init_direct__(transport)
         elif isinstance(transport, HttpxTransport):
             self.__init_httpx__(transport)
+
+    def __init_subclass__(cls, **kwargs: Any) -> None:
+        super().__init_subclass__(**kwargs)
+        if getattr(cls, "__abstract__", False):
+            setattr(cls, "__abstract__", False)
+            return
+        if not inspect.isabstract(cls):
+            cls.router = cls.get_router()
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         pass
@@ -91,27 +89,6 @@ class Service(abc.ABC):
             "updated_at": self.get_datetime(),
         }
 
-    @classmethod
-    def get_v1_app(cls) -> Starlette:
-        routes = [proc.get_endpoint().get_route() for proc in cls.collect_procedures()]
-
-        return Starlette(
-            middleware=[Middleware(ServiceMiddleware, cls)],
-            routes=routes,
-        )
-
-    @classmethod
-    def collect_procedures(cls) -> "list[ServiceProcedure[Any, Any, Any]]":
-        from .procedure import ServiceProcedure
-
-        procedures = []
-        for attrname in dir(cls):
-            val = getattr(cls, attrname)
-            if isinstance(val, ServiceProcedure):
-                procedures.append(val)
-
-        return procedures
-
     def validate_df_or_raise(
         self, df: pd.DataFrame, model: type[pa.DataFrameModel]
     ) -> pd.DataFrame:
@@ -119,6 +96,51 @@ class Service(abc.ABC):
             return model.validate(df)
         except SchemaError as e:
             raise InvalidDataFrame(str(e))
+
+    @classmethod
+    def get_router(cls) -> Router:
+        from ixmp4.services.procedure import ServiceProcedure
+
+        routes: list[route] = []
+        for attrname in dir(cls):
+            val = getattr(cls, attrname, None)
+            if isinstance(val, ServiceProcedure):
+                val.endpoint = val.get_endpoint()
+                proc_route = cls.get_procedure_route(val.endpoint)
+                routes.append(proc_route)
+
+        async def service_dep(transport: DirectTransport) -> Service:
+            return cls(transport)
+
+        return Router(
+            cls.router_prefix,
+            route_handlers=routes,
+            dependencies={"service": Provide(service_dep)},
+            tags=cls.router_tags,
+        )
+
+    @classmethod
+    def get_procedure_route(
+        cls,
+        endpoint: HttpProcedureEndpoint[Any, Any, Any],
+    ) -> route:
+        qualname = ".".join(
+            [
+                cls.__module__,
+                cls.__name__,
+                endpoint.procedure.func.__name__,
+            ]
+        )
+        handler = route(
+            endpoint.path,
+            http_method=endpoint.methods,
+            status_code=200,
+            name=endpoint.name,
+            operation_id=qualname,
+            description=endpoint.procedure.func.__doc__,
+            summary=endpoint.name,
+        )
+        return handler(endpoint.handle_request)
 
 
 class GetByIdService(Service):

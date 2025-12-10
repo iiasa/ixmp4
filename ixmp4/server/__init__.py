@@ -12,44 +12,66 @@ This will start ixmp4’s asgi server. Check
 """
 
 import logging
-from pathlib import Path
-from typing import TYPE_CHECKING, Any, Sequence
+from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
-from starlette.applications import Starlette
-from toolkit.manager.client import ManagerClient
+from litestar import Litestar
+from litestar.config.cors import CORSConfig
+from litestar.openapi import OpenAPIConfig
+from litestar.openapi.plugins import ScalarRenderPlugin
+from litestar.openapi.spec.components import Components
+from litestar.openapi.spec.security_scheme import SecurityScheme
+
+from ixmp4 import __version__
+from ixmp4.conf.settingsmodel import ServerSettings
 
 if TYPE_CHECKING:
-    from ixmp4.services import Service
     from ixmp4.transport import DirectTransport
 
-from . import v1
+from .v1 import V1HttpApi
 
 logger = logging.getLogger(__name__)
 
+cors_config = CORSConfig(
+    allow_origins=["*"],
+    allow_credentials=True,
+    allow_methods=["*"],
+    allow_headers=["*"],
+)
 
-class Ixmp4Server(Starlette):
+
+class Ixmp4Server:
+    asgi_app: Litestar
+    v1: V1HttpApi
+
     def __init__(
         self,
-        secret_hs256: str | None,
-        toml_file: Path | None = None,
-        manager_client: ManagerClient | None = None,
-        override_transport: "DirectTransport | None" = None,
-        service_classes: Sequence[type["Service"]] | None = None,
+        settings: ServerSettings,
+        debug: bool = False,
+        override_transport: "Callable[..., Awaitable[DirectTransport]] | None" = None,
         **kwargs: Any,
     ) -> None:
-        super().__init__(**kwargs)
+        bearer_scheme = SecurityScheme(
+            "http", scheme="bearer", bearer_format="Bearer <token>"
+        )
+        openapi_config = OpenAPIConfig(
+            title="IXMP4",
+            version=__version__,
+            render_plugins=[ScalarRenderPlugin()],
+            components=Components(security_schemes={"default": bearer_scheme}),
+        )
 
-        if secret_hs256 is None:
+        if settings.secret_hs256 is None:
             logger.warning(
                 "Starting server with no token secret and disabling authentication. "
             )
-        self.mount(
-            "/v1",
-            v1.V1Application(
-                secret_hs256,
-                toml_file=toml_file,
-                manager_client=manager_client,
-                service_classes=service_classes,
-                override_transport=override_transport,
-            ),
+
+        self.v1 = V1HttpApi(
+            settings,
+            override_transport=override_transport,
+        )
+        self.asgi_app = Litestar(
+            debug=debug,
+            cors_config=cors_config,
+            route_handlers=[self.v1.router],
+            openapi_config=openapi_config,
         )

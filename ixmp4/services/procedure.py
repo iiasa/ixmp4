@@ -68,6 +68,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     paginated_func: ProcedurePaginatedFunc[ServiceT, Params, PaginatedResult[ReturnT]]
     paginated_signature: inspect.Signature
     http_config: HttpConfig
+    endpoint: HttpProcedureEndpoint[ServiceT, Params, ReturnT]
 
     def __init__(
         self,
@@ -196,7 +197,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         return self.maybe_add_auth_check(service, bound_func)
 
     def connect_httpx_service(self, service: ServiceT) -> Callable[Params, ReturnT]:
-        return ServiceProcedureClient(self.get_endpoint(), service)
+        return ServiceProcedureClient(self.endpoint, service)
 
     def get_endpoint(self) -> HttpProcedureEndpoint[ServiceT, Params, ReturnT]:
         return HttpProcedureEndpoint(self, self.http_config)

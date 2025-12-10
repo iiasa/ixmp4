@@ -1,7 +1,6 @@
 import functools
 import inspect
 from concurrent import futures
-from json import JSONDecodeError
 from string import Formatter
 from typing import (
     TYPE_CHECKING,
@@ -11,6 +10,7 @@ from typing import (
     Literal,
     NotRequired,
     ParamSpec,
+    Sequence,
     TypedDict,
     TypeVar,
     cast,
@@ -22,9 +22,8 @@ from typing import (
 import httpx
 import pandas as pd
 import pydantic as pyd
-from starlette.requests import Request
-from starlette.responses import Response
-from starlette.routing import Route
+from litestar import HttpMethod, Litestar, Request, Response
+from litestar.handlers import HTTPRouteHandler
 from typing_extensions import Unpack
 
 from ixmp4.core.exceptions import InvalidArguments, ProgrammingError
@@ -39,17 +38,21 @@ ReturnT = TypeVar("ReturnT")
 Params = ParamSpec("Params")
 ServiceT = TypeVar("ServiceT", bound="Service")
 
+HttpMethodLiteral = Literal[
+    "GET", "POST", "DELETE", "PATCH", "PUT", "HEAD", "TRACE", "OPTIONS"
+]
+
 
 class HttpConfig(TypedDict):
     name: NotRequired[str]
     path: NotRequired[str]
-    methods: NotRequired[list[str]]
+    methods: NotRequired[Sequence[HttpMethod] | Sequence[HttpMethodLiteral]]
 
 
 class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
     service: ServiceT
     endpoint: "HttpProcedureEndpoint[ServiceT, Params, ReturnT]"
-    route: Route
+    route: HTTPRouteHandler
     transport: HttpxTransport
     path: str
     method: str
@@ -61,9 +64,9 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
     ):
         self.endpoint = endpoint
         self.service = service
-        self.method = endpoint.methods[0]
+        self.method = str(endpoint.methods[0])
+        self.route = self.service.get_procedure_route(self.endpoint)
 
-        self.route = endpoint.get_route()
         if not isinstance(service.transport, HttpxTransport):
             raise ProgrammingError(
                 f"Cannot instantiate http client for transport: {service.transport}"
@@ -73,8 +76,9 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
 
     def __call__(self, *args: Params.args, **kwargs: Params.kwargs) -> ReturnT:
         path_params, payload = self.classify_arguments(*args, **kwargs)
-        path = str(self.route.url_path_for(self.route.name, **path_params))
-        path = self.service.router_prefix + path
+        app = Litestar(route_handlers=[self.service.router])
+        path = app.route_reverse(self.endpoint.name, **path_params)
+
         json = None
         params = None
 
@@ -92,7 +96,7 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         if self.endpoint.procedure.has_paginated_func:
             return self.handle_paginated_response(res, path, params=params, json=json)
         else:
-            return self.endpoint.result_adapter.validate_python(res.json())
+            return self.validate_return_dto(res.text)
 
     def pos_args_to_named(self, args: tuple[Any]) -> dict[str, Any]:
         arg_names = [
@@ -126,9 +130,6 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         payload = payload_obj.model_dump(mode="json", exclude_unset=True)
         return path_params, payload
 
-    def validate_result(self, value: Any) -> ReturnT:
-        return self.endpoint.result_adapter.validate_python(value)
-
     def handle_paginated_response(
         self,
         response: httpx.Response,
@@ -136,9 +137,8 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         params: dict[str, Any] | None,
         json: dict[str, Any] | None,
     ) -> ReturnT:
-        json = response.json()
-        result: PaginatedResult[ReturnT] = PaginatedResult.model_validate(json)
-        result_items = [self.validate_result(result.results)]
+        result = self.validate_paginated_return_dto(response.text)
+        result_items = [result.results]
 
         if result.total >= (result.pagination.offset + result.pagination.limit):
             # TODO: We could check if the `total` changed
@@ -184,9 +184,8 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
 
         for res in responses:
             self.transport.raise_service_exception(res)
-            page: PaginatedResult[ReturnT] = PaginatedResult.model_validate(res.json())
-            result = self.validate_result(page.results)
-            pagination_results.append(result)
+            result = self.validate_paginated_return_dto(res.text)
+            pagination_results.append(result.results)
 
         return pagination_results
 
@@ -209,21 +208,26 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
     def merge_lists(self, results: list[list[Any]]) -> list[Any]:
         return [i for page in results for i in page]
 
+    def validate_return_dto(self, data: str) -> ReturnT:
+        return self.endpoint.return_type_adapter.validate_json(data)
+
+    def validate_paginated_return_dto(self, data: str) -> PaginatedResult[Any]:
+        return self.endpoint.paginated_return_type_adapter.validate_json(data)
+
 
 class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
     procedure: "ServiceProcedure[ServiceT, Params, ReturnT]"
     name: str
     path: str
-    methods: list[str]
+    methods: Sequence[HttpMethod] | Sequence[HttpMethodLiteral]
     supports_body: bool
     description: str | None
 
     path_fields: list[str]
     path_model: type[pyd.BaseModel]
     payload_model: type[pyd.BaseModel]
-
-    result_adapter: pyd.TypeAdapter[ReturnT]
-    paginated_result_adapter: pyd.TypeAdapter[PaginatedResult[ReturnT]]
+    return_type_adapter: pyd.TypeAdapter[ReturnT]
+    paginated_return_type_adapter: pyd.TypeAdapter[PaginatedResult[Any]]
 
     def __init__(
         self,
@@ -237,9 +241,9 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
         kebab_func_name = procedure.func.__name__.replace("_", "-")
         self.path = http_config.get("path", "/" + kebab_func_name)
 
-        self.methods = http_config.get("methods", ["POST"])
+        self.methods = http_config.get("methods", [HttpMethod.POST])
         if len(self.methods) == 0:
-            self.methods = ["POST"]
+            self.methods = [HttpMethod.POST]
 
         self.description = procedure.func.__doc__
 
@@ -249,11 +253,13 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
         self.path_model = self.build_path_model(self.path_fields)
         self.payload_model = self.build_payload_model(self.path_fields)
 
-        self.result_adapter = pyd.TypeAdapter(procedure.signature.return_annotation)
+        self.return_type_adapter = pyd.TypeAdapter(
+            self.procedure.signature.return_annotation
+        )
 
         if self.procedure.has_paginated_func:
-            self.paginated_result_adapter = pyd.TypeAdapter(
-                procedure.paginated_signature.return_annotation
+            self.paginated_return_type_adapter = pyd.TypeAdapter(
+                self.procedure.paginated_signature.return_annotation
             )
 
     def get_path_fields(self, path: str) -> list[str]:
@@ -295,9 +301,17 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
 
     def get_pagination_params(self, query_params: dict[str, Any]) -> Pagination:
         pagination = Pagination.model_validate(query_params, extra="ignore")
-        query_params.pop("limit", None)
-        query_params.pop("offset", None)
         return pagination
+
+    def wrap_return_serializer(
+        self, func: Callable[Params, Any], type_adapter: pyd.TypeAdapter[Any]
+    ) -> Callable[Params, bytes]:
+        @functools.wraps(func)
+        def wrapper(*args: Params.args, **kwargs: Params.kwargs) -> bytes:
+            result = func(*args, **kwargs)
+            return type_adapter.dump_json(result)
+
+        return wrapper
 
     def bind_endpoint_func(
         self, service: ServiceT, query_params: dict[str, Any]
@@ -308,67 +322,52 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
             bound_func = functools.partial(
                 self.procedure.paginated_func, service, pagination
             )
+            bound_func = self.wrap_return_serializer(
+                bound_func, self.paginated_return_type_adapter
+            )
         else:
             bound_func = functools.partial(self.procedure.func, service)
+            bound_func = self.wrap_return_serializer(
+                bound_func, self.return_type_adapter
+            )
 
         auth_func = self.procedure.maybe_add_auth_check(service, bound_func)
         return auth_func
 
-    async def handle_request(self, request: Request) -> Response:
-        path_params = dict(request.path_params)
-        path_params.pop("platform", None)
-
-        query_params = dict(request.query_params)
-        try:
-            json_params = await request.json()
-        except JSONDecodeError:
-            json_params = {}
-
-        service = cast(ServiceT, request.state.service)
-        bound_func = self.bind_endpoint_func(service, query_params)
-        args, kwargs = await self.build_call_args(
-            path_params, query_params, json_params
-        )
-        result = bound_func(*args, **kwargs)
-
-        if self.procedure.has_paginated_func:
-            content = self.paginated_result_adapter.dump_json(result)
-        else:
-            content = self.result_adapter.dump_json(result)
-
-        return Response(content, media_type="application/json")
-
-    def get_route(self) -> Route:
-        return Route(
-            self.path,
-            self.handle_request,
-            name=self.name,
-            methods=self.methods,
-        )
-
-    async def build_call_args(
+    async def handle_request(
         self,
-        path_params: dict[str, Any],
-        query_params: dict[str, Any],
-        json_params: dict[str, Any],
+        request: Request[Any, Any, Any],
+        service: Any,
+        query: dict[str, Any],
+        body: bytes,
+    ) -> Response[Any]:
+        bound_func = self.bind_endpoint_func(cast(ServiceT, service), query)
+        args, kwargs = self.build_call_args(request.path_params, query, body)
+        result = bound_func(*args, **kwargs)
+        return Response(result, media_type="application/json")
+
+    def build_call_args(
+        self,
+        path: dict[str, Any],
+        query: dict[str, Any],
+        body: bytes,
         varargs_key: str = "__varargs__",
     ) -> tuple[tuple[Any, ...], dict[str, Any]]:
-        if self.supports_body:
-            payload = json_params
-        else:
-            payload = query_params
-
         try:
-            path_obj = self.path_model.model_validate(path_params)
-            payload_obj = self.payload_model.model_validate(payload)
+            path_params = self.path_model.model_validate(path)
+            if self.supports_body:
+                payload = self.payload_model.model_validate_json(body)
+            else:
+                payload = self.payload_model.model_validate(query, extra="ignore")
+
         except pyd.ValidationError as e:
             raise InvalidArguments(e)
 
-        payload = dict(((k, v) for k, v in dict(payload_obj).items() if v is not None))
-        varargs = payload.pop(varargs_key, [])
+        payload_dict = payload.model_dump(mode="python", exclude_unset=True)
+        varargs = payload_dict.pop(varargs_key, [])
 
         bound_params = self.procedure.signature.bind(
-            *varargs, **dict(path_obj), **payload
+            *varargs, **path_params.model_dump(mode="python"), **payload_dict
         )
         return bound_params.args, bound_params.kwargs
 
@@ -383,7 +382,7 @@ def generate_arguments_model(
     varargs_key: str = "__varargs__",
 ) -> type[pyd.BaseModel]:
     fields: dict[str, Any] = {}
-    model_config = pyd.ConfigDict()
+    model_config = pyd.ConfigDict(arbitrary_types_allowed=True)
 
     for index, (name, param) in enumerate(signature.parameters.items()):
         if parameter_callback(index, name, param) == "skip":

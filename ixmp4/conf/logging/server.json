@@ -12,7 +12,7 @@
       "level": "NOTSET",
       "formatter": "generic"
     },
-    "starlette": {
+    "litestar": {
       "level": "NOTSET"
     },
     "httpx": {
