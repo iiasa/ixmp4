@@ -43,6 +43,7 @@ class Service(abc.ABC):
         if getattr(cls, "__abstract__", False):
             setattr(cls, "__abstract__", False)
             return
+
         if not inspect.isabstract(cls):
             cls.router = cls.get_router()
 
@@ -114,10 +115,11 @@ class Service(abc.ABC):
         for attrname in dir(cls):
             val = getattr(cls, attrname, None)
             if isinstance(val, ServiceProcedure):
-                val.endpoint = val.get_endpoint(cls)
-                proc_route = cls.get_procedure_route(val.endpoint)
+                endpoint = val.get_endpoint(cls)
+                proc_route = cls.get_procedure_route(endpoint)
                 routes = router.register(proc_route)
-                val.endpoint.routes = routes
+                endpoint.routes = routes
+                val.endpoints[cls] = endpoint
 
         return router
 

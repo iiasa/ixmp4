@@ -68,7 +68,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     paginated_func: ProcedurePaginatedFunc[ServiceT, Params, PaginatedResult[ReturnT]]
     paginated_signature: inspect.Signature
     http_config: HttpConfig
-    endpoint: HttpProcedureEndpoint[ServiceT, Params, ReturnT]
+    endpoints: dict[type[Service], HttpProcedureEndpoint[ServiceT, Params, ReturnT]]
 
     def __init__(
         self,
@@ -78,6 +78,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         self.func = func
         self.signature = self.parse_signature(self.func)
         self.http_config = http_config or HttpConfig()
+        self.endpoints = {}
 
     # provides type hints for service methods
     def __call__(self, *args: Params.args, **kwds: Params.kwargs) -> ReturnT:
@@ -197,7 +198,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         return self.maybe_add_auth_check(service, bound_func)
 
     def connect_httpx_service(self, service: ServiceT) -> Callable[Params, ReturnT]:
-        return ServiceProcedureClient(self.endpoint, service)
+        return ServiceProcedureClient(self.endpoints[type(service)], service)
 
     def get_endpoint(
         self, service_class: type["Service"]
