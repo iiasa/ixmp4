@@ -7,7 +7,7 @@ from toolkit.exceptions import ConstraintViolated as BaseConstraintViolated
 from toolkit.exceptions import Forbidden as BaseForbidden
 from toolkit.exceptions import NotFound as BaseNotFound
 from toolkit.exceptions import NotUnique as BaseNotUnique
-from toolkit.exceptions import PlatformNotFound as PlatformNotFound
+from toolkit.exceptions import PlatformNotFound as BasePlatformNotFound
 from toolkit.exceptions import ProgrammingError as ProgrammingError
 from toolkit.exceptions import ServerError as BaseServerError
 from toolkit.exceptions import ServiceException
@@ -105,6 +105,11 @@ class UnknownApiError(Ixmp4Error):
 @registry.register()
 class ApiEncumbered(Ixmp4Error):
     http_error_name = "api_encumbered"
+
+
+@registry.register()
+class PlatformNotFound(NotFound, BasePlatformNotFound, Ixmp4Error):
+    pass
 
 
 @registry.register()
