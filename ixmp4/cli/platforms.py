@@ -2,24 +2,31 @@ import re
 from collections.abc import Generator, Iterator
 from itertools import cycle
 from pathlib import Path
-from typing import Any, Optional, TypeVar
+from typing import Any, TypeVar
 
+import sqlalchemy as sa
 import typer
+from rich import box
+from rich.console import Console
 from rich.progress import Progress, track
-from sqlalchemy.exc import OperationalError
+from rich.table import Column, Table
+from toolkit.exceptions import ServiceException
+from typing_extensions import Annotated
 
-from ixmp4.conf import settings
-from ixmp4.conf.auth import SelfSignedAuth
-from ixmp4.conf.manager import ManagerConfig, ManagerPlatformInfo
-from ixmp4.conf.toml import TomlPlatformInfo
+from ixmp4.conf.settings import Settings
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.core.platform import Platform
 from ixmp4.data.generator import MockDataGenerator
-from ixmp4.db.utils import alembic, sqlite
+from ixmp4.db import __file__ as db_module_dir
 
 from . import utils
+from .alembic import get_alembic_controller
+
+migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
+
 
 app = typer.Typer()
+console = Console()
 
 
 def validate_name(name: str) -> str:
@@ -42,9 +49,9 @@ def validate_dsn(dsn: str | None) -> str | None:
         return dsn
 
 
-def prompt_sqlite_dsn(name: str) -> str:
-    path = sqlite.get_database_path(name)
-    dsn = sqlite.get_dsn(path)
+def prompt_sqlite_dsn(name: str, path: Path) -> str:
+    dsn = path.absolute().as_uri().replace("file://", "sqlite:///")
+
     if path.exists():
         if typer.confirm(
             f"A file at the standard filesystem location for name '{name}' already "
@@ -58,8 +65,11 @@ def prompt_sqlite_dsn(name: str) -> str:
             f"No file at the standard filesystem location for name '{name}' exists. "
             "Do you want to create a new database?"
         ):
-            utils.echo("Creating the database and running migrations...")
-            alembic.upgrade_database(dsn, "head")
+            utils.echo("Creating the database and running migrations... \n")
+
+            controller = get_alembic_controller(dsn)
+            controller.upgrade_database("head")
+
             return dsn
         else:
             raise typer.Exit()
@@ -67,19 +77,27 @@ def prompt_sqlite_dsn(name: str) -> str:
 
 @app.command(help="Adds a new platform to ixmp4's toml registry.")
 def add(
-    name: str = typer.Argument(
-        ...,
-        help="The string identifier of the platform to add. Must be slug-like.",
-        callback=validate_name,
-    ),
-    dsn: Optional[str] = typer.Option(
-        None,
-        help="Data source name. Can be a http(s) URL or a database connection string.",
-        callback=validate_dsn,
-    ),
+    name: Annotated[
+        str,
+        typer.Argument(
+            help="The string identifier of the platform to add. Must be slug-like.",
+            callback=validate_name,
+        ),
+    ],
+    dsn: Annotated[
+        str | None,
+        typer.Option(
+            help="Data source name. Can be a http(s) URL or a database connection string.",
+            callback=validate_dsn,
+        ),
+    ] = None,
 ) -> None:
+    settings = Settings()
+    settings.configure_logging("alembic")
+    toml_platforms = settings.get_toml_platforms()
+
     try:
-        settings.toml.get_platform(name)
+        toml_platforms.get_platform(name)
         raise typer.BadParameter(
             f"Platform with name '{name}' already exists. "
             "Choose another name or remove the existing platform."
@@ -91,9 +109,10 @@ def add(
         utils.echo(
             "No DSN supplied, assuming you want to add a local sqlite database..."
         )
-        dsn = prompt_sqlite_dsn(name)
+        path = settings.get_database_path(name)
+        dsn = prompt_sqlite_dsn(name, path)
 
-    settings.toml.add_platform(name, dsn)
+    toml_platforms.add_platform(name, dsn)
     utils.good("\nPlatform added successfully.")
 
 
@@ -111,12 +130,15 @@ def prompt_sqlite_removal(dsn: str) -> None:
 
 @app.command(help="Removes a platform from ixmp4's toml registry.")
 def remove(
-    name: str = typer.Argument(
-        ..., help="The string identifier of the platform to remove."
-    ),
+    name: Annotated[
+        str,
+        typer.Argument(help="The string identifier of the platform to remove."),
+    ],
 ) -> None:
+    settings = Settings()
+    toml_platforms = settings.get_toml_platforms()
     try:
-        platform = settings.toml.get_platform(name)
+        platform = toml_platforms.get_platform(name)
     except PlatformNotFound:
         raise typer.BadParameter(f"Platform '{name}' does not exist.")
 
@@ -126,125 +148,66 @@ def remove(
     ):
         if platform.dsn.startswith("sqlite://"):
             prompt_sqlite_removal(platform.dsn)
-        settings.toml.remove_platform(name)
-
-
-def tabulate_toml_platforms(platforms: list[TomlPlatformInfo]) -> None:
-    toml_path_str = typer.style(settings.toml.path, fg=typer.colors.CYAN)
-    utils.echo(f"\nPlatforms registered in '{toml_path_str}'")
-    if len(platforms):
-        utils.echo("\nName".ljust(21) + "DSN")
-        for p in platforms:
-            utils.important(_shorten(p.name, 20), nl=False)
-            utils.echo(_shorten(p.dsn, 60))
-    utils.echo("Total: " + typer.style(str(len(platforms)), fg=typer.colors.GREEN))
-
-
-def tabulate_manager_platforms(
-    platforms: list[ManagerPlatformInfo],
-) -> None:
-    manager_url_str = typer.style(settings.manager.url, fg=typer.colors.CYAN)
-    utils.echo(f"\nPlatforms accessible via '{manager_url_str}'")
-    utils.echo("\nName".ljust(21) + "Access".ljust(10) + "Notice")
-    for p in platforms:
-        utils.important(_shorten(p.name, 20), nl=False)
-        utils.echo(str(p.accessibility.value.lower()).ljust(10), nl=False)
-        if p.notice is not None:
-            utils.echo(_shorten(p.notice, 58), nl=False)
-        utils.echo()
-    utils.echo("Total: " + typer.style(str(len(platforms)), fg=typer.colors.GREEN))
+        toml_platforms.remove_platform(name)
 
 
 @app.command("list", help="Lists all registered platforms.")
 def list_() -> None:
-    tabulate_toml_platforms(settings.toml.list_platforms())
-    if settings.manager is not None:
-        tabulate_manager_platforms(settings.manager.list_platforms())
+    settings = Settings()
+    # TOML Platforms
+    toml_platforms = settings.get_toml_platforms()
 
+    toml_path_str = typer.style(toml_platforms.path, fg=typer.colors.CYAN)
+    toml_results = toml_platforms.list_platforms()
 
-@app.command(
-    help=(
-        "Migrates all database platforms from your local toml file to the newest "
-        "revision."
+    toml_table = Table(
+        "Name",
+        "DSN",
+        box=box.SIMPLE,
+        title="via toml file " + toml_path_str,
+        title_justify="left",
+        caption="Total: " + typer.style(str(len(toml_results)), fg=typer.colors.GREEN),
+        caption_justify="left",
     )
-)
-def upgrade() -> None:
-    platform_list: list[ManagerPlatformInfo] | list[TomlPlatformInfo]
-    if settings.managed:
+    for tp in toml_results:
+        toml_table.add_row(tp.name, sa.make_url(tp.dsn).render_as_string())
+
+    console.print()
+    console.print(toml_table)
+
+    # Manager Platforms
+    try:
+        manager_platforms = settings.get_manager_platforms()
+        manager_results = manager_platforms.list_platforms()
+    except ServiceException as e:
         utils.echo(
-            f"Establishing self-signed admin connection to '{settings.manager_url}'."
+            "Exception occurred during manager request, cannot access manager platforms:"
         )
-        manager_conf = ManagerConfig(
-            str(settings.manager_url),
-            SelfSignedAuth(settings.secret_hs256),
-            remote=False,
-        )
-        platform_list = manager_conf.list_platforms()
-    else:
-        platform_list = settings.toml.list_platforms()
+        utils.error(str(e))
+        raise typer.Exit()
 
-    for p in platform_list:
-        if p.dsn.startswith("http"):
-            # This should probably never happen unless the manager registers an
-            # external rest platform.
-            utils.echo(f"Skipping '{p.name}' because it is a REST platform.")
-        else:
-            utils.echo(f"Upgrading platform '{p.name}' with dsn '{p.dsn}'...")
-            try:
-                alembic.upgrade_database(p.dsn, "head")
-            except OperationalError as e:
-                utils.echo(f"Skipping '{p.name}' because of an error: {str(e)}")
+    manager_url_str = typer.style(settings.manager_url, fg=typer.colors.CYAN)
+    utils.echo()
 
-
-@app.command(help=("Downgrades all database platforms to the given revision."))
-def downgrade(
-    revision: str = typer.Argument(
-        ...,
-        help="The revision to downgrade to.",
-    ),
-) -> None:
-    platform_list: list[ManagerPlatformInfo] | list[TomlPlatformInfo]
-    if settings.managed:
-        utils.echo(
-            f"Establishing self-signed admin connection to '{settings.manager_url}'."
-        )
-        manager_conf = ManagerConfig(
-            str(settings.manager_url),
-            SelfSignedAuth(settings.secret_hs256),
-            remote=False,
-        )
-        platform_list = manager_conf.list_platforms()
-    else:
-        platform_list = settings.toml.list_platforms()
-
-    for p in platform_list:
-        if p.dsn.startswith("http"):
-            # This should probably never happen unless the manager registers an
-            # external rest platform.
-            utils.echo(f"Skipping '{p.name}' because it is a REST platform.")
-        else:
-            utils.echo(f"Downgrading platform '{p.name}' with dsn '{p.dsn}'...")
-            try:
-                alembic.downgrade_database(p.dsn, revision)
-            except OperationalError as e:
-                utils.echo(f"Skipping '{p.name}' because of an error: {str(e)}")
-
-
-@app.command(
-    help=(
-        "Stamps all database platforms from your local toml file with the given "
-        "revision."
+    manager_table = Table(
+        "Slug",
+        Column("Name", max_width=24, no_wrap=True),
+        "Access",
+        Column("Notice", max_width=48, no_wrap=True),
+        box=box.SIMPLE,
+        title="via manager api " + manager_url_str,
+        title_justify="left",
+        caption="Total: "
+        + typer.style(str(len(manager_results)), fg=typer.colors.GREEN),
+        caption_justify="left",
     )
-)
-def stamp(revision: str) -> None:
-    for c in settings.toml.list_platforms():
-        if c.dsn.startswith("http"):
-            utils.echo(f"Skipping '{c.name}' because it is a REST platform.")
-        else:
-            utils.echo(
-                f"Stamping platform '{c.name}' with dsn '{c.dsn}' to '{revision}'..."
-            )
-            alembic.stamp_database(c.dsn, revision)
+    for mp in manager_results:
+        manager_table.add_row(
+            mp.slug, mp.name, str(mp.accessibility).lower(), mp.notice
+        )
+    console.print()
+    console.print(manager_table)
+    console.print()
 
 
 @app.command(
@@ -253,22 +216,26 @@ def stamp(revision: str) -> None:
 )
 def generate(
     platform_name: str,
-    num_models: int = typer.Option(
-        10, "--models", help="Number of mock models to generate."
-    ),
-    num_runs: int = typer.Option(40, "--runs", help="Number of mock runs to generate."),
-    num_regions: int = typer.Option(
-        200, "--regions", help="Number of mock regions to generate."
-    ),
-    num_variables: int = typer.Option(
-        1000, "--variables", help="Number of mock variables to generate."
-    ),
-    num_units: int = typer.Option(
-        40, "--units", help="Number of mock units to generate."
-    ),
-    num_datapoints: int = typer.Option(
-        30_000, "--datapoints", help="Number of mock datapoints to generate."
-    ),
+    num_models: Annotated[
+        int, typer.Option("--models", help="Number of mock models to generate.")
+    ] = 10,
+    num_runs: Annotated[
+        int, typer.Option("--runs", help="Number of mock runs to generate.")
+    ] = 40,
+    num_regions: Annotated[
+        int, typer.Option("--regions", help="Number of mock regions to generate.")
+    ] = 200,
+    num_variables: Annotated[
+        int,
+        typer.Option("--variables", help="Number of mock variables to generate."),
+    ] = 1000,
+    num_units: Annotated[
+        int, typer.Option("--units", help="Number of mock units to generate.")
+    ] = 40,
+    num_datapoints: Annotated[
+        int,
+        typer.Option("--datapoints", help="Number of mock datapoints to generate."),
+    ] = 30_000,
 ) -> None:
     try:
         platform = Platform(platform_name)
@@ -290,7 +257,7 @@ def generate(
     typer.echo("\n".join(lines))
     typer.echo(
         f"...and load them into the platform '{platform_name}' "
-        f"(DSN: {platform.backend.info.dsn}).\n"
+        f"(DSN: {platform.connection_info.dsn}).\n"
     )
 
     if typer.confirm("Are you sure?"):
@@ -341,10 +308,3 @@ def generate_data(generator: MockDataGenerator) -> None:
         )
         for df in generator.yield_datapoints(runs, variable_names, units, regions):
             progress.advance(task, len(df))
-
-
-def _shorten(value: str, length: int) -> str:
-    """Shorten and adjust a string to a given length adding `...` if necessary"""
-    if len(value) > length - 4:
-        value = value[: length - 4] + "..."
-    return value.ljust(length)

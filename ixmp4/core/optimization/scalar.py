@@ -1,111 +1,148 @@
 from datetime import datetime
-from typing import TYPE_CHECKING, ClassVar
+from typing import TYPE_CHECKING
 
-# TODO Import this from typing when dropping Python 3.11
+import pandas as pd
 from typing_extensions import Unpack
 
+from ixmp4.backend import Backend
 from ixmp4.core.unit import Unit
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Scalar as ScalarModel
-from ixmp4.data.abstract import Unit as UnitModel
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.optimization.scalar.dto import Scalar as ScalarDto
+from ixmp4.data.optimization.scalar.exceptions import (
+    ScalarDeletionPrevented,
+    ScalarNotFound,
+    ScalarNotUnique,
+)
+from ixmp4.data.optimization.scalar.filter import ScalarFilter
+from ixmp4.data.optimization.scalar.service import ScalarService
+from ixmp4.data.unit.dto import Unit as UnitDto
+from ixmp4.data.unit.service import UnitService
 
-from .base import Deleter, Lister, OptimizationBaseModelFacade, Retriever, Tabulator
+from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 if TYPE_CHECKING:
     from ixmp4.core.run import Run
 
-    from . import InitKwargs
 
+class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
+    NotUnique = ScalarNotUnique
+    NotFound = ScalarNotFound
+    DeletionPrevented = ScalarDeletionPrevented
 
-class Scalar(OptimizationBaseModelFacade):
-    _model: ScalarModel
-    NotFound: ClassVar = ScalarModel.NotFound
-    NotUnique: ClassVar = ScalarModel.NotUnique
+    def __init__(self, backend: Backend, dto: ScalarDto, run: "Run"):
+        super().__init__(backend, dto, run)
+        self.units = backend.units
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self._dto.name
+
+    @property
+    def run_id(self) -> int:
+        return self._dto.run__id
 
     @property
     def value(self) -> float:
         """Associated value."""
-        return self._model.value
+        return self._dto.value
 
     @value.setter
     def value(self, value: float) -> None:
         self._run.require_lock()
-        self._model.value = value
-        self.backend.optimization.scalars.update(
-            id=self._model.id, value=self._model.value
-        )
+        self._service.update_by_id(self._dto.id, value=value)
+        self._dto.value = value
 
     @property
-    def unit(self) -> UnitModel:
+    def unit(self) -> UnitDto:
         """Associated unit."""
-        return self._model.unit
+        return self._dto.unit
 
     @unit.setter
-    def unit(self, value: str | Unit) -> None:
+    def unit(self, value: str | UnitDto) -> None:
         self._run.require_lock()
         if isinstance(value, str):
-            unit_model = self.backend.units.get(value)
-            value = Unit(_backend=self.backend, _model=unit_model)
-        self._model = self.backend.optimization.scalars.update(
-            id=self._model.id, unit_id=value.id
-        )
-
-    @property
-    def run_id(self) -> int:
-        return self._model.run__id
+            unit = self.units.get_by_name(value)
+        else:
+            unit = value
+        self._dto = self._service.update_by_id(self._dto.id, unit_name=unit.name)
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.optimization.scalars.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._service.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.optimization.scalars.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         else:
-            self.backend.optimization.scalars.docs.set(self.id, description)
+            self._service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.optimization.scalars.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
+
+    def update(
+        self, value: int | float | None = None, unit_name: str | None = None
+    ) -> None:
+        """Adds data to the Scalar."""
+        self._run.require_lock()
+        self._service.update_by_id(self._dto.id, value=value, unit_name=unit_name)
+        self._refresh()
+
+    def delete(self) -> None:
+        self._run.require_lock()
+        self._service.delete_by_id(self._dto.id)
+
+    def _get_service(self, backend: Backend) -> ScalarService:
+        return backend.optimization.scalars
 
     def __str__(self) -> str:
         return f"<Scalar {self.id} name={self.name}>"
 
 
-class ScalarRepository(
-    Deleter[Scalar, ScalarModel],
-    Retriever[Scalar, ScalarModel],
-    Lister[Scalar, ScalarModel],
-    Tabulator[Scalar, ScalarModel],
+class ScalarServiceFacade(
+    BaseOptimizationServiceFacade[Scalar | int | str, ScalarDto, ScalarService]
 ):
-    def __init__(self, _run: "Run", **kwargs: Unpack["InitKwargs"]) -> None:
-        super().__init__(_run=_run, **kwargs)
-        self._backend_repository = self.backend.optimization.scalars
-        self._model_type = Scalar
+    units: UnitService
+
+    def __init__(self, backend: Backend, run: "Run"):
+        super().__init__(backend, run)
+        self.units = backend.units
+
+    def _get_service(self, backend: Backend) -> ScalarService:
+        return backend.optimization.scalars
+
+    def _get_item_id(self, key: Scalar | int | str) -> int:
+        if isinstance(key, Scalar):
+            id = key.id
+        elif isinstance(key, int):
+            id = key
+        elif isinstance(key, str):
+            dto = self._service.get(self._run.id, key)
+            id = dto.id
+        else:
+            raise TypeError("Invalid argument: Must be `Scalar`, `int` or `str`.")
+
+        return id
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
         self._run.require_lock()
@@ -116,16 +153,33 @@ class ScalarRepository(
         else:
             # TODO: provide logging information about None-units being converted
             # if unit is None, assume that this is a dimensionless scalar (unit = "")
-            dimensionless_unit = self.backend.units.get_or_create(name="")
+            dimensionless_unit = self.units.get_or_create(name="")
             unit_name = dimensionless_unit.name
 
         try:
-            model = self.backend.optimization.scalars.create(
-                name=name, value=value, unit_name=unit_name, run_id=self._run.id
+            dto = self._service.create(
+                self._run.id, name, value=value, unit_name=unit_name
             )
         except Scalar.NotUnique as e:
             raise Scalar.NotUnique(
-                message=f"Scalar '{name}' already exists! Did you mean to call "
-                "run.optimization.scalars.update()?"
+                message=f"Scalar '{name}' already exists! "
+                "Did you mean to call Scalar.update()?"
             ) from e
-        return Scalar(_backend=self.backend, _model=model, _run=self._run)
+        return Scalar(self._backend, dto, run=self._run)
+
+    def delete(self, x: Scalar | int | str) -> None:
+        self._run.require_lock()
+        id = self._get_item_id(x)
+        self._service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> Scalar:
+        dto = self._service.get(self._run.id, name)
+        return Scalar(self._backend, dto, run=self._run)
+
+    def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:
+        scalars = self._service.list(**kwargs)
+        return [Scalar(self._backend, dto, run=self._run) for dto in scalars]
+
+    def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> pd.DataFrame:
+        kwargs["run__id"] = self._run.id
+        return self._service.tabulate(**kwargs).drop(columns=["run__id"])

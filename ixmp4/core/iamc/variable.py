@@ -1,124 +1,107 @@
-from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Variable as VariableModel
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.iamc.variable.dto import Variable as VariableDto
+from ixmp4.data.iamc.variable.exceptions import (
+    VariableDeletionPrevented,
+    VariableNotFound,
+    VariableNotUnique,
+)
+from ixmp4.data.iamc.variable.filter import VariableFilter
+from ixmp4.data.iamc.variable.service import VariableService
 
 
-class Variable(BaseModelFacade):
-    _model: VariableModel
-    NotFound: ClassVar = VariableModel.NotFound
-    NotUnique: ClassVar = VariableModel.NotUnique
+class Variable(BaseFacadeObject[VariableService, VariableDto]):
+    NotFound = VariableNotFound
+    NotUnique = VariableNotUnique
+    DeletionPrevented = VariableDeletionPrevented
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self._dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.iamc.variables.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._service.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.iamc.variables.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         else:
-            self.backend.iamc.variables.docs.set(self.id, description)
+            self._service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.iamc.variables.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
+
+    def delete(self) -> None:
+        """Deletes the variable from the database."""
+        self._service.delete_by_id(self._dto.id)
+
+    def _get_service(self, backend: Backend) -> VariableService:
+        return backend.iamc.variables
 
     def __str__(self) -> str:
-        return f"<Variable {self.id} name={self.name}>"
+        return f"<Variable {self.id} name='{self.name}'>"
 
 
-class VariableRepository(BaseFacade):
-    def create(self, name: str) -> Variable:
-        model = self.backend.iamc.variables.create(name)
-        return Variable(_backend=self.backend, _model=model)
+class VariableServiceFacade(
+    BaseDocsServiceFacade[Variable | int | str, Variable, VariableService]
+):
+    def _get_service(self, backend: Backend) -> VariableService:
+        return backend.iamc.variables
 
-    def get(self, name: str) -> Variable:
-        model = self.backend.iamc.variables.get(name)
-        return Variable(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> list[Variable]:
-        variables = self.backend.iamc.variables.list(name=name)
-        return [Variable(_backend=self.backend, _model=v) for v in variables]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.iamc.variables.tabulate(name=name)
-
-    def _get_variable_id(self, variable: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(variable, str):
-            obj = self.backend.iamc.variables.get(variable)
-            return obj.id
+    def _get_item_id(self, ref: Variable | int | str) -> int:
+        if isinstance(ref, Variable):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self._service.get_by_name(ref)
+            return dto.id
         else:
-            raise ValueError(f"Invalid reference to variable: {variable}")
+            raise ValueError(f"Invalid reference to variable: {ref}")
 
-    def get_docs(self, name: str) -> str | None:
-        variable_id = self._get_variable_id(name)
-        if variable_id is None:
-            return None
-        try:
-            return self.backend.iamc.variables.docs.get(
-                dimension_id=variable_id
-            ).description
-        except DocsModel.NotFound:
-            return None
+    def create(self, name: str) -> Variable:
+        dto = self._service.create(name)
+        return Variable(self._backend, dto)
 
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        variable_id = self._get_variable_id(name)
-        if variable_id is None:
-            return None
-        return self.backend.iamc.variables.docs.set(
-            dimension_id=variable_id, description=description
-        ).description
+    def delete(self, ref: Variable | int | str) -> None:
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        variable_id = self._get_variable_id(name)
-        if variable_id is None:
-            return None
-        try:
-            self.backend.iamc.variables.docs.delete(dimension_id=variable_id)
-            return None
-        except DocsModel.NotFound:
-            return None
+    def get_by_name(self, name: str) -> Variable:
+        dto = self._service.get_by_name(name)
+        return Variable(self._backend, dto)
 
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.backend.iamc.variables.docs.list(
-                dimension_id=id, dimension_id__in=id__in
-            )
-        ]
+    def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
+        units = self._service.list(**kwargs)
+        return [Variable(self._backend, dto) for dto in units]
+
+    def tabulate(self, **kwargs: Unpack[VariableFilter]) -> pd.DataFrame:
+        return self._service.tabulate(**kwargs)

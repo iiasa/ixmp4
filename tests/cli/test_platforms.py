@@ -1,16 +1,41 @@
+import os
 from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Generator
+from unittest import mock
 
+import pytest
 from typer.testing import CliRunner
 
-from ixmp4.cli import platforms
-from ixmp4.conf import settings
+from ixmp4.cli import app
+from ixmp4.conf.settings import Settings
 
 runner = CliRunner()
 
 
+@pytest.fixture(scope="function")
+def temporary_settings() -> Generator[Settings, None, None]:
+    """Fixture to create settings pointing to a temporary directory
+    and mocking the `Settings` constructor."""
+    with TemporaryDirectory() as temp_dir:
+        settings = Settings(storage_directory=Path(temp_dir))
+        with mock.patch("ixmp4.conf.settings.Settings", new=lambda: settings):
+            yield settings
+
+
+@pytest.fixture(scope="function")
+def tmp_working_directory() -> Generator[Path, None, None]:
+    """Fixture to create and enter a temporary working directory for tests."""
+    with TemporaryDirectory() as temp_dir:
+        orginal_dir = os.getcwd()
+        os.chdir(temp_dir)
+        yield Path(temp_dir)
+        os.chdir(orginal_dir)
+
+
 class TestAddPlatformCLI:
-    def test_add_platform(self, clean_storage_directory: Path) -> None:
-        result = runner.invoke(platforms.app, ["add", "test"], input="y")
+    def test_add_platform(self, temporary_settings: Settings) -> None:
+        result = runner.invoke(app, ["platforms", "add", "test"], input="y")
         assert result.exit_code == 0
 
         # Assert command output
@@ -27,22 +52,27 @@ class TestAddPlatformCLI:
         assert "Platform added successfully." in result.stdout
 
         # Check if the database file was created
-        database_file = clean_storage_directory / "databases" / "test.sqlite3"
+        database_file = (
+            temporary_settings.storage_directory / "databases" / "test.sqlite3"
+        )
         assert database_file.is_file()
 
         # Assert that the toml object now contains the new platform
-        platform_info = settings.toml.get_platform("test")
+        toml_platforms = temporary_settings.get_toml_platforms()
+        platform_info = toml_platforms.get_platform("test")
         assert platform_info.name == "test"
         assert "test.sqlite3" in platform_info.dsn
 
-    def test_add_platform_sqlite_dsn(self, clean_storage_directory: Path) -> None:
+    def test_add_platform_sqlite_dsn(self, temporary_settings: Settings) -> None:
         # Explicitly set the DSN to a different location
         alternative_path = (
-            clean_storage_directory / "databases" / "test-alternative.sqlite3"
+            temporary_settings.storage_directory
+            / "databases"
+            / "test-alternative.sqlite3"
         )
         result = runner.invoke(
-            platforms.app,
-            ["add", "test", f"--dsn=sqlite://{alternative_path}"],
+            app,
+            ["platforms", "add", "test", f"--dsn=sqlite://{alternative_path}"],
         )
         assert result.exit_code == 0
         assert "Platform added successfully." in result.stdout
@@ -57,27 +87,39 @@ class TestAddPlatformCLI:
             "Do you want to create a new database?"
         ) not in result.stdout
         assert "Creating the database and running migrations..." not in result.stdout
+
+        # assert the supplied path is not a newly created database
         assert not alternative_path.is_file()
 
+        # check the toml file
+        toml_platforms = temporary_settings.get_toml_platforms()
+        platform_info = toml_platforms.get_platform("test")
+        assert platform_info.name == "test"
+        assert str(alternative_path) in platform_info.dsn
+
     def test_add_platform_from_anywhere(
-        self, clean_storage_directory: Path, tmp_working_directory: Path
+        self, temporary_settings: Settings, tmp_working_directory: Path
     ) -> None:
         # Ensure we are NOT in the ixmp4 root directory
         assert not (tmp_working_directory / "ixmp4" / "db" / "migrations").exists()
 
         # Assert platform creation still works
-        result = runner.invoke(platforms.app, ["add", "test"], input="y")
+        result = runner.invoke(app, ["platforms", "add", "test"], input="y")
         assert result.exit_code == 0
         assert "Platform added successfully." in result.stdout
-        assert (clean_storage_directory / "databases" / "test.sqlite3").is_file()
+        assert (
+            temporary_settings.storage_directory / "databases" / "test.sqlite3"
+        ).is_file()
 
-    def test_add_platform_duplicate(self, clean_storage_directory: Path) -> None:
-        runner.invoke(platforms.app, ["add", "test"], input="y").stdout
+    def test_add_platform_duplicate(self, temporary_settings: Settings) -> None:
+        runner.invoke(app, ["platforms", "add", "test"], input="y").stdout
         # Ensure the first platform is created
-        assert (clean_storage_directory / "databases" / "test.sqlite3").is_file()
+        assert (
+            temporary_settings.storage_directory / "databases" / "test.sqlite3"
+        ).is_file()
 
         # Assert failure when trying to add the same platform again
-        result = runner.invoke(platforms.app, ["add", "test"])
+        result = runner.invoke(app, ["platforms", "add", "test"])
         assert result.exit_code == 2
         assert (
             "Invalid value: Platform with name 'test' already exists."
@@ -87,12 +129,13 @@ class TestAddPlatformCLI:
 class TestPlatformGenerateCLI:
     def test_generate_platform_data(self) -> None:
         # Create a test platform
-        runner.invoke(platforms.app, ["add", "test-generate"], input="y")
+        runner.invoke(app, ["platforms", "add", "test-generate"], input="y")
 
         # Run generate command with small numbers for testing
         result = runner.invoke(
-            platforms.app,
+            app,
             [
+                "platforms",
                 "generate",
                 "test-generate",
                 "--models",
@@ -115,7 +158,7 @@ class TestPlatformGenerateCLI:
         assert result.exit_code == 0
 
     def test_generate_platform_not_found(self) -> None:
-        result = runner.invoke(platforms.app, ["generate", "nonexistent-platform"])
+        result = runner.invoke(app, ["platforms", "generate", "nonexistent-platform"])
 
         # We simply test whether the generate command errors
         assert result.exit_code > 0

@@ -1,4 +1,4 @@
-version: "3.1"
+name: ixmp4_tests
 
 services:
   postgres:

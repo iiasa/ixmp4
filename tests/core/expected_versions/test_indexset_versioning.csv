@@ -1,5 +1,0 @@
-_data_type,run__id,name,id,created_by,transaction_id,end_transaction_id,operation_type
-None,1,Indexset 1,1,@unknown,4,8,0
-None,1,Indexset 2,2,@unknown,5,12,0
-int,1,Indexset 1,1,@unknown,8,None,1
-str,1,Indexset 2,2,@unknown,12,None,1

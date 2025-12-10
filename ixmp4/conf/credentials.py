@@ -1,11 +1,17 @@
 from contextlib import suppress
 from pathlib import Path
+from typing import TypedDict
 
 import toml
 
 
+class CredentialsDict(TypedDict):
+    username: str
+    password: str
+
+
 class Credentials(object):
-    credentials: dict[str, dict[str, str]]
+    credentials: dict[str, CredentialsDict]
 
     def __init__(self, toml_file: Path) -> None:
         self.path = toml_file
@@ -18,9 +24,8 @@ class Credentials(object):
         f = self.path.open("w+")
         toml.dump(self.credentials, f)
 
-    def get(self, key: str) -> tuple[str, str]:
-        c = self.credentials[key]
-        return (c["username"], c["password"])
+    def get(self, key: str) -> CredentialsDict | None:
+        return self.credentials.get(key, None)
 
     def set(self, key: str, username: str, password: str) -> None:
         self.credentials[key] = {

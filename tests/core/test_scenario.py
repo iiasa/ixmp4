@@ -1,116 +1,124 @@
-from collections.abc import Iterable
+import datetime
 
-import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4.core import Scenario
+from ixmp4 import Scenario
+from tests import backends
 
-from ..utils import assert_unordered_equality
-
-
-def create_testcase_scenarios(platform: ixmp4.Platform) -> tuple[Scenario, Scenario]:
-    scenario = platform.scenarios.create("Scenario")
-    scenario2 = platform.scenarios.create("Scenario 2")
-    return scenario, scenario2
+platform = backends.get_platform_fixture(scope="class")
 
 
-def df_from_list(scenarios: Iterable[Scenario]) -> pd.DataFrame:
-    return pd.DataFrame(
-        [[s.id, s.name, s.created_at, s.created_by] for s in scenarios],
-        columns=["id", "name", "created_at", "created_by"],
-    )
+class TestScenario:
+    def test_create_scenario(
+        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+    ) -> None:
+        scenario1 = platform.scenarios.create("Scenario 1")
+        scenario2 = platform.scenarios.create("Scenario 2")
+        scenario3 = platform.scenarios.create("Scenario 3")
+        scenario4 = platform.scenarios.create("Scenario 4")
+
+        assert scenario1.id == 1
+        assert scenario1.name == "Scenario 1"
+        assert scenario1.created_at == fake_time.replace(tzinfo=None)
+        assert scenario1.created_by == "@unknown"
+        assert scenario1.docs is None
+        assert str(scenario1) == "<Scenario 1 name='Scenario 1'>"
+
+        assert scenario2.id == 2
+        assert scenario3.id == 3
+        assert scenario4.id == 4
+
+    def test_tabulate_scenario(self, platform: ixmp4.Platform) -> None:
+        ret_df = platform.scenarios.tabulate()
+        assert len(ret_df) == 4
+        assert "id" in ret_df.columns
+        assert "name" in ret_df.columns
+        assert "created_at" in ret_df.columns
+        assert "created_by" in ret_df.columns
+
+    def test_list_scenario(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.scenarios.list()) == 4
+
+    def test_delete_scenario_via_func_obj(self, platform: ixmp4.Platform) -> None:
+        scenario1 = platform.scenarios.get_by_name("Scenario 1")
+        platform.scenarios.delete(scenario1)
+
+    def test_delete_scenario_via_func_id(self, platform: ixmp4.Platform) -> None:
+        platform.scenarios.delete(2)
+
+    def test_delete_scenario_via_func_name(self, platform: ixmp4.Platform) -> None:
+        platform.scenarios.delete("Scenario 3")
+
+    def test_delete_scenario_via_obj(self, platform: ixmp4.Platform) -> None:
+        scenario4 = platform.scenarios.get_by_name("Scenario 4")
+        scenario4.delete()
+
+    def test_scenarios_empty(self, platform: ixmp4.Platform) -> None:
+        assert platform.scenarios.tabulate().empty
+        assert len(platform.scenarios.list()) == 0
 
 
-class TestCoreScenario:
-    def test_retrieve_scenario(self, platform: ixmp4.Platform) -> None:
-        scenario1 = platform.scenarios.create("Scenario")
-        scenario2 = platform.scenarios.get("Scenario")
-
-        assert scenario1.id == scenario2.id
-
+class TestScenarioUnique:
     def test_scenario_unqiue(self, platform: ixmp4.Platform) -> None:
         platform.scenarios.create("Scenario")
 
         with pytest.raises(Scenario.NotUnique):
             platform.scenarios.create("Scenario")
 
-    def test_list_scenario(self, platform: ixmp4.Platform) -> None:
-        scenarios = create_testcase_scenarios(platform)
-        scenario, _ = scenarios
 
-        a = [s.id for s in scenarios]
-        b = [s.id for s in platform.scenarios.list()]
-        assert not (set(a) ^ set(b))
+class TestScenarioDocs:
+    def test_create_docs_via_func(self, platform: ixmp4.Platform) -> None:
+        scenario1 = platform.scenarios.create("Scenario 1")
 
-        a = [scenario.id]
-        b = [s.id for s in platform.scenarios.list(name="Scenario")]
-        assert not (set(a) ^ set(b))
-
-    def test_tabulate_scenario(self, platform: ixmp4.Platform) -> None:
-        scenarios = create_testcase_scenarios(platform)
-        scenario, _ = scenarios
-
-        a = df_from_list(scenarios)
-        b = platform.scenarios.tabulate()
-        assert_unordered_equality(a, b, check_dtype=False)
-
-        a = df_from_list([scenario])
-        b = platform.scenarios.tabulate(name="Scenario")
-        assert_unordered_equality(a, b, check_dtype=False)
-
-    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
-        platform.scenarios.create("Scenario")
-        docs_scenario1 = platform.scenarios.set_docs(
-            "Scenario", "Description of test Scenario"
+        scenario1_docs1 = platform.scenarios.set_docs(
+            "Scenario 1", "Description of Scenario 1"
         )
-        docs_scenario2 = platform.scenarios.get_docs("Scenario")
+        scenario1_docs2 = platform.scenarios.get_docs("Scenario 1")
 
-        assert docs_scenario1 == docs_scenario2
+        assert scenario1_docs1 == scenario1_docs2
+        assert scenario1.docs == scenario1_docs1
 
-        scenario2 = platform.scenarios.create("Scenario2")
+    def test_create_docs_via_object(self, platform: ixmp4.Platform) -> None:
+        scenario2 = platform.scenarios.create("Scenario 2")
+        scenario2.docs = "Description of Scenario 2"
 
-        assert scenario2.docs is None
+        assert platform.scenarios.get_docs("Scenario 2") == scenario2.docs
 
-        scenario2.docs = "Description of test Scenario2"
+    def test_create_docs_via_setattr(self, platform: ixmp4.Platform) -> None:
+        scenario3 = platform.scenarios.create("Scenario 3")
+        setattr(scenario3, "docs", "Description of Scenario 3")
 
-        assert platform.scenarios.get_docs("Scenario2") == scenario2.docs
-
-    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
-        scenario = platform.scenarios.create("Scenario")
-        scenario.docs = "Description of test Scenario"
-        scenario.docs = None
-
-        assert scenario.docs is None
-
-        scenario.docs = "Second description of test Scenario"
-        del scenario.docs
-
-        assert scenario.docs is None
-
-        # Mypy doesn't recognize del properly, it seems
-        scenario.docs = "Third description of test Scenario"  # type: ignore[unreachable]
-        platform.scenarios.delete_docs("Scenario")
-
-        assert scenario.docs is None
+        assert platform.scenarios.get_docs("Scenario 3") == scenario3.docs
 
     def test_list_docs(self, platform: ixmp4.Platform) -> None:
-        scenario_1 = platform.scenarios.create("Scenario 1")
-        scenario_1.docs = "Description of Scenario 1"
-        scenario_2 = platform.scenarios.create("Scenario 2")
-        scenario_2.docs = "Description of Scenario 2"
-        scenario_3 = platform.scenarios.create("Scenario 3")
-        scenario_3.docs = "Description of Scenario 3"
-
         assert platform.scenarios.list_docs() == [
-            scenario_1.docs,
-            scenario_2.docs,
-            scenario_3.docs,
+            "Description of Scenario 1",
+            "Description of Scenario 2",
+            "Description of Scenario 3",
         ]
 
-        assert platform.scenarios.list_docs(id=scenario_2.id) == [scenario_2.docs]
+        assert platform.scenarios.list_docs(id=3) == ["Description of Scenario 3"]
 
-        assert platform.scenarios.list_docs(id__in=[scenario_1.id, scenario_3.id]) == [
-            scenario_1.docs,
-            scenario_3.docs,
-        ]
+        assert platform.scenarios.list_docs(id__in=[1]) == ["Description of Scenario 1"]
+
+    def test_delete_docs_via_func(self, platform: ixmp4.Platform) -> None:
+        scenario1 = platform.scenarios.get_by_name("Scenario 1")
+        platform.scenarios.delete_docs("Scenario 1")
+        scenario1 = platform.scenarios.get_by_name("Scenario 1")
+        assert scenario1.docs is None
+
+    def test_delete_docs_set_none(self, platform: ixmp4.Platform) -> None:
+        scenario2 = platform.scenarios.get_by_name("Scenario 2")
+        scenario2.docs = None
+        scenario2 = platform.scenarios.get_by_name("Scenario 2")
+        assert scenario2.docs is None
+
+    def test_delete_docs_del(self, platform: ixmp4.Platform) -> None:
+        scenario3 = platform.scenarios.get_by_name("Scenario 3")
+        del scenario3.docs
+        scenario3 = platform.scenarios.get_by_name("Scenario 3")
+        assert scenario3.docs is None
+
+    def test_docs_empty(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.scenarios.list_docs()) == 0

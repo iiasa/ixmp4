@@ -4,230 +4,208 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
-from ixmp4.core.exceptions import RunLockRequired
+from tests import backends
+from tests.custom_exception import CustomException
 
-from ..utils import CustomException
+from .base import PlatformTest
 
-EXP_META_COLS = ["model", "scenario", "version", "key", "value"]
-
-
-def test_run_meta(platform: ixmp4.Platform) -> None:
-    run1 = platform.runs.create("Model 1", "Scenario 1")
-    run1.set_as_default()
-
-    with run1.transact("Add meta data"):
-        # set and update different types of meta indicators
-        run1.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
-        run1.meta["mfloat"] = -1.9
-
-    run2 = platform.runs.get("Model 1", "Scenario 1")
-
-    # assert meta by run
-    assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
-    assert dict(run1.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
-
-    # assert meta via platform
-    exp = pd.DataFrame(
-        [
-            ["Model 1", "Scenario 1", 1, "mint", 13],
-            ["Model 1", "Scenario 1", 1, "mstr", "foo"],
-            ["Model 1", "Scenario 1", 1, "mfloat", -1.9],
-        ],
-        columns=EXP_META_COLS,
-    )
-    pdt.assert_frame_equal(platform.meta.tabulate(run_id=1), exp)
-
-    # remove all meta indicators and set a new indicator
-    with run1.transact("Update meta data"):
-        run1.meta = {"mnew": "bar"}
-
-    run2 = platform.runs.get("Model 1", "Scenario 1")
-
-    # assert meta by run
-    assert dict(run2.meta) == {"mnew": "bar"}
-    assert dict(run1.meta) == {"mnew": "bar"}
-
-    # assert meta via platform
-    exp = pd.DataFrame(
-        [["Model 1", "Scenario 1", 1, "mnew", "bar"]], columns=EXP_META_COLS
-    )
-    pdt.assert_frame_equal(platform.meta.tabulate(run_id=1), exp)
-
-    with run1.transact("Delete meta data"):
-        del run1.meta["mnew"]
-    run2 = platform.runs.get("Model 1", "Scenario 1")
-
-    # assert meta by run
-    assert dict(run2.meta) == {}
-    assert dict(run1.meta) == {}
-
-    # assert meta via platform
-    exp = pd.DataFrame([], columns=EXP_META_COLS)
-    pdt.assert_frame_equal(platform.meta.tabulate(run_id=1), exp, check_dtype=False)
-
-    run2 = platform.runs.create("Model 2", "Scenario 2")
-    with run1.transact("Update meta data"):
-        run1.meta = {"mstr": "baz"}
-    with run2.transact("Update meta data"):
-        run2.meta = {"mfloat": 3.1415926535897}
-
-    # test default_only run filter
-    exp = pd.DataFrame(
-        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
-    )
-    # run={"default_only": True} is default
-    pdt.assert_frame_equal(platform.meta.tabulate(), exp)
-
-    exp = pd.DataFrame(
-        [
-            ["Model 1", "Scenario 1", 1, "mstr", "baz"],
-            ["Model 2", "Scenario 2", 1, "mfloat", 3.1415926535897],
-        ],
-        columns=EXP_META_COLS,
-    )
-    pdt.assert_frame_equal(platform.meta.tabulate(run={"default_only": False}), exp)
-
-    # test is_default run filter
-    exp = pd.DataFrame(
-        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
-    )
-    pdt.assert_frame_equal(platform.meta.tabulate(run={"is_default": True}), exp)
-
-    exp = pd.DataFrame(
-        [["Model 2", "Scenario 2", 1, "mfloat", 3.1415926535897]],
-        columns=EXP_META_COLS,
-    )
-    pdt.assert_frame_equal(
-        platform.meta.tabulate(run={"default_only": False, "is_default": False}), exp
-    )
-
-    # test filter by key
-    with run1.transact("Update meta data"):
-        run1.meta = {"mstr": "baz", "mfloat": 3.1415926535897}
-
-    exp = pd.DataFrame(
-        [["Model 1", "Scenario 1", 1, "mstr", "baz"]], columns=EXP_META_COLS
-    )
-    pdt.assert_frame_equal(platform.meta.tabulate(key="mstr"), exp)
+platform = backends.get_platform_fixture(scope="class")
 
 
-@pytest.mark.parametrize(
-    "npvalue1, pyvalue1, npvalue2, pyvalue2",
-    [
-        (np.int64(1), 1, np.int64(13), 13),
-        (np.float64(1.9), 1.9, np.float64(13.9), 13.9),
-    ],
-)
-def test_run_meta_numpy(
-    platform: ixmp4.Platform,
-    npvalue1: np.int64 | np.float64,
-    pyvalue1: int | float,
-    npvalue2: np.int64 | np.float64,
-    pyvalue2: int | float,
-) -> None:
-    """Test that numpy types are cast to simple types"""
-    run1 = platform.runs.create("Model", "Scenario")
-    run1.set_as_default()
-
-    # set multiple meta indicators of same type ("value"-column of numpy-type)
-    with run1.transact("Add meta data"):
-        run1.meta = {"key": npvalue1, "other key": npvalue1}
-    assert run1.meta["key"] == pyvalue1
-
-    # set meta indicators of different types ("value"-column of type `object`)
-    with run1.transact("Update meta data"):
-        run1.meta = {"key": npvalue1, "other key": "some value"}
-    assert run1.meta["key"] == pyvalue1
-
-    # set meta via setter
-    with run1.transact("Update 'key' meta data"):
-        run1.meta["key"] = npvalue2
-    assert run1.meta["key"] == pyvalue2
-
-    # assert that meta values were saved and updated correctly
-    run2 = platform.runs.get("Model", "Scenario")
-    assert dict(run2.meta) == {"key": pyvalue2, "other key": "some value"}
+class MetaTest(PlatformTest):
+    @pytest.fixture(scope="class")
+    def run(self, platform: ixmp4.Platform) -> ixmp4.Run:
+        run = platform.runs.create("Model", "Scenario")
+        run.set_as_default()
+        return run
 
 
-def test_run_meta_rollback(pg_platform: ixmp4.Platform) -> None:
-    run = pg_platform.runs.create("Model 1", "Scenario 1")
+class TestMetaData(MetaTest):
+    def test_add_meta(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        with run.transact("Add meta data"):
+            run.meta = {
+                "mint": 13,
+                "mfloat": 0.0,
+                "mstr": "foo",
+                "mnone": None,  # <- should be ignored
+                "mnan": np.nan,  # <-'
+            }
+            run.meta["mfloat"] = -1.9
 
-    with run.transact("Add meta data"):
-        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
-        run.meta["mfloat"] = -1.9
+        assert dict(run.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
 
-    try:
-        with run.transact("Update meta data failure"):
-            run.meta["mfloat"] = 3.14
-            raise CustomException("Whoops!!!")
-    except CustomException:
-        pass
+        run2 = platform.runs.get("Model", "Scenario")
+        assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
 
-    # assert that meta values were rolled back correctly
-    assert run.meta == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
-    assert run.meta["mfloat"] == -1.9
+    def test_tabulate_platform_meta_after_add(self, platform: ixmp4.Platform) -> None:
+        exp = pd.DataFrame(
+            [
+                ["Model", "Scenario", 1, "mfloat", -1.9],
+                ["Model", "Scenario", 1, "mint", 13],
+                ["Model", "Scenario", 1, "mstr", "foo"],
+            ],
+            columns=["model", "scenario", "version", "key", "value"],
+        )
+        ret = platform.meta.tabulate(run__id=1)
+        pdt.assert_frame_equal(exp, ret, check_like=True)
 
-    with run.transact("Remove metadata"):
-        del run.meta["mfloat"]
-        run.meta["mint"] = None
+        exp_str = pd.DataFrame(
+            [
+                ["Model", "Scenario", 1, "mstr", "foo"],
+            ],
+            columns=["model", "scenario", "version", "key", "value"],
+        )
+        ret_str = platform.meta.tabulate(key="mstr")
+        pdt.assert_frame_equal(exp_str, ret_str, check_like=True)
 
-    try:
-        with run.transact("Update meta data failure"):
-            run.meta["mfloat"] = 3.14
-            raise CustomException("Whoops!!!")
-    except CustomException:
-        pass
+    def test_delete_meta(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        with run.transact("Delete meta data with `del`"):
+            del run.meta["mint"]
 
-    assert run.meta == {"mstr": "foo"}
-    assert run.meta["mstr"] == "foo"
+        assert dict(run.meta) == {"mstr": "foo", "mfloat": -1.9}
 
-    with pytest.raises(KeyError, match="'mint'"):
-        run.meta["mint"]
+        with run.transact("Delete meta data with `None`"):
+            run.meta["mfloat"] = None
+
+        assert dict(run.meta) == {"mstr": "foo"}
+
+        run2 = platform.runs.get("Model", "Scenario")
+        assert dict(run2.meta) == {"mstr": "foo"}
+
+    def test_update_meta(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        with run.transact("Update meta data"):
+            run.meta = {"mnew": "bar"}
+
+        assert dict(run.meta) == {"mnew": "bar"}
+
+        run2 = platform.runs.get("Model", "Scenario")
+        assert dict(run2.meta) == {"mnew": "bar"}
+
+    def test_tabulate_platform_meta_after_update(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        exp = pd.DataFrame(
+            [
+                ["Model", "Scenario", 1, "mnew", "bar"],
+            ],
+            columns=["model", "scenario", "version", "key", "value"],
+        )
+        ret = platform.meta.tabulate(run__id=1)
+        pdt.assert_frame_equal(exp, ret, check_like=True)
+
+    def test_clear_meta(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        with run.transact("Clear meta data"):
+            run.meta = {}
+        assert dict(run.meta) == {}
+
+        run2 = platform.runs.get("Model", "Scenario")
+        assert dict(run2.meta) == {}
+
+    def test_tabulate_platform_meta_after_delete(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        exp = pd.DataFrame(
+            [],
+            columns=["model", "scenario", "version", "key", "value"],
+        )
+        ret = platform.meta.tabulate(run__id=1)
+        # index_type differs on http platforms here (integer v empty)
+        pdt.assert_frame_equal(exp, ret, check_like=True, check_index_type=False)
+
+    def test_two_runs_with_numpy_values(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        run1 = run
+        run2 = platform.runs.create("Model 2", "Scenario 2")
+
+        with run1.transact("Set meta data on both"):
+            run1.meta = {"mnpint": np.float64(12)}
+        with run2.transact("Set meta data on both"):
+            run2.meta = {"mnpfloat": np.float64(3.1415926535897)}
+
+    def test_tabulate_platform_meta_two_runs(self, platform: ixmp4.Platform) -> None:
+        exp = pd.DataFrame(
+            [
+                ["Model", "Scenario", 1, "mnpint", 12],
+                ["Model 2", "Scenario 2", 1, "mnpfloat", 3.1415926535897],
+            ],
+            columns=["model", "scenario", "version", "key", "value"],
+        )
+        ret = platform.meta.tabulate(run={"default_only": False})
+        pdt.assert_frame_equal(exp, ret, check_like=True)
+
+        exp_non_default = pd.DataFrame(
+            [
+                ["Model 2", "Scenario 2", 1, "mnpfloat", 3.1415926535897],
+            ],
+            columns=["model", "scenario", "version", "key", "value"],
+        )
+        ret_non_default = platform.meta.tabulate(run={"is_default": False})
+        pdt.assert_frame_equal(exp_non_default, ret_non_default, check_like=True)
 
 
-def test_meta_requires_lock(platform: ixmp4.Platform) -> None:
-    run = platform.runs.create("Model", "Scenario")
-    # Attempt to add data without owning a lock
-    with pytest.raises(RunLockRequired):
-        run.meta["mint"] = 13
+class TestMetaRunLock(MetaTest):
+    def test_meta_requires_lock(self, run: ixmp4.Run) -> None:
+        with pytest.raises(ixmp4.Run.LockRequired):
+            run.meta["mint"] = 13
 
-    with pytest.raises(RunLockRequired):
-        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
+        with pytest.raises(ixmp4.Run.LockRequired):
+            run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
 
-    with run.transact("Add meta data"):
-        run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
+        with run.transact("Add meta data"):
+            run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
 
-    # Attempt to remove data without owning a lock
-    with pytest.raises(RunLockRequired):
-        del run.meta["mfloat"]
-        run.meta["mstr"] = None
+        with pytest.raises(ixmp4.Run.LockRequired):
+            del run.meta["mfloat"]
+            run.meta["mstr"] = None
 
 
-@pytest.mark.parametrize("nonevalue", (None, np.nan))
-def test_run_meta_none(platform: ixmp4.Platform, nonevalue: float | None) -> None:
-    """Test that None-values are handled correctly"""
-    run1 = platform.runs.create("Model", "Scenario")
-    run1.set_as_default()
+class TestMetaRollback(MetaTest):
+    def test_meta_update_failure(self, run: ixmp4.Run) -> None:
+        with run.transact("Add meta data"):
+            run.meta = {"mint": 13, "mfloat": 0.0, "mstr": "foo"}
+            run.meta["mfloat"] = -1.9
 
-    # set multiple indicators where one value is None
-    with run1.transact("Add meta data with `None`"):
-        run1.meta = {"mint": 13, "mnone": nonevalue}
-    assert run1.meta["mint"] == 13
-    with pytest.raises(KeyError, match="'mnone'"):
-        run1.meta["mnone"]
+        try:
+            with run.transact("Update meta data failure"):
+                run.meta["mfloat"] = 3.14
+                raise CustomException
+        except CustomException:
+            pass
 
-    assert dict(platform.runs.get("Model", "Scenario").meta) == {"mint": 13}
+    def test_meta_versioning_after_update_failure(
+        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        assert run.meta == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
+        assert run.meta["mfloat"] == -1.9
 
-    with run1.transact("Delete meta data by setting key to `None`"):
-        # delete indicator via setter
-        run1.meta["mint"] = nonevalue
-        with pytest.raises(KeyError, match="'mint'"):
-            run1.meta["mint"]
+    def test_meta_non_versioning_after_update_failure(
+        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        assert run.meta == {"mint": 13, "mfloat": 3.14, "mstr": "foo"}
+        assert run.meta["mfloat"] == 3.14
 
-    assert not dict(platform.runs.get("Model", "Scenario").meta)
+    def test_meta_second_update_failure(self, run: ixmp4.Run) -> None:
+        with run.transact("Remove meta data"):
+            del run.meta["mfloat"]
+            run.meta["mint"] = None
 
+        try:
+            with run.transact("Update meta data second failure"):
+                run.meta["mfloat"] = 3.14
+                raise CustomException
+        except CustomException:
+            pass
 
-def test_platform_meta_empty(platform: ixmp4.Platform) -> None:
-    """Test that an empty dataframe is returned if there are no scenarios"""
-    exp = pd.DataFrame([], columns=["model", "scenario", "version", "key", "value"])
-    pdt.assert_frame_equal(platform.meta.tabulate(), exp)
+    def test_meta_versioning_after_second_update_failure(
+        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        assert run.meta == {"mstr": "foo"}
+        assert run.meta["mstr"] == "foo"
+
+    def test_meta_non_versioning_after_second_update_failure(
+        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        assert run.meta == {"mstr": "foo", "mfloat": 3.14}
+        assert run.meta["mstr"] == "foo"
+        assert run.meta["mfloat"] == 3.14

@@ -1,759 +1,585 @@
-import warnings
-from typing import TYPE_CHECKING
+import datetime
+from typing import Any
 
-import numpy as np
 import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4.core import IndexSet, Table
-from ixmp4.core.exceptions import (
-    OptimizationDataValidationError,
-    OptimizationItemUsageError,
-    RunLockRequired,
-)
-from ixmp4.data.backend.test import RestTestBackend
+from ixmp4.core.exceptions import OptimizationItemUsageError
+from tests import backends
+from tests.custom_exception import CustomException
 
-from .. import utils
+from .base import PlatformTest
 
-if TYPE_CHECKING:
-    from ixmp4.data.backend import SqlAlchemyBackend
+platform = backends.get_platform_fixture(scope="class")
 
 
-def df_from_list(tables: list[Table]) -> pd.DataFrame:
-    return pd.DataFrame(
-        # Order is important here to avoid utils.assert_unordered_equality,
-        # which doesn't like lists
-        [
-            [
-                table.run_id,
-                table.data,
-                table.name,
-                table.id,
-                table.created_at,
-                table.created_by,
-            ]
-            for table in tables
-        ],
-        columns=[
-            "run__id",
-            "data",
-            "name",
-            "id",
-            "created_at",
-            "created_by",
-        ],
-    )
-
-
-class TestCoreTable:
-    def test_create_table(self, platform: ixmp4.Platform) -> None:
+class OptimizationTableTest(PlatformTest):
+    @pytest.fixture(scope="class")
+    def run(
+        self,
+        platform: ixmp4.Platform,
+    ) -> ixmp4.Run:
         run = platform.runs.create("Model", "Scenario")
+        assert run.id == 1
+        return run
 
-        # Test normal creation
-        indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=platform, run_id=run.id
-            )
-        )
-        with run.transact("Test tables.create()"):
-            table = run.optimization.tables.create(
-                "Table 1",
-                constrained_to_indexsets=[indexset_1.name],
-            )
-        assert table.run_id == run.id
-        assert table.id == 1
-        assert table.name == "Table 1"
-        assert table.data == {}
-        assert table.indexset_names == [indexset_1.name]
-        assert table.column_names is None
+    @pytest.fixture(scope="class")
+    def indexset(self, run: ixmp4.Run) -> ixmp4.optimization.IndexSet:
+        with run.transact("Create indexset"):
+            indexset = run.optimization.indexsets.create("IndexSet")
+            indexset.add_data(["do", "re", "mi", "fa", "so", "la", "ti"])
+            return indexset
 
-        # Test create without run lock raises
-        with pytest.raises(RunLockRequired):
+
+class TestTable(OptimizationTableTest):
+    def test_create_table(
+        self,
+        run: ixmp4.Run,
+        indexset: ixmp4.optimization.IndexSet,
+        fake_time: datetime.datetime,
+    ) -> None:
+        with run.transact("Create tables"):
+            table1 = run.optimization.tables.create(
+                "Table 1", constrained_to_indexsets=["IndexSet"]
+            )
+
+            table2 = run.optimization.tables.create(
+                "Table 2", constrained_to_indexsets=["IndexSet"]
+            )
+            table3 = run.optimization.tables.create(
+                "Table 3",
+                constrained_to_indexsets=["IndexSet"],
+                column_names=["Column"],
+            )
+
+            table4 = run.optimization.tables.create(
+                "Table 4",
+                constrained_to_indexsets=["IndexSet", "IndexSet"],
+                column_names=["Column 1", "Column 2"],
+            )
+
+        assert table1.id == 1
+        assert table1.run_id == run.id
+        assert table1.name == "Table 1"
+        assert table1.data == {}
+        assert table1.indexset_names == ["IndexSet"]
+        assert table1.column_names is None
+        assert table1.created_by == "@unknown"
+        assert table1.created_at == fake_time.replace(tzinfo=None)
+
+        assert table2.id == 2
+        assert table2.indexset_names == ["IndexSet"]
+        assert table2.column_names is None
+
+        assert table3.id == 3
+        assert table3.indexset_names == ["IndexSet"]
+        assert table3.column_names == ["Column"]
+
+        assert table4.id == 4
+        assert table4.indexset_names == ["IndexSet", "IndexSet"]
+        assert table4.column_names == ["Column 1", "Column 2"]
+
+    def test_tabulate_table(self, run: ixmp4.Run) -> None:
+        ret_df = run.optimization.tables.tabulate()
+        assert len(ret_df) == 4
+        assert "id" in ret_df.columns
+        assert "name" in ret_df.columns
+        assert "data" in ret_df.columns
+        assert "created_at" in ret_df.columns
+        assert "created_by" in ret_df.columns
+
+        assert "run__id" not in ret_df.columns
+
+    def test_list_table(self, run: ixmp4.Run) -> None:
+        assert len(run.optimization.tables.list()) == 4
+
+    def test_delete_table_via_func_obj(self, run: ixmp4.Run) -> None:
+        with run.transact("Delete table 1"):
+            table1 = run.optimization.tables.get_by_name("Table 1")
+            run.optimization.tables.delete(table1)
+
+    def test_delete_table_via_func_id(self, run: ixmp4.Run) -> None:
+        with run.transact("Delete table 2"):
+            run.optimization.tables.delete(2)
+
+    def test_delete_table_via_func_name(self, run: ixmp4.Run) -> None:
+        with run.transact("Delete table 3"):
+            run.optimization.tables.delete("Table 3")
+
+    def test_delete_table_via_obj(self, run: ixmp4.Run) -> None:
+        table4 = run.optimization.tables.get_by_name("Table 4")
+        with run.transact("Delete table 4"):
+            table4.delete()
+
+    def test_table_empty(self, run: ixmp4.Run) -> None:
+        assert run.optimization.tables.tabulate().empty
+        assert len(run.optimization.tables.list()) == 0
+
+
+class TestTableUnique(OptimizationTableTest):
+    def test_table_unique(
+        self,
+        run: ixmp4.Run,
+        indexset: ixmp4.optimization.IndexSet,
+    ) -> None:
+        with run.transact("Table not unique"):
             run.optimization.tables.create(
-                "Table 2", constrained_to_indexsets=[indexset_1.name]
+                "Table", constrained_to_indexsets=[indexset.name]
             )
 
-        with run.transact("Test tables.create() errors and column_names"):
-            # Test duplicate name raises
-            with pytest.raises(Table.NotUnique):
-                _ = run.optimization.tables.create(
-                    "Table 1", constrained_to_indexsets=[indexset_1.name]
+            with pytest.raises(ixmp4.optimization.Table.NotUnique):
+                run.optimization.tables.create(
+                    "Table", constrained_to_indexsets=[indexset.name]
                 )
 
-            # Test mismatch in constrained_to_indexsets and column_names raises
+
+class TestTableNotFound(OptimizationTableTest):
+    def test_table_not_found(
+        self,
+        run: ixmp4.Run,
+    ) -> None:
+        with pytest.raises(ixmp4.optimization.Table.NotFound):
+            run.optimization.tables.get_by_name("Table")
+
+
+class TestTableCreateInvalidArguments(OptimizationTableTest):
+    def test_table_create_invalid_args(
+        self,
+        run: ixmp4.Run,
+        indexset: ixmp4.optimization.IndexSet,
+        fake_time: datetime.datetime,
+    ) -> None:
+        with run.transact("Invalid arguments"):
             with pytest.raises(OptimizationItemUsageError, match="not equal in length"):
-                _ = run.optimization.tables.create(
-                    name="Table 2",
-                    constrained_to_indexsets=[indexset_1.name],
-                    column_names=["Dimension 1", "Dimension 2"],
+                run.optimization.tables.create(
+                    "Table",
+                    constrained_to_indexsets=[indexset.name],
+                    column_names=["Column 1", "Column 2"],
                 )
 
-            # Test columns_names are used for names if given
-            table_2 = run.optimization.tables.create(
-                name="Table 2",
-                constrained_to_indexsets=[indexset_1.name],
-                column_names=["Column 1"],
-            )
-        assert table_2.column_names == ["Column 1"]
-
-        with run.transact("Test tables.create() multiple column_names"):
-            # Test duplicate column_names raise
             with pytest.raises(
                 OptimizationItemUsageError, match="`column_names` are not unique"
             ):
-                _ = run.optimization.tables.create(
-                    name="Table 3",
-                    constrained_to_indexsets=[indexset_1.name, indexset_1.name],
+                run.optimization.tables.create(
+                    "Table",
+                    constrained_to_indexsets=[indexset.name, indexset.name],
                     column_names=["Column 1", "Column 1"],
                 )
 
-            # Test using different column names for same indexset
-            table_3 = run.optimization.tables.create(
-                name="Table 3",
-                constrained_to_indexsets=[indexset_1.name, indexset_1.name],
-                column_names=["Column 1", "Column 2"],
-            )
 
-        assert table_3.column_names == ["Column 1", "Column 2"]
-        assert table_3.indexset_names == [indexset_1.name, indexset_1.name]
+class TableDataTest(OptimizationTableTest):
+    @pytest.fixture(scope="class")
+    def test_data_indexsets(self, run: ixmp4.Run) -> list[ixmp4.optimization.IndexSet]:
+        with run.transact("Create indexsets"):
+            indexset1 = run.optimization.indexsets.create("IndexSet 1")
+            indexset2 = run.optimization.indexsets.create("IndexSet 2")
+            indexset1.add_data(["do", "re", "mi", "fa", "so", "la", "ti"])
+            indexset2.add_data([3, 1, 4])
 
-        # Test indexset_names is not writable
-        with run.transact("Test table.indexset_names setter"):
-            with pytest.raises(AttributeError, match="set"):
-                # Triggering mypy error on purpose
-                table.indexset_names = [indexset_2.name]  # type:ignore[misc]
+        return [indexset1, indexset2]
 
-    def test_delete_table(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        (indexset_1,) = utils.create_indexsets_for_run(
-            platform=platform, run_id=run.id, amount=1
-        )
-        with run.transact("Test tables.delete()"):
-            table = run.optimization.tables.create(
-                name="Table", constrained_to_indexsets=[indexset_1.name]
-            )
-
-            # TODO How to check that DeletionPrevented is raised? No other object uses
-            # Table.id, so nothing could prevent the deletion.
-
-            # Test unknown name raises
-            with pytest.raises(Table.NotFound):
-                run.optimization.tables.delete(item="does not exist")
-
-            # Test normal deletion
-            run.optimization.tables.delete(item=table.name)
-
-        assert run.optimization.tables.tabulate().empty
-
-        # Confirm that IndexSet has not been deleted
-        assert not run.optimization.indexsets.tabulate().empty
-
-        with run.transact("Test tables.delete() indexset linkage"):
-            # Test that association table rows are deleted
-            # If they haven't, this would raise DeletionPrevented
-            run.optimization.indexsets.delete(item=indexset_1.id)
-
-        # Test delete without run lock raises
-        with pytest.raises(RunLockRequired):
-            run.optimization.tables.delete(item="Table 2")
-
-    def test_get_table(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        (indexset,) = utils.create_indexsets_for_run(
-            platform=platform, run_id=run.id, amount=1
-        )
-        with run.transact("Test tables.get()"):
-            _ = run.optimization.tables.create(
-                name="Table", constrained_to_indexsets=[indexset.name]
-            )
-        table = run.optimization.tables.get("Table")
-        assert table.run_id == run.id
-        assert table.id == 1
-        assert table.name == "Table"
-        assert table.data == {}
-        assert table.indexset_names == [indexset.name]
-
-        with pytest.raises(Table.NotFound):
-            _ = run.optimization.tables.get(name="Table 2")
-
-    def test_table_add_data(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=platform, run_id=run.id
-            )
-        )
-        with run.transact("Test Table.add()"):
-            indexset.add(data=["foo", "bar", ""])
-            indexset_2.add([1, 2, 3])
-            # pandas can only convert dicts to dataframes if the values are lists
-            # or if index is given. But maybe using read_json instead of from_dict
-            # can remedy this. Or maybe we want to catch the resulting
-            # "ValueError: If using all scalar values, you must pass an index" and
-            # reraise a custom informative error?
-            test_data_1 = {indexset.name: ["foo"], indexset_2.name: [1]}
+    def test_table_add_data(
+        self,
+        run: ixmp4.Run,
+        test_data_indexsets: list[ixmp4.optimization.IndexSet],
+        column_names: list[str] | None,
+        test_data: dict[str, list[Any]] | pd.DataFrame,
+        fake_time: datetime.datetime,
+    ) -> None:
+        with run.transact("Create table and add data"):
             table = run.optimization.tables.create(
                 "Table",
-                constrained_to_indexsets=[indexset.name, indexset_2.name],
+                constrained_to_indexsets=[i.name for i in test_data_indexsets],
+                column_names=column_names,
             )
-            table.add(data=test_data_1)
-        assert table.data == test_data_1
+            table.add_data(test_data)
 
-        test_data_2 = {indexset.name: [""], indexset_2.name: [3]}
+        if isinstance(test_data, pd.DataFrame):
+            test_data = test_data.to_dict(orient="list")
 
-        # Test add without run lock raises
-        with pytest.raises(RunLockRequired):
-            table.add(data=test_data_2)
+        assert table.data == test_data
 
-        with run.transact("Test Table.add() errors"):
-            table_2 = run.optimization.tables.create(
-                name="Table 2",
-                constrained_to_indexsets=[indexset.name, indexset_2.name],
+    def test_table_remove_data_partial(
+        self,
+        run: ixmp4.Run,
+        partial_test_data: dict[str, list[Any]] | pd.DataFrame,
+        remaining_test_data: dict[str, list[Any]],
+        fake_time: datetime.datetime,
+    ) -> None:
+        with run.transact("Remove table data partial"):
+            table = run.optimization.tables.get_by_name("Table")
+            table.remove_data(partial_test_data)
+
+        assert table.data == remaining_test_data
+
+    def test_table_remove_data_full(
+        self,
+        run: ixmp4.Run,
+        fake_time: datetime.datetime,
+    ) -> None:
+        with run.transact("Remove table data full"):
+            table = run.optimization.tables.get_by_name("Table")
+            table.remove_data()
+
+        assert table.data == {}
+
+
+class TestTableData(TableDataTest):
+    @pytest.fixture(scope="class")
+    def column_names(
+        self,
+    ) -> list[str] | None:
+        return None
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
+
+    @pytest.fixture(scope="class")
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {
+            "IndexSet 1": ["re", "mi"],
+            "IndexSet 2": [3, 1],
+        }
+
+    @pytest.fixture(scope="class")
+    def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {
+            "IndexSet 1": ["do"],
+            "IndexSet 2": [3],
+        }
+
+
+class TestTableDataWithColumnNames(TableDataTest):
+    @pytest.fixture(scope="class")
+    def column_names(self) -> list[str] | None:
+        return ["Column 1", "Column 2"]
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {
+            "Column 1": ["do", "re", "mi"],
+            "Column 2": [3, 3, 1],
+        }
+
+    @pytest.fixture(scope="class")
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {
+            "Column 1": ["re", "mi"],
+            "Column 2": [3, 1],
+        }
+
+    @pytest.fixture(scope="class")
+    def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {
+            "Column 1": ["do"],
+            "Column 2": [3],
+        }
+
+
+class TestTableDataDataFrame(TableDataTest):
+    @pytest.fixture(scope="class")
+    def column_names(
+        self,
+    ) -> list[str] | None:
+        return None
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["do", 3],
+                ["re", 3],
+                ["mi", 1],
+            ],
+            columns=["IndexSet 1", "IndexSet 2"],
+        )
+
+    @pytest.fixture(scope="class")
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["re", 3],
+                ["mi", 1],
+            ],
+            columns=["IndexSet 1", "IndexSet 2"],
+        )
+
+    @pytest.fixture(scope="class")
+    def remaining_test_data(self) -> dict[str, list[Any]]:
+        return {
+            "IndexSet 1": ["do"],
+            "IndexSet 2": [3],
+        }
+
+
+class TestTableInvalidData(OptimizationTableTest):
+    def test_tables_create(self, run: ixmp4.Run) -> None:
+        with run.transact("Create indexsets"):
+            indexset1 = run.optimization.indexsets.create("IndexSet 1")
+            indexset2 = run.optimization.indexsets.create("IndexSet 2")
+            indexset1.add_data(["do", "re", "mi", "fa", "so", "la", "ti"])
+            indexset2.add_data([3, 1, 4])
+
+        with run.transact("Create tables"):
+            table1 = run.optimization.tables.create(
+                "Table 1",
+                constrained_to_indexsets=["IndexSet 1", "IndexSet 2"],
             )
+            assert table1.id == 1
 
-            with pytest.raises(OptimizationDataValidationError, match="missing values"):
-                table_2.add(
-                    pd.DataFrame({indexset.name: [None], indexset_2.name: [2]}),
-                    # empty string is allowed for now, but None or NaN raise
+    def test_table_add_invalid_data(self, run: ixmp4.Run) -> None:
+        table1 = run.optimization.tables.get_by_name("Table 1")
+
+        with pytest.raises(
+            ixmp4.optimization.Table.DataInvalid,
+            match="All arrays must be of the same length",
+        ):
+            with run.transact("Add invalid data"):
+                table1.add_data(
+                    {
+                        "IndexSet 1": ["do", "re"],  # missing "mi"
+                        "IndexSet 2": [3, 3, 1],
+                    }
                 )
 
-            with pytest.raises(
-                OptimizationDataValidationError, match="contains duplicate rows"
-            ):
-                table_2.add(
-                    data={indexset.name: ["foo", "foo"], indexset_2.name: [2, 2]},
-                )
-
-            # Test raising on unrecognised data.values()
-            with pytest.raises(
-                OptimizationDataValidationError,
-                match="contains values that are not allowed",
-            ):
-                table_2.add(
-                    data={indexset.name: ["foo"], indexset_2.name: [0]},
-                )
-
-            table_2.add(data=test_data_2)
-        assert table_2.data == test_data_2
-
-        # Test overwriting column names
-        test_data_3 = {"Column 1": ["bar"], "Column 2": [2]}
-        with run.transact("Test Table.add() column_names"):
-            table_3 = run.optimization.tables.create(
-                name="Table 3",
-                constrained_to_indexsets=[indexset.name, indexset_2.name],
-                column_names=["Column 1", "Column 2"],
-            )
-            with pytest.raises(
-                OptimizationDataValidationError,
-                match="Data is missing for some columns!",
-            ):
-                table_3.add(data={"Column 1": ["bar"]})
-
-            table_3.add(data=test_data_3)
-        assert table_3.data == test_data_3
-
-        with run.transact("Test Table.add() column_names insert"):
-            # Test raising on non-existing Column.name
-            with pytest.raises(
-                OptimizationDataValidationError,
-                match="Trying to add data to unknown columns!",
-            ):
-                table_3.add(
-                    {"Column 1": ["not there"], "Column 2": [2], "Column 3": [1]}
-                )
-
-            # Test data is expanded when Column.name is already present
-            table_3.add(
-                data=pd.DataFrame({"Column 1": ["foo"], "Column 2": [3]}),
-            )
-        assert table_3.data == {"Column 1": ["bar", "foo"], "Column 2": [2, 3]}
-
-        test_data_4 = {"Column 2": [2], "Column 1": ["bar"]}
-
-        with run.transact("Test Table.add() order"):
-            # Test that order is not important...
-            table_4 = run.optimization.tables.create(
-                name="Table 4",
-                constrained_to_indexsets=[indexset.name, indexset_2.name],
-                column_names=["Column 1", "Column 2"],
-            )
-            table_4.add(data=test_data_4)
-        assert table_4.data == test_data_4
-
-        with run.transact("Test Table.add() order expanding"):
-            # ...even for expanding
-            table_4.add(data={"Column 1": ["foo"], "Column 2": [1]})
-        assert table_4.data == {"Column 2": [2, 1], "Column 1": ["bar", "foo"]}
-
-        with run.transact("Test Table.add() another error"):
-            # This doesn't seem to test a distinct case compared to the above
-            with pytest.raises(
-                OptimizationDataValidationError,
-                match="Trying to add data to unknown columns!",
-            ):
-                table_4.add(
-                    data={
-                        "Column 1": ["bar"],
-                        "Column 2": [3],
-                        "Indexset": ["foo"],
+        with pytest.raises(
+            ixmp4.optimization.Table.DataInvalid, match="contains duplicate rows"
+        ):
+            with run.transact("Add invalid data"):
+                table1.add_data(
+                    {
+                        "IndexSet 1": ["do", "do", "mi"],
+                        "IndexSet 2": [3, 3, 1],
                     },
                 )
 
-        with run.transact("Test Table.add() order"):
-            # Test various data types
-            indexset_3 = run.optimization.indexsets.create(name="Indexset 3")
+    def test_table_remove_invalid_data(self, run: ixmp4.Run) -> None:
+        table1 = run.optimization.tables.get_by_name("Table 1")
 
-            indexset_3.add(data=[1.0, 2.2, 3.14])
-            table_5 = run.optimization.tables.create(
-                name="Table 5",
-                constrained_to_indexsets=[indexset.name, indexset_3.name],
+        with pytest.raises(
+            OptimizationItemUsageError, match="data to be removed must specify"
+        ):
+            with run.transact("Remove invalid data"):
+                table1.remove_data({"IndexSet 1": ["do"]})
+
+
+class TestTableRunLock(OptimizationTableTest):
+    def test_table_requires_lock(
+        self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
+    ) -> None:
+        with pytest.raises(ixmp4.Run.LockRequired):
+            run.optimization.tables.create(
+                "Table", constrained_to_indexsets=[indexset.name]
             )
-            test_data_5 = {
-                indexset.name: ["foo", "foo", "bar"],
-                indexset_3.name: [1.0, 2.2, 3.14],
-            }
-            table_5.add(test_data_5)
-        assert table_5.data == test_data_5
 
-        with run.transact("Test Table.add() empty"):
-            # Test adding nothing is a no-op
-            table_5.add(data={})
-        assert table_5.data == test_data_5
-
-        with run.transact("Test table.data setter"):
+        with run.transact("Create table"):
             table = run.optimization.tables.create(
-                name="Table 6", constrained_to_indexsets=[indexset.name]
-            )
-            with pytest.raises(AttributeError, match="set"):
-                # Triggering mypy error on purpose
-                table.data = {indexset.name: ["foo"]}  # type:ignore[misc]
-
-    def test_table_remove_data(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-
-        # Prepare a table containing some test data
-        indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=platform, run_id=run.id
-            )
-        )
-        initial_data: dict[str, list[int] | list[str]] = {
-            indexset_1.name: ["foo", "foo", "foo", "bar", "bar", "bar"],
-            indexset_2.name: [1, 2, 3, 1, 2, 3],
-        }
-        with run.transact("Test Table.remove()"):
-            indexset_1.add(data=["foo", "bar", ""])
-            indexset_2.add(data=[1, 2, 3])
-            table = run.optimization.tables.create(
-                name="Table",
-                constrained_to_indexsets=[indexset_1.name, indexset_2.name],
-            )
-            table.add(data=initial_data)
-
-            # Test removing empty data removes nothing
-            table.remove(data={})
-
-        assert table.data == initial_data
-
-        remove_data_1: dict[str, list[int] | list[str]] = {
-            indexset_1.name: ["foo"],
-            indexset_2.name: [1],
-        }
-
-        # Test remove without run lock raises
-        with pytest.raises(RunLockRequired):
-            table.remove(data=remove_data_1)
-
-        with run.transact("Test Table.remove() errors and single"):
-            # Test incomplete index raises
-            with pytest.raises(
-                OptimizationItemUsageError, match="data to be removed must specify"
-            ):
-                table.remove(data={indexset_1.name: ["foo"]})
-
-            # Test unknown keys without indexed columns raises
-            with pytest.raises(
-                OptimizationItemUsageError, match="data to be removed must specify"
-            ):
-                table.remove(data={"foo": ["bar"]})
-
-            # Test removing one row
-            table.remove(data=remove_data_1)
-
-        # Prepare the expectation from the original test data
-        # You can confirm manually that only the correct types are removed
-        for key in remove_data_1.keys():
-            initial_data[key].remove(remove_data_1[key][0])  # type: ignore[arg-type]
-
-        assert table.data == initial_data
-
-        # Test removing non-existing (but correctly formatted) data works, even with
-        # additional/unused columns
-        remove_data_1["foo"] = ["bar"]
-        with run.transact("Test Table.remove() non-existing"):
-            table.remove(data=remove_data_1)
-
-        assert table.data == initial_data
-
-        # Test removing multiple rows
-        remove_data_2 = pd.DataFrame(
-            {indexset_1.name: ["foo", "bar", "bar"], indexset_2.name: [3, 1, 3]}
-        )
-        with run.transact("Test Table.remove() multiple"):
-            table.remove(data=remove_data_2)
-
-        # Prepare the expectation
-        expected = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
-
-        assert table.data == expected
-
-        # Test removing all remaining data
-        remove_data_3 = {indexset_1.name: ["foo", "bar"], indexset_2.name: [2, 2]}
-        with run.transact("Test Table.remove() all data"):
-            table.remove(data=remove_data_3)
-
-        assert table.data == {}
-
-    def test_list_tables(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        utils.create_indexsets_for_run(platform=platform, run_id=run.id)
-        with run.transact("Test tables.list()"):
-            table = run.optimization.tables.create(
-                "Table", constrained_to_indexsets=["Indexset 1"]
-            )
-            table_2 = run.optimization.tables.create(
-                "Table 2", constrained_to_indexsets=["Indexset 2"]
+                "Table", constrained_to_indexsets=[indexset.name]
             )
 
-        # Create table in another run to test listing tables for specific run
-        run_2 = platform.runs.create("Model", "Scenario")
-        with run_2.transact("Test tables.list() 2"):
-            indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
-            run_2.optimization.tables.create(
-                "Table 1", constrained_to_indexsets=[indexset_3.name]
-            )
+        with pytest.raises(ixmp4.Run.LockRequired):
+            table.add_data({"marginals": [1], "levels": [2], "IndexSet": ["fa"]})
 
-        expected_ids = [table.id, table_2.id]
-        list_ids = [table.id for table in run.optimization.tables.list()]
-        assert not (set(expected_ids) ^ set(list_ids))
+        with pytest.raises(ixmp4.Run.LockRequired):
+            table.remove_data({"IndexSet": ["fa"]})
 
-        # Test retrieving just one result by providing a name
-        expected_id = [table.id]
-        list_id = [table.id for table in run.optimization.tables.list(name="Table")]
-        assert not (set(expected_id) ^ set(list_id))
+        with pytest.raises(ixmp4.Run.LockRequired):
+            table.delete()
 
-    def test_tabulate_table(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        indexset, indexset_2 = tuple(
-            IndexSet(_backend=platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=platform, run_id=run.id
-            )
-        )
-        with run.transact("Test tables.tabulate()"):
-            table = run.optimization.tables.create(
-                name="Table",
-                constrained_to_indexsets=[indexset.name, indexset_2.name],
-            )
-            table_2 = run.optimization.tables.create(
-                name="Table 2",
-                constrained_to_indexsets=[indexset.name, indexset_2.name],
-            )
+        with pytest.raises(ixmp4.Run.LockRequired):
+            run.optimization.tables.delete(table.id)
 
-        # Create table in another run to test listing tables for specific run
-        run_2 = platform.runs.create("Model", "Scenario")
-        with run_2.transact("Test tables.tabulate() 2"):
-            indexset_3 = run_2.optimization.indexsets.create("Indexset 3")
-            run_2.optimization.tables.create(
-                "Table 1", constrained_to_indexsets=[indexset_3.name]
-            )
 
-        pd.testing.assert_frame_equal(
-            df_from_list([table_2]),
-            run.optimization.tables.tabulate(name="Table 2"),
-        )
-
-        with run.transact("Test tables.tabulate() with data"):
-            indexset.add(["foo", "bar"])
-            indexset_2.add([1, 2, 3])
-            test_data_1 = {indexset.name: ["foo"], indexset_2.name: [1]}
-            table.add(test_data_1)
-            test_data_2 = {indexset_2.name: [2, 3], indexset.name: ["foo", "bar"]}
-            table_2.add(test_data_2)
-
-        pd.testing.assert_frame_equal(
-            df_from_list([table, table_2]),
-            run.optimization.tables.tabulate(),
-        )
-
-    def test_table_docs(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        (indexset,) = utils.create_indexsets_for_run(
-            platform=platform, run_id=run.id, amount=1
-        )
-        with run.transact("Test Table.docs"):
-            table_1 = run.optimization.tables.create(
+class TestTableDocs(OptimizationTableTest):
+    def test_create_docs_via_func(
+        self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
+    ) -> None:
+        with run.transact("Create table 1"):
+            table1 = run.optimization.tables.create(
                 "Table 1", constrained_to_indexsets=[indexset.name]
             )
-        docs = "Documentation of Table 1"
-        table_1.docs = docs
-        assert table_1.docs == docs
 
-        table_1.docs = None
-        assert table_1.docs is None
-
-    def test_table_rollback_sqlite(self, sqlite_platform: ixmp4.Platform) -> None:
-        run = sqlite_platform.runs.create("Model", "Scenario")
-        (indexset,) = tuple(
-            IndexSet(_backend=sqlite_platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=sqlite_platform, run_id=run.id, amount=1
-            )
+        table1_docs1 = run.optimization.tables.set_docs(
+            "Table 1", "Description of Table 1"
         )
-        test_data = {indexset.name: ["foo"]}
+        table1_docs2 = run.optimization.tables.get_docs("Table 1")
 
-        with run.transact("Test Table versioning"):
+        assert table1_docs1 == table1_docs2
+        assert table1.docs == table1_docs1
+
+    def test_create_docs_via_object(
+        self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
+    ) -> None:
+        with run.transact("Create table 2"):
+            table2 = run.optimization.tables.create(
+                "Table 2", constrained_to_indexsets=[indexset.name]
+            )
+        table2.docs = "Description of Table 2"
+
+        assert run.optimization.tables.get_docs("Table 2") == table2.docs
+
+    def test_create_docs_via_setattr(
+        self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
+    ) -> None:
+        with run.transact("Create table 3"):
+            table3 = run.optimization.tables.create(
+                "Table 3", constrained_to_indexsets=[indexset.name]
+            )
+        setattr(table3, "docs", "Description of Table 3")
+
+        assert run.optimization.tables.get_docs("Table 3") == table3.docs
+
+    def test_list_docs(self, run: ixmp4.Run) -> None:
+        assert run.optimization.tables.list_docs() == [
+            "Description of Table 1",
+            "Description of Table 2",
+            "Description of Table 3",
+        ]
+
+        assert run.optimization.tables.list_docs(id=3) == ["Description of Table 3"]
+
+        assert run.optimization.tables.list_docs(id__in=[1]) == [
+            "Description of Table 1"
+        ]
+
+    def test_delete_docs_via_func(self, run: ixmp4.Run) -> None:
+        table1 = run.optimization.tables.get_by_name("Table 1")
+        run.optimization.tables.delete_docs("Table 1")
+        table1 = run.optimization.tables.get_by_name("Table 1")
+        assert table1.docs is None
+
+    def test_delete_docs_set_none(self, run: ixmp4.Run) -> None:
+        table2 = run.optimization.tables.get_by_name("Table 2")
+        table2.docs = None
+        table2 = run.optimization.tables.get_by_name("Table 2")
+        assert table2.docs is None
+
+    def test_delete_docs_del(self, run: ixmp4.Run) -> None:
+        table3 = run.optimization.tables.get_by_name("Table 3")
+        del table3.docs
+        table3 = run.optimization.tables.get_by_name("Table 3")
+        assert table3.docs is None
+
+    def test_docs_empty(self, run: ixmp4.Run) -> None:
+        assert len(run.optimization.tables.list_docs()) == 0
+
+
+class TestTableRollback(OptimizationTableTest):
+    def test_table_add_data_failure(
+        self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
+    ) -> None:
+        with run.transact("Add table data"):
             table = run.optimization.tables.create(
-                "Table 1", constrained_to_indexsets=[indexset.name]
+                "Table", constrained_to_indexsets=[indexset.name]
             )
-            indexset.add(["foo"])
-
-        with warnings.catch_warnings(record=True) as w:
-            try:
-                with (
-                    run.transact("Test Table versioning update on sqlite"),
-                ):
-                    table.add(test_data)
-                    raise utils.CustomException("Whoops!!!")
-            except utils.CustomException:
-                pass
-
-        table = run.optimization.tables.get(table.name)
-
-        assert table.data == test_data
-        assert (
-            "An exception occurred but the `Run` was not reverted because "
-            "versioning is not supported by this platform" in str(w[0].message)
-        )
-
-    def test_versioning_table(self, pg_platform: ixmp4.Platform) -> None:
-        run = pg_platform.runs.create("Model", "Scenario")
-        indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=pg_platform, run_id=run.id
+            table.add_data(
+                {
+                    "IndexSet": ["do", "re", "mi"],
+                }
             )
-        )
 
-        with run.transact("Test Table versioning"):
-            indexset_1.add(data=[1, 2, 3])
-            indexset_2.add(data=["foo", "bar"])
-            table = run.optimization.tables.create(
-                "Table 1", constrained_to_indexsets=[indexset_1.name]
-            )
-            table.docs = "Docs of Table 1"
-            table.add(data={indexset_1.name: [1, 2]})
-            table.add(data={indexset_1.name: [3]})
-            table_2 = run.optimization.tables.create(
-                name="Table 2", constrained_to_indexsets=[indexset_2.name]
-            )
-            table_2.add(data={indexset_2.name: ["foo", "bar"]})
-            table_2.remove(data={indexset_2.name: ["foo"]})
-            run.optimization.tables.delete(table_2.id)
-
-            @utils.versioning_test(pg_platform.backend)
-            def assert_versions(backend: "SqlAlchemyBackend") -> None:
-                # Test Table versions
-                vdf = backend.optimization.tables.versions.tabulate()
-
-                data = vdf["data"].to_list()
-
-                # TODO assert_unordered_equality can't handle dict for .data
-                # property/column. Should we switch it to nullable? How do we test here?
-                expected = (
-                    pd.read_csv(
-                        "./tests/core/expected_versions/test_table_versioning.csv"
-                    )
-                    .replace({np.nan: None})
-                    .assign(
-                        created_at=pd.Series(
-                            [
-                                table.created_at,
-                                table.created_at,
-                                table.created_at,
-                                table_2.created_at,
-                                table_2.created_at,
-                                table_2.created_at,
-                                table_2.created_at,
-                            ]
-                        )
-                    )
+        try:
+            with run.transact("Update table data failure"):
+                table.add_data(
+                    {
+                        "IndexSet": ["fa", "so"],
+                    }
                 )
+                raise CustomException
+        except CustomException:
+            pass
 
-                # NOTE Don't know how to store/read in these dicts with csv
-                expected_data = [
-                    {},
-                    {"Indexset 1": [1, 2]},
-                    {"Indexset 1": [1, 2, 3]},
-                    {},
-                    {"Indexset 2": ["foo", "bar"]},
-                    {"Indexset 2": ["bar"]},
-                    {"Indexset 2": ["bar"]},
-                ]
+    def test_table_versioning_after_add_data_failure(
+        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+        assert table.data == {
+            "IndexSet": ["do", "re", "mi"],
+        }
 
-                utils.assert_unordered_equality(
-                    expected, vdf.drop(columns="data"), check_dtype=False
-                )
-                assert data == expected_data
+    def test_table_non_versioning_after_add_data_failure(
+        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+        assert table.data == {
+            "IndexSet": ["do", "fa", "mi", "re", "so"],
+        }
 
-                # Test TableIndexSetAssociation versions
-                # NOTE The last entry here comes implicitly from deleting Table 2
-                vdf = backend.optimization.tables._associations.versions.tabulate()
+    def test_table_remove_data_failure(self, run: ixmp4.Run) -> None:
+        table = run.optimization.tables.get_by_name("Table")
 
-                expected = pd.read_csv(
-                    "./tests/core/expected_versions/test_tableindexsetassociations_versioning.csv"
-                ).replace({np.nan: None})
-
-                if isinstance(pg_platform.backend, RestTestBackend):
-                    expected = expected.replace({23: 22, 23.0: 22.0})
-
-                utils.assert_unordered_equality(expected, vdf, check_dtype=False)
-
-    def test_table_rollback(self, pg_platform: ixmp4.Platform) -> None:
-        run = pg_platform.runs.create("Model", "Scenario")
-        indexset_1, indexset_2 = tuple(
-            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=pg_platform, run_id=run.id
+        with run.transact("Remove table data"):
+            table.remove_data(
+                {
+                    "IndexSet": ["fa", "so"],
+                }
             )
-        )
-
-        # Test rollback of Table creation
-        try:
-            with run.transact("Test Table rollback on creation"):
-                _ = run.optimization.tables.create(
-                    "Table", constrained_to_indexsets=[indexset_1.name]
-                )
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
-            pass
-
-        assert run.optimization.tables.tabulate().empty
-
-        # Test rollback of Table creation when linked in Docs table
-        try:
-            with run.transact("Test Table rollback after setting docs"):
-                table = run.optimization.tables.create(
-                    "Table", constrained_to_indexsets=[indexset_1.name]
-                )
-                table.docs = "Test Table"
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
-            pass
-
-        assert pg_platform.backend.optimization.tables.docs.list() == []
-
-        with run.transact("Test Table rollback setup"):
-            table = run.optimization.tables.create(
-                "Table", constrained_to_indexsets=[indexset_1.name]
-            )
-            indexset_1.add(data=[1, 2, 3])
-            table_2 = run.optimization.tables.create(
-                "Table 2",
-                constrained_to_indexsets=[indexset_2.name],
-                column_names=["Column 2"],
-            )
-            indexset_2.add(data=["foo", "bar"])
-
-        # Test rollback of Table data addition
-        try:
-            with run.transact("Test Table rollback on data addition"):
-                table.add(data={indexset_1.name: [1, 3]})
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
-            pass
-
-        table = run.optimization.tables.get("Table")
-        assert table.data == {}
-
-        # Test rollback of Table data removal
-        with run.transact("Test Table rollback on data removal -- setup"):
-            table.add(data={indexset_1.name: [1, 3]})
 
         try:
-            with run.transact("Test Table rollback on data removal"):
-                table.remove(data={indexset_1.name: [1]})
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
+            with run.transact("Remove table data failure"):
+                table.remove_data({"IndexSet": ["do", "re"]})
+                raise CustomException
+        except CustomException:
             pass
 
-        table = run.optimization.tables.get("Table")
-        assert table.data == {indexset_1.name: [1, 3]}
+    def test_table_versioning_after_remove_data_failure(
+        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+        assert table.data == {
+            "IndexSet": ["do", "re", "mi"],
+        }
 
-        # Test rollback of Table deletion
-        try:
-            with run.transact("Test Table rollback on deletion"):
-                run.optimization.tables.delete("Table")
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
-            pass
+    def test_table_non_versioning_after_remove_data_failure(
+        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+        assert table.data == {
+            "IndexSet": ["mi"],
+        }
 
-        table = run.optimization.tables.get("Table")
-        assert table.indexset_names == [indexset_1.name]
-        assert table.data == {indexset_1.name: [1, 3]}
-
-        # Test rollback of Table deletion with column_names
-        try:
-            with run.transact("Test Table rollback on deletion with column_names"):
-                run.optimization.tables.delete("Table 2")
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
-            pass
-
-        table_2 = run.optimization.tables.get("Table 2")
-        assert table_2.indexset_names == [indexset_2.name]
-        assert table_2.column_names == ["Column 2"]
-
-        # Test rollback of Table deletion with IndexSet deletion
-        try:
-            with run.transact("Test Table rollback on deletion w/ IndexSet deletion"):
-                run.optimization.tables.delete("Table")
-                run.optimization.indexsets.delete(indexset_1.name)
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
-            pass
-
-        table = run.optimization.tables.get("Table")
-        assert table.indexset_names == [indexset_1.name]
-        assert table.data == {indexset_1.name: [1, 3]}
-
-    def test_table_rollback_to_checkpoint(self, pg_platform: ixmp4.Platform) -> None:
-        run = pg_platform.runs.create("Model", "Scenario")
-        (indexset,) = tuple(
-            IndexSet(_backend=pg_platform.backend, _model=model, _run=run)
-            for model in utils.create_indexsets_for_run(
-                platform=pg_platform, run_id=run.id, amount=1
-            )
-        )
+    def test_table_docs_failure(self, run: ixmp4.Run) -> None:
+        table = run.optimization.tables.get_by_name("Table")
 
         try:
-            with run.transact("Test Table rollback to checkpoint"):
-                table = run.optimization.tables.create(
-                    "Table", constrained_to_indexsets=[indexset.name]
-                )
-                indexset.add(data=[1, 2, 3])
-                table.add(data={indexset.name: [1, 3]})
-                run.checkpoints.create("Test Table rollback to checkpoint")
-                table.remove(data={indexset.name: [1]})
-                run.optimization.tables.delete(item=table.id)
-                raise utils.CustomException("Whoops!!!")
-        except utils.CustomException:
+            with run.transact("Set table docs failure"):
+                table.docs = "These docs should persist!"
+                raise CustomException
+        except CustomException:
             pass
 
-        table = run.optimization.tables.get("Table")
-        assert table.data == {indexset.name: [1, 3]}
+    def test_table_after_docs_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+        assert table.docs == "These docs should persist!"
+
+    def test_table_delete_failure(
+        self, run: ixmp4.Run, indexset: ixmp4.optimization.IndexSet
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+
+        try:
+            with run.transact("Delete table failure"):
+                table.delete()
+                indexset.delete()
+                raise CustomException
+        except CustomException:
+            pass
+
+    def test_table_versioning_after_delete_failure(
+        self, versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        table = run.optimization.tables.get_by_name("Table")
+        assert table.id == 1
+
+    def test_table_non_versioning_after_delete_failure(
+        self, non_versioning_platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        with pytest.raises(ixmp4.optimization.Table.NotFound):
+            run.optimization.tables.get_by_name("Table")
