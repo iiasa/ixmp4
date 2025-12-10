@@ -13,7 +13,7 @@ from rich.table import Column, Table
 from toolkit.exceptions import ServiceException
 from typing_extensions import Annotated
 
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.core.platform import Platform
 from ixmp4.data.generator import MockDataGenerator

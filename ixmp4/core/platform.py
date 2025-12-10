@@ -27,7 +27,7 @@ In development mode additional commands are available:
 
 from ixmp4.backend import Backend
 from ixmp4.conf.platforms import PlatformConnectionInfo
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.transport import DirectTransport, HttpxTransport
 

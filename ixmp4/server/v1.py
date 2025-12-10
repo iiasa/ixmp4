@@ -13,7 +13,7 @@ from ixmp4 import data
 from ixmp4.conf.platforms import (
     PlatformConnectionInfo,
 )
-from ixmp4.conf.settingsmodel import ServerSettings
+from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
     Forbidden,
     Ixmp4Error,

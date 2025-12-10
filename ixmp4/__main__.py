@@ -1,5 +1,5 @@
 from ixmp4.cli import app
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 
 if __name__ == "__main__":
     settings = Settings()

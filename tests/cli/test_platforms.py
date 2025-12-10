@@ -2,12 +2,13 @@ import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Generator
+from unittest import mock
 
 import pytest
 from typer.testing import CliRunner
 
 from ixmp4.cli import app
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 
 runner = CliRunner()
 
@@ -18,7 +19,8 @@ def temporary_settings() -> Generator[Settings, None, None]:
     and mocking the `Settings` constructor."""
     with TemporaryDirectory() as temp_dir:
         settings = Settings(storage_directory=Path(temp_dir))
-        yield settings
+        with mock.patch("ixmp4.conf.settings.Settings", new=lambda: settings):
+            yield settings
 
 
 @pytest.fixture(scope="function")

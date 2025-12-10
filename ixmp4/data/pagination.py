@@ -2,7 +2,7 @@ from typing import Generic, TypeVar
 
 import pydantic as pyd
 
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 
 ResultsT = TypeVar("ResultsT")
 

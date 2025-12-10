@@ -5,7 +5,7 @@ from unittest import mock
 
 import pytest
 
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 from tests.backends import clean_postgres_database as clean_postgres_database
 from tests.profiling import profiled as profiled
 

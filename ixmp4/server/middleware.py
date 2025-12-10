@@ -14,7 +14,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
 
-from ixmp4.conf.settingsmodel import ServerSettings
+from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
     BadRequest,
 )

@@ -1,7 +1,7 @@
 import typer
 import uvicorn
 
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 from ixmp4.server import Ixmp4Server
 
 app = typer.Typer()

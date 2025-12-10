@@ -6,7 +6,7 @@ import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError
 
 from ixmp4.backend import Backend
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 from ixmp4.core.platform import Platform
 from ixmp4.db.models import get_metadata
 from ixmp4.server import Ixmp4Server

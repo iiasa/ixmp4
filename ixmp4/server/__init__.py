@@ -30,7 +30,7 @@ from ixmp4.conf.platforms import (
     PlatformConnectionInfo,
     TomlPlatforms,
 )
-from ixmp4.conf.settingsmodel import ServerSettings
+from ixmp4.conf.settings import ServerSettings
 
 if TYPE_CHECKING:
     from ixmp4.transport import DirectTransport

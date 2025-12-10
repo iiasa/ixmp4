@@ -15,7 +15,7 @@ from toolkit.client.auth import ManagerAuth
 from toolkit.exceptions import InvalidCredentials
 
 from ixmp4.cli import alembic, platforms, server
-from ixmp4.conf.settingsmodel import Settings
+from ixmp4.conf.settings import Settings
 
 from . import utils
 

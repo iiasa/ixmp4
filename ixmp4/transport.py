@@ -13,7 +13,7 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.client.auth import Auth, ManagerAuth
 from toolkit.client.base import ServiceClient
 
-from ixmp4.conf.settingsmodel import ClientSettings
+from ixmp4.conf.settings import ClientSettings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
 
