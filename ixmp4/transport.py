@@ -6,14 +6,14 @@ from typing import Any
 
 import httpx
 import sqlalchemy as sa
+from litestar import Litestar
+from litestar.testing import TestClient
 from sqlalchemy import orm
-from starlette.testclient import TestClient
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.client.auth import Auth, ManagerAuth
 from toolkit.client.base import ServiceClient
-from toolkit.utils import ttl_cache
 
-from ixmp4.conf import settings
+from ixmp4.conf.settingsmodel import ClientSettings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
 
@@ -130,50 +130,51 @@ class AuthorizedTransport(DirectTransport):
 
 
 class HttpxTransport(Transport, ServiceClient):
-    http_client: httpx.Client | TestClient
+    http_client: httpx.Client | TestClient[Litestar]
+    settings: ClientSettings
     executor: ThreadPoolExecutor
     exception_registry = exception_registry
     direct: DirectTransport | None = None
 
     def __init__(
         self,
-        client: httpx.Client | TestClient,
-        max_concurrent_requests: int = settings.client_max_concurrent_requests,
-        cache_ttl: int = 60 * 15,
+        client: httpx.Client | TestClient[Litestar],
+        settings: ClientSettings,
         direct: DirectTransport | None = None,
     ):
         self.url = str(client.base_url)
-        self.executor = ThreadPoolExecutor(max_workers=max_concurrent_requests)
+        self.settings = settings
+        self.executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_requests)
         self.http_client = client
-        self.ttl_cache = ttl_cache(cache_ttl)
         self.direct = direct
 
     @classmethod
-    def from_url(cls, url: str, auth: Auth | None) -> "HttpxTransport":
-        timeout = httpx.Timeout(settings.client_timeout, connect=60.0)
+    def from_url(
+        cls, url: str, settings: ClientSettings, auth: Auth | None
+    ) -> "HttpxTransport":
+        timeout = httpx.Timeout(settings.timeout, connect=60.0)
         client = httpx.Client(
             base_url=url,
             timeout=timeout,
             http2=True,
             auth=auth,
         )
-        return cls(client)
+        return cls(client, settings)
 
     @classmethod
-    def from_direct(
-        cls, direct: DirectTransport, raise_server_exceptions: bool = True
+    def from_asgi(
+        cls,
+        asgi: Litestar,
+        settings: ClientSettings,
+        direct: DirectTransport | None = None,
+        raise_server_exceptions: bool = True,
     ) -> "HttpxTransport":
-        # avoid circular import
-        # this usually only used in testing contexts
-        from ixmp4.server import Ixmp4Server
-
-        app = Ixmp4Server(None, override_transport=direct)
         client = TestClient(
-            app=app,
-            base_url="http://testserver/v1/direct/",
+            app=asgi,
+            base_url="http://testserver.local/v1/direct/",
             raise_server_exceptions=raise_server_exceptions,
         )
-        return cls(client, direct=direct)
+        return cls(client, settings, direct=direct)
 
     def __str__(self) -> str:
         if (
