@@ -25,12 +25,10 @@ In development mode additional commands are available:
 
 """
 
-from toolkit.client.auth import Auth
-
 from ixmp4.backend import Backend
-from ixmp4.base_exceptions import PlatformNotFound
-from ixmp4.conf import settings
 from ixmp4.conf.platforms import PlatformConnectionInfo
+from ixmp4.conf.settingsmodel import Settings
+from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.transport import DirectTransport, HttpxTransport
 
 from .iamc import PlatformIamcData
@@ -47,6 +45,7 @@ class Platform(object):
     Enables the manipulation of data via the `Run` class and `Repository` instances."""
 
     NotFound = PlatformNotFound
+    NotUnique = PlatformNotFound
 
     runs: RunServiceFacade
     iamc: PlatformIamcData
@@ -57,6 +56,7 @@ class Platform(object):
     meta: RunMetaServiceFacade
 
     backend: Backend
+    settings: Settings
     connection_info: PlatformConnectionInfo
 
     """Provides a unified data interface for the platform.
@@ -66,30 +66,17 @@ class Platform(object):
         self,
         name: str | None = None,
         _backend: Backend | None = None,
-        _auth: Auth | None = None,
+        _settings: Settings | None = None,
     ) -> None:
-        if _backend is None:
-            if name is None:
-                raise TypeError("__init__() is missing required argument 'name'")
-
-            ci = self.get_toml_platform_ci(name)
-
-            if ci is None:
-                ci = self.get_manager_platform_ci(name)
-
-            if ci is None:
-                raise PlatformNotFound(f"Platform '{name}' was not found.")
-
-            self.connection_info = ci
-
-            if ci.dsn.startswith("http"):
-                self.backend = Backend(
-                    HttpxTransport.from_url(ci.dsn, settings.get_client_auth())
-                )
-            else:
-                self.backend = Backend(DirectTransport.from_dsn(ci.dsn))
+        if _settings is not None:
+            self.settings = _settings
         else:
+            self.settings = Settings()
+
+        if _backend is not None:
             self.backend = _backend
+        else:
+            self.backend = self.init_backend(name)
 
         self.runs = RunServiceFacade(self.backend)
         self.iamc = PlatformIamcData(self.backend)
@@ -99,8 +86,36 @@ class Platform(object):
         self.units = UnitServiceFacade(self.backend)
         self.meta = RunMetaServiceFacade(self.backend)
 
+    def init_backend(self, name: str | None) -> Backend:
+        if name is None:
+            raise TypeError("__init__() is missing required argument 'name'")
+
+        ci = self.get_toml_platform_ci(name)
+
+        if ci is None:
+            ci = self.get_manager_platform_ci(name)
+
+        if ci is None:
+            raise PlatformNotFound(f"Platform '{name}' was not found.")
+
+        self.connection_info = ci
+
+        transport = self.get_transport(ci)
+        return Backend(transport)
+
+    def get_transport(
+        self, ci: PlatformConnectionInfo, http_credentials: str = "default"
+    ) -> HttpxTransport | DirectTransport:
+        if ci.dsn.startswith("http"):
+            cred_dict = self.settings.get_credentials().get(http_credentials)
+            return HttpxTransport.from_url(
+                ci.dsn, self.settings.client, self.settings.get_client_auth(cred_dict)
+            )
+        else:
+            return DirectTransport.from_dsn(ci.dsn)
+
     def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
-        toml = settings.get_toml_platforms()
+        toml = self.settings.get_toml_platforms()
 
         try:
             return toml.get_platform(name)
@@ -108,7 +123,7 @@ class Platform(object):
             return None
 
     def get_manager_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
-        manager = settings.get_manager_platforms()
+        manager = self.settings.get_manager_platforms()
 
         try:
             return manager.get_platform(name)
