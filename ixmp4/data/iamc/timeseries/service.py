@@ -43,7 +43,7 @@ class TimeSeriesService(Service):
         self.units = UnitPandasRepository(self.executor)
         self.variables = VariablePandasRepository(self.executor)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate_by_df(self, df: SerializableDataFrame) -> SerializableDataFrame:
         r"""Tabulates timeseries by values in a supplied dataframe.
 
@@ -74,7 +74,7 @@ class TimeSeriesService(Service):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(
         self, join_parameters: bool = False, **kwargs: Unpack[TimeSeriesFilter]
     ) -> SerializableDataFrame:
@@ -199,7 +199,7 @@ class TimeSeriesService(Service):
         )
         return merged_df.drop(columns=["variable__id", "unit__id"])
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         if df.empty:
             return None

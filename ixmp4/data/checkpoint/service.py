@@ -29,7 +29,7 @@ class CheckpointService(GetByIdService):
         self.pandas = PandasRepository(self.executor)
         self.transactions = TransactionRepository(self.executor)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(
         self, run__id: int, message: str, transaction__id: int | None = None
     ) -> Checkpoint:
@@ -77,7 +77,7 @@ class CheckpointService(GetByIdService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a checkpoint.
 
@@ -105,7 +105,7 @@ class CheckpointService(GetByIdService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Checkpoint:
         """Retrieves a checkpoint by its id.
 
@@ -138,7 +138,7 @@ class CheckpointService(GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[CheckpointFilter]) -> list[Checkpoint]:
         r"""Lists checkpoints by specified criteria.
 
@@ -180,7 +180,7 @@ class CheckpointService(GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[CheckpointFilter]) -> SerializableDataFrame:
         r"""Tabulates checkpoints by specified criteria.
 
@@ -215,7 +215,7 @@ class CheckpointService(GetByIdService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[CheckpointFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),

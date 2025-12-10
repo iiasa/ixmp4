@@ -33,7 +33,7 @@ class UnitService(DocsService, GetByIdService):
         self.versions = VersionRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=UnitDocs)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(self, name: str) -> Unit:
         """Creates a unit.
 
@@ -66,7 +66,7 @@ class UnitService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a unit.
 
@@ -94,7 +94,7 @@ class UnitService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get_by_name(self, name: str) -> Unit:
         """Retrieves a unit by its name.
 
@@ -125,7 +125,7 @@ class UnitService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Unit:
         """Retrieves a unit by its id.
 
@@ -162,7 +162,7 @@ class UnitService(DocsService, GetByIdService):
         except UnitNotFound:
             return self.create(name)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
         r"""Lists units by specified criteria.
 
@@ -203,7 +203,7 @@ class UnitService(DocsService, GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[UnitFilter]) -> SerializableDataFrame:
         r"""Tabulates units by specified criteria.
 
@@ -235,7 +235,7 @@ class UnitService(DocsService, GetByIdService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[UnitFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),

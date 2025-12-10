@@ -1,3 +1,4 @@
+import abc
 from typing import Any, List
 
 from toolkit import db
@@ -15,7 +16,8 @@ from .filter import DocsFilter
 from .repository import ItemRepository as DocsRepository
 
 
-class DocsService(Service):
+class DocsService(Service, abc.ABC):
+    __abstract__: bool = True
     docs_executor: db.r.SessionExecutor
     docs: DocsRepository
     docs_model: type[AbstractDocs]
@@ -33,7 +35,7 @@ class DocsService(Service):
             filter=db.r.Filter(DocsFilter, self.docs_model),
         )
 
-    @procedure(Http(path="/{dimension__id}/docs/", methods=["GET"]))
+    @procedure(Http(path="/{dimension__id:int}/docs/", methods=("GET",)))
     def get_docs(self, dimension__id: int) -> Docs:
         """Retrieves a docs entry.
 
@@ -63,7 +65,7 @@ class DocsService(Service):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{dimension__id}/docs/", methods=["POST"]))
+    @procedure(Http(path="/{dimension__id:int}/docs/", methods=("POST",)))
     def set_docs(self, dimension__id: int, description: str) -> Docs:
         """Updates a docs entry.
 
@@ -105,7 +107,7 @@ class DocsService(Service):
         # self.auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{dimension__id}/docs/", methods=["DELETE"]))
+    @procedure(Http(path="/{dimension__id:int}/docs/", methods=("DELETE",)))
     def delete_docs(self, dimension__id: int) -> None:
         """Deletes a docs entry.
 
@@ -136,7 +138,7 @@ class DocsService(Service):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/docs/list/", methods=["PATCH"]))
+    @procedure(Http(path="/docs/list/", methods=("PATCH",)))
     def list_docs(self, **kwargs: Unpack[DocsFilter]) -> list[Docs]:
         r"""Lists docs entries by specified criteria.
 

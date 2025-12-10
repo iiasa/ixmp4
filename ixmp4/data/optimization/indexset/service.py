@@ -61,7 +61,7 @@ class IndexSetService(DocsService, GetByIdService):
 
         DocsService.__init_direct__(self, transport, docs_model=IndexSetDocs)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(
         self,
         run_id: int,
@@ -113,7 +113,7 @@ class IndexSetService(DocsService, GetByIdService):
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get(self, run_id: int, name: str) -> IndexSet:
         """Retrieves an indexset by its name and run_id.
 
@@ -151,7 +151,7 @@ class IndexSetService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> IndexSet:
         """Retrieves an indexset by its id.
 
@@ -185,7 +185,7 @@ class IndexSetService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes an indexset.
 
@@ -228,7 +228,7 @@ class IndexSetService(DocsService, GetByIdService):
         else:
             return cast(List[float] | List[int] | List[str], [data])
 
-    @procedure(Http(path="/{id}/data", methods=["POST"]))
+    @procedure(Http(path="/{id:int}/data", methods=("POST",)))
     def add_data(
         self, id: int, data: float | int | str | List[float] | List[int] | List[str]
     ) -> None:
@@ -264,7 +264,7 @@ class IndexSetService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/data", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/data", methods=("DELETE",)))
     def remove_data(
         self,
         id: int,
@@ -316,7 +316,7 @@ class IndexSetService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[IndexSetFilter]) -> list[IndexSet]:
         r"""Lists indexsets by specified criteria.
 
@@ -362,7 +362,7 @@ class IndexSetService(DocsService, GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[IndexSetFilter]) -> SerializableDataFrame:
         r"""Tabulates indexsets by specified criteria.
 
@@ -399,7 +399,7 @@ class IndexSetService(DocsService, GetByIdService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[IndexSetFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),

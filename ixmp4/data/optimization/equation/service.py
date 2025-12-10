@@ -52,7 +52,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
         self.indexsets = IndexSetRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=EquationDocs)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(
         self,
         run_id: int,
@@ -132,7 +132,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get(self, run_id: int, name: str) -> Equation:
         """Retrieves a equation by its name and run_id.
 
@@ -170,7 +170,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Equation:
         """Retrieves a equation by its id.
 
@@ -204,7 +204,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a equation.
 
@@ -237,7 +237,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/data", methods=["POST"]))
+    @procedure(Http(path="/{id:int}/data", methods=("POST",)))
     def add_data(self, id: int, data: SerializableDataFrame | dict[str, Any]) -> None:
         """Adds data to an Equation.
 
@@ -298,7 +298,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/data", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/data", methods=("DELETE",)))
     def remove_data(
         self, id: int, data: SerializableDataFrame | dict[str, Any] | None = None
     ) -> None:
@@ -344,7 +344,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[EquationFilter]) -> list[Equation]:
         r"""Lists equations by specified criteria.
 
@@ -390,7 +390,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[EquationFilter]) -> SerializableDataFrame:
         r"""Tabulates equations by specified criteria.
 
@@ -426,7 +426,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[EquationFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),
@@ -434,6 +434,6 @@ class EquationService(DocsService, IndexSetAssociatedService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def revert(self, transaction__id: int, run__id: int) -> None:
         raise NotImplementedError

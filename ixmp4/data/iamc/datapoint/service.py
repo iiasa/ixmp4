@@ -69,7 +69,7 @@ class DataPointService(Service):
             columns |= {"run__id"}
         return tuple(columns)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(
         self,
         join_parameters: bool | None = False,
@@ -119,7 +119,7 @@ class DataPointService(Service):
         join_run_id: bool = False,
         **kwargs: Unpack[DataPointFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs,
                 limit=pagination.limit,
@@ -134,7 +134,7 @@ class DataPointService(Service):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         df = self.validate_df_or_raise(df, UpsertDataPointFrameSchema)
         self.pandas.upsert(df, key=self.full_key & set(df.columns))
@@ -150,7 +150,7 @@ class DataPointService(Service):
         # TODO: get list of models from list of timeseries__ids
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["DELETE"]))
+    @procedure(Http(methods=("DELETE",)))
     def bulk_delete(self, df: SerializableDataFrame) -> None:
         df = self.validate_df_or_raise(df, DeleteDataPointFrameSchema)
         self.pandas.delete(df, key=self.full_key & set(df.columns))

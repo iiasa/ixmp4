@@ -30,7 +30,7 @@ class RunMetaEntryService(Service):
         self.pandas = PandasRepository(self.executor)
         self.runs = RunRepository(self.executor)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(self, run__id: int, key: str, value: MetaValueType) -> RunMetaEntry:
         """Creates a metadata entry.
 
@@ -69,7 +69,7 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get(self, run__id: int, key: str) -> RunMetaEntry:
         """Retrieves a metadata entry by the run id and key.
 
@@ -104,7 +104,7 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a metadata entry.
 
@@ -135,7 +135,7 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[RunMetaEntryFilter]) -> list[RunMetaEntry]:
         r"""Lists metadata entries by specified criteria.
 
@@ -194,7 +194,7 @@ class RunMetaEntryService(Service):
 
         return columns
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(
         self, join_run_index: bool = False, **kwargs: Unpack[RunMetaEntryFilter]
     ) -> SerializableDataFrame:
@@ -232,7 +232,7 @@ class RunMetaEntryService(Service):
         join_run_index: bool = False,
         **kwargs: Unpack[RunMetaEntryFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs,
                 limit=pagination.limit,
@@ -243,7 +243,7 @@ class RunMetaEntryService(Service):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         """Upserts a dataframe of run meta indicator entries.
 
@@ -270,7 +270,7 @@ class RunMetaEntryService(Service):
         # TODO check run__ids
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["DELETE"]))
+    @procedure(Http(methods=("DELETE",)))
     def bulk_delete(self, df: SerializableDataFrame) -> None:
         """Deletes run meta indicator entries as specified per dataframe.
         Warning: No recovery of deleted data shall be possible via ixmp

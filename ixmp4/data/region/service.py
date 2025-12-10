@@ -37,7 +37,7 @@ class RegionService(DocsService, GetByIdService):
 
         DocsService.__init_direct__(self, transport, docs_model=RegionDocs)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(self, name: str, hierarchy: str) -> Region:
         """Creates a region.
 
@@ -75,7 +75,7 @@ class RegionService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a region.
 
@@ -107,7 +107,7 @@ class RegionService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get_by_name(self, name: str) -> Region:
         """Retrieves a region by its name.
 
@@ -140,7 +140,7 @@ class RegionService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Region:
         """Retrieves a region by its id.
 
@@ -190,7 +190,7 @@ class RegionService(DocsService, GetByIdService):
         else:
             return region
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
         r"""Lists regions by specified criteria.
 
@@ -236,7 +236,7 @@ class RegionService(DocsService, GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> SerializableDataFrame:
         r"""Tabulates regions by specified criteria.
 
@@ -269,7 +269,7 @@ class RegionService(DocsService, GetByIdService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[RegionFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),

@@ -36,7 +36,7 @@ class ScalarService(DocsService, GetByIdService):
         self.units = UnitRepository(self.executor)
         DocsService.__init_direct__(self, transport, docs_model=ScalarDocs)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(
         self, run_id: int, name: str, value: float | int, unit_name: str
     ) -> Scalar:
@@ -93,7 +93,7 @@ class ScalarService(DocsService, GetByIdService):
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get(self, run_id: int, name: str) -> Scalar:
         """Retrieves a scalar by its name and run_id.
 
@@ -129,7 +129,7 @@ class ScalarService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Scalar:
         """Retrieves a scalar by its id.
 
@@ -163,7 +163,7 @@ class ScalarService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a scalar.
 
@@ -195,7 +195,7 @@ class ScalarService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["POST"]))
+    @procedure(Http(path="/{id:int}/", methods=("POST",)))
     def update_by_id(
         self, id: int, value: float | int | None = None, unit_name: str | None = None
     ) -> Scalar:
@@ -237,7 +237,7 @@ class ScalarService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:
         r"""Lists scalars by specified criteria.
 
@@ -283,7 +283,7 @@ class ScalarService(DocsService, GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> SerializableDataFrame:
         r"""Tabulates scalars by specified criteria.
 
@@ -316,7 +316,7 @@ class ScalarService(DocsService, GetByIdService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[ScalarFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),

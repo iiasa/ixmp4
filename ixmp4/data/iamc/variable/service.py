@@ -40,7 +40,7 @@ class VariableService(DocsService, GetByIdService):
 
         DocsService.__init_direct__(self, transport, docs_model=VariableDocs)
 
-    @procedure(Http(path="/", methods=["POST"]))
+    @procedure(Http(path="/", methods=("POST",)))
     def create(self, name: str) -> Variable:
         """Creates a variable.
 
@@ -69,7 +69,7 @@ class VariableService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["DELETE"]))
+    @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
         """Deletes a variable.
 
@@ -97,7 +97,7 @@ class VariableService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=["POST"]))
+    @procedure(Http(methods=("POST",)))
     def get_by_name(self, name: str) -> Variable:
         """Retrieves a variable by its name.
 
@@ -128,7 +128,7 @@ class VariableService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(path="/{id}/", methods=["GET"]))
+    @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Variable:
         """Retrieves a variable by its id.
 
@@ -165,7 +165,7 @@ class VariableService(DocsService, GetByIdService):
         except VariableNotFound:
             return self.create(name)
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
         r"""Lists variables by specified criteria.
 
@@ -207,7 +207,7 @@ class VariableService(DocsService, GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=["PATCH"]))
+    @procedure(Http(methods=("PATCH",)))
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> SerializableDataFrame:
         r"""Tabulates variables by specified criteria.
 
@@ -240,7 +240,7 @@ class VariableService(DocsService, GetByIdService):
     def paginated_tabulate(
         self, pagination: Pagination, **kwargs: Unpack[VariableFilter]
     ) -> PaginatedResult[SerializableDataFrame]:
-        return PaginatedResult(
+        return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs, limit=pagination.limit, offset=pagination.offset
             ),
