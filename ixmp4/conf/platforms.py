@@ -67,7 +67,7 @@ class TomlPlatforms(PlatformConnections):
     def dump(self) -> None:
         obj = {}
         for c in self.platforms.values():
-            dict_ = json.loads(c.model_dump_json())
+            dict_ = json.loads(c.model_dump_json(exclude_unset=True))
             name = dict_.pop("name")
             del dict_["slug"]
             obj[name] = dict_
