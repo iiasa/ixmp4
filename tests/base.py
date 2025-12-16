@@ -3,7 +3,12 @@ from typing import NoReturn
 import pandas as pd
 import pytest
 
-from ixmp4.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.transport import (
+    AuthorizedTransport,
+    DirectTransport,
+    HttpxTransport,
+    Transport,
+)
 
 
 class TransportTest(object):
@@ -11,6 +16,18 @@ class TransportTest(object):
     def transport_is_pgsql(cls, t: DirectTransport) -> bool:
         assert t.session.bind is not None
         return t.session.bind.dialect.name == "postgresql"
+
+    @classmethod
+    def get_unauthorized_direct_or_skip(cls, transport: Transport) -> DirectTransport:
+        if isinstance(transport, HttpxTransport) and transport.direct is not None:
+            transport = transport.direct
+
+        if isinstance(transport, AuthorizedTransport):
+            return transport.unauthorized_transport
+        elif isinstance(transport, DirectTransport):
+            return transport
+        else:
+            cls.skip_transport(transport, "does not provide a direct transport class")
 
     @classmethod
     def get_direct_or_skip(cls, transport: Transport) -> DirectTransport:

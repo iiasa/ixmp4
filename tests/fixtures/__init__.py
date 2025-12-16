@@ -3,6 +3,7 @@ from datetime import datetime
 from typing import Any, Literal, cast
 
 import pandas as pd
+from toolkit.manager.models import DjangoFixtureDict
 
 from tests.conftest import fixture_dir
 
@@ -35,3 +36,11 @@ def get_migration_data(name: str) -> list[dict[str, Any]]:
 def get_csv_data(size: Literal["big"], name: str) -> pd.DataFrame:
     """Get the csv data as a dataframe."""
     return pd.read_csv(fixture_dir / size / (name + ".csv"))
+
+
+def get_manager_fixtures() -> list[DjangoFixtureDict]:
+    """Get the manager fixtures."""
+    with open(fixture_dir / "manager.json", "r") as f:
+        return cast(
+            list[DjangoFixtureDict], json.load(f, object_hook=json_timestamp_decoder)
+        )

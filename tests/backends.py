@@ -1,16 +1,22 @@
 import contextlib
-from typing import Callable, Generator, Literal, Sequence, cast
+from typing import Callable, Generator, Iterator, Literal, Sequence, cast
 
 import pytest
 import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.backend import Backend
 from ixmp4.conf.settings import Settings
 from ixmp4.core.platform import Platform
 from ixmp4.db.models import get_metadata
 from ixmp4.server import Ixmp4Server
-from ixmp4.transport import DirectTransport, HttpxTransport, Transport
+from ixmp4.transport import (
+    AuthorizedTransport,
+    DirectTransport,
+    HttpxTransport,
+    Transport,
+)
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 BackendTypeStr = Literal["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
@@ -67,13 +73,33 @@ def drop_model_tables(bind: sa.Engine | sa.Connection) -> None:
     )
 
 
+def get_direct_transport(
+    dsn: str,
+    auth_ctx: AuthorizationContext | None,
+    platform_info: PlatformProtocol | None,
+) -> DirectTransport:
+    if auth_ctx is None:
+        return DirectTransport.from_dsn(dsn)
+    else:
+        if platform_info is None:
+            raise ValueError(
+                "Provide the `platform_info` fixture to test authorized transports."
+            )
+        return AuthorizedTransport.from_dsn(
+            dsn, auth_ctx=auth_ctx, platform=platform_info
+        )
+
+
 @contextlib.contextmanager
 def postgresql_transport(
     dsn: str,
+    *,
     settings: Settings,
+    auth_ctx: AuthorizationContext | None,
+    platform_info: PlatformProtocol | None,
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
-    pgsql = DirectTransport.from_dsn(dsn)
+    pgsql = get_direct_transport(dsn, auth_ctx, platform_info)
     assert pgsql.session.bind is not None
     if create_tables:
         create_model_tables(pgsql.session.bind.engine)
@@ -84,10 +110,13 @@ def postgresql_transport(
 
 @contextlib.contextmanager
 def sqlite_transport(
+    *,
     settings: Settings,
+    auth_ctx: AuthorizationContext | None,
+    platform_info: PlatformProtocol | None,
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
-    sqlite = DirectTransport.from_dsn("sqlite:///:memory:")
+    sqlite = get_direct_transport("sqlite:///:memory:", auth_ctx, platform_info)
     assert sqlite.session.bind is not None
     if create_tables:
         create_model_tables(sqlite.session.bind.engine)
@@ -100,71 +129,103 @@ def sqlite_transport(
 
 @contextlib.contextmanager
 def httpx_sqlite_transport(
+        *,
+
     settings: Settings,
+    auth_ctx: AuthorizationContext | None,
+    platform_info: PlatformProtocol | None,
     create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
-    with sqlite_transport(settings, create_tables=create_tables) as direct:
-
-        async def get_transport() -> DirectTransport:
-            return direct
-
-        server = Ixmp4Server(
-            settings.server, override_transport=get_transport, debug=True
-        )
-        server.simulate_startup()
-
-        httpx_sqlite = HttpxTransport.from_asgi(
-            server.asgi_app, settings.client, direct
-        )
-        yield httpx_sqlite
+    with sqlite_transport(
+        settings=settings,
+        auth_ctx=auth_ctx,
+        platform_info=platform_info,
+        create_tables=create_tables,
+    ) as direct:
+        with test_server(direct, settings) as server:
+            httpx_sqlite = HttpxTransport.from_asgi(server.asgi_app, settings.client)
+            httpx_sqlite.direct = direct
+            yield httpx_sqlite
 
 
 @contextlib.contextmanager
 def httpx_postgresql_transport(
     dsn: str,
+        *,
+
     settings: Settings,
+    auth_ctx: AuthorizationContext | None,
+    platform_info: PlatformProtocol | None,
     create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
-    with postgresql_transport(dsn, settings, create_tables=create_tables) as direct:
+    with postgresql_transport(
+        dsn,
+        settings=settings,
+        auth_ctx=auth_ctx,
+        platform_info=platform_info,
+        create_tables=create_tables,
+    ) as direct:
+        with test_server(direct, settings) as server:
+            httpx_pgsql = HttpxTransport.from_asgi(server.asgi_app, settings.client)
+            httpx_pgsql.direct = direct
+            yield httpx_pgsql
 
-        async def get_transport() -> DirectTransport:
-            return direct
 
-        server = Ixmp4Server(
-            settings.server, override_transport=get_transport, debug=True
-        )
-        server.simulate_startup()
+@contextlib.contextmanager
+def test_server(direct: DirectTransport, settings: Settings) -> Iterator[Ixmp4Server]:
+    # NOTE: This currently re-builds the api for every test setup
+    # TODO: upstream litestar adjustment to make this better?
 
-        httpx_pgsql = HttpxTransport.from_asgi(server.asgi_app, settings.client, direct)
-        yield httpx_pgsql
+    async def get_direct() -> DirectTransport:
+        return direct
+
+    server = Ixmp4Server(settings.server, override_transport=get_direct, debug=True)
+    server.simulate_startup()
+    yield server
 
 
 def transport(
     request: pytest.FixtureRequest,
-    settings: Settings,
     create_tables: bool = True,
 ) -> contextlib._GeneratorContextManager[Transport, None, None]:
     postgres_dsn = request.config.option.postgres_dsn
     type = request.param
     active_backends = get_active_backends([type], request)
+    settings = request.getfixturevalue("settings")
+    auth_ctx = request.getfixturevalue("auth_ctx")
+    platform_info = request.getfixturevalue("platform_info")
 
     if type not in active_backends:
         pytest.skip("Transport backend is not active. ")
 
     if type == "rest-sqlite":
-        return httpx_sqlite_transport(settings, create_tables=create_tables)
+        return httpx_sqlite_transport(
+            settings=settings,
+            auth_ctx=auth_ctx,
+            platform_info=platform_info,
+            create_tables=create_tables,
+        )
     elif type == "rest-postgres":
         return httpx_postgresql_transport(
             postgres_dsn,
-            settings,
+            settings=settings,
+            auth_ctx=auth_ctx,
+            platform_info=platform_info,
             create_tables=create_tables,
         )
     elif type == "sqlite":
-        return sqlite_transport(settings, create_tables=create_tables)
+        return sqlite_transport(
+            settings=settings,
+            auth_ctx=auth_ctx,
+            platform_info=platform_info,
+            create_tables=create_tables,
+        )
     elif type == "postgres":
         return postgresql_transport(
             postgres_dsn,
-            settings,
+            settings=settings,
+            auth_ctx=auth_ctx,
+            platform_info=platform_info,
             create_tables=create_tables,
         )
     else:
@@ -187,12 +248,10 @@ def get_transport_fixture(
 
     def transport_fixture(
         request: pytest.FixtureRequest,
-        settings: Settings,
     ) -> Generator[Transport, None, None]:
         try:
             with transport(
                 request,
-                settings,
                 create_tables=create_tables,
             ) as t:
                 yield t
@@ -211,9 +270,8 @@ def get_platform_fixture(
 
     def platform_fixture(
         request: pytest.FixtureRequest,
-        settings: Settings,
     ) -> Generator[Platform, None, None]:
-        with transport(request, settings) as t:
+        with transport(request) as t:
             yield Platform(_backend=Backend(t))
 
     return pytest.fixture(params=list(backends), scope=scope)(platform_fixture)

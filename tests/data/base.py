@@ -23,3 +23,8 @@ class ServiceTest(TransportTest, Generic[ServiceT]):
             return self.service_class(direct)
         else:
             self.skip_transport(transport, "does not support versioning")
+
+    @pytest.fixture(scope="class")
+    def unauthorized_service(self, transport: Transport) -> ServiceT:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return self.service_class(direct)
