@@ -4,9 +4,10 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.unit.exceptions import UnitNotFound, UnitNotUnique
 from ixmp4.data.unit.service import UnitService
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -193,3 +194,196 @@ class TestUnitTabulate(UnitServiceTest):
 
         units = service.tabulate()
         pdt.assert_frame_equal(units, expected_units, check_like=True)
+
+
+class TestUnitAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, UnitServiceTest
+):
+    def test_unit_create(self, service: UnitService) -> None:
+        unit = service.create("Unit")
+        assert unit.id == 1
+        assert unit.created_by == "superuser_sarah"
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        unit = service.get_by_name("Unit")
+        assert unit.id == 1
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        unit = service.get_by_id(1)
+        assert unit.name == "Unit"
+
+    def test_unit_list(self, service: UnitService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        service.delete_by_id(1)
+
+
+class TestUnitAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, UnitServiceTest
+):
+    def test_unit_create(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            unit = service.create("Unit")
+            assert unit.id == 1
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Unit")
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_unit_list(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestUnitAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, UnitServiceTest):
+    def test_unit_create(self, service: UnitService) -> None:
+        unit = service.create("Unit")
+        assert unit.id == 1
+        assert unit.created_by == "staffuser_bob"
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        unit = service.get_by_name("Unit")
+        assert unit.id == 1
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        unit = service.get_by_id(1)
+        assert unit.name == "Unit"
+
+    def test_unit_list(self, service: UnitService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        service.delete_by_id(1)
+
+
+class TestUnitAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, UnitServiceTest
+):
+    def test_unit_create(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            unit = service.create("Unit")
+            assert unit.id == 1
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        with pytest.raises(UnitNotFound):
+            service.get_by_name("Unit")
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        with pytest.raises(UnitNotFound):
+            service.get_by_id(1)
+
+    def test_unit_list(self, service: UnitService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestUnitAuthNonePrivate(auth.NoneTest, auth.PrivatePlatformTest, UnitServiceTest):
+    def test_unit_create(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            unit = service.create("Unit")
+            assert unit.id == 1
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Unit")
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_unit_list(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestUnitAuthDavePublic(auth.DaveTest, auth.PublicPlatformTest, UnitServiceTest):
+    def test_unit_create(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            unit = service.create("Unit")
+            assert unit.id == 1
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        with pytest.raises(UnitNotFound):
+            service.get_by_name("Unit")
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        with pytest.raises(UnitNotFound):
+            service.get_by_id(1)
+
+    def test_unit_list(self, service: UnitService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestUnitAuthNonePublic(auth.NoneTest, auth.PublicPlatformTest, UnitServiceTest):
+    def test_unit_create(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            unit = service.create("Unit")
+            assert unit.id == 1
+
+    def test_unit_get_by_name(self, service: UnitService) -> None:
+        with pytest.raises(UnitNotFound):
+            service.get_by_name("Unit")
+
+    def test_unit_get_by_id(self, service: UnitService) -> None:
+        with pytest.raises(UnitNotFound):
+            service.get_by_id(1)
+
+    def test_unit_list(self, service: UnitService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_unit_tabulate(self, service: UnitService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_unit_delete(self, service: UnitService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)

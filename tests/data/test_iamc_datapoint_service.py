@@ -4,6 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.iamc.datapoint.service import DataPointService
 from ixmp4.data.iamc.datapoint.type import Type
 from ixmp4.data.iamc.reverter import DataPointReverterRepository
@@ -14,7 +15,7 @@ from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import UnitService
 from ixmp4.data.versions.model import Operation
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.base import DataFrameTest
 from tests.data.base import ServiceTest
 
@@ -574,3 +575,268 @@ class TestDatapointBulkMixedWithType(DataPointBulkOperationsTest):
         expected_mixed_df: pd.DataFrame,
     ) -> pd.DataFrame:
         return expected_mixed_df
+
+
+class DataPointAuthTest(DataPointServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def units(self, transport: Transport) -> UnitService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return UnitService(direct)
+
+    @pytest.fixture(scope="class")
+    def regions(self, transport: Transport) -> RegionService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RegionService(direct)
+
+    @pytest.fixture(scope="class")
+    def timeseries(self, transport: Transport) -> TimeSeriesService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return TimeSeriesService(direct)
+
+    def create_related(
+        self,
+        regions: RegionService,
+        units: UnitService,
+    ) -> None:
+        # assume regions and units have been created
+        # by a manager
+        regions.create("Region 1", "default")
+        regions.create("Region 2", "default")
+        units.create("Unit 1")
+        units.create("Unit 2")
+
+    @pytest.fixture(scope="class")
+    def test_ts_df(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["Region 1", "Variable 1", "Unit 1"],
+                ["Region 1", "Variable 2", "Unit 2"],
+                ["Region 2", "Variable 1", "Unit 1"],
+            ],
+            columns=["region", "variable", "unit"],
+        )
+
+    @pytest.fixture(scope="class")
+    def run(
+        self,
+        runs: RunService,
+    ) -> Run:
+        run = runs.create("Model", "Scenario")
+        assert run.id == 1
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_df(
+        self,
+        regions: RegionService,
+        units: UnitService,
+        run: Run,
+        timeseries: TimeSeriesService,
+        test_ts_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        self.create_related(regions, units)
+        test_ts_df["run__id"] = run.id
+        timeseries.bulk_upsert(test_ts_df)
+        return pd.DataFrame(
+            [
+                [1, Type.ANNUAL, 2000, 1.1],
+                [1, Type.ANNUAL, 2010, 1.3],
+                [1, Type.ANNUAL, 2020, 1.5],
+                [1, Type.ANNUAL, 2030, 1.7],
+            ],
+            columns=[
+                "time_series__id",
+                "type",
+                "step_year",
+                "value",
+            ],
+        )
+
+
+class TestDataPointAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, DataPointAuthTest
+):
+    def test_datapoint_bulk_insert(
+        self,
+        service: DataPointService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        service.bulk_upsert(test_df)
+
+    def test_datapoint_tabulate(self, service: DataPointService) -> None:
+        ret_df = service.tabulate()
+        assert len(ret_df) == 4
+
+    def test_datapoint_bulk_delete(
+        self, service: DataPointService, test_df: pd.DataFrame
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        service.bulk_delete(delete_df)
+
+
+class TestDataPointAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, DataPointAuthTest
+):
+    def test_datapoint_bulk_insert(
+        self,
+        service: DataPointService,
+        unauthorized_service: DataPointService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df)
+        unauthorized_service.bulk_upsert(test_df)
+
+    def test_datapoint_tabulate(self, service: DataPointService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_datapoint_bulk_delete(
+        self,
+        service: DataPointService,
+        unauthorized_service: DataPointService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df)
+        unauthorized_service.bulk_upsert(test_df)
+
+
+class TestDataPointAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, DataPointAuthTest
+):
+    def test_datapoint_bulk_insert(
+        self,
+        service: DataPointService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        service.bulk_upsert(test_df)
+
+    def test_datapoint_tabulate(self, service: DataPointService) -> None:
+        ret_df = service.tabulate()
+        assert len(ret_df) == 4
+
+    def test_datapoint_bulk_delete(
+        self, service: DataPointService, test_df: pd.DataFrame
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        service.bulk_delete(delete_df)
+
+
+class TestDataPointAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, DataPointAuthTest
+):
+    @pytest.fixture(scope="class")
+    def run1(
+        self,
+        runs: RunService,
+    ) -> Run:
+        run1 = runs.create("Model 1", "Scenario")
+        assert run1.id == 2
+        return run1
+
+    @pytest.fixture(scope="class")
+    def run2(
+        self,
+        runs: RunService,
+    ) -> Run:
+        run2 = runs.create("Model 2", "Scenario")
+        assert run2.id == 3
+        return run2
+
+    @pytest.fixture(scope="class")
+    def test_df1(
+        self,
+        run1: Run,
+        timeseries: TimeSeriesService,
+        test_ts_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        test_ts_df1 = test_ts_df.copy()
+        test_ts_df1["run__id"] = run1.id
+        timeseries.bulk_upsert(test_ts_df1)
+        return pd.DataFrame(
+            [
+                [4, Type.CATEGORICAL, 2000, "A", 1.1],
+                [4, Type.CATEGORICAL, 2010, "A", 1.3],
+                [5, Type.CATEGORICAL, 2000, "B", 1.5],
+                [6, Type.CATEGORICAL, 2010, "B", 1.7],
+            ],
+            columns=[
+                "time_series__id",
+                "type",
+                "step_year",
+                "step_category",
+                "value",
+            ],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_df2(
+        self,
+        run2: Run,
+        timeseries: TimeSeriesService,
+        test_ts_df: pd.DataFrame,
+    ) -> pd.DataFrame:
+        test_ts_df2 = test_ts_df.copy()
+        test_ts_df2["run__id"] = run2.id
+        timeseries.bulk_upsert(test_ts_df2)
+        return pd.DataFrame(
+            [
+                [7, Type.DATETIME, datetime(2000, 1, 1, 0, 0, 0), 1.1],
+                [7, Type.DATETIME, datetime(2000, 2, 1, 0, 0, 0), 1.3],
+                [9, Type.DATETIME, datetime(2000, 3, 1, 0, 0, 0), 1.5],
+                [9, Type.DATETIME, datetime(2000, 4, 1, 0, 0, 0), 1.7],
+            ],
+            columns=[
+                "time_series__id",
+                "type",
+                "step_datetime",
+                "value",
+            ],
+        )
+
+    def test_datapoint_bulk_insert(
+        self,
+        service: DataPointService,
+        unauthorized_service: DataPointService,
+        test_df: pd.DataFrame,
+        test_df1: pd.DataFrame,
+        test_df2: pd.DataFrame,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df)
+        unauthorized_service.bulk_upsert(test_df)
+
+        service.bulk_upsert(test_df1)
+
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df2)
+        unauthorized_service.bulk_upsert(test_df2)
+
+    def test_datapoint_tabulate(self, service: DataPointService) -> None:
+        ret_df = service.tabulate()
+        assert len(ret_df) == 8
+
+    def test_datapoint_bulk_delete(
+        self,
+        service: DataPointService,
+        test_df: pd.DataFrame,
+        test_df1: pd.DataFrame,
+        test_df2: pd.DataFrame,
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df)
+
+        delete_df1 = test_df1.drop(columns=["value"])
+        service.bulk_delete(delete_df1)
+
+        delete_df2 = test_df2.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df2)

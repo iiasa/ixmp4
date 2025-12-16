@@ -4,9 +4,10 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.run.exceptions import NoDefaultRunVersion, RunNotFound
 from ixmp4.data.run.service import RunService
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -26,7 +27,7 @@ class TestRunCreate(RunServiceTest):
         assert run.version == 1
         assert not run.is_default
 
-    def test_region_create_versioning(
+    def test_run_create_versioning(
         self, versioning_service: RunService, fake_time: datetime.datetime
     ) -> None:
         expected_versions = pd.DataFrame(
@@ -287,8 +288,8 @@ class TestRunTabulate(RunServiceTest):
                     True,
                     "@unknown",
                     fake_time.replace(tzinfo=None),
-                    None,  # "@unknown",
-                    pd.NaT,  # fake_time.replace(tzinfo=None),
+                    "@unknown",
+                    fake_time.replace(tzinfo=None),
                 ],
                 [
                     2,
@@ -334,3 +335,416 @@ class TestRunTabulate(RunServiceTest):
 
 
 # TODO: lock, unlock, clone
+
+
+class TestRunAuthSarahPrivate(auth.SarahTest, auth.PrivatePlatformTest, RunServiceTest):
+    def test_run_create(self, service: RunService) -> None:
+        run = service.create("Model", "Scenario")
+        assert run.id == 1
+        assert run.version == 1
+        assert run.created_by == "superuser_sarah"
+
+    def test_run_get(self, service: RunService) -> None:
+        run = service.get("Model", "Scenario", 1)
+        assert run.id == 1
+
+    def test_run_set_as_default_version(self, service: RunService) -> None:
+        service.set_as_default_version(1)
+
+    def test_run_get_default_version(self, service: RunService) -> None:
+        run = service.get_default_version("Model", "Scenario")
+        assert run.id == 1
+
+    def test_run_unset_as_default_version(self, service: RunService) -> None:
+        service.unset_as_default_version(1)
+
+    def test_run_get_by_id(self, service: RunService) -> None:
+        run = service.get_by_id(1)
+        assert run.id == 1
+
+    def test_run_lock(self, service: RunService) -> None:
+        service.lock(1)
+
+    def test_run_unlock(self, service: RunService) -> None:
+        service.unlock(1)
+
+    def test_run_clone(self, service: RunService) -> None:
+        cloned_run = service.clone(1)
+        assert cloned_run.id == 2
+
+    def test_run_revert(self, versioning_service: RunService) -> None:
+        versioning_service.revert(1, 1)
+
+    def test_run_list(self, service: RunService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_run_tabulate(self, service: RunService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_run_delete(self, service: RunService) -> None:
+        service.delete_by_id(1)
+
+
+class TestRunAuthAlicePrivate(auth.AliceTest, auth.PrivatePlatformTest, RunServiceTest):
+    def test_run_create(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create("Model", "Scenario")
+        run = unauthorized_service.create("Model", "Scenario")
+        assert run.id == 1
+
+    def test_run_get(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.get("Model", "Scenario", 1)
+
+    def test_run_set_as_default_version(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.set_as_default_version(1)
+        unauthorized_service.set_as_default_version(1)
+
+    def test_run_get_default_version(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_default_version("Model", "Scenario")
+
+    def test_run_unset_as_default_version(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.unset_as_default_version(1)
+        unauthorized_service.unset_as_default_version(1)
+
+    def test_run_get_by_id(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_run_lock(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.lock(1)
+        unauthorized_service.lock(1)
+
+    def test_run_unlock(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.unlock(1)
+        unauthorized_service.unlock(1)
+
+    def test_run_clone(self, service: RunService) -> None:
+        with pytest.raises(RunNotFound):
+            service.clone(1)
+
+    def test_run_revert(self, versioning_service: RunService) -> None:
+        with pytest.raises(RunNotFound):
+            versioning_service.revert(1, 12)
+
+    def test_run_list(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_run_tabulate(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_run_delete(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRunAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, RunServiceTest):
+    def test_run_create(self, service: RunService) -> None:
+        run = service.create("Model", "Scenario")
+        assert run.id == 1
+        assert run.version == 1
+        assert run.created_by == "staffuser_bob"
+
+    def test_run_get(self, service: RunService) -> None:
+        run = service.get("Model", "Scenario", 1)
+        assert run.id == 1
+
+    def test_run_set_as_default_version(self, service: RunService) -> None:
+        service.set_as_default_version(1)
+
+    def test_run_get_default_version(self, service: RunService) -> None:
+        run = service.get_default_version("Model", "Scenario")
+        assert run.id == 1
+
+    def test_run_unset_as_default_version(self, service: RunService) -> None:
+        service.unset_as_default_version(1)
+
+    def test_run_get_by_id(self, service: RunService) -> None:
+        run = service.get_by_id(1)
+        assert run.id == 1
+
+    def test_run_lock(self, service: RunService) -> None:
+        service.lock(1)
+
+    def test_run_unlock(self, service: RunService) -> None:
+        service.unlock(1)
+
+    def test_run_clone(self, service: RunService) -> None:
+        cloned_run = service.clone(1)
+        assert cloned_run.id == 2
+
+    def test_run_revert(self, versioning_service: RunService) -> None:
+        versioning_service.revert(1, 1)
+
+    def test_run_list(self, service: RunService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_run_tabulate(self, service: RunService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_run_delete(self, service: RunService) -> None:
+        service.delete_by_id(1)
+
+
+class TestRunAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, RunServiceTest
+):
+    def test_run_create(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create("Model", "Scenario")
+
+        run1 = unauthorized_service.create("Model", "Scenario")
+        run2 = unauthorized_service.create("Other Model", "Scenario")
+
+        run3 = service.create("Model 10", "Scenario")
+
+        assert run1.id == 1
+        assert run2.id == 2
+        assert run3.id == 3
+
+    def test_run_get(self, service: RunService) -> None:
+        run1 = service.get("Model", "Scenario", 1)
+        assert run1.id == 1
+
+        with pytest.raises(Forbidden):
+            service.get("Other Model", "Scenario", 1)
+
+        run3 = service.get("Model 10", "Scenario", 1)
+        assert run3.id == 3
+
+    def test_run_set_as_default_version(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.set_as_default_version(1)
+        unauthorized_service.set_as_default_version(1)
+
+        service.set_as_default_version(3)
+
+    def test_run_get_default_version(self, service: RunService) -> None:
+        run1 = service.get_default_version("Model", "Scenario")
+        assert run1.id == 1
+
+        with pytest.raises(Forbidden):
+            service.get_default_version("Other Model", "Scenario")
+
+        run3 = service.get_default_version("Model 10", "Scenario")
+        assert run3.id == 3
+
+    def test_run_unset_as_default_version(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.unset_as_default_version(1)
+        unauthorized_service.unset_as_default_version(1)
+
+        service.unset_as_default_version(3)
+
+    def test_run_get_by_id(self, service: RunService) -> None:
+        run1 = service.get_by_id(1)
+        assert run1.id == 1
+
+        with pytest.raises(RunNotFound):
+            service.get_by_id(2)
+
+        run3 = service.get_by_id(3)
+        assert run3.id == 3
+
+    def test_run_lock(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.lock(1)
+        unauthorized_service.lock(1)
+
+        service.lock(3)
+
+    def test_run_unlock(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.unlock(1)
+        unauthorized_service.unlock(1)
+
+        service.unlock(3)
+
+    def test_run_clone(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.clone(1)
+        cloned_run = unauthorized_service.clone(1)
+        assert cloned_run.id == 4
+
+    def test_run_revert(self, versioning_service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            versioning_service.revert(1, 1)
+
+        with pytest.raises(RunNotFound):
+            versioning_service.revert(2, 1)
+
+        versioning_service.revert(3, 1)
+
+    def test_run_list(self, service: RunService) -> None:
+        results = service.list()
+        assert len(results) == 2
+
+    def test_run_tabulate(self, service: RunService) -> None:
+        results = service.tabulate()
+        assert len(results) == 2
+
+    def test_run_delete(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+        with pytest.raises(Forbidden):
+            service.delete_by_id(2)
+
+        with pytest.raises(Forbidden):
+            service.delete_by_id(3)
+
+
+class TestRunAuthNonePrivate(auth.NoneTest, auth.PrivatePlatformTest, RunServiceTest):
+    def test_run_create(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create("Model", "Scenario")
+        unauthorized_service.create("Model", "Scenario")
+
+    def test_run_get(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.get("Model", "Scenario", 1)
+
+    def test_run_set_as_default_version(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.set_as_default_version(1)
+        unauthorized_service.set_as_default_version(1)
+
+    def test_run_get_default_version(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_default_version("Model", "Scenario")
+
+    def test_run_unset_as_default_version(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.unset_as_default_version(1)
+        unauthorized_service.unset_as_default_version(1)
+
+    def test_run_get_by_id(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_run_lock(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.lock(1)
+        unauthorized_service.lock(1)
+
+    def test_run_unlock(
+        self, service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            service.unlock(1)
+        unauthorized_service.unlock(1)
+
+    def test_run_clone(self, service: RunService) -> None:
+        with pytest.raises(RunNotFound):
+            service.clone(1)
+
+    def test_run_revert(
+        self, versioning_service: RunService, unauthorized_service: RunService
+    ) -> None:
+        with pytest.raises(RunNotFound):
+            versioning_service.revert(1, 1)
+        unauthorized_service.revert(1, 1)
+
+    def test_run_list(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_run_tabulate(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_run_delete(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, RunServiceTest):
+    def test_run_create(self, service: RunService) -> None:
+        run = service.create("Model", "Scenario")
+        assert run.id == 1
+        assert run.version == 1
+        assert run.created_by == "user_dave"
+
+    def test_run_get(self, service: RunService) -> None:
+        run = service.get("Model", "Scenario", 1)
+        assert run.id == 1
+
+    def test_run_set_as_default_version(self, service: RunService) -> None:
+        service.set_as_default_version(1)
+
+    def test_run_get_default_version(self, service: RunService) -> None:
+        run = service.get_default_version("Model", "Scenario")
+        assert run.id == 1
+
+    def test_run_unset_as_default_version(self, service: RunService) -> None:
+        service.unset_as_default_version(1)
+
+    def test_run_get_by_id(self, service: RunService) -> None:
+        run = service.get_by_id(1)
+        assert run.id == 1
+
+    def test_run_lock(self, service: RunService) -> None:
+        service.lock(1)
+
+    def test_run_unlock(self, service: RunService) -> None:
+        service.unlock(1)
+
+    def test_run_clone(self, service: RunService) -> None:
+        cloned_run = service.clone(1)
+        assert cloned_run.id == 2
+
+    def test_run_revert(self, versioning_service: RunService) -> None:
+        versioning_service.revert(1, 1)
+
+    def test_run_list(self, service: RunService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_run_tabulate(self, service: RunService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_run_delete(self, service: RunService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)

@@ -4,9 +4,10 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.model.exceptions import ModelNotFound, ModelNotUnique
 from ixmp4.data.model.service import ModelService
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -184,66 +185,199 @@ class TestModelTabulate(ModelServiceTest):
         pdt.assert_frame_equal(models, expected_models, check_like=True)
 
 
-# TODO: refactor to a filter test class for efficiency
-# def test_filter_model(self, platform: ixmp4.Platform) -> None:
-#     run1, run2 = self.filter.load_dataset(platform)
+class TestModelAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, ModelServiceTest
+):
+    def test_model_create(self, service: ModelService) -> None:
+        model = service.create("Model")
+        assert model.id == 1
+        assert model.created_by == "superuser_sarah"
 
-#     res = platform.backend.models.tabulate(
-#         iamc={
-#             "run": {"model": {"name": "Model 1"}},
-#             "unit": {"name": "Unit 1"},
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == ["Model 1", "Model 3"]
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        model = service.get_by_name("Model")
+        assert model.id == 1
 
-#     run2.set_as_default()
-#     res = platform.backend.models.tabulate(
-#         iamc={
-#             "variable": {"name__in": ["Variable 3", "Variable 5"]},
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == ["Model 2", "Model 3"]
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        model = service.get_by_id(1)
+        assert model.name == "Model"
 
-#     run2.unset_as_default()
-#     res = platform.backend.models.tabulate(
-#         iamc={
-#             "variable": {"name__like": "Variable *"},
-#             "unit": {"name__in": ["Unit 1", "Unit 3"]},
-#             "run": {
-#                 "model": {"name__in": ["Model 1", "Model 2"]},
-#                 "default_only": True,
-#             },
-#         }
-#     )
-#     assert res["name"].tolist() == ["Model 1", "Model 3"]
+    def test_model_list(self, service: ModelService) -> None:
+        results = service.list()
+        assert len(results) == 1
 
-#     res = platform.backend.models.tabulate(
-#         iamc={
-#             "variable": {"name__like": "Variable *"},
-#             "unit": {"name__in": ["Unit 1", "Unit 3"]},
-#             "run": {
-#                 "model": {"name__in": ["Model 1", "Model 2"]},
-#                 "default_only": False,
-#             },
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == [
-#         "Model 1",
-#         "Model 2",
-#         "Model 3",
-#         "Model 4",
-#     ]
+    def test_model_tabulate(self, service: ModelService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
 
-#     res = platform.backend.models.tabulate(iamc=False)
+    def test_model_delete(self, service: ModelService) -> None:
+        service.delete_by_id(1)
 
-#     assert res["name"].tolist() == ["Model 5"]
 
-#     res = platform.backend.models.tabulate()
+class TestModelAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, ModelServiceTest
+):
+    def test_model_create(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            model = service.create("Model")
+            assert model.id == 1
 
-#     assert sorted(res["name"].tolist()) == [
-#         "Model 1",
-#         "Model 2",
-#         "Model 3",
-#         "Model 4",
-#         "Model 5",
-#     ]
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Model")
+
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_model_list(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_model_tabulate(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_model_delete(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestModelAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, ModelServiceTest):
+    def test_model_create(self, service: ModelService) -> None:
+        model = service.create("Model")
+        assert model.id == 1
+        assert model.created_by == "staffuser_bob"
+
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        model = service.get_by_name("Model")
+        assert model.id == 1
+
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        model = service.get_by_id(1)
+        assert model.name == "Model"
+
+    def test_model_list(self, service: ModelService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_model_tabulate(self, service: ModelService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_model_delete(self, service: ModelService) -> None:
+        service.delete_by_id(1)
+
+
+class TestModelAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, ModelServiceTest
+):
+    def test_model_create(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            model = service.create("Model")
+            assert model.id == 1
+
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        with pytest.raises(ModelNotFound):
+            service.get_by_name("Model")
+
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        with pytest.raises(ModelNotFound):
+            service.get_by_id(1)
+
+    def test_model_list(self, service: ModelService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_model_tabulate(self, service: ModelService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_model_delete(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestModelAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, ModelServiceTest
+):
+    def test_model_create(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            model = service.create("Model")
+            assert model.id == 1
+
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Model")
+
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_model_list(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_model_tabulate(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_model_delete(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestModelAuthDavePublic(auth.DaveTest, auth.PublicPlatformTest, ModelServiceTest):
+    def test_model_create(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            model = service.create("Model")
+            assert model.id == 1
+
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        with pytest.raises(ModelNotFound):
+            service.get_by_name("Model")
+
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        with pytest.raises(ModelNotFound):
+            service.get_by_id(1)
+
+    def test_model_list(self, service: ModelService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_model_tabulate(self, service: ModelService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_model_delete(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestModelAuthNonePublic(auth.NoneTest, auth.PublicPlatformTest, ModelServiceTest):
+    def test_model_create(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            model = service.create("Model")
+            assert model.id == 1
+
+    def test_model_get_by_name(self, service: ModelService) -> None:
+        with pytest.raises(ModelNotFound):
+            service.get_by_name("Model")
+
+    def test_model_get_by_id(self, service: ModelService) -> None:
+        with pytest.raises(ModelNotFound):
+            service.get_by_id(1)
+
+    def test_model_list(self, service: ModelService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_model_tabulate(self, service: ModelService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_model_delete(self, service: ModelService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+# TODO: More detail in auth tests

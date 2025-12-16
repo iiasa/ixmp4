@@ -4,9 +4,10 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.scenario.exceptions import ScenarioNotFound, ScenarioNotUnique
 from ixmp4.data.scenario.service import ScenarioService
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -182,3 +183,204 @@ class TestScenarioTabulate(ScenarioServiceTest):
 
         scenarios = service.tabulate()
         pdt.assert_frame_equal(scenarios, expected_scenarios, check_like=True)
+
+
+class TestScenarioAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        scenario = service.create("Scenario")
+        assert scenario.id == 1
+        assert scenario.created_by == "superuser_sarah"
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        scenario = service.get_by_name("Scenario")
+        assert scenario.id == 1
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        scenario = service.get_by_id(1)
+        assert scenario.name == "Scenario"
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        service.delete_by_id(1)
+
+
+class TestScenarioAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            scenario = service.create("Scenario")
+            assert scenario.id == 1
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Scenario")
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestScenarioAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        scenario = service.create("Scenario")
+        assert scenario.id == 1
+        assert scenario.created_by == "staffuser_bob"
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        scenario = service.get_by_name("Scenario")
+        assert scenario.id == 1
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        scenario = service.get_by_id(1)
+        assert scenario.name == "Scenario"
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        service.delete_by_id(1)
+
+
+class TestScenarioAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            scenario = service.create("Scenario")
+            assert scenario.id == 1
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        with pytest.raises(ScenarioNotFound):
+            service.get_by_name("Scenario")
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        with pytest.raises(ScenarioNotFound):
+            service.get_by_id(1)
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestScenarioAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            scenario = service.create("Scenario")
+            assert scenario.id == 1
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Scenario")
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestScenarioAuthDavePublic(
+    auth.DaveTest, auth.PublicPlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            scenario = service.create("Scenario")
+            assert scenario.id == 1
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        with pytest.raises(ScenarioNotFound):
+            service.get_by_name("Scenario")
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        with pytest.raises(ScenarioNotFound):
+            service.get_by_id(1)
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestScenarioAuthNonePublic(
+    auth.NoneTest, auth.PublicPlatformTest, ScenarioServiceTest
+):
+    def test_scenario_create(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            scenario = service.create("Scenario")
+            assert scenario.id == 1
+
+    def test_scenario_get_by_name(self, service: ScenarioService) -> None:
+        with pytest.raises(ScenarioNotFound):
+            service.get_by_name("Scenario")
+
+    def test_scenario_get_by_id(self, service: ScenarioService) -> None:
+        with pytest.raises(ScenarioNotFound):
+            service.get_by_id(1)
+
+    def test_scenario_list(self, service: ScenarioService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_scenario_tabulate(self, service: ScenarioService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_scenario_delete(self, service: ScenarioService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)

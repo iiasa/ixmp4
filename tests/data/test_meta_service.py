@@ -58,7 +58,7 @@ class RunMetaEntryServiceTest(ServiceTest[RunMetaEntryService]):
         assert run.id == 1
         return run
 
-    def assert_value(self, meta: RunMetaEntry, val: MetaValueType):
+    def assert_value(self, meta: RunMetaEntry, val: MetaValueType) -> None:
         value_type = Type.from_pytype(type(val))
         assert Type(meta.dtype) == value_type
         col = Type.column_for_type(value_type)

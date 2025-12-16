@@ -4,9 +4,10 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.region.exceptions import RegionNotFound, RegionNotUnique
 from ixmp4.data.region.service import RegionService
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -248,66 +249,202 @@ class TestRegionTabulate(RegionServiceTest):
         pdt.assert_frame_equal(regions, expected_regions, check_like=True)
 
 
-# TODO: refactor to a filter test class for efficiency
-# def test_filter_region(self, platform: ixmp4.Platform) -> None:
-#     run1, run2 = self.filter.load_dataset(platform)
+class TestRegionAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        region = service.create("Region", "Hierarchy")
+        assert region.id == 1
+        assert region.created_by == "superuser_sarah"
 
-#     res = platform.backend.regions.tabulate(
-#         iamc={
-#             "run": {"model": {"name": "Model 1"}},
-#             "unit": {"name": "Unit 1"},
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == ["Region 1", "Region 3"]
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        region = service.get_by_name("Region")
+        assert region.id == 1
 
-#     run2.set_as_default()
-#     res = platform.backend.regions.tabulate(
-#         iamc={
-#             "variable": {"name__in": ["Variable 3", "Variable 5"]},
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == ["Region 2", "Region 3"]
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        region = service.get_by_id(1)
+        assert region.name == "Region"
 
-#     run2.unset_as_default()
-#     res = platform.backend.regions.tabulate(
-#         iamc={
-#             "variable": {"name__like": "Variable *"},
-#             "unit": {"name__in": ["Unit 1", "Unit 3"]},
-#             "run": {
-#                 "model": {"name__in": ["Model 1", "Model 2"]},
-#                 "default_only": True,
-#             },
-#         }
-#     )
-#     assert res["name"].tolist() == ["Region 1", "Region 3"]
+    def test_region_list(self, service: RegionService) -> None:
+        results = service.list()
+        assert len(results) == 1
 
-#     res = platform.backend.regions.tabulate(
-#         iamc={
-#             "variable": {"name__like": "Variable *"},
-#             "unit": {"name__in": ["Unit 1", "Unit 3"]},
-#             "run": {
-#                 "model": {"name__in": ["Model 1", "Model 2"]},
-#                 "default_only": False,
-#             },
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == [
-#         "Region 1",
-#         "Region 2",
-#         "Region 3",
-#         "Region 4",
-#     ]
+    def test_region_tabulate(self, service: RegionService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
 
-#     res = platform.backend.regions.tabulate(iamc=False)
+    def test_region_delete(self, service: RegionService) -> None:
+        service.delete_by_id(1)
 
-#     assert res["name"].tolist() == ["Region 5"]
 
-#     res = platform.backend.regions.tabulate()
+class TestRegionAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            region = service.create("Region", "Hierarchy")
+            assert region.id == 1
 
-#     assert sorted(res["name"].tolist()) == [
-#         "Region 1",
-#         "Region 2",
-#         "Region 3",
-#         "Region 4",
-#         "Region 5",
-#     ]
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Region")
+
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_region_list(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_region_tabulate(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_region_delete(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRegionAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        region = service.create("Region", "Hierarchy")
+        assert region.id == 1
+        assert region.created_by == "staffuser_bob"
+
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        region = service.get_by_name("Region")
+        assert region.id == 1
+
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        region = service.get_by_id(1)
+        assert region.name == "Region"
+
+    def test_region_list(self, service: RegionService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_region_tabulate(self, service: RegionService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_region_delete(self, service: RegionService) -> None:
+        service.delete_by_id(1)
+
+
+class TestRegionAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            region = service.create("Region", "Hierarchy")
+            assert region.id == 1
+
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        with pytest.raises(RegionNotFound):
+            service.get_by_name("Region")
+
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        with pytest.raises(RegionNotFound):
+            service.get_by_id(1)
+
+    def test_region_list(self, service: RegionService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_region_tabulate(self, service: RegionService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_region_delete(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRegionAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            region = service.create("Region", "Hierarchy")
+            assert region.id == 1
+
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_name("Region")
+
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_region_list(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_region_tabulate(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_region_delete(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRegionAuthDavePublic(
+    auth.DaveTest, auth.PublicPlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            region = service.create("Region", "Hierarchy")
+            assert region.id == 1
+
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        with pytest.raises(RegionNotFound):
+            service.get_by_name("Region")
+
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        with pytest.raises(RegionNotFound):
+            service.get_by_id(1)
+
+    def test_region_list(self, service: RegionService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_region_tabulate(self, service: RegionService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_region_delete(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRegionAuthNonePublic(
+    auth.NoneTest, auth.PublicPlatformTest, RegionServiceTest
+):
+    def test_region_create(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            region = service.create("Region", "Hierarchy")
+            assert region.id == 1
+
+    def test_region_get_by_name(self, service: RegionService) -> None:
+        with pytest.raises(RegionNotFound):
+            service.get_by_name("Region")
+
+    def test_region_get_by_id(self, service: RegionService) -> None:
+        with pytest.raises(RegionNotFound):
+            service.get_by_id(1)
+
+    def test_region_list(self, service: RegionService) -> None:
+        results = service.list()
+        assert len(results) == 0
+
+    def test_region_tabulate(self, service: RegionService) -> None:
+        results = service.tabulate()
+        assert len(results) == 0
+
+    def test_region_delete(self, service: RegionService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)

@@ -4,13 +4,15 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.checkpoint.repositories import (
     CheckpointNotFound,
 )
 from ixmp4.data.checkpoint.service import CheckpointService
+from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -153,66 +155,190 @@ class TestCheckpointTabulate(CheckpointServiceTest):
         pdt.assert_frame_equal(checkpoints, expected_checkpoints, check_like=True)
 
 
-# TODO: refactor to a filter test class for efficiency
-# def test_filter_checkpoint(self, platform: ixmp4.Platform) -> None:
-#     run1, run2 = self.filter.load_dataset(platform)
+class CheckpointAuthTest(CheckpointServiceTest):
+    @pytest.fixture(scope="class")
+    def unauthorized_runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
 
-#     res = platform.backend.checkpoints.tabulate(
-#         iamc={
-#             "run": {"checkpoint": {"name": "Checkpoint 1"}},
-#             "unit": {"name": "Unit 1"},
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == ["Checkpoint 1", "Checkpoint 3"]
+    @pytest.fixture(scope="class")
+    def model_run(self, unauthorized_runs: RunService) -> Run:
+        return unauthorized_runs.create("Model", "Scenario")
 
-#     run2.set_as_default()
-#     res = platform.backend.checkpoints.tabulate(
-#         iamc={
-#             "variable": {"name__in": ["Variable 3", "Variable 5"]},
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == ["Checkpoint 2", "Checkpoint 3"]
+    @pytest.fixture(scope="class")
+    def model10_run(self, unauthorized_runs: RunService) -> Run:
+        return unauthorized_runs.create("Model 10", "Scenario")
 
-#     run2.unset_as_default()
-#     res = platform.backend.checkpoints.tabulate(
-#         iamc={
-#             "variable": {"name__like": "Variable *"},
-#             "unit": {"name__in": ["Unit 1", "Unit 3"]},
-#             "run": {
-#                 "checkpoint": {"name__in": ["Checkpoint 1", "Checkpoint 2"]},
-#                 "default_only": True,
-#             },
-#         }
-#     )
-#     assert res["name"].tolist() == ["Checkpoint 1", "Checkpoint 3"]
+    @pytest.fixture(scope="class")
+    def model2_run(self, unauthorized_runs: RunService) -> Run:
+        return unauthorized_runs.create("Model 2", "Scenario")
 
-#     res = platform.backend.checkpoints.tabulate(
-#         iamc={
-#             "variable": {"name__like": "Variable *"},
-#             "unit": {"name__in": ["Unit 1", "Unit 3"]},
-#             "run": {
-#                 "checkpoint": {"name__in": ["Checkpoint 1", "Checkpoint 2"]},
-#                 "default_only": False,
-#             },
-#         }
-#     )
-#     assert sorted(res["name"].tolist()) == [
-#         "Checkpoint 1",
-#         "Checkpoint 2",
-#         "Checkpoint 3",
-#         "Checkpoint 4",
-#     ]
 
-#     res = platform.backend.checkpoints.tabulate(iamc=False)
+class TestCheckpointAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, CheckpointAuthTest
+):
+    def test_checkpoint_create(
+        self, service: CheckpointService, model_run: Run, transaction__id: int | None
+    ) -> None:
+        checkpoint1 = service.create(model_run.id, "Model Checkpoint", transaction__id)
+        assert checkpoint1.id == 1
 
-#     assert res["name"].tolist() == ["Checkpoint 5"]
+    def test_checkpoint_get_by_id(self, service: CheckpointService) -> None:
+        checkpoint1 = service.get_by_id(1)
+        assert checkpoint1.id == 1
 
-#     res = platform.backend.checkpoints.tabulate()
+    def test_checkpoint_list(self, service: CheckpointService) -> None:
+        results = service.list()
+        assert len(results) == 1
 
-#     assert sorted(res["name"].tolist()) == [
-#         "Checkpoint 1",
-#         "Checkpoint 2",
-#         "Checkpoint 3",
-#         "Checkpoint 4",
-#         "Checkpoint 5",
-#     ]
+    def test_checkpoint_tabulate(self, service: CheckpointService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_checkpoint_delete_by_id(self, service: CheckpointService) -> None:
+        service.delete_by_id(1)
+
+
+class TestCheckpointAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, CheckpointAuthTest
+):
+    def test_checkpoint_create(
+        self,
+        service: CheckpointService,
+        unauthorized_service: CheckpointService,
+        model_run: Run,
+        transaction__id: int | None,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(model_run.id, "Model Checkpoint", transaction__id)
+        checkpoint1 = unauthorized_service.create(
+            model_run.id, "Model Checkpoint", transaction__id
+        )
+        assert checkpoint1.id == 1
+
+    def test_checkpoint_get_by_id(self, service: CheckpointService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_checkpoint_list(self, service: CheckpointService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_checkpoint_tabulate(self, service: CheckpointService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_checkpoint_delete_by_id(self, service: CheckpointService) -> None:
+        with pytest.raises(CheckpointNotFound):
+            service.delete_by_id(1)
+
+
+class TestCheckpointAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, CheckpointAuthTest
+):
+    def test_checkpoint_create(
+        self, service: CheckpointService, model_run: Run, transaction__id: int | None
+    ) -> None:
+        checkpoint1 = service.create(model_run.id, "Model Checkpoint", transaction__id)
+        assert checkpoint1.id == 1
+
+    def test_checkpoint_get_by_id(self, service: CheckpointService) -> None:
+        checkpoint1 = service.get_by_id(1)
+        assert checkpoint1.id == 1
+
+    def test_checkpoint_list(self, service: CheckpointService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_checkpoint_tabulate(self, service: CheckpointService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_checkpoint_delete_by_id(self, service: CheckpointService) -> None:
+        service.delete_by_id(1)
+
+
+class TestCheckpointAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, CheckpointAuthTest
+):
+    def test_checkpoint_create(
+        self,
+        service: CheckpointService,
+        unauthorized_service: CheckpointService,
+        model_run: Run,
+        model2_run: Run,
+        transaction__id: int | None,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(model_run.id, "Model Checkpoint", transaction__id)
+
+        with pytest.raises(Forbidden):
+            service.create(model2_run.id, "Model 2 Checkpoint", transaction__id)
+
+        checkpoint1 = unauthorized_service.create(
+            model_run.id, "Model Checkpoint", transaction__id
+        )
+        checkpoint2 = unauthorized_service.create(
+            model2_run.id, "Model 2 Checkpoint", transaction__id
+        )
+
+        assert checkpoint1.id == 1
+        assert checkpoint2.id == 2
+
+    def test_checkpoint_get_by_id(self, service: CheckpointService) -> None:
+        checkpoint1 = service.get_by_id(1)
+        assert checkpoint1.id == 1
+
+        with pytest.raises(CheckpointNotFound):
+            service.get_by_id(2)
+
+    def test_checkpoint_list(self, service: CheckpointService) -> None:
+        results = service.list()
+        assert len(results) == 1
+
+    def test_checkpoint_tabulate(self, service: CheckpointService) -> None:
+        results = service.tabulate()
+        assert len(results) == 1
+
+    def test_checkpoint_delete_by_id(self, service: CheckpointService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+        with pytest.raises(CheckpointNotFound):
+            service.delete_by_id(2)
+
+
+class TestCheckpointAuthDaveGated(
+    auth.DaveTest, auth.GatedPlatformTest, CheckpointAuthTest
+):
+    def test_checkpoint_create(
+        self,
+        service: CheckpointService,
+        model_run: Run,
+        model2_run: Run,
+        transaction__id: int | None,
+    ) -> None:
+        checkpoint1 = service.create(model_run.id, "Model Checkpoint", transaction__id)
+        checkpoint2 = service.create(
+            model2_run.id, "Model 2 Checkpoint", transaction__id
+        )
+        assert checkpoint1.id == 1
+        assert checkpoint2.id == 2
+
+    def test_checkpoint_get_by_id(self, service: CheckpointService) -> None:
+        checkpoint1 = service.get_by_id(1)
+        checkpoint2 = service.get_by_id(2)
+        assert checkpoint1.id == 1
+        assert checkpoint2.id == 2
+
+    def test_checkpoint_list(self, service: CheckpointService) -> None:
+        results = service.list()
+        assert len(results) == 2
+
+    def test_checkpoint_tabulate(self, service: CheckpointService) -> None:
+        results = service.tabulate()
+        assert len(results) == 2
+
+    def test_checkpoint_delete_by_id(self, service: CheckpointService) -> None:
+        service.delete_by_id(1)
+        service.delete_by_id(2)
