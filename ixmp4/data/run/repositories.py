@@ -1,9 +1,11 @@
-from typing import cast
+from typing import Any, Sequence, cast
 
 import sqlalchemy as sa
 from toolkit import db
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.repository.base import Values
 
+from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.model.db import Model
 from ixmp4.data.scenario.db import Scenario
 
@@ -12,7 +14,30 @@ from .exceptions import RunNotFound, RunNotUnique
 from .filter import RunFilter
 
 
-class ItemRepository(db.r.ItemRepository[Run]):
+class RunAuthRepository(AuthRepository[Run]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        model_exc = self.select_permitted_model_ids(auth_ctx, platform)
+        return exc.where(Run.model__id.in_(model_exc))
+
+    def list_model_names(self, run_ids: Sequence[int]) -> Sequence[str]:
+        exc = (
+            sa.select(Model.name)
+            .distinct()
+            .select_from(Run)
+            .join(Run.model)
+            .where(Run.id.in_(run_ids))
+        )
+
+        with self.executor.select(exc) as result:
+            return result.scalars().all()
+
+
+class ItemRepository(RunAuthRepository, db.r.ItemRepository[Run]):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
     target = db.r.ModelTarget(Run)
@@ -91,7 +116,7 @@ class ItemRepository(db.r.ItemRepository[Run]):
             return None
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(RunAuthRepository, db.r.PandasRepository):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
     filter = db.r.Filter(RunFilter, Run)

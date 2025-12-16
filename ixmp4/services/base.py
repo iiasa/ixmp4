@@ -1,7 +1,7 @@
 import abc
 import inspect
 from datetime import datetime, timezone
-from typing import Any, ClassVar, ParamSpec, Sequence, TypeVar
+from typing import Any, ClassVar, ParamSpec, Sequence, TypedDict, TypeVar
 
 import pandas as pd
 import pandera.pandas as pa
@@ -9,6 +9,7 @@ import sqlalchemy as sa
 from litestar import Router, route
 from litestar.di import Provide
 from pandera.errors import SchemaError
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
 from ixmp4.data.base.dto import BaseModel
@@ -23,6 +24,11 @@ from ixmp4.transport import (
 TransportT = TypeVar("TransportT", bound=Transport)
 ReturnT = TypeVar("ReturnT")
 Params = ParamSpec("Params")
+
+
+class AuthKwargs(TypedDict):
+    auth_ctx: AuthorizationContext | None
+    platform: PlatformProtocol | None
 
 
 class Service(abc.ABC):
@@ -52,6 +58,12 @@ class Service(abc.ABC):
 
     def __init_httpx__(self, transport: HttpxTransport) -> None:
         pass
+
+    def get_auth_kwargs(self, transport: DirectTransport) -> AuthKwargs:
+        if isinstance(transport, AuthorizedTransport):
+            return AuthKwargs(auth_ctx=transport.auth_ctx, platform=transport.platform)
+        else:
+            return AuthKwargs(auth_ctx=None, platform=None)
 
     def get_dialect(self) -> sa.Dialect:
         if isinstance(self.transport, DirectTransport):
