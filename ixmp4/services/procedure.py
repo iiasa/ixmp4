@@ -29,12 +29,46 @@ ContraServiceT = TypeVar("ContraServiceT", bound="Service", contravariant=True)
 
 ProcedureFunc = Callable[Concatenate[ServiceT, Params], ReturnT]
 
-ProcedureAuthCheckFuncWithParams = Callable[
-    Concatenate[ServiceT, AuthorizationContext, PlatformProtocol, Params], Any
-]
-ProcedureAuthCheckFuncNoParams = Callable[
-    Concatenate[ServiceT, AuthorizationContext, PlatformProtocol, ...], Any
-]
+
+class InternalProcedureAuthCheckFunc(Protocol[ContraServiceT]):
+    __name__: str
+
+    def __call__(
+        self,
+        svc: ContraServiceT,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        *args: Any,
+        **kwds: Any,
+    ) -> Any: ...
+
+
+class ProcedureAuthCheckFuncWithParams(Protocol[ContraServiceT, Params]):
+    __name__: str
+
+    def __call__(
+        self,
+        svc: ContraServiceT,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        *args: Params.args,
+        **kwds: Params.kwargs,
+    ) -> Any: ...
+
+
+class ProcedureAuthCheckFuncNoParams(Protocol[ContraServiceT]):
+    __name__: str
+
+    def __call__(
+        self,
+        svc: ContraServiceT,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+    ) -> Any: ...
+
+
 ProcedureAuthCheckFunc = (
     ProcedureAuthCheckFuncNoParams[ServiceT]
     | ProcedureAuthCheckFuncWithParams[ServiceT, Params]
@@ -94,7 +128,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
                 continue  # skip self parameter as it will not be bound yet
             if param.kind == inspect.Parameter.POSITIONAL_ONLY:
                 raise ProgrammingError(
-                    f"`{func.__name__}` has positional-only arguments, "
+                    f"Procedure `{func.__name__}` has positional-only arguments, "
                     "which is not supported."
                 )
 
@@ -110,6 +144,66 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
             valid_params, return_annotation=org_sig.return_annotation
         )
 
+    def parse_auth_check_signature(self, func: Callable[..., Any]) -> inspect.Signature:
+        org_sig = inspect.signature(func)
+        valid_params = []
+        param_dict = org_sig.parameters.items()
+
+        for index, (name, param) in enumerate(param_dict):
+            if name == "self":
+                continue  # skip self parameter as it will not be bound yet
+
+            if param.annotation == inspect.Parameter.empty:
+                raise ProgrammingError(
+                    f"Argument `{name}` of `{func.__name__}` requires "
+                    "a type annotation."
+                )
+
+            if param.kind == inspect.Parameter.POSITIONAL_ONLY:
+                if index == 1 and param.annotation is AuthorizationContext:
+                    pass
+                elif index == 2 and param.annotation is PlatformProtocol:
+                    pass
+                else:
+                    raise ProgrammingError(
+                        f"Unexpected positional-only argument '{name}' with annotation "
+                        f"`{param.annotation}` in function definiton for "
+                        f"`{func.__name__}`."
+                    )
+
+            original_params = list(self.signature.parameters.items())
+            if index > 2:
+                try:
+                    coresp_name, coresp_param = original_params[index - 3]
+                except IndexError:
+                    raise ProgrammingError(
+                        f"Argument '{name}' for auth check `{func.__name__}` "
+                        f"is superfluous because `{self.func.__name__}` only "
+                        f"expects {len(original_params)} argument(s)."
+                    )
+
+                if param.annotation != coresp_param.annotation:
+                    raise ProgrammingError(
+                        f"Annotation `{param.annotation}` of argument '{name}' "
+                        f"for auth check `{func.__name__}` does not match "
+                        f"corresponding annotation `{coresp_param.annotation}` for "
+                        f"'{coresp_name}' argument of `{self.func.__name__}`."
+                    )
+
+                if param.default != coresp_param.default:
+                    raise ProgrammingError(
+                        f"Default `{param.default}` of keyword argument '{name}' "
+                        f"for auth check `{func.__name__}` does not match "
+                        f"corresponding default `{coresp_param.default}` for "
+                        f"'{coresp_name}' argument of `{self.func.__name__}`."
+                    )
+
+            valid_params.append(param)
+
+        return inspect.Signature(
+            valid_params, return_annotation=org_sig.return_annotation
+        )
+
     def auth_check(
         self,
     ) -> Callable[
@@ -117,11 +211,42 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         ProcedureAuthCheckFunc[ServiceT, Params],
     ]:
         def decorator(
-            auth_check: ProcedureAuthCheckFunc[ServiceT, Params],
+            decorated_auth_check: ProcedureAuthCheckFunc[ServiceT, Params],
         ) -> ProcedureAuthCheckFunc[ServiceT, Params]:
-            self.auth_check_func = auth_check
+            auth_check_sig = self.parse_auth_check_signature(decorated_auth_check)
+
+            auth_check_func: InternalProcedureAuthCheckFunc[ServiceT]
+
+            if len(auth_check_sig.parameters) <= 2:
+                wrapped = cast(  # type: ignore[redundant-cast]
+                    ProcedureAuthCheckFuncNoParams[ServiceT], decorated_auth_check
+                )
+
+                @functools.wraps(wrapped)
+                def auth_check_wrapper(
+                    service_self: ServiceT,
+                    auth_ctx: AuthorizationContext,
+                    platform: PlatformProtocol,
+                    *arg: Any,
+                    **kwargs: Any,
+                ) -> Any:
+                    return wrapped(service_self, auth_ctx, platform)
+
+                auth_check_func = cast(
+                    InternalProcedureAuthCheckFunc[ServiceT],
+                    auth_check_wrapper,
+                )
+
+            else:
+                decorated_auth_check = cast(
+                    InternalProcedureAuthCheckFunc[ServiceT],
+                    decorated_auth_check,
+                )
+                auth_check_func = decorated_auth_check
+
+            self.auth_check_func = auth_check_func
             self.has_auth_check = True
-            return auth_check
+            return decorated_auth_check
 
         return decorator
 

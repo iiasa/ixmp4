@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -88,11 +88,7 @@ class ScenarioService(DocsService, GetByIdService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
@@ -176,11 +172,7 @@ class ScenarioService(DocsService, GetByIdService):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -219,11 +211,7 @@ class ScenarioService(DocsService, GetByIdService):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 

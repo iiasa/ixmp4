@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -27,10 +27,9 @@ class ModelService(DocsService, GetByIdService):
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
+        self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.versions = VersionRepository(self.executor)
-
         DocsService.__init_direct__(self, transport, docs_model=ModelDocs)
 
     @procedure(Http(path="/", methods=("POST",)))
@@ -58,11 +57,7 @@ class ModelService(DocsService, GetByIdService):
 
     @create.auth_check()
     def create_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
@@ -89,11 +84,7 @@ class ModelService(DocsService, GetByIdService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
@@ -120,11 +111,7 @@ class ModelService(DocsService, GetByIdService):
 
     @get_by_name.auth_check()
     def get_by_name_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -152,11 +139,7 @@ class ModelService(DocsService, GetByIdService):
 
     @get_by_id.auth_check()
     def get_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -179,11 +162,7 @@ class ModelService(DocsService, GetByIdService):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -223,11 +202,7 @@ class ModelService(DocsService, GetByIdService):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 

@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -153,11 +153,7 @@ class RunMetaEntryService(Service):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -217,11 +213,7 @@ class RunMetaEntryService(Service):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -261,11 +253,7 @@ class RunMetaEntryService(Service):
 
     @bulk_upsert.auth_check()
     def bulk_upsert_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         # TODO check run__ids
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
@@ -289,11 +277,7 @@ class RunMetaEntryService(Service):
 
     @bulk_delete.auth_check()
     def bulk_delete_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         # TODO check run__ids
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)

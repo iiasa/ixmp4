@@ -84,11 +84,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @create.auth_check()
     def create_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
@@ -121,11 +117,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @get.auth_check()
     def get_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -155,11 +147,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @get_by_id.auth_check()
     def get_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -187,11 +175,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
@@ -229,11 +213,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @update_by_id.auth_check()
     def update_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
@@ -260,11 +240,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -304,11 +280,7 @@ class ScalarService(DocsService, GetByIdService):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 

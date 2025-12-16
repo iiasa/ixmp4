@@ -1,4 +1,4 @@
-from typing import Any, List, cast
+from typing import List, cast
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -104,11 +104,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @create.auth_check()
     def create_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         # TODO: Check run_id
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
@@ -143,11 +139,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @get.auth_check()
     def get_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -177,11 +169,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @get_by_id.auth_check()
     def get_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -209,11 +197,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
@@ -256,11 +240,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @add_data.auth_check()
     def add_data_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
@@ -308,11 +288,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @remove_data.auth_check()
     def remove_data_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
@@ -339,11 +315,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -387,11 +359,7 @@ class IndexSetService(DocsService, GetByIdService):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 

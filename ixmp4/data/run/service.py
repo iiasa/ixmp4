@@ -1,5 +1,5 @@
 from contextlib import suppress
-from typing import Any, List
+from typing import List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -75,8 +75,10 @@ class RunService(GetByIdService):
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
+        self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
+
+        # omit auth kwargs here so we dont interfere with run business logic
         self.models = ModelRepository(self.executor)
         self.scenarios = ScenarioRepository(self.executor)
         self.transactions = TransactionRepository(self.executor)
@@ -145,11 +147,7 @@ class RunService(GetByIdService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
@@ -286,11 +284,7 @@ class RunService(GetByIdService):
 
     @get_by_id.auth_check()
     def get_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -313,11 +307,7 @@ class RunService(GetByIdService):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -358,11 +348,7 @@ class RunService(GetByIdService):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -400,11 +386,7 @@ class RunService(GetByIdService):
 
     @set_as_default_version.auth_check()
     def set_as_default_version_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, id: int
     ) -> None:
         run = self.items.get_by_pk({"id": id})
         auth_ctx.has_edit_permission(
@@ -433,11 +415,7 @@ class RunService(GetByIdService):
 
     @unset_as_default_version.auth_check()
     def unset_as_default_version_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, id: int
     ) -> None:
         run = self.items.get_by_pk({"id": id})
         auth_ctx.has_edit_permission(
@@ -478,8 +456,7 @@ class RunService(GetByIdService):
         platform: PlatformProtocol,
         id: int,
         transaction__id: int,
-        *args: Any,
-        **kwargs: Any,
+        revert_platform: bool = False,
     ) -> None:
         run = self.items.get_by_pk({"id": id})
         auth_ctx.has_edit_permission(
@@ -514,12 +491,7 @@ class RunService(GetByIdService):
 
     @lock.auth_check()
     def lock_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        id: int,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, id: int
     ) -> None:
         run = self.items.get_by_pk({"id": id})
         auth_ctx.has_edit_permission(
@@ -545,12 +517,7 @@ class RunService(GetByIdService):
 
     @unlock.auth_check()
     def unlock_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        id: int,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, id: int
     ) -> None:
         run = self.items.get_by_pk({"id": id})
         auth_ctx.has_edit_permission(
@@ -595,11 +562,12 @@ class RunService(GetByIdService):
         run_id: int,
         model_name: str | None = None,
         scenario_name: str | None = None,
-        *args: Any,
-        **kwargs: Any,
+        keep_solution: bool = True,
     ) -> None:
         run = self.items.get_by_pk({"id": run_id})
         auth_ctx.has_view_permission(
             platform, models=[run.model.name], raise_exc=Forbidden
         )
-        auth_ctx.has_edit_permission(platform, models=[model_name], raise_exc=Forbidden)
+        auth_ctx.has_edit_permission(
+            platform, models=[model_name or run.model.name], raise_exc=Forbidden
+        )

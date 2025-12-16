@@ -1,5 +1,5 @@
 import abc
-from typing import Any, List
+from typing import List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -57,11 +57,7 @@ class DocsService(Service, abc.ABC):
     # TODO: check run permission
     @get_docs.auth_check()
     def get_docs_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -91,6 +87,7 @@ class DocsService(Service, abc.ABC):
             result = self.docs.create(
                 {"dimension__id": dimension__id, "description": description}
             )
+            assert result.inserted_primary_key is not None
             row_id = result.inserted_primary_key.id
 
         return Docs.model_validate(self.docs.get_by_pk({"id": row_id}))
@@ -98,11 +95,7 @@ class DocsService(Service, abc.ABC):
     # NOTE: Any edit permission suffices to delete any docs row, is this intended?
     @set_docs.auth_check()
     def set_docs_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         # self.auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
@@ -130,11 +123,7 @@ class DocsService(Service, abc.ABC):
     # NOTE: Any edit permission suffices to delete any docs row, is this intended?
     @delete_docs.auth_check()
     def delete_docs_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
 
@@ -162,11 +151,7 @@ class DocsService(Service, abc.ABC):
 
     @list_docs.auth_check()
     def list_docs_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 

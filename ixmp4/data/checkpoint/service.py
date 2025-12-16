@@ -1,4 +1,4 @@
-from typing import Any, List
+from typing import List
 
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -7,6 +7,7 @@ from typing_extensions import Unpack
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
+from ixmp4.data.run.repositories import ItemRepository as RunRepository
 from ixmp4.data.versions.transaction import TransactionRepository
 from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
@@ -25,8 +26,9 @@ class CheckpointService(GetByIdService):
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
+        self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.runs = RunRepository(self.executor)
         self.transactions = TransactionRepository(self.executor)
 
     @procedure(Http(path="/", methods=("POST",)))
@@ -62,20 +64,25 @@ class CheckpointService(GetByIdService):
         result = self.items.create(
             {"run__id": run__id, "transaction__id": transaction__id, "message": message}
         )
+        assert result.inserted_primary_key is not None
         return Checkpoint.model_validate(
             self.items.get_by_pk({"id": result.inserted_primary_key.id})
         )
 
-    # TODO: check run permission
     @create.auth_check()
     def create_auth_check(
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        /,
+        run__id: int,
+        message: str,
+        transaction__id: int | None = None,
     ) -> None:
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        run = self.runs.get_by_pk({"id": run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/", methods=("DELETE",)))
     def delete_by_id(self, id: int) -> None:
@@ -94,16 +101,18 @@ class CheckpointService(GetByIdService):
 
         self.items.delete_by_pk({"id": id})
 
-    # TODO: check run permission
     @delete_by_id.auth_check()
     def delete_auth_check(
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        id: int,
     ) -> None:
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        checkpoint = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": checkpoint.run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Checkpoint:
@@ -127,14 +136,9 @@ class CheckpointService(GetByIdService):
 
         return Checkpoint.model_validate(self.items.get_by_pk({"id": id}))
 
-    # TODO: check run permission
     @get_by_id.auth_check()
     def get_by_id_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -157,11 +161,7 @@ class CheckpointService(GetByIdService):
 
     @list.auth_check()
     def list_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -203,11 +203,7 @@ class CheckpointService(GetByIdService):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
