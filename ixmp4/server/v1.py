@@ -3,6 +3,7 @@ from contextlib import asynccontextmanager, suppress
 from typing import TYPE_CHECKING, Any, AsyncIterator, Awaitable, Callable, Sequence
 
 from litestar import Controller, Litestar, Request, Response, Router, get
+from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.middleware import DefineMiddleware
 from sqlalchemy import orm
@@ -65,6 +66,8 @@ class V1HttpApi:
 
     router: Router
     platform_router: Router
+    provide_platform: Provide | None = None
+    provide_transport: Provide | None = None
 
     def __init__(
         self,
@@ -76,13 +79,15 @@ class V1HttpApi:
             service_classes = v1_services
 
         self.settings = settings
+        self.provide_transport = Provide(override_transport or self.get_transport)
+        self.provide_platform = Provide(self.get_platform)
 
         self.platform_router = Router(
             path="/{platform_name:str}",
             route_handlers=[PlatformController],
             dependencies={
-                "platform": Provide(self.get_platform),
-                "transport": Provide(override_transport or self.get_transport),
+                "platform": self.provide_platform,
+                "transport": self.provide_transport,
             },
         )
 
@@ -93,8 +98,7 @@ class V1HttpApi:
             self.platform_router.register(service.router)
 
         auth_mw = DefineMiddleware(
-            AuthenticationMiddleware,
-            secret_hs256=settings.secret_hs256,
+            AuthenticationMiddleware, secret_hs256=settings.secret_hs256
         )
 
         self.router = Router(
@@ -142,15 +146,15 @@ class V1HttpApi:
 
     async def get_platform(
         self,
-        app: Litestar,
+        state: State,
         platform_name: str,
         request: Request[User | None, AuthorizationContext | None, Any],
     ) -> PlatformConnectionInfo:
         platform: PlatformConnectionInfo | None = None
 
-        if app.state.manager_platforms is not None and request.auth is not None:
+        if state.manager_platforms is not None and request.auth is not None:
             with suppress(PlatformNotFound):
-                platform = app.state.manager_platforms.get_platform(platform_name)
+                platform = state.manager_platforms.get_platform(platform_name)
                 request.auth.has_access_permission(
                     platform,
                     raise_exc=Forbidden(
@@ -159,9 +163,9 @@ class V1HttpApi:
                     ),
                 )
 
-        if platform is None and app.state.toml_platforms is not None:
+        if platform is None and state.toml_platforms is not None:
             with suppress(PlatformNotFound):
-                platform = app.state.toml_platforms.get_platform(platform_name)
+                platform = state.toml_platforms.get_platform(platform_name)
 
         if platform is None or platform.dsn.startswith("http"):
             raise PlatformNotFound(f"Platform '{platform_name}' was not found.")
