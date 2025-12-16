@@ -18,6 +18,7 @@ def start(
     """Starts the ixmp4 web api."""
     settings = Settings()
     server = Ixmp4Server(settings.server, debug=debug)
+
     uvicorn.run(
         server.asgi_app,
         host=host,
