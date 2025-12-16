@@ -34,6 +34,7 @@ def alembic_config(at_revision_c71efc396d2b: list[dict[str, Any]]) -> dict[str, 
     return {
         "script_location": "ixmp4/db/migrations",
         "at_revision_data": {"c71efc396d2b": at_revision_c71efc396d2b},
+        "sqlalchemy.url": "fake-test-dsn-which-is-unused",
     }
 
 
