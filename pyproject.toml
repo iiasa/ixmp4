@@ -80,6 +80,7 @@ snakeviz = ">=2.1.1"
 types-toml = ">=0.10.8.7"
 pytest-alembic = ">=0.12.1"
 pandera = { extras = ["mypy"], version = ">=0.24.0" }
+pytest-memray = "^1.8.0"
 
 [tool.poetry.group.tutorial]
 optional = true
