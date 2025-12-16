@@ -1,9 +1,12 @@
-from typing import Sequence
+from typing import Any, Sequence
 
 import pandas as pd
+import sqlalchemy as sa
 from toolkit import db
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.repository.base import Values
 
+from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.iamc.variable.db import Variable
 from ixmp4.data.model.db import Model
@@ -17,7 +20,28 @@ from .exceptions import DataPointNotFound, DataPointNotUnique
 from .filter import DataPointFilter, DataPointVersionFilter
 
 
-class PandasRepository(db.r.PandasRepository):
+class DataPointAuthRepository(AuthRepository[DataPoint]):
+    def select_permitted_ts_ids(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> sa.Select[tuple[int]]:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        return (
+            sa.select(TimeSeries)
+            .where(TimeSeries.run__id.in_(run_exc))
+            .with_only_columns(TimeSeries.id)
+        )
+
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        ts_exc = self.select_permitted_ts_ids(auth_ctx, platform)
+        return exc.where(DataPoint.time_series__id.in_(ts_exc))
+
+
+class PandasRepository(DataPointAuthRepository, db.r.PandasRepository):
     NotFound = DataPointNotFound
     NotUnique = DataPointNotUnique
     target = db.r.ExtendedTarget(

@@ -1,5 +1,3 @@
-from typing import Any
-
 import pandas as pd
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
@@ -18,6 +16,7 @@ from ixmp4.data.region.exceptions import RegionNotFound
 from ixmp4.data.region.repositories import (
     PandasRepository as RegionPandasRepository,
 )
+from ixmp4.data.run.repositories import ItemRepository as RunRepository
 from ixmp4.data.unit.exceptions import UnitNotFound
 from ixmp4.data.unit.repositories import (
     PandasRepository as UnitPandasRepository,
@@ -35,13 +34,21 @@ class TimeSeriesService(Service):
     executor: db.r.SessionExecutor
     pandas: PandasRepository
 
+    measurands: MeasurandPandasRepository
+    regions: RegionPandasRepository
+    units: UnitPandasRepository
+    variables: VariablePandasRepository
+    runs: RunRepository
+
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.pandas = PandasRepository(self.executor)
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
+
         self.measurands = MeasurandPandasRepository(self.executor)
         self.regions = RegionPandasRepository(self.executor)
         self.units = UnitPandasRepository(self.executor)
         self.variables = VariablePandasRepository(self.executor)
+        self.runs = RunRepository(self.executor)
 
     @procedure(Http(methods=("PATCH",)))
     def tabulate_by_df(self, df: SerializableDataFrame) -> SerializableDataFrame:
@@ -66,11 +73,7 @@ class TimeSeriesService(Service):
 
     @tabulate_by_df.auth_check()
     def tabulate_by_df_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -100,11 +103,7 @@ class TimeSeriesService(Service):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -220,8 +219,9 @@ class TimeSeriesService(Service):
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        /,
+        df: SerializableDataFrame,
     ) -> None:
-        # TODO: get list of models from list of run__ids
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        run_ids = df["run__id"].unique().tolist()
+        model_names = self.runs.list_model_names(run_ids)
+        auth_ctx.has_edit_permission(platform, models=model_names, raise_exc=Forbidden)

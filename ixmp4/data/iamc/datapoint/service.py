@@ -1,5 +1,3 @@
-from typing import Any
-
 from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
@@ -46,7 +44,7 @@ class DataPointService(Service):
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.pandas = PandasRepository(self.executor)
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.timeseries = TimeSeriesPandasRepository(self.executor)
         self.versions = VersionRepository(self.executor)
 
@@ -102,11 +100,7 @@ class DataPointService(Service):
 
     @tabulate.auth_check()
     def tabulate_auth_check(
-        self,
-        auth_ctx: AuthorizationContext,
-        platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> None:
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
@@ -144,11 +138,12 @@ class DataPointService(Service):
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        /,
+        df: SerializableDataFrame,
     ) -> None:
-        # TODO: get list of models from list of timeseries__ids
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        timeseries_ids = df["time_series__id"].unique().tolist()
+        model_names = self.timeseries.list_model_names(timeseries_ids)
+        auth_ctx.has_edit_permission(platform, models=model_names, raise_exc=Forbidden)
 
     @procedure(Http(methods=("DELETE",)))
     def bulk_delete(self, df: SerializableDataFrame) -> None:
@@ -161,8 +156,8 @@ class DataPointService(Service):
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        *args: Any,
-        **kwargs: Any,
+        df: SerializableDataFrame,
     ) -> None:
-        # TODO: get list of models from list of timeseries__ids
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        timeseries_ids = df["time_series__id"].unique().tolist()
+        model_names = self.timeseries.list_model_names(timeseries_ids)
+        auth_ctx.has_edit_permission(platform, models=model_names, raise_exc=Forbidden)
