@@ -40,10 +40,7 @@ Session = orm.sessionmaker(autocommit=False, autoflush=False)
 class DirectTransport(Transport):
     session: orm.Session
 
-    def __init__(
-        self,
-        session: orm.Session,
-    ):
+    def __init__(self, session: orm.Session):
         self.session = session
 
     @classmethod
@@ -68,10 +65,12 @@ class DirectTransport(Transport):
         return cls(session, *args, **kwargs)
 
     @classmethod
+    @lru_cache()
     def create_postgresql_engine(cls, dsn: str) -> sa.Engine:
         return sa.create_engine(dsn, poolclass=sa.StaticPool, max_identifier_length=63)
 
     @classmethod
+    @lru_cache()
     def create_sqlite_engine(cls, dsn: str) -> sa.Engine:
         return sa.create_engine(
             dsn,
@@ -109,6 +108,7 @@ class DirectTransport(Transport):
 class AuthorizedTransport(DirectTransport):
     platform: PlatformProtocol
     auth_ctx: AuthorizationContext
+    unauthorized_transport: DirectTransport
 
     def __init__(
         self,
@@ -121,6 +121,7 @@ class AuthorizedTransport(DirectTransport):
         )
         self.auth_ctx = auth_ctx
         self.platform = platform
+        self.unauthorized_transport = DirectTransport(session)
 
     def __str__(self) -> str:
         return (
@@ -137,16 +138,12 @@ class HttpxTransport(Transport, ServiceClient):
     direct: DirectTransport | None = None
 
     def __init__(
-        self,
-        client: httpx.Client | TestClient[Litestar],
-        settings: ClientSettings,
-        direct: DirectTransport | None = None,
+        self, client: httpx.Client | TestClient[Litestar], settings: ClientSettings
     ):
         self.url = str(client.base_url)
         self.settings = settings
         self.executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_requests)
         self.http_client = client
-        self.direct = direct
 
     @classmethod
     def from_url(
@@ -174,7 +171,9 @@ class HttpxTransport(Transport, ServiceClient):
             base_url="http://testserver.local/v1/direct/",
             raise_server_exceptions=raise_server_exceptions,
         )
-        return cls(client, settings, direct=direct)
+        transport = cls(client, settings)
+        transport.direct = direct
+        return transport
 
     def __str__(self) -> str:
         if (
