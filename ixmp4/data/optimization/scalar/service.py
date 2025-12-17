@@ -8,6 +8,7 @@ from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
+from ixmp4.data.run.repositories import ItemRepository as RunRepository
 from ixmp4.data.unit.repositories import ItemRepository as UnitRepository
 from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
@@ -26,14 +27,17 @@ class ScalarService(DocsService, GetByIdService):
     pandas: PandasRepository
     versions: VersionRepository
 
+    runs: RunRepository
     indexsets: UnitRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
+        self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.versions = VersionRepository(self.executor)
         self.units = UnitRepository(self.executor)
+        self.runs = RunRepository(self.executor)
+
         DocsService.__init_direct__(self, transport, docs_model=ScalarDocs)
 
     @procedure(Http(path="/", methods=("POST",)))
@@ -84,10 +88,19 @@ class ScalarService(DocsService, GetByIdService):
 
     @create.auth_check()
     def create_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        run_id: int,
+        name: str,
+        value: float | int,
+        unit_name: str,
     ) -> None:
-        # TODO: Check run_id
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        run = self.runs.get_by_pk({"id": run_id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(methods=("POST",)))
     def get(self, run_id: int, name: str) -> Scalar:
@@ -117,9 +130,16 @@ class ScalarService(DocsService, GetByIdService):
 
     @get.auth_check()
     def get_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        run_id: int,
+        name: str,
     ) -> None:
-        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+        run = self.runs.get_by_pk({"id": run_id})
+        auth_ctx.has_view_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Scalar:
@@ -175,9 +195,14 @@ class ScalarService(DocsService, GetByIdService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, /, id: int
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        item = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": item.run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/", methods=("POST",)))
     def update_by_id(
@@ -213,9 +238,20 @@ class ScalarService(DocsService, GetByIdService):
 
     @update_by_id.auth_check()
     def update_by_id_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        id: int,
+        value: float | int | None = None,
+        unit_name: str | None = None,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        item = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": item.run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:

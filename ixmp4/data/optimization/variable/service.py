@@ -13,6 +13,7 @@ from ixmp4.data.optimization.indexset.repositories import (
     ItemRepository as IndexSetRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
+from ixmp4.data.run.repositories import ItemRepository as RunRepository
 from ixmp4.services import DirectTransport, Http, procedure
 
 from .db import VariableDocs
@@ -38,14 +39,17 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
     associations: AssociationRepository
     indexsets: IndexSetRepository
+    runs: RunRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
+        self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.versions = VersionRepository(self.executor)
         self.associations = AssociationRepository(self.executor)
         self.indexsets = IndexSetRepository(self.executor)
+        self.runs = RunRepository(self.executor)
+
         DocsService.__init_direct__(self, transport, docs_model=VariableDocs)
 
     @procedure(Http(path="/", methods=("POST",)))
@@ -106,10 +110,19 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
     @create.auth_check()
     def create_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        run_id: int,
+        name: str,
+        constrained_to_indexsets: list[str] | None = None,
+        column_names: list[str] | None = None,
     ) -> None:
-        # TODO: Check run_id
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        run = self.runs.get_by_pk({"id": run_id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(methods=("POST",)))
     def get(self, run_id: int, name: str) -> Variable:
@@ -141,9 +154,17 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
     @get.auth_check()
     def get_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        run_id: int,
+        name: str,
     ) -> None:
-        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+        run = self.runs.get_by_pk({"id": run_id})
+        auth_ctx.has_view_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/", methods=("GET",)))
     def get_by_id(self, id: int) -> Variable:
@@ -199,9 +220,14 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol, /, id: int
     ) -> None:
-        auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
+        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        item = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": item.run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/data", methods=("POST",)))
     def add_data(self, id: int, data: dict[str, Any] | SerializableDataFrame) -> None:
@@ -254,9 +280,19 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
     @add_data.auth_check()
     def add_data_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        id: int,
+        data: dict[str, Any] | SerializableDataFrame,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        item = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": item.run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(path="/{id:int}/data", methods=("DELETE",)))
     def remove_data(
@@ -293,9 +329,19 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
     @remove_data.auth_check()
     def remove_data_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        /,
+        id: int,
+        data: dict[str, Any] | SerializableDataFrame | None = None,
     ) -> None:
         auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        item = self.items.get_by_pk({"id": id})
+        run = self.runs.get_by_pk({"id": item.run__id})
+        auth_ctx.has_edit_permission(
+            platform, models=[run.model.name], raise_exc=Forbidden
+        )
 
     @procedure(Http(methods=("PATCH",)))
     def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
