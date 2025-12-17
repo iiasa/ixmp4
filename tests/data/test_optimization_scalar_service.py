@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.data.optimization.indexset.service import IndexSetService
+from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.optimization.scalar.repositories import (
     ScalarNotFound,
     ScalarNotUnique,
@@ -14,7 +14,7 @@ from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import Unit, UnitService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -281,7 +281,7 @@ class ScalarDataTest(ScalarServiceTest):
 
     def test_scalar_data_versioning(
         self,
-        versioning_service: IndexSetService,
+        versioning_service: ScalarService,
         run: Run,
         test_data: tuple[int | float, str],
         test_data_value_update: int | float,
@@ -488,3 +488,373 @@ class TestScalarTabulate(ScalarServiceTest):
 
         scalars = service.tabulate()
         pdt.assert_frame_equal(scalars, expected_scalars, check_like=True)
+
+
+class ScalarAuthTest(ScalarServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def units(self, transport: Transport) -> UnitService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return UnitService(direct)
+
+    @pytest.fixture(scope="class")
+    def run(self, runs: RunService) -> Run:
+        run = runs.create("Model", "Scenario")
+        return run
+
+    @pytest.fixture(scope="class")
+    def run1(self, runs: RunService) -> Run:
+        run = runs.create("Model 1", "Scenario")
+        return run
+
+    @pytest.fixture(scope="class")
+    def run2(self, runs: RunService) -> Run:
+        run = runs.create("Model 2", "Scenario")
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_data(self, units: UnitService) -> tuple[int | float, str]:
+        units.create("Unit")
+        return 1.2, "Unit"
+
+    @pytest.fixture(scope="class")
+    def test_data_update(self, units: UnitService) -> tuple[int | float, str]:
+        return -2.2, "Unit"
+
+
+class TestScalarAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, ScalarAuthTest
+):
+    def test_scalar_create(
+        self, service: ScalarService, run: Run, test_data: tuple[int | float, str]
+    ) -> None:
+        value, unit = test_data
+        ret = service.create(run.id, "Scalar", value, unit)
+        assert ret.id == 1
+
+    def test_parameter_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_scalar_get(self, service: ScalarService, run: Run) -> None:
+        ret = service.get(run.id, "Scalar")
+        assert ret.id == 1
+
+    def test_scalar_update_by_id(
+        self,
+        service: ScalarService,
+        test_data_update: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data_update
+        service.update_by_id(1, value=value, unit_name=unit)
+
+    def test_scalar_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_scalar_list(
+        self,
+        service: ScalarService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_scalar_tabulate(self, service: ScalarService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_scalar_delete_by_id(self, service: ScalarService) -> None:
+        service.delete_by_id(1)
+
+
+class TestScalarAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, ScalarAuthTest
+):
+    def test_scalar_create(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+        run: Run,
+        test_data: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data
+        with pytest.raises(Forbidden):
+            service.create(run.id, "Scalar", value, unit)
+
+        ret = unauthorized_service.create(run.id, "Scalar", value, unit)
+        assert ret.id == 1
+
+    def test_scalar_get(self, service: ScalarService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Scalar")
+
+    def test_parameter_get_by_id(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_scalar_update_by_id(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+        test_data_update: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data_update
+        with pytest.raises(Forbidden):
+            service.update_by_id(1, value=value, unit_name=unit)
+        unauthorized_service.update_by_id(1, value=value, unit_name=unit)
+
+    def test_scalar_get_by_id(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_scalar_list(
+        self,
+        service: ScalarService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_scalar_tabulate(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_scalar_delete_by_id(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestScalarAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, ScalarAuthTest):
+    def test_scalar_create(
+        self, service: ScalarService, run: Run, test_data: tuple[int | float, str]
+    ) -> None:
+        value, unit = test_data
+        ret = service.create(run.id, "Scalar", value, unit)
+        assert ret.id == 1
+
+    def test_parameter_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_scalar_get(self, service: ScalarService, run: Run) -> None:
+        ret = service.get(run.id, "Scalar")
+        assert ret.id == 1
+
+    def test_scalar_update_by_id(
+        self,
+        service: ScalarService,
+        test_data_update: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data_update
+        service.update_by_id(1, value=value, unit_name=unit)
+
+    def test_scalar_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_scalar_list(
+        self,
+        service: ScalarService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_scalar_tabulate(self, service: ScalarService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_scalar_delete_by_id(self, service: ScalarService) -> None:
+        service.delete_by_id(1)
+
+
+class TestScalarAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, ScalarAuthTest
+):
+    def test_scalar_create(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+        test_data: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data
+        with pytest.raises(Forbidden):
+            service.create(run.id, "Scalar", value, unit)
+        ret = unauthorized_service.create(run.id, "Scalar", value, unit)
+        assert ret.id == 1
+
+        ret2 = service.create(run1.id, "Scalar 1", value, unit)
+        assert ret2.id == 2
+
+        with pytest.raises(Forbidden):
+            service.create(run2.id, "Scalar 2", value, unit)
+        ret3 = unauthorized_service.create(run2.id, "Scalar 2", value, unit)
+        assert ret3.id == 3
+
+    def test_scalar_get(
+        self,
+        service: ScalarService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+    ) -> None:
+        ret = service.get(run.id, "Scalar")
+        assert ret.id == 1
+
+        ret2 = service.get(run1.id, "Scalar 1")
+        assert ret2.id == 2
+
+        with pytest.raises(ScalarNotFound):
+            service.get(run2.id, "Scalar 2")
+
+    def test_scalar_update_by_id(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+        test_data_update: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data_update
+
+        with pytest.raises(Forbidden):
+            service.update_by_id(1, value=value, unit_name=unit)
+        unauthorized_service.update_by_id(1, value=value, unit_name=unit)
+
+        service.update_by_id(2, value=value, unit_name=unit)
+
+        with pytest.raises(ScalarNotFound):
+            service.update_by_id(3, value=value, unit_name=unit)
+        unauthorized_service.update_by_id(3, value=value, unit_name=unit)
+
+    def test_scalar_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+        ret2 = service.get_by_id(2)
+        assert ret2.id == 2
+
+        with pytest.raises(ScalarNotFound):
+            service.get_by_id(3)
+
+    def test_scalar_list(
+        self,
+        service: ScalarService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 2
+
+    def test_scalar_tabulate(self, service: ScalarService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 2
+
+    def test_scalar_delete_by_id(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+        service.delete_by_id(2)
+
+        with pytest.raises(ScalarNotFound):
+            service.delete_by_id(3)
+        unauthorized_service.delete_by_id(3)
+
+
+class TestScalarAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, ScalarAuthTest
+):
+    def test_scalar_create(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+        run: Run,
+        test_data: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data
+        with pytest.raises(Forbidden):
+            service.create(run.id, "Scalar", value, unit)
+
+        ret = unauthorized_service.create(run.id, "Scalar", value, unit)
+        assert ret.id == 1
+
+    def test_scalar_get(self, service: ScalarService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Scalar")
+
+    def test_parameter_get_by_id(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_scalar_update_by_id(
+        self,
+        service: ScalarService,
+        unauthorized_service: ScalarService,
+        test_data_update: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data_update
+        with pytest.raises(Forbidden):
+            service.update_by_id(1, value=value, unit_name=unit)
+        unauthorized_service.update_by_id(1, value=value, unit_name=unit)
+
+    def test_scalar_get_by_id(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_scalar_list(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_scalar_tabulate(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_scalar_delete_by_id(self, service: ScalarService) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+
+
+class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, ScalarAuthTest):
+    def test_scalar_create(
+        self, service: ScalarService, run: Run, test_data: tuple[int | float, str]
+    ) -> None:
+        value, unit = test_data
+        ret = service.create(run.id, "Scalar", value, unit)
+        assert ret.id == 1
+
+    def test_parameter_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_scalar_get(self, service: ScalarService, run: Run) -> None:
+        ret = service.get(run.id, "Scalar")
+        assert ret.id == 1
+
+    def test_scalar_update_by_id(
+        self,
+        service: ScalarService,
+        test_data_update: tuple[int | float, str],
+    ) -> None:
+        value, unit = test_data_update
+        service.update_by_id(1, value=value, unit_name=unit)
+
+    def test_scalar_get_by_id(self, service: ScalarService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_scalar_list(self, service: ScalarService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_scalar_tabulate(self, service: ScalarService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_scalar_delete_by_id(self, service: ScalarService) -> None:
+        service.delete_by_id(1)

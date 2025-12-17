@@ -5,7 +5,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.base_exceptions import OptimizationItemUsageError
+from ixmp4.base_exceptions import Forbidden, OptimizationItemUsageError
 from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
 from ixmp4.data.optimization.table.repositories import (
     TableDataInvalid,
@@ -16,7 +16,7 @@ from ixmp4.data.optimization.table.service import TableService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -635,3 +635,444 @@ class TestTableTabulate(TableServiceTest):
 
         tables = service.tabulate()
         pdt.assert_frame_equal(tables, expected_tables, check_like=True)
+
+
+class TableAuthTest(TableServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def indexsets(self, transport: Transport) -> IndexSetService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return IndexSetService(direct)
+
+    @pytest.fixture(scope="class")
+    def run(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run1(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 1", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run2(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 2", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]]:
+        return {
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
+
+    def create_indexsets(self, run: Run, indexsets: IndexSetService) -> list[IndexSet]:
+        indexset1 = indexsets.create(run.id, "IndexSet 1")
+        indexset2 = indexsets.create(run.id, "IndexSet 2")
+        indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
+        indexsets.add_data(indexset2.id, [3, 1, 4])
+        return [indexsets.get_by_id(indexset1.id), indexsets.get_by_id(indexset2.id)]
+
+    @pytest.fixture(scope="class")
+    def indexset_names(self) -> list[str]:
+        return ["IndexSet 1", "IndexSet 2"]
+
+
+class TestTableAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, TableAuthTest
+):
+    def test_table_create(
+        self, service: TableService, run: Run, indexset_names: list[str]
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Table",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_table_add_data(
+        self,
+        service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_table_remove_data(
+        self,
+        service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_table_list(self, service: TableService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_table_tabulate(self, service: TableService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_table_delete(self, service: TableService) -> None:
+        service.delete_by_id(1)
+
+
+class TestTableAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, TableAuthTest
+):
+    def test_table_create(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Table",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Table",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_table_get(self, service: TableService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Table")
+
+    def test_table_get_by_id(self, service: TableService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_table_add_data(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_table_remove_data(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+    def test_table_list(self, service: TableService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_table_tabulate(self, service: TableService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_table_delete(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestTableAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, TableAuthTest):
+    def test_table_create(
+        self,
+        service: TableService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Table",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_table_get(self, service: TableService, run: Run) -> None:
+        ret = service.get(run.id, "Table")
+        assert ret.id == 1
+
+    def test_table_get_by_id(self, service: TableService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_table_add_data(
+        self,
+        service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_table_remove_data(
+        self,
+        service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_table_list(self, service: TableService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_table_tabulate(self, service: TableService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_table_delete(self, service: TableService) -> None:
+        service.delete_by_id(1)
+
+
+class TestTableAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, TableAuthTest
+):
+    def test_table_create(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Table",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Table",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+        ret2 = service.create(
+            run1.id,
+            "Table 1",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret2.id == 2
+
+        with pytest.raises(Forbidden):
+            service.create(
+                run2.id,
+                "Table 2",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret3 = unauthorized_service.create(
+            run2.id,
+            "Table 2",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret3.id == 3
+
+    def test_table_get(
+        self, service: TableService, run: Run, run1: Run, run2: Run
+    ) -> None:
+        ret = service.get(run.id, "Table")
+        assert ret.id == 1
+
+        ret = service.get(run1.id, "Table 1")
+        assert ret.id == 2
+
+        with pytest.raises(TableNotFound):
+            service.get(run2.id, "Table 2")
+
+    def test_table_get_by_id(self, service: TableService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+        ret2 = service.get_by_id(2)
+        assert ret2.id == 2
+
+        with pytest.raises(TableNotFound):
+            service.get_by_id(3)
+
+    def test_table_add_data(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+        service.add_data(2, test_data)
+
+        with pytest.raises(TableNotFound):
+            service.add_data(3, test_data)
+        unauthorized_service.add_data(3, test_data)
+
+    def test_table_remove_data(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+        service.remove_data(2, test_data)
+
+        with pytest.raises(TableNotFound):
+            service.remove_data(3, test_data)
+        unauthorized_service.remove_data(3, test_data)
+
+    def test_table_list(self, service: TableService) -> None:
+        ret = service.list()
+        assert len(ret) == 2
+
+    def test_table_tabulate(self, service: TableService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 2
+
+    def test_table_delete(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+        service.delete_by_id(2)
+
+        with pytest.raises(TableNotFound):
+            service.delete_by_id(3)
+        unauthorized_service.delete_by_id(3)
+
+
+class TestTableAuthNonePrivate(auth.NoneTest, auth.PrivatePlatformTest, TableAuthTest):
+    def test_table_create(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Table",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Table",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_table_get(self, service: TableService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Table")
+
+    def test_table_get_by_id(self, service: TableService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_table_add_data(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_table_remove_data(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_table_list(self, service: TableService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_table_tabulate(self, service: TableService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_table_delete(
+        self,
+        service: TableService,
+        unauthorized_service: TableService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, TableAuthTest):
+    def test_table_create(
+        self,
+        service: TableService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Table",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_table_get(self, service: TableService, run: Run) -> None:
+        ret = service.get(run.id, "Table")
+        assert ret.id == 1
+
+    def test_table_get_by_id(self, service: TableService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_table_add_data(
+        self,
+        service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_table_remove_data(
+        self,
+        service: TableService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_table_list(self, service: TableService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_table_tabulate(self, service: TableService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_table_delete(self, service: TableService) -> None:
+        service.delete_by_id(1)

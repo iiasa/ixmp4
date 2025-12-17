@@ -5,7 +5,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.base_exceptions import OptimizationItemUsageError
+from ixmp4.base_exceptions import Forbidden, OptimizationItemUsageError
 from ixmp4.data.optimization.equation.exceptions import (
     EquationDataInvalid,
     EquationNotFound,
@@ -16,7 +16,7 @@ from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -712,3 +712,497 @@ class TestEquationTabulate(EquationServiceTest):
 
         equations = service.tabulate()
         pdt.assert_frame_equal(equations, expected_equations, check_like=True)
+
+
+class EquationAuthTest(EquationServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def indexsets(self, transport: Transport) -> IndexSetService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return IndexSetService(direct)
+
+    @pytest.fixture(scope="class")
+    def run(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run1(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 1", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run2(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 2", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]]:
+        return {
+            "marginals": [-2, 1, 1],
+            "levels": [2, 1, 3],
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
+
+    def create_indexsets(self, run: Run, indexsets: IndexSetService) -> list[IndexSet]:
+        indexset1 = indexsets.create(run.id, "IndexSet 1")
+        indexset2 = indexsets.create(run.id, "IndexSet 2")
+        indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
+        indexsets.add_data(indexset2.id, [3, 1, 4])
+        return [indexsets.get_by_id(indexset1.id), indexsets.get_by_id(indexset2.id)]
+
+    @pytest.fixture(scope="class")
+    def indexset_names(self) -> list[str]:
+        return ["IndexSet 1", "IndexSet 2"]
+
+
+class TestEquationAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, EquationAuthTest
+):
+    def test_equation_create(
+        self, service: EquationService, run: Run, indexset_names: list[str]
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Equation",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_equation_get(
+        self,
+        service: EquationService,
+        run: Run,
+    ) -> None:
+        ret = service.get(run.id, "Equation")
+        assert ret.id == 1
+
+    def test_equation_get_by_id(self, service: EquationService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_equation_add_data(
+        self,
+        service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_equation_remove_data(
+        self,
+        service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_equation_list(
+        self,
+        service: EquationService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_equation_tabulate(self, service: EquationService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_equation_delete(self, service: EquationService) -> None:
+        service.delete_by_id(1)
+
+
+class TestEquationAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, EquationAuthTest
+):
+    def test_equation_create(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Equation",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Equation",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_equation_get(self, service: EquationService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Equation")
+
+    def test_equation_get_by_id(self, service: EquationService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_equation_add_data(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_equation_remove_data(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+    def test_equation_list(
+        self,
+        service: EquationService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_equation_tabulate(self, service: EquationService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_equation_delete(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestEquationAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, EquationAuthTest
+):
+    def test_equation_create(
+        self,
+        service: EquationService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Equation",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_equation_get(
+        self,
+        service: EquationService,
+        run: Run,
+    ) -> None:
+        ret = service.get(run.id, "Equation")
+        assert ret.id == 1
+
+    def test_equation_get_by_id(self, service: EquationService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_equation_add_data(
+        self,
+        service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_equation_remove_data(
+        self,
+        service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_equation_list(
+        self,
+        service: EquationService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_equation_tabulate(self, service: EquationService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_equation_delete(self, service: EquationService) -> None:
+        service.delete_by_id(1)
+
+
+class TestEquationAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, EquationAuthTest
+):
+    def test_equation_create(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Equation",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Equation",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+        ret2 = service.create(
+            run1.id,
+            "Equation 1",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret2.id == 2
+
+        with pytest.raises(Forbidden):
+            service.create(
+                run2.id,
+                "Equation 2",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret3 = unauthorized_service.create(
+            run2.id,
+            "Equation 2",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret3.id == 3
+
+    def test_equation_get(
+        self,
+        service: EquationService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+    ) -> None:
+        ret = service.get(run.id, "Equation")
+        assert ret.id == 1
+
+        ret = service.get(run1.id, "Equation 1")
+        assert ret.id == 2
+
+        with pytest.raises(EquationNotFound):
+            service.get(run2.id, "Equation 2")
+
+    def test_equation_get_by_id(self, service: EquationService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+        ret2 = service.get_by_id(2)
+        assert ret2.id == 2
+
+        with pytest.raises(EquationNotFound):
+            service.get_by_id(3)
+
+    def test_equation_add_data(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+        service.add_data(2, test_data)
+
+        with pytest.raises(EquationNotFound):
+            service.add_data(3, test_data)
+        unauthorized_service.add_data(3, test_data)
+
+    def test_equation_remove_data(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+        service.remove_data(2, test_data)
+
+        with pytest.raises(EquationNotFound):
+            service.remove_data(3, test_data)
+        unauthorized_service.remove_data(3, test_data)
+
+    def test_equation_list(
+        self,
+        service: EquationService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 2
+
+    def test_equation_tabulate(self, service: EquationService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 2
+
+    def test_equation_delete(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+        service.delete_by_id(2)
+
+        with pytest.raises(EquationNotFound):
+            service.delete_by_id(3)
+        unauthorized_service.delete_by_id(3)
+
+
+class TestEquationAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, EquationAuthTest
+):
+    def test_equation_create(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Equation",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Equation",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_equation_get(
+        self,
+        service: EquationService,
+        run: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Equation")
+
+    def test_equation_get_by_id(self, service: EquationService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_equation_add_data(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_equation_remove_data(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_equation_list(
+        self,
+        service: EquationService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_equation_tabulate(self, service: EquationService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_equation_delete(
+        self,
+        service: EquationService,
+        unauthorized_service: EquationService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, EquationAuthTest):
+    def test_equation_create(
+        self,
+        service: EquationService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Equation",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_equation_get(
+        self,
+        service: EquationService,
+        run: Run,
+    ) -> None:
+        ret = service.get(run.id, "Equation")
+        assert ret.id == 1
+
+    def test_equation_get_by_id(self, service: EquationService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_equation_add_data(
+        self,
+        service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_equation_remove_data(
+        self,
+        service: EquationService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_equation_list(
+        self,
+        service: EquationService,
+    ) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_equation_tabulate(self, service: EquationService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_equation_delete(self, service: EquationService) -> None:
+        service.delete_by_id(1)

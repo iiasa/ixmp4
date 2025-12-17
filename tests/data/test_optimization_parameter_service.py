@@ -5,7 +5,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.base_exceptions import OptimizationItemUsageError
+from ixmp4.base_exceptions import Forbidden, OptimizationItemUsageError
 from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
 from ixmp4.data.optimization.parameter.repositories import (
     ParameterDataInvalid,
@@ -17,7 +17,7 @@ from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import Unit, UnitService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -741,3 +741,466 @@ class TestParameterTabulate(ParameterServiceTest):
 
         parameters = service.tabulate()
         pdt.assert_frame_equal(parameters, expected_parameters, check_like=True)
+
+
+class ParameterAuthTest(ParameterServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def indexsets(self, transport: Transport) -> IndexSetService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return IndexSetService(direct)
+
+    @pytest.fixture(scope="class")
+    def units(self, transport: Transport) -> UnitService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return UnitService(direct)
+
+    @pytest.fixture(scope="class")
+    def run(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run1(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 1", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run2(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 2", "Scenario")
+        self.create_indexsets(run, indexsets)
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_data(self, units: UnitService) -> dict[str, list[Any]]:
+        units.create("Unit 1")
+        units.create("Unit 2")
+
+        return {
+            "units": ["Unit 1", "Unit 1", "Unit 2"],
+            "values": [1.2, 1.5, -3],
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
+
+    def create_indexsets(self, run: Run, indexsets: IndexSetService) -> list[IndexSet]:
+        indexset1 = indexsets.create(run.id, "IndexSet 1")
+        indexset2 = indexsets.create(run.id, "IndexSet 2")
+        indexsets.add_data(indexset1.id, ["do", "re", "mi", "fa", "so", "la", "ti"])
+        indexsets.add_data(indexset2.id, [3, 1, 4])
+        return [indexsets.get_by_id(indexset1.id), indexsets.get_by_id(indexset2.id)]
+
+    @pytest.fixture(scope="class")
+    def indexset_names(self) -> list[str]:
+        return ["IndexSet 1", "IndexSet 2"]
+
+
+class TestParameterAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, ParameterAuthTest
+):
+    def test_parameter_create(
+        self, service: ParameterService, run: Run, indexset_names: list[str]
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Parameter",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_parameter_get(self, service: ParameterService, run: Run) -> None:
+        ret = service.get(run.id, "Parameter")
+        assert ret.id == 1
+
+    def test_parameter_get_by_id(self, service: ParameterService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_parameter_add_data(
+        self,
+        service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_parameter_remove_data(
+        self,
+        service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_parameter_delete(self, service: ParameterService) -> None:
+        service.delete_by_id(1)
+
+
+class TestParameterAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, ParameterAuthTest
+):
+    def test_parameter_create(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Parameter",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Parameter",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_parameter_get(self, service: ParameterService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Parameter")
+
+    def test_parameter_get_by_id(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_parameter_add_data(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_parameter_remove_data(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_parameter_delete(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestParameterAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, ParameterAuthTest
+):
+    def test_parameter_create(
+        self,
+        service: ParameterService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Parameter",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_parameter_get(self, service: ParameterService, run: Run) -> None:
+        ret = service.get(run.id, "Parameter")
+        assert ret.id == 1
+
+    def test_parameter_get_by_id(self, service: ParameterService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_parameter_add_data(
+        self,
+        service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_parameter_remove_data(
+        self,
+        service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_parameter_delete(self, service: ParameterService) -> None:
+        service.delete_by_id(1)
+
+
+class TestParameterAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, ParameterAuthTest
+):
+    def test_parameter_create(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Parameter",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Parameter",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+        ret2 = service.create(
+            run1.id,
+            "Parameter 1",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret2.id == 2
+
+        with pytest.raises(Forbidden):
+            service.create(
+                run2.id,
+                "Parameter 2",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret3 = unauthorized_service.create(
+            run2.id,
+            "Parameter 2",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret3.id == 3
+
+    def test_indexset_get(
+        self, service: ParameterService, run: Run, run1: Run, run2: Run
+    ) -> None:
+        ret = service.get(run.id, "Parameter")
+        assert ret.id == 1
+
+        ret = service.get(run1.id, "Parameter 1")
+        assert ret.id == 2
+
+        with pytest.raises(ParameterNotFound):
+            service.get(run2.id, "Parameter 2")
+
+    def test_parameter_get_by_id(self, service: ParameterService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+        ret2 = service.get_by_id(2)
+        assert ret2.id == 2
+
+        with pytest.raises(ParameterNotFound):
+            service.get_by_id(3)
+
+    def test_parameter_add_data(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+        service.add_data(2, test_data)
+
+        with pytest.raises(ParameterNotFound):
+            service.add_data(3, test_data)
+        unauthorized_service.add_data(3, test_data)
+
+    def test_parameter_remove_data(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+        service.remove_data(2, test_data)
+
+        with pytest.raises(ParameterNotFound):
+            service.remove_data(3, test_data)
+        unauthorized_service.remove_data(3, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        ret = service.list()
+        assert len(ret) == 2
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 2
+
+    def test_parameter_delete(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+        service.delete_by_id(2)
+
+        with pytest.raises(ParameterNotFound):
+            service.delete_by_id(3)
+        unauthorized_service.delete_by_id(3)
+
+
+class TestParameterAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, ParameterAuthTest
+):
+    def test_parameter_create(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(
+                run.id,
+                "Parameter",
+                constrained_to_indexsets=indexset_names,
+            )
+        ret = unauthorized_service.create(
+            run.id,
+            "Parameter",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_parameter_get(self, service: ParameterService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Parameter")
+
+    def test_parameter_get_by_id(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_parameter_add_data(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_parameter_remove_data(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_parameter_delete(
+        self,
+        service: ParameterService,
+        unauthorized_service: ParameterService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, ParameterAuthTest):
+    def test_parameter_create(
+        self,
+        service: ParameterService,
+        run: Run,
+        indexset_names: list[str],
+    ) -> None:
+        ret = service.create(
+            run.id,
+            "Parameter",
+            constrained_to_indexsets=indexset_names,
+        )
+        assert ret.id == 1
+
+    def test_parameter_get(self, service: ParameterService, run: Run) -> None:
+        ret = service.get(run.id, "Parameter")
+        assert ret.id == 1
+
+    def test_parameter_get_by_id(self, service: ParameterService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_parameter_add_data(
+        self,
+        service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_parameter_remove_data(
+        self,
+        service: ParameterService,
+        test_data: dict[str, list[Any]],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_parameter_delete(self, service: ParameterService) -> None:
+        service.delete_by_id(1)

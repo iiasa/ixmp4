@@ -1,10 +1,14 @@
 import datetime
+from typing import Any
 
 import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.base_exceptions import InvalidArguments
+from ixmp4.base_exceptions import (
+    Forbidden,
+    InvalidArguments,
+)
 from ixmp4.data.optimization.equation.service import EquationService
 from ixmp4.data.optimization.indexset.repositories import (
     IndexSetDataInvalid,
@@ -20,7 +24,7 @@ from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import UnitService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -654,3 +658,385 @@ class TestIndexSetTabulate(IndexSetServiceTest):
 
         idxsets = service.tabulate()
         pdt.assert_frame_equal(idxsets, expected_idxsets, check_like=True)
+
+
+class IndexSetAuthTest(IndexSetServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def indexsets(self, transport: Transport) -> IndexSetService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return IndexSetService(direct)
+
+    @pytest.fixture(scope="class")
+    def run(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model", "Scenario")
+        return run
+
+    @pytest.fixture(scope="class")
+    def run1(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 1", "Scenario")
+        return run
+
+    @pytest.fixture(scope="class")
+    def run2(self, runs: RunService, indexsets: IndexSetService) -> Run:
+        run = runs.create("Model 2", "Scenario")
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> list[Any]:
+        return ["do", "re", "mi", "fa", "so", "la", "ti"]
+
+
+class TestIndexSetAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, IndexSetAuthTest
+):
+    def test_indexset_create(self, service: IndexSetService, run: Run) -> None:
+        ret = service.create(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get(self, service: IndexSetService, run: Run) -> None:
+        ret = service.get(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get_by_id(self, service: IndexSetService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_indexset_add_data(
+        self,
+        service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_indexset_remove_data(
+        self,
+        service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_indexset_list(self, service: IndexSetService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_indexset_tabulate(self, service: IndexSetService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_indexset_delete(self, service: IndexSetService) -> None:
+        service.delete_by_id(1)
+
+
+class TestIndexSetAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, IndexSetAuthTest
+):
+    def test_indexset_create(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        run: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(run.id, "IndexSet")
+        ret = unauthorized_service.create(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get(self, service: IndexSetService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "IndexSet")
+
+    def test_indexset_get_by_id(self, service: IndexSetService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_indexset_add_data(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_indexset_remove_data(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+    def test_parameter_list(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_parameter_tabulate(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_indexset_delete(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestIndexSetAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, IndexSetAuthTest
+):
+    def test_indexset_create(
+        self,
+        service: IndexSetService,
+        run: Run,
+    ) -> None:
+        ret = service.create(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get(self, service: IndexSetService, run: Run) -> None:
+        ret = service.get(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get_by_id(self, service: IndexSetService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_indexset_add_data(
+        self,
+        service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_indexset_remove_data(
+        self,
+        service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_indexset_list(self, service: IndexSetService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_indexset_tabulate(self, service: IndexSetService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_indexset_delete(self, service: IndexSetService) -> None:
+        service.delete_by_id(1)
+
+
+class TestIndexSetAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, IndexSetAuthTest
+):
+    def test_indexset_create(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(run.id, "IndexSet")
+        ret = unauthorized_service.create(run.id, "IndexSet")
+        assert ret.id == 1
+
+        ret2 = service.create(run1.id, "IndexSet 1")
+        assert ret2.id == 2
+
+        with pytest.raises(Forbidden):
+            service.create(run2.id, "IndexSet 2")
+        ret3 = unauthorized_service.create(run2.id, "IndexSet 2")
+        assert ret3.id == 3
+
+    def test_indexset_get(
+        self, service: IndexSetService, run: Run, run1: Run, run2: Run
+    ) -> None:
+        ret = service.get(run.id, "IndexSet")
+        assert ret.id == 1
+
+        ret = service.get(run1.id, "IndexSet 1")
+        assert ret.id == 2
+
+        with pytest.raises(IndexSetNotFound):
+            service.get(run2.id, "IndexSet 2")
+
+    def test_indexset_get_by_id(self, service: IndexSetService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+        ret2 = service.get_by_id(2)
+        assert ret2.id == 2
+
+        with pytest.raises(IndexSetNotFound):
+            service.get_by_id(3)
+
+    def test_indexset_add_data(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+        service.add_data(2, test_data)
+
+        with pytest.raises(IndexSetNotFound):
+            service.add_data(3, test_data)
+        unauthorized_service.add_data(3, test_data)
+
+    def test_indexset_remove_data(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+        service.remove_data(2, test_data)
+
+        with pytest.raises(IndexSetNotFound):
+            service.remove_data(3, test_data)
+        unauthorized_service.remove_data(3, test_data)
+
+    def test_indexset_list(self, service: IndexSetService) -> None:
+        ret = service.list()
+        assert len(ret) == 2
+
+    def test_indexset_tabulate(self, service: IndexSetService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 2
+
+    def test_indexset_delete(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+        service.delete_by_id(2)
+
+        with pytest.raises(IndexSetNotFound):
+            service.delete_by_id(3)
+        unauthorized_service.delete_by_id(3)
+
+
+class TestIndexSetAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, IndexSetAuthTest
+):
+    def test_indexset_create(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        run: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(run.id, "IndexSet")
+        ret = unauthorized_service.create(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get(self, service: IndexSetService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "IndexSet")
+
+    def test_indexset_get_by_id(self, service: IndexSetService) -> None:
+        with pytest.raises(Forbidden):
+            service.get_by_id(1)
+
+    def test_indexset_add_data(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.add_data(1, test_data)
+        unauthorized_service.add_data(1, test_data)
+
+    def test_indexset_remove_data(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.remove_data(1, test_data)
+        unauthorized_service.remove_data(1, test_data)
+
+    def test_indexset_list(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_indexset_tabulate(self, service: ParameterService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_indexset_delete(
+        self,
+        service: IndexSetService,
+        unauthorized_service: IndexSetService,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.delete_by_id(1)
+        unauthorized_service.delete_by_id(1)
+
+
+class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, IndexSetAuthTest):
+    def test_indexset_create(
+        self,
+        service: IndexSetService,
+        run: Run,
+    ) -> None:
+        ret = service.create(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get(self, service: IndexSetService, run: Run) -> None:
+        ret = service.get(run.id, "IndexSet")
+        assert ret.id == 1
+
+    def test_indexset_get_by_id(self, service: IndexSetService) -> None:
+        ret = service.get_by_id(1)
+        assert ret.id == 1
+
+    def test_indexset_add_data(
+        self,
+        service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        service.add_data(1, test_data)
+
+    def test_indexset_remove_data(
+        self,
+        service: IndexSetService,
+        test_data: list[Any],
+    ) -> None:
+        service.remove_data(1, test_data)
+
+    def test_indexset_list(self, service: IndexSetService) -> None:
+        ret = service.list()
+        assert len(ret) == 1
+
+    def test_indexset_tabulate(self, service: IndexSetService) -> None:
+        ret = service.tabulate()
+        assert len(ret) == 1
+
+    def test_indexset_delete(self, service: IndexSetService) -> None:
+        service.delete_by_id(1)
