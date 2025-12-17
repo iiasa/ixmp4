@@ -1,5 +1,10 @@
-from toolkit import db
+from typing import Any
 
+import sqlalchemy as sa
+from toolkit import db
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+
+from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.optimization.base.repositories import IndexedRepository
 
 from .db import Equation, EquationIndexsetAssociation, EquationVersion
@@ -7,7 +12,20 @@ from .exceptions import EquationDataInvalid, EquationNotFound, EquationNotUnique
 from .filter import EquationFilter
 
 
-class ItemRepository(IndexedRepository[EquationIndexsetAssociation]):
+class EquationAuthRepository(AuthRepository[Equation]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        return exc.where(Equation.run__id.in_(run_exc))
+
+
+class ItemRepository(
+    EquationAuthRepository, IndexedRepository[Equation, EquationIndexsetAssociation]
+):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
     DataInvalid = EquationDataInvalid
@@ -29,7 +47,7 @@ class AssociationRepository(db.r.ItemRepository[EquationIndexsetAssociation]):
     target = db.r.ModelTarget(EquationIndexsetAssociation)
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(EquationAuthRepository, db.r.PandasRepository):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
     target = db.r.ModelTarget(Equation)

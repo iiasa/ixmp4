@@ -1,5 +1,10 @@
-from toolkit import db
+from typing import Any
 
+import sqlalchemy as sa
+from toolkit import db
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+
+from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.optimization.base.repositories import IndexedRepository
 
 from .db import Variable, VariableIndexsetAssociation, VariableVersion
@@ -11,7 +16,20 @@ from .exceptions import (
 from .filter import VariableFilter
 
 
-class ItemRepository(IndexedRepository[VariableIndexsetAssociation]):
+class VariableAuthRepository(AuthRepository[Variable]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        return exc.where(Variable.run__id.in_(run_exc))
+
+
+class ItemRepository(
+    VariableAuthRepository, IndexedRepository[Variable, VariableIndexsetAssociation]
+):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     DataInvalid = VariableDataInvalid
@@ -35,7 +53,7 @@ class AssociationRepository(db.r.ItemRepository[VariableIndexsetAssociation]):
     target = db.r.ModelTarget(VariableIndexsetAssociation)
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(VariableAuthRepository, db.r.PandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     target = db.r.ModelTarget(Variable)

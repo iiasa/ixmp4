@@ -1,6 +1,6 @@
 import abc
 import logging
-from typing import ClassVar, Collection, Generic, TypeVar
+from typing import Any, ClassVar, Collection, Generic, TypeVar
 
 import pandas as pd
 import sqlalchemy as sa
@@ -16,13 +16,16 @@ from .db import IndexedModel, IndexsetAssociationModel
 
 logger = logging.getLogger(__name__)
 AssocT = TypeVar("AssocT", bound=IndexsetAssociationModel)
+IndexedModelT = TypeVar("IndexedModelT", bound=IndexedModel[Any])
 
 
 class IndexedRepository(
-    abc.ABC, db.r.ItemRepository[IndexedModel[AssocT]], Generic[AssocT]
+    abc.ABC,
+    db.r.ItemRepository[IndexedModelT],
+    Generic[IndexedModelT, AssocT],
 ):
     executor: db.r.SessionExecutor
-    target: db.r.ModelTarget[IndexedModel[AssocT]]
+    target: db.r.ModelTarget[IndexedModelT]
     association_target: db.r.ModelTarget[AssocT]
     idxset_target = db.r.ModelTarget(IndexSet)
     DataInvalid: ClassVar[type[OptimizationDataValidationError]]
@@ -153,7 +156,7 @@ class IndexedRepository(
 
     def validate_data(
         self,
-        item: IndexedModel[AssocT],
+        item: IndexedModelT,
         data: pd.DataFrame,
         indexsets: list["IndexSet"],
         column_names: list[str] | None = None,

@@ -1,7 +1,11 @@
 import logging
+from typing import Any
 
 import sqlalchemy as sa
 from toolkit import db
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+
+from ixmp4.data.base.repository import AuthRepository
 
 from .db import IndexSet, IndexSetData, IndexSetVersion
 from .exceptions import (
@@ -17,7 +21,18 @@ from .type import Type
 logger = logging.getLogger(__name__)
 
 
-class ItemRepository(db.r.ItemRepository[IndexSet]):
+class IndexSetAuthRepository(AuthRepository[IndexSet]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        return exc.where(IndexSet.run__id.in_(run_exc))
+
+
+class ItemRepository(IndexSetAuthRepository, db.r.ItemRepository[IndexSet]):
     NotFound = IndexSetNotFound
     NotUnique = IndexSetNotUnique
     target = db.r.ModelTarget(IndexSet)
@@ -62,7 +77,7 @@ class ItemRepository(db.r.ItemRepository[IndexSet]):
                 return result
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(IndexSetAuthRepository, db.r.PandasRepository):
     target = db.r.ModelTarget(IndexSet)
     filter = db.r.Filter(IndexSetFilter, IndexSet)
 
