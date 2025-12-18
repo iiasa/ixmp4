@@ -17,33 +17,33 @@ platform = backends.get_platform_fixture(scope="class")
 
 @pytest.fixture(scope="session")
 def regions() -> pd.DataFrame:
-    return get_csv_data("big", "regions")
+    return get_csv_data("benchmark", "regions")
 
 
 @pytest.fixture(scope="session")
 def units() -> pd.DataFrame:
-    return get_csv_data("big", "units")
+    return get_csv_data("benchmark", "units")
 
 
 @pytest.fixture(scope="session")
 def runs() -> pd.DataFrame:
-    return get_csv_data("big", "runs")
+    return get_csv_data("benchmark", "runs")
 
 
 @pytest.fixture(scope="session")
 def datapoints_full_insert() -> pd.DataFrame:
-    return get_csv_data("big", "datapoints")
+    return get_csv_data("benchmark", "datapoints")
 
 
 @pytest.fixture(scope="session")
 def datapoints_half_insert() -> pd.DataFrame:
-    data = get_csv_data("big", "datapoints")
+    data = get_csv_data("benchmark", "datapoints")
     return data.head(len(data) // 2)
 
 
 @pytest.fixture(scope="session")
 def datapoints_half_insert_half_update() -> pd.DataFrame:
-    data = get_csv_data("big", "datapoints")
+    data = get_csv_data("benchmark", "datapoints")
     data["value"] = -99.99
     return data
 
@@ -107,7 +107,6 @@ class TestBenchmarks:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            # version is ignored, but should be sequential
             run = platform.runs.get(str(model), str(scenario), int(version))
             with run.transact("Benchmark: Add DataPoints Full"):
                 run.iamc.add(rows.drop(columns=["model", "scenario", "version"]))
@@ -119,7 +118,6 @@ class TestBenchmarks:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            # version is ignored, but should be sequential
             run = platform.runs.get(str(model), str(scenario), int(version))
             with run.transact("Benchmark: Remove DataPoints Full"):
                 run.iamc.remove(
@@ -195,3 +193,27 @@ class TestBenchmarks:
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result) == len(datapoints_half_insert_half_update)
+
+    @pytest.mark.benchmark(group="filter_datapoints")
+    def test_filter_datapoints_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+        datapoints_half_insert_half_update: pd.DataFrame,
+    ) -> None:
+        """Benchmarks a full insert of `test_data_big`."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": False},
+                    unit={"id__in": [i for i in range(20, 90)]},
+                    variable={
+                        "name__in": ["Variable " + str(i) for i in range(80, 120)]
+                    },
+                    region={"name__like": "Region 2*1"},
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) == 100

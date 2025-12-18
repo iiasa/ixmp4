@@ -33,7 +33,7 @@ def get_migration_data(name: str) -> list[dict[str, Any]]:
         )
 
 
-def get_csv_data(size: Literal["big"], name: str) -> pd.DataFrame:
+def get_csv_data(size: Literal["benchmark", "filter"], name: str) -> pd.DataFrame:
     """Get the csv data as a dataframe."""
     return pd.read_csv(fixture_dir / size / (name + ".csv"))
 
