@@ -1,6 +1,31 @@
 import logging
 
-from ixmp4 import data
+from ixmp4.data.checkpoint.service import CheckpointService
+from ixmp4.data.iamc.datapoint.service import DataPointService as IamcDataPointService
+from ixmp4.data.iamc.timeseries.service import (
+    TimeSeriesService as IamcTimeSeriesService,
+)
+from ixmp4.data.iamc.variable.service import VariableService as IamcVariableService
+from ixmp4.data.meta.service import RunMetaEntryService
+from ixmp4.data.model.service import ModelService
+from ixmp4.data.optimization.equation.service import (
+    EquationService as OptEquationService,
+)
+from ixmp4.data.optimization.indexset.service import (
+    IndexSetService as OptIndexSetService,
+)
+from ixmp4.data.optimization.parameter.service import (
+    ParameterService as OptParameterService,
+)
+from ixmp4.data.optimization.scalar.service import ScalarService as OptScalarService
+from ixmp4.data.optimization.table.service import TableService as OptTableService
+from ixmp4.data.optimization.variable.service import (
+    VariableService as OptVariableService,
+)
+from ixmp4.data.region.service import RegionService
+from ixmp4.data.run.service import RunService
+from ixmp4.data.scenario.service import ScenarioService
+from ixmp4.data.unit.service import UnitService
 from ixmp4.transport import (
     Transport,
 )
@@ -9,18 +34,18 @@ logger = logging.getLogger(__name__)
 
 
 class IamcSubobject(object):
-    datapoints: data.iamc.DataPointService
-    timeseries: data.iamc.TimeSeriesService
-    variables: data.iamc.VariableService
+    datapoints: IamcDataPointService
+    timeseries: IamcTimeSeriesService
+    variables: IamcVariableService
 
 
 class OptimizationSubobject(object):
-    equations: data.optimization.EquationService
-    indexsets: data.optimization.IndexSetService
-    parameters: data.optimization.ParameterService
-    scalars: data.optimization.ScalarService
-    tables: data.optimization.TableService
-    variables: data.optimization.VariableService
+    equations: OptEquationService
+    indexsets: OptIndexSetService
+    parameters: OptParameterService
+    scalars: OptScalarService
+    tables: OptTableService
+    variables: OptVariableService
 
 
 class Backend(object):
@@ -29,14 +54,13 @@ class Backend(object):
     iamc: IamcSubobject
     optimization: OptimizationSubobject
 
-    # info: PlatformInfo
-    meta: data.RunMetaEntryService
-    models: data.ModelService
-    regions: data.RegionService
-    runs: data.RunService
-    scenarios: data.ScenarioService
-    units: data.UnitService
-    checkpoints: data.CheckpointService
+    meta: RunMetaEntryService
+    models: ModelService
+    regions: RegionService
+    runs: RunService
+    scenarios: ScenarioService
+    units: UnitService
+    checkpoints: CheckpointService
 
     def __init__(self, transport: Transport) -> None:
         logger.info(f"Creating backend class with transport: {transport}")
@@ -44,19 +68,19 @@ class Backend(object):
         self.optimization = OptimizationSubobject()
         self.iamc = IamcSubobject()
 
-        self.meta = data.RunMetaEntryService(transport)
-        self.models = data.ModelService(transport)
-        self.regions = data.RegionService(transport)
-        self.runs = data.RunService(transport)
-        self.scenarios = data.ScenarioService(transport)
-        self.units = data.UnitService(transport)
-        self.checkpoints = data.CheckpointService(transport)
-        self.iamc.datapoints = data.iamc.DataPointService(transport)
-        self.iamc.timeseries = data.iamc.TimeSeriesService(transport)
-        self.iamc.variables = data.iamc.VariableService(transport)
-        self.optimization.equations = data.optimization.EquationService(transport)
-        self.optimization.indexsets = data.optimization.IndexSetService(transport)
-        self.optimization.parameters = data.optimization.ParameterService(transport)
-        self.optimization.scalars = data.optimization.ScalarService(transport)
-        self.optimization.tables = data.optimization.TableService(transport)
-        self.optimization.variables = data.optimization.VariableService(transport)
+        self.meta = RunMetaEntryService(transport)
+        self.models = ModelService(transport)
+        self.regions = RegionService(transport)
+        self.runs = RunService(transport)
+        self.scenarios = ScenarioService(transport)
+        self.units = UnitService(transport)
+        self.checkpoints = CheckpointService(transport)
+        self.iamc.datapoints = IamcDataPointService(transport)
+        self.iamc.timeseries = IamcTimeSeriesService(transport)
+        self.iamc.variables = IamcVariableService(transport)
+        self.optimization.equations = OptEquationService(transport)
+        self.optimization.indexsets = OptIndexSetService(transport)
+        self.optimization.parameters = OptParameterService(transport)
+        self.optimization.scalars = OptScalarService(transport)
+        self.optimization.tables = OptTableService(transport)
+        self.optimization.variables = OptVariableService(transport)

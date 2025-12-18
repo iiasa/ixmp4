@@ -45,7 +45,9 @@ class TimeSeries(BaseModel):
     )
 
     variable: orm.Mapped["Variable"] = orm.relationship(
-        secondary=Measurand.__table__, viewonly=True
+        "ixmp4.data.iamc.variable.db.Variable",
+        secondary=Measurand.__table__,
+        viewonly=True,
     )
     unit: orm.Mapped["Unit"] = orm.relationship(
         secondary=Measurand.__table__, viewonly=True

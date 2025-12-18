@@ -6,6 +6,7 @@ from toolkit import db
 from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
 from ixmp4.data.iamc.timeseries.db import TimeSeries
+from ixmp4.data.run.filter import RunFilter
 
 from .db import Region
 
@@ -13,7 +14,7 @@ from .db import Region
 class IamcRegionFilter(base.RegionFilter, total=False):
     variable: Annotated[iamc.VariableFilter, (Region.timeseries, TimeSeries.variable)]
     unit: Annotated[base.UnitFilter, (Region.timeseries, TimeSeries.unit)]
-    run: Annotated[base.RunFilter, (Region.timeseries, TimeSeries.run)]
+    run: Annotated[RunFilter, (Region.timeseries, TimeSeries.run)]
 
 
 def filter_by_iamc(

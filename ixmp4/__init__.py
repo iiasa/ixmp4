@@ -5,10 +5,10 @@
 # from ixmp4.core import Variable as Variable
 import ixmp4.core.iamc as iamc
 import ixmp4.core.optimization as optimization
-from ixmp4.base_exceptions import InconsistentIamcType as InconsistentIamcType
-from ixmp4.base_exceptions import Ixmp4Error as Ixmp4Error
-from ixmp4.base_exceptions import NotFound as NotFound
-from ixmp4.base_exceptions import NotUnique as NotUnique
+from ixmp4.core.exceptions import InconsistentIamcType as InconsistentIamcType
+from ixmp4.core.exceptions import Ixmp4Error as Ixmp4Error
+from ixmp4.core.exceptions import NotFound as NotFound
+from ixmp4.core.exceptions import NotUnique as NotUnique
 from ixmp4.core.model import Model as Model
 from ixmp4.core.platform import Platform as Platform
 from ixmp4.core.region import Region as Region

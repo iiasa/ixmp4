@@ -154,7 +154,7 @@ class VariableService(DocsService, GetByIdService):
             return self.create(name)
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
+    def list(self, **kwargs: Unpack[VariableFilter]) -> List[Variable]:
         r"""Lists variables by specified criteria.
 
         Parameters

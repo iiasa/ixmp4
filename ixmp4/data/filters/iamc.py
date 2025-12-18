@@ -23,6 +23,11 @@ class StepYearFilter(TypedDict, total=False):
     step_year__in: list[int]
 
 
+class StepCategoryFilter(TypedDict, total=False):
+    step_category: str
+    step_category__in: list[str]
+
+
 class UnitIdFilter(TypedDict, total=False):
     unit__id: int
     unit__id__lte: int
@@ -57,6 +62,7 @@ class DataPointFilter(
     IdFilter,
     DataPointTypeFilter,
     StepYearFilter,
+    StepCategoryFilter,
     TimeSeriesIdFilter,
     ValueFilter,
     total=False,

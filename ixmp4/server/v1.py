@@ -12,7 +12,6 @@ from toolkit.auth.user import User
 from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
 
-from ixmp4 import data
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
     PlatformConnectionInfo,
@@ -25,6 +24,32 @@ from ixmp4.core.exceptions import (
     PlatformNotFound,
     registry,
 )
+from ixmp4.data.checkpoint.service import CheckpointService
+from ixmp4.data.iamc.datapoint.service import DataPointService as IamcDataPointService
+from ixmp4.data.iamc.timeseries.service import (
+    TimeSeriesService as IamcTimeSeriesService,
+)
+from ixmp4.data.iamc.variable.service import VariableService as IamcVariableService
+from ixmp4.data.meta.service import RunMetaEntryService
+from ixmp4.data.model.service import ModelService
+from ixmp4.data.optimization.equation.service import (
+    EquationService as OptEquationService,
+)
+from ixmp4.data.optimization.indexset.service import (
+    IndexSetService as OptIndexSetService,
+)
+from ixmp4.data.optimization.parameter.service import (
+    ParameterService as OptParameterService,
+)
+from ixmp4.data.optimization.scalar.service import ScalarService as OptScalarService
+from ixmp4.data.optimization.table.service import TableService as OptTableService
+from ixmp4.data.optimization.variable.service import (
+    VariableService as OptVariableService,
+)
+from ixmp4.data.region.service import RegionService
+from ixmp4.data.run.service import RunService
+from ixmp4.data.scenario.service import ScenarioService
+from ixmp4.data.unit.service import UnitService
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -41,22 +66,22 @@ logger = logging.getLogger(__name__)
 
 
 v1_services: list[type["Service"]] = [
-    data.RunMetaEntryService,
-    data.ModelService,
-    data.RegionService,
-    data.RunService,
-    data.ScenarioService,
-    data.UnitService,
-    data.CheckpointService,
-    data.iamc.VariableService,
-    data.iamc.TimeSeriesService,
-    data.iamc.DataPointService,
-    data.optimization.EquationService,
-    data.optimization.IndexSetService,
-    data.optimization.ParameterService,
-    data.optimization.ScalarService,
-    data.optimization.TableService,
-    data.optimization.VariableService,
+    RunMetaEntryService,
+    ModelService,
+    RegionService,
+    RunService,
+    ScenarioService,
+    UnitService,
+    CheckpointService,
+    IamcVariableService,
+    IamcTimeSeriesService,
+    IamcDataPointService,
+    OptEquationService,
+    OptIndexSetService,
+    OptParameterService,
+    OptScalarService,
+    OptTableService,
+    OptVariableService,
 ]
 
 
