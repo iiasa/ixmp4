@@ -1,125 +1,107 @@
-from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Model as ModelModel
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.model.dto import Model as ModelDto
+from ixmp4.data.model.exceptions import (
+    ModelDeletionPrevented,
+    ModelNotFound,
+    ModelNotUnique,
+)
+from ixmp4.data.model.filter import ModelFilter
+from ixmp4.data.model.service import ModelService
 
 
-class Model(BaseModelFacade):
-    _model: ModelModel  # smh
-    NotFound: ClassVar = ModelModel.NotFound
-    NotUnique: ClassVar = ModelModel.NotUnique
+class Model(BaseFacadeObject[ModelService, ModelDto]):
+    NotFound = ModelNotFound
+    NotUnique = ModelNotUnique
+    DeletionPrevented = ModelDeletionPrevented
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self._dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.models.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._service.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.models.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         else:
-            self.backend.models.docs.set(self.id, description)
+            self._service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.models.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
 
+    def delete(self) -> None:
+        self._service.delete_by_id(self._dto.id)
+
+    def _get_service(self, backend: Backend) -> ModelService:
+        return backend.models
+
     def __str__(self) -> str:
-        return f"<Model {self.id} name={self.name}>"
+        return f"<Model {self.id} name='{self.name}'>"
 
 
-class ModelRepository(BaseFacade):
+class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelService]):
+    def _get_service(self, backend: Backend) -> ModelService:
+        return backend.models
+
+    def _get_item_id(self, ref: Model | int | str) -> int:
+        if isinstance(ref, Model):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self._service.get_by_name(ref)
+            return dto.id
+        else:
+            raise ValueError(f"Invalid reference to model: {ref}")
+
     def create(
         self,
         name: str,
     ) -> Model:
-        model = self.backend.models.create(name)
-        return Model(_backend=self.backend, _model=model)
+        dto = self._service.create(name)
+        return Model(self._backend, dto)
 
-    def get(self, name: str) -> Model:
-        model = self.backend.models.get(name)
-        return Model(_backend=self.backend, _model=model)
+    def delete(self, ref: Model | int | str) -> None:
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
-    def list(self, name: str | None = None) -> list[Model]:
-        models = self.backend.models.list(name=name)
-        return [Model(_backend=self.backend, _model=m) for m in models]
+    def get_by_name(self, name: str) -> Model:
+        dto = self._service.get_by_name(name)
+        return Model(self._backend, dto)
 
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.models.tabulate(name=name)
+    def list(self, **kwargs: Unpack[ModelFilter]) -> list[Model]:
+        models = self._service.list(**kwargs)
+        return [Model(self._backend, dto) for dto in models]
 
-    def _get_model_id(self, model: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(model, str):
-            obj = self.backend.models.get(model)
-            return obj.id
-        else:
-            raise ValueError(f"Invalid reference to model: {model}")
-
-    def get_docs(self, name: str) -> str | None:
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        try:
-            return self.backend.models.docs.get(dimension_id=model_id).description
-        except DocsModel.NotFound:
-            return None
-
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        return self.backend.models.docs.set(
-            dimension_id=model_id, description=description
-        ).description
-
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        try:
-            self.backend.models.docs.delete(dimension_id=model_id)
-            return None
-        except DocsModel.NotFound:
-            return None
-
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.backend.models.docs.list(
-                dimension_id=id, dimension_id__in=id__in
-            )
-        ]
+    def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
+        return self._service.tabulate(**kwargs)

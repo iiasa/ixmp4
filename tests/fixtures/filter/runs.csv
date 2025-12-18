@@ -1,0 +1,11 @@
+model,scenario,version,is_default
+Model,Scenario,1,True
+Model,Scenario,2,False
+Model 1,Scenario 1,1,False
+Model 1,Scenario 1,2,True
+Model 10,Scenario 10,1,True
+Model 10,Scenario 10,2,True
+Model 2,Scenario 2,1,False
+Model 2,Scenario 2,2,False
+
+Model Without Data,Scenario Without Data,1,True

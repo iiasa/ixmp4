@@ -1,0 +1,436 @@
+model,scenario,version,region,unit,variable,value,type,step_category,step_year,step_datetime
+
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.0,ANNUAL,,1973.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.07136864467148891,ANNUAL,,1974.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.1427286710690402,ANNUAL,,1975.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.21407146195943433,ANNUAL,,1976.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.28538840219076256,ANNUAL,,1977.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.3566708797327679,ANNUAL,,1978.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.42791028671680953,ANNUAL,,1979.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.4990980204753242,ANNUAL,,1980.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.57022548458066,ANNUAL,,1981.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.6412840898831563,ANNUAL,,1982.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.7122652555483456,ANNUAL,,1983.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.7831604100931495,ANNUAL,,1984.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.8539609924209474,ANNUAL,,1985.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.9246584528553893,ANNUAL,,1986.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,0.9952442541728321,ANNUAL,,1987.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,1.0657098726332679,ANNUAL,,1988.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,1.1360467990096281,ANNUAL,,1989.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,1.2062465396153337,ANNUAL,,1990.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,1.2763006173299667,ANNUAL,,1991.0,
+Model,Scenario,1,Region 1,Unit 1,Variable 1,1.3462005726229465,ANNUAL,,1992.0,
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.0,DATETIME,,,1968-06-08 00:00:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.08830398106201376,DATETIME,,,1968-06-08 05:10:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.17659416480664053,DATETIME,,,1968-06-08 10:20:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.2648567560722962,DATETIME,,,1968-06-08 15:30:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.35307796400866515,DATETIME,,,1968-06-08 20:40:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.441244004231493,DATETIME,,,1968-06-09 01:50:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.5293411009763682,DATETIME,,,1968-06-09 07:00:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.6173554892511575,DATETIME,,,1968-06-09 12:10:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.7052734169867578,DATETIME,,,1968-06-09 17:20:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.7930811471858288,DATETIME,,,1968-06-09 22:30:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.8807649600691713,DATETIME,,,1968-06-10 03:40:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,0.9683111552194145,DATETIME,,,1968-06-10 08:50:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,1.0557060537216785,DATETIME,,,1968-06-10 14:00:00
+Model,Scenario,1,Region 2,Unit 2,Variable 3,1.142936000300877,DATETIME,,,1968-06-10 19:10:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.2299873654553253,DATETIME,,,1968-06-11 00:20:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.3168465475863242,DATETIME,,,1968-06-11 05:30:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.4034999751233794,DATETIME,,,1968-06-11 10:40:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.4899341086447353,DATETIME,,,1968-06-11 15:50:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.5761354429928782,DATETIME,,,1968-06-11 21:00:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.6620905093846925,DATETIME,,,1968-06-12 02:10:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.7477858775159296,DATETIME,,,1968-06-12 07:20:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.833208157659666,DATETIME,,,1968-06-12 12:30:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,1.91834400275842,DATETIME,,,1968-06-12 17:40:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,2.003180110509603,DATETIME,,,1968-06-12 22:50:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,2.0877032254439785,DATETIME,,,1968-06-13 04:00:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,2.1719001409968,DATETIME,,,1968-06-13 09:10:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,2.2557577015713095,DATETIME,,,1968-06-13 14:20:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,2.339262804594275,DATETIME,,,1968-06-13 19:30:00
+Model,Scenario,1,Region 3,Unit 4,Variable 2,2.42240240256324,DATETIME,,,1968-06-14 00:40:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.5051635050851697,DATETIME,,,1968-06-14 05:50:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.5875331809061715,DATETIME,,,1968-06-14 11:00:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.669498559931979,DATETIME,,,1968-06-14 16:10:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.7510468352388773,DATETIME,,,1968-06-14 21:20:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.8321652650747593,DATETIME,,,1968-06-15 02:30:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.9128411748499983,DATETIME,,,1968-06-15 07:40:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,2.993061959117828,DATETIME,,,1968-06-15 12:50:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.072815083543912,DATETIME,,,1968-06-15 18:00:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.1520880868648193,DATETIME,,,1968-06-15 23:10:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.2308685828350594,DATETIME,,,1968-06-16 04:20:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.309144262162417,DATETIME,,,1968-06-16 09:30:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.3869028944312474,DATETIME,,,1968-06-16 14:40:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.4641323300134585,DATETIME,,,1968-06-16 19:50:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.5408205019668646,DATETIME,,,1968-06-17 01:00:00
+Model,Scenario,1,Region 4,Unit 1,Variable 4,3.616955427920617,DATETIME,,,1968-06-17 06:10:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,3.692525211947435,DATETIME,,,1968-06-17 11:20:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,3.767518046422307,DATETIME,,,1968-06-17 16:30:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,3.841922213867422,DATETIME,,,1968-06-17 21:40:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,3.9157260887829897,DATETIME,,,1968-06-18 02:50:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,3.988918139463709,DATETIME,,,1968-06-18 08:00:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.061486929800569,DATETIME,,,1968-06-18 13:10:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.133421121067721,DATETIME,,,1968-06-18 18:20:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.2047094736941295,DATETIME,,,1968-06-18 23:30:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.275340849019732,DATETIME,,,1968-06-19 04:40:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.345304211035834,DATETIME,,,1968-06-19 09:50:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.414588628109459,DATETIME,,,1968-06-19 15:00:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.483183274691398,DATETIME,,,1968-06-19 20:10:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.551077433007679,DATETIME,,,1968-06-20 01:20:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.618260494734195,DATETIME,,,1968-06-20 06:30:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.684721962654235,DATETIME,,,1968-06-20 11:40:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.750451452298653,DATETIME,,,1968-06-20 16:50:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.815438693568415,DATETIME,,,1968-06-20 22:00:00
+Model,Scenario,2,Region 5,Unit 3,Variable 5,4.879673532339292,DATETIME,,,1968-06-21 03:10:00
+
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.05986868405313934,CATEGORICAL,Category 1,1956.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.11972179386429567,CATEGORICAL,Category 2,1956.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.1795437592429699,CATEGORICAL,Category 3,1956.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.23931901810057693,CATEGORICAL,Category 4,1956.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.299032020498768,CATEGORICAL,Category 0,1957.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.35866723269459244,CATEGORICAL,Category 1,1957.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.4182091411814459,CATEGORICAL,Category 2,1957.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.4776422567247549,CATEGORICAL,Category 3,1957.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.5369511183913468,CATEGORICAL,Category 4,1957.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.5961202975714579,CATEGORICAL,Category 0,1958.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.655134401992332,CATEGORICAL,Category 1,1958.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.7139780797223674,CATEGORICAL,Category 2,1958.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.7726360231647694,CATEGORICAL,Category 3,1958.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.8310929730396678,CATEGORICAL,Category 4,1958.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.8893337223536684,CATEGORICAL,Category 0,1959.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,0.9473431203557992,CATEGORICAL,Category 1,1959.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.0051060764788287,CATEGORICAL,Category 2,1959.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.0626075642649262,CATEGORICAL,Category 3,1959.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.1198326252746447,CATEGORICAL,Category 4,1959.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.1767663729782105,CATEGORICAL,Category 0,1960.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.2333939966281064,CATEGORICAL,Category 1,1960.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.2897007651119383,CATEGORICAL,Category 2,1960.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.3456720307845886,CATEGORICAL,Category 3,1960.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.4012932332786558,CATEGORICAL,Category 4,1960.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.4565499032921883,CATEGORICAL,Category 0,1961.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.5114276663527284,CATEGORICAL,Category 1,1961.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.5659122465566901,CATEGORICAL,Category 2,1961.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.619989470283091,CATEGORICAL,Category 3,1961.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.6736452698806812,CATEGORICAL,Category 4,1961.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.726865687327501,CATEGORICAL,Category 0,1962.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.7796368778619207,CATEGORICAL,Category 1,1962.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.8319451135842193,CATEGORICAL,Category 2,1962.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.8837767870277609,CATEGORICAL,Category 3,1962.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.9351184146988385,CATEGORICAL,Category 4,1962.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,1.9859566405842761,CATEGORICAL,Category 0,1963.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.0362782396258554,CATEGORICAL,Category 1,1963.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.0860701211606902,CATEGORICAL,Category 2,1963.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.135319332326628,CATEGORICAL,Category 3,1963.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.184013061431808,CATEGORICAL,Category 4,1963.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.232138641287496,CATEGORICAL,Category 0,1964.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.2796835525033288,CATEGORICAL,Category 1,1964.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.3266354267441063,CATEGORICAL,Category 2,1964.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.372982049947293,CATEGORICAL,Category 3,1964.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.4187113655003816,CATEGORICAL,Category 4,1964.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.4638114773773054,CATEGORICAL,Category 0,1965.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.5082706532330667,CATEGORICAL,Category 1,1965.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.552077327455793,CATEGORICAL,Category 2,1965.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.595220104175411,CATEGORICAL,Category 3,1965.0,
+Model 1,Scenario 1,1,Region 1,Unit 1,Variable 2,2.6376877602281743,CATEGORICAL,Category 4,1965.0,
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,4.94314593204841,DATETIME,,,1968-06-21 08:20:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.005845975262451,DATETIME,,,1968-06-21 13:30:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.0677638652272226,DATETIME,,,1968-06-21 18:40:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.128889927398391,DATETIME,,,1968-06-21 23:50:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.189214610953102,DATETIME,,,1968-06-22 05:00:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.248728490282282,DATETIME,,,1968-06-22 10:10:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.307422266463363,DATETIME,,,1968-06-22 15:20:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.365286768713232,DATETIME,,,1968-06-22 20:30:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.422312955821137,DATETIME,,,1968-06-23 01:40:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.478491917561361,DATETIME,,,1968-06-23 06:50:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.533814876085429,DATETIME,,,1968-06-23 12:00:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.588273187293625,DATETIME,,,1968-06-23 17:10:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.6418583421856185,DATETIME,,,1968-06-23 22:20:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.694561968189975,DATETIME,,,1968-06-24 03:30:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.746375830472358,DATETIME,,,1968-06-24 08:40:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.797291833222199,DATETIME,,,1968-06-24 13:50:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.84730202091766,DATETIME,,,1968-06-24 19:00:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.896398579568656,DATETIME,,,1968-06-25 00:10:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.944573837937785,DATETIME,,,1968-06-25 05:20:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,5.991820268738941,DATETIME,,,1968-06-25 10:30:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,6.038130489813431,DATETIME,,,1968-06-25 15:40:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,6.083497265283434,DATETIME,,,1968-06-25 20:50:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,6.127913506682577,DATETIME,,,1968-06-26 02:00:00
+Model 1,Scenario 1,1,Region 6,Unit 6,Variable 6,6.171372274063508,DATETIME,,,1968-06-26 07:10:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.213866777082241,DATETIME,,,1968-06-26 12:20:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.2553903760591325,DATETIME,,,1968-06-26 17:30:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.295936583016324,DATETIME,,,1968-06-26 22:40:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.335499062691467,DATETIME,,,1968-06-27 03:50:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.3740716335276035,DATETIME,,,1968-06-27 09:00:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.411648268639016,DATETIME,,,1968-06-27 14:10:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.448223096752916,DATETIME,,,1968-06-27 19:20:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.483790403126825,DATETIME,,,1968-06-28 00:30:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.518344630441483,DATETIME,,,1968-06-28 05:40:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.5518803796691705,DATETIME,,,1968-06-28 10:50:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.5843924109172995,DATETIME,,,1968-06-28 16:00:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.615875644247133,DATETIME,,,1968-06-28 21:10:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.646325160467519,DATETIME,,,1968-06-29 02:20:00
+Model 1,Scenario 1,1,Region 7,Unit 3,Variable 7,6.675736201903493,DATETIME,,,1968-06-29 07:30:00
+
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.0,ANNUAL,,1992.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.05013648022551649,ANNUAL,,1993.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.1002520796763038,ANNUAL,,1994.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.15032592627403013,ANNUAL,,1995.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.20033716532953647,ANNUAL,,1996.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.2502649682283699,ANNUAL,,1997.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.30008854110545724,ANNUAL,,1998.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.34978713350530644,ANNUAL,,1999.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.39934004702412873,ANNUAL,,2000.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.4487266439302822,ANNUAL,,2001.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.49792635575944705,ANNUAL,,2002.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.5469186918809523,ANNUAL,,2003.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.5956832480316865,ANNUAL,,2004.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.6441997148140379,ANNUAL,,2005.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.6924478861543255,ANNUAL,,2006.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.7404076677181983,ANNUAL,,2007.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.788059085279496,ANNUAL,,2008.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.8353822930390886,ANNUAL,,2009.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.8823575818902296,ANNUAL,,2010.0,
+Model 1,Scenario 1,2,Region 6,Unit 6,Variable 6,0.9289653876269767,ANNUAL,,2011.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.0,ANNUAL,,1992.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.05013648022551649,ANNUAL,,1993.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.1002520796763038,ANNUAL,,1994.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.15032592627403013,ANNUAL,,1995.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.20033716532953647,ANNUAL,,1996.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.2502649682283699,ANNUAL,,1997.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.30008854110545724,ANNUAL,,1998.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.34978713350530644,ANNUAL,,1999.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.39934004702412873,ANNUAL,,2000.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.4487266439302822,ANNUAL,,2001.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.49792635575944705,ANNUAL,,2002.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.5469186918809523,ANNUAL,,2003.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.5956832480316865,ANNUAL,,2004.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.6441997148140379,ANNUAL,,2005.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.6924478861543255,ANNUAL,,2006.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.7404076677181983,ANNUAL,,2007.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.788059085279496,ANNUAL,,2008.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.8353822930390886,ANNUAL,,2009.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.8823575818902296,ANNUAL,,2010.0,
+Model 1,Scenario 1,2,Region 1,Unit 7,Variable 5,0.9289653876269767,ANNUAL,,2011.0,
+
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-0.4756650164256867,DATETIME,,,1993-11-03 16:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-1.0165175230646748,DATETIME,,,1993-11-05 18:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-1.5528538470776012,DATETIME,,,1993-11-07 20:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-2.0822911541962084,DATETIME,,,1993-11-09 23:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-2.602477261094838,DATETIME,,,1993-11-12 01:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-3.1111010856671815,DATETIME,,,1993-11-14 03:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-3.6059029146986514,DATETIME,,,1993-11-16 06:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-4.084684443317053,DATETIME,,,1993-11-18 08:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-4.545318541618415,DATETIME,,,1993-11-20 10:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-4.98575870507672,DATETIME,,,1993-11-22 13:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-5.404048146751367,DATETIME,,,1993-11-24 15:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-5.798328490897421,DATETIME,,,1993-11-26 17:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-6.166848029354793,DATETIME,,,1993-11-28 20:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-6.507969504034778,DATETIME,,,1993-11-30 22:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-6.820177380928003,DATETIME,,,1993-12-03 00:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-7.102084583316795,DATETIME,,,1993-12-05 03:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-7.352438654277687,DATETIME,,,1993-12-07 05:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-7.570127321095273,DATETIME,,,1993-12-09 07:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-7.754183436865869,DATETIME,,,1993-12-11 10:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-7.9037892773364185,DATETIME,,,1993-12-13 12:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-8.018280173888662,DATETIME,,,1993-12-15 14:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-8.097147466527945,DATETIME,,,1993-12-17 17:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-8.140040763757119,DATETIME,,,1993-12-19 19:20:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-8.1467694992954,DATETIME,,,1993-12-21 21:40:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-8.117303778725976,DATETIME,,,1993-12-24 00:00:00
+Model 10,Scenario 10,1,Region 7,Unit 1,Variable 1,-8.051774512310875,DATETIME,,,1993-12-26 02:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-7.950472833383034,DATETIME,,,1993-12-28 04:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-7.813848804899548,DATETIME,,,1993-12-30 07:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-7.6425094199025825,DATETIME,,,1994-01-01 09:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-7.43721590477154,DATETIME,,,1994-01-03 11:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-7.198880337247575,DATETIME,,,1994-01-05 14:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-6.92856159425588,DATETIME,,,1994-01-07 16:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-6.627460647528761,DATETIME,,,1994-01-09 18:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-6.2969152279301195,DATETIME,,,1994-01-11 21:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-5.938393882186651,DATETIME,,,1994-01-13 23:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-5.553489448430483,DATETIME,,,1994-01-16 01:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-5.14391197954018,DATETIME,,,1994-01-18 04:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-4.711481145720192,DATETIME,,,1994-01-20 06:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-4.258118150072654,DATETIME,,,1994-01-22 08:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-3.7858371930788968,DATETIME,,,1994-01-24 11:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-3.2967365239123985,DATETIME,,,1994-01-26 13:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-2.7929891183402864,DATETIME,,,1994-01-28 15:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-2.276833024629673,DATETIME,,,1994-01-30 18:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-1.7505614203499116,DATETIME,,,1994-02-01 20:20:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-1.2165124242465277,DATETIME,,,1994-02-03 22:40:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-0.6770587084505566,DATETIME,,,1994-02-06 01:00:00
+Model 10,Scenario 10,1,Region 8,Unit 2,Variable 5,-0.1345969571740834,DATETIME,,,1994-02-08 03:20:00
+
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.0,ANNUAL,,1963.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.039853436050753525,ANNUAL,,1964.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.07970079788570729,ANNUAL,,1965.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.11953601221485617,ANNUAL,,1966.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.15935300759964324,ANNUAL,,1967.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.19914571537833106,ANNUAL,,1968.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.23890807059094993,ANNUAL,,1969.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.2786340129036816,ANNUAL,,1970.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.31831748753253847,ANNUAL,,1971.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.35795244616619615,ANNUAL,,1972.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.39753284788783994,ANNUAL,,1973.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.43705266009588484,ANNUAL,,1974.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.47650585942342666,ANNUAL,,1975.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.5158864326562874,ANNUAL,,1976.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.5551883776495119,ANNUAL,,1977.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.5944057042421782,ANNUAL,,1978.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.6335324351703809,ANNUAL,,1979.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.6725626069782489,ANNUAL,,1980.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.711490270926859,ANNUAL,,1981.0,
+Model 10,Scenario 10,2,Region 9,Unit 5,Variable 7,0.7503094939009057,ANNUAL,,1982.0,
+
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,0.0,CATEGORICAL,Category 0,1986.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,0.3502681054994562,CATEGORICAL,Category 1,1986.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,0.6970364478720038,CATEGORICAL,Category 0,1987.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.0368402324670303,CATEGORICAL,Category 1,1987.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.3662842521930596,CATEGORICAL,Category 0,1988.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.6820768113047035,CATEGORICAL,Category 1,1988.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.98106261493846,CATEGORICAL,Category 0,1989.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.260254295775987,CATEGORICAL,Category 1,1989.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.5168622628308563,CATEGORICAL,Category 0,1990.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.748322574119571,CATEGORICAL,Category 1,1990.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.9523225547223415,CATEGORICAL,Category 0,1991.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.126823904266413,CATEGORICAL,Category 1,1991.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.2700830629496176,CATEGORICAL,Category 0,1992.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.3806686326135758,CATEGORICAL,Category 1,1992.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.4574756788009338,CATEGORICAL,Category 0,1993.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.4997367708952214,CATEGORICAL,Category 1,1993.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.507029650033892,CATEGORICAL,Category 0,1994.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.4792814481792984,CATEGORICAL,Category 1,1994.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.416769416192034,CATEGORICAL,Category 0,1995.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.320118153631987,CATEGORICAL,Category 1,1995.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.190293367965996,CATEGORICAL,Category 0,1996.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,3.028592225538068,CATEGORICAL,Category 1,1996.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.836630390712051,CATEGORICAL,Category 0,1997.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.616325882687382,CATEGORICAL,Category 1,1997.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.3698799112852527,CATEGORICAL,Category 0,1998.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,2.0997548831877078,CATEGORICAL,Category 1,1998.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.8086497983840342,CATEGORICAL,Category 0,1999.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.4994732826550434,CATEGORICAL,Category 1,1999.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,1.1753145255457325,CATEGORICAL,Category 0,2000.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,0.8394124142044959,CATEGORICAL,Category 1,2000.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,0.49512317149338125,CATEGORICAL,Category 0,2001.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,0.1458868217186655,CATEGORICAL,Category 1,2001.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-0.2048071809548915,CATEGORICAL,Category 0,2002.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-0.5534548179765987,CATEGORICAL,Category 1,2002.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-0.8965725174049246,CATEGORICAL,Category 0,2003.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-1.230731960606812,CATEGORICAL,Category 1,2003.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-1.552594336884213,CATEGORICAL,Category 0,2004.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-1.858943703766921,CATEGORICAL,Category 1,2004.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-2.146719119646679,CATEGORICAL,Category 0,2005.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-2.413045227693925,CATEGORICAL,Category 1,2005.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-2.6552609854727556,CATEGORICAL,Category 0,2006.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-2.8709462531973284,CATEGORICAL,Category 1,2006.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.057945974968614,CATEGORICAL,Category 0,2007.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.2143917113805576,CATEGORICAL,Category 1,2007.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.3387203083490204,CATEGORICAL,Category 0,2008.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.429689515630661,CATEGORICAL,Category 1,2008.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.486390398976745,CATEGORICAL,Category 0,2009.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.5082564219036976,CATEGORICAL,Category 1,2009.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.4950691063383794,CATEGORICAL,Category 0,2010.0,
+Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.4469602155787715,CATEGORICAL,Category 1,2010.0,
+
+
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.0,DATETIME,,,1952-08-24 00:00:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.07700412804863478,DATETIME,,,1952-08-24 12:10:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.15399954136188967,DATETIME,,,1952-08-25 00:20:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.23097752619065162,DATETIME,,,1952-08-25 12:30:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.30792937075822935,DATETIME,,,1952-08-26 00:40:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.38484636624628565,DATETIME,,,1952-08-26 12:50:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.4617198077804341,DATETIME,,,1952-08-27 01:00:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.5385409954153901,DATETIME,,,1952-08-27 13:10:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.6153012351195639,DATETIME,,,1952-08-28 01:20:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.6919918397589839,DATETIME,,,1952-08-28 13:30:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.7686041300804398,DATETIME,,,1952-08-29 01:40:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.8451294356937346,DATETIME,,,1952-08-29 13:50:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.9215590960529312,DATETIME,,,1952-08-30 02:00:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.9978844614364878,DATETIME,,,1952-08-30 14:10:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.074096893926166,DATETIME,,,1952-08-31 02:20:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.1501877683846045,DATETIME,,,1952-08-31 14:30:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.2261484734314458,DATETIME,,,1952-09-01 02:40:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.3019704124179063,DATETIME,,,1952-09-01 14:50:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.3776450043996777,DATETIME,,,1952-09-02 03:00:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.4531636851080538,DATETIME,,,1952-09-02 15:10:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.5285179079191682,DATETIME,,,1952-09-03 03:20:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.6036991448212352,DATETIME,,,1952-09-03 15:30:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.6786988873796838,DATETIME,,,1952-09-04 03:40:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.7535086477000796,DATETIME,,,1952-09-04 15:50:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.8281199593887167,DATETIME,,,1952-09-05 04:00:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.9025243785107804,DATETIME,,,1952-09-05 16:10:00
+Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,1.9767134845459657,DATETIME,,,1952-09-06 04:20:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.05067888134145,DATETIME,,,1952-09-06 16:30:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.124412198062101,DATETIME,,,1952-09-07 04:40:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.1979050901378265,DATETIME,,,1952-09-07 16:50:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.271149240207947,DATETIME,,,1952-09-08 05:00:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.3441363590624933,DATETIME,,,1952-09-08 17:10:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.416858186580312,DATETIME,,,1952-09-09 05:20:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.489306492663885,DATETIME,,,1952-09-09 17:30:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.5614730781707467,DATETIME,,,1952-09-10 05:40:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.633349775841402,DATETIME,,,1952-09-10 17:50:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.7049284512236342,DATETIME,,,1952-09-11 06:00:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.7762010035930977,DATETIME,,,1952-09-11 18:10:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.847159366870096,DATETIME,,,1952-09-12 06:20:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.9177955105324402,DATETIME,,,1952-09-12 18:30:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,2.9881014405242814,DATETIME,,,1952-09-13 06:40:00
+Model 2,Scenario 2,1,Region 9,Unit 9,Variable 9,3.0580692001608134,DATETIME,,,1952-09-13 18:50:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.1276908710287548,DATETIME,,,1952-09-14 07:00:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.196958573882491,DATETIME,,,1952-09-14 19:10:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.2658644695357832,DATETIME,,,1952-09-15 07:20:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.334400759748955,DATETIME,,,1952-09-15 19:30:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.4025596881114306,DATETIME,,,1952-09-16 07:40:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.4703335409195497,DATETIME,,,1952-09-16 19:50:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.537714648049541,DATETIME,,,1952-09-17 08:00:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.604695383825574,DATETIME,,,1952-09-17 20:10:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.671268167882768,DATETIME,,,1952-09-18 08:20:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.737425466025085,DATETIME,,,1952-09-18 20:30:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.8031597910779875,DATETIME,,,1952-09-19 08:40:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.868463703735781,DATETIME,,,1952-09-19 20:50:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.9333298134035406,DATETIME,,,1952-09-20 09:00:00
+Model 2,Scenario 2,1,Region 10,Unit 9,Variable 9,3.9977507790335154,DATETIME,,,1952-09-20 21:10:00
+
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.061719309955938,DATETIME,,,1952-09-21 09:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.125228166704126,DATETIME,,,1952-09-21 21:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.188270161833779,DATETIME,,,1952-09-22 09:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.250838160736417,DATETIME,,,1952-09-22 21:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.312925082446802,DATETIME,,,1952-09-23 10:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.374523900444317,DATETIME,,,1952-09-23 22:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.435627643448176,DATETIME,,,1952-09-24 10:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.4962293962063695,DATETIME,,,1952-09-24 22:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.55632230027829,DATETIME,,,1952-09-25 10:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.6158995548109125,DATETIME,,,1952-09-25 22:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.674954417308462,DATETIME,,,1952-09-26 11:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.733480204395483,DATETIME,,,1952-09-26 23:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.791470292573205,DATETIME,,,1952-09-27 11:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.848918118969142,DATETIME,,,1952-09-27 23:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.905817182079835,DATETIME,,,1952-09-28 11:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,4.962161042506628,DATETIME,,,1952-09-28 23:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.017943323684443,DATETIME,,,1952-09-29 12:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.0731577126034235,DATETIME,,,1952-09-30 00:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.127797960523395,DATETIME,,,1952-09-30 12:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.181857883681047,DATETIME,,,1952-10-01 00:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.235331363989766,DATETIME,,,1952-10-01 12:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.288212349732034,DATETIME,,,1952-10-02 00:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.340494856244313,DATETIME,,,1952-10-02 13:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.392172966594346,DATETIME,,,1952-10-03 01:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.443240832250787,DATETIME,,,1952-10-03 13:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.493692673745093,DATETIME,,,1952-10-04 01:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.5435227813256045,DATETIME,,,1952-10-04 13:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.592725515603725,DATETIME,,,1952-10-05 01:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.641295308192149,DATETIME,,,1952-10-05 14:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.689226662335045,DATETIME,,,1952-10-06 02:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.736514153530138,DATETIME,,,1952-10-06 14:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.7831524301426125,DATETIME,,,1952-10-07 02:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.829136214010774,DATETIME,,,1952-10-07 14:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.874460301043378,DATETIME,,,1952-10-08 02:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.919119561808605,DATETIME,,,1952-10-08 15:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,5.963108942114563,DATETIME,,,1952-10-09 03:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.006423463581276,DATETIME,,,1952-10-09 15:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.049058224204109,DATETIME,,,1952-10-10 03:30:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.091008398908534,DATETIME,,,1952-10-10 15:40:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.1322692400961945,DATETIME,,,1952-10-11 03:50:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.172836078182206,DATETIME,,,1952-10-11 16:00:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.212704322123619,DATETIME,,,1952-10-12 04:10:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.251869459939,DATETIME,,,1952-10-12 16:20:00
+Model 2,Scenario 2,2,Region 10,Unit 10,Variable 10,6.290327059219063,DATETIME,,,1952-10-13 04:30:00

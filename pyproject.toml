@@ -10,16 +10,15 @@ authors = [
     { name = "Fridolin Glatter", email = "<glatter@iiasa.ac.at>" },
     { name = "Daniel Huppmann", email = "<huppmann@iiasa.ac.at>" },
     { name = "Philip Hackstock", email = "<hackstock@iiasa.ac.at>" },
-    { name = "Pino Mussak", email = "<mussak@iiasa.ac.at>" }
+    { name = "Pino Mussak", email = "<mussak@iiasa.ac.at>" },
 ]
 description = "a data warehouse for scenario analysis"
-dynamic = [ "version" ]
+dynamic = ["version"]
 license = "MIT"
 readme = "README.md"
 requires-python = ">=3.10, <3.15"
 dependencies = [
     "alembic>=1.12.0",
-    "fastapi>=0.100.0",
     "httpx[http2]>=0.25.0",
     "openpyxl>=3.0.9",
     # remove legacy-handling in timeseries- and meta-repositories when dropping pandas < 2.2
@@ -34,7 +33,9 @@ dependencies = [
     "SQLAlchemy[mypy]>=2.0.22",
     "SQLAlchemy-Utils>=0.41.0",
     "toml>=0.10.2",
-    "typer>=0.9.0",
+    "typer>=0.19.0",
+    "scse-toolkit@git+https://github.com/iiasa/scse-toolkit.git@enhancement/db-repositories",
+    "litestar (>=2.18.0,<3.0.0)",
 ]
 
 [project.scripts]
@@ -44,7 +45,6 @@ ixmp4 = "ixmp4.__main__:app"
 documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
 homepage = "https://software.ece.iiasa.ac.at"
 repository = "https://github.com/iiasa/ixmp4"
-
 
 [tool.poetry.group.docs]
 optional = true
@@ -79,6 +79,8 @@ ruff = ">=0.2.0"
 snakeviz = ">=2.1.1"
 types-toml = ">=0.10.8.7"
 pytest-alembic = ">=0.12.1"
+pandera = { extras = ["mypy"], version = ">=0.24.0" }
+pytest-memray = "^1.8.0"
 
 [tool.poetry.group.tutorial]
 optional = true

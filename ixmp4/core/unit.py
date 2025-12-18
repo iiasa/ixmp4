@@ -1,65 +1,89 @@
-from collections.abc import Iterable
 from datetime import datetime
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Unit as UnitModel
+from ixmp4.backend import Backend
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
+from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.data.unit.dto import Unit as UnitDto
+from ixmp4.data.unit.exceptions import (
+    UnitDeletionPrevented,
+    UnitNotFound,
+    UnitNotUnique,
+)
+from ixmp4.data.unit.filter import UnitFilter
+from ixmp4.data.unit.service import UnitService
 
 
-class Unit(BaseModelFacade):
-    _model: UnitModel
-    NotUnique = UnitModel.NotUnique
-    NotFound = UnitModel.NotFound
-    DeletionPrevented = UnitModel.DeletionPrevented
+class Unit(BaseFacadeObject[UnitService, UnitDto]):
+    NotUnique = UnitNotUnique
+    NotFound = UnitNotFound
+    DeletionPrevented = UnitDeletionPrevented
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self._dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
-
-    def delete(self) -> None:
-        self.backend.units.delete(self._model.id)
+        return self._dto.created_by
 
     @property
     def docs(self) -> str | None:
         try:
-            return self.backend.units.docs.get(self.id).description
-        except DocsModel.NotFound:
+            return self._service.get_docs(self.id).description
+        except DocsNotFound:
             return None
 
     @docs.setter
     def docs(self, description: str | None) -> None:
         if description is None:
-            self.backend.units.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         else:
-            self.backend.units.docs.set(self.id, description)
+            self._service.set_docs(self.id, description)
 
     @docs.deleter
     def docs(self) -> None:
         try:
-            self.backend.units.docs.delete(self.id)
+            self._service.delete_docs(self.id)
         # TODO: silently failing
-        except DocsModel.NotFound:
+        except DocsNotFound:
             return None
+
+    def delete(self) -> None:
+        self._service.delete_by_id(self._dto.id)
+
+    def _get_service(self, backend: Backend) -> UnitService:
+        return backend.units
 
     def __str__(self) -> str:
         return f"<Unit {self.id} name={self.name}>"
 
 
-class UnitRepository(BaseFacade):
+class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitService]):
+    def _get_service(self, backend: Backend) -> UnitService:
+        return backend.units
+
+    def _get_item_id(self, ref: Unit | int | str) -> int:
+        if isinstance(ref, Unit):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self._service.get_by_name(ref)
+            return dto.id
+        else:
+            raise ValueError(f"Invalid reference to unit: {ref}")
+
     def create(self, name: str) -> Unit:
         if name != "" and name.strip() == "":
             raise ValueError("Using a space-only unit name is not allowed.")
@@ -67,78 +91,20 @@ class UnitRepository(BaseFacade):
             raise ValueError(
                 "Unit name 'dimensionless' is reserved, use an empty string '' instead."
             )
-        model = self.backend.units.create(name)
-        return Unit(_backend=self.backend, _model=model)
+        dto = self._service.create(name)
+        return Unit(self._backend, dto)
 
-    def delete(self, x: Unit | int | str) -> None:
-        if isinstance(x, Unit):
-            id = x.id
-        elif isinstance(x, int):
-            id = x
-        elif isinstance(x, str):
-            model = self.backend.units.get(x)
-            id = model.id
-        else:
-            raise TypeError("Invalid argument: Must be `Unit`, `int` or `str`.")
+    def delete(self, ref: Unit | int | str) -> None:
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
 
-        self.backend.units.delete(id)
+    def get_by_name(self, name: str) -> Unit:
+        dto = self._service.get_by_name(name)
+        return Unit(self._backend, dto)
 
-    def get(self, name: str) -> Unit:
-        model = self.backend.units.get(name)
-        return Unit(_backend=self.backend, _model=model)
+    def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
+        units = self._service.list(**kwargs)
+        return [Unit(self._backend, dto) for dto in units]
 
-    def list(self, name: str | None = None) -> list[Unit]:
-        units = self.backend.units.list(name=name)
-        return [Unit(_backend=self.backend, _model=u) for u in units]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.units.tabulate(name=name)
-
-    def _get_unit_id(self, unit: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(unit, str):
-            obj = self.backend.units.get(unit)
-            return obj.id
-        else:
-            raise ValueError(f"Invalid reference to unit: {unit}")
-
-    def get_docs(self, name: str) -> str | None:
-        unit_id = self._get_unit_id(name)
-        if unit_id is None:
-            return None
-        try:
-            return self.backend.units.docs.get(dimension_id=unit_id).description
-        except DocsModel.NotFound:
-            return None
-
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        unit_id = self._get_unit_id(name)
-        if unit_id is None:
-            return None
-        return self.backend.units.docs.set(
-            dimension_id=unit_id, description=description
-        ).description
-
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        unit_id = self._get_unit_id(name)
-        if unit_id is None:
-            return None
-        try:
-            self.backend.units.docs.delete(dimension_id=unit_id)
-            return None
-        except DocsModel.NotFound:
-            return None
-
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.backend.units.docs.list(
-                dimension_id=id, dimension_id__in=id__in
-            )
-        ]
+    def tabulate(self, **kwargs: Unpack[UnitFilter]) -> pd.DataFrame:
+        return self._service.tabulate(**kwargs)

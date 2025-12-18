@@ -1,10 +1,7 @@
-# TODO Import this from typing when dropping Python 3.11
-from typing_extensions import TypedDict
-
-from ixmp4.data.backend import Backend
-
-from .data import OptimizationData
-
-
-class InitKwargs(TypedDict):
-    _backend: Backend | None
+from .data import RunOptimizationData as RunOptimizationData
+from .equation import Equation as Equation
+from .indexset import IndexSet as IndexSet
+from .parameter import Parameter as Parameter
+from .scalar import Scalar as Scalar
+from .table import Table as Table
+from .variable import Variable as Variable

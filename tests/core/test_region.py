@@ -1,170 +1,127 @@
-from collections.abc import Iterable
+import datetime
 
-import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4 import DataPoint
-from ixmp4.core import Region
+from ixmp4 import Region
+from tests import backends
 
-from ..fixtures import SmallIamcDataset
-from ..utils import assert_unordered_equality
-
-
-def create_testcase_regions(platform: ixmp4.Platform) -> tuple[Region, Region]:
-    reg = platform.regions.create("Test", hierarchy="default")
-    other = platform.regions.create("Test Other", hierarchy="other")
-    return reg, other
+platform = backends.get_platform_fixture(scope="class")
 
 
-def df_from_list(regions: Iterable[Region]) -> pd.DataFrame:
-    return pd.DataFrame(
-        [[r.id, r.name, r.hierarchy, r.created_at, r.created_by] for r in regions],
-        columns=["id", "name", "hierarchy", "created_at", "created_by"],
-    )
+class TestRegion:
+    def test_create_region(
+        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+    ) -> None:
+        region1 = platform.regions.create("Region 1", hierarchy="default")
+        region2 = platform.regions.create("Region 2", hierarchy="default")
+        region3 = platform.regions.create("Region 3", hierarchy="default")
+        region4 = platform.regions.create("Region 4", hierarchy="default")
 
+        assert region1.id == 1
+        assert region1.name == "Region 1"
+        assert region1.hierarchy == "default"
+        assert region1.created_at == fake_time.replace(tzinfo=None)
+        assert region1.created_by == "@unknown"
+        assert region1.docs is None
+        assert str(region1) == "<Region 1 name='Region 1' hierarchy='default'>"
 
-class TestCoreRegion:
-    small = SmallIamcDataset
+        assert region2.id == 2
+        assert region3.id == 3
+        assert region4.id == 4
 
-    def test_delete_region(self, platform: ixmp4.Platform) -> None:
-        reg1 = platform.regions.create("Test 1", hierarchy="default")
-        reg2 = platform.regions.create("Test 2", hierarchy="default")
-        reg3 = platform.regions.create("Test 3", hierarchy="default")
-        platform.regions.create("Test 4", hierarchy="default")
+    def test_tabulate_region(self, platform: ixmp4.Platform) -> None:
+        ret_df = platform.regions.tabulate()
+        assert len(ret_df) == 4
+        assert "id" in ret_df.columns
+        assert "name" in ret_df.columns
+        assert "hierarchy" in ret_df.columns
+        assert "created_at" in ret_df.columns
+        assert "created_by" in ret_df.columns
 
-        assert reg1.id != reg2.id != reg3.id
-        platform.regions.delete(reg1)
-        platform.regions.delete(reg2.id)
-        reg3.delete()
-        platform.regions.delete("Test 4")
+    def test_list_region(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.regions.list()) == 4
 
+    def test_delete_region_via_func_obj(self, platform: ixmp4.Platform) -> None:
+        region1 = platform.regions.get_by_name("Region 1")
+        platform.regions.delete(region1)
+
+    def test_delete_region_via_func_id(self, platform: ixmp4.Platform) -> None:
+        platform.regions.delete(2)
+
+    def test_delete_region_via_func_name(self, platform: ixmp4.Platform) -> None:
+        platform.regions.delete("Region 3")
+
+    def test_delete_region_via_obj(self, platform: ixmp4.Platform) -> None:
+        region4 = platform.regions.get_by_name("Region 4")
+        region4.delete()
+
+    def test_regions_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.regions.tabulate().empty
+        assert len(platform.regions.list()) == 0
 
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
 
-        run = platform.runs.create("Model", "Scenario")
-
-        with run.transact("Add iamc data"):
-            run.iamc.add(self.small.annual.copy(), type=DataPoint.Type.ANNUAL)
-
-        with pytest.raises(Region.DeletionPrevented):
-            platform.regions.delete("Region 1")
-
-    def test_region_has_hierarchy(self, platform: ixmp4.Platform) -> None:
-        with pytest.raises(TypeError):
-            # We are testing exactly this: raising with missing argument.
-            platform.regions.create("Test Region")  # type: ignore[call-arg]
-
-        reg1 = platform.regions.create("Test", hierarchy="default")
-        reg2 = platform.regions.get("Test")
-
-        assert reg1.id == reg2.id
-
-    def test_get_region(self, platform: ixmp4.Platform) -> None:
-        reg1 = platform.regions.create("Test", hierarchy="default")
-        reg2 = platform.regions.get("Test")
-
-        assert reg1.id == reg2.id
-
-        with pytest.raises(Region.NotFound):
-            platform.regions.get("Does not exist")
-
-    def test_region_unique(self, platform: ixmp4.Platform) -> None:
+class TestRegionUnique:
+    def test_region_unqiue(self, platform: ixmp4.Platform) -> None:
         platform.regions.create("Test", hierarchy="default")
+
+        with pytest.raises(Region.NotUnique):
+            platform.regions.create("Test", hierarchy="default")
 
         with pytest.raises(Region.NotUnique):
             platform.regions.create("Test", hierarchy="other")
 
-    def test_region_unknown(self, platform: ixmp4.Platform) -> None:
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
 
-        invalid_data = self.small.annual.copy()
-        invalid_data["region"] = "invalid"
+class TestRegionDocs:
+    def test_create_docs_via_func(self, platform: ixmp4.Platform) -> None:
+        region1 = platform.regions.create("Region 1", hierarchy="default")
 
-        run = platform.runs.create("Model", "Scenario")
-        with pytest.raises(Region.NotFound):
-            with run.transact("Add invalid data"):
-                run.iamc.add(invalid_data, type=DataPoint.Type.ANNUAL)
+        region1_docs1 = platform.regions.set_docs("Region 1", "Description of Region 1")
+        region1_docs2 = platform.regions.get_docs("Region 1")
 
-    def test_list_region(self, platform: ixmp4.Platform) -> None:
-        regions = create_testcase_regions(platform)
-        reg, other = regions
+        assert region1_docs1 == region1_docs2
+        assert region1.docs == region1_docs1
 
-        a = [r.id for r in regions]
-        b = [r.id for r in platform.regions.list()]
-        assert not (set(a) ^ set(b))
+    def test_create_docs_via_object(self, platform: ixmp4.Platform) -> None:
+        region2 = platform.regions.create("Region 2", hierarchy="default")
+        region2.docs = "Description of Region 2"
 
-        a = [other.id]
-        b = [r.id for r in platform.regions.list(hierarchy="other")]
-        assert not (set(a) ^ set(b))
+        assert platform.regions.get_docs("Region 2") == region2.docs
 
-    def test_tabulate_region(self, platform: ixmp4.Platform) -> None:
-        regions = create_testcase_regions(platform)
-        _, other = regions
+    def test_create_docs_via_setattr(self, platform: ixmp4.Platform) -> None:
+        region3 = platform.regions.create("Region 3", hierarchy="default")
+        setattr(region3, "docs", "Description of Region 3")
 
-        a = df_from_list(regions)
-        b = platform.regions.tabulate()
-        assert_unordered_equality(a, b, check_dtype=False)
-
-        a = df_from_list([other])
-        b = platform.regions.tabulate(hierarchy="other")
-        assert_unordered_equality(a, b, check_dtype=False)
-
-    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
-        platform.regions.create("Test Region", "Test Hierarchy")
-        docs_region1 = platform.regions.set_docs(
-            "Test Region", "Description of test Region"
-        )
-        docs_region2 = platform.regions.get_docs("Test Region")
-
-        assert docs_region1 == docs_region2
-
-        region2 = platform.regions.create("Test Region 2", "Hierarchy")
-
-        assert region2.docs is None
-
-        region2.docs = "Description of test region 2"
-
-        assert platform.regions.get_docs("Test Region 2") == region2.docs
-
-    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
-        region = platform.regions.create("Test Region", "Hierarchy")
-        region.docs = "Description of test region"
-        region.docs = None
-
-        assert region.docs is None
-
-        region.docs = "Second description of test region"
-        del region.docs
-
-        assert region.docs is None
-
-        # Mypy doesn't recognize del properly, it seems
-        region.docs = "Third description of test region"  # type: ignore[unreachable]
-        platform.regions.delete_docs("Test Region")
-
-        assert region.docs is None
+        assert platform.regions.get_docs("Region 3") == region3.docs
 
     def test_list_docs(self, platform: ixmp4.Platform) -> None:
-        region_1 = platform.regions.create("Region 1", "Hierarchy")
-        region_1.docs = "Description of Region 1"
-        region_2 = platform.regions.create("Region 2", "Hierarchy")
-        region_2.docs = "Description of Region 2"
-        region_3 = platform.regions.create("Region 3", "Hierarchy")
-        region_3.docs = "Description of Region 3"
-
         assert platform.regions.list_docs() == [
-            region_1.docs,
-            region_2.docs,
-            region_3.docs,
+            "Description of Region 1",
+            "Description of Region 2",
+            "Description of Region 3",
         ]
 
-        assert platform.regions.list_docs(id=region_2.id) == [region_2.docs]
+        assert platform.regions.list_docs(id=3) == ["Description of Region 3"]
 
-        assert platform.regions.list_docs(id__in=[region_1.id, region_3.id]) == [
-            region_1.docs,
-            region_3.docs,
-        ]
+        assert platform.regions.list_docs(id__in=[1]) == ["Description of Region 1"]
+
+    def test_delete_docs_via_func(self, platform: ixmp4.Platform) -> None:
+        region1 = platform.regions.get_by_name("Region 1")
+        platform.regions.delete_docs("Region 1")
+        region1 = platform.regions.get_by_name("Region 1")
+        assert region1.docs is None
+
+    def test_delete_docs_set_none(self, platform: ixmp4.Platform) -> None:
+        region2 = platform.regions.get_by_name("Region 2")
+        region2.docs = None
+        region2 = platform.regions.get_by_name("Region 2")
+        assert region2.docs is None
+
+    def test_delete_docs_del(self, platform: ixmp4.Platform) -> None:
+        region3 = platform.regions.get_by_name("Region 3")
+        del region3.docs
+        region3 = platform.regions.get_by_name("Region 3")
+        assert region3.docs is None
+
+    def test_docs_empty(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.regions.list_docs()) == 0

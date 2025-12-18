@@ -12,7 +12,7 @@ from ixmp4.core.platform import Backend, Platform
 from ixmp4.core.region import Region
 from ixmp4.core.run import Run
 from ixmp4.core.unit import Unit
-from ixmp4.data.abstract import DataPoint
+from ixmp4.data.iamc.datapoint.type import Type
 
 
 class MockDataGenerator(object):
@@ -65,7 +65,7 @@ class MockDataGenerator(object):
             try:
                 yield self.platform.regions.create(name, "default")
             except Region.NotUnique:
-                yield self.platform.regions.get(name)
+                yield self.platform.regions.get_by_name(name)
 
     def yield_units(self) -> Generator[Unit, Any, None]:
         for i in range(self.num_units):
@@ -73,7 +73,7 @@ class MockDataGenerator(object):
             try:
                 yield self.platform.units.create(name)
             except Unit.NotUnique:
-                yield self.platform.units.get(name)
+                yield self.platform.units.get_by_name(name)
 
     def yield_variable_names(self) -> Generator[str, Any, None]:
         for i in range(self.num_variables):
@@ -93,9 +93,9 @@ class MockDataGenerator(object):
             unit_name = next(units).name
             dp_type = random.choice(
                 [
-                    DataPoint.Type.ANNUAL,
-                    DataPoint.Type.CATEGORICAL,
-                    DataPoint.Type.DATETIME,
+                    Type.ANNUAL,
+                    Type.CATEGORICAL,
+                    Type.DATETIME,
                 ]
             )
             df = self.get_datapoints(
@@ -112,9 +112,7 @@ class MockDataGenerator(object):
             if self.num_datapoints == dp_count:
                 break
 
-    def get_datapoints(
-        self, type: DataPoint.Type, max: int = sys.maxsize
-    ) -> pd.DataFrame:
+    def get_datapoints(self, type: Type, max: int = sys.maxsize) -> pd.DataFrame:
         df = pd.DataFrame(
             columns=[
                 "region",
@@ -123,12 +121,12 @@ class MockDataGenerator(object):
                 "value",
             ],
         )
-        if type == DataPoint.Type.ANNUAL:
+        if type == Type.ANNUAL:
             amount = min(20, max)
             start_year = random.randint(1950, 2000)
             steps_annual = [start_year + i for i in range(amount)]
             df["step_year"] = steps_annual
-        if type == DataPoint.Type.CATEGORICAL:
+        if type == Type.CATEGORICAL:
             amount = min(50, max)
             num_categories = random.randint(2, 10)
             start_year = random.randint(1950, 2000)
@@ -141,7 +139,7 @@ class MockDataGenerator(object):
 
             df["step_year"] = steps_year
             df["step_category"] = steps_category
-        if type == DataPoint.Type.DATETIME:
+        if type == Type.DATETIME:
             amount = min(100, max)
             dt = timedelta(minutes=random.randint(1, 360) * 10)
             start_dt = datetime(

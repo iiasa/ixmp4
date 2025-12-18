@@ -1,38 +1,38 @@
 from typing import TYPE_CHECKING
 
-from ixmp4.data.backend import Backend
+from ixmp4.backend import Backend
 
-from ..base import BaseFacade
-from .equation import EquationRepository
-from .indexset import IndexSetRepository
-from .parameter import ParameterRepository
-from .scalar import ScalarRepository
-from .table import TableRepository
-from .variable import VariableRepository
+from ..base import BaseBackendFacade
+from .equation import EquationServiceFacade
+from .indexset import IndexSetServiceFacade
+from .parameter import ParameterServiceFacade
+from .scalar import ScalarServiceFacade
+from .table import TableServiceFacade
+from .variable import VariableServiceFacade
 
 if TYPE_CHECKING:
     from ixmp4.core.run import Run
 
 
-class OptimizationData(BaseFacade):
+class RunOptimizationData(BaseBackendFacade):
     """An optimization data instance, which provides access to optimization data such as
     IndexSet, Table, Variable, etc."""
 
-    equations: EquationRepository
-    indexsets: IndexSetRepository
-    parameters: ParameterRepository
-    scalars: ScalarRepository
-    tables: TableRepository
-    variables: VariableRepository
+    equations: EquationServiceFacade
+    indexsets: IndexSetServiceFacade
+    parameters: ParameterServiceFacade
+    scalars: ScalarServiceFacade
+    tables: TableServiceFacade
+    variables: VariableServiceFacade
 
-    def __init__(self, run: "Run", **kwargs: Backend) -> None:
-        super().__init__(**kwargs)
-        self.equations = EquationRepository(_backend=self.backend, _run=run)
-        self.indexsets = IndexSetRepository(_backend=self.backend, _run=run)
-        self.parameters = ParameterRepository(_backend=self.backend, _run=run)
-        self.scalars = ScalarRepository(_backend=self.backend, _run=run)
-        self.tables = TableRepository(_backend=self.backend, _run=run)
-        self.variables = VariableRepository(_backend=self.backend, _run=run)
+    def __init__(self, backend: Backend, run: "Run") -> None:
+        super().__init__(backend)
+        self.equations = EquationServiceFacade(backend, run)
+        self.indexsets = IndexSetServiceFacade(backend, run)
+        self.parameters = ParameterServiceFacade(backend, run)
+        self.scalars = ScalarServiceFacade(backend, run)
+        self.tables = TableServiceFacade(backend, run)
+        self.variables = VariableServiceFacade(backend, run)
 
     # TODO Improve performance by writing dedicated queries
     def remove_solution(self) -> None:
