@@ -1,16 +1,13 @@
 import abc
 import inspect
-from contextlib import suppress
 from datetime import datetime, timezone
 from typing import Any, ClassVar, ParamSpec, Sequence, TypedDict, TypeVar
 
 import pandas as pd
 import pandera.pandas as pa
-import pydantic as pyd
 import sqlalchemy as sa
 from litestar import Router, route
 from litestar.di import Provide
-from litestar.openapi.datastructures import ResponseSpec
 from pandera.errors import SchemaError
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
@@ -143,15 +140,6 @@ class Service(abc.ABC):
         cls,
         endpoint: HttpProcedureEndpoint[Any, Any, Any],
     ) -> route:
-        responses = {}
-        with suppress(TypeError):
-            if issubclass(
-                endpoint.procedure.signature.return_annotation, pyd.BaseModel
-            ):
-                responses[200] = ResponseSpec(
-                    data_container=endpoint.procedure.signature.return_annotation,
-                )
-
         handler = route(
             endpoint.path,
             http_method=endpoint.methods,
@@ -160,7 +148,7 @@ class Service(abc.ABC):
             operation_id=endpoint.name,
             description=endpoint.procedure.func.__doc__,
             summary=endpoint.shortname,
-            responses=responses,
+            operation_class=endpoint.get_openapi_operation_class(),
         )
         return handler(endpoint.handle_request)
 

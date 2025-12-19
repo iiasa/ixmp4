@@ -1,6 +1,7 @@
 import functools
 import inspect
 from concurrent import futures
+from dataclasses import dataclass
 from string import Formatter
 from typing import (
     TYPE_CHECKING,
@@ -24,14 +25,24 @@ import pandas as pd
 import pydantic as pyd
 from litestar import HttpMethod, Request, Response
 from litestar.handlers import HTTPRouteHandler
+from litestar.openapi.spec import (
+    OpenAPIMediaType,
+    OpenAPIResponse,
+    Operation,
+    Reference,
+    Schema,
+)
 from litestar.routes import BaseRoute
 from litestar.types.internal_types import PathParameterDefinition
 from litestar.utils.path import join_paths
 from typing_extensions import Unpack
 
-from ixmp4.core.exceptions import InvalidArguments, ProgrammingError
+from ixmp4.base_exceptions import ProgrammingError
+from ixmp4.core.exceptions import InvalidArguments
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.transport import HttpxTransport
+from ixmp4.transport import (
+    HttpxTransport,
+)
 
 if TYPE_CHECKING:
     from .base import Service
@@ -397,6 +408,34 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
             *varargs, **path_params.model_dump(mode="python"), **payload_dict
         )
         return bound_params.args, bound_params.kwargs
+
+    def get_openapi_operation_class(pe_self) -> type[Operation]:
+        @dataclass
+        class ProcedureOperation(Operation):
+            def __post_init__(self) -> None:
+                self.responses = pe_self.get_openapi_responses()
+
+        return ProcedureOperation
+
+    def get_openapi_responses(self) -> dict[str, OpenAPIResponse | Reference]:
+        responses: dict[str, OpenAPIResponse | Reference] = {}
+        if self.procedure.has_paginated_func:
+            return_schema = self.paginated_return_type_adapter.json_schema(
+                mode="serialization"
+            )
+        else:
+            return_schema = self.return_type_adapter.json_schema(mode="serialization")
+        if "$defs" in return_schema:
+            return_schema["dependent_schemas"] = return_schema.pop("$defs")
+
+        responses["200"] = OpenAPIResponse(
+            content={
+                "application/json": OpenAPIMediaType(schema=Schema(**return_schema))
+            },
+            description="",
+        )
+
+        return responses
 
 
 # this function tries to remain similar to

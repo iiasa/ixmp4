@@ -6,8 +6,8 @@ Run the web api with:
 
    ixmp4 server start [--host 127.0.0.1] [--port 8000]
 
-This will start ixmp4’s asgi server. Check
-``http://127.0.0.1:8000/v1/<platform>/docs/``.
+This will start ixmp4’s asgi server. Check ``http://127.0.0.1:8000/docs/``
+for openapi documentation.
 
 """
 
@@ -20,16 +20,8 @@ from litestar.openapi import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
 from litestar.openapi.spec.security_scheme import SecurityScheme
-from toolkit.auth.user import User
-from toolkit.client.auth import SelfSignedAuth
-from toolkit.manager.client import ManagerClient
 
-from ixmp4 import __version__, data
-from ixmp4.conf.platforms import (
-    ManagerPlatforms,
-    PlatformConnectionInfo,
-    TomlPlatforms,
-)
+from ixmp4 import __version__
 from ixmp4.conf.settings import ServerSettings
 
 if TYPE_CHECKING:
@@ -68,7 +60,9 @@ class Ixmp4Server:
         openapi_config = OpenAPIConfig(
             title="IXMP4",
             version=__version__,
-            render_plugins=[ScalarRenderPlugin()],
+            path="/docs",
+            create_examples=True,
+            render_plugins=[ScalarRenderPlugin(path="/")],
             components=Components(security_schemes={"default": bearer_scheme}),
         )
 
