@@ -83,6 +83,9 @@ class Settings(BaseSettings):
         if self.is_in_interactive_mode():
             self.configure_logging(self.mode)
 
+        if self.server.toml_platforms is None:
+            self.server.toml_platforms = self.get_toml_platforms_path()
+
         return self
 
     def is_in_interactive_mode(self) -> bool:
