@@ -8,7 +8,7 @@ from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
-from ixmp4.services import DirectTransport, Http, Service, procedure
+from ixmp4.data.services import DirectTransport, Http, Service, procedure
 
 from .dto import MetaValueType, RunMetaEntry
 from .filter import RunMetaEntryFilter

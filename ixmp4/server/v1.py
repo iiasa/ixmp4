@@ -11,6 +11,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.auth.user import User
 from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
+from typing_extensions import NotRequired, TypedDict
 
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
@@ -58,7 +59,7 @@ from ixmp4.transport import (
 )
 
 if TYPE_CHECKING:
-    from ixmp4.services import Service
+    from ixmp4.data.services import Service
 
 from .middleware import AuthenticationMiddleware
 
@@ -219,29 +220,41 @@ class V1HttpApi:
                 yield DirectTransport(session)
 
 
+class PlatformInfo(TypedDict):
+    slug: str
+    name: str
+
+
+class PlatformAuthStatus(TypedDict):
+    access: bool
+    view: bool
+    submit: bool
+    edit: bool
+    manage: bool
+
+
+class PlatformStatus(TypedDict):
+    auth: NotRequired[PlatformAuthStatus]
+
+
 class PlatformController(Controller):
     @get("/")
-    async def info(self, platform: PlatformConnectionInfo) -> Response[dict[str, Any]]:
-        return Response(
-            {
-                "slug": platform.slug,
-                "name": platform.name,
-            }
-        )
+    async def info(self, platform: PlatformConnectionInfo) -> Response[PlatformInfo]:
+        return Response(PlatformInfo(slug=platform.slug, name=platform.name))
 
     @get("/status")
     async def status(
         self,
         platform: PlatformConnectionInfo,
         request: Request[User | None, AuthorizationContext | None, Any],
-    ) -> Response[dict[str, Any]]:
-        status = {}
+    ) -> Response[PlatformStatus]:
+        status = PlatformStatus()
         if request.auth is not None:
-            status["auth"] = {
-                "access": request.auth.has_access_permission(platform),
-                "view": request.auth.has_view_permission(platform),
-                "submit": request.auth.has_submit_permission(platform),
-                "edit": request.auth.has_edit_permission(platform),
-                "manage": request.auth.has_management_permission(platform),
-            }
+            status["auth"] = PlatformAuthStatus(
+                access=request.auth.has_access_permission(platform),
+                view=request.auth.has_view_permission(platform),
+                submit=request.auth.has_submit_permission(platform),
+                edit=request.auth.has_edit_permission(platform),
+                manage=request.auth.has_management_permission(platform),
+            )
         return Response(status)

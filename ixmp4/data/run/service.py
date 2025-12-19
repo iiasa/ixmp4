@@ -23,8 +23,8 @@ from ixmp4.data.scenario.exceptions import ScenarioNotUnique
 from ixmp4.data.scenario.repositories import (
     ItemRepository as ScenarioRepository,
 )
+from ixmp4.data.services import GetByIdService, Http, procedure
 from ixmp4.data.versions.transaction import TransactionRepository
-from ixmp4.services import GetByIdService, Http, procedure
 from ixmp4.transport import DirectTransport
 
 from .dto import Run

@@ -8,7 +8,7 @@ from ixmp4.data.base.dto import BaseModel
 from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.docs.service import DocsService
-from ixmp4.services.base import GetByIdService, Service
+from ixmp4.data.services.base import GetByIdService, Service
 
 
 class BaseBackendFacade(object):

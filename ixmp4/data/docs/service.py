@@ -7,7 +7,7 @@ from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import Http, Service, procedure
+from ixmp4.data.services import Http, Service, procedure
 from ixmp4.transport import DirectTransport
 
 from .db import AbstractDocs

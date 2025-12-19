@@ -1,7 +1,7 @@
 from typing import TYPE_CHECKING
 
 from ixmp4.base_exceptions import OptimizationItemUsageError
-from ixmp4.services import GetByIdService
+from ixmp4.data.services import GetByIdService
 
 if TYPE_CHECKING:
     pass

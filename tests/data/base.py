@@ -2,7 +2,7 @@ from typing import Generic, TypeVar
 
 import pytest
 
-from ixmp4.services import Service
+from ixmp4.data.services import Service
 from ixmp4.transport import Transport
 from tests.base import TransportTest
 

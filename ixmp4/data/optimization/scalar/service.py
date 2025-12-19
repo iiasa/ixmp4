@@ -9,8 +9,8 @@ from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
+from ixmp4.data.services import DirectTransport, GetByIdService, Http, procedure
 from ixmp4.data.unit.repositories import ItemRepository as UnitRepository
-from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import ScalarDocs
 from .dto import Scalar

@@ -21,7 +21,7 @@ from ixmp4.data.optimization.variable.repositories import (
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
-from ixmp4.services import DirectTransport, GetByIdService, Http, procedure
+from ixmp4.data.services import DirectTransport, GetByIdService, Http, procedure
 
 from .db import IndexSetDocs
 from .dto import IndexSet

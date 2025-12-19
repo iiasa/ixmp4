@@ -1,19 +1,22 @@
 import abc
 import inspect
+from contextlib import suppress
 from datetime import datetime, timezone
 from typing import Any, ClassVar, ParamSpec, Sequence, TypedDict, TypeVar
 
 import pandas as pd
 import pandera.pandas as pa
+import pydantic as pyd
 import sqlalchemy as sa
 from litestar import Router, route
 from litestar.di import Provide
+from litestar.openapi.datastructures import ResponseSpec
 from pandera.errors import SchemaError
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
 from ixmp4.data.base.dto import BaseModel
-from ixmp4.services.http import HttpProcedureEndpoint
+from ixmp4.data.services.http import HttpProcedureEndpoint
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -112,7 +115,7 @@ class Service(abc.ABC):
 
     @classmethod
     def get_router(cls) -> Router:
-        from ixmp4.services.procedure import ServiceProcedure
+        from ixmp4.data.services.procedure import ServiceProcedure
 
         async def service_dep(transport: DirectTransport) -> Service:
             return cls(transport)
@@ -140,6 +143,15 @@ class Service(abc.ABC):
         cls,
         endpoint: HttpProcedureEndpoint[Any, Any, Any],
     ) -> route:
+        responses = {}
+        with suppress(TypeError):
+            if issubclass(
+                endpoint.procedure.signature.return_annotation, pyd.BaseModel
+            ):
+                responses[200] = ResponseSpec(
+                    data_container=endpoint.procedure.signature.return_annotation,
+                )
+
         handler = route(
             endpoint.path,
             http_method=endpoint.methods,
@@ -147,7 +159,8 @@ class Service(abc.ABC):
             name=endpoint.name,
             operation_id=endpoint.name,
             description=endpoint.procedure.func.__doc__,
-            summary=endpoint.name,
+            summary=endpoint.shortname,
+            responses=responses,
         )
         return handler(endpoint.handle_request)
 

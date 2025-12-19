@@ -8,7 +8,7 @@ from ixmp4.data.iamc.timeseries.repositories import (
     PandasRepository as TimeSeriesPandasRepository,
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.services import DirectTransport, Http, Service, procedure
+from ixmp4.data.services import DirectTransport, Http, Service, procedure
 
 from .df_schemas import DeleteDataPointFrameSchema, UpsertDataPointFrameSchema
 from .filter import DataPointFilter

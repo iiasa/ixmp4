@@ -55,7 +55,7 @@ def debug_logging(settings: Settings) -> None:
 def fake_time() -> Generator[datetime, None, None]:
     frozen_time = datetime.now(tz=timezone.utc)
 
-    with mock.patch("ixmp4.services.Service.get_datetime", lambda s: frozen_time):
+    with mock.patch("ixmp4.data.services.Service.get_datetime", lambda s: frozen_time):
         yield frozen_time
 
 
