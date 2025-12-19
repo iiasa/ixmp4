@@ -332,7 +332,6 @@ Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.5082564219036976,CATEGORIC
 Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.4950691063383794,CATEGORICAL,Category 0,2010.0,
 Model 10,Scenario 10,2,Region 10,Unit 6,Variable 3,-3.4469602155787715,CATEGORICAL,Category 1,2010.0,
 
-
 Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.0,DATETIME,,,1952-08-24 00:00:00
 Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.07700412804863478,DATETIME,,,1952-08-24 12:10:00
 Model 2,Scenario 2,1,Region 8,Unit 8,Variable 8,0.15399954136188967,DATETIME,,,1952-08-25 00:20:00
