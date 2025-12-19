@@ -1,3 +1,5 @@
+import json
+
 import typer
 import uvicorn
 
@@ -28,23 +30,14 @@ def start(
     )
 
 
-# TODO
-# @app.command()
-# def dump_schema(
-#     output_file: Optional[typer.FileTextWrite] = typer.Option(None, "-o"),
-# ) -> None:
-#     app = Ixmp4Server("schema_secret")
-#     schema = get_openapi(
-#         title=app.title,
-#         version=app.version,
-#         openapi_version=app.openapi_version,
-#         description=app.description,
-#         routes=app.routes,
-#     )
-#     if output_file is None:
-#         utils.echo(json.dumps(schema))
-#     else:
-#         json.dump(
-#             schema,
-#             output_file,
-#         )
+@app.command()
+def dump_schema(
+    output_file: typer.FileTextWrite | None = typer.Option(None, "-o"),
+) -> None:
+    settings = Settings()
+    server = Ixmp4Server(settings.server)
+    schema = server.asgi_app.openapi_schema.to_schema()
+    if output_file is None:
+        typer.echo(json.dumps(schema))
+    else:
+        json.dump(schema, output_file)
