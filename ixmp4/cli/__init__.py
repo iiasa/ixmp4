@@ -5,6 +5,7 @@ Check the CLI help command on how to use it:
 
     ixmp4 --help
     ixmp4 platforms --help
+    ixmp4 alembic --help
     ixmp4 test --help
     ixmp4 server --help
 
@@ -40,8 +41,10 @@ def login(
         auth = ManagerAuth(username, password, str(settings.manager_url))
         user = auth.access_token.user
         assert user is not None
-
-        utils.good(f"Successfully authenticated as user '{user.username}'.")
+        typer.secho(
+            f"Successfully authenticated as user '{user.username}'.",
+            fg=typer.colors.GREEN,
+        )
         if typer.confirm(
             text=(
                 "Are you sure you want to save your credentials in plain-text for "
@@ -50,7 +53,7 @@ def login(
         ):
             credentials = settings.get_credentials()
             credentials.set("default", username, password)
-            utils.good("Done.")
+            typer.secho("Done.", fg=typer.colors.GREEN)
 
     except InvalidCredentials:
         raise typer.BadParameter(
@@ -66,7 +69,7 @@ def logout() -> None:
     ):
         credentials = settings.get_credentials()
         credentials.clear("default")
-        utils.good("Done.")
+        typer.secho("Done.", fg=typer.colors.GREEN)
 
 
 try:
@@ -99,7 +102,7 @@ try:
             opts += ["--benchmark-group-by=func", "--benchmark-columns=min"]
 
         if dry:
-            utils.echo("pytest " + " ".join(opts))
+            typer.echo("pytest " + " ".join(opts))
             raise typer.Exit(0)
         exit_code = pytest.main(opts)
         raise typer.Exit(
