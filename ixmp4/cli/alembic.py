@@ -10,8 +10,6 @@ from ixmp4.conf.settings import Settings
 from ixmp4.db import __file__ as db_module_dir
 from ixmp4.db.models import get_metadata
 
-from . import utils
-
 migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
 
 app = AlembicCli()
@@ -35,11 +33,11 @@ def get_connection_info(settings: Settings, name: str) -> PlatformConnectionInfo
             manager_platforms = settings.get_manager_platforms()
             platform = manager_platforms.get_platform(name)
         except ServiceException as se:
-            utils.echo(
+            typer.echo(
                 "Exception occured during manager request, "
                 "cannot access manager platforms:"
             )
-            utils.error(str(se))
+            typer.secho(str(se), fg=typer.colors.RED, err=True)
             raise pnf
     if platform.dsn.startswith("http"):
         raise typer.BadParameter(
@@ -67,16 +65,16 @@ def collect_targets(
             manager_platforms = settings.get_manager_platforms()
             candidates += manager_platforms.list_platforms()
         except ServiceException as e:
-            utils.echo(
+            typer.echo(
                 "Exception occurred during manager request, "
                 "cannot access manager platforms:"
             )
-            utils.error(str(e))
+            typer.secho(str(e), fg=typer.colors.RED, err=True)
 
     targets: list[PlatformConnectionInfo] = []
     for c in candidates:
         if c.dsn.startswith("http"):
-            utils.echo(f"Skipping '{c.name}' because it is an API platform. ")
+            typer.echo(f"Skipping '{c.name}' because it is an API platform. ")
         else:
             targets.append(c)
 

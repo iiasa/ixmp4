@@ -19,7 +19,6 @@ from ixmp4.core.platform import Platform
 from ixmp4.data.generator import MockDataGenerator
 from ixmp4.db import __file__ as db_module_dir
 
-from . import utils
 from .alembic import get_alembic_controller
 
 migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
@@ -65,7 +64,7 @@ def prompt_sqlite_dsn(name: str, path: Path) -> str:
             f"No file at the standard filesystem location for name '{name}' exists. "
             "Do you want to create a new database?"
         ):
-            utils.echo("Creating the database and running migrations... \n")
+            typer.echo("Creating the database and running migrations... \n")
 
             controller = get_alembic_controller(dsn)
             controller.upgrade_database("head")
@@ -106,14 +105,14 @@ def add(
         pass
 
     if dsn is None:
-        utils.echo(
+        typer.echo(
             "No DSN supplied, assuming you want to add a local sqlite database..."
         )
         path = settings.get_database_path(name)
         dsn = prompt_sqlite_dsn(name, path)
 
     toml_platforms.add_platform(name, dsn)
-    utils.good("\nPlatform added successfully.")
+    typer.secho("\nPlatform added successfully.", fg=typer.colors.GREEN)
 
 
 def prompt_sqlite_removal(dsn: str) -> None:
@@ -123,9 +122,9 @@ def prompt_sqlite_removal(dsn: str) -> None:
         f"Do you want to remove the associated database file at {path_str} as well?"
     ):
         path.unlink()
-        utils.echo("\nDatabase file deleted.")
+        typer.echo("\nDatabase file deleted.")
     else:
-        utils.echo("\nDatabase file left intact.")
+        typer.echo("\nDatabase file left intact.")
 
 
 @app.command(help="Removes a platform from ixmp4's toml registry.")
@@ -180,14 +179,14 @@ def list_() -> None:
         manager_platforms = settings.get_manager_platforms()
         manager_results = manager_platforms.list_platforms()
     except ServiceException as e:
-        utils.echo(
+        typer.echo(
             "Exception occurred during manager request, cannot access manager platforms:"
         )
-        utils.error(str(e))
-        raise typer.Exit()
+        typer.secho(str(e), fg=typer.colors.RED, err=True)
+        raise typer.Exit(code=2)
 
     manager_url_str = typer.style(settings.manager_url, fg=typer.colors.CYAN)
-    utils.echo()
+    typer.echo()
 
     manager_table = Table(
         "Slug",
@@ -271,7 +270,7 @@ def generate(
             num_datapoints,
         )
         generate_data(generator)
-        utils.good("Done!")
+        typer.secho("Done.", fg=typer.colors.GREEN)
 
 
 T = TypeVar("T")
