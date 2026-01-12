@@ -18,8 +18,6 @@ from toolkit.exceptions import InvalidCredentials
 from ixmp4.cli import alembic, platforms, server
 from ixmp4.conf.settings import Settings
 
-from . import utils
-
 app = typer.Typer()
 app.add_typer(platforms.app, name="platforms")
 app.add_typer(alembic.app, name="alembic")
