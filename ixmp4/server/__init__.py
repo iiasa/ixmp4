@@ -39,7 +39,7 @@ cors_config = CORSConfig(
 )
 
 
-class Ixmp4Server:
+class Ixmp4Server(object):
     asgi_app: Litestar
     settings: ServerSettings
 
