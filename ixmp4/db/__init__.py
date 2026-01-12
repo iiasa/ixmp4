@@ -1,35 +1,64 @@
 """
-This module is responsible for everything database related.
-Interfacing, migrating and more is all done here.
 
-It uses `sqlalchemy <https://www.sqlalchemy.org/>`__ and
+Database operations are done bia `sqlalchemy <https://www.sqlalchemy.org/>`__
+as a programmatic database API and
 `alembic <https://alembic.sqlalchemy.org/en/latest/>`__ for database
-management.
+migration management.
 
 Migrations
 ----------
 
-There is a development database at ``run/db.sqlite`` which is used for
-generating migrations, nothing else. It can be manipulated with alembic
-directly using these commands:
+Migrations are run automatically when creating a new sqlite database:
 
 .. code:: bash
 
-   # run all migrations until the current state is reached
-   alembic upgrade head
+   $ ixmp4 platforms add test
 
-   # run one migration forward
-   alembic upgrade +1
+   No DSN supplied, assuming you want to add a local sqlite database...
+   No file at the standard filesystem location for name 'test' exists. \
+   Do you want to create a new database? [y/N]: y
 
-   # run one migration backward
-   alembic downgrade -1
+   Creating the database and running migrations...
 
-   # autogenerate new migration (please choose a descriptive change message)
-   alembic revision -m "<message>" --autogenerate
+   [INFO] 16:51:40 - alembic.runtime.migration: Context impl SQLiteImpl.
+   [INFO] 16:51:40 - alembic.runtime.migration: Will assume non-transactional DDL.
+   [INFO] 16:51:40 - alembic.runtime.migration: Running upgrade  -> c71efc396d2b, \
+   Initial Migration
+   ...
 
-You will have to run all migrations before being able to create new ones
-in the development database. Be sure to run ``ruff`` on newly created
-migrations before committing them!
+If the ixmp4 data model changes and the database models are updated,
+a new migration has to be created to update the database table definitions.
 
-TODO
+To generate a new migration automatically, you will need an existing up-to-date database
+to compare and a decriptive message for the migration (think commit-message):
+
+.. code:: bash
+
+   $ ixmp4 alembic -p test autogenerate "My migration message."
+
+   [INFO] 16:54:51 - alembic.runtime.migration: Context impl SQLiteImpl.
+   [INFO] 16:54:51 - alembic.runtime.migration: Will assume non-transactional DDL.
+   Generating /home/wolschlager/Code/ixmp4/ixmp4/db/migrations/versions/fbe0529cafe7_test.py ...  done
+   Running post write hook 'ruff' ...
+   1 file reformatted
+   done
+
+Afterwards you can update existing databases with the upgrade command:
+
+.. code:: bash
+
+   $ ixmp4 alembic -p test upgrade
+
+   [INFO] 17:02:06 - alembic.runtime.migration: Context impl SQLiteImpl.
+   [INFO] 17:02:06 - alembic.runtime.migration: Will assume non-transactional DDL.
+   [INFO] 17:02:06 - alembic.runtime.migration: Running upgrade 8b0797ebf42f -> 5069a5e8c20c, test
+
+   Upgraded database 'sqlite:////home/wolschlager/Code/ixmp4/run/storage/databases/test.sqlite3' to revision 'head'.
+
+More alembic commands are available and documented in the CLI:
+
+.. code:: bash
+
+   $ ixmp4 alembic --help
+
 """

@@ -1,5 +1,5 @@
 """All database models collected in one module.
-TODO: Think about explicit imports of version, docs and association models."""
+Used to collect all model metadata for migrations."""
 
 from sqlalchemy import MetaData
 
