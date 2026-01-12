@@ -57,6 +57,7 @@ sphinxcontrib-bibtex = ">=2.6.1"
 sphinxcontrib-openapi = ">=0.8.1"
 setuptools = ">=69.2.0"
 roman-numerals-py = "<4.0.0"
+sphinxcontrib-typer = "^0.7.2"
 
 [tool.poetry.group.server]
 optional = true
