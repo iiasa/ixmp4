@@ -30,7 +30,7 @@ If the ixmp4 data model changes and the database models are updated,
 a new migration has to be created to update the database table definitions.
 
 To generate a new migration automatically, you will need an existing up-to-date database
-to compare and a decriptive message for the migration (think commit-message):
+to compare and a descriptive message for the migration (think commit-message):
 
 .. code:: bash
 
@@ -55,10 +55,6 @@ Afterwards you can update existing databases with the upgrade command:
 
    Upgraded database 'sqlite:////home/wolschlager/Code/ixmp4/run/storage/databases/test.sqlite3' to revision 'head'.
 
-More alembic commands are available and documented in the CLI:
-
-.. code:: bash
-
-   $ ixmp4 alembic --help
+Refer to the :doc:`cli documentation <ixmp4.cli>` for all alembic cli commands.
 
 """
