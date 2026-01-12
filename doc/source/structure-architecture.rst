@@ -1,17 +1,5 @@
-Developer Documentation
-=======================
-
-.. toctree::
-   :maxdepth: 1
-
-   ixmp4.core/modules
-   ixmp4.data/modules
-   ixmp4.server/modules
-   ixmp4.cli
-   ixmp4.db
-   ixmp4.conf
-   tests
-
+Structure and Architecture
+==========================
 
 Package/Folder Structure
 ------------------------
@@ -32,7 +20,7 @@ Package/Folder Structure
 Architecture
 ------------
 
-ixmp4 provides a Python API, a REST API and a compatibility layer for Postgres and SQLite Databases.
+ixmp4 provides a Python API, a HTTP API and a compatibility layer for Postgres and SQLite Databases.
 The Python API can interact with databases directly or use the REST API of a compatible ixmp4 server instance.
 
 ::
@@ -52,19 +40,9 @@ The Python API can interact with databases directly or use the REST API of a com
     I │  │            │   │ └───────┘ │    │     │  │ └───────┘ │   │    y │  │ │
       │  └────────────┘   └───────────┘    └─    │  └───────────┘  ─┘      │  └─┘
 
+The :doc:`ixmp4.data <ixmp4.data/modules>` module exposes a common interface for direct and remote usage via the ``Service`` classes.
 
-The :mod:`ixmp4.data` module organizes each datatype into a few files for consistency:
-
-- **db.py**: sqlalchemy database models and other database definitions
-- **dto.py**: a data transfer class for item serialization
-- **exceptions.py**: exceptions specific to the datatype (NotFound, NotUnique, etc.)
-- **filter.py**: filter definitions for use in repositories
-- **repositories.py**: repository classes responsible for interacting with the database
-- **service.py**: service class as the main interface for the datatype which combines all of the above
-
-The service classes are instantiated together via a :class:`ixmp4.backend.Backend` object 
-which can be used by other code to perform operations in the database or on a remote ixmp4 
-http server. This construct and its classes can be referred to as the ":doc:`data layer <ixmp4.data/modules>`".
-
-For a user-friendly python API an additional "facade layer" is added in the :doc:`ixmp4.core <ixmp4.core/modules>`
+For a user-friendly python API an additional "facade layer" centered around the 
+:doc:`Platform <ixmp4.core/platform>` class is added in the ``ixmp4.core``
 module on top of the data layer.
+

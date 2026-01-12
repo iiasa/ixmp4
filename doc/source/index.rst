@@ -20,17 +20,69 @@ Overview
 The **ixmp4** package is a data warehouse for high-powered scenario analysis
 in the domain of integrated assessment of climate change and energy systems modeling.
 
-Table of contents
------------------
+
+Getting started
+---------------
 
 .. toctree::
-   :maxdepth: 1
+   :caption: Getting started
+   :hidden:
+   :maxdepth: 2
 
+   installation
    configuration
    data-model
-   devs/modules
+
+
+Core API
+--------
+
+.. toctree::
+   :caption: Core API
+   :hidden:
+   :maxdepth: 1
+
+   ixmp4.cli
+   ixmp4.conf
+
+   ixmp4.core/platform
+   ixmp4.core/run
+   ixmp4.core/region
+   ixmp4.core/unit
+   ixmp4.core/model
+   ixmp4.core/scenario
+   ixmp4.core/meta
+
+   ixmp4.core/iamc
+
+   ixmp4.core/exceptions
+
+Development
+-----------
+
+.. toctree::
+   :caption: Development
+   :hidden:
+   :maxdepth: 1
+   
+   structure-architecture
+   ixmp4.data/modules
+   ixmp4.server/modules
+   ixmp4.db
+   tests
+
+Reference
+---------
+
+.. toctree::
+   :caption: Reference
+   :hidden:
+   :maxdepth: 1
+
    references
 
+
+   
 License
 -------
 

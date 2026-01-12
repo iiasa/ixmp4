@@ -1,8 +1,5 @@
-Databases (ixmp4.db)
-====================
-
-Module contents
----------------
+Databases and Migrations (ixmp4.db)
+===================================
 
 .. automodule:: ixmp4.db
    :members:

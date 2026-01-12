@@ -1,5 +1,6 @@
 """
-Check the CLI help command on how to use it:
+IXMP4 provides a command line interface for some of its functionality.
+Use the ``--help`` option to find out more about any command:
 
 .. code:: bash
 

@@ -1,9 +1,6 @@
 Configuration
 =============
 
-Module contents
----------------
-
 .. automodule:: ixmp4.conf
    :members:
    :undoc-members:

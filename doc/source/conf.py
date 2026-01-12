@@ -21,6 +21,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinxcontrib.bibtex",
     "sphinx.ext.autodoc",
+    "sphinxcontrib.typer",
     "sphinxcontrib.openapi",
     "sphinx_multiversion",
 ]

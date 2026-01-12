@@ -1,29 +1,4 @@
-"""
-IXMP4 provides a CLI for platform creation, deletion, etc.:
-
-.. code:: bash
-
-   # list all existing databases
-   ixmp4 platforms list
-
-   # run all migrations on all existing databases
-   ixmp4 platforms upgrade
-
-   # create a new database or register it
-   ixmp4 platforms add <database-name> [--dsn sqlite://my/database/file.db]
-
-   # delete a database
-   ixmp4 platforms delete <database-name>
-
-In development mode additional commands are available:
-
-.. code:: bash
-
-   # set the revision hash of all databases
-   # without running migrations
-   ixmp4 platforms stamp <revision-hash>
-
-"""
+""" """
 
 from ixmp4.backend import Backend
 from ixmp4.conf.platforms import PlatformConnectionInfo
@@ -42,7 +17,7 @@ from .unit import UnitServiceFacade
 
 class Platform(object):
     """A modeling platform instance as a connection to a data backend.
-    Enables the manipulation of data via the `Run` class and `Repository` instances."""
+    Enables the manipulation of data via the `Facade` instances."""
 
     NotFound = PlatformNotFound
     NotUnique = PlatformNotFound
