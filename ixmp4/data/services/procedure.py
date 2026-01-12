@@ -109,6 +109,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         func: ProcedureFunc[ServiceT, Params, ReturnT],
         http_config: HttpConfig | None = None,
     ):
+        functools.update_wrapper(self, func)
         self.func = func
         self.signature = self.parse_signature(self.func)
         self.http_config = http_config or HttpConfig()
