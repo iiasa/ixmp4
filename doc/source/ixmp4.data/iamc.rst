@@ -9,37 +9,100 @@ IAMC Data Interface
    :undoc-members:
    :show-inheritance:
 
-Submodules
-----------
 
-ixmp4.data.iamc.datapoint module
---------------------------------
+Datapoints (ixmp4.data.iamc.datapoint)
+--------------------------------------
 
 .. automodule:: ixmp4.data.iamc.datapoint
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.data.iamc.measurand module
---------------------------------
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+
+.. autoclass:: ixmp4.data.iamc.datapoint.dto.DataPoint
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.iamc.datapoint.service.DataPointService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+
+.. automodule:: ixmp4.data.iamc.datapoint.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Measurands (ixmp4.data.iamc.measurand)
+--------------------------------------
 
 .. automodule:: ixmp4.data.iamc.measurand
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.data.iamc.timeseries module
----------------------------------
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.iamc.measurand.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+TimeSeries (ixmp4.data.iamc.timeseries)
+---------------------------------------
 
 .. automodule:: ixmp4.data.iamc.timeseries
    :members:
    :undoc-members:
    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.iamc.timeseries.service.TimeSeriesService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
 
-ixmp4.data.iamc.variable module
--------------------------------
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.iamc.timeseries.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Variables (ixmp4.data.iamc.variable)
+------------------------------------
 
 .. automodule:: ixmp4.data.iamc.variable
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.iamc.variable.dto.Variable
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.iamc.variable.service.VariableService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.iamc.variable.exceptions
    :members:
    :undoc-members:
    :show-inheritance:

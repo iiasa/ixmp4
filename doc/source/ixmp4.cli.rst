@@ -41,35 +41,44 @@ Remove platforms from your local toml file:
    ixmp4 platforms delete test
    ixmp4 platforms delete postgres
 
+IIASA Infrastructure
+--------------------
+
+By default, public IIASA platforms will be available to all users.
+If you want to log in using your ECE Manger account, use the ``ixmp4 login <username>`` command.
 
 .. typer:: ixmp4.cli.app:login
    :prog: ixmp4 login
    :width: 70
-   :make-sections:
    :preferred: text
+
+To delete locally saved credentials and return to anonymous use: 
 
 .. typer:: ixmp4.cli.app:logout
    :prog: ixmp4 logout
    :width: 70
-   :make-sections:
    :preferred: text
 
-
+Alembic CLI
+-----------
 
 .. typer:: ixmp4.cli.app:alembic
    :prog: ixmp4 alembic
    :width: 70
-   :make-sections:
    :preferred: text
+
+IXMP4 Server
+------------
 
 .. typer:: ixmp4.cli.app:server
    :prog: ixmp4 server
    :width: 70
-   :make-sections:
    :preferred: text
+
+Tests
+-----
 
 .. typer:: ixmp4.cli.app:test
    :prog: ixmp4 test
    :width: 70
-   :make-sections:
    :preferred: text

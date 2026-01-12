@@ -17,11 +17,12 @@ The :mod:`ixmp4.data` module organizes each datatype into a few files for consis
 
 The service classes are instantiated together via a :class:`ixmp4.backend.Backend` object 
 which can be used by other code to perform operations in the database or on a remote ixmp4 
-http server. This construct and its classes can be referred to as the ":doc:`data layer <ixmp4.data/modules>`".
+http server. This construct and its classes can be referred to as the "data layer".
 
 
 .. toctree::
    :maxdepth: 1
    
+   common
    iamc
    optimization
