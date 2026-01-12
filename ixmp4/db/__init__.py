@@ -1,6 +1,6 @@
 """
 
-Database operations are done bia `sqlalchemy <https://www.sqlalchemy.org/>`__
+Database operations are executed using `sqlalchemy <https://www.sqlalchemy.org/>`__
 as a programmatic database API and
 `alembic <https://alembic.sqlalchemy.org/en/latest/>`__ for database
 migration management.
