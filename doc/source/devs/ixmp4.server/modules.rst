@@ -4,9 +4,7 @@ Web Application Server (ixmp4.server)
 .. toctree::
    :maxdepth: 1
    
-   endpoints
-   rest
-   rest.iamc
+   v1
 
 
 Module contents

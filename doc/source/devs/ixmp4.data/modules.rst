@@ -1,10 +1,14 @@
 Data Layer (ixmp4.data)
 =======================
 
+.. automodule:: ixmp4.data
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
 .. toctree::
    :maxdepth: 1
    
-   abstract
-   abstract.iamc
-   backend
-   db.iamc.datapoint.filter
+   iamc
+   optimization

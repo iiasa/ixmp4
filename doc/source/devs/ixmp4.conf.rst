@@ -13,22 +13,6 @@ Module contents
 Submodules
 ----------
 
-ixmp4.conf.auth module
-----------------------
-
-.. automodule:: ixmp4.conf.auth
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-ixmp4.conf.base module
-----------------------
-
-.. automodule:: ixmp4.conf.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 ixmp4.conf.credentials module
 -----------------------------
 
@@ -37,26 +21,19 @@ ixmp4.conf.credentials module
    :undoc-members:
    :show-inheritance:
 
-ixmp4.conf.manager module
--------------------------
+ixmp4.conf.platforms module
+-----------------------------
 
-.. automodule:: ixmp4.conf.manager
+.. automodule:: ixmp4.conf.platforms
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.conf.toml module
-----------------------
+ixmp4.conf.settings module
+-----------------------------
 
-.. automodule:: ixmp4.conf.toml
+.. automodule:: ixmp4.conf.settings
    :members:
    :undoc-members:
    :show-inheritance:
-
-ixmp4.conf.user module
-----------------------
-
-.. automodule:: ixmp4.conf.user
-   :members:
-   :undoc-members:
-   :show-inheritance:
+   

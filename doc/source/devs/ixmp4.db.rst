@@ -10,21 +10,10 @@ Module contents
    :show-inheritance:
 
 
-Subpackages
------------
-
-.. toctree::
-   :maxdepth: 4
-
-   ixmp4.db.utils
-
-Submodules
-----------
-
-ixmp4.db.filters module
+ixmp4.db.models module
 -----------------------
 
-.. automodule:: ixmp4.db.filters
+.. automodule:: ixmp4.db.models
    :members:
    :undoc-members:
    :show-inheritance:

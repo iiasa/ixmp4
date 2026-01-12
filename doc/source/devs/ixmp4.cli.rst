@@ -12,6 +12,14 @@ Module contents
 Submodules
 ----------
 
+ixmp4.cli.alembic module
+--------------------------
+
+.. automodule:: ixmp4.cli.alembic
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
 ixmp4.cli.platforms module
 --------------------------
 
@@ -28,10 +36,3 @@ ixmp4.cli.server module
    :undoc-members:
    :show-inheritance:
 
-ixmp4.cli.utils module
-----------------------
-
-.. automodule:: ixmp4.cli.utils
-   :members:
-   :undoc-members:
-   :show-inheritance:

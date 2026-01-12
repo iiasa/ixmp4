@@ -1,0 +1,10 @@
+Version 1 API 
+=============
+
+.. toctree::
+   :maxdepth: 2
+
+.. automodule:: ixmp4.server.v1
+   :members:
+   :undoc-members:
+   :show-inheritance:
