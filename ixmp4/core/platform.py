@@ -65,11 +65,11 @@ class Platform(object):
     def __init__(
         self,
         name: str | None = None,
+        settings: Settings | None = None,
         _backend: Backend | None = None,
-        _settings: Settings | None = None,
     ) -> None:
-        if _settings is not None:
-            self.settings = _settings
+        if settings is not None:
+            self.settings = settings
         else:
             self.settings = Settings()
 
