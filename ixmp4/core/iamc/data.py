@@ -28,7 +28,7 @@ class RunIamcData(BaseBackendFacade):
     ----------
     backend : ixmp4.data.backend.Backend
         Data source backend.
-    run : ixmp4.core.run.Run
+    run : :class:`ixmp4.core.run.Run`
         Model run.
     """
 

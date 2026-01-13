@@ -103,7 +103,7 @@ class RunService(GetByIdService):
 
         Returns
         -------
-        :class:`Run`:
+        :class:`ixmp4.data.run.dto.Run`:
             The created run.
         """
         creation_info = self.get_creation_info()
