@@ -17,14 +17,6 @@ Datapoints (ixmp4.data.iamc.datapoint)
    :members:
    :undoc-members:
    :show-inheritance:
-
-Data Transfer Object
-^^^^^^^^^^^^^^^^^^^^
-
-.. autoclass:: ixmp4.data.iamc.datapoint.dto.DataPoint
-    :members:   
-    :undoc-members:
-    :show-inheritance:
     
 Service
 ^^^^^^^

@@ -10,54 +10,183 @@ Optimization Data Interface
    :show-inheritance:
 
 
-Submodules
-----------
-
-ixmp4.data.optimization.indexset module
----------------------------------------
+IndexSets (ixmp4.data.optimization.indexset)
+--------------------------------------------
 
 .. automodule:: ixmp4.data.optimization.indexset
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.data.optimization.scalar module
--------------------------------------
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.optimization.indexset.dto.IndexSet
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.optimization.indexset.service.IndexSetService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.optimization.indexset.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+
+Scalars (ixmp4.data.optimization.scalar)
+----------------------------------------
 
 .. automodule:: ixmp4.data.optimization.scalar
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.data.optimization.equation module
----------------------------------------
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.optimization.scalar.dto.Scalar
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.optimization.scalar.service.ScalarService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.optimization.scalar.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+
+
+Equations (ixmp4.data.optimization.equation)
+--------------------------------------------
 
 .. automodule:: ixmp4.data.optimization.equation
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.data.optimization.parameter module
-----------------------------------------
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.optimization.equation.dto.Equation
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.optimization.equation.service.EquationService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.optimization.equation.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Paramters (ixmp4.data.optimization.parameter)
+---------------------------------------------
 
 .. automodule:: ixmp4.data.optimization.parameter
    :members:
    :undoc-members:
    :show-inheritance:
 
-ixmp4.data.optimization.table module
-------------------------------------
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.optimization.parameter.dto.Parameter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.optimization.parameter.service.ParameterService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.optimization.parameter.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+Tables (ixmp4.data.optimization.table)
+--------------------------------------
 
 .. automodule:: ixmp4.data.optimization.table
    :members:
    :undoc-members:
    :show-inheritance:
 
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.optimization.table.dto.Table
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.optimization.table.service.TableService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
 
-ixmp4.data.optimization.variable module
----------------------------------------
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.optimization.table.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
+
+Variables (ixmp4.data.optimization.variable)
+--------------------------------------------
 
 .. automodule:: ixmp4.data.optimization.variable
    :members:
    :undoc-members:
    :show-inheritance:
+
+Data Transfer Object
+^^^^^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.optimization.variable.dto.Variable
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
+Service
+^^^^^^^
+.. autoclass:: ixmp4.data.optimization.variable.service.VariableService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Exceptions
+^^^^^^^^^^
+.. automodule:: ixmp4.data.optimization.variable.exceptions
+   :members:
+   :undoc-members:
+   :show-inheritance:
+
