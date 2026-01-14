@@ -30,7 +30,7 @@ Getting started
    :maxdepth: 2
 
    installation
-   configuration
+   setup
    data-model
 
 
@@ -42,21 +42,21 @@ Core API
    :hidden:
    :maxdepth: 1
 
-   ixmp4.cli
-   ixmp4.conf
+   configuration
+   auth
+   cli
 
-   ixmp4.core/platform
-   ixmp4.core/run
-   ixmp4.core/region
-   ixmp4.core/unit
-   ixmp4.core/model
-   ixmp4.core/scenario
-   ixmp4.core/meta
+   core/platform
+   core/run
+   core/region
+   core/unit
+   core/model
+   core/scenario
+   core/meta
 
-   ixmp4.core/iamc
-   ixmp4.core/optimization
-
-   ixmp4.core/exceptions
+   core/iamc
+   core/optimization
+   core/exceptions
 
 Development
 -----------
@@ -66,10 +66,10 @@ Development
    :hidden:
    :maxdepth: 1
    
-   structure-architecture
-   ixmp4.data/modules
-   ixmp4.server/modules
-   ixmp4.db
+   architecture
+   data/modules
+   server/modules
+   database
    tests
    docker
 

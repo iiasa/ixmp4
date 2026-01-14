@@ -1,64 +1,36 @@
-Database setup and configuration
-================================
+Configuration
+=============
 
-The **ixmp4** package provides an interface to local and server-based database instances.
+.. automodule:: ixmp4.conf
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-After installing **ixmp4**, you have to configure access to any database instances.
 
-Connections to a server-based database
---------------------------------------
+Submodules
+----------
 
-To connect to an **ixmp4 database** hosted by IIASA, you have to provide your username
-and password for the IIASA ECE Manager (https://manager.ece.iiasa.ac.at).
+ixmp4.conf.credentials module
+-----------------------------
 
-In a console, run the following:
+.. automodule:: ixmp4.conf.credentials
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-.. code-block::
+ixmp4.conf.platforms module
+-----------------------------
 
-    ixmp4 login <username>
+.. automodule:: ixmp4.conf.platforms
+   :members:
+   :undoc-members:
+   :show-inheritance:
 
-You will be prompted to enter your password.
+ixmp4.conf.settings module
+-----------------------------
 
-.. warning::
-
-    Your username and password will be saved locally in plain-text for future use!
-
-From a Python environment, you can then access any **ixmp4 database** hosted by IIASA
-using the following code:
-
-.. code-block:: python
-
-    import ixmp4
-    mp = ixmp4.Platform("<database-name>")
-
-Creating and accessing a local database instance
-------------------------------------------------
-
-To initialize a new database locally, run the following in a console:
-
-.. code-block::
-
-    ixmp4 platforms add <database-name>
-
-By default, an SQLite database will be created. If you want to add an existing database or a database of a different type, use the `--dsn` argument:
-
-.. code-block::
-    
-    ixmp4 platforms add <database-name> --dsn postgresql+psycopg://user:pw@host/db    
-
-From a Python environment, you can then access this **ixmp4 database** using the
-following code:
-
-.. code-block:: python
-
-    import ixmp4
-    mp = ixmp4.Platform("<database-name>")
-
-Available instances
--------------------
-
-For a list of available **ixmp4 database** instances, run the following in a console:
-
-.. code-block::
-
-    ixmp4 platforms list
+.. automodule:: ixmp4.conf.settings
+   :members:
+   :undoc-members:
+   :show-inheritance:
+   
