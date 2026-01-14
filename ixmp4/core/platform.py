@@ -52,13 +52,6 @@ class Platform(object):
     Once created, the platform's ``Facade`` attributes
     can be used to manipulate data:
 
-    .. code:: python
-
-        unit = platform.units.create("siriometer")
-        print(unit.name)
-
-        run = platform.runs.create("Model", "Scenario")
-
     .. list-table::
         :header-rows: 1
 
