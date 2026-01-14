@@ -59,31 +59,31 @@ class Platform(object):
           - Service Facade Class
           - Object Facade Class
 
-        * - :py:attr:`~runs`
+        * - :py:attr:`~.runs`
           - :class:`~ixmp4.core.run.RunServiceFacade`
           - :class:`~ixmp4.core.run.Run`
 
-        * - :py:attr:`~meta`
+        * - :py:attr:`~.meta`
           - :class:`~ixmp4.core.meta.PlatformRunMetaFacade`
           - :class:`~ixmp4.core.meta.RunMetaFacade`
 
-        * - :py:attr:`~iamc`
+        * - :py:attr:`~.iamc`
           - :class:`~ixmp4.core.iamc.data.PlatformIamcData`
           - :class:`~ixmp4.core.iamc.data.RunIamcData`
 
-        * - :py:attr:`~models`
+        * - :py:attr:`~.models`
           - :class:`~ixmp4.core.run.ModelServiceFacade`
           - :class:`~ixmp4.core.run.Model`
 
-        * - :py:attr:`~scenarios`
+        * - :py:attr:`~.scenarios`
           - :class:`~ixmp4.core.scenario.ScenarioServiceFacade`
           - :class:`~ixmp4.core.scenario.Scenario`
 
-        * - :py:attr:`~regions`
+        * - :py:attr:`~.regions`
           - :class:`~ixmp4.core.region.RegionServiceFacade`
           - :class:`~ixmp4.core.region.Region`
 
-        * - :py:attr:`~units`
+        * - :py:attr:`~.units`
           - :class:`~ixmp4.core.unit.UnitServiceFacade`
           - :class:`~ixmp4.core.unit.Unit`
 
@@ -93,7 +93,7 @@ class Platform(object):
     NotUnique = PlatformNotUnique
 
     runs: RunServiceFacade
-    """Facade instance to manage :class:`ixmp4.core.run.Run` instances
+    """Facade instance to manage :class:`~ixmp4.core.run.Run` instances
     for a platform."""
 
     meta: PlatformRunMetaFacade
@@ -104,19 +104,19 @@ class Platform(object):
     """Facade instance to query IAMC data globally for a platform."""
 
     models: ModelServiceFacade
-    """Facade instance to manage :class:`ixmp4.core.model.Model` instances
+    """Facade instance to manage :class:`~ixmp4.core.model.Model` instances
     for a platform."""
 
     scenarios: ScenarioServiceFacade
-    """Facade instance to manage :class:`ixmp4.core.scenario.Scenario` instances
+    """Facade instance to manage :class:`~ixmp4.core.scenario.Scenario` instances
     for a platform."""
 
     regions: RegionServiceFacade
-    """Facade instance to manage :class:`ixmp4.core.region.Region` instances
+    """Facade instance to manage :class:`~ixmp4.core.region.Region` instances
     for a platform."""
 
     units: UnitServiceFacade
-    """Facade instance to manage :class:`ixmp4.core.unit.Unit` instances
+    """Facade instance to manage :class:`~ixmp4.core.unit.Unit` instances
     for a platform."""
 
     backend: Backend
