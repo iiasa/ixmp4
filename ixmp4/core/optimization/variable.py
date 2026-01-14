@@ -96,14 +96,7 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
             return None
 
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to the Variable.
-
-        .. code:: python
-
-            var = run.optimization.variables.get_by_name("Production")
-            var.add_data({"levels": [100.0, 110.0]})
-
-        """
+        """Adds data to the variable."""
         self._run.require_lock()
         self._service.add_data(id=self._dto.id, data=data)
         self._refresh()
@@ -113,12 +106,6 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
 
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
-
-        .. code:: python
-
-            var = run.optimization.variables.get_by_name("Production")
-            var.remove_data({"levels": [100.0]})
-
         """
         self._run.require_lock()
         self._service.remove_data(id=self._dto.id, data=data)

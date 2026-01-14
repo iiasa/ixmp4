@@ -14,7 +14,7 @@ Authenticating with IIASA Infrastructure
 ----------------------------------------
 
 IIASA provides a number of "public", "gated" and "private" ixmp4 instances. 
-To access "gated" instances and enable instance managers give you 
+To access "gated" instances and allow instance managers to give you 
 access to or permissions on their instances, you will need an account with
 the |ece_management_service|.
     

@@ -1,5 +1,5 @@
-Command Line Interface (ixmp4.cli)
-==================================
+Command-line interface
+======================
 
 .. automodule:: ixmp4.cli
    :show-inheritance:
