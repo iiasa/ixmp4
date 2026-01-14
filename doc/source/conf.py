@@ -21,6 +21,7 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinxcontrib.bibtex",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
     "sphinxcontrib.typer",
     "sphinxcontrib.openapi",
     "sphinx_multiversion",
@@ -73,3 +74,5 @@ rst_prolog = """
     <br>
 
 """
+
+autodoc_member_order = "bysource"
