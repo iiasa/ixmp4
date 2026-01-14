@@ -134,7 +134,7 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
             If no model matching ``ref`` exists.
         :class:`ModelDeletionPrevented`:
             If the model matching ``ref`` is used in the database,
-            preventing it's deletion.
+            preventing its deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 

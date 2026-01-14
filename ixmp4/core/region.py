@@ -179,7 +179,7 @@ class RegionServiceFacade(
             If no region matching ``ref`` exists.
         :class:`RegionDeletionPrevented`:
             If the region matching ``ref`` is used in the database,
-            preventing it's deletion.
+            preventing its deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 

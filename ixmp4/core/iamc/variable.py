@@ -134,7 +134,7 @@ class VariableServiceFacade(
             If no variable matching ``ref`` exists.
         :class:`VariableDeletionPrevented`:
             If the variable matching ``ref`` is used in the database,
-            preventing it's deletion.
+            preventing its deletion.
         """
 
         id = self._get_item_id(ref)

@@ -226,7 +226,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
             If the parameter with `id` does not exist.
         :class:`ParameterDeletionPrevented`:
             If the parameter with `id` is used in the database,
-            preventing it's deletion.
+            preventing its deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 

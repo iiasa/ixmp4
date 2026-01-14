@@ -142,7 +142,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
             If no region matching ``ref`` exists.
         :class:`UnitDeletionPrevented`:
             If the region matching ``ref`` is used in the database,
-            preventing it's deletion.
+            preventing its deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 

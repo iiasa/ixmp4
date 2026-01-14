@@ -137,7 +137,7 @@ class ScenarioServiceFacade(
             If no scenario matching ``ref`` exists.
         :class:`ScenarioDeletionPrevented`:
             If the scenario matching ``ref`` is used in the database,
-            preventing it's deletion.
+            preventing it deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
         """
