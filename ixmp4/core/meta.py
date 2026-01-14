@@ -31,7 +31,12 @@ class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
 
         .. code:: python
 
-            df = platform.meta.tabulate(run={"default_only": False, "model": {"name": "Model"}})
+            df = platform.meta.tabulate(
+                run={
+                    "default_only": False,
+                    "model": {"name": "Model"},
+                }
+            )
             #>     key      value  model   scenario  version
             # 0  indicator  1.23   Model  Scenario  1
 
