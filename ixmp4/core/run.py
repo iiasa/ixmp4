@@ -32,6 +32,29 @@ from .optimization.data import RunOptimizationData
 
 
 class Run(BaseFacadeObject[RunService, RunDto]):
+    """As a central class to organize data on a platform
+    the ``Run`` provides methods and access to ``Facade`` instances.
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Attribute
+          - Facade Class
+
+        * - :py:attr:`~.meta`
+          - :class:`~ixmp4.core.meta.RunMetaFacade`
+
+        * - :py:attr:`~.checkpoints`
+          - :class:`~ixmp4.core.checkpoints.RunCheckpoints`
+
+        * - :py:attr:`~.iamc`
+          - :class:`~ixmp4.core.iamc.data.RunIamcData`
+
+        * - :py:attr:`~.optimization`
+          - :class:`~ixmp4.core.optimization.data.RunOptimizationData`
+
+    """
+
     NotFound = RunNotFound
     NotUnique = RunNotUnique
     DeletionPrevented = RunDeletionPrevented
@@ -40,10 +63,18 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     NoDefaultVersion = NoDefaultRunVersion
 
     meta: RunMetaFacade
+    """Facade instance to query run meta indicators
+    for a run."""
 
     checkpoints: RunCheckpoints
+    """Facade instance to manage :class:`~ixmp4.core.checkpoint.Checkpoint` 
+    instances for a run."""
+
     iamc: RunIamcData
+    """Facade instance to manager IAMC data for a run."""
+
     optimization: RunOptimizationData
+    """Facade instance to manager optimization data for a run."""
 
     owns_lock: bool = False
     minimum_lock_timeout: float = 0.1
