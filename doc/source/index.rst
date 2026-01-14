@@ -22,7 +22,6 @@ in the domain of integrated assessment of climate change and energy systems mode
 
 
 .. toctree::
-   :caption: Getting started
    :maxdepth: 1
 
    installation
@@ -30,7 +29,7 @@ in the domain of integrated assessment of climate change and energy systems mode
    data-model
 
 .. toctree::
-   :caption: Core API
+   :caption: Usage
    :maxdepth: 1
 
    configuration
@@ -67,5 +66,6 @@ in the domain of integrated assessment of climate change and energy systems mode
    references
    license
    funding
+   contributors
 
 .. include:: funding.rst
