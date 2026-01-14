@@ -7,8 +7,10 @@ custom permission system.
 
 Almost all operations on a platform require "view", "submit", 
 "edit" or "manage" permissions if authorization is enabled. 
+If permission requirements are not met, any operation may raise
+an :class:`~ixmp4.base_exceptions.Unauthorized` exception.
 Additionally, when querying data, a given user may not be 
-able to see the totality of the data in the platform. 
+able to see the totality of the data in a platform.
 
 Authenticating with IIASA Infrastructure
 ----------------------------------------
@@ -98,3 +100,10 @@ configuration variable to enable unrestricted use:
 This will give anyone with knowledge of the secret superuser access 
 to the local server instance. 
 Anyone connecting without a secret will receive an "unauthorized" response.
+
+.. note::
+    The secret is used for cryptographic signatures and their verification
+    and never shared in any client-server communication.
+
+    Ideally, it is only shared between individuals physically or via 
+    verifiably secure channels.
