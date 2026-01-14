@@ -21,26 +21,20 @@ if TYPE_CHECKING:
 
 
 class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
-    """Used to query run meta indicators on a platform.
-
-    .. code:: python
-
-        df = platform.meta.tabulate(
-            run={
-                "default_only": False,
-                "model": {"name": "Model"},
-            },
-        )
-
-        print(df)
-
-    """
+    """Used to query run meta indicators on a platform."""
 
     def _get_service(self, backend: "Backend") -> RunMetaEntryService:
         return backend.meta
 
     def tabulate(self, **kwargs: Unpack[RunMetaEntryFilter]) -> pd.DataFrame:
         r"""Tabulates metadata entries by specified criteria.
+
+        .. code:: python
+
+            df = platform.meta.tabulate(run={"default_only": False, "model": {"name": "Model"}})
+            #>     key      value  model   scenario  version
+            # 0  indicator  1.23   Model  Scenario  1
+
 
         Parameters
         ----------
@@ -68,21 +62,25 @@ class RunMetaFacade(
 ):
     """Behaves like a dictionary with the meta indicator data for a specific run.
 
-    To set entries:
+    To set and read entries:
 
     .. code:: python
 
         run.meta = {"key": "value"}
-
         run.meta["other key"] = -1.2
+
+        run.meta["key"]
+        #> 'value'
 
     To delete entries:
 
     .. code:: python
 
         del run.meta["other key"]
-
         run.meta = {}
+
+        run.meta
+        #> {}
 
     """
 
