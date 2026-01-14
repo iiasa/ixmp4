@@ -14,9 +14,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.client import ManagerClient
 
 from ixmp4.conf.settings import ServerSettings
-from ixmp4.core.exceptions import (
-    BadRequest,
-)
+from ixmp4.core.exceptions import BadRequest, Unauthorized
 
 logger = logging.getLogger(__name__)
 
@@ -39,6 +37,12 @@ class AuthenticationMiddleware(AbstractAuthenticationMiddleware):
 
         if self.secret_hs256 is not None:
             token = self.validate_token(auth_header, self.secret_hs256)
+            if token is None and connection.app.state.manager_client is None:
+                raise Unauthorized(
+                    "Anonymous use on a local server with enabled "
+                    "authentication is not permitted."
+                )
+
         else:
             token = None
 
