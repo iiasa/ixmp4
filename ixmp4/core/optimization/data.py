@@ -20,11 +20,28 @@ class RunOptimizationData(BaseBackendFacade):
     """
 
     equations: EquationServiceFacade
+    """Facade instance to manage :class:`~ixmp4.core.optimization.equation.Equation`
+    instances for a run."""
+
     indexsets: IndexSetServiceFacade
+    """Facade instance to manage :class:`~ixmp4.core.optimization.indexset.IndexSet`
+    instances for a run."""
+
     parameters: ParameterServiceFacade
+    """Facade instance to manage :class:`~ixmp4.core.optimization.parameter.Parameter`
+    instances for a run."""
+
     scalars: ScalarServiceFacade
+    """Facade instance to manage :class:`~ixmp4.core.optimization.scalar.Scalar`
+    instances for a run."""
+
     tables: TableServiceFacade
+    """Facade instance to manage :class:`~ixmp4.core.optimization.table.Table`
+    instances for a run."""
+
     variables: VariableServiceFacade
+    """Facade instance to manage :class:`~ixmp4.core.optimization.variable.Variable`
+    instances for a run."""
 
     def __init__(self, backend: Backend, run: "Run") -> None:
         super().__init__(backend)
