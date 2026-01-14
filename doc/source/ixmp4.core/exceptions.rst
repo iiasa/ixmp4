@@ -4,7 +4,10 @@ Exceptions
 .. toctree::
    :maxdepth: 1
    
-.. automodule:: ixmp4.core.exceptions
+Base Exceptions
+---------------
+
+.. automodule:: ixmp4.base_exceptions
    :members:
    :undoc-members:
    :show-inheritance:

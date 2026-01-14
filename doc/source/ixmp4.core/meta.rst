@@ -5,8 +5,8 @@ Meta Indicators
 .. toctree::
    :maxdepth: 1
    
-.. automodule:: ixmp4.core.meta
+.. autoclass:: ixmp4.core.meta.PlatformRunMetaFacade
    :members:
-   :undoc-members:
-   :show-inheritance:
-   
+
+.. autoclass:: ixmp4.core.meta.RunMetaFacade
+   :members:

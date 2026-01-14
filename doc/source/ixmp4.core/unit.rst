@@ -5,7 +5,8 @@ Units
 .. toctree::
    :maxdepth: 1
    
-.. automodule:: ixmp4.core.unit
+.. autoclass:: ixmp4.core.unit.UnitServiceFacade
    :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. autoclass:: ixmp4.core.unit.Unit
+   :members:

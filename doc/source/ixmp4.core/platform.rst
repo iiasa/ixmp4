@@ -6,6 +6,4 @@ Platform
    
 .. automodule:: ixmp4.core.platform
    :members:
-   :undoc-members:
-   :show-inheritance:
    

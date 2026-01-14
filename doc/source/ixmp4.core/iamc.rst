@@ -5,15 +5,23 @@ IAMC Data
 .. toctree::
    :maxdepth: 1
 
-   
-.. automodule:: ixmp4.core.iamc.data
+.. autoclass:: ixmp4.core.iamc.data.PlatformIamcData
    :members:
-   :undoc-members:
-   :show-inheritance:
-   :noindex:
 
-
-.. automodule:: ixmp4.core.iamc.variable
+.. autoclass:: ixmp4.core.iamc.data.RunIamcData
    :members:
-   :undoc-members:
-   :show-inheritance:
+
+IAMC Variables
+--------------
+
+.. autoclass:: ixmp4.core.iamc.variable.VariableServiceFacade
+   :members:
+
+.. autoclass:: ixmp4.core.iamc.variable.Variable
+   :members:
+
+IAMC Data Points
+----------------
+
+.. autoclass:: ixmp4.core.iamc.datapoint.DataPoint
+   :members:

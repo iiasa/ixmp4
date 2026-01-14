@@ -5,7 +5,8 @@ Regions
 .. toctree::
    :maxdepth: 1
    
-.. automodule:: ixmp4.core.region
+.. autoclass:: ixmp4.core.region.RegionServiceFacade
    :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. autoclass:: ixmp4.core.region.Region
+   :members:

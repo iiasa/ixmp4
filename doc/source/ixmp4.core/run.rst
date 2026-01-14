@@ -5,7 +5,9 @@ Runs
 .. toctree::
    :maxdepth: 1
    
-.. automodule:: ixmp4.core.run
+.. autoclass:: ixmp4.core.run.RunServiceFacade
    :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. autoclass:: ixmp4.core.run.Run
+   :members:
+

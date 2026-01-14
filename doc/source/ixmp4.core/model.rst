@@ -5,7 +5,8 @@ Models
 .. toctree::
    :maxdepth: 1
    
-.. automodule:: ixmp4.core.model
+.. autoclass:: ixmp4.core.model.ModelServiceFacade
    :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. autoclass:: ixmp4.core.model.Model
+   :members:

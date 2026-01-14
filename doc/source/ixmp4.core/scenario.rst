@@ -4,8 +4,9 @@ Scenarios
 
 .. toctree::
    :maxdepth: 1
-   
-.. automodule:: ixmp4.core.scenario
+
+.. autoclass:: ixmp4.core.scenario.ScenarioServiceFacade
    :members:
-   :undoc-members:
-   :show-inheritance:
+
+.. autoclass:: ixmp4.core.scenario.Scenario
+   :members:
