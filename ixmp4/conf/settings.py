@@ -72,6 +72,7 @@ class Settings(BaseSettings):
     model_config = SettingsConfigDict(
         env_prefix="ixmp4_",
         extra="allow",
+        env_nested_delimiter="__",
         env_file=".env",
         env_file_encoding="utf-8",
     )
