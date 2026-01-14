@@ -175,7 +175,7 @@ class RegionService(DocsService, GetByIdService):
             return region
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
+    def list(self, **kwargs: Unpack[RegionFilter]) -> List[Region]:
         r"""Lists regions by specified criteria.
 
         Parameters
@@ -190,7 +190,7 @@ class RegionService(DocsService, GetByIdService):
 
         Returns
         -------
-        list[:class:`Region`]:
+        list[:class:`ixmp4.data.region.dto.Region`]:
             List of regions.
         """
         return [Region.model_validate(i) for i in self.items.list(values=kwargs)]
@@ -231,6 +231,7 @@ class RegionService(DocsService, GetByIdService):
             A data frame with the columns:
                 - id
                 - name
+                - hierarchy
         """
 
         return self.pandas.tabulate(values=kwargs)

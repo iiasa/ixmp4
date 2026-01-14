@@ -270,9 +270,9 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`OptimizationItemUsageError`:
-            - If values are missing, `None`, or `NaN`
-            - If values are not allowed based on constraints to `Indexset`s
+        :class:`ixmp4.data.optimization.exceptions.OptimizationItemUsageError`:
+            - If values are missing, ``None``, or ``NaN``
+            - If values are not allowed based on constraints to ``Indexset`` s
             - If rows are not unique
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.

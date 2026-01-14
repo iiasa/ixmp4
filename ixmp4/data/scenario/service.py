@@ -46,7 +46,6 @@ class ScenarioService(DocsService, GetByIdService):
         :class:`ScenarioNotUnique`:
             If the scenario with `name` is not unique.
 
-
         Returns
         -------
         :class:`Scenario`:
@@ -155,7 +154,7 @@ class ScenarioService(DocsService, GetByIdService):
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[ScenarioFilter]) -> list[Scenario]:
+    def list(self, **kwargs: Unpack[ScenarioFilter]) -> List[Scenario]:
         r"""Lists scenarios by specified criteria.
 
         Parameters
@@ -165,7 +164,7 @@ class ScenarioService(DocsService, GetByIdService):
 
         Returns
         -------
-        Iterable[:class:`Scenario`]:
+        list[:class:`ixmp4.data.scenario.dto.Scenario`]:
             List of scenarios.
         """
         return [Scenario.model_validate(i) for i in self.items.list(values=kwargs)]

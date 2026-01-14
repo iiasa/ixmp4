@@ -104,7 +104,7 @@ class ModelService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`ixmp4.data.base.iamc.Model`:
+        :class:`ixmp4.data.model.dto.Model`:
             The retrieved model.
         """
         return Model.model_validate(self.items.get({"name": name}))
@@ -131,7 +131,7 @@ class ModelService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`ixmp4.data.base.iamc.Model`:
+        :class:`ixmp4.data.model.dto.Model`:
             The retrieved model.
         """
 
@@ -144,7 +144,7 @@ class ModelService(DocsService, GetByIdService):
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[ModelFilter]) -> list[Model]:
+    def list(self, **kwargs: Unpack[ModelFilter]) -> List[Model]:
         r"""Lists models by specified criteria.
 
         Parameters
@@ -154,7 +154,7 @@ class ModelService(DocsService, GetByIdService):
 
         Returns
         -------
-        Iterable[:class:`Model`]:
+        list[:class:`ixmp4.data.model.dto.Model`]:
             List of models.
         """
 

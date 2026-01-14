@@ -50,7 +50,7 @@ class UnitService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`Unit`:
+        :class:`ixmp4.data.unit.dto.Unit`:
             The created unit.
         """
         self.items.create({"name": name, **self.get_creation_info()})
@@ -147,7 +147,7 @@ class UnitService(DocsService, GetByIdService):
             return self.create(name)
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
+    def list(self, **kwargs: Unpack[UnitFilter]) -> List[Unit]:
         r"""Lists units by specified criteria.
 
         Parameters
@@ -157,7 +157,7 @@ class UnitService(DocsService, GetByIdService):
 
         Returns
         -------
-        Iterable[:class:`Unit`]:
+        list[:class:`ixmp4.data.unit.dto.Unit`]:
             List of units.
         """
         return [Unit.model_validate(i) for i in self.items.list(values=kwargs)]

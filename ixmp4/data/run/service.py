@@ -19,6 +19,7 @@ from ixmp4.data.model.exceptions import ModelNotUnique
 from ixmp4.data.model.repositories import ItemRepository as ModelRepository
 from ixmp4.data.optimization.reverter import run_reverter as opt_reverter
 from ixmp4.data.pagination import PaginatedResult, Pagination
+from ixmp4.data.run.dto import Run
 from ixmp4.data.scenario.exceptions import ScenarioNotUnique
 from ixmp4.data.scenario.repositories import (
     ItemRepository as ScenarioRepository,
@@ -27,7 +28,6 @@ from ixmp4.data.services import GetByIdService, Http, procedure
 from ixmp4.data.versions.transaction import TransactionRepository
 from ixmp4.transport import DirectTransport
 
-from .dto import Run
 from .exceptions import (
     NoDefaultRunVersion,
     RunIsLocked,
@@ -67,6 +67,8 @@ class RunService(GetByIdService):
         "version",
         "lock_transaction",
         "is_default",
+    ]
+    audit_info_columns = [
         "created_by",
         "created_at",
         "updated_by",
@@ -171,7 +173,7 @@ class RunService(GetByIdService):
 
         Returns
         -------
-        :class:`Run`:
+        :class:`ixmp4.data.run.dto.Run`:
             The retrieved run.
         """
         result = self.items.get(
@@ -207,7 +209,7 @@ class RunService(GetByIdService):
 
         Returns
         -------
-        :class:`Run`:
+        :class:`ixmp4.data.run.dto.Run`:
             The retrieved or created run.
         """
 
@@ -234,7 +236,7 @@ class RunService(GetByIdService):
 
         Returns
         -------
-        :class:`Run`:
+        :class:`ixmp4.data.run.dto.Run`:
             The retrieved run.
         """
         try:
@@ -276,7 +278,7 @@ class RunService(GetByIdService):
 
         Returns
         -------
-        :class:`Run`:
+        :class:`ixmp4.data.run.dto.Run`:
             The retrieved Run.
         """
         result = self.items.get_by_pk({"id": id})
@@ -289,7 +291,7 @@ class RunService(GetByIdService):
         auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[RunFilter]) -> list[Run]:
+    def list(self, **kwargs: Unpack[RunFilter]) -> List[Run]:
         r"""Lists runs by specified criteria.
 
         Parameters
@@ -300,7 +302,7 @@ class RunService(GetByIdService):
 
         Returns
         -------
-        Iterable[:class:`Run`]:
+        list[:class:`ixmp4.data.run.dto.Run`]:
             List of runs.
         """
         return [Run.model_validate(i) for i in self.items.list(values=kwargs)]
@@ -326,12 +328,23 @@ class RunService(GetByIdService):
             pagination=pagination,
         )
 
+    def get_columns(self, *, include_audit_info: bool) -> List[str]:
+        columns = self.default_columns
+        if include_audit_info:
+            columns += self.audit_info_columns
+        return columns
+
     @procedure(Http(methods=("PATCH",)))
-    def tabulate(self, **kwargs: Unpack[RunFilter]) -> SerializableDataFrame:
+    def tabulate(
+        self, include_audit_info: bool = False, **kwargs: Unpack[RunFilter]
+    ) -> SerializableDataFrame:
         r"""Tabulate runs by specified criteria.
 
         Parameters
         ----------
+        include_audit_info: bool
+            Whether or not to include audit info columns in the data frame.
+            Default: ``False``
         \*\*kwargs: any
             Any filter parameters as specified in
             `RunFilter`.
@@ -341,10 +354,24 @@ class RunService(GetByIdService):
         :class:`pandas.DataFrame`:
             A data frame with the columns:
                 - id
+                - model
+                - scenario
                 - model__id
                 - scenario__id
+                - version
+                - lock_transaction
+                - is_default
+            and if ``include_audit_info`` is ``True``:
+                - created_by
+                - created_at
+                - updated_by
+                - updated_at
+
         """
-        return self.pandas.tabulate(values=kwargs, columns=self.default_columns)
+        return self.pandas.tabulate(
+            values=kwargs,
+            columns=self.get_columns(include_audit_info=include_audit_info),
+        )
 
     @tabulate.auth_check()
     def tabulate_auth_check(
@@ -354,14 +381,17 @@ class RunService(GetByIdService):
 
     @tabulate.paginated()
     def paginated_tabulate(
-        self, pagination: Pagination, **kwargs: Unpack[RunFilter]
+        self,
+        pagination: Pagination,
+        include_audit_info: bool = False,
+        **kwargs: Unpack[RunFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
                 values=kwargs,
                 limit=pagination.limit,
                 offset=pagination.offset,
-                columns=self.default_columns,
+                columns=self.get_columns(include_audit_info=include_audit_info),
             ),
             total=self.pandas.count(values=kwargs),
             pagination=pagination,
@@ -407,8 +437,6 @@ class RunService(GetByIdService):
         ------
         :class:`RunNotFound`:
             If no run with the `id` exists.
-        :class:`ixmp4.core.exceptions.IxmpError`:
-            If the run is not set as a default version.
 
         """
         self.items.unset_as_default_version(id, values=self.get_update_info())
@@ -435,7 +463,7 @@ class RunService(GetByIdService):
         transaction__id : int
             Id of the transaction to revert to.
         revert_platform : bool, optional
-            Whether to revert the units defined on the platform, too. Default `False`.
+            Whether to revert the units defined on the platform, too. Default ``False``.
 
         Raises
         ------
@@ -538,17 +566,17 @@ class RunService(GetByIdService):
         ----------
         run_id: int
             The unique integer id of the base run.
-        model_name: str | None
-            The new name of the model used in the new run, optional.
-        scenario_name: str | None
-            The new name of the scenario used in the new run, optional.
+        model_name: str | None, optional
+            The new name of the model used in the new run.
+        scenario_name: str | None, optional
+            The new name of the scenario used in the new run.
         keep_solution: bool
             Whether to keep the solution data from the base run. Optional, defaults to
-            `True`.
+            ``True``.
 
         Returns
         -------
-        :class:`Run`:
+        :class:`ixmp4.data.run.dto.Run`:
             The clone of the base run.
         """
         # TODO

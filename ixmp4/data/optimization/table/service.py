@@ -63,7 +63,7 @@ class TableService(DocsService, IndexSetAssociatedService):
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Table:
-        """Creates a table.
+        r"""Creates a table.
 
         Each column of the Table needs to be constrained to an existing
         :class:`ixmp4.data.abstract.optimization.IndexSet`. These are specified by name
@@ -72,7 +72,6 @@ class TableService(DocsService, IndexSetAssociatedService):
 
 
         Parameters
-        ----------
         ----------
         run_id : int
             The id of the :class:`Run` for which this Table is
@@ -154,7 +153,6 @@ class TableService(DocsService, IndexSetAssociatedService):
         ----------
         run_id : int
             The unique name of the table.
-
         name : str
             The unique name of the table.
 
@@ -272,8 +270,8 @@ class TableService(DocsService, IndexSetAssociatedService):
         Raises
         ------
         :class:`OptimizationDataValidationError`:
-            - If values are missing, `None`, or `NaN`
-            - If values are not allowed based on constraints to `Indexset`s
+            - If values are missing, ``None``, or ``NaN``
+            - If values are not allowed based on constraints to ``Indexset`` s
             - If rows are not unique
 
         Returns

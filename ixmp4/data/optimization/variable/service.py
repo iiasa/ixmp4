@@ -62,9 +62,8 @@ class VariableService(DocsService, IndexSetAssociatedService):
     ) -> Variable:
         """Creates a table.
 
-        Variables
+        Parameters
         ----------
-        TODO
 
 
         Raises
@@ -78,7 +77,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        :class:`Variable`:
+        :class:`ixmp4.data.optimization.variable.dto.Variable`:
             The created table.
         """
 
@@ -128,7 +127,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def get(self, run_id: int, name: str) -> Variable:
         """Retrieves a table by its name and run_id.
 
-        Variables
+        Parameters
         ----------
         run_id : int
             The unique name of the table.
@@ -170,7 +169,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def get_by_id(self, id: int) -> Variable:
         """Retrieves a table by its id.
 
-        Variables
+        Parameters
         ----------
         id : int
             The integer id of the table.
@@ -200,7 +199,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def delete_by_id(self, id: int) -> None:
         """Deletes a table.
 
-        Variables
+        Parameters
         ----------
         id : int
             The unique integer id of the table.
@@ -251,8 +250,8 @@ class VariableService(DocsService, IndexSetAssociatedService):
         Raises
         ------
         :class:`ixmp4.core.exceptions.OptimizationItemUsageError`:
-            - If values are missing, `None`, or `NaN`
-            - If values are not allowed based on constraints to `Indexset`s
+            - If values are missing, ``None``, or ``NaN``
+            - If values are not allowed based on constraints to ``Variables`` s
             - If rows are not unique
 
         Returns
@@ -344,10 +343,10 @@ class VariableService(DocsService, IndexSetAssociatedService):
         )
 
     @procedure(Http(methods=("PATCH",)))
-    def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
+    def list(self, **kwargs: Unpack[VariableFilter]) -> List[Variable]:
         r"""Lists variables by specified criteria.
 
-        Variables
+        Parameters
         ----------
         \*\*kwargs: any
             Filter variables as specified in `VariableFilter`.
@@ -359,7 +358,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        list[:class:`Variable`]:
+        list[:class:`ixmp4.data.optimization.variable.dto.Variable`]:
             List of variables.
         """
         return [Variable.model_validate(i) for i in self.items.list(values=kwargs)]
@@ -392,7 +391,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> SerializableDataFrame:
         r"""Tabulates variables by specified criteria.
 
-        Variables
+        Parameters
         ----------
         \*\*kwargs: any
             Filter variables as specified in `VariableFilter`.

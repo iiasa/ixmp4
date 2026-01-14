@@ -172,7 +172,12 @@ class RunMetaEntryService(Service):
             pagination=pagination,
         )
 
-    def get_requested_columns(self, join_run_index: bool) -> List[str]:
+    def get_columns(
+        self, *, join_run_index: bool | None, include_run_index: bool
+    ) -> List[str]:
+        if join_run_index is not None:
+            include_run_index = join_run_index
+
         columns = [
             "id",
             "dtype",
@@ -183,7 +188,7 @@ class RunMetaEntryService(Service):
             "value_bool",
         ]
 
-        if join_run_index:
+        if include_run_index:
             columns += ["model", "scenario", "version"]
         else:
             columns += ["run__id"]
@@ -192,12 +197,18 @@ class RunMetaEntryService(Service):
 
     @procedure(Http(methods=("PATCH",)))
     def tabulate(
-        self, join_run_index: bool = False, **kwargs: Unpack[RunMetaEntryFilter]
+        self,
+        include_run_index: bool = False,
+        join_run_index: bool | None = None,
+        **kwargs: Unpack[RunMetaEntryFilter],
     ) -> SerializableDataFrame:
         r"""Tabulates metadata entries by specified criteria.
 
         Parameters
         ----------
+        include_run_index: bool, optional
+            Whether to include run columns in the data frame.
+            Default: ``False``
         \*\*kwargs: any
             Filter parameters as specified in `RunMetaEntryFilter`.
 
@@ -205,10 +216,24 @@ class RunMetaEntryService(Service):
         -------
         :class:`pandas.DataFrame`:
             A data frame with the columns:
-                - TODO
+                - id
+                - dtype
+                - key
+                - value
+            if ``include_run_index`` is ``False`` (default):
+                - run__id
+            if ``include_run_index`` is ``True``:
+                - model
+                - scenario
+                - version
+
         """
+
         return self.pandas.tabulate(
-            values=kwargs, columns=self.get_requested_columns(join_run_index)
+            values=kwargs,
+            columns=self.get_columns(
+                join_run_index=join_run_index, include_run_index=include_run_index
+            ),
         )
 
     @tabulate.auth_check()
@@ -221,7 +246,8 @@ class RunMetaEntryService(Service):
     def paginated_tabulate(
         self,
         pagination: Pagination,
-        join_run_index: bool = False,
+        include_run_index: bool = False,
+        join_run_index: bool | None = None,
         **kwargs: Unpack[RunMetaEntryFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
@@ -229,7 +255,9 @@ class RunMetaEntryService(Service):
                 values=kwargs,
                 limit=pagination.limit,
                 offset=pagination.offset,
-                columns=self.get_requested_columns(join_run_index),
+                columns=self.get_columns(
+                    join_run_index=join_run_index, include_run_index=include_run_index
+                ),
             ),
             total=self.pandas.count(values=kwargs),
             pagination=pagination,

@@ -4,10 +4,10 @@ Run the web api with:
 
 .. code:: bash
 
-   ixmp4 server start [--host 127.0.0.1] [--port 8000]
+   ixmp4 server start [--host 127.0.0.1] [--port 9000]
 
-This will start ixmp4’s asgi server. Check ``http://127.0.0.1:8000/docs/``
-for openapi documentation.
+This will start ixmp4’s asgi server. Check ``http://127.0.0.1:9000/docs/``
+for comprehensive openapi documentation.
 
 """
 

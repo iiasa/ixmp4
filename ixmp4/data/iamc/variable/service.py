@@ -164,7 +164,7 @@ class VariableService(DocsService, GetByIdService):
 
         Returns
         -------
-        Iterable[:class:`Variable`]:
+        list[:class:`ixmp4.data.iamc.variable.dto.Variable`]:
             List of variables.
         """
 
