@@ -25,13 +25,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.iamc.datapoint.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Measurands (ixmp4.data.iamc.measurand)
 --------------------------------------
@@ -41,12 +34,6 @@ Measurands (ixmp4.data.iamc.measurand)
    :undoc-members:
    :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.iamc.measurand.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 TimeSeries (ixmp4.data.iamc.timeseries)
 ---------------------------------------
@@ -62,13 +49,6 @@ Service
     :members:   
     :undoc-members:
     :show-inheritance:
-
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.iamc.timeseries.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Variables (ixmp4.data.iamc.variable)
 ------------------------------------
@@ -91,10 +71,3 @@ Service
     :members:   
     :undoc-members:
     :show-inheritance:
-
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.iamc.variable.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:

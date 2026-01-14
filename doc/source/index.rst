@@ -46,7 +46,7 @@ in the domain of integrated assessment of climate change and energy systems mode
 
    core/iamc
    core/optimization
-   core/exceptions
+   exceptions
 
 .. toctree::
    :caption: Development

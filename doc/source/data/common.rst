@@ -33,14 +33,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.run.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 
 Models (ixmp4.data.model)
@@ -66,13 +58,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.model.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 Scenarios (ixmp4.data.scenario)
@@ -98,13 +83,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.scenario.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 
 Run Meta Indicators (ixmp4.data.meta)
@@ -130,13 +108,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.meta.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Regions (ixmp4.data.region)
 ---------------------------
@@ -161,14 +132,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.region.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 Units (ixmp4.data.unit)
 -----------------------
 
@@ -191,11 +154,3 @@ Service
     :members:   
     :undoc-members:
     :show-inheritance:
-
-Exceptions
-^^^^^^^^^^
-
-.. automodule:: ixmp4.data.unit.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:

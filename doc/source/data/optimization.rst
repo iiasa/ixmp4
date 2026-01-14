@@ -32,14 +32,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.optimization.indexset.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 
 Scalars (ixmp4.data.optimization.scalar)
 ----------------------------------------
@@ -62,15 +54,6 @@ Service
     :members:   
     :undoc-members:
     :show-inheritance:
-
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.optimization.scalar.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-
 
 
 Equations (ixmp4.data.optimization.equation)
@@ -95,12 +78,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.optimization.equation.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Paramters (ixmp4.data.optimization.parameter)
 ---------------------------------------------
@@ -124,12 +101,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.optimization.parameter.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
 
 Tables (ixmp4.data.optimization.table)
 --------------------------------------
@@ -153,13 +124,6 @@ Service
     :undoc-members:
     :show-inheritance:
 
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.optimization.table.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 Variables (ixmp4.data.optimization.variable)
 --------------------------------------------
@@ -182,11 +146,3 @@ Service
     :members:   
     :undoc-members:
     :show-inheritance:
-
-Exceptions
-^^^^^^^^^^
-.. automodule:: ixmp4.data.optimization.variable.exceptions
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
