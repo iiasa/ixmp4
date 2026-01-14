@@ -70,6 +70,7 @@ Development
    ixmp4.server/modules
    ixmp4.db
    tests
+   docker
 
 Reference
 ---------
