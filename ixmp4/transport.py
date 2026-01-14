@@ -10,10 +10,10 @@ from litestar import Litestar
 from litestar.testing import TestClient
 from sqlalchemy import orm
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
-from toolkit.client.auth import Auth, ManagerAuth
+from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.client.base import ServiceClient
 
-from ixmp4.conf.settings import ClientSettings
+from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
 
@@ -147,9 +147,21 @@ class HttpxTransport(Transport, ServiceClient):
 
     @classmethod
     def from_url(
-        cls, url: str, settings: ClientSettings, auth: Auth | None
+        cls, url: str, settings: ClientSettings | None = None, auth: Auth | None = None
     ) -> "HttpxTransport":
-        timeout = httpx.Timeout(settings.timeout, connect=60.0)
+        if settings is None:
+            settings = Settings().client
+
+        timeout = httpx.Timeout(settings.timeout, connect=10.0)
+
+        if settings.secret_hs256 is not None and auth is None:
+            logger.info(
+                "Found `secret_hs256` in client settings, using self-signed auth."
+            )
+            auth = SelfSignedAuth(
+                settings.secret_hs256.get_secret_value(), issuer="ixmp4"
+            )
+
         client = httpx.Client(
             base_url=url,
             timeout=timeout,

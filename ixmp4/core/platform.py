@@ -170,7 +170,9 @@ class Platform(object):
         if ci.dsn.startswith("http"):
             cred_dict = self.settings.get_credentials().get(http_credentials)
             return HttpxTransport.from_url(
-                ci.dsn, self.settings.client, self.settings.get_client_auth(cred_dict)
+                ci.dsn,
+                settings=self.settings.client,
+                auth=self.settings.get_client_auth(cred_dict),
             )
         else:
             return DirectTransport.from_dsn(ci.dsn)
