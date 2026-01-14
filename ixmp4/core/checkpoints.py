@@ -32,8 +32,29 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
         return backend.checkpoints
 
     def tabulate(self) -> pd.DataFrame:
+        """Tabulates checkpoints for this run.
+
+        .. code:: python
+
+            run.checkpoints.tabulate()
+            #>    id  message  transaction__id
+            # 0   1  "message"  123
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            Data frame with checkpoint information.
+        """
         return self._service.tabulate(run__id=self.run.id)
 
     def create(self, message: str) -> Checkpoint:
+        """Creates a checkpoint for this run.
+
+        .. code:: python
+
+            run.checkpoints.create("My message")
+            #> <Checkpoint 1 message='My message'>
+
+        """
         self.run.require_lock()
         return self._service.create(run__id=self.run.id, message=message)

@@ -18,23 +18,28 @@ from ..base import BaseBackendFacade
 from .variable import VariableServiceFacade
 
 if TYPE_CHECKING:
-    from ..run import Run
+    from ixmp4.core import run
 
 
 class RunIamcData(BaseBackendFacade):
-    """IAMC data.
+    """IAMC data linked to a :class:`ixmp4.core.run.Run`.
 
-    Parameters
-    ----------
-    backend : ixmp4.data.backend.Backend
-        Data source backend.
-    run : :class:`ixmp4.core.run.Run`
-        Model run.
+    .. code:: python
+        import pandas as pd
+
+        input_df = pd.read_csv("my_iamc_data.csv")
+        run.iamc.add(input_df)
+
+        returned_df = run.iamc.tabulate()
+        print(returned_df)
+
+        run.iamc.remove(input_df.drop(columns=["value"]))
+
     """
 
-    _run: "Run"
+    _run: "run.Run"
 
-    def __init__(self, backend: Backend, run: "Run") -> None:
+    def __init__(self, backend: Backend, run: "run.Run") -> None:
         super().__init__(backend)
         self._run = run
 
@@ -72,6 +77,42 @@ class RunIamcData(BaseBackendFacade):
         ).drop(columns=["id", "time_series__id"])
 
     def add(self, df: pd.DataFrame, type: Type | None = None) -> None:
+        """Adds IAMC data from a data frame to a run.
+
+        .. code:: python
+
+            import pandas as pd
+
+            input_df = pd.DataFrame({
+                "region": ["World"],
+                "variable": ["Emissions|CO2"],
+                "unit": ["MtCO2/yr"],
+                "year": [2020],
+                "value": [36.5],
+            })
+
+            run.iamc.add(input_df)
+
+        Parameters
+        ----------
+        df : :class:`pandas.DataFrame`
+            A data frame with the columns:
+                - region
+                - variable
+                - unit
+                - value
+            Any combination of:
+                - step_year for ANNUAL data points
+                - step_year and step_category for CATEGORICAL data points
+                - step_datetime for DATETIME data points
+            You may optionally supply the type column to
+            specify the types of mixed data points:
+                - type
+        type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
+            Will be set as the type for all provided data points.
+
+        """
+
         self._run.require_lock()
         # df = AddDataPointFrameSchema.validate(df) TODO
         df = self._rename_arg_cols(df)
@@ -84,10 +125,44 @@ class RunIamcData(BaseBackendFacade):
         self._backend.iamc.datapoints.bulk_upsert(df)
 
     def remove(self, df: pd.DataFrame, type: Type | None = None) -> None:
+        """Removes IAMC data matchin a data frame from a run.
+
+        .. code:: python
+
+            import pandas as pd
+
+            remove_df = pd.DataFrame({
+                "region": ["World"],
+                "variable": ["Emissions|CO2"],
+                "unit": ["MtCO2/yr"],
+                "year": [2020],
+            })
+
+            run.iamc.remove(remove_df)
+
+        Parameters
+        ----------
+        df : :class:`pandas.DataFrame`
+            A data frame with the columns:
+                - region
+                - variable
+                - unit
+            Any combination of:
+                - step_year for ANNUAL data points
+                - step_year and step_category for CATEGORICAL data points
+                - step_datetime for DATETIME data points
+            You may optionally supply the type column to
+            specify the types of mixed data points:
+                - type
+        type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
+            Will be set as the type for all provided data points.
+        """
+
         self._run.require_lock()
         # df = RemoveDataPointFrameSchema.validate(df) TODO
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
+        # TODO: This creates ts and deletes them right after
         df = self._get_or_create_ts(df)
         if type is not None:
             df["type"] = type
@@ -100,6 +175,32 @@ class RunIamcData(BaseBackendFacade):
         raw: bool = False,
         **kwargs: Unpack[DataPointFilter],
     ) -> pd.DataFrame:
+        r"""Tabulates datapoints by specified criteria.
+
+        .. code:: python
+
+            df = run.iamc.tabulate()
+            #>    region    unit       variable        year  value
+            # 0  World    MtCO2/yr   Emissions|CO2     2020  36.5
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `DataPointFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - region
+                - unit
+                - variable
+                - year
+                - category
+                - datetime
+                - type
+        """
+
         kwargs["run"] = {"id": self._run.id, "default_only": False}
         df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
@@ -111,6 +212,8 @@ class RunIamcData(BaseBackendFacade):
 
 
 class PlatformIamcData(BaseBackendFacade):
+    """IAMC data on a platform."""
+
     variables: VariableServiceFacade
 
     def __init__(self, backend: Backend) -> None:
@@ -134,6 +237,35 @@ class PlatformIamcData(BaseBackendFacade):
         raw: bool = False,
         **kwargs: Unpack[DataPointFilter],
     ) -> pd.DataFrame:
+        r"""Tabulates datapoints by specified criteria.
+
+        .. code:: python
+
+            df = platform.iamc.tabulate()
+            #>   model   scenario  version  region  ...   year  value
+            # 0  Model  Scenario   1         World  ...  2020   36.5
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `DataPointFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - model
+                - scenario
+                - version
+                - region
+                - unit
+                - variable
+                - year
+                - category
+                - datetime
+                - type
+        """
+
         df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=join_runs,

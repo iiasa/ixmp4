@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 from typing_extensions import Unpack
@@ -68,7 +69,7 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
             return None
 
     def delete(self) -> None:
-        """Deletes the region from the database."""
+        """Deletes this region."""
         self._service.delete_by_id(self._dto.id)
 
     def _get_service(self, backend: Backend) -> RegionService:
@@ -77,10 +78,15 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
     def __str__(self) -> str:
         return f"<Region {self.id} name='{self.name}' hierarchy='{self.hierarchy}'>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class RegionServiceFacade(
     BaseDocsServiceFacade[Region | int | str, Region, RegionService]
 ):
+    """Used to manipulate regions on a platform."""
+
     def _get_service(self, backend: Backend) -> RegionService:
         return backend.regions
 
@@ -95,25 +101,141 @@ class RegionServiceFacade(
         else:
             raise ValueError(f"Invalid reference to region: {ref}")
 
-    def create(
-        self,
-        name: str,
-        hierarchy: str,
-    ) -> Region:
+    def create(self, name: str, hierarchy: str) -> Region:
+        """Creates a region.
+
+        .. code:: python
+
+            platform.regions.create("Region", "Hierarchy")
+            #> <Region 1 name='Region' hierarchy='Hierarchy'>
+
+        Parameters
+        ----------
+        name : str
+            The name of the region.
+        hierarchy : str
+            The hierarchy this region is assigned to.
+
+        Raises
+        ------
+        :class:`RegionNotUnique`:
+            If the region with ``name`` is not unique.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        Returns
+        -------
+        :class:`ixmp4.core.region.Region`:
+            The created region.
+        """
+
         dto = self._service.create(name, hierarchy)
         return Region(self._backend, dto)
 
     def get_by_name(self, name: str) -> Region:
+        """Retrieves a region by its name.
+
+        .. code:: python
+
+            platform.regions.get_by_name("Region")
+            #> <Region 1 name='Region' hierarchy='Hierarchy'>
+
+        Parameters
+        ----------
+        name : str
+            The unique name of the region.
+
+        Raises
+        ------
+        :class:`RegionNotFound`:
+            If the region with `name` does not exist.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        Returns
+        -------
+        :class:`ixmp4.core.region.Region`:
+            The retrieved region.
+        """
+
         dto = self._service.get_by_name(name)
         return Region(self._backend, dto)
 
     def delete(self, ref: Region | int | str) -> None:
+        """Deletes a region.
+
+        .. code:: python
+
+            platform.regions.delete("Region")
+
+        Parameters
+        ----------
+        ref : :class:`ixmp4.core.region.Region` | int | str
+            Region object, region id or region name.
+
+        Raises
+        ------
+        :class:`RegionNotFound`:
+            If no region matching ``ref`` exists.
+        :class:`RegionDeletionPrevented`:
+            If the region matching ``ref`` is used in the database,
+            preventing it's deletion.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        """
+
         id = self._get_item_id(ref)
         self._service.delete_by_id(id)
 
-    def list(self, **kwargs: Unpack[RegionFilter]) -> list[Region]:
+    def list(self, **kwargs: Unpack[RegionFilter]) -> List[Region]:
+        r"""Lists regions by specified criteria.
+
+        .. code:: python
+
+            platform.regions.list()
+            #> [<Region 1 name='Region' hierarchy='Hierarchy'>]
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `RegionFilter`.
+
+        Raises
+        ------
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        Returns
+        -------
+        List[:class:`ixmp4.core.region.Region`]:
+            List of regions.
+        """
+
         regions = self._service.list(**kwargs)
         return [Region(self._backend, dto) for dto in regions]
 
     def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
+        r"""Tabulates regions by specified criteria.
+
+        .. code:: python
+
+            platform.regions.tabulate()
+            #>     name  hierarchy  id                 created_at created_by
+            # 0  Region  Hierarchy   1 2026-01-14 15:37:49.996256   @unknown
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `RegionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - id
+                - name
+                - hierarchy
+        """
+
         return self._service.tabulate(**kwargs)

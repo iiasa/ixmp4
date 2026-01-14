@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 from typing_extensions import Unpack
@@ -23,10 +24,12 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """Variable name."""
         return self._dto.name
 
     @property
@@ -88,20 +91,124 @@ class VariableServiceFacade(
             raise ValueError(f"Invalid reference to variable: {ref}")
 
     def create(self, name: str) -> Variable:
+        """Creates a variable.
+
+        .. code:: python
+
+            platform.iamc.variables.create("Emissions|CO2")
+            #> <Variable 1 name='Emissions|CO2'>
+
+        Parameters
+        ----------
+        name : str
+            The name of the variable.
+
+        Raises
+        ------
+        :class:`VariableNotUnique`:
+            If the variable with `name` is not unique.
+
+        Returns
+        -------
+        :class:`ixmp4.core.iamc.variable.Variable`:
+            The created variable.
+        """
         dto = self._service.create(name)
         return Variable(self._backend, dto)
 
     def delete(self, ref: Variable | int | str) -> None:
+        """Deletes a variable.
+
+        .. code:: python
+
+            platform.iamc.variables.delete("Emissions|CO2")
+
+        Parameters
+        ----------
+        ref : :class:`~ixmp4.core.iamc.variable.Variable` | int | str
+            Variable object, variable id or variable name.
+
+        Raises
+        ------
+        :class:`VariableNotFound`:
+            If no variable matching ``ref`` exists.
+        :class:`VariableDeletionPrevented`:
+            If the variable matching ``ref`` is used in the database,
+            preventing it's deletion.
+        """
+
         id = self._get_item_id(ref)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Variable:
+        """Retrieves a variable by its name.
+
+        .. code:: python
+
+            platform.iamc.variables.get_by_name("Emissions|CO2")
+            #> <Variable 1 name='Emissions|CO2'>
+
+        Parameters
+        ----------
+        name : str
+            The unique name of the variable.
+
+        Raises
+        ------
+        :class:`VariableNotFound`:
+            If the variable with `name` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.core.iamc.variable.Variable`:
+            The retrieved variable.
+        """
+
         dto = self._service.get_by_name(name)
         return Variable(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
-        units = self._service.list(**kwargs)
-        return [Variable(self._backend, dto) for dto in units]
+    def list(self, **kwargs: Unpack[VariableFilter]) -> List[Variable]:
+        r"""Lists variables by specified criteria.
+
+        .. code:: python
+
+            platform.iamc.variables.list()
+            #> [<Variable 1 name='Emissions|CO2'>]
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `VariableFilter`.
+
+        Returns
+        -------
+        list[:class:`ixmp4.data.iamc.variable.dto.Variable`]:
+            List of variables.
+        """
+
+        variables = self._service.list(**kwargs)
+        return [Variable(self._backend, dto) for dto in variables]
 
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> pd.DataFrame:
+        r"""Tabulates variables by specified criteria.
+
+        .. code:: python
+
+            platform.iamc.variables.tabulate()
+            #>     name  id
+            # 0  Emissions|CO2   1
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `VariableFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - id
+                - name
+        """
+
         return self._service.tabulate(**kwargs)

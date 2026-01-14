@@ -1,10 +1,8 @@
 import time
 import warnings
-from collections import UserDict
 from contextlib import contextmanager
-from typing import Generator, cast
+from typing import Generator, List
 
-import numpy as np
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -12,8 +10,6 @@ from typing_extensions import Unpack
 
 from ixmp4.backend import Backend
 from ixmp4.base_exceptions import OperationNotSupported
-from ixmp4.data.meta.dto import MetaValueType
-from ixmp4.data.meta.service import RunMetaEntryService
 from ixmp4.data.model.dto import Model as ModelDto
 from ixmp4.data.run.dto import Run as RunDto
 from ixmp4.data.run.exceptions import (
@@ -31,6 +27,7 @@ from ixmp4.data.scenario.dto import Scenario as ScenarioDto
 from .base import BaseFacadeObject, BaseServiceFacade
 from .checkpoints import RunCheckpoints
 from .iamc import RunIamcData
+from .meta import RunMetaFacade
 from .optimization.data import RunOptimizationData
 
 
@@ -42,7 +39,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     LockRequired = RunLockRequired
     NoDefaultVersion = NoDefaultRunVersion
 
-    _meta: "RunMetaFacade"
+    meta: RunMetaFacade
 
     checkpoints: RunCheckpoints
     iamc: RunIamcData
@@ -55,7 +52,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def __init__(self, backend: Backend, dto: RunDto) -> None:
         super().__init__(backend, dto)
         self.iamc = RunIamcData(backend, run=self)
-        self._meta = RunMetaFacade(backend, run=self)
+        self.meta = RunMetaFacade(backend, run=self)
         self.optimization = RunOptimizationData(backend, run=self)
         self.checkpoints = RunCheckpoints(backend, run=self)
 
@@ -80,26 +77,31 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         return self._dto.version
 
     @property
-    def meta(self) -> "RunMetaFacade":
-        "Meta indicator data (`dict`-like)."
-        return self._meta
-
-    @meta.setter
-    def meta(self, meta: dict[str, MetaValueType | np.generic | None]) -> None:
-        self._meta._set(meta)
-
-    @property
     def is_default(self) -> bool:
         return self._dto.is_default
 
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
-        combination."""
+        combination.
+
+        .. code:: python
+
+            run.set_as_default()
+            run.is_default
+            #> True
+        """
         self._service.set_as_default_version(self._dto.id)
         self._refresh()
 
     def unset_as_default(self) -> None:
-        """Unsets this run as the default version."""
+        """Unsets this run as the default version.
+
+        .. code:: python
+
+            run.unset_as_default()
+            run.is_default
+            #> False
+        """
         self._service.unset_as_default_version(self._dto.id)
         self._refresh()
 
@@ -154,6 +156,14 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         the timeout has passed (and then throw the original
         `Run.IsLocked` exception).
 
+        .. code:: python
+
+            with run.transact("My message"):
+                # perform operations that require locking the run
+                run.meta["new-key"] = 1
+
+            #> Checkpoint created and run unlocked
+
         Parameters
         ----------
         messsage : str
@@ -205,7 +215,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
                     "is not supported by this platform: " + str(ons_exc.message)
                 )
 
-            self._meta._refresh()
+            self.meta._refresh()
             self._unlock()
             raise e
 
@@ -215,6 +225,10 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def delete(self) -> None:
         """Delete this run.
         Tries to acquire a lock in the background.
+
+        .. code:: python
+
+            run.delete()
 
         Raises
         ------
@@ -229,6 +243,31 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         scenario: str | None = None,
         keep_solution: bool = True,
     ) -> "Run":
+        """Create a copy of this run.
+
+        .. code:: python
+
+            new_run = run.clone(
+                model="OtherModel",
+                scenario="OtherScenario",
+                keep_solution=False
+            )
+            #> <Run 2 model='OtherModel' scenario='OtherScenario' version=1>
+
+        Parameters
+        ----------
+        model : str | None
+            Optional model name for the cloned run.
+        scenario : str | None
+            Optional scenario name for the cloned run.
+        keep_solution : bool
+            Whether to keep the solution data in the clone.
+
+        Returns
+        -------
+        :class:`ixmp4.core.run.Run`:
+            The cloned run.
+        """
         return Run(
             backend=self._backend,
             dto=self._service.clone(
@@ -242,25 +281,104 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def _get_service(self, backend: Backend) -> RunService:
         return backend.runs
 
+    def __str__(self) -> str:
+        return (
+            f"<Run {self.id} model='{self.model.name}' "
+            f"scenario='{self.scenario.name}' version='{self.version}'>"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class RunServiceFacade(BaseServiceFacade[RunService]):
+    """Used to manipulate runs on a platform."""
+
     def _get_service(self, backend: Backend) -> RunService:
         return backend.runs
 
     def create(self, model: str, scenario: str) -> Run:
+        """Creates a run with an incremented version number or version=1 if no versions
+        exist. Will automatically create the models and scenarios if they don't exist
+        yet.
+
+        .. code:: python
+
+            run = platform.runs.create("Model", "Scenario")
+            #> <Run 1 model='Model' scenario='Scenario' version=1>
+
+        Parameters
+        ----------
+        model_name : str
+            The name of a model.
+        scenario_name : str
+            The name of a scenario.
+
+        Returns
+        -------
+        :class:`ixmp4.core.run.Run`:
+            The created run.
+        """
+
         return Run(self._backend, self._service.create(model, scenario))
 
-    def delete(self, x: Run | int) -> None:
-        if isinstance(x, Run):
-            id = x.id
-        elif isinstance(x, int):
-            id = x
+    def delete(self, ref: Run | int) -> None:
+        """Deletes a run and **all associated iamc, optimization and meta data**.
+
+        .. code:: python
+
+            platform.runs.delete(1)
+
+        Parameters
+        ----------
+        ref : :class:`ixmp4.core.run.Run` | int
+            Run object or id.
+
+        Raises
+        ------
+        :class:`RunNotFound`:
+            If the ref does not exist.
+        """
+
+        if isinstance(ref, Run):
+            id = ref.id
+        elif isinstance(ref, int):
+            id = ref
         else:
             raise TypeError("Invalid argument: Must be `Run` or `int`.")
 
         self._service.delete_by_id(id)
 
     def get(self, model: str, scenario: str, version: int | None = None) -> Run:
+        """Retrieves a run.
+
+        .. code:: python
+
+            default_run = platform.runs.get("Model", "Scenario")
+            specific_run = platform.runs.get("Model", "Scenario", version=2)
+
+        Parameters
+        ----------
+        model_name : str
+            The name of a model.
+        scenario_name : str
+            The name of a scenario.
+        version : int | None
+            The version number of a run or ``None``
+            to get the default version.
+
+        Raises
+        ------
+        :class:`RunNotFound`:
+            If the run with `model_name`, `scenario_name` and
+            optional `version` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.core.run.Run`:
+            The retrieved run.
+        """
+
         dto = (
             self._service.get_default_version(model, scenario)
             if version is None
@@ -268,82 +386,71 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
         )
         return Run(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[RunFilter]) -> list[Run]:
+    def list(self, **kwargs: Unpack[RunFilter]) -> List[Run]:
+        r"""Lists runs by specified criteria.
+
+        .. code:: python
+
+            platform.runs.list()
+            #> [<Run 1 model='Model' scenario='Scenario' version=1>]
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Any filter parameters as specified in
+            `RunFilter`.
+
+        Returns
+        -------
+        list[:class:`ixmp4.core.run.Run`]:
+            List of runs.
+        """
+
         return [Run(self._backend, dto) for dto in self._service.list(**kwargs)]
 
     def tabulate(
-        self, audit_info: bool = False, **kwargs: Unpack[RunFilter]
+        self,
+        include_audit_info: bool = False,
+        audit_info: bool | None = None,
+        **kwargs: Unpack[RunFilter],
     ) -> pd.DataFrame:
-        runs = self._service.tabulate(**kwargs)
-        columns = ["model", "scenario", "version", "is_default"]
-        if audit_info:
-            columns += ["updated_at", "updated_by", "created_at", "created_by", "id"]
-        return runs[columns]
+        r"""Tabulate runs by specified criteria.
 
+        .. code:: python
 
-class RunMetaFacade(
-    BaseServiceFacade[RunMetaEntryService], UserDict[str, MetaValueType | None]
-):
-    run: Run
+            platform.runs.tabulate()
+            #>    id  model  scenario  version  is_default
+            # 0   1   Model  Scenario  1        True
 
-    def _get_service(self, backend: Backend) -> RunMetaEntryService:
-        return backend.meta
+        Parameters
+        ----------
+        include_audit_info: bool
+            Whether or not to include audit info columns in the data frame.
+            Default: False
+        \*\*kwargs: any
+            Any filter parameters as specified in
+            `RunFilter`.
 
-    def __init__(self, backend: Backend, run: Run) -> None:
-        super().__init__(backend)
-        self.run = run
-        self._refresh()
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - id
+                - model
+                - scenario
+                - model__id
+                - scenario__id
+                - version
+                - lock_transaction
+                - is_default
+            and if ``include_audit_info`` is ``True``:
+                - created_by
+                - created_at
+                - updated_by
+                - updated_at
 
-    def _refresh(self) -> None:
-        self.df, self.data = self._get()
+        """
+        if audit_info is not None:
+            include_audit_info = audit_info
 
-    def _get(self) -> tuple[pd.DataFrame, dict[str, MetaValueType | None]]:
-        df = self._service.tabulate(run__id=self.run.id, run={"default_only": False})
-        if df.empty:
-            return df, {}
-        return df, dict(zip(df["key"], df["value"]))
-
-    def _set(self, meta: dict[str, MetaValueType | np.generic | None]) -> None:
-        self.run.require_lock()
-
-        df = pd.DataFrame({"key": self.data.keys()})
-        df["run__id"] = self.run.id
-        self._service.bulk_delete(df)
-        df = pd.DataFrame(
-            {"key": meta.keys(), "value": [numpy_to_pytype(v) for v in meta.values()]}
-        )
-        df.dropna(axis=0, inplace=True)
-        df["run__id"] = self.run.id
-        self._service.bulk_upsert(df)
-        self.df, self.data = self._get()
-
-    def __setitem__(self, key: str, value: MetaValueType | np.generic | None) -> None:
-        self.run.require_lock()
-
-        try:
-            del self[key]
-        except KeyError:
-            pass
-
-        py_value = numpy_to_pytype(value)
-        if py_value is not None:
-            self._service.create(self.run.id, key, py_value)
-        self.df, self.data = self._get()
-
-    def __delitem__(self, key: str) -> None:
-        self.run.require_lock()
-        id = dict(zip(self.df["key"], self.df["id"]))[key]
-        self._service.delete_by_id(id)
-        self.df, self.data = self._get()
-
-
-def numpy_to_pytype(
-    value: MetaValueType | np.generic | None,
-) -> MetaValueType | None:
-    """Cast numpy-types to basic Python types"""
-    if value is np.nan:  # np.nan is cast to 'float', not None
-        return None
-    elif isinstance(value, np.generic):
-        return cast(MetaValueType, value.item())
-    else:
-        return value
+        return self._service.tabulate(include_audit_info=include_audit_info, **kwargs)

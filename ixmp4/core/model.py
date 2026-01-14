@@ -1,4 +1,5 @@
 from datetime import datetime
+from typing import List
 
 import pandas as pd
 from typing_extensions import Unpack
@@ -68,6 +69,9 @@ class Model(BaseFacadeObject[ModelService, ModelDto]):
     def __str__(self) -> str:
         return f"<Model {self.id} name='{self.name}'>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelService]):
     def _get_service(self, backend: Backend) -> ModelService:
@@ -84,24 +88,130 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
         else:
             raise ValueError(f"Invalid reference to model: {ref}")
 
-    def create(
-        self,
-        name: str,
-    ) -> Model:
+    def create(self, name: str) -> Model:
+        """Creates a model.
+
+        .. code:: python
+
+            platform.models.create("Model")
+            #> <Model 1 name='Model'>
+
+        Parameters
+        ----------
+        name : str
+            The name of the model.
+
+        Raises
+        ------
+        :class:`ModelNotUnique`:
+            If the model with `name` is not unique.
+
+
+        Returns
+        -------
+        :class:`ixmp4.core.model.Model`:
+            The created model.
+        """
+
         dto = self._service.create(name)
         return Model(self._backend, dto)
 
     def delete(self, ref: Model | int | str) -> None:
+        """Deletes a model.
+
+        .. code:: python
+
+            platform.models.delete("Model")
+
+        Parameters
+        ----------
+        ref : :class:`ixmp4.core.model.Model` | int | str
+            Model object, model id or model name.
+
+        Raises
+        ------
+        :class:`ModelNotFound`:
+            If no model matching ``ref`` exists.
+        :class:`ModelDeletionPrevented`:
+            If the model matching ``ref`` is used in the database,
+            preventing it's deletion.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        """
+
         id = self._get_item_id(ref)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Model:
+        """Retrieves a model by its name.
+
+        .. code:: python
+
+            platform.models.get_by_name("Model")
+            #> <Model 1 name='Model'>
+
+        Parameters
+        ----------
+        name : str
+            The unique name of the model.
+
+        Raises
+        ------
+        :class:`ModelNotFound`:
+            If the model with `name` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.core.model.Model`:
+            The retrieved model.
+        """
+
         dto = self._service.get_by_name(name)
         return Model(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[ModelFilter]) -> list[Model]:
+    def list(self, **kwargs: Unpack[ModelFilter]) -> List[Model]:
+        r"""Lists models by specified criteria.
+
+        .. code:: python
+
+            platform.models.list()
+            #> [<Model 1 name='Model'>]
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `ModelFilter`.
+
+        Returns
+        -------
+        list[:class:`ixmp4.core.model.Model`]:
+            List of models.
+        """
+
         models = self._service.list(**kwargs)
         return [Model(self._backend, dto) for dto in models]
 
     def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
+        r"""Tabulates models by specified criteria.
+
+        .. code:: python
+
+            platform.models.tabulate()
+            #>     name  id
+            # 0  Model   1
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in `ModelFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - id
+                - name
+        """
+
         return self._service.tabulate(**kwargs)

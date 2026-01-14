@@ -1,13 +1,13 @@
 """ """
 
 from ixmp4.backend import Backend
+from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.conf.settings import Settings
-from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.transport import DirectTransport, HttpxTransport
 
 from .iamc import PlatformIamcData
-from .meta import RunMetaServiceFacade
+from .meta import PlatformRunMetaFacade
 from .model import ModelServiceFacade
 from .region import RegionServiceFacade
 from .run import RunServiceFacade
@@ -17,25 +17,118 @@ from .unit import UnitServiceFacade
 
 class Platform(object):
     """A modeling platform instance as a connection to a data backend.
-    Enables the manipulation of data via the `Facade` instances."""
+    Enables the manipulation of data via the ``Facade`` instances.
+
+    To instantiate a new platform, provide a name which will be
+    used to first search the local 'platforms.toml' file and
+    then the ECE Manager API.
+
+    .. code:: python
+
+        import ixmp4
+
+        platform = ixmp4.Platform("<name>")
+
+
+    You may override the settings the platform uses ...
+
+    .. code:: python
+
+        import ixmp4
+        from ixmp4.conf.settings import Settings
+
+        platform = ixmp4.Platform("<name>", settings=Settings(manager_url="https://.../"))
+
+    ...or provide a :class:`ixmp4.backend.Backend` class directly.
+
+    .. code:: python
+
+        import ixmp4
+        from ixmp4.backend import Backend
+
+        platform = ixmp4.Platform(_backend=Backend(...))
+
+
+    Once created, the platform's ``Facade`` attributes
+    can be used to manipulate data:
+
+    .. code:: python
+
+        unit = platform.units.create("siriometer")
+        print(unit.name)
+
+        run = platform.runs.create("Model", "Scenario")
+
+    .. list-table::
+        :header-rows: 1
+
+        * - Attribute
+          - Service Facade Class
+          - Object Facade Class
+
+        * - :py:attr:`~runs`
+          - :class:`~ixmp4.core.run.RunServiceFacade`
+          - :class:`~ixmp4.core.run.Run`
+
+        * - :py:attr:`~meta`
+          - :class:`~ixmp4.core.meta.PlatformRunMetaFacade`
+          - :class:`~ixmp4.core.meta.RunMetaFacade`
+
+        * - :py:attr:`~iamc`
+          - :class:`~ixmp4.core.iamc.data.PlatformIamcData`
+          - :class:`~ixmp4.core.iamc.data.RunIamcData`
+
+        * - :py:attr:`~models`
+          - :class:`~ixmp4.core.run.ModelServiceFacade`
+          - :class:`~ixmp4.core.run.Model`
+
+        * - :py:attr:`~scenarios`
+          - :class:`~ixmp4.core.scenario.ScenarioServiceFacade`
+          - :class:`~ixmp4.core.scenario.Scenario`
+
+        * - :py:attr:`~regions`
+          - :class:`~ixmp4.core.region.RegionServiceFacade`
+          - :class:`~ixmp4.core.region.Region`
+
+        * - :py:attr:`~units`
+          - :class:`~ixmp4.core.unit.UnitServiceFacade`
+          - :class:`~ixmp4.core.unit.Unit`
+
+    """
 
     NotFound = PlatformNotFound
-    NotUnique = PlatformNotFound
+    NotUnique = PlatformNotUnique
 
     runs: RunServiceFacade
+    """Facade instance to manage :class:`ixmp4.core.run.Run` instances
+    for a platform."""
+
+    meta: PlatformRunMetaFacade
+    """Facade instance to query run meta indicators
+    globally for a platform."""
+
     iamc: PlatformIamcData
+    """Facade instance to query IAMC data globally for a platform."""
+
     models: ModelServiceFacade
-    regions: RegionServiceFacade
+    """Facade instance to manage :class:`ixmp4.core.model.Model` instances
+    for a platform."""
+
     scenarios: ScenarioServiceFacade
+    """Facade instance to manage :class:`ixmp4.core.scenario.Scenario` instances
+    for a platform."""
+
+    regions: RegionServiceFacade
+    """Facade instance to manage :class:`ixmp4.core.region.Region` instances
+    for a platform."""
+
     units: UnitServiceFacade
-    meta: RunMetaServiceFacade
+    """Facade instance to manage :class:`ixmp4.core.unit.Unit` instances
+    for a platform."""
 
     backend: Backend
     settings: Settings
     connection_info: PlatformConnectionInfo
-
-    """Provides a unified data interface for the platform.
-    Using it directly is not recommended."""
 
     def __init__(
         self,
@@ -59,7 +152,7 @@ class Platform(object):
         self.regions = RegionServiceFacade(self.backend)
         self.scenarios = ScenarioServiceFacade(self.backend)
         self.units = UnitServiceFacade(self.backend)
-        self.meta = RunMetaServiceFacade(self.backend)
+        self.meta = PlatformRunMetaFacade(self.backend)
 
     def init_backend(self, name: str | None) -> Backend:
         if name is None:
