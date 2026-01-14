@@ -95,8 +95,8 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
 
         .. code:: python
 
-            platform.units.create("siriometer")
-            #> <Unit 1 name='siriometer'>
+            platform.units.create("MtCO2/yr")
+            #> <Unit 1 name='MtCO2/yr'>
 
         Parameters
         ----------
@@ -129,7 +129,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
 
         .. code:: python
 
-            platform.units.delete("siriometer")
+            platform.units.delete("MtCO2/yr")
 
         Parameters
         ----------
@@ -155,8 +155,8 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
 
         .. code:: python
 
-            platform.units.get_by_name("siriometer")
-            #> <Unit 1 name='siriometer'>
+            platform.units.get_by_name("MtCO2/yr")
+            #> <Unit 1 name='MtCO2/yr'>
 
         Parameters
         ----------
@@ -183,7 +183,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
         .. code:: python
 
             platform.units.list()
-            #> [<Unit 1 name='siriometer'>]
+            #> [<Unit 1 name='MtCO2/yr'>]
 
         Parameters
         ----------
@@ -206,7 +206,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
 
             platform.units.tabulate()
             #>     name      id
-            # 0  siriometer   1
+            # 0  MtCO2/yr   1
 
         Parameters
         ----------

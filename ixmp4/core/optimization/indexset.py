@@ -26,18 +26,22 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """IndexSet name."""
         return self._dto.name
 
     @property
     def run_id(self) -> int:
+        """Run id."""
         return self._dto.run__id
 
     @property
     def data(self) -> list[float] | list[int] | list[str]:
+        """Data contained in the index set."""
         return self._dto.data
 
     @property
@@ -100,10 +104,15 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
     def __str__(self) -> str:
         return f"<IndexSet {self.id} name={self.name}>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class IndexSetServiceFacade(
     BaseOptimizationServiceFacade[IndexSet | int | str, IndexSetDto, IndexSetService]
 ):
+    """Used to manage index sets for a specific run."""
+
     def _get_service(self, backend: Backend) -> IndexSetService:
         return backend.optimization.indexsets
 
@@ -121,23 +130,63 @@ class IndexSetServiceFacade(
         return id
 
     def create(self, name: str) -> IndexSet:
+        """Create a new index set for this run.
+
+        .. code:: python
+
+            run.optimization.indexsets.create("Years")
+            #> <IndexSet 1 name='Years'>
+
+        """
         self._run.require_lock()
         dto = self._service.create(self._run.id, name)
         return IndexSet(self._backend, dto, run=self._run)
 
     def delete(self, x: IndexSet | int | str) -> None:
+        """Delete an index set for the run.
+
+        .. code:: python
+
+            run.optimization.indexsets.delete("Years")
+
+        """
         self._run.require_lock()
         id = self._get_item_id(x)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> IndexSet:
+        """Retrieve an index set by name for this run.
+
+        .. code:: python
+
+            run.optimization.indexsets.get_by_name("Years")
+            #> <IndexSet 1 name='Years'>
+
+        """
         dto = self._service.get(self._run.id, name)
         return IndexSet(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[IndexSetFilter]) -> list[IndexSet]:
+        r"""List index sets for this run.
+
+        .. code:: python
+
+            run.optimization.indexsets.list()
+            #> [<IndexSet 1 name='Years'>]
+
+        """
         indexsets = self._service.list(**kwargs)
         return [IndexSet(self._backend, dto, run=self._run) for dto in indexsets]
 
     def tabulate(self, **kwargs: Unpack[IndexSetFilter]) -> pd.DataFrame:
+        r"""Tabulate index sets for this run.
+
+        .. code:: python
+
+            run.optimization.indexsets.tabulate()
+            #>    name    id
+            # 0  Years   1
+
+        """
         kwargs["run__id"] = self._run.id
         return self._service.tabulate(**kwargs).drop(columns=["run__id"])

@@ -16,7 +16,8 @@ if TYPE_CHECKING:
 
 class RunOptimizationData(BaseBackendFacade):
     """An optimization data instance, which provides access to optimization data such as
-    IndexSet, Table, Variable, etc."""
+    IndexSet, Table, Variable, etc.
+    """
 
     equations: EquationServiceFacade
     indexsets: IndexSetServiceFacade
@@ -36,13 +37,28 @@ class RunOptimizationData(BaseBackendFacade):
 
     # TODO Improve performance by writing dedicated queries
     def remove_solution(self) -> None:
+        """Remove solution data from all equations and variables on this run.
+
+        .. code:: python
+
+            run.optimization.remove_solution()
+            #> None (solution data removed)
+
+        """
         for equation in self.equations.list():
             equation.remove_data()
         for variable in self.variables.list():
             variable.remove_data()
 
     def has_solution(self) -> bool:
-        """Check whether this Run contains a solution."""
+        """Check whether this Run contains a solution.
+
+        .. code:: python
+
+            run.optimization.has_solution()
+            #> True
+
+        """
         for variable in self.variables.list():
             if variable.levels:
                 return True

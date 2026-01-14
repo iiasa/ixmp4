@@ -35,14 +35,17 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """Scalar name."""
         return self._dto.name
 
     @property
     def run_id(self) -> int:
+        """Run id."""
         return self._dto.run__id
 
     @property
@@ -103,7 +106,7 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     def update(
         self, value: int | float | None = None, unit_name: str | None = None
     ) -> None:
-        """Adds data to the Scalar."""
+        """Updates data on the Scalar."""
         self._run.require_lock()
         self._service.update_by_id(self._dto.id, value=value, unit_name=unit_name)
         self._refresh()
@@ -118,10 +121,15 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     def __str__(self) -> str:
         return f"<Scalar {self.id} name={self.name}>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class ScalarServiceFacade(
     BaseOptimizationServiceFacade[Scalar | int | str, ScalarDto, ScalarService]
 ):
+    """Used to manage scalars for a specific run."""
+
     units: UnitService
 
     def __init__(self, backend: Backend, run: "Run"):
@@ -145,6 +153,14 @@ class ScalarServiceFacade(
         return id
 
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
+        """Create a scalar for the run.
+
+        .. code:: python
+
+            run.optimization.scalars.create("discount", 0.05, unit="")
+            #> <Scalar 1 name='discount'>
+
+        """
         self._run.require_lock()
         if isinstance(unit, Unit):
             unit_name = unit.name
@@ -168,18 +184,50 @@ class ScalarServiceFacade(
         return Scalar(self._backend, dto, run=self._run)
 
     def delete(self, x: Scalar | int | str) -> None:
+        """Delete a scalar for the run.
+
+        .. code:: python
+
+            run.optimization.scalars.delete("discount")
+
+        """
         self._run.require_lock()
         id = self._get_item_id(x)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Scalar:
+        """Retrieve a scalar by name for this run.
+
+        .. code:: python
+
+            run.optimization.scalars.get_by_name("discount")
+            #> <Scalar 1 name='discount'>
+
+        """
         dto = self._service.get(self._run.id, name)
         return Scalar(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[ScalarFilter]) -> list[Scalar]:
+        r"""List scalars for this run.
+
+        .. code:: python
+
+            run.optimization.scalars.list()
+            #> [<Scalar 1 name='discount'>]
+
+        """
         scalars = self._service.list(**kwargs)
         return [Scalar(self._backend, dto, run=self._run) for dto in scalars]
 
     def tabulate(self, **kwargs: Unpack[ScalarFilter]) -> pd.DataFrame:
+        r"""Tabulate scalars for this run.
+
+        .. code:: python
+
+            run.optimization.scalars.tabulate()
+            #>    name    value  unit
+            # 0  discount 0.05   ""
+
+        """
         kwargs["run__id"] = self._run.id
         return self._service.tabulate(**kwargs).drop(columns=["run__id"])

@@ -27,34 +27,42 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """Parameter name."""
         return self._dto.name
 
     @property
     def run_id(self) -> int:
+        """Run id."""
         return self._dto.run__id
 
     @property
     def data(self) -> dict[str, list[float] | list[int] | list[str]]:
+        """Raw data dictionary for this parameter."""
         return self._dto.data
 
     @property
     def values(self) -> list[float]:
+        """List of numeric values for this parameter."""
         return cast(list[float], self._dto.data.get("values", []))
 
     @property
     def units(self) -> list[str]:
+        """List of units associated with the parameter values."""
         return cast(list[str], self._dto.data.get("units", []))
 
     @property
     def indexset_names(self) -> list[str] | None:
+        """Names of index sets constraining this parameter."""
         return self._dto.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:
+        """Names of columns for this parameter."""
         return self._dto.column_names
 
     @property
@@ -113,10 +121,15 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
     def __str__(self) -> str:
         return f"<Parameter {self.id} name={self.name}>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class ParameterServiceFacade(
     BaseOptimizationServiceFacade[Parameter | int | str, ParameterDto, ParameterService]
 ):
+    """Used to manage parameters for a specific run."""
+
     def _get_service(self, backend: Backend) -> ParameterService:
         return backend.optimization.parameters
 
@@ -139,6 +152,14 @@ class ParameterServiceFacade(
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Parameter:
+        """Create a new parameter for the run.
+
+        .. code:: python
+
+            run.optimization.parameters.create("Cost", ["Region", "Year"])
+            #> <Parameter 1 name='Cost'>
+
+        """
         self._run.require_lock()
         dto = self._service.create(
             self._run.id, name, constrained_to_indexsets, column_names
@@ -146,18 +167,50 @@ class ParameterServiceFacade(
         return Parameter(self._backend, dto, run=self._run)
 
     def delete(self, x: Parameter | int | str) -> None:
+        """Delete a parameter from the run.
+
+        .. code:: python
+
+            run.optimization.parameters.delete("Cost")
+
+        """
         self._run.require_lock()
         id = self._get_item_id(x)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Parameter:
+        """Retrieve a parameter by name for this run.
+
+        .. code:: python
+
+            run.optimization.parameters.get_by_name("Cost")
+            #> <Parameter 1 name='Cost'>
+
+        """
         dto = self._service.get(self._run.id, name)
         return Parameter(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[ParameterFilter]) -> list[Parameter]:
+        r"""List parameters for this run.
+
+        .. code:: python
+
+            run.optimization.parameters.list()
+            #> [<Parameter 1 name='Cost'>]
+
+        """
         parameters = self._service.list(**kwargs)
         return [Parameter(self._backend, dto, run=self._run) for dto in parameters]
 
     def tabulate(self, **kwargs: Unpack[ParameterFilter]) -> pd.DataFrame:
+        r"""Tabulate parameters for this run.
+
+        .. code:: python
+
+            run.optimization.parameters.tabulate()
+            #>    name    id
+            # 0  Cost    1
+
+        """
         kwargs["run__id"] = self._run.id
         return self._service.tabulate(**kwargs).drop(columns=["run__id"])

@@ -27,34 +27,42 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """Equation name."""
         return self._dto.name
 
     @property
     def run_id(self) -> int:
+        """Run id."""
         return self._dto.run__id
 
     @property
     def data(self) -> dict[str, list[float] | list[int] | list[str]]:
+        """Raw data dictionary for this equation."""
         return self._dto.data
 
     @property
     def levels(self) -> list[float]:
+        """Level values associated with this equation."""
         return cast(list[float], self._dto.data.get("levels", []))
 
     @property
     def marginals(self) -> list[float]:
+        """Marginal values for this equation."""
         return cast(list[float], self._dto.data.get("marginals", []))
 
     @property
     def indexset_names(self) -> list[str] | None:
+        """Names of index sets constraining this equation."""
         return self._dto.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:
+        """Names of columns for this equation."""
         return self._dto.column_names
 
     @property
@@ -117,6 +125,8 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
 class EquationServiceFacade(
     BaseOptimizationServiceFacade[Equation | int | str, EquationDto, EquationService]
 ):
+    """Used to manage equations for a specific run."""
+
     def _get_service(self, backend: Backend) -> EquationService:
         return backend.optimization.equations
 
@@ -139,6 +149,14 @@ class EquationServiceFacade(
         constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Equation:
+        """Create a new equation for this run.
+
+        .. code:: python
+
+            run.optimization.equations.create("Balance")
+            #> <Equation 1 name='Balance'>
+
+        """
         self._run.require_lock()
         dto = self._service.create(
             self._run.id,
@@ -149,18 +167,50 @@ class EquationServiceFacade(
         return Equation(self._backend, dto, run=self._run)
 
     def delete(self, x: Equation | int | str) -> None:
+        """Delete an equation from the run.
+
+        .. code:: python
+
+            run.optimization.equations.delete("Balance")
+
+        """
         self._run.require_lock()
         id = self._get_item_id(x)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Equation:
+        """Retrieve an equation by name for this run.
+
+        .. code:: python
+
+            run.optimization.equations.get_by_name("Balance")
+            #> <Equation 1 name='Balance'>
+
+        """
         dto = self._service.get(self._run.id, name)
         return Equation(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[EquationFilter]) -> list[Equation]:
+        r"""List equations for this run.
+
+        .. code:: python
+
+            run.optimization.equations.list()
+            #> [<Equation 1 name='Balance'>]
+
+        """
         equations = self._service.list(**kwargs)
         return [Equation(self._backend, dto, run=self._run) for dto in equations]
 
     def tabulate(self, **kwargs: Unpack[EquationFilter]) -> pd.DataFrame:
+        r"""Tabulate equations for this run.
+
+        .. code:: python
+
+            run.optimization.equations.tabulate()
+            #>    name    id
+            # 0  Balance 1
+
+        """
         kwargs["run__id"] = self._run.id
         return self._service.tabulate(**kwargs).drop(columns=["run__id"])

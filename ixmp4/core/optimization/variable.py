@@ -27,34 +27,42 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """Variable name."""
         return self._dto.name
 
     @property
     def run_id(self) -> int:
+        """Run id."""
         return self._dto.run__id
 
     @property
     def data(self) -> dict[str, list[float] | list[int] | list[str]]:
+        """Raw data dictionary for this variable."""
         return self._dto.data
 
     @property
     def levels(self) -> list[float]:
+        """Level values associated with this variable."""
         return cast(list[float], self._dto.data.get("levels", []))
 
     @property
     def marginals(self) -> list[float]:
+        """Marginal values for this variable."""
         return cast(list[float], self._dto.data.get("marginals", []))
 
     @property
     def indexset_names(self) -> list[str] | None:
+        """Names of index sets constraining this variable."""
         return self._dto.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:
+        """Names of columns for this variable."""
         return self._dto.column_names
 
     @property
@@ -88,7 +96,14 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
             return None
 
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to the Variable."""
+        """Adds data to the Variable.
+
+        .. code:: python
+
+            var = run.optimization.variables.get_by_name("Production")
+            var.add_data({"levels": [100.0, 110.0]})
+
+        """
         self._run.require_lock()
         self._service.add_data(id=self._dto.id, data=data)
         self._refresh()
@@ -98,12 +113,25 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
 
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
+
+        .. code:: python
+
+            var = run.optimization.variables.get_by_name("Production")
+            var.remove_data({"levels": [100.0]})
+
         """
         self._run.require_lock()
         self._service.remove_data(id=self._dto.id, data=data)
         self._refresh()
 
     def delete(self) -> None:
+        """Delete this variable from the run.
+
+        .. code:: python
+
+            run.optimization.variables.delete("Production")
+
+        """
         self._run.require_lock()
         self._service.delete_by_id(self._dto.id)
 
@@ -113,10 +141,15 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
     def __str__(self) -> str:
         return f"<Variable {self.id} name={self.name}>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class VariableServiceFacade(
     BaseOptimizationServiceFacade[Variable | int | str, VariableDto, VariableService]
 ):
+    """Used to manage optimization variables for a specific run."""
+
     def _get_service(self, backend: Backend) -> VariableService:
         return backend.optimization.variables
 
@@ -139,6 +172,14 @@ class VariableServiceFacade(
         constrained_to_indexsets: list[str] | None = None,
         column_names: list[str] | None = None,
     ) -> Variable:
+        """Create a new optimization variable for the run.
+
+        .. code:: python
+
+            run.optimization.variables.create("Production")
+            #> <Variable 1 name='Production'>
+
+        """
         self._run.require_lock()
         dto = self._service.create(
             self._run.id, name, constrained_to_indexsets, column_names
@@ -146,18 +187,50 @@ class VariableServiceFacade(
         return Variable(self._backend, dto, run=self._run)
 
     def delete(self, x: Variable | int | str) -> None:
+        """Delete a variable from the run.
+
+        .. code:: python
+
+            run.optimization.variables.delete("Production")
+
+        """
         self._run.require_lock()
         id = self._get_item_id(x)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Variable:
+        """Get a variable by name for this run.
+
+        .. code:: python
+
+            run.optimization.variables.get_by_name("Production")
+            #> <Variable 1 name='Production'>
+
+        """
         dto = self._service.get(self._run.id, name)
         return Variable(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[VariableFilter]) -> list[Variable]:
+        r"""List variables defined for this run.
+
+        .. code:: python
+
+            run.optimization.variables.list()
+            #> [<Variable 1 name='Production'>]
+
+        """
         variables = self._service.list(**kwargs)
         return [Variable(self._backend, dto, run=self._run) for dto in variables]
 
     def tabulate(self, **kwargs: Unpack[VariableFilter]) -> pd.DataFrame:
+        r"""Tabulate variables for this run.
+
+        .. code:: python
+
+            run.optimization.variables.tabulate()
+            #>    name    id
+            # 0  Production 1
+
+        """
         kwargs["run__id"] = self._run.id
         return self._service.tabulate(**kwargs).drop(columns=["run__id"])

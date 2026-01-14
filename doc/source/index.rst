@@ -54,6 +54,7 @@ Core API
    ixmp4.core/meta
 
    ixmp4.core/iamc
+   ixmp4.core/optimization
 
    ixmp4.core/exceptions
 

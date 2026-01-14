@@ -27,26 +27,32 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
 
     @property
     def id(self) -> int:
+        """Unique id."""
         return self._dto.id
 
     @property
     def name(self) -> str:
+        """Table name."""
         return self._dto.name
 
     @property
     def run_id(self) -> int:
+        """Run id."""
         return self._dto.run__id
 
     @property
     def data(self) -> dict[str, list[float] | list[int] | list[str]]:
+        """Raw data dictionary for this table."""
         return self._dto.data
 
     @property
     def indexset_names(self) -> list[str] | None:
+        """Names of index sets constraining this table."""
         return self._dto.indexset_names
 
     @property
     def column_names(self) -> list[str] | None:
+        """Names of columns for this table."""
         return self._dto.column_names
 
     @property
@@ -105,10 +111,15 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
     def __str__(self) -> str:
         return f"<Table {self.id} name={self.name}>"
 
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class TableServiceFacade(
     BaseOptimizationServiceFacade[Table | int | str, TableDto, TableService]
 ):
+    """Used to manage tables for a specific run."""
+
     def _get_service(self, backend: Backend) -> TableService:
         return backend.optimization.tables
 
@@ -131,6 +142,14 @@ class TableServiceFacade(
         constrained_to_indexsets: list[str],
         column_names: list[str] | None = None,
     ) -> Table:
+        """Create a new table for this run.
+
+        .. code:: python
+
+            run.optimization.tables.create("CostTable", ["region", "year"])
+            #> <Table 1 name='CostTable'>
+
+        """
         self._run.require_lock()
         dto = self._service.create(
             self._run.id, name, constrained_to_indexsets, column_names
@@ -138,18 +157,50 @@ class TableServiceFacade(
         return Table(self._backend, dto, run=self._run)
 
     def delete(self, x: Table | int | str) -> None:
+        """Delete a table for the run.
+
+        .. code:: python
+
+            run.optimization.tables.delete("CostTable")
+
+        """
         self._run.require_lock()
         id = self._get_item_id(x)
         self._service.delete_by_id(id)
 
     def get_by_name(self, name: str) -> Table:
+        """Retrieve a table by name for this run.
+
+        .. code:: python
+
+            run.optimization.tables.get_by_name("CostTable")
+            #> <Table 1 name='CostTable'>
+
+        """
         dto = self._service.get(self._run.id, name)
         return Table(self._backend, dto, run=self._run)
 
     def list(self, **kwargs: Unpack[TableFilter]) -> list[Table]:
+        r"""List tables for this run.
+
+        .. code:: python
+
+            run.optimization.tables.list()
+            #> [<Table 1 name='CostTable'>]
+
+        """
         tables = self._service.list(**kwargs)
         return [Table(self._backend, dto, run=self._run) for dto in tables]
 
     def tabulate(self, **kwargs: Unpack[TableFilter]) -> pd.DataFrame:
+        r"""Tabulate tables for this run.
+
+        .. code:: python
+
+            run.optimization.tables.tabulate()
+            #>    name    id
+            # 0  CostTable 1
+
+        """
         kwargs["run__id"] = self._run.id
         return self._service.tabulate(**kwargs).drop(columns=["run__id"])
