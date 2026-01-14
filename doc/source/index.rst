@@ -21,25 +21,16 @@ The **ixmp4** package is a data warehouse for high-powered scenario analysis
 in the domain of integrated assessment of climate change and energy systems modeling.
 
 
-Getting started
----------------
-
 .. toctree::
    :caption: Getting started
-   :hidden:
-   :maxdepth: 2
+   :maxdepth: 1
 
    installation
    setup
    data-model
 
-
-Core API
---------
-
 .. toctree::
    :caption: Core API
-   :hidden:
    :maxdepth: 1
 
    configuration
@@ -58,12 +49,8 @@ Core API
    core/optimization
    core/exceptions
 
-Development
------------
-
 .. toctree::
    :caption: Development
-   :hidden:
    :maxdepth: 1
    
    architecture
@@ -73,49 +60,12 @@ Development
    tests
    docker
 
-Reference
----------
-
 .. toctree::
    :caption: Reference
-   :hidden:
    :maxdepth: 1
 
    references
    license
+   funding
 
-
-   
-License
--------
-
-The **ixmp4** package is released under the `MIT License`_.
-
-.. _`MIT License`: https://github.com/iiasa/ixmp4/blob/main/LICENSE
-
-Funding acknowledgement
------------------------
-
-.. figure:: _static/ECEMF-logo.png
-   :align: left
-   :height: 60px
-
-.. figure:: _static/openENTRANCE-logo.png
-   :align: left
-   :height: 80px
-
-.. figure:: _static/ariadne-bmbf-logo.png
-   :align: left
-   :height: 90px
-
-The development of the **ixmp4** package was funded from the EU Horizon 2020 projects
-`openENTRANCE <https://openentrance.eu>`_ and `ECEMF <https://ecemf.eu>`_
-as well as the BMBF Kopernikus project `ARIADNE <https://ariadneprojekt.de>`_ |br|
-(FKZ 03SFK5A by the German Federal Ministry of Education and Research).
-
-.. figure:: _static/EU-logo-300x201.jpg
-   :align: left
-   :width: 80px
-
-This project has received funding from the European Union’s Horizon 2020
-research and innovation programme under grant agreement No. 835896 and 101022622.
+.. include:: funding.rst

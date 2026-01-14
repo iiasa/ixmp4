@@ -8,7 +8,7 @@ custom permission system.
 Almost all operations on a platform require "view", "submit", 
 "edit" or "manage" permissions if authorization is enabled. 
 Additionally, when querying data, a given user may not be 
-able to see the totality of data in the platform. 
+able to see the totality of the data in the platform. 
 
 Authenticating with IIASA Infrastructure
 ----------------------------------------
@@ -23,7 +23,7 @@ the |ece_management_service|.
    <a href="https://manager.ece.iiasa.ac.at/" target="_blank">ECE Management Service</a>
 
 Once active, your account can be used to log in via 
-the ``login`` `console command <cli>`
+the ``login`` console command. 
 
 .. code:: bash
 
@@ -35,7 +35,7 @@ You will be prompted to enter your password.
 
     Your username and password will be saved locally in plain-text for future use!
 
-To list the instances you have access to:
+To list the instances you have access to you can use:
 
 .. code:: bash
 
@@ -49,9 +49,12 @@ using the following code (provided you enjoy the necessary permissions):
     import ixmp4
     platform = ixmp4.Platform("<platform-name>")
 
+.. note::
+    See the CLI section ":ref:`cli-iiasa`" for more information on 
+    available commands.
 
-Local Server Auth
------------------
+Authenticating with a Local Server
+----------------------------------
 
 By default, the ``ixmp4 server start`` command will start an
 ixmp4 server without any authentication mechanisms or checks.
@@ -76,7 +79,7 @@ Or set the ``IXMP4_SERVER__SECRET_HS256`` environment variable:
     IXMP4_SERVER__SECRET_HS256=changeme ixmp4 server start
 
 A client connecting to a server started in this manner has to be
-configured using the :attr:`~ixmp4.conf.settings.ClientSettings.secret_hs256` 
+configured using the :attr:`ixmp4.conf.settings.ClientSettings.secret_hs256` 
 configuration variable to enable unrestricted use:
 
 .. code:: python
