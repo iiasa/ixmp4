@@ -25,6 +25,7 @@ class RunIamcData(BaseBackendFacade):
     """IAMC data linked to a :class:`ixmp4.core.run.Run`.
 
     .. code:: python
+
         import pandas as pd
 
         input_df = pd.read_csv("my_iamc_data.csv")
@@ -101,13 +102,15 @@ class RunIamcData(BaseBackendFacade):
                 - variable
                 - unit
                 - value
+
             Any combination of:
                 - step_year for ANNUAL data points
                 - step_year and step_category for CATEGORICAL data points
                 - step_datetime for DATETIME data points
-            You may optionally supply the type column to
-            specify the types of mixed data points:
+
+            You may optionally supply the type column for mixed data points:
                 - type
+
         type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
             Will be set as the type for all provided data points.
 
@@ -147,13 +150,15 @@ class RunIamcData(BaseBackendFacade):
                 - region
                 - variable
                 - unit
+
             Any combination of:
                 - step_year for ANNUAL data points
                 - step_year and step_category for CATEGORICAL data points
                 - step_datetime for DATETIME data points
-            You may optionally supply the type column to
-            specify the types of mixed data points:
+
+            You may optionally supply the type column for mixed data points:
                 - type
+
         type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
             Will be set as the type for all provided data points.
         """
