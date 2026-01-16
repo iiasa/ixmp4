@@ -24,6 +24,68 @@ default_op_column_key = "operation_type"
 
 
 class PostgresVersionTriggers(object):
+    """
+    Represents a set of triggers on a source table that record changes
+    to a version table.
+
+    .. code:: python
+
+        from sqlalchemy import orm
+        from toolkit import db
+
+        from ixmp4.data import versions
+        from ixmp4.data.base.db import BaseModel
+
+        class Example(BaseModel):
+            # ...
+            name: db.t.String = orm.mapped_column(unique=True)
+
+        class ExampleVersion(versions.BaseVersionModel):
+            # ...
+            name: db.t.String # omit any constraints
+
+        version_triggers = versions.PostgresVersionTriggers(
+            Example.__table__, ExampletVersion.__table__
+        )
+
+    A set of listeners will be attached to the provided tables.
+    On creation (for example via ``BaseModel.metadata.create_all()``)
+    each source table will also emit statements to create the triggers.
+    On deletion (f.e. ``.drop_all()``) the triggers will also be dropped.
+
+    Since these triggers don't support alembic autogeneration, a migration
+    has to be added manually to create or update them.
+
+    .. code:: python
+
+        def upgrade():
+            conn = op.get_bind()
+            dialect_name = conn.dialect.name
+            metadata = sa.MetaData()
+
+            if dialect_name == "postgresql":
+                transaction_table = sa.Table(
+                    "transaction", metadata, autoload_with=conn
+                )
+                version_table = sa.Table(
+                    "example", metadata, autoload_with=conn
+                )
+                data_table = sa.Table(
+                    "example_version", metadata, autoload_with=conn
+                )
+                triggers = PostgresVersionTriggers(
+                    data_table, version_table, transaction_table
+                )
+                triggers.create_entities(conn)
+
+        def downgrade():
+            # ...
+            if dialect_name == "postgresql":
+                # ...
+                triggers.drop_entities(conn)
+
+    """
+
     version_procedure: VersionProcedure
     insert_trigger: InsertTrigger
     update_trigger: UpdateTrigger
@@ -145,15 +207,20 @@ class PostgresVersionTriggers(object):
                 )
 
     def sync_entities(self, con: Session | Connection) -> None:
+        """Recreate all DDL entities for this trigger group on a supplied connection."""
         self.drop_entities(con)
         self.create_entities(con)
 
     def create_entities(self, con: Session | Connection) -> None:
+        """Create all DDL entities for this trigger group on a supplied connection."""
+
         for ent in self.entities:
             ddl = schema.DDL(ent.to_create_sql()).execute_if(dialect="postgresql")  # type: ignore[no-untyped-call]
             con.execute(ddl)
 
     def drop_entities(self, con: Session | Connection) -> None:
+        """Drop all DDL entities for this trigger group on a supplied connection."""
+
         for ent in reversed(self.entities):
             ddl = schema.DDL(ent.to_drop_sql()).execute_if(  # type: ignore[no-untyped-call]
                 dialect="postgresql"

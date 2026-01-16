@@ -46,6 +46,8 @@ in the domain of integrated assessment of climate change and energy systems mode
 
    core/iamc
    core/optimization
+
+   locks-and-versioning
    exceptions
 
 .. toctree::
