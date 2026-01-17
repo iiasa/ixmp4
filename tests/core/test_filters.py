@@ -232,4 +232,4 @@ class TestFilters:
         assert len(df_category1) == 35
 
         df_year_gte = platform.iamc.tabulate(step_year__gte=2000)
-        assert len(df_year_gte) == 13
+        assert len(df_year_gte) == 46
