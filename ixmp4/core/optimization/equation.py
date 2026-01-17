@@ -5,7 +5,7 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.backend import Backend
-from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.core.docs import DocsDescriptor
 from ixmp4.data.optimization.equation.dto import Equation as EquationDto
 from ixmp4.data.optimization.equation.exceptions import (
     EquationDataInvalid,
@@ -24,6 +24,9 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
     NotFound = EquationNotFound
     DeletionPrevented = EquationDeletionPrevented
     DataInvalid = EquationDataInvalid
+
+    docs: DocsDescriptor[EquationService, EquationDto] = DocsDescriptor()
+    """Optimization Equation docs."""
 
     @property
     def id(self) -> int:
@@ -72,28 +75,6 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
     @property
     def created_by(self) -> str | None:
         return self._dto.created_by
-
-    @property
-    def docs(self) -> str | None:
-        try:
-            return self._service.get_docs(self.id).description
-        except DocsNotFound:
-            return None
-
-    @docs.setter
-    def docs(self, description: str | None) -> None:
-        if description is None:
-            self._service.delete_docs(self.id)
-        else:
-            self._service.set_docs(self.id, description)
-
-    @docs.deleter
-    def docs(self) -> None:
-        try:
-            self._service.delete_docs(self.id)
-        # TODO: silently failing
-        except DocsNotFound:
-            return None
 
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
         """Adds data to the Equation."""

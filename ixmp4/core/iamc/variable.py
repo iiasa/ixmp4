@@ -6,7 +6,7 @@ from typing_extensions import Unpack
 
 from ixmp4.backend import Backend
 from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
-from ixmp4.data.docs.repository import DocsNotFound
+from ixmp4.core.docs import DocsDescriptor
 from ixmp4.data.iamc.variable.dto import Variable as VariableDto
 from ixmp4.data.iamc.variable.exceptions import (
     VariableDeletionPrevented,
@@ -21,6 +21,9 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     DeletionPrevented = VariableDeletionPrevented
+
+    docs: DocsDescriptor[VariableService, VariableDto] = DocsDescriptor()
+    """IAMC Variable docs."""
 
     @property
     def id(self) -> int:
@@ -39,28 +42,6 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
     @property
     def created_by(self) -> str | None:
         return self._dto.created_by
-
-    @property
-    def docs(self) -> str | None:
-        try:
-            return self._service.get_docs(self.id).description
-        except DocsNotFound:
-            return None
-
-    @docs.setter
-    def docs(self, description: str | None) -> None:
-        if description is None:
-            self._service.delete_docs(self.id)
-        else:
-            self._service.set_docs(self.id, description)
-
-    @docs.deleter
-    def docs(self) -> None:
-        try:
-            self._service.delete_docs(self.id)
-        # TODO: silently failing
-        except DocsNotFound:
-            return None
 
     def delete(self) -> None:
         """Deletes the variable from the database."""

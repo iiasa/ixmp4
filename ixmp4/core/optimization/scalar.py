@@ -5,8 +5,8 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.backend import Backend
+from ixmp4.core.docs import DocsDescriptor
 from ixmp4.core.unit import Unit
-from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.optimization.scalar.dto import Scalar as ScalarDto
 from ixmp4.data.optimization.scalar.exceptions import (
     ScalarDeletionPrevented,
@@ -28,6 +28,9 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     NotUnique = ScalarNotUnique
     NotFound = ScalarNotFound
     DeletionPrevented = ScalarDeletionPrevented
+
+    docs: DocsDescriptor[ScalarService, ScalarDto] = DocsDescriptor()
+    """Optimization Scalar docs."""
 
     def __init__(self, backend: Backend, dto: ScalarDto, run: "Run"):
         super().__init__(backend, dto, run)
@@ -80,28 +83,6 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     @property
     def created_by(self) -> str | None:
         return self._dto.created_by
-
-    @property
-    def docs(self) -> str | None:
-        try:
-            return self._service.get_docs(self.id).description
-        except DocsNotFound:
-            return None
-
-    @docs.setter
-    def docs(self, description: str | None) -> None:
-        if description is None:
-            self._service.delete_docs(self.id)
-        else:
-            self._service.set_docs(self.id, description)
-
-    @docs.deleter
-    def docs(self) -> None:
-        try:
-            self._service.delete_docs(self.id)
-        # TODO: silently failing
-        except DocsNotFound:
-            return None
 
     def update(
         self, value: int | float | None = None, unit_name: str | None = None
