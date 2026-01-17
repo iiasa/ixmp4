@@ -25,9 +25,9 @@ from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.dto import Scenario as ScenarioDto
 
 from .base import BaseFacadeObject, BaseServiceFacade
-from .checkpoints import RunCheckpoints
+from .checkpoint import RunCheckpoints
 from .iamc import RunIamcData
-from .meta import RunMetaFacade
+from .meta import RunMetaDescriptor
 from .optimization.data import RunOptimizationData
 
 
@@ -42,7 +42,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
           - Facade Class
 
         * - :py:attr:`~.meta`
-          - :class:`~ixmp4.core.meta.RunMetaFacade`
+          - :class:`~ixmp4.core.meta.RunMetaDescriptor`
+            :class:`~ixmp4.core.meta.RunMetaDictFacade`
 
         * - :py:attr:`~.checkpoints`
           - :class:`~ixmp4.core.checkpoints.RunCheckpoints`
@@ -62,7 +63,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     LockRequired = RunLockRequired
     NoDefaultVersion = NoDefaultRunVersion
 
-    meta: RunMetaFacade
+    meta: RunMetaDescriptor = RunMetaDescriptor()
     """Facade instance to query run meta indicators
     for a run."""
 
@@ -83,7 +84,6 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def __init__(self, backend: Backend, dto: RunDto) -> None:
         super().__init__(backend, dto)
         self.iamc = RunIamcData(backend, run=self)
-        self.meta = RunMetaFacade(backend, run=self)
         self.optimization = RunOptimizationData(backend, run=self)
         self.checkpoints = RunCheckpoints(backend, run=self)
 
