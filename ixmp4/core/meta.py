@@ -1,5 +1,5 @@
 from collections import UserDict
-from typing import TYPE_CHECKING, cast
+from typing import TYPE_CHECKING, Any, cast
 
 import numpy as np
 import pandas as pd
@@ -62,32 +62,10 @@ class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
         )
 
 
-class RunMetaFacade(
+class RunMetaDictFacade(
     BaseServiceFacade[RunMetaEntryService], UserDict[str, MetaValueType | None]
 ):
-    """Behaves like a dictionary with the meta indicator data for a specific run.
-
-    To set and read entries:
-
-    .. code:: python
-
-        run.meta = {"key": "value"}
-        run.meta["other key"] = -1.2
-
-        run.meta["key"]
-        #> 'value'
-
-    To delete entries:
-
-    .. code:: python
-
-        del run.meta["other key"]
-        run.meta = {}
-
-        run.meta
-        #> {}
-
-    """
+    """Behaves like a dictionary with the meta indicator data for a specific run."""
 
     run: "Run"
 
@@ -123,6 +101,14 @@ class RunMetaFacade(
         self.df, self.data = self._get()
 
     def __setitem__(self, key: str, value: MetaValueType | np.generic | None) -> None:
+        """
+        .. code:: python
+
+            run.meta["key"] = -1.2
+
+            run.meta["key"]
+            #> 'value'
+        """
         self.run.require_lock()
 
         try:
@@ -136,17 +122,18 @@ class RunMetaFacade(
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
+        """
+        .. code:: python
+
+            del run.meta["key"]
+            run.meta["key"]
+            #> `KeyError`
+
+        """
         self.run.require_lock()
         id = dict(zip(self.df["key"], self.df["id"]))[key]
         self._service.delete_by_id(id)
         self.df, self.data = self._get()
-
-    def __set__(
-        self,
-        obj: object,
-        value: "dict[str, MetaValueType | np.generic | None] | RunMetaFacade",
-    ) -> None:
-        self._set(dict(value))
 
     def __dict__(self) -> dict[str, MetaValueType | None]:
         return dict(self.data)
@@ -162,3 +149,53 @@ def numpy_to_pytype(
         return cast(MetaValueType, value.item())
     else:
         return value
+
+
+class RunMetaDescriptor(object):
+    """Descriptor class for the 'meta' property of a run."""
+
+    def _get_entry_df(self, run: "Run") -> pd.DataFrame:
+        return run._backend.meta.tabulate(
+            run__id=run._dto.id, run={"default_only": False}
+        )
+
+    def _delete_existing(self, run: "Run") -> None:
+        existing_df = self._get_entry_df(run)
+        run._backend.meta.bulk_delete(existing_df[["run__id", "key"]])
+
+    def __set__(
+        self, obj: "Run", value: dict[str, MetaValueType | np.generic | None]
+    ) -> None:
+        """
+        Sets meta indicators for a run consistent with normal property syntax.
+
+        .. code:: python
+
+            run.meta = {"key": "value"}
+
+        """
+        obj.require_lock()
+        self._delete_existing(obj)
+
+        df = pd.DataFrame(
+            {"key": value.keys(), "value": [numpy_to_pytype(v) for v in value.values()]}
+        )
+        df.dropna(axis=0, inplace=True)
+        df["run__id"] = obj._dto.id
+        obj._backend.meta.bulk_upsert(df)
+
+    def __get__(self, obj: "Run", objtype: type[Any]) -> RunMetaDictFacade:
+        """
+        Retrieves the meta indicators for a run object.
+
+        .. code:: python
+
+            run.meta
+            #> {"key": "value"}
+
+        Returns
+        =======
+        :class:`ixmp4.core.meta.RunMetaDictFacade`
+            A special object that behaves like a dictionary.
+        """
+        return RunMetaDictFacade(obj._backend, obj)
