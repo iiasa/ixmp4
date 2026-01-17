@@ -42,7 +42,9 @@ in the domain of integrated assessment of climate change and energy systems mode
    core/unit
    core/model
    core/scenario
+   
    core/meta
+   core/docs
 
    core/iamc
    core/optimization

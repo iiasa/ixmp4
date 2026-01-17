@@ -102,8 +102,8 @@ to the local server instance.
 Anyone connecting without a secret will receive an "unauthorized" response.
 
 .. note::
-    The secret is used for cryptographic signatures and their verification
-    and never shared in any client-server communication.
+    The secret is used for cryptographic signatures and their verification.
+    It is never sent in any client-server communication.
 
     Ideally, it is only shared between individuals physically or via 
     verifiably secure channels.

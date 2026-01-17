@@ -1,5 +1,5 @@
-Locks and Versioning
-====================
+Locks & Versioning
+==================
 
 To ensure changes to platform data are properly recorded,
 ixmp4 has a data versioning mechanism in place on PostgreSQL
@@ -16,7 +16,7 @@ Locking Runs
 To acquire the lock on a :class:`~ixmp4.core.run.Run`, 
 the :meth:`~ixmp4.core.run.Run.transact` context manager may be used.
 
-.. autofunc:: ixmp4.core.run.Run.transact
+.. automethod:: ixmp4.core.run.Run.transact
     
 .. code:: python
 

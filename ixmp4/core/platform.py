@@ -65,7 +65,8 @@ class Platform(object):
 
         * - :py:attr:`~.meta`
           - :class:`~ixmp4.core.meta.PlatformRunMetaFacade`
-          - :class:`~ixmp4.core.meta.RunMetaFacade`
+          - :class:`~ixmp4.core.meta.RunMetaDescriptor`/
+            :class:`~ixmp4.core.meta.RunMetaDictFacade`
 
         * - :py:attr:`~.iamc`
           - :class:`~ixmp4.core.iamc.data.PlatformIamcData`
