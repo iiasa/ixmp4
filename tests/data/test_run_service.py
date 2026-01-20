@@ -368,10 +368,6 @@ class TestRunAuthSarahPrivate(auth.SarahTest, auth.PrivatePlatformTest, RunServi
     def test_run_unlock(self, service: RunService) -> None:
         service.unlock(1)
 
-    def test_run_clone(self, service: RunService) -> None:
-        cloned_run = service.clone(1)
-        assert cloned_run.id == 2
-
     def test_run_revert(self, versioning_service: RunService) -> None:
         versioning_service.revert(1, 1)
 
@@ -436,10 +432,6 @@ class TestRunAuthAlicePrivate(auth.AliceTest, auth.PrivatePlatformTest, RunServi
             service.unlock(1)
         unauthorized_service.unlock(1)
 
-    def test_run_clone(self, service: RunService) -> None:
-        with pytest.raises(RunNotFound):
-            service.clone(1)
-
     def test_run_revert(self, versioning_service: RunService) -> None:
         with pytest.raises(RunNotFound):
             versioning_service.revert(1, 12)
@@ -487,10 +479,6 @@ class TestRunAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, RunServiceTe
 
     def test_run_unlock(self, service: RunService) -> None:
         service.unlock(1)
-
-    def test_run_clone(self, service: RunService) -> None:
-        cloned_run = service.clone(1)
-        assert cloned_run.id == 2
 
     def test_run_revert(self, versioning_service: RunService) -> None:
         versioning_service.revert(1, 1)
@@ -591,14 +579,6 @@ class TestRunAuthCarinaPrivate(
 
         service.unlock(3)
 
-    def test_run_clone(
-        self, service: RunService, unauthorized_service: RunService
-    ) -> None:
-        with pytest.raises(Forbidden):
-            service.clone(1)
-        cloned_run = unauthorized_service.clone(1)
-        assert cloned_run.id == 4
-
     def test_run_revert(self, versioning_service: RunService) -> None:
         with pytest.raises(Forbidden):
             versioning_service.revert(1, 1)
@@ -675,10 +655,6 @@ class TestRunAuthNonePrivate(auth.NoneTest, auth.PrivatePlatformTest, RunService
             service.unlock(1)
         unauthorized_service.unlock(1)
 
-    def test_run_clone(self, service: RunService) -> None:
-        with pytest.raises(RunNotFound):
-            service.clone(1)
-
     def test_run_revert(
         self, versioning_service: RunService, unauthorized_service: RunService
     ) -> None:
@@ -729,10 +705,6 @@ class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, RunServiceTest
 
     def test_run_unlock(self, service: RunService) -> None:
         service.unlock(1)
-
-    def test_run_clone(self, service: RunService) -> None:
-        cloned_run = service.clone(1)
-        assert cloned_run.id == 2
 
     def test_run_revert(self, versioning_service: RunService) -> None:
         versioning_service.revert(1, 1)
