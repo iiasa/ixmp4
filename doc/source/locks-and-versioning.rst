@@ -18,12 +18,6 @@ the :meth:`~ixmp4.core.run.Run.transact` context manager may be used.
 
 .. automethod:: ixmp4.core.run.Run.transact
     
-.. code:: python
-
-    with run.transact("Add xyz data"):
-        # ... perform operations
-
-    
 Internally, ixmp4 will save the last transaction id in the database as
 the ``lock_transaction`` column for the run's row.
 Any subsequent attempt to lock the run will result in an exception as 

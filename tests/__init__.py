@@ -11,7 +11,8 @@ included in the coverage calculations. To circumvent this, use the ``--dry`` par
 .. code:: bash
 
    ixmp4 test --with-backend --dry
-   # -> pytest --cov-report xml:.coverage.xml --cov-report term --cov=ixmp4 -rsx --benchmark-skip
+   # -> pytest --cov-report xml:.coverage.xml --cov-report term
+   # --cov=ixmp4 -rsx --benchmark-skip
 
    eval $(ixmp4 test --with-backend --dry)
    # -> executes pytest
@@ -25,13 +26,23 @@ Alternatively, use ``pytest`` directly:
 Running tests with PostgreSQL
 -----------------------------
 
-In order to run the local tests with PostgreSQL you'll need to have a local instance of
-this database running. The easiest way to do this is using a docker container.
+In order to run the local tests with PostgreSQL you'll need to have
+a local instance of it running. The easiest way to do this is using
+the provided ``docker-compose.yml`` file in the ``tests/`` directory.
+
+.. code:: bash
+
+   cd tests/
+   docker-compose up
 
 The docker container of the database needs to be started first and then the tests can be
 run normally using pytest. If everything is working correctly, the tests for PostgreSQL
 should not be skipped.
 
+Using ``docker`` directly
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can also start a custom PostgreSQL database using ``docker``.
 For PostgreSQL using the official `postgres <https://hub.docker.com/_/postgres>`_ image
 is recommended. Get the latest version on your local machine using (having docker
 installed):
