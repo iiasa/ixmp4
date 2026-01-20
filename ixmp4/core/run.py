@@ -31,6 +31,68 @@ from .meta import RunMetaDescriptor
 from .optimization.data import RunOptimizationData
 
 
+class RunCloner:
+    def clone(self, src_run: "Run", dst_run: "Run", keep_solution: bool) -> None:
+        with dst_run.transact("Clone run " + str(src_run)):
+            self.clone_meta(src_run, dst_run)
+            self.clone_iamc(src_run, dst_run)
+            self.clone_optimization(src_run, dst_run, keep_solution)
+
+    def clone_meta(self, src_run: "Run", dst_run: "Run") -> None:
+        dst_run.meta = dict(src_run.meta)
+
+    def clone_iamc(self, src_run: "Run", dst_run: "Run") -> None:
+        df = src_run.iamc.tabulate()
+        if not df.empty:
+            dst_run.iamc.add(df)
+
+    def clone_optimization(
+        self, src_run: "Run", dst_run: "Run", keep_solution: bool
+    ) -> None:
+        for src_scalar in src_run.optimization.scalars.list():
+            dst_run.optimization.scalars.create(
+                src_scalar.name, src_scalar.value, src_scalar.unit
+            )
+
+        for src_idxset in src_run.optimization.indexsets.list():
+            dst_idxset = dst_run.optimization.indexsets.create(src_idxset.name)
+            dst_idxset.add_data(src_idxset.data)
+
+        for src_table in src_run.optimization.tables.list():
+            dst_table = dst_run.optimization.tables.create(
+                src_table.name,
+                constrained_to_indexsets=src_table.indexset_names,
+                column_names=src_table.column_names,
+            )
+            dst_table.add_data(src_table.data)
+
+        for src_parameter in src_run.optimization.parameters.list():
+            dst_parameter = dst_run.optimization.parameters.create(
+                src_parameter.name,
+                constrained_to_indexsets=src_parameter.indexset_names,
+                column_names=src_parameter.column_names,
+            )
+            dst_parameter.add_data(src_parameter.data)
+
+        for src_equation in src_run.optimization.equations.list():
+            dst_equation = dst_run.optimization.equations.create(
+                src_equation.name,
+                constrained_to_indexsets=src_equation.indexset_names,
+                column_names=src_equation.column_names,
+            )
+            if keep_solution:
+                dst_equation.add_data(src_equation.data)
+
+        for src_variable in src_run.optimization.variables.list():
+            dst_variable = dst_run.optimization.variables.create(
+                src_variable.name,
+                constrained_to_indexsets=src_variable.indexset_names,
+                column_names=src_variable.column_names,
+            )
+            if keep_solution:
+                dst_variable.add_data(src_variable.data)
+
+
 class Run(BaseFacadeObject[RunService, RunDto]):
     """As a central class to organize data on a platform
     the ``Run`` provides methods and access to ``Facade`` instances.
@@ -78,8 +140,11 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     """Facade instance to manager optimization data for a run."""
 
     owns_lock: bool = False
+    """Indicated whether this run object has acquired the run's lock."""
     minimum_lock_timeout: float = 0.1
     maximum_lock_timeout: float = 5
+
+    _cloner: RunCloner = RunCloner()
 
     def __init__(self, backend: Backend, dto: RunDto) -> None:
         super().__init__(backend, dto)
@@ -299,15 +364,14 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         :class:`ixmp4.core.run.Run`:
             The cloned run.
         """
-        return Run(
+        dst_run = Run(
             backend=self._backend,
-            dto=self._service.clone(
-                run_id=self.id,
+            dto=self._service.create(
                 model_name=model,
                 scenario_name=scenario,
-                keep_solution=keep_solution,
             ),
         )
+        self._cloner.clone(self, dst_run, keep_solution)
 
     def _get_service(self, backend: Backend) -> RunService:
         return backend.runs
