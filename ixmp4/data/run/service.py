@@ -6,6 +6,7 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
+from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.iamc.reverter import run_reverter as iamc_reverter
 from ixmp4.data.meta.repositories import (
@@ -45,6 +46,7 @@ class RunService(GetByIdService):
     router_prefix = "/runs"
     router_tags = ["runs"]
 
+    http_controller = EnumerationCompatibilityController
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository

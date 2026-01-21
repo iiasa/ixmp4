@@ -5,6 +5,7 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
+from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
@@ -20,6 +21,7 @@ class ScenarioService(DocsService, GetByIdService):
     router_prefix = "/scenarios"
     router_tags = ["scenarios"]
 
+    http_controller = EnumerationCompatibilityController
     executor: db.r.SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
