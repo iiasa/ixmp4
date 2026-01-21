@@ -1,7 +1,3 @@
-[tool.poetry]
-packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
-requires-poetry = ">=2.0,<3.0"
-version = "0.0.0"
 
 [project]
 name = "ixmp4"
@@ -34,9 +30,10 @@ dependencies = [
     "SQLAlchemy-Utils>=0.41.0",
     "toml>=0.10.2",
     "typer>=0.19.0",
-    "scse-toolkit@git+https://github.com/iiasa/scse-toolkit.git@enhancement/db-repositories",
+    "scse-toolkit==0.16.0.dev1",
     "litestar (>=2.18.0,<3.0.0)",
 ]
+
 
 [project.scripts]
 ixmp4 = "ixmp4.__main__:app"
@@ -45,6 +42,16 @@ ixmp4 = "ixmp4.__main__:app"
 documentation = "https://docs.ece.iiasa.ac.at/projects/ixmp4"
 homepage = "https://software.ece.iiasa.ac.at"
 repository = "https://github.com/iiasa/ixmp4"
+
+[tool.poetry]
+packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
+requires-poetry = ">=2.0,<3.0"
+version = "0.0.0"
+
+[[tool.poetry.source]]
+name = "test-pypi"
+url = "https://test.pypi.org/simple"
+priority = "supplemental"
 
 [tool.poetry.group.docs]
 optional = true
