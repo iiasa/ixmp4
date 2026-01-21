@@ -60,9 +60,6 @@ class PandasRepository(TimeSeriesAuthRepository, db.r.PandasRepository):
             "region": (TimeSeries.region, Region.name),
             "variable": (TimeSeries.variable, Variable.name),
             "unit": (TimeSeries.unit, Unit.name),
-            "region__id": (TimeSeries.region, Region.id),
-            "variable__id": (TimeSeries.variable, Variable.id),
-            "unit__id": (TimeSeries.unit, Unit.id),
         },
     )
 

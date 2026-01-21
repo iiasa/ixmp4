@@ -56,9 +56,6 @@ class PandasRepository(DataPointAuthRepository, db.r.PandasRepository):
             "region": ((DataPoint.timeseries, TimeSeries.region), Region.name),
             "variable": ((DataPoint.timeseries, TimeSeries.variable), Variable.name),
             "unit": ((DataPoint.timeseries, TimeSeries.unit), Unit.name),
-            "region__id": ((DataPoint.timeseries, TimeSeries.region), Region.id),
-            "variable__id": ((DataPoint.timeseries, TimeSeries.variable), Variable.id),
-            "unit__id": ((DataPoint.timeseries, TimeSeries.unit), Unit.id),
             "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
