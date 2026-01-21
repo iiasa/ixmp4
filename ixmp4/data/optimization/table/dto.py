@@ -8,9 +8,9 @@ class Table(BaseModel, HasCreationInfo):
     name: str
     "Name of the table."
     data: dict[str, list[float] | list[int] | list[str]]
-    indexset_names: list[str] | None
+    indexset_names: list[str]
     column_names: list[str] | None
     run__id: int
 
     def __str__(self) -> str:
-        return f"<Variable {self.id} name={self.name}>"
+        return f"<Table {self.id} name={self.name}>"

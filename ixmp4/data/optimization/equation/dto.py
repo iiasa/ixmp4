@@ -14,4 +14,4 @@ class Equation(BaseModel, HasCreationInfo):
     run__id: int
 
     def __str__(self) -> str:
-        return f"<Variable {self.id} name={self.name}>"
+        return f"<Equation {self.id} name={self.name}>"

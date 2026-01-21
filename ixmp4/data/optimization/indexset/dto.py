@@ -16,4 +16,4 @@ class IndexSet(BaseModel, HasCreationInfo):
     data_type: Type | None
 
     def __str__(self) -> str:
-        return f"<Variable {self.id} name={self.name}>"
+        return f"<IndexSet {self.id} name={self.name}>"
