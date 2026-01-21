@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Any
+from typing import Any, List
 
 import pandas as pd
 from typing_extensions import Unpack
@@ -49,7 +49,7 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
         return self._dto.data
 
     @property
-    def indexset_names(self) -> list[str] | None:
+    def indexset_names(self) -> list[str]:
         """Names of index sets constraining this table."""
         return self._dto.indexset_names
 
@@ -120,8 +120,8 @@ class TableServiceFacade(
     def create(
         self,
         name: str,
-        constrained_to_indexsets: list[str],
-        column_names: list[str] | None = None,
+        constrained_to_indexsets: List[str],
+        column_names: List[str] | None = None,
     ) -> Table:
         """Create a new table for this run.
 

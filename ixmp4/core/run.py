@@ -1,6 +1,7 @@
 import time
 import warnings
 from contextlib import contextmanager
+from datetime import datetime
 from typing import Generator, List
 
 import pandas as pd
@@ -51,7 +52,7 @@ class RunCloner:
     ) -> None:
         for src_scalar in src_run.optimization.scalars.list():
             dst_run.optimization.scalars.create(
-                src_scalar.name, src_scalar.value, src_scalar.unit
+                src_scalar.name, src_scalar.value, src_scalar.unit.name
             )
 
         for src_idxset in src_run.optimization.indexsets.list():
@@ -175,6 +176,14 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     @property
     def is_default(self) -> bool:
         return self._dto.is_default
+
+    @property
+    def created_at(self) -> datetime | None:
+        return self._dto.created_at
+
+    @property
+    def created_by(self) -> str | None:
+        return self._dto.created_by
 
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
@@ -367,11 +376,13 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         dst_run = Run(
             backend=self._backend,
             dto=self._service.create(
-                model_name=model,
-                scenario_name=scenario,
+                model_name=model or self.model.name,
+                scenario_name=scenario or self.scenario.name,
             ),
         )
+
         self._cloner.clone(self, dst_run, keep_solution)
+        return dst_run
 
     def _get_service(self, backend: Backend) -> RunService:
         return backend.runs
@@ -379,7 +390,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def __str__(self) -> str:
         return (
             f"<Run {self.id} model='{self.model.name}' "
-            f"scenario='{self.scenario.name}' version='{self.version}'>"
+            f"scenario='{self.scenario.name}' version={self.version}>"
         )
 
     def __repr__(self) -> str:

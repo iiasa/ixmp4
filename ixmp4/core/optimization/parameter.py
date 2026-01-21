@@ -59,7 +59,7 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
         return cast(list[str], self._dto.data.get("units", []))
 
     @property
-    def indexset_names(self) -> list[str] | None:
+    def indexset_names(self) -> list[str]:
         """Names of index sets constraining this parameter."""
         return self._dto.indexset_names
 
