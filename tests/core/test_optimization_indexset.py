@@ -31,10 +31,8 @@ class TestIndexSet(OptimizationIndexSetTest):
     ) -> None:
         with run.transact("Create indexsets"):
             indexset1 = run.optimization.indexsets.create("IndexSet 1")
-
             indexset2 = run.optimization.indexsets.create("IndexSet 2")
             indexset3 = run.optimization.indexsets.create("IndexSet 3")
-
             indexset4 = run.optimization.indexsets.create("IndexSet 4")
 
         assert indexset1.id == 1
