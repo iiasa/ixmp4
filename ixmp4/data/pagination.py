@@ -1,8 +1,10 @@
-from typing import Generic, TypeVar
+from typing import Any, Generic, List, TypeVar
 
 import pydantic as pyd
 
 from ixmp4.conf.settings import Settings
+
+from .dataframe import DataFrameTypeAdapter
 
 ResultsT = TypeVar("ResultsT")
 
@@ -23,3 +25,6 @@ class PaginatedResult(pyd.BaseModel, Generic[ResultsT]):
     total: int
     pagination: Pagination
     model_config = pyd.ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
+
+
+GenericPaginatedResult = PaginatedResult[List[Any] | DataFrameTypeAdapter]
