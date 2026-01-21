@@ -13,6 +13,7 @@ from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
 from typing_extensions import NotRequired, TypedDict
 
+from ixmp4.backend import Backend
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
     PlatformConnectionInfo,
@@ -26,6 +27,7 @@ from ixmp4.core.exceptions import (
     registry,
 )
 from ixmp4.data.checkpoint.service import CheckpointService
+from ixmp4.data.docs.controller import DocsCompatibilityController
 from ixmp4.data.iamc.datapoint.service import DataPointService as IamcDataPointService
 from ixmp4.data.iamc.timeseries.service import (
     TimeSeriesService as IamcTimeSeriesService,
@@ -94,6 +96,7 @@ class V1HttpApi:
     platform_router: Router
     provide_platform: Provide | None = None
     provide_transport: Provide | None = None
+    provide_backend: Provide | None = None
 
     def __init__(
         self,
@@ -107,21 +110,24 @@ class V1HttpApi:
         self.settings = settings
         self.provide_transport = Provide(override_transport or self.get_transport)
         self.provide_platform = Provide(self.get_platform)
+        self.provide_backend = Provide(self.get_backend)
 
         self.platform_router = Router(
             path="/{platform_name:str}",
-            route_handlers=[PlatformController],
+            route_handlers=[PlatformController, DocsCompatibilityController],
             dependencies={
                 "platform": self.provide_platform,
                 "transport": self.provide_transport,
+                "backend": self.provide_backend,
             },
         )
 
         for service in service_classes:
+            service_router = service.get_router(settings)
             logger.info(f"Mounting {service.__name__}:")
-            logger.info(f"   Path: {service.router.path}")
-            logger.info(f"   Routes: {[route.path for route in service.router.routes]}")
-            self.platform_router.register(service.router)
+            logger.info(f"   Path: {service_router.path}")
+            logger.info(f"   Routes: {[route.path for route in service_router.routes]}")
+            self.platform_router.register(service_router)
 
         auth_mw = DefineMiddleware(
             AuthenticationMiddleware, secret_hs256=settings.secret_hs256
@@ -218,6 +224,12 @@ class V1HttpApi:
                 yield AuthorizedTransport(session, request.auth, platform)
             else:
                 yield DirectTransport(session)
+
+    async def get_backend(
+        self,
+        transport: DirectTransport,
+    ) -> AsyncIterator[Backend]:
+        yield Backend(transport)
 
 
 class PlatformInfo(TypedDict):
