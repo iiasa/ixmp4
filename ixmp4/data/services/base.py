@@ -1,19 +1,25 @@
 import abc
-import inspect
 from datetime import datetime, timezone
-from typing import Any, ClassVar, ParamSpec, Sequence, TypedDict, TypeVar
+from typing import (
+    Any,
+    ClassVar,
+    ParamSpec,
+    Sequence,
+    TypedDict,
+    TypeVar,
+)
 
 import pandas as pd
 import pandera.pandas as pa
 import sqlalchemy as sa
-from litestar import Router, route
+from litestar import Controller, Router
 from litestar.di import Provide
 from pandera.errors import SchemaError
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
+from ixmp4.conf.settings import ServerSettings
 from ixmp4.data.base.dto import BaseModel
-from ixmp4.data.services.http import HttpProcedureEndpoint
 from ixmp4.transport import (
     AuthorizedTransport,
     DirectTransport,
@@ -32,10 +38,52 @@ class AuthKwargs(TypedDict):
 
 
 class Service(abc.ABC):
+    """Main data layer interface for a data type.
+
+    .. code:: python
+
+        from ixmp4.data.services import (
+            GetByIdService,
+            Http,
+            procedure,
+        )
+        from .exceptions import ExampleError
+
+        class ExampleService(Service):
+            @procedure(Http(path="/", methods=("POST",)))
+            def do_something(self):
+                raise ExampleError("Can't do something, sorry.")
+
+    To mark service methods as interface procedures that can
+    be called directly or via the http api, use the
+    :func:`~ixmp4.data.services.procedure.procedure` decorator.
+
+    Services can then be instantiated with a :class:`ixmp4.transport.Transport`
+    object:
+
+    .. code:: python
+
+        from ixmp4.transport import DirectTransport, HttpxTransport
+        from .example import ExampleService
+
+        direct = DirectTranport.from_dsn("sqlite://...")
+        direct_svc = ExampleService(direct)
+
+        http = HttpxTransport.from_url/from_asgi(...)
+        http_svc = ExampleService(http)
+
+        direct_svc.do_something()
+        #> ExampleError
+
+        http_svc.do_something()
+        #> ExampleError
+    """
+
     router_tags: ClassVar[Sequence[str]] = []
     router_prefix: ClassVar[str]
-    router: ClassVar[Router]
+    # router: ClassVar[Router]
     transport: Transport
+    http_controller: ClassVar[type[Controller] | None] = None
 
     def __init__(self, transport: Transport):
         self.transport = transport
@@ -49,9 +97,6 @@ class Service(abc.ABC):
         if getattr(cls, "__abstract__", False):
             setattr(cls, "__abstract__", False)
             return
-
-        if not inspect.isabstract(cls):
-            cls.router = cls.get_router()
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         pass
@@ -111,7 +156,7 @@ class Service(abc.ABC):
             raise InvalidDataFrame(str(e))
 
     @classmethod
-    def get_router(cls) -> Router:
+    def get_router(cls, settings: ServerSettings) -> Router:
         from ixmp4.data.services.procedure import ServiceProcedure
 
         async def service_dep(transport: DirectTransport) -> Service:
@@ -128,29 +173,15 @@ class Service(abc.ABC):
             val = getattr(cls, attrname, None)
             if isinstance(val, ServiceProcedure):
                 endpoint = val.get_endpoint(cls)
-                proc_route = cls.get_procedure_route(endpoint)
+                proc_route = endpoint.get_procedure_route()
                 routes = router.register(proc_route)
                 endpoint.routes = routes
                 val.endpoints[cls] = endpoint
 
-        return router
+        if cls.http_controller is not None:
+            router.register(cls.http_controller)
 
-    @classmethod
-    def get_procedure_route(
-        cls,
-        endpoint: HttpProcedureEndpoint[Any, Any, Any],
-    ) -> route:
-        handler = route(
-            endpoint.path,
-            http_method=endpoint.methods,
-            status_code=200,
-            name=endpoint.name,
-            operation_id=endpoint.name,
-            description=endpoint.procedure.func.__doc__,
-            summary=endpoint.shortname,
-            operation_class=endpoint.get_openapi_operation_class(),
-        )
-        return handler(endpoint.handle_request)
+        return router
 
 
 class GetByIdService(Service):

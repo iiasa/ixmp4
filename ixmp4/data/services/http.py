@@ -22,7 +22,8 @@ from typing import (
 import httpx
 import pandas as pd
 import pydantic as pyd
-from litestar import HttpMethod, Request, Response
+from litestar import Controller, HttpMethod, Request, Response, route
+from litestar.di import Provide
 from litestar.handlers import HTTPRouteHandler
 from litestar.openapi.spec import (
     OpenAPIMediaType,
@@ -37,6 +38,7 @@ from litestar.utils.path import join_paths
 from typing_extensions import NotRequired, Unpack
 
 from ixmp4.base_exceptions import ProgrammingError
+from ixmp4.conf.settings import Settings
 from ixmp4.core.exceptions import InvalidArguments
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.transport import (
@@ -78,7 +80,7 @@ class ServiceProcedureClient(Generic[ServiceT, Params, ReturnT]):
         self.endpoint = endpoint
         self.service = service
         self.method = str(endpoint.methods[0])
-        self.route_handler = self.service.get_procedure_route(self.endpoint)
+        self.route_handler = self.endpoint.get_procedure_route()
 
         if not isinstance(service.transport, HttpxTransport):
             raise ProgrammingError(
@@ -393,7 +395,10 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
         try:
             path_params = self.path_model.model_validate(path)
             if self.supports_body:
-                payload = self.payload_model.model_validate_json(body)
+                if len(body) > 0:
+                    payload = self.payload_model.model_validate_json(body)
+                else:
+                    payload = self.payload_model()
             else:
                 payload = self.payload_model.model_validate(query, extra="ignore")
 
@@ -423,18 +428,32 @@ class HttpProcedureEndpoint(Generic[ServiceT, Params, ReturnT]):
                 mode="serialization"
             )
         else:
-            return_schema = self.return_type_adapter.json_schema(mode="serialization")
-        if "$defs" in return_schema:
-            return_schema["dependent_schemas"] = return_schema.pop("$defs")
+            return_schema = self.return_type_adapter.json_schema(
+                mode="serialization", ref_template="'#/components/schemas/{model}'"
+            )
 
+        return_schema.pop("$defs", None)
+
+        schema = Schema(**return_schema)
         responses["200"] = OpenAPIResponse(
-            content={
-                "application/json": OpenAPIMediaType(schema=Schema(**return_schema))
-            },
+            content={"application/json": OpenAPIMediaType(schema=schema)},
             description="",
         )
 
         return responses
+
+    def get_procedure_route(self) -> route:
+        handler = route(
+            self.path,
+            http_method=self.methods,
+            status_code=200,
+            name=self.name,
+            operation_id=self.name,
+            description=self.procedure.func.__doc__,
+            summary=self.shortname,
+            operation_class=self.get_openapi_operation_class(),
+        )
+        return handler(self.handle_request)
 
 
 # this function tries to remain similar to
@@ -492,3 +511,38 @@ def generate_arguments_model(
         __config__=model_config,
         **fields,
     )
+
+
+default_settings = Settings()
+
+
+async def get_pagination(
+    offset: int = 0, limit: int = default_settings.server.default_page_size
+) -> Pagination:
+    return Pagination(limit=limit, offset=offset)
+
+
+class ServiceController(Controller, Generic[ServiceT]):
+    dependencies = {"pagination": Provide(get_pagination)}
+
+    def get_endpoint(
+        self, service: ServiceT, name: str
+    ) -> HttpProcedureEndpoint[ServiceT, Any, Any]:
+        return cast(
+            HttpProcedureEndpoint[ServiceT, Any, Any],
+            getattr(type(service), name).endpoints[service.__class__],
+        )
+
+    async def call_procedure(
+        self,
+        service: ServiceT,
+        name: str,
+        request: Request[Any, Any, Any],
+    ) -> Any:
+        endpoint = self.get_endpoint(service, name)
+
+        bound_func = endpoint.bind_endpoint_func(service, dict(request.query_params))
+        args, kwargs = endpoint.build_call_args(
+            request.path_params, dict(request.query_params), await request.body()
+        )
+        return bound_func(*args, **kwargs)

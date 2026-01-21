@@ -92,6 +92,18 @@ class ProcedurePaginatedFunc(Protocol[ContraServiceT, Params, CoReturnT]):
     ) -> CoReturnT: ...
 
 
+class BoundProcedurePaginatedFunc(Protocol[Params, CoReturnT]):
+    __name__: str
+
+    def __call__(
+        self,
+        pagination: Pagination,
+        /,
+        *args: Params.args,
+        **kwds: Params.kwargs,
+    ) -> CoReturnT: ...
+
+
 class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
     func: ProcedureFunc[ServiceT, Params, ReturnT]
     signature: inspect.Signature
@@ -255,17 +267,23 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         self,
     ) -> Callable[
         [ProcedurePaginatedFunc[ServiceT, Params, PaginatedResult[ReturnT]]],
-        ProcedurePaginatedFunc[ServiceT, Params, PaginatedResult[ReturnT]],
+        BoundProcedurePaginatedFunc[Params, PaginatedResult[ReturnT]],
     ]:
         def decorator(
             paginated_func: ProcedurePaginatedFunc[
                 ServiceT, Params, PaginatedResult[ReturnT]
             ],
-        ) -> ProcedurePaginatedFunc[ServiceT, Params, PaginatedResult[ReturnT]]:
+        ) -> BoundProcedurePaginatedFunc[Params, PaginatedResult[ReturnT]]:
             self.paginated_func = paginated_func
             self.paginated_signature = self.parse_signature(paginated_func)
             self.has_paginated_func = True
-            return paginated_func
+
+            # if we don't cast here the type checker doesnt
+            # understand that the first param disappears
+            return cast(
+                BoundProcedurePaginatedFunc[Params, PaginatedResult[ReturnT]],
+                paginated_func,
+            )
 
         return decorator
 
@@ -338,6 +356,14 @@ def procedure(
     [Callable[Concatenate[ServiceT, Params], ReturnT]],
     ServiceProcedure[ServiceT, Params, ReturnT],
 ]:
+    """Makes a service method callable directly or via http.
+
+    Returns
+    =======
+    :class:`~ixmp4.data.services.procedure.ServiceProcedure`
+        The method wrapped in a special descriptor class.
+    """
+
     def decorator(
         func: Callable[Concatenate[ServiceT, Params], ReturnT],
     ) -> ServiceProcedure[ServiceT, Params, ReturnT]:
