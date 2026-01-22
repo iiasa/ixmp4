@@ -129,8 +129,7 @@ def sqlite_transport(
 
 @contextlib.contextmanager
 def httpx_sqlite_transport(
-        *,
-
+    *,
     settings: Settings,
     auth_ctx: AuthorizationContext | None,
     platform_info: PlatformProtocol | None,
@@ -151,8 +150,7 @@ def httpx_sqlite_transport(
 @contextlib.contextmanager
 def httpx_postgresql_transport(
     dsn: str,
-        *,
-
+    *,
     settings: Settings,
     auth_ctx: AuthorizationContext | None,
     platform_info: PlatformProtocol | None,
