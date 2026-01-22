@@ -1,5 +1,6 @@
 import enum
-from typing import TypedDict
+
+from typing_extensions import TypedDict
 
 
 class TypeColumnsDict(TypedDict):

@@ -11,7 +11,6 @@ from typing import (
     Literal,
     ParamSpec,
     Sequence,
-    TypedDict,
     TypeVar,
     cast,
     get_args,
@@ -35,7 +34,7 @@ from litestar.openapi.spec import (
 from litestar.routes import BaseRoute
 from litestar.types.internal_types import PathParameterDefinition
 from litestar.utils.path import join_paths
-from typing_extensions import NotRequired, Unpack
+from typing_extensions import NotRequired, TypedDict, Unpack
 
 from ixmp4.base_exceptions import ProgrammingError
 from ixmp4.conf.settings import Settings

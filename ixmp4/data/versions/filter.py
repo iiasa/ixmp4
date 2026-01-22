@@ -1,7 +1,8 @@
-from typing import Annotated, Any, TypedDict
+from typing import Annotated, Any
 
 import sqlalchemy as sa
 from toolkit import db
+from typing_extensions import TypedDict
 
 from .model import Operation
 

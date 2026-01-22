@@ -1,6 +1,7 @@
-from typing import Annotated, Any, TypedDict
+from typing import Annotated, Any
 
 import sqlalchemy as sa
+from typing_extensions import TypedDict
 
 from ixmp4.data.run.db import Run
 

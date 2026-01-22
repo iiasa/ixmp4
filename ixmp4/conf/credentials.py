@@ -1,8 +1,8 @@
 from contextlib import suppress
 from pathlib import Path
-from typing import TypedDict
 
 import toml
+from typing_extensions import TypedDict
 
 
 class CredentialsDict(TypedDict):

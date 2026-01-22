@@ -5,7 +5,6 @@ from typing import (
     ClassVar,
     ParamSpec,
     Sequence,
-    TypedDict,
     TypeVar,
 )
 
@@ -16,6 +15,7 @@ from litestar import Controller, Router
 from litestar.di import Provide
 from pandera.errors import SchemaError
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from typing_extensions import TypedDict
 
 from ixmp4.base_exceptions import InvalidDataFrame, ProgrammingError
 from ixmp4.conf.settings import ServerSettings
