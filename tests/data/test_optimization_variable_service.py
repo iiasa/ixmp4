@@ -705,9 +705,7 @@ class TestVariableTabulate(VariableServiceTest):
             columns=["id", "name", "data"],
         )
         expected_variables["run__id"] = run.id
-        expected_variables["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        )
+        expected_variables["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_variables["created_by"] = "@unknown"
 
         variables = service.tabulate()
