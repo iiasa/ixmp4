@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -196,7 +196,7 @@ class TableDataTest(OptimizationTableTest):
             table.add_data(test_data)
 
         if isinstance(test_data, pd.DataFrame):
-            test_data = test_data.to_dict(orient="list")
+            test_data = cast(dict[str, list[Any]], test_data.to_dict(orient="list"))
 
         assert table.data == test_data
 

@@ -1,5 +1,5 @@
 import datetime
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pandas.testing as pdt
@@ -249,7 +249,7 @@ class VariableDataTest(VariableServiceTest):
         variable = service.get_by_id(variable.id)
 
         if isinstance(test_data, pd.DataFrame):
-            test_data = test_data.to_dict(orient="list")
+            test_data = cast(dict[str, list[Any]], test_data.to_dict(orient="list"))
 
         assert variable.data == test_data
 
@@ -287,10 +287,12 @@ class VariableDataTest(VariableServiceTest):
         fake_time: datetime.datetime,
     ) -> None:
         if isinstance(test_data, pd.DataFrame):
-            test_data = test_data.to_dict(orient="list")
+            test_data = cast(dict[str, list[Any]], test_data.to_dict(orient="list"))
 
         if isinstance(remaining_test_data, pd.DataFrame):
-            remaining_test_data = remaining_test_data.to_dict(orient="list")
+            remaining_test_data = cast(
+                dict[str, list[Any]], remaining_test_data.to_dict(orient="list")
+            )
 
         # compute transaction ids
         is_tx = (

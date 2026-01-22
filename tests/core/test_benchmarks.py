@@ -1,7 +1,7 @@
 """This module only contains benchmarks, no assertions are made to validate the
 results."""
 
-from typing import Any
+from typing import Any, cast
 
 import pandas as pd
 import pytest
@@ -107,7 +107,7 @@ class TestBenchmarks:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            run = platform.runs.get(str(model), str(scenario), int(version))
+            run = platform.runs.get(str(model), str(scenario), cast(int, version))
             with run.transact("Benchmark: Add DataPoints Full"):
                 run.iamc.add(rows.drop(columns=["model", "scenario", "version"]))
 
@@ -118,7 +118,7 @@ class TestBenchmarks:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            run = platform.runs.get(str(model), str(scenario), int(version))
+            run = platform.runs.get(str(model), str(scenario), cast(int, version))
             with run.transact("Benchmark: Remove DataPoints Full"):
                 run.iamc.remove(
                     rows.drop(columns=["model", "scenario", "version", "value"])
