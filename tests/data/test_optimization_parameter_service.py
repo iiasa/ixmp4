@@ -356,9 +356,7 @@ class ParameterDataTest(ParameterServiceTest):
         expected_versions["id"] = 1
         expected_versions["run__id"] = run.id
         expected_versions["name"] = "Parameter"
-        expected_versions["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_versions["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
@@ -736,9 +734,7 @@ class TestParameterTabulate(ParameterServiceTest):
             columns=["id", "name", "data"],
         )
         expected_parameters["run__id"] = run.id
-        expected_parameters["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_parameters["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_parameters["created_by"] = "@unknown"
 
         parameters = service.tabulate()

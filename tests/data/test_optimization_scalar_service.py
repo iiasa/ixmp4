@@ -332,9 +332,7 @@ class ScalarDataTest(ScalarServiceTest):
         expected_versions["id"] = 1
         expected_versions["run__id"] = run.id
         expected_versions["name"] = "Scalar"
-        expected_versions["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_versions["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
@@ -481,9 +479,7 @@ class TestScalarTabulate(ScalarServiceTest):
             columns=["id", "name", "value", "unit__id"],
         )
         expected_scalars["run__id"] = run.id
-        expected_scalars["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_scalars["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_scalars["created_by"] = "@unknown"
 
         scalars = service.tabulate()

@@ -358,9 +358,7 @@ class TableDataTest(TableServiceTest):
         expected_versions["id"] = 1
         expected_versions["run__id"] = run.id
         expected_versions["name"] = "Table"
-        expected_versions["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_versions["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
@@ -630,9 +628,7 @@ class TestTableTabulate(TableServiceTest):
             columns=["id", "name", "data"],
         )
         expected_tables["run__id"] = run.id
-        expected_tables["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_tables["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_tables["created_by"] = "@unknown"
 
         tables = service.tabulate()

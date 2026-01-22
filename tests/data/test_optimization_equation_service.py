@@ -341,9 +341,7 @@ class EquationDataTest(EquationServiceTest):
         expected_versions["id"] = 1
         expected_versions["run__id"] = run.id
         expected_versions["name"] = "Equation"
-        expected_versions["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_versions["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
@@ -707,9 +705,7 @@ class TestEquationTabulate(EquationServiceTest):
             columns=["id", "name", "data"],
         )
         expected_equations["run__id"] = run.id
-        expected_equations["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_equations["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_equations["created_by"] = "@unknown"
 
         equations = service.tabulate()

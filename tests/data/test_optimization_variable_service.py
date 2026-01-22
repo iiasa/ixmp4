@@ -341,9 +341,7 @@ class VariableDataTest(VariableServiceTest):
         expected_versions["id"] = 1
         expected_versions["run__id"] = run.id
         expected_versions["name"] = "Variable"
-        expected_versions["created_at"] = pd.Timestamp(
-            fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        expected_versions["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
@@ -709,7 +707,7 @@ class TestVariableTabulate(VariableServiceTest):
         expected_variables["run__id"] = run.id
         expected_variables["created_at"] = pd.Timestamp(
             fake_time.replace(tzinfo=None)
-        ).as_unit("ns")
+        )
         expected_variables["created_by"] = "@unknown"
 
         variables = service.tabulate()
