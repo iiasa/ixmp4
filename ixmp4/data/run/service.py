@@ -60,23 +60,6 @@ class RunService(GetByIdService):
     meta: MetaRepository
     meta_versions: MetaVersionRepository
 
-    default_columns = [
-        "id",
-        "model",
-        "scenario",
-        "model__id",
-        "scenario__id",
-        "version",
-        "lock_transaction",
-        "is_default",
-    ]
-    audit_info_columns = [
-        "created_by",
-        "created_at",
-        "updated_by",
-        "updated_at",
-    ]
-
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
@@ -331,9 +314,23 @@ class RunService(GetByIdService):
         )
 
     def get_columns(self, *, include_audit_info: bool) -> List[str]:
-        columns = self.default_columns
+        columns = [
+            "id",
+            "model",
+            "scenario",
+            "model__id",
+            "scenario__id",
+            "version",
+            "lock_transaction",
+            "is_default",
+        ]
         if include_audit_info:
-            columns += self.audit_info_columns
+            columns += [
+                "created_by",
+                "created_at",
+                "updated_by",
+                "updated_at",
+            ]
         return columns
 
     @procedure(Http(methods=("PATCH",)))
