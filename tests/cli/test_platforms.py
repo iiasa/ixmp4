@@ -10,8 +10,6 @@ from typer.testing import CliRunner
 from ixmp4.cli import app
 from ixmp4.conf.settings import Settings
 
-runner = CliRunner()
-
 
 @pytest.fixture(scope="function")
 def temporary_settings() -> Generator[Settings, None, None]:
@@ -19,8 +17,15 @@ def temporary_settings() -> Generator[Settings, None, None]:
     and mocking the `Settings` constructor."""
     with TemporaryDirectory() as temp_dir:
         settings = Settings(storage_directory=Path(temp_dir))
-        with mock.patch("ixmp4.conf.settings.Settings", new=lambda: settings):
+        with mock.patch("ixmp4.conf.settings.Settings", new=settings):
             yield settings
+
+
+@pytest.fixture(scope="function")
+def runner(temporary_settings: Settings) -> CliRunner:
+    return CliRunner(
+        env={"IXMP4_STORAGE_DIRECTORY": str(temporary_settings.storage_directory)},
+    )
 
 
 @pytest.fixture(scope="function")
@@ -34,7 +39,9 @@ def tmp_working_directory() -> Generator[Path, None, None]:
 
 
 class TestAddPlatformCLI:
-    def test_add_platform(self, temporary_settings: Settings) -> None:
+    def test_add_platform(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
         result = runner.invoke(app, ["platforms", "add", "test"], input="y")
         assert result.exit_code == 0
 
@@ -63,7 +70,9 @@ class TestAddPlatformCLI:
         assert platform_info.name == "test"
         assert "test.sqlite3" in platform_info.dsn
 
-    def test_add_platform_sqlite_dsn(self, temporary_settings: Settings) -> None:
+    def test_add_platform_sqlite_dsn(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
         # Explicitly set the DSN to a different location
         alternative_path = (
             temporary_settings.storage_directory
@@ -98,7 +107,10 @@ class TestAddPlatformCLI:
         assert str(alternative_path) in platform_info.dsn
 
     def test_add_platform_from_anywhere(
-        self, temporary_settings: Settings, tmp_working_directory: Path
+        self,
+        runner: CliRunner,
+        temporary_settings: Settings,
+        tmp_working_directory: Path,
     ) -> None:
         # Ensure we are NOT in the ixmp4 root directory
         assert not (tmp_working_directory / "ixmp4" / "db" / "migrations").exists()
@@ -111,7 +123,9 @@ class TestAddPlatformCLI:
             temporary_settings.storage_directory / "databases" / "test.sqlite3"
         ).is_file()
 
-    def test_add_platform_duplicate(self, temporary_settings: Settings) -> None:
+    def test_add_platform_duplicate(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
         runner.invoke(app, ["platforms", "add", "test"], input="y").stdout
         # Ensure the first platform is created
         assert (
@@ -127,7 +141,7 @@ class TestAddPlatformCLI:
 
 
 class TestPlatformGenerateCLI:
-    def test_generate_platform_data(self) -> None:
+    def test_generate_platform_data(self, runner: CliRunner) -> None:
         # Create a test platform
         runner.invoke(app, ["platforms", "add", "test-generate"], input="y")
 
@@ -157,7 +171,7 @@ class TestPlatformGenerateCLI:
         # We simply test whether the generate command runs without error
         assert result.exit_code == 0
 
-    def test_generate_platform_not_found(self) -> None:
+    def test_generate_platform_not_found(self, runner: CliRunner) -> None:
         result = runner.invoke(app, ["platforms", "generate", "nonexistent-platform"])
 
         # We simply test whether the generate command errors
