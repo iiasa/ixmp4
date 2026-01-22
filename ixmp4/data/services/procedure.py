@@ -163,8 +163,8 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         param_dict = org_sig.parameters.items()
 
         for index, (name, param) in enumerate(param_dict):
-            self.validate_auth_check_parameter(index, name, param, func)
-            valid_params.append(param)
+            if self.validate_auth_check_parameter(index, name, param, func):
+                valid_params.append(param)
 
         return inspect.Signature(
             valid_params, return_annotation=org_sig.return_annotation
@@ -172,9 +172,9 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
 
     def validate_auth_check_parameter(
         self, index: int, name: str, param: inspect.Parameter, func: Callable[..., Any]
-    ) -> None:
+    ) -> bool:
         if name == "self":
-            return  # skip self parameter as it will not be bound yet
+            return False  # skip self parameter as it will not be bound yet
 
         if param.annotation == inspect.Parameter.empty:
             raise ProgrammingError(
@@ -219,6 +219,7 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
                     f"corresponding default `{coresp_param.default}` for "
                     f"'{coresp_name}' argument of `{self.func.__name__}`."
                 )
+        return True
 
     def auth_check(
         self,
