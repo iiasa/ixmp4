@@ -38,7 +38,8 @@ to compare and a descriptive message for the migration (think commit-message):
 
    [INFO] 16:54:51 - alembic.runtime.migration: Context impl SQLiteImpl.
    [INFO] 16:54:51 - alembic.runtime.migration: Will assume non-transactional DDL.
-   Generating /home/wolschlager/Code/ixmp4/ixmp4/db/migrations/versions/fbe0529cafe7_test.py ...  done
+   Generating /home/wolschlager/Code/ixmp4/ixmp4/db/migrations/versions/\
+fbe0529cafe7_test.py ...  done
    Running post write hook 'ruff' ...
    1 file reformatted
    done
@@ -51,9 +52,11 @@ Afterwards you can update existing databases with the upgrade command:
 
    [INFO] 17:02:06 - alembic.runtime.migration: Context impl SQLiteImpl.
    [INFO] 17:02:06 - alembic.runtime.migration: Will assume non-transactional DDL.
-   [INFO] 17:02:06 - alembic.runtime.migration: Running upgrade 8b0797ebf42f -> 5069a5e8c20c, test
+   [INFO] 17:02:06 - alembic.runtime.migration: Running upgrade 8b0797ebf42f -> \
+5069a5e8c20c, test
 
-   Upgraded database 'sqlite:////home/wolschlager/Code/ixmp4/run/storage/databases/test.sqlite3' to revision 'head'.
+   Upgraded database 'sqlite:////home/wolschlager/Code/ixmp4/run/storage/databases/\
+test.sqlite3' to revision 'head'.
 
 Refer to the :doc:`cli documentation <cli>` for all alembic cli commands.
 

@@ -190,7 +190,7 @@ class TestRunClone:
             indexset1.add_data(test_data_idxset1)
             indexset2.add_data(test_data_idxset2)
 
-            scalar1 = run.optimization.scalars.create("Scalar 1", 1.23, "Unit 1")
+            run.optimization.scalars.create("Scalar 1", 1.23, "Unit 1")
 
             equation1 = run.optimization.equations.create(
                 "Equation 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]

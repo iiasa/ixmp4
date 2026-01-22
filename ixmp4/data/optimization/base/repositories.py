@@ -161,7 +161,8 @@ class IndexedRepository(
         indexsets: list["IndexSet"],
         column_names: list[str] | None = None,
     ) -> None:
-        # Can't validate ("values","units") or ("levels", "marginals") when they are present
+        # Can't validate ("values","units") or ("levels", "marginals")
+        # when they are present
         number_columns = len(data.columns) - len(self.extra_data_columns)
         columns = (
             column_names if column_names else [indexset.name for indexset in indexsets]

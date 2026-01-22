@@ -163,59 +163,62 @@ class ServiceProcedure(Generic[ServiceT, Params, ReturnT]):
         param_dict = org_sig.parameters.items()
 
         for index, (name, param) in enumerate(param_dict):
-            if name == "self":
-                continue  # skip self parameter as it will not be bound yet
-
-            if param.annotation == inspect.Parameter.empty:
-                raise ProgrammingError(
-                    f"Argument `{name}` of `{func.__name__}` requires "
-                    "a type annotation."
-                )
-
-            if param.kind == inspect.Parameter.POSITIONAL_ONLY:
-                if index == 1 and param.annotation is AuthorizationContext:
-                    pass
-                elif index == 2 and param.annotation is PlatformProtocol:
-                    pass
-                else:
-                    raise ProgrammingError(
-                        f"Unexpected positional-only argument '{name}' with annotation "
-                        f"`{param.annotation}` in function definiton for "
-                        f"`{func.__name__}`."
-                    )
-
-            original_params = list(self.signature.parameters.items())
-            if index > 2:
-                try:
-                    coresp_name, coresp_param = original_params[index - 3]
-                except IndexError:
-                    raise ProgrammingError(
-                        f"Argument '{name}' for auth check `{func.__name__}` "
-                        f"is superfluous because `{self.func.__name__}` only "
-                        f"expects {len(original_params)} argument(s)."
-                    )
-
-                if param.annotation != coresp_param.annotation:
-                    raise ProgrammingError(
-                        f"Annotation `{param.annotation}` of argument '{name}' "
-                        f"for auth check `{func.__name__}` does not match "
-                        f"corresponding annotation `{coresp_param.annotation}` for "
-                        f"'{coresp_name}' argument of `{self.func.__name__}`."
-                    )
-
-                if param.default != coresp_param.default:
-                    raise ProgrammingError(
-                        f"Default `{param.default}` of keyword argument '{name}' "
-                        f"for auth check `{func.__name__}` does not match "
-                        f"corresponding default `{coresp_param.default}` for "
-                        f"'{coresp_name}' argument of `{self.func.__name__}`."
-                    )
-
+            self.validate_auth_check_parameter(index, name, param, func)
             valid_params.append(param)
 
         return inspect.Signature(
             valid_params, return_annotation=org_sig.return_annotation
         )
+
+    def validate_auth_check_parameter(
+        self, index: int, name: str, param: inspect.Parameter, func: Callable[..., Any]
+    ) -> None:
+        if name == "self":
+            return  # skip self parameter as it will not be bound yet
+
+        if param.annotation == inspect.Parameter.empty:
+            raise ProgrammingError(
+                f"Argument `{name}` of `{func.__name__}` requires a type annotation."
+            )
+
+        if param.kind == inspect.Parameter.POSITIONAL_ONLY:
+            if index == 1 and param.annotation is AuthorizationContext:
+                pass
+            elif index == 2 and param.annotation is PlatformProtocol:
+                pass
+            else:
+                raise ProgrammingError(
+                    f"Unexpected positional-only argument '{name}' with annotation "
+                    f"`{param.annotation}` in function definiton for "
+                    f"`{func.__name__}`."
+                )
+
+        original_params = list(self.signature.parameters.items())
+        if index > 2:
+            try:
+                coresp_name, coresp_param = original_params[index - 3]
+            except IndexError:
+                raise ProgrammingError(
+                    f"Argument '{name}' for auth check `{func.__name__}` "
+                    f"is superfluous because `{self.func.__name__}` only "
+                    f"expects {len(original_params)} argument(s)."
+                )
+
+            if param.annotation != coresp_param.annotation:
+                raise ProgrammingError(
+                    f"Annotation `{param.annotation}` of argument '{name}' "
+                    f"for auth check `{func.__name__}` does not match "
+                    f"corresponding annotation `{coresp_param.annotation}` for "
+                    f"'{coresp_name}' argument of `{self.func.__name__}`."
+                )
+
+            if param.default != coresp_param.default:
+                raise ProgrammingError(
+                    f"Default `{param.default}` of keyword argument '{name}' "
+                    f"for auth check `{func.__name__}` does not match "
+                    f"corresponding default `{coresp_param.default}` for "
+                    f"'{coresp_name}' argument of `{self.func.__name__}`."
+                )
 
     def auth_check(
         self,

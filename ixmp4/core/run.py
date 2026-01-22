@@ -131,7 +131,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     for a run."""
 
     checkpoints: RunCheckpoints
-    """Facade instance to manage :class:`~ixmp4.core.checkpoint.Checkpoint` 
+    """Facade instance to manage :class:`~ixmp4.core.checkpoint.Checkpoint`
     instances for a run."""
 
     iamc: RunIamcData

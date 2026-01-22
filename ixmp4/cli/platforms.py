@@ -86,7 +86,10 @@ def add(
     dsn: Annotated[
         str | None,
         typer.Option(
-            help="Data source name. Can be a http(s) URL or a database connection string.",
+            help=(
+                "Data source name. "
+                "Can be a http(s) URL or a database connection string."
+            ),
             callback=validate_dsn,
         ),
     ] = None,
@@ -180,7 +183,8 @@ def list_() -> None:
         manager_results = manager_platforms.list_platforms()
     except ServiceException as e:
         typer.echo(
-            "Exception occurred during manager request, cannot access manager platforms:"
+            "Exception occurred during manager request, "
+            "cannot access manager platforms:"
         )
         typer.secho(str(e), fg=typer.colors.RED, err=True)
         raise typer.Exit(code=2)
