@@ -17,7 +17,6 @@ from ixmp4.backend import Backend
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
     PlatformConnectionInfo,
-    TomlPlatforms,
 )
 from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
@@ -157,10 +156,7 @@ class V1HttpApi:
             app.state.manager_client = None
             app.state.manager_platforms = None
 
-        if self.settings.toml_platforms is not None:
-            app.state.toml_platforms = TomlPlatforms(self.settings.toml_platforms)
-        else:
-            app.state.toml_platforms = None
+        app.state.toml_platforms = self.settings.get_toml_platforms()
 
     @staticmethod
     def service_exception_handler(

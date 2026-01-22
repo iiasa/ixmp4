@@ -55,8 +55,12 @@ class ServerSettings(BaseSettings):
     ) -> ManagerClient:
         return ManagerClient(str(manager_url), self.get_self_signed_auth(secret_hs256))
 
-    def get_toml_platforms(self, toml_platforms: Path) -> TomlPlatforms:
-        return TomlPlatforms(toml_platforms)
+    def get_toml_platforms(self) -> TomlPlatforms | None:
+        if self.toml_platforms is None:
+            return None
+        if not self.toml_platforms.exists():
+            return None
+        return TomlPlatforms(self.toml_platforms)
 
 
 class Settings(BaseSettings):
