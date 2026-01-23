@@ -1,5 +1,3 @@
-""" """
-
 from ixmp4.backend import Backend
 from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
 from ixmp4.conf.platforms import PlatformConnectionInfo
