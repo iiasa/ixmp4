@@ -1,7 +1,7 @@
 import abc
 import json
 from pathlib import Path
-from typing import Any, Protocol, Sequence, runtime_checkable
+from typing import Any, Protocol, runtime_checkable
 
 import toml
 from pydantic import BaseModel, ConfigDict
@@ -27,7 +27,7 @@ class PlatformConnectionInfo(Protocol):
 
 class PlatformConnections(abc.ABC):
     @abc.abstractmethod
-    def list_platforms(self) -> Sequence[PlatformConnectionInfo]:
+    def list_platforms(self) -> list[PlatformConnectionInfo]:
         raise NotImplementedError
 
     @abc.abstractmethod
@@ -75,7 +75,7 @@ class TomlPlatforms(PlatformConnections):
         f = self.path.open("w+")
         toml.dump(obj, f)
 
-    def list_platforms(self) -> Sequence[TomlPlatform]:
+    def list_platforms(self) -> list[TomlPlatform]:
         return list(self.platforms.values())
 
     def get_platform(self, name: str) -> TomlPlatform:
@@ -107,7 +107,7 @@ class ManagerPlatforms(PlatformConnections):
     def __init__(self, manager_client: ManagerClient):
         self.manager_client = manager_client
 
-    def list_platforms(self) -> Sequence[Ixmp4Instance]:
+    def list_platforms(self) -> list[Ixmp4Instance]:
         return self.manager_client.ixmp4.cached_list()
 
     def get_platform(self, name: str) -> Ixmp4Instance:
