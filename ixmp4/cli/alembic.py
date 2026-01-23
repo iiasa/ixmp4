@@ -42,13 +42,13 @@ def get_connection_info(settings: Settings, name: str) -> PlatformConnectionInfo
     if platform.dsn.startswith("http"):
         raise typer.BadParameter(
             f"Platform '{name}' is a http platform and "
-            "thus cannot be an alembic command target."
+            "thus cannot be a database target for alembic."
         )
 
     return platform
 
 
-def collect_targets(
+def collect_platforms(
     settings: Settings, *, platform: list[str] | None, toml: bool, manager: bool
 ) -> list[PlatformConnectionInfo]:
     candidates: list[PlatformConnectionInfo] = []
@@ -71,14 +71,14 @@ def collect_targets(
             )
             typer.secho(str(e), fg=typer.colors.RED, err=True)
 
-    targets: list[PlatformConnectionInfo] = []
+    platforms: list[PlatformConnectionInfo] = []
     for c in candidates:
         if c.dsn.startswith("http"):
             typer.echo(f"Skipping '{c.name}' because it is an API platform. ")
         else:
-            targets.append(c)
+            platforms.append(c)
 
-    return targets
+    return platforms
 
 
 @app.callback(invoke_without_command=True)
@@ -107,17 +107,19 @@ def alembic(
 ) -> None:
     """Runs alembic commands on platform databases.
     Requires '--platform/-p', '--toml' or '--manager' to
-    choose command targets."""
+    choose command target databases."""
     settings = Settings()
     settings.configure_logging("alembic")
-    targets = collect_targets(settings, platform=platform, toml=toml, manager=manager)
+    platforms = collect_platforms(
+        settings, platform=platform, toml=toml, manager=manager
+    )
 
-    if len(targets) == 0:
+    if len(platforms) == 0:
         raise typer.BadParameter(
-            "No targets found. Are you missing one of: "
+            "No platforms found. Are you missing one of: "
             "'--platform/-p', '--toml', '--manager'?"
         )
 
-    controllers = [get_alembic_controller(target.dsn) for target in targets]
+    controllers = [get_alembic_controller(platform.dsn) for platform in platforms]
     ctx.ensure_object(dict)
     ctx.obj["controllers"] = controllers
