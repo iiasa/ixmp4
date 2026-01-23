@@ -16,7 +16,6 @@ from ixmp4.data.unit.service import UnitService
 from ixmp4.data.versions.model import Operation
 from ixmp4.transport import Transport
 from tests import auth, backends
-from tests.base import DataFrameTest
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -84,7 +83,7 @@ class DataPointServiceTest(ServiceTest[DataPointService]):
         return timeseries.tabulate()
 
 
-class DataPointBulkOperationsTest(DataFrameTest, DataPointServiceTest):
+class DataPointBulkOperationsTest(DataPointServiceTest):
     @pytest.fixture(scope="class")
     def test_annual_df(
         self,

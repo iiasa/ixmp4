@@ -11,7 +11,7 @@ from ixmp4.cli import app
 from ixmp4.conf.settings import Settings
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="class")
 def temporary_settings() -> Generator[Settings, None, None]:
     """Fixture to create settings pointing to a temporary directory
     and mocking the `Settings` constructor."""
@@ -21,7 +21,7 @@ def temporary_settings() -> Generator[Settings, None, None]:
             yield settings
 
 
-@pytest.fixture(scope="function")
+@pytest.fixture(scope="class")
 def runner(temporary_settings: Settings) -> CliRunner:
     return CliRunner(
         env={"IXMP4_STORAGE_DIRECTORY": str(temporary_settings.storage_directory)},
@@ -38,7 +38,7 @@ def tmp_working_directory() -> Generator[Path, None, None]:
         os.chdir(orginal_dir)
 
 
-class TestAddPlatformCLI:
+class TestPlatformCLI:
     def test_add_platform(
         self, runner: CliRunner, temporary_settings: Settings
     ) -> None:
@@ -77,11 +77,16 @@ class TestAddPlatformCLI:
         alternative_path = (
             temporary_settings.storage_directory
             / "databases"
-            / "test-alternative.sqlite3"
+            / "test-alternative-path.sqlite3"
         )
         result = runner.invoke(
             app,
-            ["platforms", "add", "test", f"--dsn=sqlite://{alternative_path}"],
+            [
+                "platforms",
+                "add",
+                "test-alternative",
+                f"--dsn=sqlite://{alternative_path}",
+            ],
         )
         assert result.exit_code == 0
         assert "Platform added successfully." in result.stdout
@@ -92,7 +97,7 @@ class TestAddPlatformCLI:
             not in result.stdout
         )
         assert (
-            "No file at the standard filesystem location for name 'test' exists. "
+            "No file at the standard filesystem location for name 'test-alternative' exists. "
             "Do you want to create a new database?"
         ) not in result.stdout
         assert "Creating the database and running migrations..." not in result.stdout
@@ -102,8 +107,8 @@ class TestAddPlatformCLI:
 
         # check the toml file
         toml_platforms = temporary_settings.get_toml_platforms()
-        platform_info = toml_platforms.get_platform("test")
-        assert platform_info.name == "test"
+        platform_info = toml_platforms.get_platform("test-alternative")
+        assert platform_info.name == "test-alternative"
         assert str(alternative_path) in platform_info.dsn
 
     def test_add_platform_from_anywhere(
@@ -116,28 +121,89 @@ class TestAddPlatformCLI:
         assert not (tmp_working_directory / "ixmp4" / "db" / "migrations").exists()
 
         # Assert platform creation still works
-        result = runner.invoke(app, ["platforms", "add", "test"], input="y")
+        result = runner.invoke(app, ["platforms", "add", "test-anywhere"], input="y")
         assert result.exit_code == 0
         assert "Platform added successfully." in result.stdout
         assert (
-            temporary_settings.storage_directory / "databases" / "test.sqlite3"
+            temporary_settings.storage_directory / "databases" / "test-anywhere.sqlite3"
         ).is_file()
 
     def test_add_platform_duplicate(
         self, runner: CliRunner, temporary_settings: Settings
     ) -> None:
-        runner.invoke(app, ["platforms", "add", "test"], input="y").stdout
-        # Ensure the first platform is created
-        assert (
-            temporary_settings.storage_directory / "databases" / "test.sqlite3"
-        ).is_file()
-
         # Assert failure when trying to add the same platform again
         result = runner.invoke(app, ["platforms", "add", "test"])
         assert result.exit_code == 2
         assert (
             "Invalid value: Platform with name 'test' already exists."
         ) in result.output
+
+    def test_list_platforms(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
+        result = runner.invoke(app, ["platforms", "list"])
+        assert result.exit_code == 0
+
+        assert "via toml file" in result.output
+        assert "databases/test" in result.output
+        assert "databases/test-alternative" in result.output
+        assert "databases/test-anywhere" in result.output
+
+        assert "via manager api" in result.output
+
+    def test_remove_platform(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
+        # Remove platform and delete sqlite file
+        result = runner.invoke(
+            app, ["platforms", "remove", "test-anywhere"], input="y\ny"
+        )
+        assert result.exit_code == 0
+        assert (
+            "Are you sure you want to remove the platform 'test-anywhere' with dsn"
+            in result.output
+        )
+        assert "Do you want to remove the associated database file at" in result.output
+        assert "Database file deleted." in result.output
+
+        # Remove platform without deleting sqlite file
+        alternative_path = (
+            temporary_settings.storage_directory
+            / "databases"
+            / "test-alternative-path.sqlite3"
+        )
+        alternative_path.touch()
+
+        result = runner.invoke(
+            app, ["platforms", "remove", "test-alternative"], input="y\nn"
+        )
+        assert result.exit_code == 0
+        assert (
+            "Are you sure you want to remove the platform 'test-alternative' with dsn"
+            in result.output
+        )
+        assert "Do you want to remove the associated database file at" in result.output
+        assert "Database file left intact." in result.output
+        assert alternative_path.exists()  # check file still exists
+
+        # test platforms dont show up in the list
+        result = runner.invoke(app, ["platforms", "list"])
+        assert result.exit_code == 0
+
+        assert "test-anywhere" not in result.output
+        assert "test-alternative" not in result.output
+        assert not (
+            temporary_settings.storage_directory / "databases" / "test-anywhere.sqlite3"
+        ).exists()
+
+    def test_remove_platform_not_found(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
+        result = runner.invoke(
+            app, ["platforms", "remove", "nonexistent-platform"], input="y\ny"
+        )
+        assert result.exit_code > 0
+        assert "Platform 'nonexistent-platform' does not exist." in result.output
 
 
 class TestPlatformGenerateCLI:

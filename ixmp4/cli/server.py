@@ -38,6 +38,6 @@ def dump_schema(
     server = Ixmp4Server(settings.server)
     schema = server.asgi_app.openapi_schema.to_schema()
     if output_file is None:
-        typer.echo(json.dumps(schema))
+        typer.echo(json.dumps(schema, default=str))
     else:
-        json.dump(schema, output_file)
+        json.dump(schema, output_file, default=str)

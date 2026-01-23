@@ -14,7 +14,6 @@ from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.transport import Transport
 from tests import backends
-from tests.base import DataFrameTest
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -189,7 +188,7 @@ class TestRunMetaEntryTabulate(RunMetaEntryServiceTest):
         pdt.assert_frame_equal(metas, test_entries_df, check_like=True)
 
 
-class TestRunMetaEntryBulkOperations(DataFrameTest, RunMetaEntryServiceTest):
+class TestRunMetaEntryBulkOperations(RunMetaEntryServiceTest):
     def test_meta_bulk_insert(
         self,
         service: RunMetaEntryService,

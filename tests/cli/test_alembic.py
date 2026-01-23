@@ -1,4 +1,3 @@
-import os
 from pathlib import Path
 from tempfile import TemporaryDirectory
 from typing import Generator
@@ -33,16 +32,6 @@ def runner(temporary_settings: Settings) -> CliRunner:
     return CliRunner(
         env={"IXMP4_STORAGE_DIRECTORY": str(temporary_settings.storage_directory)},
     )
-
-
-@pytest.fixture(scope="function")
-def tmp_working_directory() -> Generator[Path, None, None]:
-    """Fixture to create and enter a temporary working directory for tests."""
-    with TemporaryDirectory() as temp_dir:
-        orginal_dir = os.getcwd()
-        os.chdir(temp_dir)
-        yield Path(temp_dir)
-        os.chdir(orginal_dir)
 
 
 class TestAlembicTargets:
