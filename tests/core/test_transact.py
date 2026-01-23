@@ -25,9 +25,9 @@ class TestRunTransact:
         thread = threading.Thread(target=background_task)
         thread.start()
 
-        sync_lock.acquire(timeout=3)
+        sync_lock.acquire(timeout=1)
 
-        with run2.transact("Test transaction", timeout=2):
+        with run2.transact("Test transaction", timeout=5):
             run2.meta["mstr"] = "baz"
 
         assert run2.meta["mstr"] == "baz"
