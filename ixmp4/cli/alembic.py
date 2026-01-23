@@ -81,7 +81,7 @@ def collect_platforms(
     return platforms
 
 
-@app.callback(invoke_without_command=True)
+@app.callback()
 def alembic(
     ctx: typer.Context,
     platform: Annotated[

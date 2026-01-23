@@ -113,7 +113,7 @@ class ManagerPlatforms(PlatformConnections):
     def get_platform(self, name: str) -> Ixmp4Instance:
         ixmp4_inst = self.manager_client.ixmp4.cached_list()
         for i in ixmp4_inst:
-            if i.name == name:
+            if i.slug == name:
                 return i
         else:
             raise PlatformNotFound(f"Platform '{name}' was not found.")
