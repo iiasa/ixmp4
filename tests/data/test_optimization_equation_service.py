@@ -345,6 +345,7 @@ class EquationDataTest(EquationServiceTest):
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
+        vdf = self.canonicalize_datetimes(vdf)
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -709,6 +710,7 @@ class TestEquationTabulate(EquationServiceTest):
         expected_equations["created_by"] = "@unknown"
 
         equations = service.tabulate()
+        equations = self.canonicalize_datetimes(equations)
         pdt.assert_frame_equal(equations, expected_equations, check_like=True)
 
 

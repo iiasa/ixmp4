@@ -206,6 +206,7 @@ class TestFilters:
     def test_filter_datapoints(self, platform: ixmp4.Platform) -> None:
         df = platform.iamc.tabulate()
         assert len(df) == 426
+        import sys as sys
 
         df_runs = platform.iamc.tabulate(run={"id__in": [1, 7]})
         assert len(df_runs) == 120

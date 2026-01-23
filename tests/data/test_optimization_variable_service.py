@@ -345,6 +345,7 @@ class VariableDataTest(VariableServiceTest):
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
+        vdf = self.canonicalize_datetimes(vdf)
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -709,6 +710,7 @@ class TestVariableTabulate(VariableServiceTest):
         expected_variables["created_by"] = "@unknown"
 
         variables = service.tabulate()
+        variables = self.canonicalize_datetimes(variables)
         pdt.assert_frame_equal(variables, expected_variables, check_like=True)
 
 

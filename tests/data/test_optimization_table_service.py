@@ -362,6 +362,7 @@ class TableDataTest(TableServiceTest):
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
+        vdf = self.canonicalize_datetimes(vdf)
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -632,6 +633,7 @@ class TestTableTabulate(TableServiceTest):
         expected_tables["created_by"] = "@unknown"
 
         tables = service.tabulate()
+        tables = self.canonicalize_datetimes(tables)
         pdt.assert_frame_equal(tables, expected_tables, check_like=True)
 
 

@@ -52,3 +52,10 @@ class DataFrameTest(object):
     def canonical_sort(cls, df: pd.DataFrame) -> pd.DataFrame:
         sorted_cols = df.columns.sort_values().to_list()
         return df.sort_values(by=sorted_cols).reset_index(drop=True)
+
+    @classmethod
+    def canonicalize_datetimes(cls, df: pd.DataFrame) -> pd.DataFrame:
+        for col, dtype in df.dtypes.items():
+            if dtype == "datetime64[ns]":
+                df[col] = df[col].astype("datetime64[us]")
+        return df

@@ -360,6 +360,7 @@ class ParameterDataTest(ParameterServiceTest):
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
+        vdf = self.canonicalize_datetimes(vdf)
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -738,6 +739,7 @@ class TestParameterTabulate(ParameterServiceTest):
         expected_parameters["created_by"] = "@unknown"
 
         parameters = service.tabulate()
+        parameters = self.canonicalize_datetimes(parameters)
         pdt.assert_frame_equal(parameters, expected_parameters, check_like=True)
 
 

@@ -336,6 +336,7 @@ class ScalarDataTest(ScalarServiceTest):
         expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
+        vdf = self.canonicalize_datetimes(vdf)
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
@@ -483,6 +484,7 @@ class TestScalarTabulate(ScalarServiceTest):
         expected_scalars["created_by"] = "@unknown"
 
         scalars = service.tabulate()
+        scalars = self.canonicalize_datetimes(scalars)
         pdt.assert_frame_equal(scalars, expected_scalars, check_like=True)
 
 
