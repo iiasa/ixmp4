@@ -97,7 +97,8 @@ class TestPlatformCLI:
             not in result.stdout
         )
         assert (
-            "No file at the standard filesystem location for name 'test-alternative' exists. "
+            "No file at the standard filesystem location for name "
+            "'test-alternative' exists. "
             "Do you want to create a new database?"
         ) not in result.stdout
         assert "Creating the database and running migrations..." not in result.stdout
