@@ -10,7 +10,6 @@ on:
 
 jobs:
   test:
-    concurrency: 4
     timeout-minutes: 60
     strategy:
       matrix:
