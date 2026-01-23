@@ -58,7 +58,7 @@ class TestFilters:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            run = platform.runs.get(str(model), str(scenario), cast(int, version))
+            run = platform.runs.get(str(model), str(scenario), int(cast(str, version)))
             with run.transact("Add datapoints"):
                 run.iamc.add(rows.drop(columns=["model", "scenario", "version"]))
 
