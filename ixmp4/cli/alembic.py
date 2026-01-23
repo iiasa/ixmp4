@@ -34,7 +34,7 @@ def get_connection_info(settings: Settings, name: str) -> PlatformConnectionInfo
             platform = manager_platforms.get_platform(name)
         except ServiceException as se:
             typer.echo(
-                "Exception occured during manager request, "
+                "Exception occurred during manager request, "
                 "cannot access manager platforms:"
             )
             typer.secho(str(se), fg=typer.colors.RED, err=True)
