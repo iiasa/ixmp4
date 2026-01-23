@@ -7,12 +7,8 @@ from typing import Literal
 
 from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
-from toolkit.auth.context import AuthorizationContext
-from toolkit.auth.user import ServiceAccount, User
-from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
+from toolkit.client.auth import ManagerAuth, SelfSignedAuth
 from toolkit.manager.client import ManagerClient
-
-from ixmp4.base_exceptions import ProgrammingError
 
 from .credentials import Credentials, CredentialsDict
 from .platforms import ManagerPlatforms, TomlPlatforms
@@ -153,42 +149,6 @@ class Settings(BaseSettings):
 
         file_name = name + ".sqlite3"
         return self.get_database_dir() / file_name
-
-    def get_manager_user(
-        self, manager_client: ManagerClient
-    ) -> User | ServiceAccount | None:
-        default_auth = manager_client.auth
-        if default_auth is None or not isinstance(default_auth, Auth):
-            user = None
-        elif (
-            getattr(default_auth, "access_token", None) is None
-            or default_auth.access_token is None
-        ):
-            user = None
-        else:
-            user = default_auth.access_token.user
-        return user
-
-    def get_local_user(self, credentials: str = "default") -> User:
-        cred_dict = self.get_credentials().get(credentials)
-        if cred_dict is not None:
-            username = cred_dict["username"]
-        else:
-            username = "@unknown"
-
-        return User(id=-1, username=username, email="", groups=[], is_superuser=True)
-
-    def get_manager_auth_context(
-        self, credentials: str = "default"
-    ) -> AuthorizationContext:
-        manager_client = self.get_manager_client(credentials=credentials)
-        user = self.get_manager_user(manager_client)
-
-        if isinstance(user, ServiceAccount):
-            raise ProgrammingError(
-                "Cannot make `AuthorizationContext` with `ServiceAccount` as `user`."
-            )
-        return AuthorizationContext(user, manager_client)
 
     def get_client_auth(
         self, credentials: CredentialsDict | None
