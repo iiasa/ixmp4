@@ -3,7 +3,7 @@ from typing import Generic, TypeVar, cast
 
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
+from ixmp4.data.backend import Backend
 from ixmp4.data.base.dto import BaseModel
 from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound

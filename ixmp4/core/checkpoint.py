@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import pandas as pd
 
-from ixmp4.backend import Backend
+from ixmp4.data.backend import Backend
 from ixmp4.data.checkpoint.dto import Checkpoint
 from ixmp4.data.checkpoint.exceptions import (
     CheckpointDeletionPrevented,

@@ -6,9 +6,9 @@ import sqlalchemy as sa
 from sqlalchemy.exc import OperationalError
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
-from ixmp4.backend import Backend
 from ixmp4.conf.settings import Settings
 from ixmp4.core.platform import Platform
+from ixmp4.data.backend import Backend
 from ixmp4.db.models import get_metadata
 from ixmp4.server import Ixmp4Server
 from ixmp4.transport import (
@@ -270,7 +270,7 @@ def get_platform_fixture(
         request: pytest.FixtureRequest,
     ) -> Generator[Platform, None, None]:
         with transport(request) as t:
-            yield Platform(_backend=Backend(t))
+            yield Platform(Backend(t))
 
     return pytest.fixture(params=list(backends), scope=scope)(platform_fixture)
 

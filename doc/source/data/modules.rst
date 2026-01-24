@@ -15,7 +15,7 @@ The :mod:`ixmp4.data` module organizes each datatype into a few files for consis
 - **repositories.py**: repository classes responsible for interacting with the database
 - **service.py**: service class as the main interface for the datatype which combines all of the above
 
-The service classes are instantiated together via a :class:`ixmp4.backend.Backend` object 
+The service classes are instantiated together via a :class:`ixmp4.data.backend.Backend` object 
 which can be used by other code to perform operations in the database or on a remote ixmp4 
 http server. This construct and its classes can be referred to as the "data layer".
 

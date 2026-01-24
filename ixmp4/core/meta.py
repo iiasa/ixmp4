@@ -15,7 +15,7 @@ from ixmp4.data.meta.service import RunMetaEntryService
 from .base import BaseServiceFacade
 
 if TYPE_CHECKING:
-    from ixmp4.backend import Backend
+    from ixmp4.data.backend import Backend
 
     from .run import Run
 

@@ -22,6 +22,9 @@ class Transport(abc.ABC):
     def check_versioning_compatiblity(self) -> None:
         raise NotImplementedError
 
+    def __str__(self) -> str:
+        return f"<{self.__class__.__name__}>"
+
 
 logger = logging.getLogger(__name__)
 

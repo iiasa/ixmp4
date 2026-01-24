@@ -3,7 +3,7 @@ from typing import Any
 from litestar import get
 from litestar.di import Provide
 
-from ixmp4.backend import Backend
+from ixmp4.data.backend import Backend
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.services.http import ServiceController
 

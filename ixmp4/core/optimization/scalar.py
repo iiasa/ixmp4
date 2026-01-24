@@ -4,9 +4,9 @@ from typing import TYPE_CHECKING
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
 from ixmp4.core.docs import DocsDescriptor
 from ixmp4.core.unit import Unit
+from ixmp4.data.backend import Backend
 from ixmp4.data.optimization.scalar.dto import Scalar as ScalarDto
 from ixmp4.data.optimization.scalar.exceptions import (
     ScalarDeletionPrevented,

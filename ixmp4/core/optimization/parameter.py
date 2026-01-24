@@ -4,8 +4,8 @@ from typing import Any, cast
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
 from ixmp4.core.docs import DocsDescriptor
+from ixmp4.data.backend import Backend
 from ixmp4.data.optimization.parameter.dto import Parameter as ParameterDto
 from ixmp4.data.optimization.parameter.exceptions import (
     ParameterDataInvalid,

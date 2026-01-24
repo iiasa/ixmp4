@@ -1,6 +1,6 @@
 from typing import TYPE_CHECKING
 
-from ixmp4.backend import Backend
+from ixmp4.data.backend import Backend
 
 from ..base import BaseBackendFacade
 from .equation import EquationServiceFacade

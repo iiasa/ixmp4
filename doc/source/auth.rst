@@ -89,13 +89,12 @@ configuration variable to enable unrestricted use:
     import ixmp4
     from ixmp4.conf.settings import ClientSettings
     from ixmp4.transport import HttpxTransport
-    from ixmp4.backend import Backend
 
     transport = HttpxTransport.from_url(
         "http://localhost:9000/v1/test/",
         ClientSettings(secret_hs256="changeme"),
     )
-    platform = ixmp4.Platform(_backend=Backend(transport))
+    platform = ixmp4.Platform(transport)
 
 This will give anyone with knowledge of the secret superuser access 
 to the local server instance. 

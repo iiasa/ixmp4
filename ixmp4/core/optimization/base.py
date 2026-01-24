@@ -1,6 +1,5 @@
 from typing import TYPE_CHECKING
 
-from ixmp4.backend import Backend
 from ixmp4.core.base import (
     BaseDocsServiceFacade,
     BaseFacadeObject,
@@ -10,6 +9,7 @@ from ixmp4.core.base import (
     ItemT,
     KeyT,
 )
+from ixmp4.data.backend import Backend
 
 if TYPE_CHECKING:
     import ixmp4.core.run

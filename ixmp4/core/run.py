@@ -9,8 +9,8 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
 from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.data.backend import Backend
 from ixmp4.data.model.dto import Model as ModelDto
 from ixmp4.data.run.dto import Run as RunDto
 from ixmp4.data.run.exceptions import (

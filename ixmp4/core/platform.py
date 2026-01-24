@@ -1,8 +1,8 @@
-from ixmp4.backend import Backend
 from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.conf.settings import Settings
-from ixmp4.transport import DirectTransport, HttpxTransport
+from ixmp4.data.backend import Backend
+from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 
 from .iamc import PlatformIamcData
 from .meta import PlatformRunMetaFacade
@@ -32,19 +32,21 @@ class Platform(object):
 
     .. code:: python
 
-        import ixmp4
         from ixmp4.conf.settings import Settings
 
         platform = ixmp4.Platform("<name>", settings=Settings(manager_url="https://.../"))
 
-    ...or provide a :class:`ixmp4.backend.Backend` class directly.
+    ...and provide a :class:`~ixmp4.data.backend.Backend` or
+    :class:`~ixmp4.transport.Transport` class directly.
 
     .. code:: python
 
-        import ixmp4
-        from ixmp4.backend import Backend
+        from ixmp4.transport import DirectTransport
+        from ixmp4.data.backend import Backend
 
-        platform = ixmp4.Platform(_backend=Backend(...))
+        platform = ixmp4.Platform(Backend(...))
+        # or
+        platform = ixmp4.Platform(DirectTransport.from_dsn(...))
 
 
     Once created, the platform's ``Facade`` attributes
@@ -119,24 +121,29 @@ class Platform(object):
     for a platform."""
 
     backend: Backend
+    """Central data layer object that is composed of services."""
+
     settings: Settings
-    connection_info: PlatformConnectionInfo
+    """The settings object the platform is using."""
 
     def __init__(
         self,
-        name: str | None = None,
+        name_or_connection: str | Transport | Backend,
         settings: Settings | None = None,
-        _backend: Backend | None = None,
     ) -> None:
         if settings is not None:
             self.settings = settings
         else:
             self.settings = Settings()
 
-        if _backend is not None:
-            self.backend = _backend
+        if isinstance(name_or_connection, str):
+            self.backend = self.init_backend(name_or_connection)
+        elif isinstance(name_or_connection, Transport):
+            self.backend = Backend(name_or_connection)
+        elif isinstance(name_or_connection, Backend):
+            self.backend = name_or_connection
         else:
-            self.backend = self.init_backend(name)
+            raise TypeError("__init__() is missing required argument 'name'")
 
         self.runs = RunServiceFacade(self.backend)
         self.iamc = PlatformIamcData(self.backend)
@@ -146,10 +153,7 @@ class Platform(object):
         self.units = UnitServiceFacade(self.backend)
         self.meta = PlatformRunMetaFacade(self.backend)
 
-    def init_backend(self, name: str | None) -> Backend:
-        if name is None:
-            raise TypeError("__init__() is missing required argument 'name'")
-
+    def init_backend(self, name: str) -> Backend:
         ci = self.get_toml_platform_ci(name)
 
         if ci is None:
@@ -157,8 +161,6 @@ class Platform(object):
 
         if ci is None:
             raise PlatformNotFound(f"Platform '{name}' was not found.")
-
-        self.connection_info = ci
 
         transport = self.get_transport(ci)
         return Backend(transport)

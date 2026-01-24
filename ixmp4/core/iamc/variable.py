@@ -4,9 +4,9 @@ from typing import List
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
 from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
 from ixmp4.core.docs import DocsDescriptor
+from ixmp4.data.backend import Backend
 from ixmp4.data.iamc.variable.dto import Variable as VariableDto
 from ixmp4.data.iamc.variable.exceptions import (
     VariableDeletionPrevented,

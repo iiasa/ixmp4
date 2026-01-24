@@ -13,7 +13,6 @@ from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
 from typing_extensions import NotRequired, TypedDict
 
-from ixmp4.backend import Backend
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
     PlatformConnectionInfo,
@@ -25,6 +24,7 @@ from ixmp4.core.exceptions import (
     PlatformNotFound,
     registry,
 )
+from ixmp4.data.backend import Backend
 from ixmp4.data.checkpoint.service import CheckpointService
 from ixmp4.data.docs.controller import DocsCompatibilityController
 from ixmp4.data.iamc.datapoint.service import DataPointService as IamcDataPointService

@@ -10,7 +10,7 @@ from typing_extensions import Unpack
 #     RemoveDataPointFrameSchema,
 #     normalize_df,
 # )
-from ixmp4.backend import Backend
+from ixmp4.data.backend import Backend
 from ixmp4.data.iamc.datapoint.filter import DataPointFilter
 from ixmp4.data.iamc.datapoint.type import Type
 

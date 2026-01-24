@@ -4,8 +4,8 @@ from typing import List
 import pandas as pd
 from typing_extensions import Unpack
 
-from ixmp4.backend import Backend
 from ixmp4.core.docs import DocsDescriptor
+from ixmp4.data.backend import Backend
 from ixmp4.data.region.dto import Region as RegionDto
 from ixmp4.data.region.exceptions import (
     RegionDeletionPrevented,

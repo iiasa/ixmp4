@@ -260,7 +260,7 @@ def generate(
     typer.echo("\n".join(lines))
     typer.echo(
         f"...and load them into the platform '{platform_name}' "
-        f"(DSN: {platform.connection_info.dsn}).\n"
+        f"with transport {str(platform.backend.transport)}.\n"
     )
 
     if typer.confirm("Are you sure?"):
