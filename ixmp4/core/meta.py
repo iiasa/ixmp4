@@ -86,20 +86,6 @@ class RunMetaDictFacade(
             return df, {}
         return df, dict(zip(df["key"], df["value"]))
 
-    def _set(self, meta: dict[str, MetaValueType | np.generic | None]) -> None:
-        self.run.require_lock()
-
-        df = pd.DataFrame({"key": self.data.keys()})
-        df["run__id"] = self.run.id
-        self._service.bulk_delete(df)
-        df = pd.DataFrame(
-            {"key": meta.keys(), "value": [numpy_to_pytype(v) for v in meta.values()]}
-        )
-        df.dropna(axis=0, inplace=True)
-        df["run__id"] = self.run.id
-        self._service.bulk_upsert(df)
-        self.df, self.data = self._get()
-
     def __setitem__(self, key: str, value: MetaValueType | np.generic | None) -> None:
         """
         .. code:: python
