@@ -167,7 +167,7 @@ class InvalidDataFrame(BadRequest):
 # == Filters ==
 @registry.register()
 class InvalidArguments(BadRequest):
-    message = "The provide arguments are invalid."
+    message = "The provided arguments are invalid."
     http_status_code = 400
     http_error_name = "invalid_arguments"
 
