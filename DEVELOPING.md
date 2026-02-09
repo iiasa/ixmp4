@@ -121,7 +121,6 @@ git push upstream v<release version>rc<N>
 1. Update on [conda-forge](https://github.com/conda-forge/ixmp4-feedstock).
    A PR should automatically be opened by a bot after the GitHub release (sometimes this
    takes from 30 minutes to several hours).
-
    1. Confirm that any new dependencies are added. The minimum versions in meta.yaml
       should match the versions in pyproject.toml.
    1. Ensure that tests pass and complete any other checklist items.
