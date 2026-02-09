@@ -64,7 +64,4 @@ class ProcedureDescriptor(Generic[ServiceT, Params, ReturnT]):
             )
 
     def __set_name__(self, owner: type[ServiceT], name: str) -> None:
-        if not hasattr(owner, "_procedures"):
-            owner._procedures = {}
-        owner._procedures[name] = self.procedure
         self.procedure.register_service(owner)

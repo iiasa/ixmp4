@@ -22,7 +22,7 @@ from ixmp4.transport import (
 )
 
 if TYPE_CHECKING:
-    from .procedure import Procedure
+    pass
 
 TransportT = TypeVar("TransportT", bound=Transport)
 ReturnT = TypeVar("ReturnT")
@@ -81,8 +81,6 @@ class Service(abc.ABC):
     # router: ClassVar[Router]
     transport: Transport
     http_controller: ClassVar[type[Controller] | None] = None
-
-    _procedures: "dict[str, Procedure[Any, Any, Any]]"
 
     def __init__(self, transport: Transport):
         self.transport = transport
