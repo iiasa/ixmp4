@@ -3,6 +3,7 @@ results."""
 
 from typing import Any, cast
 
+import numpy as np
 import pandas as pd
 import pytest
 from pytest_benchmark.fixture import BenchmarkFixture
@@ -107,7 +108,9 @@ class TestBenchmarks:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            run = platform.runs.get(str(model), str(scenario), cast(int, version))
+            run = platform.runs.get(
+                str(model), str(scenario), int(cast(np.int64, version))
+            )
             with run.transact("Benchmark: Add DataPoints Full"):
                 run.iamc.add(rows.drop(columns=["model", "scenario", "version"]))
 
@@ -118,7 +121,9 @@ class TestBenchmarks:
             ["model", "scenario", "version"], group_keys=False
         ):
             model, scenario, version = run_tuple
-            run = platform.runs.get(str(model), str(scenario), cast(int, version))
+            run = platform.runs.get(
+                str(model), str(scenario), int(cast(np.int64, version))
+            )
             with run.transact("Benchmark: Remove DataPoints Full"):
                 run.iamc.remove(
                     rows.drop(columns=["model", "scenario", "version", "value"])
