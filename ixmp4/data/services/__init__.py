@@ -4,5 +4,5 @@ from ixmp4.transport import Transport as Transport
 
 from .base import GetByIdService as GetByIdService
 from .base import Service as Service
-from .procedure import HttpConfig as Http
+from .procedure import ProcedureHttpConfig as Http
 from .procedure import procedure as procedure

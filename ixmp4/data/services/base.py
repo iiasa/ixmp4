@@ -1,12 +1,6 @@
 import abc
 from datetime import datetime, timezone
-from typing import (
-    Any,
-    ClassVar,
-    ParamSpec,
-    Sequence,
-    TypeVar,
-)
+from typing import TYPE_CHECKING, Any, ClassVar, ParamSpec, Sequence, TypeVar
 
 import pandas as pd
 import pandera.pandas as pa
@@ -26,6 +20,9 @@ from ixmp4.transport import (
     HttpxTransport,
     Transport,
 )
+
+if TYPE_CHECKING:
+    from .procedure import Procedure
 
 TransportT = TypeVar("TransportT", bound=Transport)
 ReturnT = TypeVar("ReturnT")
@@ -84,6 +81,8 @@ class Service(abc.ABC):
     # router: ClassVar[Router]
     transport: Transport
     http_controller: ClassVar[type[Controller] | None] = None
+
+    _procedures: "dict[str, Procedure[Any, Any, Any]]"
 
     def __init__(self, transport: Transport):
         self.transport = transport
@@ -157,7 +156,7 @@ class Service(abc.ABC):
 
     @classmethod
     def get_router(cls, settings: ServerSettings) -> Router:
-        from ixmp4.data.services.procedure import ServiceProcedure
+        from .procedure.descriptor import ProcedureDescriptor
 
         async def service_dep(transport: DirectTransport) -> Service:
             return cls(transport)
@@ -171,12 +170,12 @@ class Service(abc.ABC):
 
         for attrname in dir(cls):
             val = getattr(cls, attrname, None)
-            if isinstance(val, ServiceProcedure):
-                endpoint = val.get_endpoint(cls)
-                proc_route = endpoint.get_procedure_route()
-                routes = router.register(proc_route)
-                endpoint.routes = routes
-                val.endpoints[cls] = endpoint
+            if isinstance(val, ProcedureDescriptor):
+                try:
+                    handler = val.procedure.handlers[cls]
+                except KeyError:
+                    handler = val.procedure.register_service(cls)
+                router.register(handler)
 
         if cls.http_controller is not None:
             router.register(cls.http_controller)

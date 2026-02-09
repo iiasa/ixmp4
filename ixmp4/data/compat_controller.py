@@ -3,7 +3,7 @@ from typing import Any, cast
 from litestar import Request, patch
 
 from ixmp4.data.pagination import GenericPaginatedResult
-from ixmp4.data.services.http import ServiceController
+from ixmp4.data.services.controller import ServiceController
 
 
 class EnumerationCompatibilityController(ServiceController[Any]):
