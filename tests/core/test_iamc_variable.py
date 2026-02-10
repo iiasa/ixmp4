@@ -30,7 +30,7 @@ class TestVariable:
         assert variable4.id == 4
 
     def test_tabulate_variable(self, platform: ixmp4.Platform) -> None:
-        ret_df = platform.iamc.variables.tabulate()
+        ret_df = platform.iamc.variables.tabulate(run=None)
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
         assert "name" in ret_df.columns
@@ -38,7 +38,7 @@ class TestVariable:
         assert "created_by" in ret_df.columns
 
     def test_list_variable(self, platform: ixmp4.Platform) -> None:
-        assert len(platform.iamc.variables.list()) == 4
+        assert len(platform.iamc.variables.list(run=None)) == 4
 
     def test_delete_variable_via_func_obj(self, platform: ixmp4.Platform) -> None:
         variable1 = platform.iamc.variables.get_by_name("Variable 1")

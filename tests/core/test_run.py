@@ -39,7 +39,7 @@ class TestRun:
         assert run4.id == 4
 
     def test_tabulate_run(self, platform: ixmp4.Platform) -> None:
-        ret_df = platform.runs.tabulate()
+        ret_df = platform.runs.tabulate(default_only=False)
         assert len(ret_df) == 4
         assert "id" in ret_df.columns
         assert "model" in ret_df.columns
@@ -47,7 +47,7 @@ class TestRun:
         assert "version" in ret_df.columns
 
     def test_list_run(self, platform: ixmp4.Platform) -> None:
-        assert len(platform.runs.list()) == 4
+        assert len(platform.runs.list(default_only=False)) == 4
 
     def test_delete_run_via_func_obj(self, platform: ixmp4.Platform) -> None:
         run1 = platform.runs.get("Model", "Scenario")
