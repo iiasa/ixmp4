@@ -1,6 +1,6 @@
 import abc
 from datetime import datetime, timezone
-from typing import TYPE_CHECKING, Any, ClassVar, ParamSpec, Sequence, TypeVar
+from typing import TYPE_CHECKING, Any, ClassVar, Mapping, ParamSpec, Sequence, TypeVar
 
 import pandas as pd
 import pandera.pandas as pa
@@ -82,6 +82,8 @@ class Service(abc.ABC):
     transport: Transport
     http_controller: ClassVar[type[Controller] | None] = None
 
+    default_filter: Mapping[str, Any] = {}
+
     def __init__(self, transport: Transport):
         self.transport = transport
         if isinstance(transport, DirectTransport):
@@ -151,6 +153,21 @@ class Service(abc.ABC):
             return model.validate(df)
         except SchemaError as e:
             raise InvalidDataFrame(str(e))
+
+    def apply_filter_defaults(self, values: Mapping[str, Any]) -> dict[str, Any]:
+        defaults = dict(self.default_filter)
+        return self.deep_update_dict(defaults, values)
+
+    def deep_update_dict(
+        self, d: dict[str, Any], o: Mapping[str, Any]
+    ) -> dict[str, Any]:
+        for key, value in o.items():
+            if isinstance(value, dict):
+                node = d.setdefault(key, {})
+                self.deep_update_dict(value, node)
+            else:
+                d[key] = value
+        return d
 
     @classmethod
     def get_router(cls, settings: ServerSettings) -> Router:
