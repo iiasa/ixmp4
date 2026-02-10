@@ -269,8 +269,11 @@ def get_platform_fixture(
     def platform_fixture(
         request: pytest.FixtureRequest,
     ) -> Generator[Platform, None, None]:
-        with transport(request) as t:
-            yield Platform(Backend(t))
+        try:
+            with transport(request) as t:
+                yield Platform(Backend(t))
+        except OperationalError as e:
+            pytest.skip("Database is not reachable: " + str(e))
 
     return pytest.fixture(params=list(backends), scope=scope)(platform_fixture)
 

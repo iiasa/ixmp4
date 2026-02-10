@@ -140,7 +140,9 @@ class TestMetaData(MetaTest):
             ],
             columns=["model", "scenario", "version", "key", "value"],
         )
-        ret_non_default = platform.meta.tabulate(run={"is_default": False})
+        ret_non_default = platform.meta.tabulate(
+            run={"is_default": False, "default_only": False}
+        )
         pdt.assert_frame_equal(exp_non_default, ret_non_default, check_like=True)
 
 

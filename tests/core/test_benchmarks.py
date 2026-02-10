@@ -194,7 +194,7 @@ class TestBenchmarks:
 
         def run(mp: ixmp4.Platform) -> pd.DataFrame:
             with profiled():
-                return mp.iamc.tabulate()
+                return mp.iamc.tabulate(run={"default_only": False})
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result) == len(datapoints_half_insert_half_update)

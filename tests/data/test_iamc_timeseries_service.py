@@ -39,6 +39,7 @@ class TimeSeriesServiceTest(ServiceTest[TimeSeriesService]):
         runs: RunService,
     ) -> Run:
         run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
         assert run.id == 1
         return run
 
@@ -393,6 +394,7 @@ class TimeSeriesAuthTest(TimeSeriesServiceTest):
         runs: RunService,
     ) -> Run:
         run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
         return run
 
     @pytest.fixture(scope="class")
@@ -581,5 +583,7 @@ class TestTimeSeriesAuthCarinaPrivate(
         self,
         service: TimeSeriesService,
     ) -> None:
-        ret_df = service.tabulate()
+        ret_df = service.tabulate(run={"default_only": False})
         assert len(ret_df) == 6
+        ret_default_df = service.tabulate()
+        assert len(ret_default_df) == 3

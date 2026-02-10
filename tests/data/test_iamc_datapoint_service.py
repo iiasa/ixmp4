@@ -34,6 +34,7 @@ class DataPointServiceTest(ServiceTest[DataPointService]):
         runs: RunService,
     ) -> Run:
         run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
         assert run.id == 1
         return run
 
@@ -281,7 +282,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
 
     @pytest.fixture(scope="class")
     def tx_after_insert(self, test_df: pd.DataFrame) -> int:
-        return 14 + len(test_df)
+        return 16 + len(test_df)
 
     @pytest.fixture(scope="class")
     def tx_after_update(self, tx_after_insert: int, test_df: pd.DataFrame) -> int:
@@ -626,6 +627,7 @@ class DataPointAuthTest(DataPointServiceTest):
         runs: RunService,
     ) -> Run:
         run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
         assert run.id == 1
         return run
 
@@ -819,7 +821,7 @@ class TestDataPointAuthCarinaPrivate(
         unauthorized_service.bulk_upsert(test_df2)
 
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
-        ret_df = service.tabulate()
+        ret_df = service.tabulate(run={"default_only": False})
         assert len(ret_df) == 8
 
     def test_datapoint_bulk_delete(

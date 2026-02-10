@@ -231,7 +231,7 @@ class TestRunList(RunServiceTest):
         service.create("Model", "Scenario")
         service.create("Other Model", "Other Scenario")
 
-        runs = service.list()
+        runs = service.list(default_only=False)
 
         assert runs[0].id == 1
         assert runs[0].model.name == "Model"
@@ -330,7 +330,7 @@ class TestRunTabulate(RunServiceTest):
             ],
         )
 
-        runs = service.tabulate(include_audit_info=True).drop(
+        runs = service.tabulate(include_audit_info=True, default_only=False).drop(
             columns=["model__id", "scenario__id"]
         )
         pdt.assert_frame_equal(expected_runs, runs, check_like=True)
@@ -374,11 +374,11 @@ class TestRunAuthSarahPrivate(auth.SarahTest, auth.PrivatePlatformTest, RunServi
         versioning_service.revert(1, 1)
 
     def test_run_list(self, service: RunService) -> None:
-        results = service.list()
+        results = service.list(default_only=False)
         assert len(results) == 1
 
     def test_run_tabulate(self, service: RunService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(default_only=False)
         assert len(results) == 1
 
     def test_run_delete(self, service: RunService) -> None:
@@ -440,11 +440,11 @@ class TestRunAuthAlicePrivate(auth.AliceTest, auth.PrivatePlatformTest, RunServi
 
     def test_run_list(self, service: RunService) -> None:
         with pytest.raises(Forbidden):
-            service.list()
+            service.list(default_only=False)
 
     def test_run_tabulate(self, service: RunService) -> None:
         with pytest.raises(Forbidden):
-            service.tabulate()
+            service.tabulate(default_only=False)
 
     def test_run_delete(self, service: RunService) -> None:
         with pytest.raises(Forbidden):
@@ -486,11 +486,11 @@ class TestRunAuthBobPrivate(auth.BobTest, auth.PrivatePlatformTest, RunServiceTe
         versioning_service.revert(1, 1)
 
     def test_run_list(self, service: RunService) -> None:
-        results = service.list()
+        results = service.list(default_only=False)
         assert len(results) == 1
 
     def test_run_tabulate(self, service: RunService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(default_only=False)
         assert len(results) == 1
 
     def test_run_delete(self, service: RunService) -> None:
@@ -591,11 +591,11 @@ class TestRunAuthCarinaPrivate(
         versioning_service.revert(3, 1)
 
     def test_run_list(self, service: RunService) -> None:
-        results = service.list()
+        results = service.list(default_only=False)
         assert len(results) == 2
 
     def test_run_tabulate(self, service: RunService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(default_only=False)
         assert len(results) == 2
 
     def test_run_delete(self, service: RunService) -> None:
@@ -666,11 +666,11 @@ class TestRunAuthNonePrivate(auth.NoneTest, auth.PrivatePlatformTest, RunService
 
     def test_run_list(self, service: RunService) -> None:
         with pytest.raises(Forbidden):
-            service.list()
+            service.list(default_only=False)
 
     def test_run_tabulate(self, service: RunService) -> None:
         with pytest.raises(Forbidden):
-            service.tabulate()
+            service.tabulate(default_only=False)
 
     def test_run_delete(self, service: RunService) -> None:
         with pytest.raises(Forbidden):
@@ -712,11 +712,11 @@ class TestRunAuthDaveGated(auth.DaveTest, auth.GatedPlatformTest, RunServiceTest
         versioning_service.revert(1, 1)
 
     def test_run_list(self, service: RunService) -> None:
-        results = service.list()
+        results = service.list(default_only=False)
         assert len(results) == 1
 
     def test_run_tabulate(self, service: RunService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(default_only=False)
         assert len(results) == 1
 
     def test_run_delete(self, service: RunService) -> None:

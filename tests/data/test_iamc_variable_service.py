@@ -33,7 +33,8 @@ class TestVariableCreateViaTimeseries(VariableServiceTest):
         self,
         runs: RunService,
     ) -> Run:
-        run = runs.create("Variable", "Scenario")
+        run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
         assert run.id == 1
         return run
 
@@ -228,7 +229,7 @@ class TestVariableList(VariableServiceTest):
         service.create("Variable 1")
         service.create("Variable 2")
 
-        variables = service.list()
+        variables = service.list(run=None)
 
         assert variables[0].id == 1
         assert variables[0].name == "Variable 1"
@@ -266,7 +267,7 @@ class TestVariableTabulate(VariableServiceTest):
             columns=["id", "name", "created_at", "created_by"],
         )
 
-        variables = service.tabulate()
+        variables = service.tabulate(run=None)
         pdt.assert_frame_equal(variables, expected_variables, check_like=True)
 
 
@@ -287,11 +288,11 @@ class TestVariableAuthSarahPrivate(
         assert variable.name == "Variable"
 
     def test_variable_list(self, service: VariableService) -> None:
-        results = service.list()
+        results = service.list(run=None)
         assert len(results) == 1
 
     def test_variable_tabulate(self, service: VariableService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(run=None)
         assert len(results) == 1
 
     def test_variable_delete(self, service: VariableService) -> None:
@@ -316,11 +317,11 @@ class TestVariableAuthAlicePrivate(
 
     def test_variable_list(self, service: VariableService) -> None:
         with pytest.raises(Forbidden):
-            service.list()
+            service.list(run=None)
 
     def test_variable_tabulate(self, service: VariableService) -> None:
         with pytest.raises(Forbidden):
-            service.tabulate()
+            service.tabulate(run=None)
 
     def test_variable_delete(self, service: VariableService) -> None:
         with pytest.raises(Forbidden):
@@ -344,11 +345,11 @@ class TestVariableAuthBobPrivate(
         assert variable.name == "Variable"
 
     def test_variable_list(self, service: VariableService) -> None:
-        results = service.list()
+        results = service.list(run=None)
         assert len(results) == 1
 
     def test_variable_tabulate(self, service: VariableService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(run=None)
         assert len(results) == 1
 
     def test_variable_delete(self, service: VariableService) -> None:
@@ -375,11 +376,11 @@ class TestVariableAuthCarinaPrivate(
         assert variable.name == "Variable"
 
     def test_variable_list(self, service: VariableService) -> None:
-        results = service.list()
+        results = service.list(run=None)
         assert len(results) == 1
 
     def test_variable_tabulate(self, service: VariableService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(run=None)
         assert len(results) == 1
 
     def test_variable_delete(self, service: VariableService) -> None:
@@ -405,11 +406,11 @@ class TestVariableAuthNonePrivate(
 
     def test_variable_list(self, service: VariableService) -> None:
         with pytest.raises(Forbidden):
-            service.list()
+            service.list(run=None)
 
     def test_variable_tabulate(self, service: VariableService) -> None:
         with pytest.raises(Forbidden):
-            service.tabulate()
+            service.tabulate(run=None)
 
     def test_variable_delete(self, service: VariableService) -> None:
         with pytest.raises(Forbidden):
@@ -436,11 +437,11 @@ class TestVariableAuthDavePublic(
         assert variable.name == "Variable"
 
     def test_variable_list(self, service: VariableService) -> None:
-        results = service.list()
+        results = service.list(run=None)
         assert len(results) == 1
 
     def test_variable_tabulate(self, service: VariableService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(run=None)
         assert len(results) == 1
 
     def test_variable_delete(self, service: VariableService) -> None:
@@ -468,11 +469,11 @@ class TestVariableAuthNonePublic(
         assert variable.name == "Variable"
 
     def test_variable_list(self, service: VariableService) -> None:
-        results = service.list()
+        results = service.list(run=None)
         assert len(results) == 1
 
     def test_variable_tabulate(self, service: VariableService) -> None:
-        results = service.tabulate()
+        results = service.tabulate(run=None)
         assert len(results) == 1
 
     def test_variable_delete(self, service: VariableService) -> None:

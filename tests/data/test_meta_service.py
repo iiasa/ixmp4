@@ -54,6 +54,7 @@ class RunMetaEntryServiceTest(ServiceTest[RunMetaEntryService]):
         runs: RunService,
     ) -> Run:
         run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
         assert run.id == 1
         return run
 

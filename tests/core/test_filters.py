@@ -163,21 +163,25 @@ class TestFilters:
         assert unit10.name == "Unit 10"
 
     def test_filter_iamc_variables(self, platform: ixmp4.Platform) -> None:
-        [var1, var10] = platform.iamc.variables.list(name__like="Variable 1*")
+        [var1, var10] = platform.iamc.variables.list(name__like="Variable 1*", run=None)
         assert var1.name == "Variable 1"
         assert var10.name == "Variable 10"
 
-        df_name_like = platform.iamc.variables.tabulate(name__like="Variable 1*")
+        df_name_like = platform.iamc.variables.tabulate(
+            name__like="Variable 1*", run=None
+        )
         assert df_name_like["name"].to_list() == ["Variable 1", "Variable 10"]
 
-        df_unit = platform.iamc.variables.tabulate(unit={"name": "Unit 5"})
+        df_unit = platform.iamc.variables.tabulate(unit={"name": "Unit 5"}, run=None)
         assert df_unit["name"].to_list() == ["Variable 7"]
 
-        df_region = platform.iamc.variables.tabulate(region={"name": "Region 5"})
+        df_region = platform.iamc.variables.tabulate(
+            region={"name": "Region 5"}, run=None
+        )
         assert df_region["name"].to_list() == ["Variable 5"]
 
         [var1, var2] = platform.iamc.variables.list(
-            region={"name": "Region 1"}, unit={"name": "Unit 1"}
+            region={"name": "Region 1"}, unit={"name": "Unit 1"}, run=None
         )
         assert var1.name == "Variable 1"
         assert var2.name == "Variable 2"
@@ -204,35 +208,52 @@ class TestFilters:
         assert var10.name == "Variable 10"
 
     def test_filter_datapoints(self, platform: ixmp4.Platform) -> None:
-        df = platform.iamc.tabulate()
+        df = platform.iamc.tabulate(run={"default_only": False})
         assert len(df) == 426
-        import sys as sys
 
-        df_runs = platform.iamc.tabulate(run={"id__in": [1, 7]})
+        df_default = platform.iamc.tabulate()
+        assert len(df_default) == 174
+
+        df_runs = platform.iamc.tabulate(run={"id__in": [1, 7], "default_only": False})
         assert len(df_runs) == 120
 
-        df_scenario2 = platform.iamc.tabulate(scenario={"name": "Scenario 2"})
+        df_scenario2 = platform.iamc.tabulate(
+            scenario={"name": "Scenario 2"}, run={"default_only": False}
+        )
         assert len(df_scenario2) == 100
 
-        df_model1x = platform.iamc.tabulate(model={"name__like": "Model 1*"})
+        df_model1x = platform.iamc.tabulate(
+            model={"name__like": "Model 1*"}, run={"default_only": False}
+        )
         assert len(df_model1x) == 244
 
-        df_region7 = platform.iamc.tabulate(region={"name": "Region 7"})
+        df_region7 = platform.iamc.tabulate(
+            region={"name": "Region 7"}, run={"default_only": False}
+        )
         assert len(df_region7) == 40
 
-        df_unit1x = platform.iamc.tabulate(unit={"name__like": "Unit 1*"})
+        df_unit1x = platform.iamc.tabulate(
+            unit={"name__like": "Unit 1*"}, run={"default_only": False}
+        )
         assert len(df_unit1x) == 154
 
         df_iamc_vars = platform.iamc.tabulate(
-            variable={"name__in": ["Variable 2", "Variable 8"]}
+            variable={"name__in": ["Variable 2", "Variable 8"]},
+            run={"default_only": False},
         )
         assert len(df_iamc_vars) == 91
 
-        df_categorical = platform.iamc.tabulate(type="CATEGORICAL")
+        df_categorical = platform.iamc.tabulate(
+            type="CATEGORICAL", run={"default_only": False}
+        )
         assert len(df_categorical) == 99
 
-        df_category1 = platform.iamc.tabulate(step_category="Category 1")
+        df_category1 = platform.iamc.tabulate(
+            step_category="Category 1", run={"default_only": False}
+        )
         assert len(df_category1) == 35
 
-        df_year_gte = platform.iamc.tabulate(step_year__gte=2000)
+        df_year_gte = platform.iamc.tabulate(
+            step_year__gte=2000, run={"default_only": False}
+        )
         assert len(df_year_gte) == 46
