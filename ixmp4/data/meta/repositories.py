@@ -108,7 +108,7 @@ class PandasRepository(db.r.PandasRepository):
 
         for type_, type_df in df.groupby("dtype"):
             col = Type.column_for_type(cast(Type, type_))
-            type_df["dtype"] = type_df["dtype"].map(lambda x: x.value)
+            type_df["dtype"] = type_df["dtype"].map(lambda x: str(x))
             type_df = type_df.rename(columns={"value": col})
 
             null_cols = set(Type.columns()) - set([col])
