@@ -27,7 +27,7 @@ def filter_by_run(
             exc = repo.filter.where_filter_item_matches(
                 repo, exc, ("run", field_name), sub_value
             )
-        return exc
+        return exc.distinct()
 
 
 class VariableFilter(iamc.VariableFilter, total=False):
