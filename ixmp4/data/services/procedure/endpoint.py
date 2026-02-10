@@ -18,7 +18,6 @@ from typing import (
 
 import pydantic as pyd
 from litestar import HttpMethod, Request
-from litestar.enums import HttpMethod
 from litestar.handlers import HTTPRouteHandler
 from litestar.openapi.spec import (
     OpenAPIMediaType,
