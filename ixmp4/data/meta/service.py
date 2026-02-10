@@ -26,6 +26,8 @@ class RunMetaEntryService(Service):
     pandas: PandasRepository
     runs: RunRepository
 
+    default_filter: RunMetaEntryFilter = {"run": {"default_only": True}}
+
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor)
@@ -151,7 +153,10 @@ class RunMetaEntryService(Service):
         Iterable[:class:`RunMetaEntry`]:
             List of metadata entries.
         """
-        return [RunMetaEntry.model_validate(i) for i in self.items.list(values=kwargs)]
+        return [
+            RunMetaEntry.model_validate(i)
+            for i in self.items.list(values=self.apply_filter_defaults(kwargs))
+        ]
 
     @list.auth_check()
     def list_auth_check(
@@ -167,10 +172,12 @@ class RunMetaEntryService(Service):
             results=[
                 RunMetaEntry.model_validate(i)
                 for i in self.items.list(
-                    values=kwargs, limit=pagination.limit, offset=pagination.offset
+                    values=self.apply_filter_defaults(kwargs),
+                    limit=pagination.limit,
+                    offset=pagination.offset,
                 )
             ],
-            total=self.items.count(values=kwargs),
+            total=self.items.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )
 
@@ -232,7 +239,7 @@ class RunMetaEntryService(Service):
         """
 
         return self.pandas.tabulate(
-            values=kwargs,
+            values=self.apply_filter_defaults(kwargs),
             columns=self.get_columns(
                 join_run_index=join_run_index, include_run_index=include_run_index
             ),
@@ -254,14 +261,14 @@ class RunMetaEntryService(Service):
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
-                values=kwargs,
+                values=self.apply_filter_defaults(kwargs),
                 limit=pagination.limit,
                 offset=pagination.offset,
                 columns=self.get_columns(
                     join_run_index=join_run_index, include_run_index=include_run_index
                 ),
             ),
-            total=self.pandas.count(values=kwargs),
+            total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )
 

@@ -25,6 +25,8 @@ class DataPointService(Service):
     pandas: PandasRepository
     versions: VersionRepository
 
+    default_filter: DataPointFilter = {"run": {"default_only": True}}
+
     full_key = {
         "time_series__id",
         "type",
@@ -92,7 +94,7 @@ class DataPointService(Service):
         """
 
         return self.pandas.tabulate(
-            values=kwargs,
+            values=self.apply_filter_defaults(kwargs),
             columns=self.get_columns(
                 join_parameters=join_parameters,
                 join_runs=join_runs,
@@ -117,7 +119,7 @@ class DataPointService(Service):
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
-                values=kwargs,
+                values=self.apply_filter_defaults(kwargs),
                 limit=pagination.limit,
                 offset=pagination.offset,
                 columns=self.get_columns(
@@ -126,7 +128,7 @@ class DataPointService(Service):
                     join_run_id=join_run_id,
                 ),
             ),
-            total=self.pandas.count(values=kwargs),
+            total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )
 

@@ -147,7 +147,10 @@ class DocsService(GetByIdService, abc.ABC):
             List of docs entries.
         """
 
-        return [Docs.model_validate(i) for i in self.docs.list(values=kwargs)]
+        return [
+            Docs.model_validate(i)
+            for i in self.docs.list(values=self.apply_filter_defaults(kwargs))
+        ]
 
     @list_docs.auth_check()
     def list_docs_auth_check(
@@ -163,9 +166,11 @@ class DocsService(GetByIdService, abc.ABC):
             results=[
                 Docs.model_validate(i)
                 for i in self.docs.list(
-                    values=kwargs, limit=pagination.limit, offset=pagination.offset
+                    values=self.apply_filter_defaults(kwargs),
+                    limit=pagination.limit,
+                    offset=pagination.offset,
                 )
             ],
-            total=self.docs.count(values=kwargs),
+            total=self.docs.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )

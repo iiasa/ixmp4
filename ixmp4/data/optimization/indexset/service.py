@@ -353,7 +353,10 @@ class IndexSetService(DocsService, GetByIdService):
         list[:class:`IndexSet`]:
             List of indexsets.
         """
-        return [IndexSet.model_validate(i) for i in self.items.list(values=kwargs)]
+        return [
+            IndexSet.model_validate(i)
+            for i in self.items.list(values=self.apply_filter_defaults(kwargs))
+        ]
 
     @list.auth_check()
     def list_auth_check(
@@ -369,10 +372,12 @@ class IndexSetService(DocsService, GetByIdService):
             results=[
                 IndexSet.model_validate(i)
                 for i in self.items.list(
-                    values=kwargs, limit=pagination.limit, offset=pagination.offset
+                    values=self.apply_filter_defaults(kwargs),
+                    limit=pagination.limit,
+                    offset=pagination.offset,
                 )
             ],
-            total=self.items.count(values=kwargs),
+            total=self.items.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )
 
@@ -397,7 +402,7 @@ class IndexSetService(DocsService, GetByIdService):
                 - created_by
         """
 
-        return self.pandas.tabulate(values=kwargs)
+        return self.pandas.tabulate(values=self.apply_filter_defaults(kwargs))
 
     @tabulate.auth_check()
     def tabulate_auth_check(
@@ -411,8 +416,10 @@ class IndexSetService(DocsService, GetByIdService):
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
             results=self.pandas.tabulate(
-                values=kwargs, limit=pagination.limit, offset=pagination.offset
+                values=self.apply_filter_defaults(kwargs),
+                limit=pagination.limit,
+                offset=pagination.offset,
             ),
-            total=self.pandas.count(values=kwargs),
+            total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )

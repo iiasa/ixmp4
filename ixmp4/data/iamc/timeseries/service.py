@@ -42,6 +42,8 @@ class TimeSeriesService(Service):
     variables: VariablePandasRepository
     runs: RunRepository
 
+    default_filter: TimeSeriesFilter = {"run": {"default_only": True}}
+
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = db.r.SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
@@ -101,7 +103,9 @@ class TimeSeriesService(Service):
         else:
             columns = None
 
-        return self.pandas.tabulate(values=kwargs, columns=columns)
+        return self.pandas.tabulate(
+            values=self.apply_filter_defaults(kwargs), columns=columns
+        )
 
     @tabulate.auth_check()
     def tabulate_auth_check(
@@ -123,12 +127,12 @@ class TimeSeriesService(Service):
 
         return PaginatedResult(
             results=self.pandas.tabulate(
-                values=kwargs,
+                values=self.apply_filter_defaults(kwargs),
                 columns=columns,
                 limit=pagination.limit,
                 offset=pagination.offset,
             ),
-            total=self.pandas.count(values=kwargs),
+            total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )
 
