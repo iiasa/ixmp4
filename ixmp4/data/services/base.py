@@ -1,4 +1,5 @@
 import abc
+import copy
 from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, ClassVar, Mapping, ParamSpec, Sequence, TypeVar
 
@@ -155,7 +156,7 @@ class Service(abc.ABC):
             raise InvalidDataFrame(str(e))
 
     def apply_filter_defaults(self, values: Mapping[str, Any]) -> dict[str, Any]:
-        defaults = dict(self.default_filter)
+        defaults = copy.deepcopy(dict(self.default_filter))
         return self.deep_update_dict(defaults, values)
 
     def deep_update_dict(
@@ -164,7 +165,7 @@ class Service(abc.ABC):
         for key, value in o.items():
             if isinstance(value, dict):
                 node = d.setdefault(key, {})
-                self.deep_update_dict(value, node)
+                self.deep_update_dict(node, value)
             else:
                 d[key] = value
         return d
