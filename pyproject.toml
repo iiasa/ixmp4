@@ -30,7 +30,7 @@ dependencies = [
     "SQLAlchemy-Utils>=0.41.0",
     "toml>=0.10.2",
     "typer>=0.19.0",
-    "scse-toolkit==0.16.0.dev1",
+    "scse-toolkit==0.16.0.dev2",
     "litestar (>=2.18.0,<3.0.0)",
 ]
 
