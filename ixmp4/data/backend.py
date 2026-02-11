@@ -2,9 +2,13 @@ import logging
 
 from ixmp4.data.checkpoint.service import CheckpointService
 from ixmp4.data.iamc.datapoint.service import DataPointService as IamcDataPointService
+from ixmp4.data.iamc.model.service import IamcModelService
+from ixmp4.data.iamc.region.service import IamcRegionService
+from ixmp4.data.iamc.scenario.service import IamcScenarioService
 from ixmp4.data.iamc.timeseries.service import (
     TimeSeriesService as IamcTimeSeriesService,
 )
+from ixmp4.data.iamc.unit.service import IamcUnitService
 from ixmp4.data.iamc.variable.service import VariableService as IamcVariableService
 from ixmp4.data.meta.service import RunMetaEntryService
 from ixmp4.data.model.service import ModelService
@@ -37,6 +41,10 @@ class IamcSubobject(object):
     datapoints: IamcDataPointService
     timeseries: IamcTimeSeriesService
     variables: IamcVariableService
+    regions: IamcRegionService
+    units: IamcUnitService
+    models: IamcModelService
+    scenarios: IamcScenarioService
 
 
 class OptimizationSubobject(object):
