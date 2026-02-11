@@ -95,6 +95,60 @@ v1_services: list[type["Service"]] = [
 ]
 
 
+@asynccontextmanager
+async def yield_session(dsn: str) -> AsyncIterator[orm.Session]:
+    engine = cached_create_engine(dsn)
+    try:
+        session = Session(bind=engine)
+        yield session
+    finally:
+        session.rollback()
+        session.close()
+
+
+async def get_transport(
+    platform: PlatformConnectionInfo,
+    request: Request[User | None, AuthorizationContext | None, Any],
+) -> AsyncIterator[DirectTransport]:
+    async with yield_session(platform.dsn) as session:
+        if request.auth is not None:
+            yield AuthorizedTransport(session, request.auth, platform)
+        else:
+            yield DirectTransport(session)
+
+
+async def get_backend(transport: DirectTransport) -> AsyncIterator[Backend]:
+    yield Backend(transport)
+
+
+async def get_platform(
+    state: State,
+    platform_name: str,
+    request: Request[User | None, AuthorizationContext | None, Any],
+) -> PlatformConnectionInfo:
+    platform: PlatformConnectionInfo | None = None
+
+    if state.manager_platforms is not None and request.auth is not None:
+        with suppress(PlatformNotFound):
+            platform = state.manager_platforms.get_platform(platform_name)
+            request.auth.has_access_permission(
+                platform,
+                raise_exc=Forbidden(
+                    f"Access to platform '{platform}' denied due "
+                    "to insufficient permissions."
+                ),
+            )
+
+    if platform is None and state.toml_platforms is not None:
+        with suppress(PlatformNotFound):
+            platform = state.toml_platforms.get_platform(platform_name)
+
+    if platform is None or platform.dsn.startswith("http"):
+        raise PlatformNotFound(f"Platform '{platform_name}' was not found.")
+
+    return platform
+
+
 class V1HttpApi:
     service_classes: Sequence[type["Service"]] | None = None
     settings: ServerSettings
@@ -115,9 +169,9 @@ class V1HttpApi:
             service_classes = v1_services
 
         self.settings = settings
-        self.provide_transport = Provide(override_transport or self.get_transport)
-        self.provide_platform = Provide(self.get_platform)
-        self.provide_backend = Provide(self.get_backend)
+        self.provide_transport = Provide(override_transport or get_transport)
+        self.provide_platform = Provide(get_platform)
+        self.provide_backend = Provide(get_backend)
 
         self.platform_router = Router(
             path="/{platform_name:str}",
@@ -179,58 +233,6 @@ class V1HttpApi:
             exc_dict,
             status_code=exc.http_status_code,
         )
-
-    async def get_platform(
-        self,
-        state: State,
-        platform_name: str,
-        request: Request[User | None, AuthorizationContext | None, Any],
-    ) -> PlatformConnectionInfo:
-        platform: PlatformConnectionInfo | None = None
-
-        if state.manager_platforms is not None and request.auth is not None:
-            with suppress(PlatformNotFound):
-                platform = state.manager_platforms.get_platform(platform_name)
-                request.auth.has_access_permission(
-                    platform,
-                    raise_exc=Forbidden(
-                        f"Access to platform '{platform}' denied due "
-                        "to insufficient permissions."
-                    ),
-                )
-
-        if platform is None and state.toml_platforms is not None:
-            with suppress(PlatformNotFound):
-                platform = state.toml_platforms.get_platform(platform_name)
-
-        if platform is None or platform.dsn.startswith("http"):
-            raise PlatformNotFound(f"Platform '{platform_name}' was not found.")
-
-        return platform
-
-    @asynccontextmanager
-    async def yield_session(self, dsn: str) -> AsyncIterator[orm.Session]:
-        engine = cached_create_engine(dsn)
-        try:
-            session = Session(bind=engine)
-            yield session
-        finally:
-            session.rollback()
-            session.close()
-
-    async def get_transport(
-        self,
-        platform: PlatformConnectionInfo,
-        request: Request[User | None, AuthorizationContext | None, Any],
-    ) -> AsyncIterator[DirectTransport]:
-        async with self.yield_session(platform.dsn) as session:
-            if request.auth is not None:
-                yield AuthorizedTransport(session, request.auth, platform)
-            else:
-                yield DirectTransport(session)
-
-    async def get_backend(self, transport: DirectTransport) -> AsyncIterator[Backend]:
-        yield Backend(transport)
 
 
 class PlatformInfo(TypedDict):
