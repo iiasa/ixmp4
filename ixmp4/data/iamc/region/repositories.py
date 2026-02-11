@@ -16,7 +16,7 @@ class IamcRegionTarget(db.r.ModelTarget[Region]):
     def select_statement(
         self, columns: Sequence[str] | None = None
     ) -> sa.Select[tuple[Any, ...]]:
-        return super().select_statement(columns=columns).where(Region.timeseries.has())
+        return super().select_statement(columns=columns).where(Region.timeseries.any())
 
 
 class ItemRepository(AuthRepository[Region], db.r.ItemRepository[Region]):

@@ -16,7 +16,7 @@ class IamcUnitTarget(db.r.ModelTarget[Unit]):
     def select_statement(
         self, columns: Sequence[str] | None = None
     ) -> sa.Select[tuple[Any, ...]]:
-        return super().select_statement(columns=columns).where(Unit.timeseries.has())
+        return super().select_statement(columns=columns).where(Unit.timeseries.any())
 
 
 class ItemRepository(AuthRepository[Unit], db.r.ItemRepository[Unit]):

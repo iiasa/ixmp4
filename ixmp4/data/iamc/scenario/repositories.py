@@ -20,7 +20,7 @@ class IamcScenarioTarget(db.r.ModelTarget[Scenario]):
         return (
             super()
             .select_statement(columns=columns)
-            .where(Scenario.runs.has(Run.timeseries.has()))
+            .where(Scenario.runs.any(Run.timeseries.any()))
         )
 
 

@@ -20,7 +20,7 @@ class IamcModelTarget(db.r.ModelTarget[Model]):
         return (
             super()
             .select_statement(columns=columns)
-            .where(Model.runs.has(Run.timeseries.has()))
+            .where(Model.runs.any(Run.timeseries.any()))
         )
 
 
