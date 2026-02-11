@@ -28,9 +28,13 @@ from ixmp4.data.backend import Backend
 from ixmp4.data.checkpoint.service import CheckpointService
 from ixmp4.data.docs.controller import DocsCompatibilityController
 from ixmp4.data.iamc.datapoint.service import DataPointService as IamcDataPointService
+from ixmp4.data.iamc.model.service import IamcModelService
+from ixmp4.data.iamc.region.service import IamcRegionService
+from ixmp4.data.iamc.scenario.service import IamcScenarioService
 from ixmp4.data.iamc.timeseries.service import (
     TimeSeriesService as IamcTimeSeriesService,
 )
+from ixmp4.data.iamc.unit.service import IamcUnitService
 from ixmp4.data.iamc.variable.service import VariableService as IamcVariableService
 from ixmp4.data.meta.service import RunMetaEntryService
 from ixmp4.data.model.service import ModelService
@@ -78,6 +82,10 @@ v1_services: list[type["Service"]] = [
     IamcVariableService,
     IamcTimeSeriesService,
     IamcDataPointService,
+    IamcModelService,
+    IamcScenarioService,
+    IamcRegionService,
+    IamcUnitService,
     OptEquationService,
     OptIndexSetService,
     OptParameterService,
@@ -221,10 +229,7 @@ class V1HttpApi:
             else:
                 yield DirectTransport(session)
 
-    async def get_backend(
-        self,
-        transport: DirectTransport,
-    ) -> AsyncIterator[Backend]:
+    async def get_backend(self, transport: DirectTransport) -> AsyncIterator[Backend]:
         yield Backend(transport)
 
 
