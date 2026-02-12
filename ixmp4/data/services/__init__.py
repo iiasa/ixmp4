@@ -7,7 +7,7 @@ commonly used building blocks available for users of the data layer.
 Basic Facilities
 ----------------
 
-* :class:`~ixmp4.data.services.Service`
+* :class:`~ixmp4.data.services.base.Service`
   abstract base class for data services; provides transport
   helpers and common utilities.
 

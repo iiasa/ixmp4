@@ -1,3 +1,4 @@
+import functools
 from typing import (
     TYPE_CHECKING,
     Any,
@@ -44,6 +45,8 @@ class ProcedureDescriptor(Generic[ServiceT, Params, ReturnT]):
 
     def __init__(self, procedure: "Procedure[ServiceT, Params, ReturnT]"):
         self.procedure = procedure
+        # update this descriptor to look like the wrapped function
+        functools.update_wrapper(self, procedure.func)
 
     # provides type hints for service methods
     def __call__(self, *args: Params.args, **kwds: Params.kwargs) -> ReturnT:

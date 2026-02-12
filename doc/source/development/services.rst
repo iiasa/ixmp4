@@ -1,6 +1,5 @@
-Services (ixmp4.data.services)
-==============================
-
+Service Classes
+===============
 
 .. automodule:: ixmp4.data.services
    :members:
@@ -23,7 +22,6 @@ ixmp4.db.services.controller module
    :undoc-members:
    :show-inheritance:
 
-
 ixmp4.db.services.procedure modules
 -----------------------------------
 
@@ -40,7 +38,6 @@ ixmp4.db.services.procedure modules
 .. automodule:: ixmp4.data.services.procedure.endpoint
    :members:
    :undoc-members:
-   :show-inheritance:
 
 .. automodule:: ixmp4.data.services.procedure.client
    :members:

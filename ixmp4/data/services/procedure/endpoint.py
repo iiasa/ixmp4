@@ -59,17 +59,17 @@ class ProcedureHttpConfig:
 
 
 class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]):
-    config: ProcedureHttpConfig
-    procedure: "Procedure[ServiceT, Params, ReturnT]"
-    proto_route: HTTPRoute
-    service_class: type[ServiceT]
-
     """HTTP route handler that adapts a procedure to a Litestar route.
 
     Constructs request/response models from the procedure signature,
     binds service instances, handles validation errors, and performs
     serialization/deserialization for the procedure's return type.
     """
+
+    config: ProcedureHttpConfig
+    procedure: "Procedure[ServiceT, Params, ReturnT]"
+    proto_route: HTTPRoute
+    service_class: type[ServiceT]
 
     def __init__(
         self,

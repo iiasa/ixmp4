@@ -18,7 +18,7 @@ from .repositories import PandasRepository, VersionRepository
 
 class DataPointService(Service):
     router_prefix = "/iamc/datapoints"
-    router_tags = ["iamc", "datapoints"]
+    router_tags = ["iamc-datapoints"]
 
     http_controller = EnumerationCompatibilityController
     executor: db.r.SessionExecutor
@@ -53,11 +53,7 @@ class DataPointService(Service):
         self.versions = VersionRepository(self.executor)
 
     def get_columns(
-        self,
-        *,
-        join_parameters: bool | None,
-        join_runs: bool | None,
-        join_run_id: bool | None,
+        self, *, join_parameters: bool, join_runs: bool, join_run_id: bool
     ) -> tuple[str, ...] | None:
         if not any([join_run_id, join_parameters, join_runs]):
             return None
@@ -74,7 +70,7 @@ class DataPointService(Service):
     @procedure(Http(methods=("PATCH",)))
     def tabulate(
         self,
-        join_parameters: bool | None = False,
+        join_parameters: bool = False,
         join_runs: bool = False,
         join_run_id: bool = False,
         **kwargs: Unpack[DataPointFilter],
@@ -83,6 +79,15 @@ class DataPointService(Service):
 
         Parameters
         ----------
+        join_parameters: bool, optional
+            Whether to include region, unit and variable in the data frame.
+            Default: ``False``
+        join_runs: bool, optional
+            Whether to include model, scenario and version in the data frame.
+            Default: ``False``
+        join_run_id: bool, optional
+            Whether to include run__id in the data frame.
+            Default: ``False``
         \*\*kwargs: any
             Filter parameters as specified in `DataPointFilter`.
 
@@ -90,7 +95,22 @@ class DataPointService(Service):
         -------
         :class:`pandas.DataFrame`:
             A data frame with the columns:
-                - TODO
+                - step_year
+                - step_category
+                - step_datetime
+                - type
+                - values
+            if `join_parameters` is ``True``:
+                - region
+                - unit
+                - variable
+            if `join_runs` is ``True``:
+                - model
+                - scenario
+                - version
+            if `join_run_id` is ``True``:
+                - run__id
+
         """
 
         return self.pandas.tabulate(
@@ -112,7 +132,7 @@ class DataPointService(Service):
     def paginated_tabulate(
         self,
         pagination: Pagination,
-        join_parameters: bool | None = False,
+        join_parameters: bool = False,
         join_runs: bool = False,
         join_run_id: bool = False,
         **kwargs: Unpack[DataPointFilter],
@@ -134,6 +154,29 @@ class DataPointService(Service):
 
     @procedure(Http(methods=("POST",)))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
+        """Bulk inserts or updates datapoints from a supplied dataframe.
+
+        This method accepts a dataframe containing datapoint data and
+        validates it against the upsert schema before inserting or updating
+        records in the database. The upsert operation is keyed on the
+        subset of full key columns present in the dataframe.
+
+        Parameters
+        ----------
+        df: :class:`pandas.DataFrame`
+            DataFrame containing rows of datapoint data to upsert.
+            Must conform to `UpsertDataPointFrameSchema` structure.
+            Key columns include:
+                - time_series__id
+                - step_category and/or step_year or step_datetime
+                - type, optional
+                - value
+
+        Raises
+        ------
+        :class:`InvalidDataFrame`
+            If the dataframe does not conform to `UpsertDataPointFrameSchema`.
+        """
         df = self.validate_df_or_raise(df, UpsertDataPointFrameSchema)
         self.pandas.upsert(df, key=self.full_key & set(df.columns))
 
@@ -151,6 +194,27 @@ class DataPointService(Service):
 
     @procedure(Http(methods=("DELETE",)))
     def bulk_delete(self, df: SerializableDataFrame) -> None:
+        """Bulk deletes datapoints from a supplied dataframe.
+
+        This method accepts a dataframe containing datapoint identifiers and
+        deletes the matching records from the database. After deletion, orphaned
+        timeseries (those with no remaining datapoints) are also removed.
+
+        Parameters
+        ----------
+        df: :class:`pandas.DataFrame`
+            DataFrame containing rows of datapoint identifiers to delete.
+            Must conform to `DeleteDataPointFrameSchema` structure.
+            Key columns include:
+                - time_series__id
+                - step_category and/or step_year or step_datetime
+                - type, optional
+
+        Raises
+        ------
+        :class:`InvalidDataFrame`
+            If the dataframe does not conform to `DeleteDataPointFrameSchema`.
+        """
         df = self.validate_df_or_raise(df, DeleteDataPointFrameSchema)
         self.pandas.delete(df, key=self.full_key & set(df.columns))
         self.timeseries.delete_orphans()
