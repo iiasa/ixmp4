@@ -5,7 +5,7 @@ import pandas.testing as pdt
 import pytest
 from toolkit import db
 
-from ixmp4.base_exceptions import Forbidden
+from ixmp4.base_exceptions import Forbidden, InvalidDataFrame
 from ixmp4.data.iamc.timeseries.service import TimeSeriesService
 from ixmp4.data.iamc.variable.repositories import (
     ItemRepository as VariableRepository,
@@ -23,7 +23,7 @@ from tests.data.base import ServiceTest
 transport = backends.get_transport_fixture(scope="class")
 
 
-# TODO: versioning
+# TODO: Add versioning tests here.
 
 
 class TimeSeriesServiceTest(ServiceTest[TimeSeriesService]):
@@ -290,6 +290,72 @@ class TestTimeSeriesBulkUpsertRelatedNotFound(TimeSeriesServiceTest):
         assert ret_df.empty
 
 
+class TestTimeSeriesBulkUpsertInvalidDf(TimeSeriesServiceTest):
+    @pytest.fixture(scope="class")
+    def test_df_no_regions(
+        self,
+        run: Run,
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [run.id, "Variable 1", "Unit 1"],
+                [run.id, "Variable 2", "Unit 2"],
+                [run.id, "Variable 1", "Unit 1"],
+            ],
+            columns=["run__id", "variable", "unit"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_df_no_units(
+        self,
+        run: Run,
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [run.id, "Region 1", 1],
+                [run.id, "Region 1", 2],
+                [run.id, "Region 2", 1],
+            ],
+            columns=["run__id", "region", "variable__id"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_df_no_variables(
+        self,
+        run: Run,
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [run.id, "Region 1", "Unit 1"],
+                [run.id, "Region 1", "Unit 2"],
+                [run.id, "Region 2", "Unit 1"],
+            ],
+            columns=["run__id", "region", "unit"],
+        )
+
+    def test_timeseries_bulk_upsert_full_related(
+        self,
+        service: TimeSeriesService,
+        run: Run,
+        regions: RegionService,
+        units: UnitService,
+        fake_time: datetime.datetime,
+        test_df_no_regions: pd.DataFrame,
+        test_df_no_units: pd.DataFrame,
+        test_df_no_variables: pd.DataFrame,
+    ) -> None:
+        self.create_related(regions, units)
+
+        with pytest.raises(InvalidDataFrame):
+            service.bulk_upsert(test_df_no_regions)
+
+        with pytest.raises(InvalidDataFrame):
+            service.bulk_upsert(test_df_no_units)
+
+        with pytest.raises(InvalidDataFrame):
+            service.bulk_upsert(test_df_no_variables)
+
+
 class TestTimeSeriesTabulate(TimeSeriesServiceTest):
     @pytest.fixture(scope="class")
     def test_df(
@@ -354,6 +420,17 @@ class TestTimeSeriesTabulateByDf(TimeSeriesServiceTest):
             columns=["id", "run__id", "region", "variable", "unit"],
         )
 
+    @pytest.fixture(scope="class")
+    def test_df_invalid(self, run: Run) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [run.id, "Variable 1", "Unit 1"],
+                [run.id, "Variable 2", "Unit 2"],
+                [run.id, "Variable 1", "Unit 1"],
+            ],
+            columns=["run__id", "variable", "unit"],
+        )
+
     def test_timeseries_tabulate_by_df(
         self,
         service: TimeSeriesService,
@@ -365,6 +442,12 @@ class TestTimeSeriesTabulateByDf(TimeSeriesServiceTest):
         service.bulk_upsert(test_df)
         ret_df = service.tabulate_by_df(test_df)
         pdt.assert_frame_equal(test_df_expected, ret_df, check_like=True)
+
+    def test_timeseries_tabulate_by_invalid_df(
+        self, service: TimeSeriesService, test_df_invalid: pd.DataFrame
+    ) -> None:
+        with pytest.raises(InvalidDataFrame):
+            service.tabulate_by_df(test_df_invalid)
 
 
 class TimeSeriesAuthTest(TimeSeriesServiceTest):
