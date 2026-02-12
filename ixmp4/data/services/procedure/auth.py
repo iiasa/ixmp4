@@ -83,6 +83,16 @@ class ProcedureAuthCheck(Generic[ServiceT, Params]):
         self.procedure = procedure
         self.has_check = False
 
+    """Holder for an optional authorization check for a Procedure.
+
+    Use as a decorator to register a function that receives the
+    :class:`toolkit.auth.context.AuthorizationContext` and
+    :class:`toolkit.auth.context.PlatformProtocol` before a procedure
+    is executed. The registered function is validated against the
+    procedure signature and can be prepended to the procedure callable
+    to enforce access control.
+    """
+
     def __call__(
         self,
     ) -> Callable[

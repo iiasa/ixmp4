@@ -26,6 +26,14 @@ ServiceT = TypeVar("ServiceT", bound="Service")
 class ProcedureDescriptor(Generic[ServiceT, Params, ReturnT]):
     procedure: "Procedure[ServiceT, Params, ReturnT]"
 
+    """Descriptor exposing a Procedure on a Service class.
+
+    When accessed on a service instance the descriptor returns a callable
+    appropriate for the transport (direct call or HTTP client). When
+    accessed on the class it exposes descriptor attributes (used by
+    router registration).
+    """
+
     @property
     def auth_check(self) -> ProcedureAuthCheck[ServiceT, Params]:
         return self.procedure.auth_check

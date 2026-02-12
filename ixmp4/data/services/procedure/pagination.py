@@ -50,6 +50,14 @@ class BoundProcedurePaginatedFunc(Protocol[Params, CoReturnT]):
 
 
 class ProcedurePagination(Generic[ServiceT, Params, ReturnT]):
+    """Descriptor for marking a procedure as paginated.
+
+    Use as a decorator on a service method to declare that the procedure
+    supports pagination. It validates the method signature and stores
+    the paginated call target for later binding by the procedure
+    machinery.
+    """
+
     paginated_func: ProcedurePaginatedFunc[ServiceT, Params, PaginatedResult[ReturnT]]
     procedure: "Procedure[ServiceT, Params, Any]"
     has_pagination: bool

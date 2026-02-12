@@ -200,6 +200,12 @@ class Service(abc.ABC):
 
 
 class GetByIdService(Service):
+    """Service interface for types that can be retrieved by numeric id.
+
+    Implementations must provide :meth:`get_by_id` which returns a
+    :class:`ixmp4.data.base.dto.BaseModel` instance for the given id.
+    """
+
     @abc.abstractmethod
     def get_by_id(self, id: int) -> BaseModel:
         raise NotImplementedError

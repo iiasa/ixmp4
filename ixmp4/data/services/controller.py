@@ -23,6 +23,13 @@ async def get_pagination(
 
 
 class ServiceController(Controller, Generic[ServiceT]):
+    """Base Litestar controller that dispatches to service procedures.
+
+    The controller is constructed with a service instance available via
+    dependency injection and provides helpers to look up the correct
+    procedure handler and invoke it with request data.
+    """
+
     dependencies = {"pagination": Provide(get_pagination)}
 
     def get_handler(

@@ -22,6 +22,15 @@ ServiceT = TypeVar("ServiceT", bound="Service")
 
 
 class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
+    """HTTP client adapter for a ProcedureRouteHandler.
+
+    When a procedure is accessed on a service backed by an
+    :class:`ixmp4.transport.HttpxTransport`, the descriptor returns an
+    instance of :class:`ProcedureClient` which performs HTTP requests to
+    the service endpoint, validates arguments, and handles paginated
+    responses by dispatching concurrent requests when needed.
+    """
+
     transport: HttpxTransport
     handler: ProcedureRouteHandler[ServiceT, Params, ReturnT]
     method: str

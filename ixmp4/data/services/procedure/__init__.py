@@ -30,6 +30,14 @@ ProcedureFunc = Callable[Concatenate[ServiceT, Params], ReturnT]
 
 
 class Procedure(Generic[ServiceT, Params, ReturnT]):
+    """Represents a service procedure and its HTTP/transport adapters.
+
+    A :class:`Procedure` wraps a service method, validates its signature,
+    and provides adapters for direct invocation, http client calls, and
+    registration of HTTP route handlers. It also manages authorization
+    checks and pagination metadata attached to the procedure.
+    """
+
     func: ProcedureFunc[ServiceT, Params, ReturnT]
     signature: inspect.Signature
     auth_check: ProcedureAuthCheck[ServiceT, Params]

@@ -45,6 +45,14 @@ ServiceT = TypeVar("ServiceT", bound="Service")
 
 @dataclass
 class ProcedureHttpConfig:
+    """Configuration for exposing a procedure via HTTP.
+
+    - ``methods``: HTTP method(s) the endpoint should accept.
+    - ``path``: optional explicit path; if omitted a path is derived
+        from the procedure name.
+    - ``status_code``: response status code for successful responses.
+    """
+
     methods: HttpMethod | Method | Sequence[HttpMethod | Method]
     path: str | None = None
     status_code: int = 200
@@ -55,6 +63,13 @@ class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]
     procedure: "Procedure[ServiceT, Params, ReturnT]"
     proto_route: HTTPRoute
     service_class: type[ServiceT]
+
+    """HTTP route handler that adapts a procedure to a Litestar route.
+
+    Constructs request/response models from the procedure signature,
+    binds service instances, handles validation errors, and performs
+    serialization/deserialization for the procedure's return type.
+    """
 
     def __init__(
         self,
