@@ -86,7 +86,7 @@ class VariableServiceFacade(
 
         Raises
         ------
-        :class:`VariableNotUnique`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableNotUnique`:
             If the variable with `name` is not unique.
 
         Returns
@@ -111,9 +111,9 @@ class VariableServiceFacade(
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableNotFound`:
             If no variable matching ``ref`` exists.
-        :class:`VariableDeletionPrevented`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableDeletionPrevented`:
             If the variable matching ``ref`` is used in the database,
             preventing its deletion.
         """
@@ -136,7 +136,7 @@ class VariableServiceFacade(
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableNotFound`:
             If the variable with `name` does not exist.
 
         Returns

@@ -81,14 +81,14 @@ class IndexSetService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`IndexSetNotUnique`:
+        :class:`ixmp4.data.optimization.indexset.exceptions.IndexSetNotUnique`:
             If the indexset is not unique.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`IndexSet`:
+        :class:`~ixmp4.data.optimization.indexset.dto.IndexSet`:
             The created indexset.
         """
 
@@ -132,14 +132,14 @@ class IndexSetService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`IndexSetNotFound`:
+        :class:`ixmp4.data.optimization.indexset.exceptions.IndexSetNotFound`:
             If the indexset with `name` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`IndexSet`:
+        :class:`~ixmp4.data.optimization.indexset.dto.IndexSet`:
             The retrieved indexset.
         """
         return IndexSet.model_validate(
@@ -170,14 +170,14 @@ class IndexSetService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`IndexSetNotFound`:
+        :class:`ixmp4.data.optimization.indexset.exceptions.IndexSetNotFound`:
             If the indexset with `id` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`IndexSet`:
+        :class:`~ixmp4.data.optimization.indexset.dto.IndexSet`:
             The retrieved indexset.
         """
 
@@ -200,9 +200,9 @@ class IndexSetService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`IndexSetNotFound`:
+        :class:`ixmp4.data.optimization.indexset.exceptions.IndexSetNotFound`:
             If the indexset with `id` does not exist.
-        :class:`IndexSetDeletionPrevented`:
+        :class:`ixmp4.data.optimization.indexset.exceptions.IndexSetDeletionPrevented`:
             If the indexset with `id` is used in the database, preventing it's deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
@@ -350,7 +350,7 @@ class IndexSetService(DocsService, GetByIdService):
 
         Returns
         -------
-        list[:class:`IndexSet`]:
+        list[:class:`~ixmp4.data.optimization.indexset.dto.IndexSet`]:
             List of indexsets.
         """
         return [

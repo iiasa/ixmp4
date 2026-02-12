@@ -61,14 +61,14 @@ class ScalarService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`ScalarNotUnique`:
+        :class:`~ixmp4.data.optimization.scalar.exceptions.ScalarNotUnique`:
             If the scalar is not unique.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Scalar`:
+        :class:`~ixmp4.data.optimization.scalar.dto.Scalar`:
             The created scalar.
         """
 
@@ -116,14 +116,14 @@ class ScalarService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`ScalarNotFound`:
+        :class:`~ixmp4.data.optimization.scalar.exceptions.ScalarNotFound`:
             If the scalar with `name` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Scalar`:
+        :class:`~ixmp4.data.optimization.scalar.dto.Scalar`:
             The retrieved scalar.
         """
         return Scalar.model_validate(self.items.get({"name": name, "run__id": run_id}))
@@ -152,14 +152,14 @@ class ScalarService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`ScalarNotFound`:
+        :class:`~ixmp4.data.optimization.scalar.exceptions.ScalarNotFound`:
             If the scalar with `id` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Scalar`:
+        :class:`~ixmp4.data.optimization.scalar.dto.Scalar`:
             The retrieved scalar.
         """
 
@@ -182,9 +182,9 @@ class ScalarService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`ScalarNotFound`:
+        :class:`~ixmp4.data.optimization.scalar.exceptions.ScalarNotFound`:
             If the scalar with `id` does not exist.
-        :class:`ScalarDeletionPrevented`:
+        :class:`~ixmp4.data.optimization.scalar.exceptions.ScalarDeletionPrevented`:
             If the scalar with `id` is used in the database, preventing it's deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
@@ -269,7 +269,7 @@ class ScalarService(DocsService, GetByIdService):
 
         Returns
         -------
-        list[:class:`Scalar`]:
+        list[:class:`~ixmp4.data.optimization.scalar.dto.Scalar`]:
             List of scalars.
         """
         return [

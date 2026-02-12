@@ -40,12 +40,12 @@ The Python API can interact with databases directly or use the REST API of a com
     I │  │            │   │ └───────┘ │    │     │  │ └───────┘ │   │    y │  │ │
       │  └────────────┘   └───────────┘    └─    │  └───────────┘  ─┘      │  └─┘
 
-The :doc:`ixmp4.data <data/modules>` module exposes a common interface for direct and remote usage via the 
+The :doc:`ixmp4.data </data/modules>` module exposes a common interface for direct and remote usage via the 
 :class:`~ixmp4.data.services.base.Service` classes. 
 See the :doc:`/development/services` section for more information.
 
 
 For a user-friendly python API an additional "facade layer" centered around the 
-:doc:`Platform <core/platform>` class is added in the ``ixmp4.core``
+:doc:`Platform </core/platform>` class is added in the ``ixmp4.core``
 module on top of the data layer.
 

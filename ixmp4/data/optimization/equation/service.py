@@ -86,7 +86,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`EquationNotUnique`:
+        :class:`~ixmp4.data.optimization.equation.exceptions.EquationNotUnique`:
             If the equation is not unique.
         :class:`OptimizationItemUsageError`:
             If the equation arguments are not valid.
@@ -95,7 +95,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        :class:`Equation`:
+        :class:`~ixmp4.data.optimization.equation.dto.Equation`:
             The created equation.
         """
         self.check_optional_column_args(
@@ -153,14 +153,14 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`EquationNotFound`:
+        :class:`~ixmp4.data.optimization.equation.exceptions.EquationNotFound`:
             If the equation with `name` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Equation`:
+        :class:`~ixmp4.data.optimization.equation.dto.Equation`:
             The retrieved equation.
         """
         return Equation.model_validate(
@@ -192,14 +192,14 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`EquationNotFound`:
+        :class:`~ixmp4.data.optimization.equation.exceptions.EquationNotFound`:
             If the equation with `id` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Equation`:
+        :class:`~ixmp4.data.optimization.equation.dto.Equation`:
             The retrieved equation.
         """
 
@@ -222,9 +222,9 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`EquationNotFound`:
+        :class:`~ixmp4.data.optimization.equation.exceptions.EquationNotFound`:
             If the equation with `id` does not exist.
-        :class:`EquationDeletionPrevented`:
+        :class:`~ixmp4.data.optimization.equation.exceptions.EquationDeletionPrevented`:
             If the equation with `id` is used in the database, preventing it's deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
@@ -384,7 +384,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        list[:class:`Equation`]:
+        list[:class:`~ixmp4.data.optimization.equation.dto.Equation`]:
             List of equations.
         """
         return [

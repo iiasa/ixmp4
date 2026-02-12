@@ -85,7 +85,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`ParameterNotUnique`:
+        :class:`~ixmp4.data.optimization.parameter.exceptions.ParameterNotUnique`:
             If the parameter is not unique.
         :class:`OptimizationItemUsageError`:
             If the parameter arguments are not valid.
@@ -94,7 +94,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        :class:`Parameter`:
+        :class:`~ixmp4.data.optimization.parameter.dto.Parameter`:
             The created parameter.
         """
         nullable_column_names: list[str] | list[None]
@@ -154,14 +154,14 @@ class ParameterService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`ParameterNotFound`:
+        :class:``~ixmp4.data.optimization.parameter.exceptions.ParameterNotFound`:
             If the parameter with `name` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Parameter`:
+        :class:`~ixmp4.data.optimization.parameter.dto.Parameter`:
             The retrieved parameter.
         """
         return Parameter.model_validate(
@@ -192,14 +192,14 @@ class ParameterService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`ParameterNotFound`:
+        :class:`~ixmp4.data.optimization.parameter.exceptions.ParameterNotFound`:
             If the parameter with `id` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Parameter`:
+        :class:`~ixmp4.data.optimization.parameter.dto.Parameter`:
             The retrieved parameter.
         """
 
@@ -222,9 +222,9 @@ class ParameterService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`ParameterNotFound`:
+        :class:`~ixmp4.data.optimization.parameter.exceptions.ParameterNotFound`:
             If the parameter with `id` does not exist.
-        :class:`ParameterDeletionPrevented`:
+        :class:`~ixmp4.data.optimization.parameter.exceptions.ParameterDeletionPrevented`:
             If the parameter with `id` is used in the database,
             preventing its deletion.
         :class:`Unauthorized`:
@@ -382,7 +382,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        list[:class:`Parameter`]:
+        list[:class:`~ixmp4.data.optimization.parameter.dto.Parameter`]:
             List of parameters.
         """
         return [

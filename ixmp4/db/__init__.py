@@ -58,6 +58,6 @@ Afterwards you can update existing databases with the upgrade command:
    Upgraded database 'sqlite:////home/wolschlager/Code/ixmp4/run/storage/databases/\
 test.sqlite3' to revision 'head'.
 
-Refer to the :doc:`cli documentation <cli>` for all alembic cli commands.
+Refer to the :doc:`cli documentation </usage/cli>` for all alembic cli commands.
 
 """

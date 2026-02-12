@@ -68,7 +68,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`VariableNotUnique`:
+        :class:`~ixmp4.data.optimization.variable.exceptions.VariableNotUnique`:
             If the table is not unique.
         :class:`OptimizationItemUsageError`:
             If the table arguments are not valid.
@@ -137,14 +137,14 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.optimization.variable.exceptions.VariableNotFound`:
             If the table with `name` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Variable`:
+        :class:`~ixmp4.data.optimization.variable.Variable`:
             The retrieved table.
         """
         return Variable.model_validate(
@@ -176,14 +176,14 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.optimization.variable.exceptions.VariableNotFound`:
             If the table with `id` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Variable`:
+        :class:`~ixmp4.data.optimization.variable.Variable`:
             The retrieved table.
         """
 
@@ -206,9 +206,9 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.optimization.variable.exceptions.VariableNotFound`:
             If the table with `id` does not exist.
-        :class:`VariableDeletionPrevented`:
+        :class:`~ixmp4.data.optimization.variable.exceptions.VariableDeletionPrevented`:
             If the table with `id` is used in the database, preventing it's deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
@@ -358,7 +358,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        list[:class:`ixmp4.data.optimization.variable.dto.Variable`]:
+        list[:class:`~ixmp4.data.optimization.variable.dto.Variable`]:
             List of variables.
         """
         return [

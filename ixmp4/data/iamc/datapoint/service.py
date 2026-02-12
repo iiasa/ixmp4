@@ -166,11 +166,12 @@ class DataPointService(Service):
         df: :class:`pandas.DataFrame`
             DataFrame containing rows of datapoint data to upsert.
             Must conform to `UpsertDataPointFrameSchema` structure.
+
             Key columns include:
-                - time_series__id
-                - step_category and/or step_year or step_datetime
-                - type, optional
-                - value
+              - time_series__id
+              - step_category and/or step_year or step_datetime
+              - type, optional
+              - value
 
         Raises
         ------
@@ -205,10 +206,11 @@ class DataPointService(Service):
         df: :class:`pandas.DataFrame`
             DataFrame containing rows of datapoint identifiers to delete.
             Must conform to `DeleteDataPointFrameSchema` structure.
+
             Key columns include:
-                - time_series__id
-                - step_category and/or step_year or step_datetime
-                - type, optional
+              - time_series__id
+              - step_category and/or step_year or step_datetime
+              - type, optional
 
         Raises
         ------

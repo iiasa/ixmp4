@@ -55,13 +55,13 @@ class VariableService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`VariableNotUnique`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableNotUnique`:
             If the variable with `name` is not unique.
 
 
         Returns
         -------
-        :class:`Variable`:
+        :class:`~ixmp4.data.iamc.variable.dto.Variable`:
             The created variable.
         """
         self.items.create({"name": name, **self.get_creation_info()})
@@ -84,9 +84,9 @@ class VariableService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableNotFound`:
             If the variable with `id` does not exist.
-        :class:`VariableDeletionPrevented`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableDeletionPrevented`:
             If the variable with `id` is used in the database, preventing it's deletion.
         """
         self.items.delete_by_pk({"id": id})
@@ -108,7 +108,7 @@ class VariableService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`VariableNotFound`:
+        :class:`~ixmp4.data.iamc.variable.exceptions.VariableNotFound`:
             If the variable with `name` does not exist.
 
         Returns
@@ -135,7 +135,7 @@ class VariableService(DocsService, GetByIdService):
 
         Raises
         ------
-        :class:`ixmp4.data.abstract.Variable.NotFound`:
+        :class:`~ixmp4.data.abstract.Variable.NotFound`:
             If the variable with `id` does not exist.
 
         Returns

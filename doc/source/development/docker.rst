@@ -44,4 +44,4 @@ Use the image like this in a docker-compose file:
 
 This configurations spawns two containers at ports `9000` and `9001` with 2 workers each.
 For a list of environment variables used for configuration, refer to the 
-:doc:`configuration section <configuration>`.
+:doc:`configuration section </usage/configuration>`.

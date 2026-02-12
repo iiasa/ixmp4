@@ -57,7 +57,7 @@ class TimeSeriesService(Service):
 
     @procedure(Http(methods=("PATCH",)))
     def tabulate_by_df(self, df: SerializableDataFrame) -> SerializableDataFrame:
-        r"""Tabulates timeseries by values in a supplied dataframe.
+        """Tabulates timeseries by values in a supplied dataframe.
 
         Parameters
         ----------
@@ -239,15 +239,16 @@ class TimeSeriesService(Service):
         ----------
         df: :class:`pandas.DataFrame`
             DataFrame containing rows of timeseries data to upsert.
+
             Minimum required columns:
-                - run__id
+              - run__id
             Optional columns that will be resolved automatically:
-                - region: region name; will be resolved to region__id
-                - unit: unit name; will be resolved to unit__id
-                - variable: variable name; will be instantiated if missing
+              - region: region name; will be resolved to region__id
+              - unit: unit name; will be resolved to unit__id
+              - variable: variable name; will be instantiated if missing
             To skip resolving related rows, supply ids directly:
-                - region__id
-                - measurand__id or unit__id and variable__id
+              - region__id
+              - measurand__id or unit__id and variable__id
 
         Raises
         ------

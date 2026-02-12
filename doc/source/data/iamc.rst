@@ -4,11 +4,6 @@ IAMC Data Interface
 .. toctree::
    :maxdepth: 2
 
-.. automodule:: ixmp4.data.iamc
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
 
 Datapoints (ixmp4.data.iamc.datapoint)
 --------------------------------------

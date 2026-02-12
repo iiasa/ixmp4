@@ -17,6 +17,7 @@ To acquire the lock on a :class:`~ixmp4.core.run.Run`,
 the :meth:`~ixmp4.core.run.Run.transact` context manager may be used.
 
 .. automethod:: ixmp4.core.run.Run.transact
+    :no-index:
     
 Internally, ixmp4 will save the last transaction id in the database as
 the ``lock_transaction`` column for the run's row.

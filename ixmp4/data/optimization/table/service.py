@@ -79,8 +79,8 @@ class TableService(DocsService, IndexSetAssociatedService):
         name : str
             The unique name of the Table.
         constrained_to_indexsets : list[str]
-            List of :class:`IndexSet` names that define
-            the allowed contents of the Table's columns.
+            List of :class:`~ixmp4.data.optimization.indexset.dto.IndexSet` names that
+            define the allowed contents of the Table's columns.
         column_names: list[str] | None = None
             Optional list of names to use as column names. If given, overwrites the
             names inferred from `constrained_to_indexsets`.
@@ -88,7 +88,7 @@ class TableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`TableNotUnique`:
+        :class:`~ixmp4.data.optimization.table.exceptions.TableNotUnique`:
             If the table is not unique.
         :class:`OptimizationItemUsageError`:
             If the table arguments are not valid.
@@ -97,7 +97,7 @@ class TableService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        :class:`Table`:
+        :class:`~ixmp4.data.optimization.table.dto.Table`:
             The created table.
         """
 
@@ -158,14 +158,14 @@ class TableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`TableNotFound`:
+        :class:`~ixmp4.data.optimization.table.exceptions.TableNotFound`:
             If the table with `name` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Table`:
+        :class:`~ixmp4.data.optimization.table.dto.Table`:
             The retrieved table.
         """
         return Table.model_validate(self.items.get({"name": name, "run__id": run_id}))
@@ -195,14 +195,14 @@ class TableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`TableNotFound`:
+        :class:`~ixmp4.data.optimization.table.exceptions.TableNotFound`:
             If the table with `id` does not exist.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         Returns
         -------
-        :class:`Table`:
+        :class:`~ixmp4.data.optimization.table.dto.Table`:
             The retrieved table.
         """
 
@@ -225,9 +225,9 @@ class TableService(DocsService, IndexSetAssociatedService):
 
         Raises
         ------
-        :class:`TableNotFound`:
+        :class:`~ixmp4.data.optimization.table.exceptions.TableNotFound`:
             If the table with `id` does not exist.
-        :class:`TableDeletionPrevented`:
+        :class:`~ixmp4.data.optimization.table.exceptions.TableDeletionPrevented`:
             If the table with `id` is used in the database, preventing it's deletion.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
@@ -263,7 +263,7 @@ class TableService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         id : int
-            The id of the :class:`Table`.
+            The id of the :class:`~ixmp4.data.optimization.table.dto.Table`.
         data : dict[str, Any] | pandas.DataFrame
             The data to be added.
 
@@ -368,7 +368,7 @@ class TableService(DocsService, IndexSetAssociatedService):
 
         Returns
         -------
-        list[:class:`Table`]:
+        list[:class:`~ixmp4.data.optimization.table.dto.Table`]:
             List of tables.
         """
         return [
