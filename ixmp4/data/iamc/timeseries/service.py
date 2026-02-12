@@ -257,9 +257,7 @@ class TimeSeriesService(Service):
         :class:`UnitNotFound`:
             If one or more unit names in the dataframe do not exist.
         """
-
         df = self.validate_df_or_raise(df, UpsertTimeSeriesFrameSchema)
-
         if df.empty:
             return None
 

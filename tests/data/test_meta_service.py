@@ -4,6 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
+from ixmp4.base_exceptions import InvalidDataFrame
 from ixmp4.data.meta.dto import MetaValueType, RunMetaEntry
 from ixmp4.data.meta.repositories import (
     RunMetaEntryNotFound,
@@ -259,3 +260,29 @@ class TestRunMetaEntryBulkOperations(RunMetaEntryServiceTest):
 
         ret = service.tabulate()
         assert ret.empty
+
+    def test_meta_bulk_upsert_invalid(
+        self,
+        service: RunMetaEntryService,
+        test_entries_df: pd.DataFrame,
+        fake_time: datetime.datetime,
+    ) -> None:
+        invalid_upsert_data = test_entries_df.drop(
+            columns=["key", "value", "id", "dtype"]
+        )  # no `run__id`
+
+        with pytest.raises(InvalidDataFrame):
+            service.bulk_upsert(invalid_upsert_data)
+
+    def test_meta_bulk_delete_invalid(
+        self,
+        service: RunMetaEntryService,
+        test_entries_df: pd.DataFrame,
+        fake_time: datetime.datetime,
+    ) -> None:
+        invalid_remove_data = test_entries_df.drop(
+            columns=["run__id", "value", "id", "dtype"]
+        )  # no `key`
+
+        with pytest.raises(InvalidDataFrame):
+            service.bulk_delete(invalid_remove_data)

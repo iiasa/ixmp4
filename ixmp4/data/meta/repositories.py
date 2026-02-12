@@ -96,9 +96,7 @@ class PandasRepository(db.r.PandasRepository):
         return self.merge_value_columns(df)
 
     def upsert(
-        self,
-        df: SerializableDataFrame,
-        key: Collection[str] | None = None,
+        self, df: SerializableDataFrame, key: Collection[str] | None = None
     ) -> Any:
         unique_keys = df["key"].unique()
         if illegal_keys := (set(unique_keys) & ILLEGAL_META_KEYS):

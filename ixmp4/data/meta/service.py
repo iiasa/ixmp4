@@ -11,6 +11,7 @@ from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
 from ixmp4.data.services import DirectTransport, Http, Service, procedure
 
+from .df_schemas import DeleteRunMetaFrameSchema, UpsertRunMetaFrameSchema
 from .dto import MetaValueType, RunMetaEntry
 from .filter import RunMetaEntryFilter
 from .repositories import ItemRepository, PandasRepository
@@ -283,9 +284,8 @@ class RunMetaEntryService(Service):
                 - run__id
                 - key
                 - value
-                - type
         """
-
+        df = self.validate_df_or_raise(df, UpsertRunMetaFrameSchema)
         self.pandas.upsert(df)
 
     @bulk_upsert.auth_check()
@@ -309,7 +309,7 @@ class RunMetaEntryService(Service):
                 - key
 
         """
-
+        df = self.validate_df_or_raise(df, DeleteRunMetaFrameSchema)
         self.pandas.delete(df)
 
     @bulk_delete.auth_check()
