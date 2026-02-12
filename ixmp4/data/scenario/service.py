@@ -50,7 +50,7 @@ class ScenarioService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`Scenario`:
+        :class:`~ixmp4.data.scenario.dto.Scenario`:
             The created scenario.
         """
 

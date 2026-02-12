@@ -5,11 +5,7 @@ Common Data Interface
    :maxdepth: 2
 
 
-.. automodule:: ixmp4.data
-   :members:
-   :undoc-members:
-   :show-inheritance:
-   
+
 Runs (ixmp4.data.run)
 ---------------------
 

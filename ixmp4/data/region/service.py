@@ -59,7 +59,7 @@ class RegionService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`Region`:
+        :class:`~ixmp4.data.region.dto.Region`:
             The created region.
         """
         self.items.create(
@@ -119,7 +119,7 @@ class RegionService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`Region`:
+        :class:`~ixmp4.data.region.Region`:
             The retrieved region.
         """
         return Region.model_validate(self.items.get({"name": name}))
@@ -148,7 +148,7 @@ class RegionService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`Region`:
+        :class:`~ixmp4.data.region.Region`:
             The retrieved region.
         """
 

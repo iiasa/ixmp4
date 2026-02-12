@@ -51,7 +51,7 @@ class ModelService(DocsService, GetByIdService):
 
         Returns
         -------
-        :class:`Model`:
+        :class:`~ixmp4.data.model.dto.Model`:
             The created model.
         """
         self.items.create({"name": name, **self.get_creation_info()})
