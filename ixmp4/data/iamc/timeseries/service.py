@@ -24,6 +24,7 @@ from ixmp4.data.unit.repositories import (
     PandasRepository as UnitPandasRepository,
 )
 
+from .df_schemas import TabulateTimeSeriesFrameSchema, UpsertTimeSeriesFrameSchema
 from .filter import TimeSeriesFilter
 from .repositories import PandasRepository
 
@@ -60,15 +61,25 @@ class TimeSeriesService(Service):
 
         Parameters
         ----------
-        df: `pd.DataFramea`
+        df: :class:`pandas.DataFrame`
             DataFrame containing rows of timeseries keys to tabulate.
+                - run__id
+                - region
+                - variable
+                - unit
 
         Returns
         -------
         :class:`pandas.DataFrame`:
             A data frame with the columns:
-                - TODO
+                - id
+                - run__id
+                - region
+                - variable
+                - unit
         """
+        df = self.validate_df_or_raise(df, TabulateTimeSeriesFrameSchema)
+
         return self.pandas.tabulate_by_df(
             df,
             key=["run__id", "region", "variable", "unit"],
@@ -89,6 +100,8 @@ class TimeSeriesService(Service):
 
         Parameters
         ----------
+        join_parameters: bool, optional
+            Include names of related region, variable and unit rows.
         \*\*kwargs: any
             Filter parameters as specified in `TimeSeriesFilter`.
 
@@ -96,7 +109,15 @@ class TimeSeriesService(Service):
         -------
         :class:`pandas.DataFrame`:
             A data frame with the columns:
-                - TODO
+                - id
+                - run__id
+            if ``join_parameters`` is ``False`` (default):
+                - region__id
+                - measurand__id
+            if ``join_parameters`` is ``True``:
+                - region
+                - variable
+                - unit
         """
         if join_parameters:
             columns = ["id", "run__id", "region", "variable", "unit"]
@@ -206,6 +227,38 @@ class TimeSeriesService(Service):
 
     @procedure(Http(methods=("POST",)))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
+        r"""Bulk inserts or updates timeseries from a supplied dataframe.
+
+        This method accepts a dataframe containing timeseries data and
+        automatically resolves region, unit, and variable references,
+        upserting them as needed. Measurands (variable/unit pairs) are also
+        created automatically. The method performs validation and merging
+        operations before inserting or updating the timeseries records.
+
+        Parameters
+        ----------
+        df: :class:`pandas.DataFrame`
+            DataFrame containing rows of timeseries data to upsert.
+            Minimum required columns:
+                - run__id
+            Optional columns that will be resolved automatically:
+                - region: region name; will be resolved to region__id
+                - unit: unit name; will be resolved to unit__id
+                - variable: variable name; will be instantiated if missing
+            To skip resolving related rows, supply ids directly:
+                - region__id
+                - measurand__id or unit__id and variable__id
+
+        Raises
+        ------
+        :class:`RegionNotFound`:
+            If one or more region names in the dataframe do not exist.
+        :class:`UnitNotFound`:
+            If one or more unit names in the dataframe do not exist.
+        """
+
+        df = self.validate_df_or_raise(df, UpsertTimeSeriesFrameSchema)
+
         if df.empty:
             return None
 
