@@ -32,9 +32,9 @@ in the domain of integrated assessment of climate change and energy systems mode
    :caption: Usage
    :maxdepth: 1
 
-   configuration
-   auth
-   cli
+   usage/configuration
+   usage/auth
+   usage/cli
 
    core/platform
    core/run
@@ -49,19 +49,22 @@ in the domain of integrated assessment of climate change and energy systems mode
    core/iamc
    core/optimization
 
-   locks-and-versioning
-   exceptions
+   usage/locks-and-versioning
+   usage/exceptions
 
 .. toctree::
    :caption: Development
    :maxdepth: 1
    
-   architecture
+   development/architecture
+   development/services
+
    data/modules
    server/modules
-   database
-   tests
-   docker
+   
+   development/database
+   development/tests
+   development/docker
 
 .. toctree::
    :caption: Reference
