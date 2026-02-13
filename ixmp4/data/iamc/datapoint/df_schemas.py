@@ -1,3 +1,4 @@
+import numpy as np
 import pandas as pd
 import pandera.pandas as pa
 import pandera.typing as pat
@@ -81,3 +82,9 @@ class DeleteDataPointFrameSchema(BaseDataPointFrameSchema):
 
 class UpsertDataPointFrameSchema(BaseDataPointFrameSchema):
     value: pat.Series[pa.Float] = pa.Field(coerce=True)
+
+    @pa.dataframe_check
+    @classmethod
+    def check_no_inf_vals(cls, df: pd.DataFrame) -> bool:
+        """Check that no infinite values exist in the 'value' column."""
+        return not bool(np.isinf(df["value"]).any())
