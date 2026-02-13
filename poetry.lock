@@ -4207,7 +4207,7 @@ description = "Python documentation generator"
 optional = false
 python-versions = ">=3.11"
 groups = ["docs"]
-markers = "python_version == \"3.11\""
+markers = "python_version >= \"3.11\" and python_version < \"3.14\""
 files = [
     {file = "sphinx-9.0.4-py3-none-any.whl", hash = "sha256:5bebc595a5e943ea248b99c13814c1c5e10b3ece718976824ffa7959ff95fffb"},
     {file = "sphinx-9.0.4.tar.gz", hash = "sha256:594ef59d042972abbc581d8baa577404abe4e6c3b04ef61bd7fc2acbd51f3fa3"},
@@ -4239,7 +4239,7 @@ description = "Python documentation generator"
 optional = false
 python-versions = ">=3.12"
 groups = ["docs"]
-markers = "python_version >= \"3.12\""
+markers = "python_version == \"3.14\""
 files = [
     {file = "sphinx-9.1.0-py3-none-any.whl", hash = "sha256:c84fdd4e782504495fe4f2c0b3413d6c2bf388589bb352d439b2a3bb99991978"},
     {file = "sphinx-9.1.0.tar.gz", hash = "sha256:7741722357dd75f8190766926071fed3bdc211c74dd2d7d4df5404da95930ddb"},
@@ -4876,7 +4876,7 @@ files = [
     {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
     {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
 ]
-markers = {docs = "python_version <= \"3.12\"", server = "python_version <= \"3.12\"", tutorial = "python_version < \"3.12\""}
+markers = {docs = "python_version < \"3.13\"", server = "python_version < \"3.13\"", tutorial = "python_version < \"3.12\""}
 
 [[package]]
 name = "typing-inspect"
@@ -5298,4 +5298,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.15"
-content-hash = "0b5b4a0da6483f567feabbc8ee66ff87bcb45dd5544074d6576bc77dba3c514e"
+content-hash = "ceb12e2515189d78ebe9d6267386f0e868d6d39b483b2ef54f625a74db997864"
