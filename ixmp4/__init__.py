@@ -14,8 +14,7 @@ from ixmp4.core.run import Run as Run
 from ixmp4.core.scenario import Scenario as Scenario
 from ixmp4.core.unit import Unit as Unit
 
+from ._version import __version__ as __version__
+from ._version import __version_tuple__ as __version_tuple__
 from .core import iamc as iamc
 from .core import optimization as optimization
-
-__version__ = "0.0.0"
-__version_tuple__ = (0, 0, 0)

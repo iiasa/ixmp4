@@ -1,7 +1,9 @@
 import logging
 from contextlib import asynccontextmanager, suppress
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, AsyncIterator, Awaitable, Callable, Sequence
 
+import pydantic as pyd
 from litestar import Controller, Litestar, Request, Response, Router, get
 from litestar.datastructures import State
 from litestar.di import Provide
@@ -11,7 +13,6 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.auth.user import User
 from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
-from typing_extensions import NotRequired, TypedDict
 
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
@@ -66,7 +67,8 @@ from ixmp4.transport import (
 if TYPE_CHECKING:
     from ixmp4.data.services import Service
 
-from .middleware import AuthenticationMiddleware
+from ..middleware import AuthenticationMiddleware
+from .platform import PlatformController
 
 logger = logging.getLogger(__name__)
 
@@ -219,6 +221,7 @@ class V1HttpApi:
             app.state.manager_platforms = None
 
         app.state.toml_platforms = self.settings.get_toml_platforms()
+        app.state.settings = self.settings
 
     @staticmethod
     def service_exception_handler(
@@ -233,43 +236,3 @@ class V1HttpApi:
             exc_dict,
             status_code=exc.http_status_code,
         )
-
-
-class PlatformInfo(TypedDict):
-    slug: str
-    name: str
-
-
-class PlatformAuthStatus(TypedDict):
-    access: bool
-    view: bool
-    submit: bool
-    edit: bool
-    manage: bool
-
-
-class PlatformStatus(TypedDict):
-    auth: NotRequired[PlatformAuthStatus]
-
-
-class PlatformController(Controller):
-    @get("/")
-    async def info(self, platform: PlatformConnectionInfo) -> Response[PlatformInfo]:
-        return Response(PlatformInfo(slug=platform.slug, name=platform.name))
-
-    @get("/status")
-    async def status(
-        self,
-        platform: PlatformConnectionInfo,
-        request: Request[User | None, AuthorizationContext | None, Any],
-    ) -> Response[PlatformStatus]:
-        status = PlatformStatus()
-        if request.auth is not None:
-            status["auth"] = PlatformAuthStatus(
-                access=request.auth.has_access_permission(platform),
-                view=request.auth.has_view_permission(platform),
-                submit=request.auth.has_submit_permission(platform),
-                edit=request.auth.has_edit_permission(platform),
-                manage=request.auth.has_management_permission(platform),
-            )
-        return Response(status)

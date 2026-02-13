@@ -13,9 +13,12 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.client.base import ServiceClient
 
+from ixmp4.base_exceptions import ImproperlyConfigured
 from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
+
+from ._version import __version__
 
 
 class Transport(abc.ABC):
@@ -141,12 +144,49 @@ class HttpxTransport(Transport, ServiceClient):
     direct: DirectTransport | None = None
 
     def __init__(
-        self, client: httpx.Client | TestClient[Litestar], settings: ClientSettings
+        self,
+        client: httpx.Client | TestClient[Litestar],
+        settings: ClientSettings,
+        check_root: bool = True,
     ):
         self.url = str(client.base_url)
+        logger.debug(f"Connecting to IXMP4 http server at '{self.url}'.")
+
         self.settings = settings
         self.executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_requests)
         self.http_client = client
+
+        if check_root:
+            self.check_root()
+
+    def check_root(self) -> None:
+        """Requests root api endpoint and logs messages."""
+        from ixmp4.server.v1.platform import PlatformInfo
+
+        res = self.http_client.get("/")
+        self.raise_service_exception(res)
+        root = PlatformInfo(**res.json())
+
+        if __version__ != root.version:
+            logger.warning(
+                "IXMP4 Client and Server versions do not match. "
+                f"(Client: {__version__}, Server: {root.version})"
+            )
+
+        logger.debug("Server UTC Time: " + root.utcnow.strftime("%c"))
+
+        if (
+            isinstance(self.http_client.auth, ManagerAuth)
+            and root.manager_url is not None
+        ):
+            client_manager_url = str(self.http_client.auth.client.base_url)
+            if client_manager_url.rstrip("/") != root.manager_url.rstrip("/"):
+                logger.error(f"Server Manager URL: {root.manager_url}")
+                logger.error(f"Client Manager URL: {root.manager_url}")
+                raise ImproperlyConfigured(
+                    "Trying to connect to a managed http Platform "
+                    "with a mismatching Manager URL."
+                )
 
     @classmethod
     def from_url(
@@ -186,7 +226,7 @@ class HttpxTransport(Transport, ServiceClient):
             base_url="http://testserver.local/v1/direct/",
             raise_server_exceptions=raise_server_exceptions,
         )
-        transport = cls(client, settings)
+        transport = cls(client, settings, check_root=False)
         transport.direct = direct
         return transport
 

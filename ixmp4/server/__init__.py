@@ -21,7 +21,7 @@ from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
 from litestar.openapi.spec.security_scheme import SecurityScheme
 
-from ixmp4 import __version__
+from ixmp4._version import __version__ as __version__
 from ixmp4.conf.settings import ServerSettings
 
 if TYPE_CHECKING:
