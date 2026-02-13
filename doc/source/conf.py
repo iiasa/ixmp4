@@ -63,6 +63,7 @@ html_css_files = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "pyam": ("https://pyam-iamc.readthedocs.io/en/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 
 # -- Prolog for all rst files ------------------------------------------------
