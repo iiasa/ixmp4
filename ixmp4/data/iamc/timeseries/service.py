@@ -103,7 +103,7 @@ class TimeSeriesService(Service):
         join_parameters: bool, optional
             Include names of related region, variable and unit rows.
         \*\*kwargs: any
-            Filter parameters as specified in `TimeSeriesFilter`.
+            Filter parameters as specified in :class:`TimeSeriesFilter`.
 
         Returns
         -------

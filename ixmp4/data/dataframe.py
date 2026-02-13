@@ -1,5 +1,5 @@
 from datetime import datetime
-from typing import Annotated, Any
+from typing import Annotated, Any, TypeAlias
 
 import pandas as pd
 import pydantic as pyd
@@ -92,7 +92,7 @@ def parse_df(val: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
     raise ValueError(f"Cannot create `DataFrame` from `{str(type(val))}`.")
 
 
-SerializableDataFrame = Annotated[
+SerializableDataFrame: TypeAlias = Annotated[
     pd.DataFrame,
     PlainValidator(parse_df),
     PlainSerializer(serialize_df, return_type=dict, when_used="json"),

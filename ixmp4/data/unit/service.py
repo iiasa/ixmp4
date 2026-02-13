@@ -160,7 +160,7 @@ class UnitService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `UnitFilter`.
+            Filter parameters as specified in :class:`UnitFilter`.
 
         Returns
         -------
@@ -202,7 +202,7 @@ class UnitService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `UnitFilter`.
+            Filter parameters as specified in :class:`UnitFilter`.
 
         Returns
         -------

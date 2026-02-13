@@ -180,7 +180,7 @@ class RegionServiceFacade(
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `RegionFilter`.
+            Filter parameters as specified in :class:`RegionFilter`.
 
         Raises
         ------
@@ -208,7 +208,7 @@ class RegionServiceFacade(
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `RegionFilter`.
+            Filter parameters as specified in :class:`RegionFilter`.
 
         Returns
         -------

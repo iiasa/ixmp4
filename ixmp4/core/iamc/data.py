@@ -191,7 +191,7 @@ class RunIamcData(BaseBackendFacade):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `DataPointFilter`.
+            Filter parameters as specified in :class:`DataPointFilter`.
 
         Returns
         -------
@@ -253,7 +253,7 @@ class PlatformIamcData(BaseBackendFacade):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `DataPointFilter`.
+            Filter parameters as specified in :class:`DataPointFilter`.
 
         Returns
         -------

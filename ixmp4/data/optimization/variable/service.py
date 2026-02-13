@@ -349,7 +349,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter variables as specified in `VariableFilter`.
+            Filter variables as specified in :class:`VariableFilter`.
 
         Raises
         ------
@@ -399,7 +399,7 @@ class VariableService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter variables as specified in `VariableFilter`.
+            Filter variables as specified in :class:`VariableFilter`.
 
         Returns
         -------

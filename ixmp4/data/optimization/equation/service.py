@@ -375,7 +375,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `EquationFilter`.
+            Filter parameters as specified in :class:`EquationFilter`.
 
         Raises
         ------
@@ -422,7 +422,7 @@ class EquationService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `EquationFilter`.
+            Filter parameters as specified in :class:`EquationFilter`.
 
         Returns
         -------

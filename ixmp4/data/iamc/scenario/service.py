@@ -36,7 +36,7 @@ class IamcScenarioService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcScenarioFilter`.
+            Filter parameters as specified in :class:`IamcScenarioFilter`.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class IamcScenarioService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcScenarioFilter`.
+            Filter parameters as specified in :class:`IamcScenarioFilter`.
 
         Returns
         -------

@@ -36,7 +36,7 @@ class IamcUnitService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcUnitFilter`.
+            Filter parameters as specified in :class:`IamcUnitFilter`.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class IamcUnitService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcUnitFilter`.
+            Filter parameters as specified in :class:`IamcUnitFilter`.
 
         Returns
         -------

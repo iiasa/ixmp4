@@ -44,7 +44,7 @@ class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `RunMetaEntryFilter`.
+            Filter parameters as specified in :class:`RunMetaEntryFilter`.
 
         Returns
         -------

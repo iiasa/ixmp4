@@ -134,7 +134,7 @@ class DocsService(GetByIdService, abc.ABC):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `DocsFilter`.
+            Filter parameters as specified in :class:`DocsFilter`.
 
         Raises
         ------

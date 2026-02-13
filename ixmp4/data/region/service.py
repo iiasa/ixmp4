@@ -183,7 +183,7 @@ class RegionService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `RegionFilter`.
+            Filter parameters as specified in :class:`RegionFilter`.
 
         Raises
         ------
@@ -230,7 +230,7 @@ class RegionService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `RegionFilter`.
+            Filter parameters as specified in :class:`RegionFilter`.
 
         Returns
         -------

@@ -89,7 +89,7 @@ class DataPointService(Service):
             Whether to include run__id in the data frame.
             Default: ``False``
         \*\*kwargs: any
-            Filter parameters as specified in `DataPointFilter`.
+            Filter parameters as specified in :class:`DataPointFilter`.
 
         Returns
         -------

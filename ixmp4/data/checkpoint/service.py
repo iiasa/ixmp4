@@ -149,7 +149,7 @@ class CheckpointService(GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `CheckpointFilter`.
+            Filter parameters as specified in :class:`CheckpointFilter`.
 
         Returns
         -------
@@ -194,7 +194,7 @@ class CheckpointService(GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `CheckpointFilter`.
+            Filter parameters as specified in :class:`CheckpointFilter`.
 
         Returns
         -------

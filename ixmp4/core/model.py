@@ -162,7 +162,7 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ModelFilter`.
+            Filter parameters as specified in :class:`ModelFilter`.
 
         Returns
         -------
@@ -185,7 +185,7 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ModelFilter`.
+            Filter parameters as specified in :class:`ModelFilter`.
 
         Returns
         -------

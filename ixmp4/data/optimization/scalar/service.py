@@ -260,7 +260,7 @@ class ScalarService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter scalars as specified in `ScalarFilter`.
+            Filter scalars as specified in :class:`ScalarFilter`.
 
         Raises
         ------
@@ -307,7 +307,7 @@ class ScalarService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter scalars as specified in `ScalarFilter`.
+            Filter scalars as specified in :class:`ScalarFilter`.
 
         Returns
         -------

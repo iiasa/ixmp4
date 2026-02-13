@@ -169,7 +169,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `UnitFilter`.
+            Filter parameters as specified in :class:`UnitFilter`.
 
         Returns
         -------
@@ -192,7 +192,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `UnitFilter`.
+            Filter parameters as specified in :class:`UnitFilter`.
 
         Returns
         -------

@@ -36,7 +36,7 @@ class IamcModelService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcModelFilter`.
+            Filter parameters as specified in :class:`IamcModelFilter`.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class IamcModelService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcModelFilter`.
+            Filter parameters as specified in :class:`IamcModelFilter`.
 
         Returns
         -------

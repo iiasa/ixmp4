@@ -164,7 +164,7 @@ class VariableService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `VariableFilter`.
+            Filter parameters as specified in :class:`VariableFilter`.
 
         Returns
         -------
@@ -207,7 +207,7 @@ class VariableService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `VariableFilter`.
+            Filter parameters as specified in :class:`VariableFilter`.
 
         Returns
         -------

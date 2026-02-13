@@ -359,7 +359,7 @@ class TableService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter tables as specified in `TableFilter`.
+            Filter tables as specified in :class:`TableFilter`.
 
         Raises
         ------
@@ -406,7 +406,7 @@ class TableService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter tables as specified in `TableFilter`.
+            Filter tables as specified in :class:`TableFilter`.
 
         Returns
         -------

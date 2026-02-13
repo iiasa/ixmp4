@@ -341,7 +341,7 @@ class IndexSetService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IndexSetFilter`.
+            Filter parameters as specified in :class:`IndexSetFilter`.
 
         Raises
         ------
@@ -388,7 +388,7 @@ class IndexSetService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IndexSet\Filter`.
+            Filter parameters as specified in :class:`IndexSet\Filter`.
 
         Returns
         -------

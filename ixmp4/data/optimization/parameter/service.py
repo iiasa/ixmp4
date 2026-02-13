@@ -373,7 +373,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ParameterFilter`.
+            Filter parameters as specified in :class:`ParameterFilter`.
 
         Raises
         ------
@@ -420,7 +420,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ParameterFilter`.
+            Filter parameters as specified in :class:`ParameterFilter`.
 
         Returns
         -------

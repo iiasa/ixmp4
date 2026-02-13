@@ -159,7 +159,7 @@ class VariableServiceFacade(
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `VariableFilter`.
+            Filter parameters as specified in :class:`VariableFilter`.
 
         Returns
         -------
@@ -182,7 +182,7 @@ class VariableServiceFacade(
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `VariableFilter`.
+            Filter parameters as specified in :class:`VariableFilter`.
 
         Returns
         -------

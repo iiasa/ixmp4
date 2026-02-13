@@ -36,7 +36,7 @@ class IamcRegionService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcRegionFilter`.
+            Filter parameters as specified in :class:`IamcRegionFilter`.
 
         Returns
         -------
@@ -79,7 +79,7 @@ class IamcRegionService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `IamcRegionFilter`.
+            Filter parameters as specified in :class:`IamcRegionFilter`.
 
         Returns
         -------

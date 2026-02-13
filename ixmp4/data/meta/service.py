@@ -147,7 +147,7 @@ class RunMetaEntryService(Service):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `RunMetaEntryFilter`.
+            Filter parameters as specified in :class:`RunMetaEntryFilter`.
 
         Returns
         -------
@@ -220,7 +220,7 @@ class RunMetaEntryService(Service):
             Whether to include run columns in the data frame.
             Default: ``False``
         \*\*kwargs: any
-            Filter parameters as specified in `RunMetaEntryFilter`.
+            Filter parameters as specified in :class:`RunMetaEntryFilter`.
 
         Returns
         -------

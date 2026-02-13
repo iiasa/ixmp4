@@ -162,7 +162,7 @@ class ScenarioService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ScenarioFilter`.
+            Filter parameters as specified in :class:`ScenarioFilter`.
 
         Returns
         -------
@@ -204,7 +204,7 @@ class ScenarioService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ScenarioFilter`.
+            Filter parameters as specified in :class:`ScenarioFilter`.
 
         Returns
         -------

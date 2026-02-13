@@ -152,7 +152,7 @@ class ModelService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ModelFilter`.
+            Filter parameters as specified in :class:`ModelFilter`.
 
         Returns
         -------
@@ -195,7 +195,7 @@ class ModelService(DocsService, GetByIdService):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in `ModelFilter`.
+            Filter parameters as specified in :class:`ModelFilter`.
 
         Returns
         -------
