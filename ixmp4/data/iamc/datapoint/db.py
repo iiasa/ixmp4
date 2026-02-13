@@ -28,8 +28,7 @@ class DataPoint(BaseModel):
     )
     timeseries: db.t.Mapped["TimeSeries"] = orm.relationship(viewonly=True)
 
-    # TODO: Should this column really be nullable?
-    value: db.t.Float = orm.mapped_column(nullable=True)
+    value: db.t.Float = orm.mapped_column()
 
     type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 

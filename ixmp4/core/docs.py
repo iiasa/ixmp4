@@ -1,8 +1,11 @@
+import logging
 from typing import Any, Generic
 
 from ixmp4.data.docs.repository import DocsNotFound
 
 from .base import BaseFacadeObject, DocsServiceT, DtoT
+
+logger = logging.getLogger(__name__)
 
 
 class DocsDescriptor(Generic[DocsServiceT, DtoT]):
@@ -70,6 +73,6 @@ class DocsDescriptor(Generic[DocsServiceT, DtoT]):
         """
         try:
             obj._service.delete_docs(obj._dto.id)
-        # TODO: silently failing
         except DocsNotFound:
+            logger.debug(f"Tried to delete docs for {obj}, but no docs were found.")
             return None

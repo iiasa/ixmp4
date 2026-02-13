@@ -378,6 +378,3 @@ class TestModelAuthNonePublic(auth.NoneTest, auth.PublicPlatformTest, ModelServi
     def test_model_delete(self, service: ModelService) -> None:
         with pytest.raises(Forbidden):
             service.delete_by_id(1)
-
-
-# TODO: More detail in auth tests

@@ -336,9 +336,6 @@ class TestRunTabulate(RunServiceTest):
         pdt.assert_frame_equal(expected_runs, runs, check_like=True)
 
 
-# TODO: lock, unlock, clone
-
-
 class TestRunAuthSarahPrivate(auth.SarahTest, auth.PrivatePlatformTest, RunServiceTest):
     def test_run_create(self, service: RunService) -> None:
         run = service.create("Model", "Scenario")

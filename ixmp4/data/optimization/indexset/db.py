@@ -32,8 +32,7 @@ class IndexSet(BaseModel, HasCreationInfo):
     def data(self) -> list[str] | list[int] | list[float]:
         if self.data_type is None:
             if len(self.data_entries) != 0:
-                logger.error(  # TODO Check if this is happening
-                    # and mb reset the datatype
+                logger.error(
                     "Invalid state: data_type is None, but data entries"
                     "are associated with the IndexSet. "
                 )

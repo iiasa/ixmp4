@@ -94,8 +94,6 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
         :class:`ixmp4.core.unit.Unit`:
             The created unit.
         """
-        # TODO: Refactor name checks to data layer
-
         if name != "" and name.strip() == "":
             raise ValueError("Using a space-only unit name is not allowed.")
         if name == "dimensionless":

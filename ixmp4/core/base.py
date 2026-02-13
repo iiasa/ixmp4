@@ -1,4 +1,5 @@
 import abc
+import logging
 from typing import Generic, TypeVar, cast
 
 from typing_extensions import Unpack
@@ -9,6 +10,8 @@ from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.services.base import GetByIdService, Service
+
+logger = logging.getLogger(__name__)
 
 
 class BaseBackendFacade(object):
@@ -52,9 +55,9 @@ class BaseDocsServiceFacade(
     Generic[KeyT, ItemT, DocsServiceT],
 ):
     def get_docs(self, x: KeyT) -> str | None:
-        equation_id = self._get_item_id(x)
+        item_id = self._get_item_id(x)
         try:
-            return self._service.get_docs(dimension__id=equation_id).description
+            return self._service.get_docs(dimension__id=item_id).description
         except DocsNotFound:
             return None
 
@@ -62,18 +65,18 @@ class BaseDocsServiceFacade(
         if description is None:
             self.delete_docs(x)
             return None
-        equation_id = self._get_item_id(x)
+        item_id = self._get_item_id(x)
         return self._service.set_docs(
-            dimension__id=equation_id, description=description
+            dimension__id=item_id, description=description
         ).description
 
     def delete_docs(self, x: KeyT) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        equation_id = self._get_item_id(x)
+        item_id = self._get_item_id(x)
         try:
-            self._service.delete_docs(dimension__id=equation_id)
+            self._service.delete_docs(dimension__id=item_id)
             return None
         except DocsNotFound:
+            logger.debug(f"Tried to delete docs for {x}, but no docs were found.")
             return None
 
     def list_docs(self, **kwargs: Unpack[DocsFilter]) -> list[str]:

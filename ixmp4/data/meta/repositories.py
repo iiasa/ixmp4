@@ -67,7 +67,7 @@ class PandasRepository(db.r.PandasRepository):
 
         type_df = df.groupby("dtype", group_keys=True)
 
-        # ensure compatibility with pandas y 2.2
+        # ensure compatibility with pandas v2.2
         # TODO remove legacy-handling when dropping support for pandas < 2.2
 
         if pd.__version__[0:3] in ["2.0", "2.1"]:

@@ -354,8 +354,6 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         tx_after_delete: int,
         test_df: pd.DataFrame,
     ) -> None:
-        # TODO: Uncommit valid_at_tx tests when version filter is implemented
-
         # insert valid version records
         insert_versions_df = test_df.copy()
         insert_versions_df["operation_type"] = Operation.INSERT.value

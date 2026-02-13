@@ -54,7 +54,6 @@ class DocsService(GetByIdService, abc.ABC):
 
         return Docs.model_validate(self.docs.get({"dimension__id": dimension__id}))
 
-    # TODO: check run permission
     @get_docs.auth_check()
     def get_docs_auth_check(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol

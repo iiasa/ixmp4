@@ -7,7 +7,6 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-# TODO Import this from typing when dropping Python 3.11
 from ixmp4.data.meta.dto import MetaValueType
 from ixmp4.data.meta.filter import RunMetaEntryFilter
 from ixmp4.data.meta.service import RunMetaEntryService
@@ -56,7 +55,6 @@ class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
                 - scenario
                 - version
         """
-        # TODO: accept list of `Run` instances as arg
         return self._service.tabulate(include_run_index=True, **kwargs).drop(
             columns=["id", "dtype"]
         )

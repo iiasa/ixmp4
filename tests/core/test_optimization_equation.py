@@ -445,25 +445,6 @@ class TestEquationInvalidData(OptimizationEquationTest):
             with run.transact("Remove invalid data"):
                 equation1.remove_data({"levels": [2]})
 
-        # move tests and logic to facade TODO
-        # caplog.clear()
-        # with caplog.at_level("WARNING"):
-        #     service.remove_data(
-        #         2,
-        #         {
-        #             "levels": [2],
-        #             "marginals": [-2],
-        #         },
-        #     )
-
-        # expected = [
-        #     (
-        #         "Trying to remove {'levels': [2], 'marginals': [-2]} from `Equation` "
-        #         "'Equation 2', but that is not indexed; not removing anything!"
-        #     )
-        # ]
-        # assert caplog.messages == expected
-
 
 class TestEquationRunLock(OptimizationEquationTest):
     def test_equation_requires_lock(
