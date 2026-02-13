@@ -25,7 +25,7 @@ app.add_typer(alembic.app, name="alembic")
 app.add_typer(server.app, name="server")
 
 
-@app.command()
+@app.command(help="Logs into the configured manager service.")
 def login(
     username: str = typer.Argument(..., help="Your username."),
     password: str = typer.Option(
@@ -60,7 +60,7 @@ def login(
         )
 
 
-@app.command()
+@app.command(help="Logs out and deletes local credentials.")
 def logout() -> None:
     settings = Settings()
     if typer.confirm(
@@ -75,7 +75,8 @@ try:
     import pytest
 
     @app.command(
-        context_settings={"allow_extra_args": True, "ignore_unknown_options": True}
+        context_settings={"allow_extra_args": True, "ignore_unknown_options": True},
+        help="Runs tests.",
     )
     def test(
         ctx: typer.Context,

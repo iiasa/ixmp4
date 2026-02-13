@@ -6,7 +6,7 @@ import uvicorn
 from ixmp4.conf.settings import Settings
 from ixmp4.server import Ixmp4Server
 
-app = typer.Typer()
+app = typer.Typer(help="Enables use of the http server.")
 
 
 @app.command()
@@ -17,7 +17,7 @@ def start(
     reload: bool = typer.Option(default=False, help="Whether to hot-reload."),
     debug: bool = typer.Option(default=False, help="Use debug mode."),
 ) -> None:
-    """Starts the ixmp4 web api."""
+    """Starts the ixmp4 http server."""
     settings = Settings()
     server = Ixmp4Server(settings.server, debug=debug)
 

@@ -24,7 +24,7 @@ from .alembic import get_alembic_controller
 migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
 
 
-app = typer.Typer()
+app = typer.Typer(help="Manages platforms via subcommands.")
 console = Console()
 
 

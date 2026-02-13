@@ -12,7 +12,9 @@ from ixmp4.db.models import get_metadata
 
 migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
 
-app = AlembicCli()
+app = AlembicCli(
+    help="Manages alembic migrations on selected platforms via subcommands."
+)
 
 
 def get_alembic_controller(dsn: str) -> AlembicController:
