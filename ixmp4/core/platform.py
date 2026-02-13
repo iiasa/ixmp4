@@ -1,3 +1,5 @@
+import logging
+
 from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.conf.settings import Settings
@@ -11,6 +13,8 @@ from .region import RegionServiceFacade
 from .run import RunServiceFacade
 from .scenario import ScenarioServiceFacade
 from .unit import UnitServiceFacade
+
+logger = logging.getLogger(__name__)
 
 
 class Platform(object):
@@ -145,6 +149,8 @@ class Platform(object):
         else:
             raise TypeError("__init__() is missing required argument 'name'")
 
+        logger.debug(f"Initializing facade objects for {self.backend}.")
+
         self.runs = RunServiceFacade(self.backend)
         self.iamc = PlatformIamcData(self.backend)
         self.models = ModelServiceFacade(self.backend)
@@ -163,6 +169,7 @@ class Platform(object):
             raise PlatformNotFound(f"Platform '{name}' was not found.")
 
         transport = self.get_transport(ci)
+        logger.debug(f"Initializing backend for {transport}.")
         return Backend(transport)
 
     def get_transport(
@@ -182,7 +189,12 @@ class Platform(object):
         toml = self.settings.get_toml_platforms()
 
         try:
-            return toml.get_platform(name)
+            toml_platform = toml.get_platform(name)
+            logger.debug(
+                f"Connecting to platform '{toml_platform.name}' "
+                "via toml configuration..."
+            )
+            return toml_platform
         except PlatformNotFound:
             return None
 
@@ -190,6 +202,15 @@ class Platform(object):
         manager = self.settings.get_manager_platforms()
 
         try:
-            return manager.get_platform(name)
+            manager_platform = manager.get_platform(name)
+            logger.debug(
+                f"Connecting to platform '{manager_platform.name}' "
+                "via manager service..."
+            )
+
+            if manager_platform.notice is not None:
+                logger.info(manager_platform.name + ": " + manager_platform.notice)
+
+            return manager_platform
         except PlatformNotFound:
             return None

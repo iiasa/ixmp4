@@ -49,6 +49,9 @@ class DirectTransport(Transport):
     def __init__(self, session: orm.Session):
         self.session = session
 
+        if (url := self.get_database_url()) is not None:
+            logger.debug(f"Connected to IXMP4 database at '{url.render_as_string()}'.")
+
     @classmethod
     def check_dsn(cls, dsn: str) -> str:
         if dsn.startswith("postgresql://"):
@@ -84,6 +87,12 @@ class DirectTransport(Transport):
             max_identifier_length=63,
             connect_args={"check_same_thread": False},
         )
+
+    def get_database_url(self) -> sa.URL | None:
+        if self.session.bind is None:
+            return None
+        else:
+            return self.session.bind.engine.url
 
     def get_engine_info(self) -> str:
         if self.session.bind is None:
@@ -150,7 +159,7 @@ class HttpxTransport(Transport, ServiceClient):
         check_root: bool = True,
     ):
         self.url = str(client.base_url)
-        logger.debug(f"Connecting to IXMP4 http server at '{self.url}'.")
+        logger.debug(f"Connected to IXMP4 http server at '{self.url}'.")
 
         self.settings = settings
         self.executor = ThreadPoolExecutor(max_workers=settings.concurrency)

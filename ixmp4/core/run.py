@@ -1,3 +1,4 @@
+import logging
 import time
 import warnings
 from contextlib import contextmanager
@@ -30,6 +31,8 @@ from .checkpoint import RunCheckpoints
 from .iamc import RunIamcData
 from .meta import RunMetaDescriptor
 from .optimization.data import RunOptimizationData
+
+logger = logging.getLogger(__name__)
 
 
 class RunCloner:
@@ -217,10 +220,12 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def _lock(self) -> None:
         self._dto = self._service.lock(self._dto.id)
         self.owns_lock = True
+        logger.debug(f"Acquired lock on {self}.")
 
     def _unlock(self) -> None:
         self._dto = self._service.unlock(self._dto.id)
         self.owns_lock = False
+        logger.debug(f"Released lock on {self}.")
 
     def _lock_with_timeout(self, timeout: float) -> None:
         """Try locking the run until a timeout passes."""
@@ -285,7 +290,6 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             If the run is already locked and no timeout is provided
             or the provided timeout is exceeded.
         """
-
         if timeout is None:
             self._lock()
         else:
