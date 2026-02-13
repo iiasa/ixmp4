@@ -32,6 +32,13 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.optimization.indexset.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
 
 Scalars (ixmp4.data.optimization.scalar)
 ----------------------------------------
@@ -51,6 +58,13 @@ Data Transfer Object
 Service
 ^^^^^^^
 .. autoclass:: ixmp4.data.optimization.scalar.service.ScalarService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.optimization.scalar.filter
     :members:   
     :undoc-members:
     :show-inheritance:
@@ -78,6 +92,13 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.optimization.equation.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
 
 Paramters (ixmp4.data.optimization.parameter)
 ---------------------------------------------
@@ -97,6 +118,13 @@ Data Transfer Object
 Service
 ^^^^^^^
 .. autoclass:: ixmp4.data.optimization.parameter.service.ParameterService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.optimization.parameter.filter
     :members:   
     :undoc-members:
     :show-inheritance:
@@ -124,6 +152,13 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.optimization.table.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
 
 Variables (ixmp4.data.optimization.variable)
 --------------------------------------------
@@ -143,6 +178,22 @@ Data Transfer Object
 Service
 ^^^^^^^
 .. autoclass:: ixmp4.data.optimization.variable.service.VariableService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.optimization.variable.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+
+Base Filters
+------------
+
+.. automodule:: ixmp4.data.filters.optimization
     :members:   
     :undoc-members:
     :show-inheritance:

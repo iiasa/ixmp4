@@ -29,6 +29,12 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.run.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
 
 
 Models (ixmp4.data.model)
@@ -54,6 +60,12 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.model.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
 
 
 Scenarios (ixmp4.data.scenario)
@@ -80,6 +92,13 @@ Service
     :show-inheritance:
 
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.scenario.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
 
 Run Meta Indicators (ixmp4.data.meta)
 -------------------------------------
@@ -100,6 +119,13 @@ Data Transfer Object
 Service
 ^^^^^^^
 .. autoclass:: ixmp4.data.meta.service.RunMetaEntryService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.meta.filter
     :members:   
     :undoc-members:
     :show-inheritance:
@@ -128,6 +154,14 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.region.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+
 Units (ixmp4.data.unit)
 -----------------------
 
@@ -147,6 +181,22 @@ Data Transfer Object
 Service
 ^^^^^^^
 .. autoclass:: ixmp4.data.unit.service.UnitService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.unit.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+
+Base Filters
+------------
+
+.. automodule:: ixmp4.data.filters.base
     :members:   
     :undoc-members:
     :show-inheritance:

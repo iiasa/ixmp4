@@ -20,6 +20,13 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.iamc.datapoint.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
 
 Measurands (ixmp4.data.iamc.measurand)
 --------------------------------------
@@ -45,6 +52,13 @@ Service
     :undoc-members:
     :show-inheritance:
 
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.iamc.timeseries.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
 Variables (ixmp4.data.iamc.variable)
 ------------------------------------
 
@@ -63,6 +77,21 @@ Data Transfer Object
 Service
 ^^^^^^^
 .. autoclass:: ixmp4.data.iamc.variable.service.VariableService
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Filters
+^^^^^^^
+.. automodule:: ixmp4.data.iamc.variable.filter
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+
+Base Filters
+------------
+
+.. automodule:: ixmp4.data.filters.iamc
     :members:   
     :undoc-members:
     :show-inheritance:
