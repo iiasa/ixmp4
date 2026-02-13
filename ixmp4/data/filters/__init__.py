@@ -58,12 +58,12 @@ def filter_by_default_only(
     return exc.where(Run.is_default) if value else exc
 
 
-class VersionFilter(TypedDict, total=False):
+class RunVersionFilter(TypedDict, total=False):
     version: int
     version__in: list[int]
 
 
-class RunFilter(IdFilter, VersionFilter, total=False):
+class RunFilter(IdFilter, RunVersionFilter, total=False):
     is_default: bool
     default_only: Annotated[bool, filter_by_default_only]
 
