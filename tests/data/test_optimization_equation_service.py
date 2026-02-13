@@ -12,7 +12,8 @@ from ixmp4.data.optimization.equation.exceptions import (
     EquationNotUnique,
 )
 from ixmp4.data.optimization.equation.service import EquationService
-from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
+from ixmp4.data.optimization.indexset.dto import IndexSet
+from ixmp4.data.optimization.indexset.service import IndexSetService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.transport import Transport

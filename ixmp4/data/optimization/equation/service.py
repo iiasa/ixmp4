@@ -19,10 +19,10 @@ from ixmp4.data.services import DirectTransport, Http, procedure
 
 from .db import EquationDocs
 from .dto import Equation
+from .exceptions import EquationDataInvalid
 from .filter import EquationFilter
 from .repositories import (
     AssociationRepository,
-    EquationDataInvalid,
     ItemRepository,
     PandasRepository,
     VersionRepository,

@@ -18,12 +18,12 @@ from ixmp4.data.services import DirectTransport, Http, procedure
 
 from .db import VariableDocs
 from .dto import Variable
+from .exceptions import VariableDataInvalid
 from .filter import VariableFilter
 from .repositories import (
     AssociationRepository,
     ItemRepository,
     PandasRepository,
-    VariableDataInvalid,
     VersionRepository,
 )
 

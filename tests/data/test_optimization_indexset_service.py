@@ -10,7 +10,7 @@ from ixmp4.base_exceptions import (
     InvalidArguments,
 )
 from ixmp4.data.optimization.equation.service import EquationService
-from ixmp4.data.optimization.indexset.repositories import (
+from ixmp4.data.optimization.indexset.exceptions import (
     IndexSetDataInvalid,
     IndexSetNotFound,
     IndexSetNotUnique,

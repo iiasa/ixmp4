@@ -70,3 +70,13 @@ from .base import GetByIdService as GetByIdService
 from .base import Service as Service
 from .procedure import ProcedureHttpConfig as Http
 from .procedure import procedure as procedure
+
+__all__ = [
+    "DirectTransport",
+    "HttpxTransport",
+    "Transport",
+    "GetByIdService",
+    "Service",
+    "Http",
+    "procedure",
+]

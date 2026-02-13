@@ -6,8 +6,9 @@ import pandas.testing as pdt
 import pytest
 
 from ixmp4.base_exceptions import Forbidden, OptimizationItemUsageError
-from ixmp4.data.optimization.indexset.service import IndexSet, IndexSetService
-from ixmp4.data.optimization.table.repositories import (
+from ixmp4.data.optimization.indexset.dto import IndexSet
+from ixmp4.data.optimization.indexset.service import IndexSetService
+from ixmp4.data.optimization.table.exceptions import (
     TableDataInvalid,
     TableNotFound,
     TableNotUnique,

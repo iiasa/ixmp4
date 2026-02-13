@@ -5,9 +5,7 @@ import pandas.testing as pdt
 import pytest
 
 from ixmp4.base_exceptions import Forbidden
-from ixmp4.data.checkpoint.repositories import (
-    CheckpointNotFound,
-)
+from ixmp4.data.checkpoint.exceptions import CheckpointNotFound
 from ixmp4.data.checkpoint.service import CheckpointService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService

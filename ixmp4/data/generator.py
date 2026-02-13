@@ -8,10 +8,11 @@ from typing import Any
 import numpy as np
 import pandas as pd
 
-from ixmp4.core.platform import Backend, Platform
+from ixmp4.core.platform import Platform
 from ixmp4.core.region import Region
 from ixmp4.core.run import Run
 from ixmp4.core.unit import Unit
+from ixmp4.data.backend import Backend
 from ixmp4.data.iamc.datapoint.type import Type
 
 

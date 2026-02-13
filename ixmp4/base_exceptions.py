@@ -10,7 +10,7 @@ from toolkit.exceptions import NotUnique as BaseNotUnique
 from toolkit.exceptions import PlatformNotFound as BasePlatformNotFound
 from toolkit.exceptions import ProgrammingError as ProgrammingError
 from toolkit.exceptions import ServerError as BaseServerError
-from toolkit.exceptions import ServiceException
+from toolkit.exceptions import ServiceException as ServiceException
 from toolkit.exceptions import ServiceUnavailable as BaseServiceUnavailable
 from toolkit.exceptions import Unauthorized as BaseUnauthorized
 from toolkit.exceptions.registry import ServiceExceptionRegistry

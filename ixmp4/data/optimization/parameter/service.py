@@ -20,12 +20,12 @@ from ixmp4.data.unit.repositories import ItemRepository as UnitRepository
 
 from .db import ParameterDocs
 from .dto import Parameter
+from .exceptions import ParameterDataInvalid
 from .filter import ParameterFilter
 from .repositories import (
     AssociationRepository,
     ItemRepository,
     PandasRepository,
-    ParameterDataInvalid,
     VersionRepository,
 )
 

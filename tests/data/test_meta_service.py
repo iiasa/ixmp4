@@ -6,9 +6,7 @@ import pytest
 
 from ixmp4.base_exceptions import InvalidDataFrame
 from ixmp4.data.meta.dto import MetaValueType, RunMetaEntry
-from ixmp4.data.meta.repositories import (
-    RunMetaEntryNotFound,
-)
+from ixmp4.data.meta.exceptions import RunMetaEntryNotFound
 from ixmp4.data.meta.service import RunMetaEntryService
 from ixmp4.data.meta.type import Type
 from ixmp4.data.run.dto import Run

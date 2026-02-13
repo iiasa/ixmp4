@@ -19,12 +19,12 @@ from ixmp4.data.services import DirectTransport, Http, procedure
 
 from .db import TableDocs
 from .dto import Table
+from .exceptions import TableDataInvalid
 from .filter import TableFilter
 from .repositories import (
     AssociationRepository,
     ItemRepository,
     PandasRepository,
-    TableDataInvalid,
     VersionRepository,
 )
 
