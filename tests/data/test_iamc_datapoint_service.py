@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.base_exceptions import Forbidden
+from ixmp4.base_exceptions import Forbidden, InconsistentIamcType, InvalidDataFrame
 from ixmp4.data.iamc.datapoint.service import DataPointService
 from ixmp4.data.iamc.datapoint.type import Type
 from ixmp4.data.iamc.reverter import DataPointReverterRepository
@@ -575,6 +575,52 @@ class TestDatapointBulkMixedWithType(DataPointBulkOperationsTest):
         expected_mixed_df: pd.DataFrame,
     ) -> pd.DataFrame:
         return expected_mixed_df
+
+
+class TestDataPointBulkOperationsInvalidData(DataPointServiceTest):
+    @pytest.fixture(scope="class")
+    def test_df_annual(self, test_ts_df: pd.DataFrame) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [1, 1, Type.ANNUAL, 2000, 1.1],
+                [2, 1, Type.ANNUAL, 2010, 1.3],
+                [3, 1, Type.ANNUAL, 2020, 1.5],
+                [4, 1, Type.ANNUAL, 2030, 1.7],
+            ],
+            columns=[
+                "id",
+                "time_series__id",
+                "type",
+                "step_year",
+                "value",
+            ],
+        )
+
+    def test_datapoint_bulk_insert(
+        self,
+        service: DataPointService,
+        test_df_annual: pd.DataFrame,
+    ) -> None:
+        df_no_step_year = test_df_annual.drop(columns=["id", "type", "step_year"])
+        with pytest.raises(InconsistentIamcType):
+            service.bulk_upsert(df_no_step_year)
+
+        df_with_inf = test_df_annual.drop(columns=["id", "type"])
+        df_with_inf["value"] = float("inf")
+        with pytest.raises(InvalidDataFrame):
+            service.bulk_upsert(df_with_inf)
+
+    def test_datapoint_bulk_delete(
+        self,
+        service: DataPointService,
+        test_df_annual: pd.DataFrame,
+    ) -> None:
+        df_no_step_year = test_df_annual.drop(
+            columns=["id", "value", "type", "step_year"]
+        )
+
+        with pytest.raises(InconsistentIamcType):
+            service.bulk_delete(df_no_step_year)
 
 
 class DataPointAuthTest(DataPointServiceTest):
