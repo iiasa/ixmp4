@@ -28,9 +28,8 @@ _sys_has_ps1 = hasattr(sys, "ps1")
 
 class ClientSettings(BaseSettings):
     default_upload_chunk_size: int = 10_000
-    max_concurrent_requests: int = Field(2, le=4)
-    max_request_retries: int = Field(3)
-    backoff_factor: int = Field(5)
+    concurrency: int = Field(2, le=4)
+    retries: int = Field(3)
     timeout: int = Field(30)
     secret_hs256: SecretStr | None = None
 

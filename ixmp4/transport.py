@@ -153,7 +153,7 @@ class HttpxTransport(Transport, ServiceClient):
         logger.debug(f"Connecting to IXMP4 http server at '{self.url}'.")
 
         self.settings = settings
-        self.executor = ThreadPoolExecutor(max_workers=settings.max_concurrent_requests)
+        self.executor = ThreadPoolExecutor(max_workers=settings.concurrency)
         self.http_client = client
 
         if check_root:
@@ -210,6 +210,7 @@ class HttpxTransport(Transport, ServiceClient):
             timeout=timeout,
             http2=True,
             auth=auth,
+            transport=httpx.HTTPTransport(retries=settings.retries, http2=True),
         )
         return cls(client, settings)
 
