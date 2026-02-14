@@ -226,7 +226,7 @@ class V1HttpApi:
         request: Request[Any, Any, Any], exc: Ixmp4Error, /
     ) -> Response[dict[str, Any]]:
         exc_dict = registry.exception_to_response_dict(exc)
-        logger.info(
+        logger.debug(
             f"Received `{exc.__class__.__name__}` exception, "
             "returning appropriate error response."
         )
