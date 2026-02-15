@@ -19,6 +19,7 @@ from pytest_alembic.tests import (
 )
 from sqlalchemy.exc import OperationalError, ProgrammingError
 
+import ixmp4
 from ixmp4.transport import DirectTransport
 from tests import backends
 from tests.fixtures import get_migration_data
@@ -78,6 +79,21 @@ def test_up_down_consistency(alembic: MigrationContext) -> None:
     up_down_consistency(alembic)
 
 
-def test_upgrade(alembic: MigrationContext) -> None:
+def test_upgrade(alembic: MigrationContext, transport: DirectTransport) -> None:
     """Test that the upgrade migrations work."""
     upgrade(alembic)
+
+    # some simple checks to assert all the
+    # data is still here
+    mp = ixmp4.Platform(transport)
+
+    assert len(mp.regions.list()) == 180
+    assert len(mp.units.list()) == 100
+    assert len(mp.runs.list(default_only=False)) == 30
+
+    run_meta = mp.meta.tabulate(run={"default_only": False})
+    assert len(run_meta) == 100
+
+    iamc_data = mp.iamc.tabulate(run={"default_only": False})
+    assert len(iamc_data) == 9436
+    assert not iamc_data["value"].isnull().any()
