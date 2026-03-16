@@ -30,7 +30,7 @@ dependencies = [
     "SQLAlchemy-Utils>=0.41.0",
     "toml>=0.10.2",
     "typer>=0.19.0",
-    "scse-toolkit==0.16.0.dev2",
+    "scse-toolkit  (>=1.0.0,<2.0.0)",
     "litestar (>=2.18.0,<3.0.0)",
 ]
 
@@ -47,11 +47,6 @@ repository = "https://github.com/iiasa/ixmp4"
 packages = [{ include = "ixmp4" }, { include = "ixmp4/py.typed" }]
 requires-poetry = ">=2.0,<3.0"
 version = "0.0.0"
-
-[[tool.poetry.source]]
-name = "test-pypi"
-url = "https://test.pypi.org/simple"
-priority = "supplemental"
 
 [tool.poetry.group.docs]
 optional = true
