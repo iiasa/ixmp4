@@ -4050,14 +4050,14 @@ scipy = ["scipy (>=1.17.0,<1.18)"]
 
 [[package]]
 name = "scse-toolkit"
-version = "0.16.0.dev2"
+version = "1.0.0"
 description = ""
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "scse_toolkit-0.16.0.dev2-py3-none-any.whl", hash = "sha256:8e57e56fd77f41fd5c2d98f032aad1826d13c1c6a3345e38e2c802bc5279b4e2"},
-    {file = "scse_toolkit-0.16.0.dev2.tar.gz", hash = "sha256:35d1260e79c9276bc212edade87173a0b6f7a5d64c48b66f1b7cc160586704ac"},
+    {file = "scse_toolkit-1.0.0-py3-none-any.whl", hash = "sha256:5449e0f408a4848638036ca6247d1b7f2dd7c462614636d195f7db0791f9d772"},
+    {file = "scse_toolkit-1.0.0.tar.gz", hash = "sha256:005c165fec408b1e813535bd1dd81728a7e65e28ed731e958cfcbc878d5d0b02"},
 ]
 
 [package.dependencies]
@@ -4073,11 +4073,6 @@ rich = ">=13.8.0,<14.0.0"
 sqlalchemy = ">=2.0.32,<3.0.0"
 typer = ">=0.0.0,<1.0.0"
 typing-extensions = ">=4.15.0,<5.0.0"
-
-[package.source]
-type = "legacy"
-url = "https://test.pypi.org/simple"
-reference = "test-pypi"
 
 [[package]]
 name = "setuptools"
@@ -5298,4 +5293,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.15"
-content-hash = "ceb12e2515189d78ebe9d6267386f0e868d6d39b483b2ef54f625a74db997864"
+content-hash = "b34d0efb7b4c97f844725d30455827892cd012a44bffe8e0e1144772aa093232"
