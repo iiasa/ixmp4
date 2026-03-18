@@ -46,12 +46,8 @@ class Run(BaseModel, HasUpdateInfo):
     # variables: Mapped[list["OptimizationVariable"]] = orm.relationship()
 
     version: Integer = orm.mapped_column(sa.Integer, nullable=False)
-    is_default: Boolean = orm.mapped_column(
-        sa.Boolean, default=False, nullable=False
-    )
-    lock_transaction: Mapped[int | None] = orm.mapped_column(
-        nullable=True, index=True
-    )
+    is_default: Boolean = orm.mapped_column(sa.Boolean, default=False, nullable=False)
+    lock_transaction: Mapped[int | None] = orm.mapped_column(nullable=True, index=True)
 
 
 class RunVersion(versions.BaseVersionModel):
