@@ -4,9 +4,15 @@ from .base import (
     IdFilter,
     NameFilter,
     RunIdFilter,
-    TimeSeriesIdFilter,
-    ValueFilter,
 )
+from .base import (
+    ValueFilter as ValueFilter,
+)
+
+
+class TimeSeriesIdFilter(TypedDict, total=False):
+    time_series__id: int
+    time_series__id__in: list[int]
 
 
 class DataPointTypeFilter(TypedDict, total=False):

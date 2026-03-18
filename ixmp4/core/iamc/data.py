@@ -5,13 +5,11 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-# from ixmp4.data.db.iamc.utils import (
-#     AddDataPointFrameSchema,
-#     RemoveDataPointFrameSchema,
-#     normalize_df,
-# )
 from ixmp4.data.backend import Backend
-from ixmp4.data.iamc.datapoint.filter import DataPointFilter
+from ixmp4.data.iamc.datapoint.filter import (
+    FacadeDataPointFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.iamc.datapoint.type import Type
 
 from ..base import BaseBackendFacade
@@ -178,7 +176,7 @@ class RunIamcData(BaseBackendFacade):
     def tabulate(
         self,
         raw: bool = False,
-        **kwargs: Unpack[DataPointFilter],
+        **kwargs: Unpack[FacadeDataPointFilter],
     ) -> pd.DataFrame:
         r"""Tabulates datapoints by specified criteria.
 
@@ -191,7 +189,7 @@ class RunIamcData(BaseBackendFacade):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in :class:`DataPointFilter`.
+            Filter parameters as specified in :class:`FacadeDataPointFilter`.
 
         Returns
         -------
@@ -210,9 +208,8 @@ class RunIamcData(BaseBackendFacade):
         df = self._backend.iamc.datapoints.tabulate(
             join_parameters=True,
             join_runs=False,
-            **kwargs,
+            **facade_to_data_filter(kwargs),
         )
-        # return normalize_df(df, raw, False, False)
         return self._rename_ret_cols(df)
 
 
@@ -240,7 +237,7 @@ class PlatformIamcData(BaseBackendFacade):
         join_runs: bool = True,
         join_run_id: bool = False,
         raw: bool = False,
-        **kwargs: Unpack[DataPointFilter],
+        **kwargs: Unpack[FacadeDataPointFilter],
     ) -> pd.DataFrame:
         r"""Tabulates datapoints by specified criteria.
 
@@ -253,7 +250,7 @@ class PlatformIamcData(BaseBackendFacade):
         Parameters
         ----------
         \*\*kwargs: any
-            Filter parameters as specified in :class:`DataPointFilter`.
+            Filter parameters as specified in :class:`FacadeDataPointFilter`.
 
         Returns
         -------
@@ -275,8 +272,7 @@ class PlatformIamcData(BaseBackendFacade):
             join_parameters=True,
             join_runs=join_runs,
             join_run_id=join_run_id,
-            **kwargs,
+            **facade_to_data_filter(kwargs),
         )
 
         return self._rename_ret_cols(df)
-        # return normalize_df(df, raw, join_runs, join_run_id)

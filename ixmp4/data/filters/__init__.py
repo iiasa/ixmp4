@@ -5,13 +5,12 @@ from typing_extensions import TypedDict
 
 from ixmp4.data.run.db import Run
 
-from .base import (
-    HierarchyFilter,
-    IdFilter,
-    NameFilter,
-    RunIdFilter,
-    TransactionIdFilter,
-)
+from .base import HierarchyFilter as HierarchyFilter
+from .base import IdFilter as IdFilter
+from .base import NameFilter as NameFilter
+from .base import RunIdFilter as RunIdFilter
+from .base import TimeSeriesIdFilter as TimeSeriesIdFilter
+from .base import TransactionIdFilter as TransactionIdFilter
 
 
 class UnitFilter(IdFilter, NameFilter, total=False):

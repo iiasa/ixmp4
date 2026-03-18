@@ -41,8 +41,3 @@ class RunIdFilter(TypedDict, total=False):
 class TransactionIdFilter(TypedDict, total=False):
     transaction__id: int
     transaction__id__in: list[int]
-
-
-class TimeSeriesIdFilter(TypedDict, total=False):
-    time_series__id: int
-    time_series__id__in: list[int]
