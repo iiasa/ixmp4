@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.orm.decl_api import declared_attr
-from toolkit import db
+from toolkit.db.types import DateTime, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasCreationInfo
@@ -16,7 +16,7 @@ if TYPE_CHECKING:
 class Variable(BaseModel, HasCreationInfo):
     __tablename__ = "iamc_variable"
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
+    name: String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
 
     @declared_attr
     def timeseries(cls) -> orm.Relationship["TimeSeries"]:
@@ -35,9 +35,9 @@ VariableDocs = docs_model(Variable)
 class VariableVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_variable_version"
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
-    created_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    name: String = orm.mapped_column(sa.String(255), nullable=False)
+    created_at: DateTime = orm.mapped_column(nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 version_triggers = versions.PostgresVersionTriggers(

@@ -4,8 +4,11 @@
 from typing import Any, Sequence
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.iamc.variable.db import Variable
@@ -19,7 +22,7 @@ from .exceptions import TimeSeriesNotFound, TimeSeriesNotUnique
 from .filter import TimeSeriesFilter, TimeSeriesVersionFilter
 
 
-class TimeSeriesAuthRepository(AuthRepository[TimeSeries]):
+class TimeSeriesAuthRepository(AuthRepository[TimeSeries | TimeSeriesVersion]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -43,18 +46,18 @@ class TimeSeriesAuthRepository(AuthRepository[TimeSeries]):
             return result.scalars().all()
 
 
-class ItemRepository(TimeSeriesAuthRepository, db.r.ItemRepository[TimeSeries]):
+class ItemRepository(TimeSeriesAuthRepository, BaseItemRepository[TimeSeries]):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
-    target = db.r.ModelTarget(TimeSeries)
-    filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
+    target = ModelTarget(TimeSeries)
+    filter = Filter(TimeSeriesFilter, TimeSeries)
 
 
-class PandasRepository(TimeSeriesAuthRepository, db.r.PandasRepository):
+class PandasRepository(TimeSeriesAuthRepository, BasePandasRepository):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
-    filter = db.r.Filter(TimeSeriesFilter, TimeSeries)
-    target = db.r.ExtendedTarget(
+    filter = Filter(TimeSeriesFilter, TimeSeries)
+    target: ModelTarget[TimeSeries | TimeSeriesVersion] = ExtendedTarget(
         TimeSeries,
         {
             "region": (TimeSeries.region, Region.name),
@@ -71,8 +74,8 @@ class PandasRepository(TimeSeriesAuthRepository, db.r.PandasRepository):
             return rowcount
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
-    filter = db.r.Filter(TimeSeriesVersionFilter, TimeSeriesVersion)
-    target = db.r.ModelTarget(TimeSeriesVersion)
+    filter = Filter(TimeSeriesVersionFilter, TimeSeriesVersion)
+    target = ModelTarget(TimeSeriesVersion)

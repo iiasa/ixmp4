@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import Boolean, DateTime, Integer, Mapped, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasUpdateInfo
@@ -17,55 +17,55 @@ class Run(BaseModel, HasUpdateInfo):
     __tablename__ = "run"
     __table_args__ = (sa.UniqueConstraint("model__id", "scenario__id", "version"),)
 
-    model__id: db.t.Integer = orm.mapped_column(
+    model__id: Integer = orm.mapped_column(
         sa.ForeignKey("model.id"), nullable=False, index=True
     )
-    model: db.t.Mapped[Model] = orm.relationship(
+    model: Mapped[Model] = orm.relationship(
         "Model",
         backref="run",
         foreign_keys=[model__id],
     )
 
-    scenario__id: db.t.Integer = orm.mapped_column(
+    scenario__id: Integer = orm.mapped_column(
         sa.ForeignKey("scenario.id"),
         nullable=False,
         index=True,
     )
-    scenario: db.t.Mapped[Scenario] = orm.relationship(
+    scenario: Mapped[Scenario] = orm.relationship(
         "Scenario",
         backref="run",
         foreign_keys=[scenario__id],
     )
-    timeseries: db.t.Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
+    timeseries: Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
 
-    # equations: db.t.Mapped[list["Equation"]] = orm.relationship()
-    # indexsets: db.t.Mapped[list["IndexSet"]] = orm.relationship()
-    # parameters: db.t.Mapped[list["Parameter"]] = orm.relationship()
-    # scalars: db.t.Mapped[list["Scalar"]] = orm.relationship()
-    # tables: db.t.Mapped[list["Table"]] = orm.relationship()
-    # variables: db.t.Mapped[list["OptimizationVariable"]] = orm.relationship()
+    # equations: Mapped[list["Equation"]] = orm.relationship()
+    # indexsets: Mapped[list["IndexSet"]] = orm.relationship()
+    # parameters: Mapped[list["Parameter"]] = orm.relationship()
+    # scalars: Mapped[list["Scalar"]] = orm.relationship()
+    # tables: Mapped[list["Table"]] = orm.relationship()
+    # variables: Mapped[list["OptimizationVariable"]] = orm.relationship()
 
-    version: db.t.Integer = orm.mapped_column(sa.Integer, nullable=False)
-    is_default: db.t.Boolean = orm.mapped_column(
+    version: Integer = orm.mapped_column(sa.Integer, nullable=False)
+    is_default: Boolean = orm.mapped_column(
         sa.Boolean, default=False, nullable=False
     )
-    lock_transaction: db.t.Mapped[int | None] = orm.mapped_column(
+    lock_transaction: Mapped[int | None] = orm.mapped_column(
         nullable=True, index=True
     )
 
 
 class RunVersion(versions.BaseVersionModel):
     __tablename__ = "run_version"
-    model__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    scenario__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    version: db.t.Integer = orm.mapped_column(nullable=False)
-    is_default: db.t.Boolean = orm.mapped_column(nullable=False)
-    lock_transaction: db.t.Integer = orm.mapped_column(nullable=True, index=True)
+    model__id: Integer = orm.mapped_column(nullable=False, index=True)
+    scenario__id: Integer = orm.mapped_column(nullable=False, index=True)
+    version: Integer = orm.mapped_column(nullable=False)
+    is_default: Boolean = orm.mapped_column(nullable=False)
+    lock_transaction: Integer = orm.mapped_column(nullable=True, index=True)
 
-    created_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
-    updated_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    updated_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    created_at: DateTime = orm.mapped_column(nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
+    updated_at: DateTime = orm.mapped_column(nullable=True)
+    updated_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 version_triggers = versions.PostgresVersionTriggers(Run.__table__, RunVersion.__table__)

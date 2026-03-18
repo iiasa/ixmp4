@@ -1,5 +1,5 @@
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -21,7 +21,7 @@ class DataPointService(Service):
     router_tags = ["iamc-datapoints"]
 
     http_controller = EnumerationCompatibilityController
-    executor: db.r.SessionExecutor
+    executor: SessionExecutor
     pandas: PandasRepository
     versions: VersionRepository
 
@@ -47,7 +47,7 @@ class DataPointService(Service):
     run_columns = {"model", "scenario", "version"}
 
     def __init_direct__(self, transport: DirectTransport) -> None:
-        self.executor = db.r.SessionExecutor(transport.session)
+        self.executor = SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.timeseries = TimeSeriesPandasRepository(self.executor)
         self.versions = VersionRepository(self.executor)

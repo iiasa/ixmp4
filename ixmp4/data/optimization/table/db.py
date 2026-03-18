@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import Integer
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import HasCreationInfo
@@ -33,7 +33,7 @@ TableDocs = docs_model(Table)
 class TableIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_tab_idx_association"
 
-    table__id: db.t.Integer = orm.mapped_column(
+    table__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("opt_tab.id", ondelete="CASCADE"),
         nullable=False,
@@ -54,7 +54,7 @@ class TableVersion(IndexedVersionModel, HasCreationInfo):
 class TableIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     __tablename__ = "opt_tab_idx_association_version"
 
-    table__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    table__id: Integer = orm.mapped_column(nullable=False, index=True)
 
     @staticmethod
     def join_table_versions() -> sa.ColumnElement[bool]:

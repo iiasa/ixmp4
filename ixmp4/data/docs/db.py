@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import Integer, String
 
 from ixmp4.data.base.db import BaseModel
 
@@ -8,8 +8,8 @@ from ixmp4.data.base.db import BaseModel
 class AbstractDocs(BaseModel):
     __abstract__ = True
 
-    description: db.t.String = orm.mapped_column(sa.Text)
-    dimension__id: db.t.Integer = orm.mapped_column(unique=True)
+    description: String = orm.mapped_column(sa.Text)
+    dimension__id: Integer = orm.mapped_column(unique=True)
 
 
 def docs_model(model: type[BaseModel]) -> type[AbstractDocs]:

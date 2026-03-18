@@ -4,7 +4,9 @@ from typing import Any, ClassVar, Collection, Generic, TypeVar
 
 import pandas as pd
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.executor import SessionExecutor
+from toolkit.db.repositories import ItemRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.base_exceptions import (
     OptimizationDataValidationError,
@@ -21,13 +23,13 @@ IndexedModelT = TypeVar("IndexedModelT", bound=IndexedModel[Any])
 
 class IndexedRepository(
     abc.ABC,
-    db.r.ItemRepository[IndexedModelT],
+    ItemRepository[IndexedModelT],
     Generic[IndexedModelT, AssocT],
 ):
-    executor: db.r.SessionExecutor
-    target: db.r.ModelTarget[IndexedModelT]
-    association_target: db.r.ModelTarget[AssocT]
-    idxset_target = db.r.ModelTarget(IndexSet)
+    executor: SessionExecutor
+    target: ModelTarget[IndexedModelT]
+    association_target: ModelTarget[AssocT]
+    idxset_target = ModelTarget(IndexSet)
     DataInvalid: ClassVar[type[OptimizationDataValidationError]]
     extra_data_columns: Collection[str] = {}
     "Extra and required columns for the item's data property."

@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.orm.decl_api import declared_attr
-from toolkit import db
+from toolkit.db.types import DateTime, Integer, Mapped, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasCreationInfo
@@ -18,7 +18,7 @@ class Measurand(BaseModel, HasCreationInfo):
     __tablename__ = "iamc_measurand"
     __table_args__ = (sa.UniqueConstraint("variable__id", "unit__id"),)
 
-    variable__id: db.t.Integer = orm.mapped_column(
+    variable__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("iamc_variable.id"), nullable=False, index=True
     )
 
@@ -31,7 +31,7 @@ class Measurand(BaseModel, HasCreationInfo):
             lazy="select",
         )
 
-    unit__id: db.t.Integer = orm.mapped_column(
+    unit__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("unit.id"), nullable=False, index=True
     )
 
@@ -44,16 +44,16 @@ class Measurand(BaseModel, HasCreationInfo):
             lazy="select",
         )
 
-    timeseries: db.t.Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
+    timeseries: Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
 
 
 class MeasurandVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_measurand_version"
-    variable__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    unit__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    variable__id: Integer = orm.mapped_column(nullable=False, index=True)
+    unit__id: Integer = orm.mapped_column(nullable=False, index=True)
 
-    created_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    created_at: DateTime = orm.mapped_column(nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
     @staticmethod
     def join_timeseries_versions() -> sa.ColumnElement[bool]:

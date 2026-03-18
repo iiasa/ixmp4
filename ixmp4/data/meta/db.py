@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import Boolean, DateTime, Float, Integer, Mapped, String
 
 if TYPE_CHECKING:
     from ixmp4.data.run.db import Run
@@ -32,25 +32,25 @@ class RunMetaEntry(BaseModel):
         "value_bool",
     ]
 
-    run__id: db.t.Integer = orm.mapped_column(
+    run__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("run.id"),
         nullable=False,
         index=True,
     )
-    run: db.t.Mapped["Run"] = orm.relationship(
+    run: Mapped["Run"] = orm.relationship(
         "Run",
         backref="meta",
         foreign_keys=[run__id],
     )
 
-    key: db.t.String = orm.mapped_column(sa.String(1023), nullable=False)
-    dtype: db.t.String = orm.mapped_column(sa.String(20), nullable=False)
+    key: String = orm.mapped_column(sa.String(1023), nullable=False)
+    dtype: String = orm.mapped_column(sa.String(20), nullable=False)
 
-    value_int: db.t.Integer = orm.mapped_column(sa.Integer, nullable=True)
-    value_str: db.t.String = orm.mapped_column(sa.String(1023), nullable=True)
-    value_float: db.t.Float = orm.mapped_column(sa.Float, nullable=True)
-    value_bool: db.t.Boolean = orm.mapped_column(sa.Boolean, nullable=True)
+    value_int: Integer = orm.mapped_column(sa.Integer, nullable=True)
+    value_str: String = orm.mapped_column(sa.String(1023), nullable=True)
+    value_float: Float = orm.mapped_column(sa.Float, nullable=True)
+    value_bool: Boolean = orm.mapped_column(sa.Boolean, nullable=True)
 
     @property
     def value(self) -> MetaValueType:
@@ -62,14 +62,14 @@ class RunMetaEntry(BaseModel):
 
 class RunMetaEntryVersion(versions.BaseVersionModel):
     __tablename__ = "runmetaentry_version"
-    run__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    key: db.t.String = orm.mapped_column(sa.String(1023), nullable=False)
-    dtype: db.t.String = orm.mapped_column(sa.String(20), nullable=False)
+    run__id: Integer = orm.mapped_column(nullable=False, index=True)
+    key: String = orm.mapped_column(sa.String(1023), nullable=False)
+    dtype: String = orm.mapped_column(sa.String(20), nullable=False)
 
-    value_int: db.t.Integer = orm.mapped_column(sa.Integer, nullable=True)
-    value_str: db.t.String = orm.mapped_column(sa.String(1023), nullable=True)
-    value_float: db.t.Float = orm.mapped_column(sa.Float, nullable=True)
-    value_bool: db.t.Boolean = orm.mapped_column(sa.Boolean, nullable=True)
+    value_int: Integer = orm.mapped_column(sa.Integer, nullable=True)
+    value_str: String = orm.mapped_column(sa.String(1023), nullable=True)
+    value_float: Float = orm.mapped_column(sa.Float, nullable=True)
+    value_bool: Boolean = orm.mapped_column(sa.Boolean, nullable=True)
 
 
 version_triggers = versions.PostgresVersionTriggers(

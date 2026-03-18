@@ -1,8 +1,11 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 
@@ -14,7 +17,7 @@ from .exceptions import (
 from .filter import ModelFilter
 
 
-class ModelAuthRepository(AuthRepository[Model]):
+class ModelAuthRepository(AuthRepository[Model | ModelVersion]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -25,22 +28,22 @@ class ModelAuthRepository(AuthRepository[Model]):
         return exc.where(Model.id.in_(model_exc))
 
 
-class ItemRepository(ModelAuthRepository, db.r.ItemRepository[Model]):
+class ItemRepository(ModelAuthRepository, BaseItemRepository[Model]):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
-    target = db.r.ModelTarget(Model)
-    filter = db.r.Filter(ModelFilter, Model)
+    target = ModelTarget(Model)
+    filter = Filter(ModelFilter, Model)
 
 
-class PandasRepository(ModelAuthRepository, db.r.PandasRepository):
+class PandasRepository(ModelAuthRepository, BasePandasRepository):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
-    target = db.r.ModelTarget(Model)
-    filter = db.r.Filter(ModelFilter, Model)
+    target: ModelTarget[Model | ModelVersion] = ModelTarget(Model)
+    filter = Filter(ModelFilter, Model)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
-    target = db.r.ModelTarget(ModelVersion)
-    filter = db.r.Filter(ModelFilter, ModelVersion)
+    target = ModelTarget(ModelVersion)
+    filter = Filter(ModelFilter, ModelVersion)

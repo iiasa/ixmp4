@@ -1,4 +1,4 @@
-from toolkit import db
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
 
 from ixmp4.base_exceptions import (
     NotFound,
@@ -19,6 +19,6 @@ class DocsNotUnique(NotUnique):
     pass
 
 
-class ItemRepository(db.r.ItemRepository[AbstractDocs]):
+class ItemRepository(BaseItemRepository[AbstractDocs]):
     NotFound = DocsNotFound
     NotUnique = DocsNotUnique

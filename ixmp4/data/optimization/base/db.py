@@ -5,7 +5,7 @@ from sqlalchemy import orm
 from sqlalchemy.dialects.postgresql import JSONB
 from sqlalchemy.ext.associationproxy import AssociationProxy, association_proxy
 from sqlalchemy.orm.decl_api import declared_attr
-from toolkit import db
+from toolkit.db.types import Integer, Mapped, String
 
 from ixmp4.data.base.db import BaseModel
 from ixmp4.data.versions import BaseVersionModel
@@ -18,10 +18,10 @@ if TYPE_CHECKING:
 class IndexsetAssociationModel(BaseModel):
     __abstract__ = True
 
-    indexset__id: db.t.Integer = orm.mapped_column(
+    indexset__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("opt_idx.id"), nullable=False, index=True
     )
-    column_name: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    column_name: String = orm.mapped_column(sa.String(255), nullable=True)
 
     @declared_attr
     @classmethod
@@ -38,8 +38,8 @@ class IndexsetAssociationModel(BaseModel):
 class IndexsetAssociationVersionModel(BaseVersionModel):
     __abstract__ = True
 
-    indexset__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    column_name: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    indexset__id: Integer = orm.mapped_column(nullable=False, index=True)
+    column_name: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 AssocT = TypeVar("AssocT", bound=IndexsetAssociationModel)
@@ -48,9 +48,9 @@ AssocT = TypeVar("AssocT", bound=IndexsetAssociationModel)
 class IndexedModel(BaseModel, Generic[AssocT]):
     __abstract__ = True
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
+    name: String = orm.mapped_column(sa.String(255), nullable=False)
 
-    run__id: db.t.Integer = orm.mapped_column(
+    run__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("run.id"), nullable=False, index=True
     )
 
@@ -61,7 +61,7 @@ class IndexedModel(BaseModel, Generic[AssocT]):
             "Run", foreign_keys=[cls.run__id], lazy="select", viewonly=True
         )
 
-    data: db.t.Mapped[dict[str, list[float] | list[int] | list[str]]] = (
+    data: Mapped[dict[str, list[float] | list[int] | list[str]]] = (
         orm.mapped_column(  # TODO: get rid of this sensibly
             sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False, default={}
         )
@@ -86,10 +86,10 @@ class IndexedModel(BaseModel, Generic[AssocT]):
 class IndexedVersionModel(BaseVersionModel):
     __abstract__ = True
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
-    run__id: db.t.Integer = orm.mapped_column(sa.Integer, nullable=False, index=True)
+    name: String = orm.mapped_column(sa.String(255), nullable=False)
+    run__id: Integer = orm.mapped_column(sa.Integer, nullable=False, index=True)
 
-    data: db.t.Mapped[dict[str, list[float] | list[int] | list[str]]] = (
+    data: Mapped[dict[str, list[float] | list[int] | list[str]]] = (
         orm.mapped_column(  # TODO: get rid of this sensibly
             sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False, default={}
         )

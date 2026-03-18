@@ -2,10 +2,11 @@ from typing import Any, Sequence, overload
 
 import sqlalchemy as sa
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
-from toolkit.db.repository.base import BaseRepository, TargetT
-from toolkit.db.repository.executor import AbstractExecutor
-from toolkit.db.repository.filter import Filter
-from toolkit.db.repository.target import DefaultModelT, ModelTarget
+from toolkit.db.executor import AbstractExecutor
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import BaseRepository
+from toolkit.db.repositories.base import TargetT
+from toolkit.db.target import DefaultModelT, ModelTarget
 
 from ixmp4.data.model.db import Model
 from ixmp4.data.run.db import Run

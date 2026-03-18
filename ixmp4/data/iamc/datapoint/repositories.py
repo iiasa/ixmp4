@@ -2,9 +2,11 @@ from typing import Any, Sequence
 
 import pandas as pd
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
-from toolkit.db.repository.base import Values
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.repositories.base import Values
+from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.iamc.timeseries.db import TimeSeries
@@ -20,7 +22,7 @@ from .exceptions import DataPointNotFound, DataPointNotUnique
 from .filter import DataPointFilter, DataPointVersionFilter
 
 
-class DataPointAuthRepository(AuthRepository[DataPoint]):
+class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
     def select_permitted_ts_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> sa.Select[tuple[int]]:
@@ -41,10 +43,10 @@ class DataPointAuthRepository(AuthRepository[DataPoint]):
         return exc.where(DataPoint.time_series__id.in_(ts_exc))
 
 
-class PandasRepository(DataPointAuthRepository, db.r.PandasRepository):
+class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     NotFound = DataPointNotFound
     NotUnique = DataPointNotUnique
-    target = db.r.ExtendedTarget(
+    target: ModelTarget[DataPointVersion | DataPoint] = ExtendedTarget(
         DataPoint,
         {
             "model": ((DataPoint.timeseries, TimeSeries.run, Run.model), Model.name),
@@ -59,7 +61,7 @@ class PandasRepository(DataPointAuthRepository, db.r.PandasRepository):
             "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
-    filter = db.r.Filter(DataPointFilter, DataPoint)
+    filter = Filter(DataPointFilter, DataPoint)
     dtypes = {"step_year": "Int64"}
 
     def tabulate(
@@ -79,6 +81,6 @@ class PandasRepository(DataPointAuthRepository, db.r.PandasRepository):
         return df.drop(columns=cols_to_drop)
 
 
-class VersionRepository(db.r.PandasRepository):
-    target = db.r.ModelTarget(DataPointVersion)
-    filter = db.r.Filter(DataPointVersionFilter, DataPointVersion)
+class VersionRepository(PandasRepository):
+    target = ModelTarget(DataPointVersion)
+    filter = Filter(DataPointVersionFilter, DataPointVersion)

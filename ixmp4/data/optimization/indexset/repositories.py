@@ -2,8 +2,11 @@ import logging
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 
@@ -21,7 +24,7 @@ from .type import Type
 logger = logging.getLogger(__name__)
 
 
-class IndexSetAuthRepository(AuthRepository[IndexSet]):
+class IndexSetAuthRepository(AuthRepository[IndexSet | IndexSetVersion]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -32,11 +35,11 @@ class IndexSetAuthRepository(AuthRepository[IndexSet]):
         return exc.where(IndexSet.run__id.in_(run_exc))
 
 
-class ItemRepository(IndexSetAuthRepository, db.r.ItemRepository[IndexSet]):
+class ItemRepository(IndexSetAuthRepository, BaseItemRepository[IndexSet]):
     NotFound = IndexSetNotFound
     NotUnique = IndexSetNotUnique
-    target = db.r.ModelTarget(IndexSet)
-    filter = db.r.Filter(IndexSetFilter, IndexSet)
+    target = ModelTarget(IndexSet)
+    filter = Filter(IndexSetFilter, IndexSet)
 
     def check_type(
         self, id: int, data: list[float] | list[int] | list[str]
@@ -77,15 +80,15 @@ class ItemRepository(IndexSetAuthRepository, db.r.ItemRepository[IndexSet]):
                 return result
 
 
-class PandasRepository(IndexSetAuthRepository, db.r.PandasRepository):
-    target = db.r.ModelTarget(IndexSet)
-    filter = db.r.Filter(IndexSetFilter, IndexSet)
+class PandasRepository(IndexSetAuthRepository, BasePandasRepository):
+    target = ModelTarget(IndexSet)
+    filter = Filter(IndexSetFilter, IndexSet)
 
 
-class IndexSetDataItemRepository(db.r.ItemRepository[IndexSetData]):
+class IndexSetDataItemRepository(BaseItemRepository[IndexSetData]):
     NotFound = IndexSetDataNotFound
     NotUnique = IndexSetDataNotUnique
-    target = db.r.ModelTarget(IndexSetData)
+    target = ModelTarget(IndexSetData)
 
     def add(self, indexset_id: int, data: list[str]) -> None:
         exc = sa.insert(IndexSetData).values(indexset__id=indexset_id)
@@ -113,8 +116,8 @@ class IndexSetDataItemRepository(db.r.ItemRepository[IndexSetData]):
                 return result
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = IndexSetNotFound
     NotUnique = IndexSetNotUnique
-    target = db.r.ModelTarget(IndexSetVersion)
-    filter = db.r.Filter(IndexSetFilter, IndexSetVersion)
+    target = ModelTarget(IndexSetVersion)
+    filter = Filter(IndexSetFilter, IndexSetVersion)

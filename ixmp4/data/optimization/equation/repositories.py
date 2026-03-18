@@ -1,8 +1,11 @@
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.optimization.base.repositories import IndexedRepository
@@ -11,8 +14,10 @@ from .db import Equation, EquationIndexsetAssociation, EquationVersion
 from .exceptions import EquationDataInvalid, EquationNotFound, EquationNotUnique
 from .filter import EquationFilter
 
+EquationTargetT = TypeVar("EquationTargetT")
 
-class EquationAuthRepository(AuthRepository[Equation]):
+
+class EquationAuthRepository(AuthRepository[EquationTargetT], Generic[EquationTargetT]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -24,14 +29,15 @@ class EquationAuthRepository(AuthRepository[Equation]):
 
 
 class ItemRepository(
-    EquationAuthRepository, IndexedRepository[Equation, EquationIndexsetAssociation]
+    EquationAuthRepository[Equation],
+    IndexedRepository[Equation, EquationIndexsetAssociation],
 ):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
     DataInvalid = EquationDataInvalid
-    target = db.r.ModelTarget(Equation)
-    association_target = db.r.ModelTarget(EquationIndexsetAssociation)
-    filter = db.r.Filter(EquationFilter, Equation)
+    target = ModelTarget(Equation)
+    association_target = ModelTarget(EquationIndexsetAssociation)
+    filter = Filter(EquationFilter, Equation)
     extra_data_columns = {"levels", "marginals"}
 
     def delete_associations(self, id: int) -> None | int:
@@ -43,19 +49,19 @@ class ItemRepository(
                 return rowcount
 
 
-class AssociationRepository(db.r.ItemRepository[EquationIndexsetAssociation]):
-    target = db.r.ModelTarget(EquationIndexsetAssociation)
+class AssociationRepository(BaseItemRepository[EquationIndexsetAssociation]):
+    target = ModelTarget(EquationIndexsetAssociation)
 
 
-class PandasRepository(EquationAuthRepository, db.r.PandasRepository):
+class PandasRepository(EquationAuthRepository[Equation], BasePandasRepository):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
-    target = db.r.ModelTarget(Equation)
-    filter = db.r.Filter(EquationFilter, Equation)
+    target = ModelTarget(Equation)
+    filter = Filter(EquationFilter, Equation)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(EquationAuthRepository[EquationVersion], BasePandasRepository):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
-    target = db.r.ModelTarget(EquationVersion)
-    filter = db.r.Filter(EquationFilter, EquationVersion)
+    target = ModelTarget(EquationVersion)
+    filter = Filter(EquationFilter, EquationVersion)

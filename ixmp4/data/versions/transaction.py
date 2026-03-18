@@ -2,7 +2,9 @@ from datetime import datetime, timezone
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.repositories import ItemRepository
+from toolkit.db.target import ModelTarget
+from toolkit.db.types import DateTime
 
 from ixmp4.base_exceptions import NotFound, NotUnique, registry
 from ixmp4.data.base.db import BaseModel
@@ -21,13 +23,13 @@ class TransactionNotUnique(NotUnique):
 class Transaction(BaseModel):
     __tablename__ = "transaction"
 
-    issued_at: db.t.DateTime = orm.mapped_column(sa.DateTime())
+    issued_at: DateTime = orm.mapped_column(sa.DateTime())
 
 
-class TransactionRepository(db.r.ItemRepository[Transaction]):
+class TransactionRepository(ItemRepository[Transaction]):
     NotUnique = TransactionNotUnique
     NotFound = TransactionNotFound
-    target = db.r.ModelTarget(Transaction)
+    target = ModelTarget(Transaction)
 
     def latest(self) -> Transaction:
         exc = self.target.select_statement()

@@ -31,18 +31,18 @@ class PostgresVersionTriggers(object):
     .. code:: python
 
         from sqlalchemy import orm
-        from toolkit import db
+        from toolkit.db.types import String
 
         from ixmp4.data import versions
         from ixmp4.data.base.db import BaseModel
 
         class Example(BaseModel):
             # ...
-            name: db.t.String = orm.mapped_column(unique=True)
+            name: String = orm.mapped_column(unique=True)
 
         class ExampleVersion(versions.BaseVersionModel):
             # ...
-            name: db.t.String # omit any constraints
+            name: String # omit any constraints
 
         version_triggers = versions.PostgresVersionTriggers(
             Example.__table__, ExampletVersion.__table__

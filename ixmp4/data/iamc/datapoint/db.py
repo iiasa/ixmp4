@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import DateTime, Float, Integer, Mapped, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel
@@ -20,42 +20,42 @@ class DataPoint(BaseModel):
         # sa.CheckConstraint("(step_datetime IS NOT NULL) OR (step_year IS NOT NULL)"),
     )
 
-    time_series__id: db.t.Integer = orm.mapped_column(
+    time_series__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("iamc_timeseries.id"),
         nullable=False,
         index=True,
     )
-    timeseries: db.t.Mapped["TimeSeries"] = orm.relationship(viewonly=True)
+    timeseries: Mapped["TimeSeries"] = orm.relationship(viewonly=True)
 
-    value: db.t.Float = orm.mapped_column()
+    value: Float = orm.mapped_column()
 
-    type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
+    type: String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
-    step_category: db.t.String = orm.mapped_column(
+    step_category: String = orm.mapped_column(
         sa.String(1023), index=True, nullable=True
     )
-    step_year: db.t.Integer = orm.mapped_column(index=True, nullable=True)
-    step_datetime: db.t.DateTime = orm.mapped_column(index=True, nullable=True)
+    step_year: Integer = orm.mapped_column(index=True, nullable=True)
+    step_datetime: DateTime = orm.mapped_column(index=True, nullable=True)
 
 
 class DataPointVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_datapoint_universal_version"
 
-    value: db.t.Float = orm.mapped_column(nullable=True)
-    type: db.t.String = orm.mapped_column(sa.String(255), nullable=False, index=True)
+    value: Float = orm.mapped_column(nullable=True)
+    type: String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
-    time_series__id: db.t.Integer = orm.mapped_column(
+    time_series__id: Integer = orm.mapped_column(
         sa.Integer,
         nullable=False,
         index=True,
     )
 
-    step_category: db.t.String = orm.mapped_column(
+    step_category: String = orm.mapped_column(
         sa.String(1023), index=True, nullable=True
     )
-    step_year: db.t.Integer = orm.mapped_column(index=True, nullable=True)
-    step_datetime: db.t.DateTime = orm.mapped_column(index=True, nullable=True)
+    step_year: Integer = orm.mapped_column(index=True, nullable=True)
+    step_datetime: DateTime = orm.mapped_column(index=True, nullable=True)
 
     @staticmethod
     def join_timeseries_versions() -> sa.ColumnElement[bool]:

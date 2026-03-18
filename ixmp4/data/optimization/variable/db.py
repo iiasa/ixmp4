@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import Integer
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import HasCreationInfo
@@ -33,7 +33,7 @@ VariableDocs = docs_model(Variable)
 class VariableIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_var_idx_association"
 
-    variable__id: db.t.Integer = orm.mapped_column(
+    variable__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("opt_var.id", ondelete="CASCADE"),
         nullable=False,
@@ -54,7 +54,7 @@ class VariableVersion(IndexedVersionModel, HasCreationInfo):
 class VariableIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     __tablename__ = "opt_var_idx_association_version"
 
-    variable__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    variable__id: Integer = orm.mapped_column(nullable=False, index=True)
 
     @staticmethod
     def join_variable_versions() -> sa.ColumnElement[bool]:

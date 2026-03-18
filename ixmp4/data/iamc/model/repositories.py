@@ -1,9 +1,12 @@
 from typing import Any, Sequence
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
-from ixmp4.data.model.db import Model
+from ixmp4.data.model.db import Model, ModelVersion
 from ixmp4.data.model.exceptions import (
     ModelNotFound,
     ModelNotUnique,
@@ -13,7 +16,7 @@ from ixmp4.data.model.repositories import ModelAuthRepository
 from ixmp4.data.run.db import Run
 
 
-class IamcModelTarget(db.r.ModelTarget[Model]):
+class IamcModelTarget(ModelTarget[Model | ModelVersion]):
     def select_statement(
         self, columns: Sequence[str] | None = None
     ) -> sa.Select[tuple[Any, ...]]:
@@ -24,15 +27,15 @@ class IamcModelTarget(db.r.ModelTarget[Model]):
         )
 
 
-class ItemRepository(ModelAuthRepository, db.r.ItemRepository[Model]):
+class ItemRepository(ModelAuthRepository, BaseItemRepository[Model]):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
     target = IamcModelTarget(Model)
-    filter = db.r.Filter(IamcModelFilter, Model)
+    filter = Filter(IamcModelFilter, Model)
 
 
-class PandasRepository(ModelAuthRepository, db.r.PandasRepository):
+class PandasRepository(ModelAuthRepository, BasePandasRepository):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
     target = IamcModelTarget(Model)
-    filter = db.r.Filter(IamcModelFilter, Model)
+    filter = Filter(IamcModelFilter, Model)

@@ -1,8 +1,11 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 
@@ -14,7 +17,7 @@ from .exceptions import (
 from .filter import ScalarFilter
 
 
-class ParameterAuthRepository(AuthRepository[Scalar]):
+class ParameterAuthRepository(AuthRepository[Scalar | ScalarVersion]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -25,22 +28,22 @@ class ParameterAuthRepository(AuthRepository[Scalar]):
         return exc.where(Scalar.run__id.in_(run_exc))
 
 
-class ItemRepository(ParameterAuthRepository, db.r.ItemRepository[Scalar]):
+class ItemRepository(ParameterAuthRepository, BaseItemRepository[Scalar]):
     NotFound = ScalarNotFound
     NotUnique = ScalarNotUnique
-    target = db.r.ModelTarget(Scalar)
-    filter = db.r.Filter(ScalarFilter, Scalar)
+    target = ModelTarget(Scalar)
+    filter = Filter(ScalarFilter, Scalar)
 
 
-class PandasRepository(ParameterAuthRepository, db.r.PandasRepository):
+class PandasRepository(ParameterAuthRepository, BasePandasRepository):
     NotFound = ScalarNotFound
     NotUnique = ScalarNotUnique
-    target = db.r.ModelTarget(Scalar)
-    filter = db.r.Filter(ScalarFilter, Scalar)
+    target = ModelTarget(Scalar)
+    filter = Filter(ScalarFilter, Scalar)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = ScalarNotFound
     NotUnique = ScalarNotUnique
-    target = db.r.ModelTarget(ScalarVersion)
-    filter = db.r.Filter(ScalarFilter, ScalarVersion)
+    target = ModelTarget(ScalarVersion)
+    filter = Filter(ScalarFilter, ScalarVersion)

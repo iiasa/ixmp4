@@ -1,8 +1,11 @@
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.optimization.base.repositories import IndexedRepository
@@ -15,8 +18,13 @@ from .exceptions import (
 )
 from .filter import VariableFilter
 
+VariableTargetT = TypeVar("VariableTargetT")
 
-class VariableAuthRepository(AuthRepository[Variable]):
+
+class VariableAuthRepository(
+    AuthRepository[VariableTargetT],
+    Generic[VariableTargetT],
+):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -28,15 +36,16 @@ class VariableAuthRepository(AuthRepository[Variable]):
 
 
 class ItemRepository(
-    VariableAuthRepository, IndexedRepository[Variable, VariableIndexsetAssociation]
+    VariableAuthRepository[Variable],
+    IndexedRepository[Variable, VariableIndexsetAssociation],
 ):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     DataInvalid = VariableDataInvalid
 
-    target = db.r.ModelTarget(Variable)
-    association_target = db.r.ModelTarget(VariableIndexsetAssociation)
-    filter = db.r.Filter(VariableFilter, Variable)
+    target = ModelTarget(Variable)
+    association_target = ModelTarget(VariableIndexsetAssociation)
+    filter = Filter(VariableFilter, Variable)
 
     extra_data_columns = {"levels", "marginals"}
 
@@ -49,19 +58,19 @@ class ItemRepository(
                 return rowcount
 
 
-class AssociationRepository(db.r.ItemRepository[VariableIndexsetAssociation]):
-    target = db.r.ModelTarget(VariableIndexsetAssociation)
+class AssociationRepository(BaseItemRepository[VariableIndexsetAssociation]):
+    target = ModelTarget(VariableIndexsetAssociation)
 
 
-class PandasRepository(VariableAuthRepository, db.r.PandasRepository):
+class PandasRepository(VariableAuthRepository[Variable], BasePandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
-    target = db.r.ModelTarget(Variable)
-    filter = db.r.Filter(VariableFilter, Variable)
+    target = ModelTarget(Variable)
+    filter = Filter(VariableFilter, Variable)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(VariableAuthRepository[VariableVersion], BasePandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
-    target = db.r.ModelTarget(VariableVersion)
-    filter = db.r.Filter(VariableFilter, VariableVersion)
+    target = ModelTarget(VariableVersion)
+    filter = Filter(VariableFilter, VariableVersion)

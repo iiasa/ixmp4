@@ -1,8 +1,10 @@
 import abc
 from typing import List
 
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.executor import SessionExecutor
+from toolkit.db.filter import Filter
+from toolkit.db.target import ModelTarget
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -18,7 +20,7 @@ from .repository import ItemRepository as DocsRepository
 
 class DocsService(GetByIdService, abc.ABC):
     __abstract__: bool = True
-    docs_executor: db.r.SessionExecutor
+    docs_executor: SessionExecutor
     docs: DocsRepository
     docs_model: type[AbstractDocs]
 
@@ -28,11 +30,11 @@ class DocsService(GetByIdService, abc.ABC):
         if docs_model is not None:
             self.docs_model = docs_model
 
-        self.docs_executor = db.r.SessionExecutor(transport.session)
+        self.docs_executor = SessionExecutor(transport.session)
         self.docs = DocsRepository(
             self.docs_executor,
-            target=db.r.ModelTarget(self.docs_model),
-            filter=db.r.Filter(DocsFilter, self.docs_model),
+            target=ModelTarget(self.docs_model),
+            filter=Filter(DocsFilter, self.docs_model),
         )
 
     @procedure(Http(path="/{dimension__id:int}/docs/", methods=("GET",)))

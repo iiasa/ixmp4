@@ -2,7 +2,10 @@ from typing import Any, Collection, Mapping, Sequence, cast
 
 import pandas as pd
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.model.db import Model
@@ -18,11 +21,11 @@ from .type import Type
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
 
-class ItemRepository(db.r.ItemRepository[RunMetaEntry]):
+class ItemRepository(BaseItemRepository[RunMetaEntry | RunMetaEntryVersion]):
     NotFound = RunMetaEntryNotFound
     NotUnique = RunMetaEntryNotUnique
-    target = db.r.ModelTarget(RunMetaEntry)
-    filter = db.r.Filter(RunMetaEntryFilter, RunMetaEntry)
+    target = ModelTarget(RunMetaEntry)
+    filter = Filter(RunMetaEntryFilter, RunMetaEntry)
 
     def create(self, run__id: int, key: str, value: MetaValueType) -> sa.Result[Any]:
         if key in ILLEGAL_META_KEYS:
@@ -40,10 +43,10 @@ class ItemRepository(db.r.ItemRepository[RunMetaEntry]):
         return super().create(values)
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(BasePandasRepository):
     NotFound = RunMetaEntryNotFound
     NotUnique = RunMetaEntryNotUnique
-    target = db.r.ExtendedTarget(
+    target: ModelTarget[RunMetaEntry | RunMetaEntryVersion] = ExtendedTarget(
         RunMetaEntry,
         {
             "model": ((RunMetaEntry.run, Run.model), Model.name),
@@ -51,7 +54,7 @@ class PandasRepository(db.r.PandasRepository):
             "version": ((RunMetaEntry.run), Run.version),
         },
     )
-    filter = db.r.Filter(RunMetaEntryFilter, RunMetaEntry)
+    filter = Filter(RunMetaEntryFilter, RunMetaEntry)
 
     def default_order_by(self, exc: sa.Select[Any]) -> sa.Select[Any]:
         return exc.order_by(RunMetaEntry.run__id, RunMetaEntry.key)
@@ -117,7 +120,7 @@ class PandasRepository(db.r.PandasRepository):
             super().upsert(type_df, key)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = RunMetaEntryNotFound
     NotUnique = RunMetaEntryNotUnique
-    target = db.r.ModelTarget(RunMetaEntryVersion)
+    target = ModelTarget(RunMetaEntryVersion)

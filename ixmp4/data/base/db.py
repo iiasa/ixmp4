@@ -1,10 +1,11 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.models import DeclarativeBase, HasConventionalMetadata
+from toolkit.db.types import DateTime, IntegerId, String
 
 
-class BaseModel(db.m.DeclarativeBase, db.m.HasConventionalMetadata):
-    id: db.t.IntegerId = orm.mapped_column(info={"skip_autogenerate": True})
+class BaseModel(DeclarativeBase, HasConventionalMetadata):
+    id: IntegerId = orm.mapped_column(info={"skip_autogenerate": True})
 
 
 BaseModel.reset_metadata()
@@ -16,10 +17,8 @@ class HasCreationInfo:
     by ixmp4's sqlalchemy event handlers for 'before_insert' and 'do_orm_execute'.
     """
 
-    created_at: db.t.DateTime = orm.mapped_column(
-        sa.DateTime(timezone=False), nullable=True
-    )
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    created_at: DateTime = orm.mapped_column(sa.DateTime(timezone=False), nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 class HasUpdateInfo(HasCreationInfo):
@@ -29,7 +28,5 @@ class HasUpdateInfo(HasCreationInfo):
     (in addition to the inherited fields from `HasCreationInfo`).
     """
 
-    updated_at: db.t.DateTime = orm.mapped_column(
-        sa.DateTime(timezone=False), nullable=True
-    )
-    updated_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    updated_at: DateTime = orm.mapped_column(sa.DateTime(timezone=False), nullable=True)
+    updated_by: String = orm.mapped_column(sa.String(255), nullable=True)

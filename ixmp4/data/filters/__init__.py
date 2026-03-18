@@ -9,8 +9,8 @@ from .base import HierarchyFilter as HierarchyFilter
 from .base import IdFilter as IdFilter
 from .base import NameFilter as NameFilter
 from .base import RunIdFilter as RunIdFilter
-from .base import TimeSeriesIdFilter as TimeSeriesIdFilter
 from .base import TransactionIdFilter as TransactionIdFilter
+from .iamc import TimeSeriesIdFilter as TimeSeriesIdFilter
 
 
 class UnitFilter(IdFilter, NameFilter, total=False):

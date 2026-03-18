@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import DateTime, Integer, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import HasCreationInfo
@@ -33,7 +33,7 @@ EquationDocs = docs_model(Equation)
 class EquationIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_equ_idx_association"
 
-    equation__id: db.t.Integer = orm.mapped_column(
+    equation__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("opt_equ.id", ondelete="CASCADE"),
         nullable=False,
@@ -50,14 +50,14 @@ class EquationIndexsetAssociation(IndexsetAssociationModel):
 class EquationVersion(IndexedVersionModel):
     __tablename__ = "opt_equ_version"
 
-    created_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    created_at: DateTime = orm.mapped_column(nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 class EquationIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     __tablename__ = "opt_equ_idx_association_version"
 
-    equation__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    equation__id: Integer = orm.mapped_column(nullable=False, index=True)
 
     @staticmethod
     def join_equation_versions() -> sa.ColumnElement[bool]:

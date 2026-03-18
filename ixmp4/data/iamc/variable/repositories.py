@@ -1,26 +1,29 @@
-from toolkit import db
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from .db import Variable, VariableVersion
 from .exceptions import VariableNotFound, VariableNotUnique
 from .filter import VariableFilter, VariableVersionFilter
 
 
-class ItemRepository(db.r.ItemRepository[Variable]):
+class ItemRepository(BaseItemRepository[Variable | VariableVersion]):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
-    target = db.r.ModelTarget(Variable)
-    filter = db.r.Filter(VariableFilter, Variable)
+    target = ModelTarget(Variable)
+    filter = Filter(VariableFilter, Variable)
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(BasePandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
-    target = db.r.ModelTarget(Variable)
-    filter = db.r.Filter(VariableFilter, Variable)
+    target = ModelTarget(Variable)
+    filter = Filter(VariableFilter, Variable)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
-    filter = db.r.Filter(VariableVersionFilter, VariableVersion)
-    target = db.r.ModelTarget(VariableVersion)
+    filter = Filter(VariableVersionFilter, VariableVersion)
+    target = ModelTarget(VariableVersion)

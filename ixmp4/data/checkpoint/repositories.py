@@ -1,8 +1,11 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 
@@ -22,15 +25,15 @@ class CheckpointAuthRepository(AuthRepository[Checkpoint]):
         return exc.where(Checkpoint.run__id.in_(run_exc))
 
 
-class ItemRepository(CheckpointAuthRepository, db.r.ItemRepository[Checkpoint]):
+class ItemRepository(CheckpointAuthRepository, BaseItemRepository[Checkpoint]):
     NotFound = CheckpointNotFound
     NotUnique = CheckpointNotUnique
-    target = db.r.ModelTarget(Checkpoint)
-    filter = db.r.Filter(CheckpointFilter, Checkpoint)
+    target = ModelTarget(Checkpoint)
+    filter = Filter(CheckpointFilter, Checkpoint)
 
 
-class PandasRepository(CheckpointAuthRepository, db.r.PandasRepository):
+class PandasRepository(CheckpointAuthRepository, BasePandasRepository):
     NotFound = CheckpointNotFound
     NotUnique = CheckpointNotUnique
-    target = db.r.ModelTarget(Checkpoint)
-    filter = db.r.Filter(CheckpointFilter, Checkpoint)
+    target = ModelTarget(Checkpoint)
+    filter = Filter(CheckpointFilter, Checkpoint)

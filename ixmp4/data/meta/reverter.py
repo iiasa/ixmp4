@@ -1,7 +1,7 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 
@@ -12,8 +12,8 @@ from .db import (
 
 
 class MetaReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(RunMetaEntry)
-    version_target = db.r.ModelTarget(RunMetaEntryVersion)
+    target = ModelTarget(RunMetaEntry)
+    version_target = ModelTarget(RunMetaEntryVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(RunMetaEntryVersion).where(

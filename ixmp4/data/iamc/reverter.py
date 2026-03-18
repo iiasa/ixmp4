@@ -1,7 +1,7 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.iamc.datapoint.db import (
     DataPoint,
@@ -19,8 +19,8 @@ from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 
 
 class DataPointReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(DataPoint)
-    version_target = db.r.ModelTarget(DataPointVersion)
+    target = ModelTarget(DataPoint)
+    version_target = ModelTarget(DataPointVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(DataPointVersion).where(
@@ -29,8 +29,8 @@ class DataPointReverterRepository(ReverterRepository[[int]]):
 
 
 class MeasurandReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(Measurand)
-    version_target = db.r.ModelTarget(MeasurandVersion)
+    target = ModelTarget(Measurand)
+    version_target = ModelTarget(MeasurandVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(MeasurandVersion).where(
@@ -39,8 +39,8 @@ class MeasurandReverterRepository(ReverterRepository[[int]]):
 
 
 class TimeSeriesReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(TimeSeries)
-    version_target = db.r.ModelTarget(TimeSeriesVersion)
+    target = ModelTarget(TimeSeries)
+    version_target = ModelTarget(TimeSeriesVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(TimeSeriesVersion).where(TimeSeriesVersion.run__id == run__id)

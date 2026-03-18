@@ -1,7 +1,7 @@
 from typing import Annotated, Any
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.repositories import BaseRepository
 
 from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
@@ -22,7 +22,7 @@ def filter_by_iamc(
     value: dict[str, Any] | bool | None,
     *,
     schema: type[Any],
-    repo: db.r.BaseRepository[Any],
+    repo: BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
     if value is True:
         return exc.where(Unit.timeseries.any())

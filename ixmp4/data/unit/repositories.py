@@ -1,6 +1,9 @@
 from typing import TYPE_CHECKING
 
-from toolkit import db
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from .db import Unit, UnitVersion
 from .exceptions import UnitNotFound, UnitNotUnique
@@ -10,22 +13,22 @@ if TYPE_CHECKING:
     pass
 
 
-class ItemRepository(db.r.ItemRepository[Unit]):
+class ItemRepository(BaseItemRepository[Unit]):
     NotFound = UnitNotFound
     NotUnique = UnitNotUnique
-    target = db.r.ModelTarget(Unit)
-    filter = db.r.Filter(UnitFilter, Unit)
+    target = ModelTarget(Unit)
+    filter = Filter(UnitFilter, Unit)
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(BasePandasRepository):
     NotFound = UnitNotFound
     NotUnique = UnitNotUnique
-    target = db.r.ModelTarget(Unit)
-    filter = db.r.Filter(UnitFilter, Unit)
+    target: ModelTarget[Unit | UnitVersion] = ModelTarget(Unit)
+    filter = Filter(UnitFilter, Unit)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = UnitNotFound
     NotUnique = UnitNotUnique
-    target = db.r.ModelTarget(UnitVersion)
-    filter = db.r.Filter(UnitFilter, UnitVersion)
+    target = ModelTarget(UnitVersion)
+    filter = Filter(UnitFilter, UnitVersion)

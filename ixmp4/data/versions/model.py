@@ -3,7 +3,7 @@ from typing import Any
 
 import sqlalchemy as sa
 from sqlalchemy import BigInteger, SmallInteger, orm
-from toolkit import db
+from toolkit.db.types import Integer
 
 from ixmp4.data.base.db import BaseModel
 
@@ -16,14 +16,14 @@ class Operation(int, enum.Enum):
 
 class BaseVersionModel(BaseModel):
     __abstract__ = True
-    id: db.t.Integer = orm.mapped_column(primary_key=True)
-    transaction_id: db.t.Integer = orm.mapped_column(
+    id: Integer = orm.mapped_column(primary_key=True)
+    transaction_id: Integer = orm.mapped_column(
         BigInteger(), primary_key=True, index=True, nullable=False
     )
-    operation_type: db.t.Integer = orm.mapped_column(
+    operation_type: Integer = orm.mapped_column(
         SmallInteger(), index=True, nullable=False
     )
-    end_transaction_id: db.t.Integer = orm.mapped_column(
+    end_transaction_id: Integer = orm.mapped_column(
         BigInteger(), nullable=True, index=True
     )
 

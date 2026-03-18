@@ -1,9 +1,12 @@
 from typing import Any, Sequence, cast
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
-from toolkit.db.repository.base import Values
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.repositories.base import Values
+from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.model.db import Model
@@ -14,7 +17,7 @@ from .exceptions import RunNotFound, RunNotUnique
 from .filter import RunFilter
 
 
-class RunAuthRepository(AuthRepository[Run]):
+class RunAuthRepository(AuthRepository[Run | RunVersion]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -37,11 +40,11 @@ class RunAuthRepository(AuthRepository[Run]):
             return result.scalars().all()
 
 
-class ItemRepository(RunAuthRepository, db.r.ItemRepository[Run]):
+class ItemRepository(RunAuthRepository, BaseItemRepository[Run]):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
-    target = db.r.ModelTarget(Run)
-    filter = db.r.Filter(RunFilter, Run)
+    target = ModelTarget(Run)
+    filter = Filter(RunFilter, Run)
 
     def create(
         self, model_id: int, scenario_id: int, values: Values | None = None
@@ -116,11 +119,11 @@ class ItemRepository(RunAuthRepository, db.r.ItemRepository[Run]):
             return None
 
 
-class PandasRepository(RunAuthRepository, db.r.PandasRepository):
+class PandasRepository(RunAuthRepository, BasePandasRepository):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
-    filter = db.r.Filter(RunFilter, Run)
-    target = db.r.ExtendedTarget(
+    filter = Filter(RunFilter, Run)
+    target: ModelTarget[Run | RunVersion] = ExtendedTarget(
         Run,
         {
             "model": (Run.model, Model.name),
@@ -129,8 +132,8 @@ class PandasRepository(RunAuthRepository, db.r.PandasRepository):
     )
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = RunNotFound
     NotUnique = RunNotUnique
-    filter = db.r.Filter(RunFilter, Run)
-    target = db.r.ModelTarget(RunVersion)
+    filter = Filter(RunFilter, Run)
+    target = ModelTarget(RunVersion)

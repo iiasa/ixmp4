@@ -1,6 +1,6 @@
 import pandas as pd
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -34,7 +34,7 @@ class TimeSeriesService(Service):
     router_tags = ["iamc", "timeseries"]
 
     http_controller = EnumerationCompatibilityController
-    executor: db.r.SessionExecutor
+    executor: SessionExecutor
     pandas: PandasRepository
 
     measurands: MeasurandPandasRepository
@@ -46,7 +46,7 @@ class TimeSeriesService(Service):
     default_filter: TimeSeriesFilter = {"run": {"default_only": True}}
 
     def __init_direct__(self, transport: DirectTransport) -> None:
-        self.executor = db.r.SessionExecutor(transport.session)
+        self.executor = SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
 
         self.measurands = MeasurandPandasRepository(self.executor)

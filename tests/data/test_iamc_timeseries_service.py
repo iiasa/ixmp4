@@ -3,7 +3,7 @@ import datetime
 import pandas as pd
 import pandas.testing as pdt
 import pytest
-from toolkit import db
+from toolkit.db.executor import SessionExecutor
 
 from ixmp4.base_exceptions import Forbidden, InvalidDataFrame
 from ixmp4.data.iamc.timeseries.service import TimeSeriesService
@@ -54,7 +54,7 @@ class TimeSeriesServiceTest(ServiceTest[TimeSeriesService]):
     @pytest.fixture(scope="class")
     def variables(self, transport: Transport) -> VariableRepository:
         direct = self.get_direct_or_skip(transport)
-        return VariableRepository(db.r.SessionExecutor(direct.session))
+        return VariableRepository(SessionExecutor(direct.session))
 
     @pytest.fixture(scope="class")
     def test_df_expected(self, run: Run, fake_time: datetime.datetime) -> pd.DataFrame:
@@ -469,7 +469,7 @@ class TimeSeriesAuthTest(TimeSeriesServiceTest):
     @pytest.fixture(scope="class")
     def variables(self, transport: Transport) -> VariableRepository:
         direct = self.get_unauthorized_direct_or_skip(transport)
-        return VariableRepository(db.r.SessionExecutor(direct.session))
+        return VariableRepository(SessionExecutor(direct.session))
 
     @pytest.fixture(scope="class")
     def run(

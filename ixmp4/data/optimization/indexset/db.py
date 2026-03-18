@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import DateTime, Integer, Mapped, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasCreationInfo
@@ -20,7 +20,7 @@ class IndexSet(BaseModel, HasCreationInfo):
     __tablename__ = "opt_idx"
     __table_args__ = (sa.UniqueConstraint("name", "run__id"),)
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
+    name: String = orm.mapped_column(sa.String(255), nullable=False)
     data_entries: orm.Mapped[list["IndexSetData"]] = orm.relationship(
         back_populates="indexset",
         order_by="IndexSetData.id",
@@ -41,9 +41,9 @@ class IndexSet(BaseModel, HasCreationInfo):
             pytype = Type(self.data_type).to_pytype()
         return [pytype(d.value) for d in self.data_entries]
 
-    data_type: db.t.Mapped[str | None] = orm.mapped_column(sa.String(63), nullable=True)
+    data_type: Mapped[str | None] = orm.mapped_column(sa.String(63), nullable=True)
 
-    run__id: db.t.Integer = orm.mapped_column(
+    run__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("run.id"), nullable=False, index=True
     )
     run: orm.Mapped["Run"] = orm.relationship(
@@ -58,32 +58,32 @@ class IndexSetData(BaseModel):
     __tablename__ = "opt_idx_data"
     __table_args__ = (sa.UniqueConstraint("indexset__id", "value"),)
 
-    indexset__id: db.t.Integer = orm.mapped_column(
+    indexset__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("opt_idx.id", ondelete="CASCADE"),
         nullable=False,
         index=True,
     )
     indexset: orm.Mapped["IndexSet"] = orm.relationship(back_populates="data_entries")
-    value: db.t.String = orm.mapped_column(nullable=False)
+    value: String = orm.mapped_column(nullable=False)
 
 
 class IndexSetVersion(versions.BaseVersionModel):
     __tablename__ = "opt_idx_version"
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
-    run__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    name: String = orm.mapped_column(sa.String(255), nullable=False)
+    run__id: Integer = orm.mapped_column(nullable=False, index=True)
     data_type: orm.Mapped[Type] = orm.mapped_column(sa.String(63), nullable=True)
 
-    created_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    created_at: DateTime = orm.mapped_column(nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 class IndexSetDataVersion(versions.BaseVersionModel):
     __tablename__ = "opt_idx_data_version"
 
-    indexset__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    value: db.t.String = orm.mapped_column(nullable=False)
+    indexset__id: Integer = orm.mapped_column(nullable=False, index=True)
+    value: String = orm.mapped_column(nullable=False)
 
     @staticmethod
     def join_indexset_versions() -> sa.ColumnElement[bool]:

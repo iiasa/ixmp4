@@ -1,8 +1,11 @@
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.optimization.base.repositories import IndexedRepository
@@ -15,8 +18,10 @@ from .exceptions import (
 )
 from .filter import TableFilter
 
+TableTargetT = TypeVar("TableTargetT")
 
-class TableAuthRepository(AuthRepository[Table]):
+
+class TableAuthRepository(AuthRepository[TableTargetT], Generic[TableTargetT]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -28,14 +33,14 @@ class TableAuthRepository(AuthRepository[Table]):
 
 
 class ItemRepository(
-    TableAuthRepository, IndexedRepository[Table, TableIndexsetAssociation]
+    TableAuthRepository[Table], IndexedRepository[Table, TableIndexsetAssociation]
 ):
     NotFound = TableNotFound
     NotUnique = TableNotUnique
     DataInvalid = TableDataInvalid
-    target = db.r.ModelTarget(Table)
-    association_target = db.r.ModelTarget(TableIndexsetAssociation)
-    filter = db.r.Filter(TableFilter, Table)
+    target = ModelTarget(Table)
+    association_target = ModelTarget(TableIndexsetAssociation)
+    filter = Filter(TableFilter, Table)
 
     def delete_associations(self, id: int) -> None | int:
         exc = self.association_target.delete_statement().where(
@@ -46,19 +51,19 @@ class ItemRepository(
                 return rowcount
 
 
-class AssociationRepository(db.r.ItemRepository[TableIndexsetAssociation]):
-    target = db.r.ModelTarget(TableIndexsetAssociation)
+class AssociationRepository(BaseItemRepository[TableIndexsetAssociation]):
+    target = ModelTarget(TableIndexsetAssociation)
 
 
-class PandasRepository(TableAuthRepository, db.r.PandasRepository):
+class PandasRepository(TableAuthRepository[Table], BasePandasRepository):
     NotFound = TableNotFound
     NotUnique = TableNotUnique
-    target = db.r.ModelTarget(Table)
-    filter = db.r.Filter(TableFilter, Table)
+    target = ModelTarget(Table)
+    filter = Filter(TableFilter, Table)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(TableAuthRepository[TableVersion], BasePandasRepository):
     NotFound = TableNotFound
     NotUnique = TableNotUnique
-    target = db.r.ModelTarget(TableVersion)
-    filter = db.r.Filter(TableFilter, TableVersion)
+    target = ModelTarget(TableVersion)
+    filter = Filter(TableFilter, TableVersion)

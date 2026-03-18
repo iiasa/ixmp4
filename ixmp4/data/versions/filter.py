@@ -1,7 +1,7 @@
 from typing import Annotated, Any
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.repositories import BaseRepository
 from typing_extensions import TypedDict
 
 from .model import Operation
@@ -11,7 +11,7 @@ def filter_by_valid_at_transaction(
     exc: sa.Select[Any] | sa.Update | sa.Delete,
     value: int,
     *,
-    repo: db.r.BaseRepository[Any],
+    repo: BaseRepository[Any],
     **kwargs: Any,
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
     tx_id_col = repo.target.table.c["transaction_id"]

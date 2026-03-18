@@ -1,19 +1,21 @@
-from toolkit import db
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from .db import Measurand, MeasurandVersion
 from .exceptions import MeasurandNotFound, MeasurandNotUnique
 from .filter import MeasurandFilter, MeasurandVersionFilter
 
 
-class PandasRepository(db.r.PandasRepository):
+class PandasRepository(BasePandasRepository):
     NotFound = MeasurandNotFound
     NotUnique = MeasurandNotUnique
-    target = db.r.ModelTarget(Measurand)
-    filter = db.r.Filter(MeasurandFilter, Measurand)
+    target = ModelTarget(Measurand)
+    filter = Filter(MeasurandFilter, Measurand)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(BasePandasRepository):
     NotFound = MeasurandNotFound
     NotUnique = MeasurandNotUnique
-    target = db.r.ModelTarget(MeasurandVersion)
-    filter = db.r.Filter(MeasurandVersionFilter, MeasurandVersion)
+    target = ModelTarget(MeasurandVersion)
+    filter = Filter(MeasurandVersionFilter, MeasurandVersion)

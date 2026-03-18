@@ -1,7 +1,7 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.optimization.equation.db import (
     Equation,
@@ -38,16 +38,16 @@ from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 
 
 class IndexSetReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(IndexSet)
-    version_target = db.r.ModelTarget(IndexSetVersion)
+    target = ModelTarget(IndexSet)
+    version_target = ModelTarget(IndexSetVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(IndexSetVersion).where(IndexSetVersion.run__id == run__id)
 
 
 class IndexSetDataReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(IndexSetData)
-    version_target = db.r.ModelTarget(IndexSetDataVersion)
+    target = ModelTarget(IndexSetData)
+    version_target = ModelTarget(IndexSetDataVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(IndexSetDataVersion).where(
@@ -56,16 +56,16 @@ class IndexSetDataReverterRepository(ReverterRepository[[int]]):
 
 
 class EquationReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(Equation)
-    version_target = db.r.ModelTarget(EquationVersion)
+    target = ModelTarget(Equation)
+    version_target = ModelTarget(EquationVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(EquationVersion).where(EquationVersion.run__id == run__id)
 
 
 class EquationIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(EquationIndexsetAssociation)
-    version_target = db.r.ModelTarget(EquationIndexsetAssociationVersion)
+    target = ModelTarget(EquationIndexsetAssociation)
+    version_target = ModelTarget(EquationIndexsetAssociationVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(EquationIndexsetAssociationVersion).where(
@@ -76,16 +76,16 @@ class EquationIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
 
 
 class ParameterReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(Parameter)
-    version_target = db.r.ModelTarget(ParameterVersion)
+    target = ModelTarget(Parameter)
+    version_target = ModelTarget(ParameterVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(ParameterVersion).where(ParameterVersion.run__id == run__id)
 
 
 class ParameterIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(ParameterIndexsetAssociation)
-    version_target = db.r.ModelTarget(ParameterIndexsetAssociationVersion)
+    target = ModelTarget(ParameterIndexsetAssociation)
+    version_target = ModelTarget(ParameterIndexsetAssociationVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(ParameterIndexsetAssociationVersion).where(
@@ -96,16 +96,16 @@ class ParameterIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
 
 
 class TableReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(Table)
-    version_target = db.r.ModelTarget(TableVersion)
+    target = ModelTarget(Table)
+    version_target = ModelTarget(TableVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(TableVersion).where(TableVersion.run__id == run__id)
 
 
 class TableIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(TableIndexsetAssociation)
-    version_target = db.r.ModelTarget(TableIndexsetAssociationVersion)
+    target = ModelTarget(TableIndexsetAssociation)
+    version_target = ModelTarget(TableIndexsetAssociationVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(TableIndexsetAssociationVersion).where(
@@ -114,16 +114,16 @@ class TableIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
 
 
 class VariableReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(Variable)
-    version_target = db.r.ModelTarget(VariableVersion)
+    target = ModelTarget(Variable)
+    version_target = ModelTarget(VariableVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(VariableVersion).where(VariableVersion.run__id == run__id)
 
 
 class VariableIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(VariableIndexsetAssociation)
-    version_target = db.r.ModelTarget(VariableIndexsetAssociationVersion)
+    target = ModelTarget(VariableIndexsetAssociation)
+    version_target = ModelTarget(VariableIndexsetAssociationVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(VariableIndexsetAssociationVersion).where(
@@ -134,8 +134,8 @@ class VariableIndexsetAssociationReverterRepository(ReverterRepository[[int]]):
 
 
 class ScalarReverterRepository(ReverterRepository[[int]]):
-    target = db.r.ModelTarget(Scalar)
-    version_target = db.r.ModelTarget(ScalarVersion)
+    target = ModelTarget(Scalar)
+    version_target = ModelTarget(ScalarVersion)
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(ScalarVersion).where(ScalarVersion.run__id == run__id)

@@ -1,8 +1,11 @@
 from typing import Any
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.run.db import Run
@@ -12,7 +15,7 @@ from .exceptions import ScenarioNotFound, ScenarioNotUnique
 from .filter import ScenarioFilter
 
 
-class ScenarioAuthRepository(AuthRepository[Scenario]):
+class ScenarioAuthRepository(AuthRepository[Scenario | ScenarioVersion]):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -23,22 +26,24 @@ class ScenarioAuthRepository(AuthRepository[Scenario]):
         return exc.where(Scenario.runs.any(Run.id.in_(run_exc)))
 
 
-class ItemRepository(db.r.ItemRepository[Scenario], ScenarioAuthRepository):
+class ItemRepository(
+    BaseItemRepository[Scenario | ScenarioVersion], ScenarioAuthRepository
+):
     NotFound = ScenarioNotFound
     NotUnique = ScenarioNotUnique
-    target = db.r.ModelTarget(Scenario)
-    filter = db.r.Filter(ScenarioFilter, Scenario)
+    target = ModelTarget(Scenario)
+    filter = Filter(ScenarioFilter, Scenario)
 
 
-class PandasRepository(db.r.PandasRepository, ScenarioAuthRepository):
+class PandasRepository(BasePandasRepository, ScenarioAuthRepository):
     NotFound = ScenarioNotFound
     NotUnique = ScenarioNotUnique
-    target = db.r.ModelTarget(Scenario)
-    filter = db.r.Filter(ScenarioFilter, Scenario)
+    target = ModelTarget(Scenario)
+    filter = Filter(ScenarioFilter, Scenario)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(PandasRepository):
     NotFound = ScenarioNotFound
     NotUnique = ScenarioNotUnique
-    target = db.r.ModelTarget(ScenarioVersion)
-    filter = db.r.Filter(ScenarioFilter, ScenarioVersion)
+    target = ModelTarget(ScenarioVersion)
+    filter = Filter(ScenarioFilter, ScenarioVersion)

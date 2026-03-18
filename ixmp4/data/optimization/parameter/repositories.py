@@ -1,8 +1,11 @@
-from typing import Any
+from typing import Any, Generic, TypeVar
 
 import sqlalchemy as sa
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.filter import Filter
+from toolkit.db.repositories import ItemRepository as BaseItemRepository
+from toolkit.db.repositories import PandasRepository as BasePandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.optimization.base.repositories import IndexedRepository
@@ -11,8 +14,13 @@ from .db import Parameter, ParameterIndexsetAssociation, ParameterVersion
 from .exceptions import ParameterDataInvalid, ParameterNotFound, ParameterNotUnique
 from .filter import ParameterFilter
 
+ParameterTargetT = TypeVar("ParameterTargetT")
 
-class ParameterAuthRepository(AuthRepository[Parameter]):
+
+class ParameterAuthRepository(
+    AuthRepository[ParameterTargetT],
+    Generic[ParameterTargetT],
+):
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
@@ -24,15 +32,16 @@ class ParameterAuthRepository(AuthRepository[Parameter]):
 
 
 class ItemRepository(
-    ParameterAuthRepository, IndexedRepository[Parameter, ParameterIndexsetAssociation]
+    ParameterAuthRepository[Parameter],
+    IndexedRepository[Parameter, ParameterIndexsetAssociation],
 ):
     NotFound = ParameterNotFound
     NotUnique = ParameterNotUnique
     DataInvalid = ParameterDataInvalid
 
-    target = db.r.ModelTarget(Parameter)
-    association_target = db.r.ModelTarget(ParameterIndexsetAssociation)
-    filter = db.r.Filter(ParameterFilter, Parameter)
+    target = ModelTarget(Parameter)
+    association_target = ModelTarget(ParameterIndexsetAssociation)
+    filter = Filter(ParameterFilter, Parameter)
 
     extra_data_columns = {"values", "units"}
 
@@ -45,19 +54,22 @@ class ItemRepository(
                 return rowcount
 
 
-class AssociationRepository(db.r.ItemRepository[ParameterIndexsetAssociation]):
-    target = db.r.ModelTarget(ParameterIndexsetAssociation)
+class AssociationRepository(BaseItemRepository[ParameterIndexsetAssociation]):
+    target = ModelTarget(ParameterIndexsetAssociation)
 
 
-class PandasRepository(ParameterAuthRepository, db.r.PandasRepository):
+class PandasRepository(ParameterAuthRepository[Parameter], BasePandasRepository):
     NotFound = ParameterNotFound
     NotUnique = ParameterNotUnique
-    target = db.r.ModelTarget(Parameter)
-    filter = db.r.Filter(ParameterFilter, Parameter)
+    target = ModelTarget(Parameter)
+    filter = Filter(ParameterFilter, Parameter)
 
 
-class VersionRepository(db.r.PandasRepository):
+class VersionRepository(
+    ParameterAuthRepository[ParameterVersion],
+    BasePandasRepository,
+):
     NotFound = ParameterNotFound
     NotUnique = ParameterNotUnique
-    target = db.r.ModelTarget(ParameterVersion)
-    filter = db.r.Filter(ParameterFilter, ParameterVersion)
+    target = ModelTarget(ParameterVersion)
+    filter = Filter(ParameterFilter, ParameterVersion)

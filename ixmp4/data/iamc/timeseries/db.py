@@ -3,7 +3,7 @@ from typing import TYPE_CHECKING
 import sqlalchemy as sa
 from sqlalchemy import orm
 from sqlalchemy.orm.decl_api import declared_attr
-from toolkit import db
+from toolkit.db.types import Integer
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel
@@ -23,21 +23,21 @@ class TimeSeries(BaseModel):
 
     __table_args__ = (sa.UniqueConstraint("run__id", "region__id", "measurand__id"),)
 
-    run__id: db.t.Integer = orm.mapped_column(
+    run__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("run.id"), nullable=False, index=True
     )
     run: orm.Mapped["Run"] = orm.relationship(
         "Run", foreign_keys=[run__id], lazy="select", viewonly=True
     )
 
-    region__id: db.t.Integer = orm.mapped_column(
+    region__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("region.id"), nullable=False, index=True
     )
     region: orm.Mapped["Region"] = orm.relationship(
         "Region", foreign_keys=[region__id], lazy="select", viewonly=True
     )
 
-    measurand__id: db.t.Integer = orm.mapped_column(
+    measurand__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("iamc_measurand.id"), nullable=False, index=True
     )
     measurand: orm.Mapped[Measurand] = orm.relationship(
@@ -64,9 +64,9 @@ class TimeSeries(BaseModel):
 
 class TimeSeriesVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_timeseries_version"
-    region__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    measurand__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
-    run__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    region__id: Integer = orm.mapped_column(nullable=False, index=True)
+    measurand__id: Integer = orm.mapped_column(nullable=False, index=True)
+    run__id: Integer = orm.mapped_column(nullable=False, index=True)
 
 
 version_triggers = versions.PostgresVersionTriggers(

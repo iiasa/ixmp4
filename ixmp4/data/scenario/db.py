@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import DateTime, Mapped, String
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel, HasCreationInfo
@@ -15,9 +15,9 @@ if TYPE_CHECKING:
 class Scenario(BaseModel, HasCreationInfo):
     __tablename__ = "scenario"
 
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
+    name: String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
 
-    runs: db.t.Mapped[list["Run"]] = orm.relationship(viewonly=True)
+    runs: Mapped[list["Run"]] = orm.relationship(viewonly=True)
 
 
 ScenarioDocs = docs_model(Scenario)
@@ -25,10 +25,10 @@ ScenarioDocs = docs_model(Scenario)
 
 class ScenarioVersion(versions.BaseVersionModel):
     __tablename__ = "scenario_version"
-    name: db.t.String = orm.mapped_column(sa.String(255), nullable=False)
+    name: String = orm.mapped_column(sa.String(255), nullable=False)
 
-    created_at: db.t.DateTime = orm.mapped_column(nullable=True)
-    created_by: db.t.String = orm.mapped_column(sa.String(255), nullable=True)
+    created_at: DateTime = orm.mapped_column(nullable=True)
+    created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
 version_triggers = versions.PostgresVersionTriggers(

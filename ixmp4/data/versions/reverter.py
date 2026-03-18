@@ -2,7 +2,9 @@ from typing import Any, ClassVar, Generic, ParamSpec
 
 import pandas as pd
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.executor import SessionExecutor
+from toolkit.db.repositories import PandasRepository
+from toolkit.db.target import ModelTarget
 
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.base.db import BaseModel
@@ -13,15 +15,15 @@ from .transaction import TransactionRepository
 Params = ParamSpec("Params")
 
 
-class ReverterRepository(db.r.PandasRepository, Generic[Params]):
-    target: db.r.ModelTarget[BaseModel]
-    version_target: ClassVar[db.r.ModelTarget[BaseVersionModel]]
+class ReverterRepository(PandasRepository, Generic[Params]):
+    target: ModelTarget[BaseModel]
+    version_target: ClassVar[ModelTarget[BaseVersionModel]]
 
     transactions: TransactionRepository
     versioned_columns: sa.ColumnCollection[str, sa.ColumnElement[Any]]
     revert_op_label = "revert_operation_type"
 
-    def __init__(self, executor: db.r.SessionExecutor):
+    def __init__(self, executor: SessionExecutor):
         super().__init__(executor)
 
         if getattr(self, "version_target", None) is None:
@@ -241,7 +243,7 @@ class Reverter(Generic[Params]):
 
     def __call__(
         self,
-        executor: db.r.SessionExecutor,
+        executor: SessionExecutor,
         tx_id: int,
         *args: Params.args,
         **kwargs: Params.kwargs,

@@ -1,7 +1,7 @@
 from typing import List
 
-from toolkit import db
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
@@ -22,13 +22,13 @@ class ModelService(DocsService, GetByIdService):
     router_tags = ["models"]
 
     http_controller = EnumerationCompatibilityController
-    executor: db.r.SessionExecutor
+    executor: SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
     versions: VersionRepository
 
     def __init_direct__(self, transport: DirectTransport) -> None:
-        self.executor = db.r.SessionExecutor(transport.session)
+        self.executor = SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.versions = VersionRepository(self.executor)

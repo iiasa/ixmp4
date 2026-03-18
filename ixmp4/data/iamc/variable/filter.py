@@ -1,7 +1,7 @@
 from typing import Annotated, Any
 
 import sqlalchemy as sa
-from toolkit import db
+from toolkit.db.repositories import BaseRepository
 
 from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
@@ -17,7 +17,7 @@ def filter_by_run(
     value: dict[str, Any] | None,
     *,
     schema: type[Any],
-    repo: db.r.BaseRepository[Any],
+    repo: BaseRepository[Any],
 ) -> sa.Select[Any]:
     if value is None:
         return exc

@@ -1,6 +1,6 @@
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit import db
+from toolkit.db.types import Integer
 
 from ixmp4.data import versions
 from ixmp4.data.base.db import HasCreationInfo
@@ -33,7 +33,7 @@ ParameterDocs = docs_model(Parameter)
 class ParameterIndexsetAssociation(IndexsetAssociationModel):
     __tablename__ = "opt_par_idx_association"
 
-    parameter__id: db.t.Integer = orm.mapped_column(
+    parameter__id: Integer = orm.mapped_column(
         sa.Integer,
         sa.ForeignKey("opt_par.id", ondelete="CASCADE"),
         nullable=False,
@@ -54,7 +54,7 @@ class ParameterVersion(IndexedVersionModel, HasCreationInfo):
 class ParameterIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     __tablename__ = "opt_par_idx_association_version"
 
-    parameter__id: db.t.Integer = orm.mapped_column(nullable=False, index=True)
+    parameter__id: Integer = orm.mapped_column(nullable=False, index=True)
 
     @staticmethod
     def join_parameter_versions() -> sa.ColumnElement[bool]:
