@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING
 
 import sqlalchemy as sa
 from sqlalchemy import orm
-from toolkit.db.types import Boolean, DateTime, Float, Integer, Mapped, String
+from toolkit.db.types import Boolean, Float, Integer, Mapped, String
 
 if TYPE_CHECKING:
     from ixmp4.data.run.db import Run
