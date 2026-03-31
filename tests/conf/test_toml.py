@@ -7,7 +7,11 @@ import pytest
 
 from ixmp4.conf.credentials import Credentials
 from ixmp4.conf.platforms import TomlPlatforms
-from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
+from ixmp4.core.exceptions import (
+    ImproperlyConfigured,
+    PlatformNotFound,
+    PlatformNotUnique,
+)
 
 
 @pytest.fixture(scope="class")
@@ -68,6 +72,36 @@ class TestTomlPlatforms(TomlTest):
     def test_remove_missing_platform(self, toml_platforms: TomlPlatforms) -> None:
         with pytest.raises(PlatformNotFound):
             toml_platforms.remove_platform("test")
+
+    def test_get_platform_substitutes_dsn_env_tokens(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        platforms_toml = tmp_path / "platforms.toml"
+        platforms_toml.write_text(
+            '[test]\ndsn = "postgresql://user:{env:IXMP4_TEST_PASSWORD}@foo.bar/db"\n'
+        )
+        monkeypatch.setenv("IXMP4_TEST_PASSWORD", "s3cr3t")
+
+        platforms = TomlPlatforms(platforms_toml)
+        assert (
+            platforms.get_platform("test").dsn == "postgresql://user:s3cr3t@foo.bar/db"
+        )
+
+        # Placeholder syntax must remain on disk and never be persisted with secrets.
+        assert "{env:IXMP4_TEST_PASSWORD}" in platforms_toml.read_text()
+
+    def test_get_platform_raises_for_missing_dsn_env_tokens(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        platforms_toml = tmp_path / "platforms.toml"
+        platforms_toml.write_text(
+            '[test]\ndsn = "postgresql://user:{env:IXMP4_MISSING_PASSWORD}@foo.bar/db"\n'
+        )
+        monkeypatch.delenv("IXMP4_MISSING_PASSWORD", raising=False)
+
+        platforms = TomlPlatforms(platforms_toml)
+        with pytest.raises(ImproperlyConfigured, match="IXMP4_MISSING_PASSWORD"):
+            platforms.get_platform("test")
 
 
 @pytest.fixture(scope="class")

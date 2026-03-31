@@ -1,5 +1,7 @@
 import abc
 import json
+import os
+import re
 from pathlib import Path
 from typing import Any, Protocol, runtime_checkable
 
@@ -8,7 +10,35 @@ from pydantic import BaseModel, ConfigDict
 from toolkit.manager.client import ManagerClient
 from toolkit.manager.models import Ixmp4Instance
 
-from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
+from ixmp4.core.exceptions import (
+    ImproperlyConfigured,
+    PlatformNotFound,
+    PlatformNotUnique,
+)
+
+_ENV_TOKEN_PATTERN = re.compile(r"\{env:([A-Za-z_][A-Za-z0-9_]*)\}")
+
+
+def resolve_dsn_env_tokens(dsn: str) -> str:
+    """Replace {env:VAR_NAME} placeholders with environment variable values."""
+
+    missing: set[str] = set()
+
+    def replace(match: re.Match[str]) -> str:
+        key = match.group(1)
+        value = os.getenv(key)
+        if value is None:
+            missing.add(key)
+            return match.group(0)
+        return value
+
+    resolved = _ENV_TOKEN_PATTERN.sub(replace, dsn)
+    if missing:
+        keys = ", ".join(sorted(missing))
+        raise ImproperlyConfigured(
+            "Cannot resolve DSN environment variable placeholder(s): " + keys
+        )
+    return resolved
 
 
 @runtime_checkable
@@ -76,11 +106,17 @@ class TomlPlatforms(PlatformConnections):
         toml.dump(obj, f)
 
     def list_platforms(self) -> list[TomlPlatform]:
-        return list(self.platforms.values())
+        return [
+            platform.model_copy(update={"dsn": resolve_dsn_env_tokens(platform.dsn)})
+            for platform in self.platforms.values()
+        ]
 
     def get_platform(self, name: str) -> TomlPlatform:
         try:
-            return self.platforms[name]
+            platform = self.platforms[name]
+            return platform.model_copy(
+                update={"dsn": resolve_dsn_env_tokens(platform.dsn)}
+            )
         except KeyError as e:
             raise PlatformNotFound(f"Platform '{name}' was not found.") from e
 
@@ -108,12 +144,16 @@ class ManagerPlatforms(PlatformConnections):
         self.manager_client = manager_client
 
     def list_platforms(self) -> list[Ixmp4Instance]:
-        return self.manager_client.ixmp4.cached_list()
+        return [
+            platform.model_copy(update={"dsn": resolve_dsn_env_tokens(platform.dsn)})
+            for platform in self.manager_client.ixmp4.cached_list()
+        ]
 
     def get_platform(self, name: str) -> Ixmp4Instance:
-        ixmp4_inst = self.manager_client.ixmp4.cached_list()
-        for i in ixmp4_inst:
-            if i.slug == name:
-                return i
+        for platform in self.manager_client.ixmp4.cached_list():
+            if platform.slug == name:
+                return platform.model_copy(
+                    update={"dsn": resolve_dsn_env_tokens(platform.dsn)}
+                )
         else:
             raise PlatformNotFound(f"Platform '{name}' was not found.")
