@@ -98,7 +98,7 @@ class Ixmp4Server(object):
         self.asgi_app = Litestar(
             debug=debug,
             cors_config=cors_config,
-            route_handlers=[ServerStatus, self.v1.router],
+            route_handlers=[ServerContoller, self.v1.router],
             openapi_config=openapi_config,
             on_startup=[self.v1.on_startup],
         )
