@@ -189,9 +189,9 @@ class HttpxTransport(Transport, ServiceClient):
             and root.manager_url is not None
         ):
             client_manager_url = str(self.http_client.auth.client.base_url)
-            if client_manager_url.rstrip("/") != root.manager_url.rstrip("/"):
+            if client_manager_url.rstrip("/") != str(root.manager_url).rstrip("/"):
                 logger.error(f"Server Manager URL: {root.manager_url}")
-                logger.error(f"Client Manager URL: {root.manager_url}")
+                logger.error(f"Client Manager URL: {client_manager_url}")
                 raise ImproperlyConfigured(
                     "Trying to connect to a managed http Platform "
                     "with a mismatching Manager URL."
