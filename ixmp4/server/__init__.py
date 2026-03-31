@@ -45,7 +45,7 @@ cors_config = CORSConfig(
 
 class ServerStatus(pyd.BaseModel):
     utcnow: datetime
-    manager_url: None | str
+    manager_url: pyd.HttpUrl | None
 
 
 class ServerContoller(Controller):

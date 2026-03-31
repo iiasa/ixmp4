@@ -18,7 +18,7 @@ class PlatformInfo(pyd.BaseModel):
     name: str
     version: str
     is_managed: bool
-    manager_url: None | str
+    manager_url: pyd.HttpUrl | None
     utcnow: datetime
 
 
