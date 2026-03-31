@@ -62,6 +62,14 @@ class TestFilters:
             with run.transact("Add datapoints"):
                 run.iamc.add(rows.drop(columns=["model", "scenario", "version"]))
 
+    def test_filter_models(self, platform: ixmp4.Platform) -> None:
+        [model_no_data] = platform.models.list(iamc=False)
+        assert model_no_data.name == "Model Without Data"
+
+    def test_filter_scenarios(self, platform: ixmp4.Platform) -> None:
+        [scenario_no_data] = platform.scenarios.list(iamc=False)
+        assert scenario_no_data.name == "Scenario Without Data"
+
     def test_filter_regions(self, platform: ixmp4.Platform) -> None:
         [region_no_data] = platform.regions.list(iamc=False)
         assert region_no_data.name == "Region Without Data"

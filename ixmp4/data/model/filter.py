@@ -30,13 +30,13 @@ def filter_by_iamc(
     repo: BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
     if value is True:
-        return exc.where(Model.runs.has(Run.timeseries.has()))
+        return exc.where(Model.runs.any(Run.timeseries.any()))
     elif value is False:
-        return exc.where(~Model.runs.has(Run.timeseries.has()))
+        return exc.where(~Model.runs.any(Run.timeseries.any()))
     elif value is None:
         return exc
     else:
-        return exc.where(Model.runs.has(Run.timeseries.has()))
+        return exc.where(Model.runs.any(Run.timeseries.any()))
 
 
 class ModelFilter(base.ModelFilter, total=False):
