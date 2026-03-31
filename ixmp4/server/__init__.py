@@ -12,14 +12,18 @@ for comprehensive openapi documentation.
 """
 
 import logging
+from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
-from litestar import Litestar
+import pydantic as pyd
+from litestar import Controller, Litestar, get
 from litestar.config.cors import CORSConfig
+from litestar.datastructures import State
 from litestar.openapi import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
 from litestar.openapi.spec.security_scheme import SecurityScheme
+from litestar.response import Response
 
 from ixmp4._version import __version__ as __version__
 from ixmp4.conf.settings import ServerSettings
@@ -37,6 +41,22 @@ cors_config = CORSConfig(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+
+
+class ServerStatus(pyd.BaseModel):
+    utcnow: datetime
+    manager_url: None | str
+
+
+class ServerContoller(Controller):
+    @get("/status")
+    async def status(self, state: State) -> Response[ServerStatus]:
+        return Response(
+            ServerStatus(
+                utcnow=datetime.now(tz=timezone.utc),
+                manager_url=state.settings.manager_url,
+            )
+        )
 
 
 class Ixmp4Server(object):
@@ -78,7 +98,7 @@ class Ixmp4Server(object):
         self.asgi_app = Litestar(
             debug=debug,
             cors_config=cors_config,
-            route_handlers=[self.v1.router],
+            route_handlers=[ServerStatus, self.v1.router],
             openapi_config=openapi_config,
             on_startup=[self.v1.on_startup],
         )
