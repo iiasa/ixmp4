@@ -84,3 +84,4 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
 class VersionRepository(PandasRepository):
     target = ModelTarget(DataPointVersion)
     filter = Filter(DataPointVersionFilter, DataPointVersion)
+    dtypes = {"step_year": "Int64"}

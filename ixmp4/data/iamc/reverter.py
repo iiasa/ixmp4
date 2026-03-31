@@ -21,6 +21,7 @@ from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 class DataPointReverterRepository(ReverterRepository[[int]]):
     target = ModelTarget(DataPoint)
     version_target = ModelTarget(DataPointVersion)
+    dtypes = {"step_year": "Int64"}
 
     def select_versions(self, run__id: int) -> sa.Select[Any]:
         return sa.select(DataPointVersion).where(

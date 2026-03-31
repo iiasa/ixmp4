@@ -90,7 +90,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         self,
         test_ts_df: pd.DataFrame,
     ) -> pd.DataFrame:
-        return pd.DataFrame(
+        df = pd.DataFrame(
             [
                 [1, 1, Type.ANNUAL, 2000, 1.1],
                 [2, 1, Type.ANNUAL, 2010, 1.3],
@@ -105,6 +105,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
                 "value",
             ],
         )
+        return df
 
     @pytest.fixture(scope="class")
     def expected_annual_df(
@@ -298,13 +299,13 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         tx_after_insert: int,
         tx_after_update: int,
         tx_after_delete: int,
-        test_df: pd.DataFrame,
+        expected_df: pd.DataFrame,
         run: Run,
     ) -> None:
         reverter_repo = DataPointReverterRepository(versioning_service.executor)
 
         # insert revert data
-        expected_insert_revert_df = test_df.copy()
+        expected_insert_revert_df = expected_df.copy()
 
         expected_insert_revert_df["revert_operation_type"] = Operation.DELETE.value
         revert_insert_df = reverter_repo.tabulate_revert_ops(
@@ -323,7 +324,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
         revert_update_df = self.drop_empty_columns(revert_update_df)
 
-        expected_revert_update_df = test_df.copy()
+        expected_revert_update_df = expected_df.copy()
         expected_revert_update_df["revert_operation_type"] = Operation.UPDATE.value
         pdt.assert_frame_equal(
             self.canonical_sort(expected_revert_update_df),
@@ -336,7 +337,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
             tx_after_delete, tx_after_update, run.id
         ).drop(columns=["transaction_id", "end_transaction_id", "operation_type"])
         revert_delete_df = self.drop_empty_columns(revert_delete_df)
-        expected_revert_delete_df = test_df.copy()
+        expected_revert_delete_df = expected_df.copy()
         expected_revert_delete_df["revert_operation_type"] = Operation.INSERT.value
         expected_revert_delete_df["value"] = -99.99
 
@@ -352,10 +353,10 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         tx_after_insert: int,
         tx_after_update: int,
         tx_after_delete: int,
-        test_df: pd.DataFrame,
+        expected_df: pd.DataFrame,
     ) -> None:
         # insert valid version records
-        insert_versions_df = test_df.copy()
+        insert_versions_df = expected_df.copy()
         insert_versions_df["operation_type"] = Operation.INSERT.value
 
         ret_insert_versions_df = versioning_service.versions.tabulate(
@@ -372,7 +373,7 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         )
 
         # update valid version records
-        update_versions_df = test_df.copy()
+        update_versions_df = expected_df.copy()
         update_versions_df["operation_type"] = Operation.UPDATE.value
         update_versions_df["value"] = -99.99
 
@@ -421,17 +422,11 @@ class TestDatapointBulkAnnualInferType(DataPointBulkOperationsTest):
         return True
 
     @pytest.fixture(scope="class")
-    def test_df(
-        self,
-        test_annual_df: pd.DataFrame,
-    ) -> pd.DataFrame:
+    def test_df(self, test_annual_df: pd.DataFrame) -> pd.DataFrame:
         return test_annual_df
 
     @pytest.fixture(scope="class")
-    def expected_df(
-        self,
-        expected_annual_df: pd.DataFrame,
-    ) -> pd.DataFrame:
+    def expected_df(self, expected_annual_df: pd.DataFrame) -> pd.DataFrame:
         return expected_annual_df
 
 
