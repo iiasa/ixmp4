@@ -1,3 +1,4 @@
+import json
 from typing import Any, cast
 
 from litestar import Request, patch
@@ -8,6 +9,30 @@ from ixmp4.data.services.controller import ServiceController
 
 class EnumerationCompatibilityController(ServiceController[Any]):
     path = "/"
+
+    def _get_compat_payload(self, query_params: dict[str, Any], body: bytes) -> bytes:
+        """Merge legacy query filters into a PATCH body payload.
+
+        The deprecated ``query`` endpoint historically accepted procedure
+        arguments via query parameters. Procedures now consume JSON request
+        bodies for PATCH routes, so we preserve backward compatibility by
+        moving non-pagination query arguments into the body.
+        """
+        payload: dict[str, Any]
+
+        if len(body) > 0:
+            parsed_body = json.loads(body)
+            payload = parsed_body if isinstance(parsed_body, dict) else {}
+        else:
+            payload = {}
+
+        reserved = {"table", "limit", "offset"}
+        for key, value in query_params.items():
+            if key in reserved:
+                continue
+            payload.setdefault(key, value)
+
+        return json.dumps(payload).encode("utf-8")
 
     @patch(
         path="/",
@@ -25,9 +50,17 @@ class EnumerationCompatibilityController(ServiceController[Any]):
         table: bool = False,
     ) -> GenericPaginatedResult:
         """Compatibility endpoint for a deprecated enumeration method."""
+        handler = self.get_handler(service, "tabulate" if table else "list")
+        query_params = dict(request.query_params)
+
+        bound_func = handler.bind_endpoint_func(service, query_params)
+        args, kwargs = handler.build_call_args(
+            request.path_params,
+            query_params,
+            self._get_compat_payload(query_params, await request.body()),
+        )
+
         return cast(
             GenericPaginatedResult,
-            await self.call_procedure(
-                service, "tabulate" if table else "list", request
-            ),
+            bound_func(*args, **kwargs),
         )
