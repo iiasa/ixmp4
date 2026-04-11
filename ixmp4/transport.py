@@ -36,7 +36,7 @@ logger = logging.getLogger(__name__)
 def cached_create_engine(dsn: str, **kwargs: Any) -> sa.Engine:
     # max_identifier_length=63 to avoid exceeding postgres' default maximum
     return sa.create_engine(
-        dsn, poolclass=sa.StaticPool, max_identifier_length=63, **kwargs
+        dsn, poolclass=sa.NullPool, max_identifier_length=63, **kwargs
     )
 
 
