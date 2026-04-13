@@ -34,9 +34,8 @@ def resolve_dsn_env_tokens(dsn: str) -> str:
 
     resolved = _ENV_TOKEN_PATTERN.sub(replace, dsn)
     if missing:
-        keys = ", ".join(sorted(missing))
         raise ImproperlyConfigured(
-            "Cannot resolve DSN environment variable placeholder(s): " + keys
+            "Cannot resolve DSN environment variable placeholder(s)."
         )
     return resolved
 
