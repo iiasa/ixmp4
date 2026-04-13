@@ -5,6 +5,7 @@ import sys
 from pathlib import Path
 from typing import Literal
 
+from dotenv import load_dotenv
 from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
 from pydantic_settings import BaseSettings, SettingsConfigDict
 from toolkit.client.auth import ManagerAuth, SelfSignedAuth
@@ -78,6 +79,7 @@ class Settings(BaseSettings):
 
     @model_validator(mode="after")
     def setup(self) -> "Settings":
+        load_dotenv()
         self.setup_directories()
 
         if self.is_in_interactive_mode():
