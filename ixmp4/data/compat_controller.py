@@ -3,6 +3,7 @@ from typing import Any, cast
 
 from litestar import Request, patch
 
+from ixmp4.core.exceptions import BadRequest
 from ixmp4.data.pagination import GenericPaginatedResult
 from ixmp4.data.services.controller import ServiceController
 
@@ -50,7 +51,13 @@ class EnumerationCompatibilityController(ServiceController[Any]):
         table: bool = False,
     ) -> GenericPaginatedResult:
         """Compatibility endpoint for a deprecated enumeration method."""
-        handler = self.get_handler(service, "tabulate" if table else "list")
+        try:
+            handler = self.get_handler(service, "tabulate" if table else "list")
+        except (IndexError, AttributeError):
+            raise BadRequest(
+                f"Invalid query parameter: `table={table}` "
+                "is not supported by this endpoint."
+            )
         query_params = dict(request.query_params)
 
         bound_func = handler.bind_endpoint_func(service, query_params)
