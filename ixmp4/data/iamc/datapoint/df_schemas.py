@@ -10,7 +10,9 @@ from .type import Type, TypeColumnsDict
 
 class BaseDataPointFrameSchema(pa.DataFrameModel):
     time_series__id: pat.Series[pa.Int] = pa.Field(coerce=True)
-    type: pat.Series[pa.String] | None = pa.Field(isin=[str(t) for t in Type])
+    type: pat.Series[pa.String] | None = pa.Field(
+        isin=[str(t) for t in Type], coerce=True
+    )
     step_year: pat.Series[pd.Int64Dtype] | None = pa.Field(
         ignore_na=True,
         coerce=True,
