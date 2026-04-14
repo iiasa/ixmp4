@@ -100,7 +100,10 @@ class TestTomlPlatforms(TomlTest):
         monkeypatch.delenv("IXMP4_MISSING_PASSWORD", raising=False)
 
         platforms = TomlPlatforms(platforms_toml)
-        with pytest.raises(ImproperlyConfigured, match="IXMP4_MISSING_PASSWORD"):
+        with pytest.raises(
+            ImproperlyConfigured,
+            match="Cannot resolve DSN environment variable placeholder(s).",
+        ):
             platforms.get_platform("test")
 
 

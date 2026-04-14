@@ -33,5 +33,8 @@ class TestManagerPlatforms:
         monkeypatch.delenv("IXMP4_DIR", raising=False)
         manager_platforms = ManagerPlatforms(mock_manager_client)
 
-        with pytest.raises(ImproperlyConfigured, match="IXMP4_DIR"):
+        with pytest.raises(
+            ImproperlyConfigured,
+            match="Cannot resolve DSN environment variable placeholder(s).",
+        ):
             manager_platforms.get_platform("dev-public")
