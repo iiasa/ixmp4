@@ -8,6 +8,7 @@ from toolkit.db.repositories import BaseRepository
 from toolkit.db.repositories.base import TargetT
 from toolkit.db.target import DefaultModelT, ModelTarget
 
+from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.model.db import Model
 from ixmp4.data.run.db import Run
 
@@ -31,7 +32,11 @@ class AuthRepository(BaseRepository[TargetT]):
         self.auth_ctx = auth_ctx
         self.platform = platform
 
-        if self.auth_ctx is not None and self.platform is not None:
+        if (
+            self.auth_ctx is not None
+            and self.platform is not None
+            and not self._has_unrestricted_access(self.auth_ctx, self.platform)
+        ):
             self.target = AuthModelTargetWrapper(
                 self.target,
                 auth_repo=self,
@@ -39,29 +44,69 @@ class AuthRepository(BaseRepository[TargetT]):
                 platform=self.platform,
             )
 
-    def select_permitted_model_ids(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]]:
-        # managers (includes superusers) can access all models
+    @staticmethod
+    def _has_unrestricted_access(
+        auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> bool:
+        """Return True when all permission LIKE patterns are the wildcard ``%``.
+        When every pattern is ``%`` the auth queries become unnecessary seqscans.
+        """
         if auth_ctx.has_management_permission(platform):
-            return sa.select(Model).with_only_columns(Model.id)
+            return True
+        perms = auth_ctx.tabulate_permissions(platform)
+        if perms.is_empty():
+            return False
+        return all(like == "%" for like in perms["like"].to_list())
+
+    def _model_permission_clause(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> sa.ColumnElement[bool] | None:
+        """Return a boolean clause for model-level permission, or None for
+        unrestricted access."""
+        if auth_ctx.has_management_permission(platform):
+            return None
 
         perms = auth_ctx.tabulate_permissions(platform)
         if perms.is_empty():
-            return sa.select(Model).where(sa.false()).with_only_columns(Model.id)
+            return sa.false()
 
-        like_conds = (
+        like_conds = [
             Model.name.like(name_like) for name_like in perms["like"].to_list()
-        )
-        return sa.select(Model).where(sa.or_(*like_conds)).with_only_columns(Model.id)
+        ]
+        return sa.or_(*like_conds)
+
+    def select_permitted_model_ids(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> sa.Select[tuple[int]]:
+        exc = sa.select(Model.id)
+        clause = self._model_permission_clause(auth_ctx, platform)
+        if clause is not None:
+            exc = exc.where(clause)
+        return exc
 
     def select_permitted_run_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> sa.Select[tuple[int]]:
-        model_exc = self.select_permitted_model_ids(auth_ctx, platform)
-        return (
-            sa.select(Run).where(Run.model__id.in_(model_exc)).with_only_columns(Run.id)
+        """Flat subquery: ``SELECT run.id FROM run JOIN model … WHERE …``."""
+        exc = sa.select(Run.id).select_from(Run).join(Run.model)
+        clause = self._model_permission_clause(auth_ctx, platform)
+        if clause is not None:
+            exc = exc.where(clause)
+        return exc
+
+    def select_permitted_ts_ids(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> sa.Select[tuple[int]]:
+        exc = (
+            sa.select(TimeSeries.id)
+            .select_from(TimeSeries)
+            .join(TimeSeries.run)
+            .join(Run.model)
         )
+        clause = self._model_permission_clause(auth_ctx, platform)
+        if clause is not None:
+            exc = exc.where(clause)
+        return exc
 
     @overload
     def where_authorized(

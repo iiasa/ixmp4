@@ -23,16 +23,6 @@ from .filter import DataPointFilter, DataPointVersionFilter
 
 
 class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
-    def select_permitted_ts_ids(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]]:
-        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
-        return (
-            sa.select(TimeSeries)
-            .where(TimeSeries.run__id.in_(run_exc))
-            .with_only_columns(TimeSeries.id)
-        )
-
     def where_authorized(
         self,
         exc: sa.Select[Any] | sa.Update | sa.Delete,
