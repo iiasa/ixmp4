@@ -5,6 +5,8 @@ import typer
 from ixmp4.conf.settings import Settings
 from ixmp4.server import Ixmp4Server
 
+from .banner import print_banner
+
 try:
     import uvicorn
 
@@ -29,6 +31,7 @@ if _server_is_installed:
     ) -> None:
         """Starts the ixmp4 http server."""
         settings = Settings()
+        print_banner(settings=settings)
         log_config = settings.load_logging_config("server")
         if debug:
             log_config["root"]["level"] = "DEBUG"

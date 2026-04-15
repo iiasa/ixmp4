@@ -39,6 +39,20 @@ def tmp_working_directory() -> Generator[Path, None, None]:
 
 
 class TestPlatformCLI:
+    def test_root_command_prints_banner(
+        self, runner: CliRunner, temporary_settings: Settings
+    ) -> None:
+        result = runner.invoke(app, [])
+
+        assert result.exit_code == 0
+        assert "_____  ____  __ ___ _ _" in result.output
+        assert "Version" in result.output
+        assert "Mode" in result.output
+        assert str(temporary_settings.storage_directory) in result.output
+        assert "Usage:" in result.output
+        assert "Show this message and exit." in result.output
+        assert "platforms" in result.output
+
     def test_add_platform(
         self, runner: CliRunner, temporary_settings: Settings
     ) -> None:

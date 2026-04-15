@@ -17,12 +17,20 @@ from toolkit.client.auth import ManagerAuth
 from toolkit.exceptions import InvalidCredentials
 
 from ixmp4.cli import alembic, platforms, server
+from ixmp4.cli.banner import print_banner
 from ixmp4.conf.settings import Settings
 
 app = typer.Typer()
 app.add_typer(platforms.app, name="platforms")
 app.add_typer(alembic.app, name="alembic")
 app.add_typer(server.app, name="server")
+
+
+@app.callback(invoke_without_command=True)
+def main(ctx: typer.Context) -> None:
+    if ctx.invoked_subcommand is None:
+        print_banner()
+        typer.echo(ctx.get_help())
 
 
 @app.command(help="Logs into the configured manager service.")
