@@ -102,7 +102,7 @@ class TestTomlPlatforms(TomlTest):
         platforms = TomlPlatforms(platforms_toml)
         with pytest.raises(
             ImproperlyConfigured,
-            match="Cannot resolve DSN environment variable placeholder(s).",
+            match=r"Cannot resolve DSN environment variable placeholder\(s\).",
         ):
             platforms.get_platform("test")
 

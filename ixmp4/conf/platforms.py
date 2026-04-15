@@ -1,5 +1,6 @@
 import abc
 import json
+import logging
 import os
 import re
 from pathlib import Path
@@ -17,6 +18,7 @@ from ixmp4.core.exceptions import (
 )
 
 _ENV_TOKEN_PATTERN = re.compile(r"\{env:([A-Za-z_][A-Za-z0-9_]*)\}")
+logger = logging.getLogger(__name__)
 
 
 def resolve_dsn_env_tokens(dsn: str) -> str:
@@ -34,6 +36,7 @@ def resolve_dsn_env_tokens(dsn: str) -> str:
 
     resolved = _ENV_TOKEN_PATTERN.sub(replace, dsn)
     if missing:
+        logger.info("Missing DSN environment variable(s): " + str(missing))
         raise ImproperlyConfigured(
             "Cannot resolve DSN environment variable placeholder(s)."
         )

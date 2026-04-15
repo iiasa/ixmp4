@@ -35,6 +35,6 @@ class TestManagerPlatforms:
 
         with pytest.raises(
             ImproperlyConfigured,
-            match="Cannot resolve DSN environment variable placeholder(s).",
+            match=r"Cannot resolve DSN environment variable placeholder\(s\).",
         ):
             manager_platforms.get_platform("dev-public")

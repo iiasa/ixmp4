@@ -157,20 +157,20 @@ class Settings(BaseSettings):
         self, credentials: CredentialsDict | None
     ) -> ManagerAuth | SelfSignedAuth | None:
         if self.client.secret_hs256 is not None:
-            logger.debug(
+            logger.info(
                 "Using self-signed http authentication strategy because the"
                 "environment variable `IXMP4_CLIENT__SECRET_HS256` is set."
             )
             return self.get_self_signed_auth(self.client.secret_hs256)
         else:
             if credentials is None:
-                logger.debug(
+                logger.info(
                     "Using anonymous http authentication strategy "
                     "because no local credentials were found."
                 )
                 return None
             else:
-                logger.debug(
+                logger.info(
                     "Using manager http authentication strategy "
                     "because local credentials were found."
                 )

@@ -36,7 +36,10 @@ def runner(temporary_settings: Settings) -> CliRunner:
 
 class TestAlembicTargets:
     def test_collect_platforms(
-        self, runner: CliRunner, temporary_settings: Settings
+        self,
+        runner: CliRunner,
+        temporary_settings: Settings,
+        monkeypatch: pytest.MonkeyPatch,
     ) -> None:
         runner.invoke(app, ["platforms", "add", "test-1"], input="y")
         runner.invoke(app, ["platforms", "add", "test-2"], input="y")
@@ -47,6 +50,8 @@ class TestAlembicTargets:
         assert len(toml_platforms) == 2
         assert toml_platforms[0].name == "test-1"
         assert toml_platforms[1].name == "test-2"
+
+        monkeypatch.setenv("IXMP4_DIR", "/tmp/ixmp4")
 
         manager_platforms = collect_platforms(
             temporary_settings, platform=[], toml=False, manager=True
