@@ -122,6 +122,9 @@ class RunMetaDictFacade(
     def __dict__(self) -> dict[str, MetaValueType | None]:
         return dict(self.data)
 
+    def __eq__(self, other: Any) -> bool:
+        return self.data.__eq__(other)
+
 
 def numpy_to_pytype(
     value: MetaValueType | np.generic | None,
