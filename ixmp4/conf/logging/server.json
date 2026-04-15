@@ -34,12 +34,12 @@
   "handlers": {
     "console": {
       "class": "logging.StreamHandler",
-      "level": "DEBUG",
+      "level": "NOTSET",
       "formatter": "generic"
     }
   },
   "root": {
-    "level": "DEBUG",
+    "level": "INFO",
     "handlers": ["console"]
   }
 }

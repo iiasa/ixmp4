@@ -3,7 +3,7 @@ import logging
 import logging.config
 import sys
 from pathlib import Path
-from typing import Literal
+from typing import Any, Literal
 
 from dotenv import load_dotenv
 from pydantic import Field, HttpUrl, SecretStr, field_validator, model_validator
@@ -130,15 +130,17 @@ class Settings(BaseSettings):
 
         return v
 
+    def load_logging_config(self, config: str) -> Any:
+        logging_config = here / f"logging/{config}.json"
+        with open(logging_config) as file:
+            return json.load(file)
+
     def configure_logging(self, config: str) -> None:
         self.access_file = str((self.log_dir / "access.log").absolute())
         self.debug_file = str((self.log_dir / "debug.log").absolute())
         self.error_file = str((self.log_dir / "error.log").absolute())
 
-        logging_config = here / f"logging/{config}.json"
-        with open(logging_config) as file:
-            config_dict = json.load(file)
-        logging.config.dictConfig(config_dict)
+        logging.config.dictConfig(self.load_logging_config(config))
 
     def get_database_dir(self) -> Path:
         """Returns the path to the local sqlite database directory."""

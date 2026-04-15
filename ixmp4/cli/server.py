@@ -14,6 +14,7 @@ except ImportError:
 
 app = typer.Typer(help="Enables use of the http server.")
 
+
 if _server_is_installed:
 
     @app.command()
@@ -28,6 +29,10 @@ if _server_is_installed:
     ) -> None:
         """Starts the ixmp4 http server."""
         settings = Settings()
+        log_config = settings.load_logging_config("server")
+        if debug:
+            log_config["root"]["level"] = "DEBUG"
+
         server = Ixmp4Server(settings.server, debug=debug)
 
         uvicorn.run(
@@ -36,6 +41,7 @@ if _server_is_installed:
             port=port,
             reload=reload,
             workers=workers,
+            log_config=log_config,
         )
 
     @app.command()
