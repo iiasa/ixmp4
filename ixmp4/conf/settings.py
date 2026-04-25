@@ -42,6 +42,15 @@ class ServerSettings(BaseSettings):
     max_page_size: int = 10_000
     default_page_size: int = 5_000
 
+    @model_validator(mode="after")
+    def setup(self) -> "ServerSettings":
+        if self.default_page_size > self.max_page_size:
+            raise ValueError(
+                "Default page size must be smaller or equal to maximum page size. ",
+                f"{self.default_page_size} > {self.max_page_size}",
+            )
+        return self
+
     def get_self_signed_auth(self, secret_hs256: SecretStr) -> SelfSignedAuth:
         return SelfSignedAuth(secret_hs256.get_secret_value(), issuer="ixmp4")
 
