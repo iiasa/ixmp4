@@ -30,7 +30,7 @@ dependencies = [
     "SQLAlchemy-Utils>=0.41.0",
     "toml>=0.10.2",
     "typer>=0.19.0",
-    "scse-toolkit (>=1.0.3,<2.0.0)",
+    "scse-toolkit (==1.1.0.dev1)",
     "litestar (>=2.18.0,<3.0.0)",
 ]
 
@@ -92,6 +92,15 @@ optional = true
 [tool.poetry.group.tutorial.dependencies]
 ipykernel = ">=6.27.1"
 
+
+[[tool.poetry.source]]
+name = "testpypi"
+url = "https://test.pypi.org/simple/"
+priority = "supplemental"
+
+
+[tool.poetry.dependencies]
+scse-toolkit = { source = "testpypi" }
 [build-system]
 build-backend = "poetry_dynamic_versioning.backend"
 requires = ["poetry-core>=1.2.0", "poetry-dynamic-versioning"]
@@ -176,4 +185,5 @@ exclude_also = [
 [tool.poetry-dynamic-versioning]
 enable = true
 style = "pep440"
+vcs = "git"
 vcs = "git"
