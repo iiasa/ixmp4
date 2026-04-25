@@ -1602,7 +1602,6 @@ files = [
 
 [package.dependencies]
 linkify-it-py = {version = ">=1,<3", optional = true, markers = "extra == \"linkify\""}
-mdit-py-plugins = {version = ">=0.5.0", optional = true, markers = "extra == \"plugins\""}
 mdurl = ">=0.1,<1.0"
 
 [package.extras]
@@ -2433,14 +2432,14 @@ numpy = ["numpy (>=1.26,<2.7)", "numpy-typing-compat (>=20250818.1.25,<20251207)
 
 [[package]]
 name = "packaging"
-version = "26.1"
+version = "26.2"
 description = "Core utilities for Python packages"
 optional = false
 python-versions = ">=3.8"
 groups = ["main", "dev", "docs", "tutorial"]
 files = [
-    {file = "packaging-26.1-py3-none-any.whl", hash = "sha256:5d9c0669c6285e491e0ced2eee587eaf67b670d94a19e94e3984a481aba6802f"},
-    {file = "packaging-26.1.tar.gz", hash = "sha256:f042152b681c4bfac5cae2742a55e103d27ab2ec0f3d88037136b6bfe7c9c5de"},
+    {file = "packaging-26.2-py3-none-any.whl", hash = "sha256:5fc45236b9446107ff2415ce77c807cee2862cb6fac22b8a73826d0693b0980e"},
+    {file = "packaging-26.2.tar.gz", hash = "sha256:ff452ff5a3e828ce110190feff1178bb1f2ea2281fa2075aadb987c2fb221661"},
 ]
 
 [[package]]
@@ -3829,20 +3828,19 @@ use-chardet-on-py3 = ["chardet (>=3.0.2,<8)"]
 
 [[package]]
 name = "rich"
-version = "13.9.4"
+version = "14.3.4"
 description = "Render rich text, tables, progress bars, syntax highlighting, markdown and more to the terminal"
 optional = false
 python-versions = ">=3.8.0"
 groups = ["main", "dev", "docs"]
 files = [
-    {file = "rich-13.9.4-py3-none-any.whl", hash = "sha256:6049d5e6ec054bf2779ab3358186963bac2ea89175919d699e378b99738c2a90"},
-    {file = "rich-13.9.4.tar.gz", hash = "sha256:439594978a49a09530cff7ebc4b5c7103ef57baf48d5ea3184f21d9a2befa098"},
+    {file = "rich-14.3.4-py3-none-any.whl", hash = "sha256:07e7adb4690f68864777b1450859253bed81a99a31ac321ac1817b2313558952"},
+    {file = "rich-14.3.4.tar.gz", hash = "sha256:817e02727f2b25b40ef56f5aa2217f400c8489f79ca8f46ea2b70dd5e14558a9"},
 ]
 
 [package.dependencies]
 markdown-it-py = ">=2.2.0"
 pygments = ">=2.13.0,<3.0.0"
-typing-extensions = {version = ">=4.0.0,<5.0", markers = "python_version < \"3.11\""}
 
 [package.extras]
 jupyter = ["ipywidgets (>=7.5.1,<9)"]
@@ -4091,14 +4089,14 @@ scipy = ["scipy (>=1.17.1,<1.18)"]
 
 [[package]]
 name = "scse-toolkit"
-version = "1.1.0.dev1"
+version = "1.0.4"
 description = ""
 optional = false
-python-versions = ">=3.10,<4.0"
+python-versions = "<4.0,>=3.10"
 groups = ["main"]
 files = [
-    {file = "scse_toolkit-1.1.0.dev1-py3-none-any.whl", hash = "sha256:1be631f7250bb901c8fb437cc6c3432bbc391304163f0d18cc7d4975104088d0"},
-    {file = "scse_toolkit-1.1.0.dev1.tar.gz", hash = "sha256:e3a3653000f1ba87a47e8db01f38d22fe5a298d1dff79bf9c091be46cfb60999"},
+    {file = "scse_toolkit-1.0.4-py3-none-any.whl", hash = "sha256:fae4f6c395db3e72a434926348106ca2339d84ec9fa17b5a14378e83ddcb3f29"},
+    {file = "scse_toolkit-1.0.4.tar.gz", hash = "sha256:ec7ff88400f519988c8bf6ce6aff116b515914e50c7d3cd93d35dce4cfced159"},
 ]
 
 [package.dependencies]
@@ -4110,15 +4108,10 @@ polars = ">=1.7.1,<2.0.0"
 pydantic = ">=2.8.2,<3.0.0"
 pydantic-settings = ">=2.4.0,<3.0.0"
 pyjwt = ">=2.9.0,<3.0.0"
-rich = ">=13.8.0,<14.0.0"
+rich = ">=13.8.0,<15"
 sqlalchemy = ">=2.0.32,<3.0.0"
 typer = ">=0.0.0,<1.0.0"
 typing-extensions = ">=4.15.0,<5.0.0"
-
-[package.source]
-type = "legacy"
-url = "https://test.pypi.org/simple"
-reference = "testpypi"
 
 [[package]]
 name = "setuptools"
@@ -4248,7 +4241,7 @@ description = "Python documentation generator"
 optional = false
 python-versions = ">=3.11"
 groups = ["docs"]
-markers = "python_version >= \"3.11\" and python_version < \"3.14\""
+markers = "python_version == \"3.11\""
 files = [
     {file = "sphinx-9.0.4-py3-none-any.whl", hash = "sha256:5bebc595a5e943ea248b99c13814c1c5e10b3ece718976824ffa7959ff95fffb"},
     {file = "sphinx-9.0.4.tar.gz", hash = "sha256:594ef59d042972abbc581d8baa577404abe4e6c3b04ef61bd7fc2acbd51f3fa3"},
@@ -4280,7 +4273,7 @@ description = "Python documentation generator"
 optional = false
 python-versions = ">=3.12"
 groups = ["docs"]
-markers = "python_version == \"3.14\""
+markers = "python_version >= \"3.12\""
 files = [
     {file = "sphinx-9.1.0-py3-none-any.whl", hash = "sha256:c84fdd4e782504495fe4f2c0b3413d6c2bf388589bb352d439b2a3bb99991978"},
     {file = "sphinx-9.1.0.tar.gz", hash = "sha256:7741722357dd75f8190766926071fed3bdc211c74dd2d7d4df5404da95930ddb"},
@@ -4709,25 +4702,26 @@ tests = ["cython", "littleutils", "pygments", "pytest", "typeguard"]
 
 [[package]]
 name = "textual"
-version = "6.2.1"
+version = "8.2.4"
 description = "Modern Text User Interface framework"
 optional = false
-python-versions = "<4.0.0,>=3.8.1"
+python-versions = "<4.0,>=3.9"
 groups = ["dev"]
 files = [
-    {file = "textual-6.2.1-py3-none-any.whl", hash = "sha256:3c7190633cd4d8bfe6049ae66808b98da91ded2edb85cef54e82bf77b03d2a54"},
-    {file = "textual-6.2.1.tar.gz", hash = "sha256:4699d8dfae43503b9c417bd2a6fb0da1c89e323fe91c4baa012f9298acaa83e1"},
+    {file = "textual-8.2.4-py3-none-any.whl", hash = "sha256:a83bd3f0cc7125ca203845af753f9d6b6be030025ecd1b05cc75ebe645b9c4ba"},
+    {file = "textual-8.2.4.tar.gz", hash = "sha256:d4e2b2ddd7157191d00b228592b7c739ea080b7d792fd410f23ca75f05ea76c4"},
 ]
 
 [package.dependencies]
-markdown-it-py = {version = ">=2.1.0", extras = ["linkify", "plugins"]}
+markdown-it-py = {version = ">=2.1.0", extras = ["linkify"]}
+mdit-py-plugins = "*"
 platformdirs = ">=3.6.0,<5"
 pygments = ">=2.19.2,<3.0.0"
-rich = ">=13.3.3"
+rich = ">=14.2.0"
 typing-extensions = ">=4.4.0,<5.0.0"
 
 [package.extras]
-syntax = ["tree-sitter (>=0.25.0) ; python_version >= \"3.10\"", "tree-sitter-bash (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-css (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-go (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-html (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-java (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-javascript (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-json (>=0.24.0) ; python_version >= \"3.10\"", "tree-sitter-markdown (>=0.3.0) ; python_version >= \"3.10\"", "tree-sitter-python (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-regex (>=0.24.0) ; python_version >= \"3.10\"", "tree-sitter-rust (>=0.23.0,<=0.23.2) ; python_version >= \"3.10\"", "tree-sitter-sql (>=0.3.0,<0.3.8) ; python_version >= \"3.10\"", "tree-sitter-toml (>=0.6.0) ; python_version >= \"3.10\"", "tree-sitter-xml (>=0.7.0) ; python_version >= \"3.10\"", "tree-sitter-yaml (>=0.6.0) ; python_version >= \"3.10\""]
+syntax = ["tree-sitter (>=0.25.0) ; python_version >= \"3.10\"", "tree-sitter-bash (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-css (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-go (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-html (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-java (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-javascript (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-json (>=0.24.0) ; python_version >= \"3.10\"", "tree-sitter-markdown (>=0.3.0) ; python_version >= \"3.10\"", "tree-sitter-python (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-regex (>=0.24.0) ; python_version >= \"3.10\"", "tree-sitter-rust (>=0.23.0) ; python_version >= \"3.10\"", "tree-sitter-sql (>=0.3.11) ; python_version >= \"3.10\"", "tree-sitter-toml (>=0.6.0) ; python_version >= \"3.10\"", "tree-sitter-xml (>=0.7.0) ; python_version >= \"3.10\"", "tree-sitter-yaml (>=0.6.0) ; python_version >= \"3.10\""]
 
 [[package]]
 name = "toml"
@@ -4919,7 +4913,7 @@ files = [
     {file = "typing_extensions-4.15.0-py3-none-any.whl", hash = "sha256:f0fa19c6845758ab08074a0cfa8b7aecb71c999ca73d62883bc25cc018c4e548"},
     {file = "typing_extensions-4.15.0.tar.gz", hash = "sha256:0cea48d173cc12fa28ecabc3b837ea3cf6f38c6d1136f85cbaaf598984861466"},
 ]
-markers = {docs = "python_version < \"3.13\"", server = "python_version < \"3.13\"", tutorial = "python_version < \"3.12\""}
+markers = {docs = "python_version <= \"3.12\"", server = "python_version <= \"3.12\"", tutorial = "python_version < \"3.12\""}
 
 [[package]]
 name = "typing-inspect"
@@ -5338,4 +5332,4 @@ type = ["pytest-mypy"]
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.10, <3.15"
-content-hash = "9a34be1c85c2e8b68ad7614e278fdb1dae8407c50254bce583c25dcdedfc4cc9"
+content-hash = "8726458437e9156051cbe3ed96b589372eb393493e6b68c05e0f233453490fa8"
