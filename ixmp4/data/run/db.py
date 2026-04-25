@@ -21,20 +21,14 @@ class Run(BaseModel, HasUpdateInfo):
         sa.ForeignKey("model.id"), nullable=False, index=True
     )
     model: Mapped[Model] = orm.relationship(
-        "Model",
-        backref="run",
-        foreign_keys=[model__id],
+        "Model", backref="run", foreign_keys=[model__id], lazy="joined"
     )
 
     scenario__id: Integer = orm.mapped_column(
-        sa.ForeignKey("scenario.id"),
-        nullable=False,
-        index=True,
+        sa.ForeignKey("scenario.id"), nullable=False, index=True
     )
     scenario: Mapped[Scenario] = orm.relationship(
-        "Scenario",
-        backref="run",
-        foreign_keys=[scenario__id],
+        "Scenario", backref="run", foreign_keys=[scenario__id], lazy="joined"
     )
     timeseries: Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
 

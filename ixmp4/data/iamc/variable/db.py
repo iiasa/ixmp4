@@ -10,6 +10,7 @@ from ixmp4.data.base.db import BaseModel, HasCreationInfo
 from ixmp4.data.docs.db import docs_model
 
 if TYPE_CHECKING:
+    from ixmp4.data.iamc.measurand.db import Measurand
     from ixmp4.data.iamc.timeseries.db import TimeSeries
 
 
@@ -17,6 +18,14 @@ class Variable(BaseModel, HasCreationInfo):
     __tablename__ = "iamc_variable"
 
     name: String = orm.mapped_column(sa.String(255), nullable=False, unique=True)
+
+    @declared_attr
+    def measurands(cls) -> orm.Relationship["Measurand"]:
+        return orm.relationship(
+            "ixmp4.data.iamc.measurand.db.Measurand",
+            foreign_keys="Measurand.variable__id",
+            viewonly=True,
+        )
 
     @declared_attr
     def timeseries(cls) -> orm.Relationship["TimeSeries"]:

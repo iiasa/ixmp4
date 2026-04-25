@@ -91,6 +91,7 @@ class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]
             summary=procedure.func.__name__,
             description=procedure.func.__doc__,
             operation_class=self.get_openapi_operation_class(),
+            sync_to_thread=True,
         )
         self.name = ".".join(
             [service_class.__module__, service_class.__name__, procedure.func.__name__]
@@ -176,7 +177,7 @@ class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]
 
         return responses
 
-    async def handle_request(
+    def handle_request(
         self,
         request: Request[Any, Any, Any],
         service: Any,

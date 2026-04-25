@@ -29,14 +29,20 @@ def filter_by_iamc(
     schema: type[Any],
     repo: BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
+    scen_ids_with_timeseries = (
+        sa.select(Run.scenario__id)
+        .where(Run.id.in_(sa.select(TimeSeries.run__id).distinct()))
+        .distinct()
+    )
+
     if value is True:
-        return exc.where(Scenario.runs.any(Run.timeseries.any()))
+        return exc.where(Scenario.id.in_(scen_ids_with_timeseries))
     elif value is False:
-        return exc.where(~Scenario.runs.any(Run.timeseries.any()))
+        return exc.where(~Scenario.id.in_(scen_ids_with_timeseries))
     elif value is None:
         return exc
     else:
-        return exc.where(Scenario.runs.any(Run.timeseries.any()))
+        return exc.where(Scenario.id.in_(scen_ids_with_timeseries))
 
 
 class ScenarioFilter(base.ScenarioFilter, total=False):

@@ -29,14 +29,20 @@ def filter_by_iamc(
     schema: type[Any],
     repo: BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
+    model_ids_with_timeseries = (
+        sa.select(Run.model__id)
+        .where(Run.id.in_(sa.select(TimeSeries.run__id).distinct()))
+        .distinct()
+    )
+
     if value is True:
-        return exc.where(Model.runs.any(Run.timeseries.any()))
+        return exc.where(Model.id.in_(model_ids_with_timeseries))
     elif value is False:
-        return exc.where(~Model.runs.any(Run.timeseries.any()))
+        return exc.where(~Model.id.in_(model_ids_with_timeseries))
     elif value is None:
         return exc
     else:
-        return exc.where(Model.runs.any(Run.timeseries.any()))
+        return exc.where(Model.id.in_(model_ids_with_timeseries))
 
 
 class ModelFilter(base.ModelFilter, total=False):
