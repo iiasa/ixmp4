@@ -186,4 +186,3 @@ exclude_also = [
 enable = true
 style = "pep440"
 vcs = "git"
-vcs = "git"
