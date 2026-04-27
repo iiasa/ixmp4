@@ -39,15 +39,17 @@ class EnumerationCompatibilityController(ServiceController[Any]):
         path="/",
         summary="query",
         deprecated=True,
+        sync_to_thread=True,
         description=(
             "This endpoint is deprecated, use the 'list' and 'tabulate' "
             "endpoints instead"
         ),
     )
-    async def query(
+    def query(
         self,
         service: Any,
         request: Request[Any, Any, Any],
+        body: bytes,
         table: bool = False,
     ) -> GenericPaginatedResult:
         """Compatibility endpoint for a deprecated enumeration method."""
@@ -64,7 +66,7 @@ class EnumerationCompatibilityController(ServiceController[Any]):
         args, kwargs = handler.build_call_args(
             request.path_params,
             query_params,
-            self._get_compat_payload(query_params, await request.body()),
+            self._get_compat_payload(query_params, body),
         )
 
         return cast(

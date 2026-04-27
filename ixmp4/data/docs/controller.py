@@ -30,8 +30,13 @@ class DocsCompatibilityController(ServiceController[Any]):
     }
     tags = ["docs"]
 
-    @get(path="/models/", description="Use /models/docs/ instead.", deprecated=True)
-    async def list_model_docs(
+    @get(
+        path="/models/",
+        description="Use /models/docs/ instead.",
+        deprecated=True,
+        sync_to_thread=True,
+    )
+    def list_model_docs(
         self,
         backend: Backend,
         pagination: Pagination,
@@ -39,8 +44,13 @@ class DocsCompatibilityController(ServiceController[Any]):
     ) -> PaginatedResult[list[Docs]]:
         return backend.models.paginated_list_docs(pagination, **docs_params)
 
-    @get(path="/regions/", description="Use /regions/docs/ instead.", deprecated=True)
-    async def list_region_docs(
+    @get(
+        path="/regions/",
+        description="Use /regions/docs/ instead.",
+        deprecated=True,
+        sync_to_thread=True,
+    )
+    def list_region_docs(
         self,
         backend: Backend,
         pagination: Pagination,
@@ -49,9 +59,12 @@ class DocsCompatibilityController(ServiceController[Any]):
         return backend.regions.paginated_list_docs(pagination, **docs_params)
 
     @get(
-        path="/scenarios/", description="Use /scenarios/docs/ instead.", deprecated=True
+        path="/scenarios/",
+        description="Use /scenarios/docs/ instead.",
+        deprecated=True,
+        sync_to_thread=True,
     )
-    async def list_scenario_docs(
+    def list_scenario_docs(
         self,
         backend: Backend,
         pagination: Pagination,
@@ -59,8 +72,13 @@ class DocsCompatibilityController(ServiceController[Any]):
     ) -> PaginatedResult[list[Docs]]:
         return backend.scenarios.paginated_list_docs(pagination, **docs_params)
 
-    @get(path="/units/", description="Use /units/docs/ instead.", deprecated=True)
-    async def list_unit_docs(
+    @get(
+        path="/units/",
+        description="Use /units/docs/ instead.",
+        deprecated=True,
+        sync_to_thread=True,
+    )
+    def list_unit_docs(
         self,
         backend: Backend,
         pagination: Pagination,
@@ -72,8 +90,9 @@ class DocsCompatibilityController(ServiceController[Any]):
         path="/iamc/variables/",
         description="Use /iamc/variables/docs/ instead.",
         deprecated=True,
+        sync_to_thread=True,
     )
-    async def list_iamc_variable_docs(
+    def list_iamc_variable_docs(
         self,
         backend: Backend,
         pagination: Pagination,
