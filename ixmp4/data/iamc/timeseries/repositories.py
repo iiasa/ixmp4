@@ -30,6 +30,8 @@ class TimeSeriesAuthRepository(AuthRepository[TimeSeries | TimeSeriesVersion]):
         platform: PlatformProtocol,
     ) -> sa.Select[Any] | sa.Update | sa.Delete:
         run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
         return exc.where(TimeSeries.run__id.in_(run_exc))
 
     def list_model_names(self, ts_ids: Sequence[int]) -> Sequence[str]:

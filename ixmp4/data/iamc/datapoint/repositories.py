@@ -30,6 +30,8 @@ class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
         platform: PlatformProtocol,
     ) -> sa.Select[Any] | sa.Update | sa.Delete:
         ts_exc = self.select_permitted_ts_ids(auth_ctx, platform)
+        if ts_exc is None:
+            return exc
         return exc.where(DataPoint.time_series__id.in_(ts_exc))
 
 

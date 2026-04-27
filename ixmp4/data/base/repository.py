@@ -48,21 +48,23 @@ class AuthRepository(BaseRepository[TargetT]):
     def _has_unrestricted_access(
         auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> bool:
-        """Return True when all permission LIKE patterns are the wildcard ``%``.
-        When every pattern is ``%`` the auth queries become unnecessary seqscans.
+        """Return True when any permission LIKE pattern is the wildcard ``%``.
+        A single ``%`` entry makes the entire ``OR`` expression always true,
+        so all auth-generated subqueries become unnecessary seqscans.
         """
         if auth_ctx.has_management_permission(platform):
             return True
         perms = auth_ctx.tabulate_permissions(platform)
         if perms.is_empty():
             return False
-        return all(like == "%" for like in perms["like"].to_list())
+        return any(like == "%" for like in perms["like"].to_list())
 
     def _model_permission_clause(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
     ) -> sa.ColumnElement[bool] | None:
-        """Return a boolean clause for model-level permission, or None for
-        unrestricted access."""
+        """Return a boolean clause for model-level permission, or ``None`` when
+        access is unrestricted (management permission or any wildcard ``%``
+        pattern, since ``OR(… LIKE '%')`` is always true)."""
         if auth_ctx.has_management_permission(platform):
             return None
 
@@ -70,43 +72,48 @@ class AuthRepository(BaseRepository[TargetT]):
         if perms.is_empty():
             return sa.false()
 
-        like_conds = [
-            Model.name.like(name_like) for name_like in perms["like"].to_list()
-        ]
+        like_list = perms["like"].to_list()
+        if any(like == "%" for like in like_list):
+            return None
+
+        like_conds = [Model.name.like(name_like) for name_like in like_list]
         return sa.or_(*like_conds)
 
     def select_permitted_model_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]]:
-        exc = sa.select(Model.id)
+    ) -> sa.Select[tuple[int]] | None:
+        """Return a subquery of allowed model IDs, or ``None`` when access is
+        unrestricted (caller should omit the filter entirely)."""
         clause = self._model_permission_clause(auth_ctx, platform)
-        if clause is not None:
-            exc = exc.where(clause)
-        return exc
+        if clause is None:
+            return None
+        return sa.select(Model.id).where(clause)
 
     def select_permitted_run_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]]:
-        """Flat subquery: ``SELECT run.id FROM run JOIN model … WHERE …``."""
-        exc = sa.select(Run.id).select_from(Run).join(Run.model)
+    ) -> sa.Select[tuple[int]] | None:
+        """Return a flat subquery ``SELECT run.id FROM run JOIN model WHERE …``,
+        or ``None`` when access is unrestricted (caller should omit the filter)."""
         clause = self._model_permission_clause(auth_ctx, platform)
-        if clause is not None:
-            exc = exc.where(clause)
-        return exc
+        if clause is None:
+            return None
+        return sa.select(Run.id).select_from(Run).join(Run.model).where(clause)
 
     def select_permitted_ts_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]]:
-        exc = (
+    ) -> sa.Select[tuple[int]] | None:
+        """Return a subquery of allowed time-series IDs, or ``None`` when access
+        is unrestricted (caller should omit the filter)."""
+        clause = self._model_permission_clause(auth_ctx, platform)
+        if clause is None:
+            return None
+        return (
             sa.select(TimeSeries.id)
             .select_from(TimeSeries)
             .join(TimeSeries.run)
             .join(Run.model)
+            .where(clause)
         )
-        clause = self._model_permission_clause(auth_ctx, platform)
-        if clause is not None:
-            exc = exc.where(clause)
-        return exc
 
     @overload
     def where_authorized(

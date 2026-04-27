@@ -25,6 +25,8 @@ class RunAuthRepository(AuthRepository[Run | RunVersion]):
         platform: PlatformProtocol,
     ) -> sa.Select[Any] | sa.Update | sa.Delete:
         model_exc = self.select_permitted_model_ids(auth_ctx, platform)
+        if model_exc is None:
+            return exc
         return exc.where(Run.model__id.in_(model_exc))
 
     def list_model_names(self, run_ids: Sequence[int]) -> Sequence[str]:

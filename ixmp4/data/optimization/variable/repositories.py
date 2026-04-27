@@ -32,6 +32,8 @@ class VariableAuthRepository(
         platform: PlatformProtocol,
     ) -> sa.Select[Any] | sa.Update | sa.Delete:
         run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
         return exc.where(Variable.run__id.in_(run_exc))
 
 

@@ -26,6 +26,7 @@ class Measurand(BaseModel, HasCreationInfo):
     def variable(cls) -> orm.Relationship["Variable"]:
         return orm.relationship(
             "ixmp4.data.iamc.variable.db.Variable",
+            backref="measurands",
             foreign_keys="Measurand.variable__id",
             lazy="select",
         )
