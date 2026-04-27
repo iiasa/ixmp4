@@ -24,14 +24,14 @@ def filter_by_iamc(
     schema: type[Any],
     repo: BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
-    if value is True:
+    if value is True or value == {}:
         return exc.where(Unit.timeseries.any())
     elif value is False:
         return exc.where(~Unit.timeseries.any())
     elif value is None:
         return exc
     else:
-        return exc.where(Unit.timeseries.any())
+        return exc
 
 
 class UnitFilter(base.UnitFilter, total=False):

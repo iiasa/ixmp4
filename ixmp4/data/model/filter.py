@@ -35,14 +35,14 @@ def filter_by_iamc(
         .distinct()
     )
 
-    if value is True:
+    if value is True or value == {}:
         return exc.where(Model.id.in_(model_ids_with_timeseries))
     elif value is False:
         return exc.where(~Model.id.in_(model_ids_with_timeseries))
     elif value is None:
         return exc
     else:
-        return exc.where(Model.id.in_(model_ids_with_timeseries))
+        return exc
 
 
 class ModelFilter(base.ModelFilter, total=False):

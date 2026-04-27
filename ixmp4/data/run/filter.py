@@ -29,14 +29,14 @@ def filter_by_iamc(
     repo: BaseRepository[Any],
 ) -> sa.Select[Any] | sa.Update | sa.Delete:
     run_ids_with_timeseries = sa.select(sa.distinct(TimeSeries.run__id))
-    if value is True:
+    if value is True or value == {}:
         return exc.where(Run.id.in_(run_ids_with_timeseries))
     elif value is False:
         return exc.where(Run.id.notin_(run_ids_with_timeseries))
     elif value is None:
         return exc
     else:
-        return exc.where(Run.id.in_(run_ids_with_timeseries))
+        return exc
 
 
 class RunFilter(base.RunFilter, total=False):
