@@ -37,6 +37,10 @@ class CheckpointFilter(IdFilter, RunIdFilter, TransactionIdFilter, total=False):
 class KeyFilter(TypedDict, total=False):
     key: str
     key__in: list[str]
+    key__like: str
+    key__ilike: str
+    key__notlike: str
+    key__notilike: str
 
 
 class DtypeFilter(TypedDict, total=False):
