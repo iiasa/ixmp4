@@ -1,12 +1,13 @@
 """This module only contains benchmarks, no assertions are made to validate the
 results."""
 
-from typing import cast
+from typing import Any, cast
 
 import pandas as pd
 import pytest
 
 import ixmp4
+from ixmp4.core.exceptions import InvalidArguments
 from tests import backends
 from tests.fixtures import get_csv_data
 
@@ -265,3 +266,13 @@ class TestFilters:
             step_year__gte=2000, run={"default_only": False}
         )
         assert len(df_year_gte) == 46
+
+    def test_invalid_filters_raise(self, platform: ixmp4.Platform) -> None:
+        with pytest.raises(InvalidArguments):
+            platform.iamc.tabulate(**cast(dict[str, Any], {"bogus": 1}))
+
+        with pytest.raises(InvalidArguments):
+            platform.iamc.tabulate(**cast(dict[str, Any], {"run": {"bogus": 1}}))
+
+        with pytest.raises(InvalidArguments):
+            platform.iamc.tabulate(**cast(dict[str, Any], {"region": {"bogus": "x"}}))
