@@ -148,6 +148,10 @@ class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]
             self.get_model_name("PathParams"),
             __module__=self.procedure.func.__module__,
             parameter_callback=callback,
+            # path fields are validated by the web framework,
+            # we can ignore them here since they might remain
+            # in the request object beyond where they are needed
+            extra="ignore",
         )
 
     def get_model_name(self, suffix: str) -> str:
@@ -245,9 +249,10 @@ def generate_arguments_model(
     __module__: str,
     parameter_callback: Callable[[int, str, inspect.Parameter], Literal["skip"] | None],
     varargs_key: str = "__varargs__",
+    extra: str = "forbid",
 ) -> type[pyd.BaseModel]:
     fields: dict[str, Any] = {}
-    model_config = pyd.ConfigDict(arbitrary_types_allowed=True)
+    model_config = pyd.ConfigDict(arbitrary_types_allowed=True, extra=extra)
 
     for index, (name, param) in enumerate(signature.parameters.items()):
         if parameter_callback(index, name, param) == "skip":
