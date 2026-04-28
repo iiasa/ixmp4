@@ -9,6 +9,7 @@ from toolkit.db.repositories.base import Values
 from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
+from ixmp4.data.iamc.measurand.db import Measurand
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.iamc.variable.db import Variable
 from ixmp4.data.model.db import Model
@@ -48,8 +49,13 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
             ),
             "version": ((DataPoint.timeseries, TimeSeries.run), Run.version),
             "region": ((DataPoint.timeseries, TimeSeries.region), Region.name),
-            "variable": ((DataPoint.timeseries, TimeSeries.variable), Variable.name),
-            "unit": ((DataPoint.timeseries, TimeSeries.unit), Unit.name),
+            # Route both variable and unit through TimeSeries.measurand so SQL
+            # uses a single measurand join instead of duplicated aliased joins.
+            "variable": (
+                (DataPoint.timeseries, TimeSeries.measurand, Measurand.variable),
+                Variable.name,
+            ),
+            "unit": ((DataPoint.timeseries, TimeSeries.measurand, Measurand.unit), Unit.name),
             "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
