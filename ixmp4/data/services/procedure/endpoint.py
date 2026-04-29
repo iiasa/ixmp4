@@ -249,7 +249,7 @@ def generate_arguments_model(
     __module__: str,
     parameter_callback: Callable[[int, str, inspect.Parameter], Literal["skip"] | None],
     varargs_key: str = "__varargs__",
-    extra: str = "forbid",
+    extra: Literal["forbid", "ignore", "allow"] = "forbid",
 ) -> type[pyd.BaseModel]:
     fields: dict[str, Any] = {}
     model_config = pyd.ConfigDict(arbitrary_types_allowed=True, extra=extra)
