@@ -26,7 +26,7 @@ class DocsCompatibilityController(ServiceController[Any]):
     path = "/docs/"
     dependencies = {
         "docs_params": Provide(get_docs_params),
-        **ServiceController.dependencies,
+        **(ServiceController.dependencies or {}),
     }
     tags = ["docs"]
 
