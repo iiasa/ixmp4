@@ -593,7 +593,6 @@ class TestBenchmarks(BenchmarkDataMixin):
                 )
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
-        print(len(result))
         assert len(result)
 
 
