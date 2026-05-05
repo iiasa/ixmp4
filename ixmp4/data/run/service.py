@@ -320,17 +320,22 @@ class RunService(GetByIdService):
             pagination=pagination,
         )
 
-    def get_columns(self, *, include_audit_info: bool) -> List[str]:
+    def get_columns(
+        self, *, include_audit_info: bool, include_internal_columns: bool
+    ) -> List[str]:
         columns = [
             "id",
             "model",
             "scenario",
-            "model__id",
-            "scenario__id",
             "version",
-            "lock_transaction",
             "is_default",
         ]
+        if include_internal_columns:
+            columns += [
+                "model__id",
+                "scenario__id",
+                "lock_transaction",
+            ]
         if include_audit_info:
             columns += [
                 "created_by",
@@ -342,7 +347,10 @@ class RunService(GetByIdService):
 
     @procedure(Http(methods=("PATCH",)))
     def tabulate(
-        self, include_audit_info: bool = False, **kwargs: Unpack[RunFilter]
+        self,
+        include_audit_info: bool = False,
+        include_internal_columns: bool = False,
+        **kwargs: Unpack[RunFilter],
     ) -> SerializableDataFrame:
         r"""Tabulate runs by specified criteria.
 
@@ -350,6 +358,10 @@ class RunService(GetByIdService):
         ----------
         include_audit_info: bool
             Whether or not to include audit info columns in the data frame.
+            Default: ``False``
+        include_internal_columns: bool
+            Whether or not to include internal database columns
+            (``model__id``, ``scenario__id``, ``lock_transaction``).
             Default: ``False``
         \*\*kwargs: any
             Any filter parameters as specified in
@@ -362,11 +374,12 @@ class RunService(GetByIdService):
                 - id
                 - model
                 - scenario
+                - version
+                - is_default
+            and if ``include_internal_columns`` is ``True``:
                 - model__id
                 - scenario__id
-                - version
                 - lock_transaction
-                - is_default
             and if ``include_audit_info`` is ``True``:
                 - created_by
                 - created_at
@@ -376,7 +389,10 @@ class RunService(GetByIdService):
         """
         return self.pandas.tabulate(
             values=self.apply_filter_defaults(kwargs),
-            columns=self.get_columns(include_audit_info=include_audit_info),
+            columns=self.get_columns(
+                include_audit_info=include_audit_info,
+                include_internal_columns=include_internal_columns,
+            ),
         )
 
     @tabulate.auth_check()
@@ -390,6 +406,7 @@ class RunService(GetByIdService):
         self,
         pagination: Pagination,
         include_audit_info: bool = False,
+        include_internal_columns: bool = False,
         **kwargs: Unpack[RunFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
@@ -397,7 +414,10 @@ class RunService(GetByIdService):
                 values=self.apply_filter_defaults(kwargs),
                 limit=pagination.limit,
                 offset=pagination.offset,
-                columns=self.get_columns(include_audit_info=include_audit_info),
+                columns=self.get_columns(
+                    include_audit_info=include_audit_info,
+                    include_internal_columns=include_internal_columns,
+                ),
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,

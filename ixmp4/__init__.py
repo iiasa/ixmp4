@@ -1,8 +1,3 @@
-# from ixmp4.core import IndexSet as IndexSet
-# from ixmp4.core import Parameter as Parameter
-# from ixmp4.core import Scalar as Scalar
-# from ixmp4.core import Table as Table
-# from ixmp4.core import Variable as Variable
 from ixmp4.core.exceptions import InconsistentIamcType as InconsistentIamcType
 from ixmp4.core.exceptions import Ixmp4Error as Ixmp4Error
 from ixmp4.core.exceptions import NotFound as NotFound

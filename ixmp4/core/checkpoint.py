@@ -50,11 +50,18 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
     def create(self, message: str) -> Checkpoint:
         """Creates a checkpoint for this run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.checkpoints.create("My message")
             #> <Checkpoint 1 message='My message'>
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self.run.require_lock()
         return self._service.create(run__id=self.run.id, message=message)

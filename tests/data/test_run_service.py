@@ -330,9 +330,11 @@ class TestRunTabulate(RunServiceTest):
             ],
         )
 
-        runs = service.tabulate(include_audit_info=True, default_only=False).drop(
-            columns=["model__id", "scenario__id"]
-        )
+        runs = service.tabulate(
+            include_audit_info=True,
+            include_internal_columns=True,
+            default_only=False,
+        ).drop(columns=["model__id", "scenario__id"])
         pdt.assert_frame_equal(expected_runs, runs, check_like=True)
 
 

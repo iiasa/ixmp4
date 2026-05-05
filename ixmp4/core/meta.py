@@ -85,13 +85,23 @@ class RunMetaDictFacade(
         return df, dict(zip(df["key"], df["value"]))
 
     def __setitem__(self, key: str, value: MetaValueType | np.generic | None) -> None:
-        """
+        """Set a metadata entry for this run.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
-            run.meta["key"] = -1.2
+            with run.transact("set meta"):
+                run.meta["key"] = -1.2
 
             run.meta["key"]
-            #> 'value'
+            #> -1.2
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self.run.require_lock()
 
@@ -106,13 +116,23 @@ class RunMetaDictFacade(
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
-        """
+        """Delete a metadata entry for this run.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
-            del run.meta["key"]
-            run.meta["key"]
-            #> `KeyError`
+            with run.transact("delete meta"):
+                del run.meta["key"]
 
+            run.meta["key"]
+            #> raises ``KeyError``
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self.run.require_lock()
         id = dict(zip(self.df["key"], self.df["id"]))[key]
@@ -153,13 +173,20 @@ class RunMetaDescriptor(object):
     def __set__(
         self, obj: "Run", value: dict[str, MetaValueType | np.generic | None]
     ) -> None:
-        """
-        Sets meta indicators for a run consistent with normal property syntax.
+        """Replace all meta indicators for a run.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
 
         .. code:: python
 
-            run.meta = {"key": "value"}
+            with run.transact("set meta"):
+                run.meta = {"key": "value"}
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         obj.require_lock()
         self._delete_existing(obj)

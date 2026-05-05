@@ -29,9 +29,16 @@ class NoDefaultRunVersion(BadRequest):
 
 @registry.register()
 class RunIsLocked(BadRequest):
-    message = "This run is already locked."
+    message = (
+        "This run is already locked by another transaction. "
+        "Use the `timeout` parameter on `run.transact()` to wait for the lock."
+    )
 
 
 @registry.register()
 class RunLockRequired(BadRequest):
+    message = (
+        "This operation requires an active run lock. "
+        "Use ``with run.transact('description'):`` to acquire one."
+    )
     http_error_name = "run_lock_required"

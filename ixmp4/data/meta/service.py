@@ -39,13 +39,14 @@ class RunMetaEntryService(Service):
         self.runs_pandas = RunPandasRepository(self.executor)
 
     @procedure(Http(path="/", methods=("POST",)))
-    def create(self, run__id: int, key: str, value: MetaValueType) -> RunMetaEntry:
+    def create(self, run_id: int, key: str, value: MetaValueType) -> RunMetaEntry:
         """Creates a metadata entry.
 
         Parameters
         ----------
-        run__id : int
-            The unique id of the run.
+        run_id : int
+            The id of the :class:`ixmp4.data.run.dto.Run` for which this entry is
+            defined.
         key : str
             The key (unique to this run) for which `value` is associated.
         value: MetaValueType
@@ -62,10 +63,10 @@ class RunMetaEntryService(Service):
         :class:`RunMetaEntry`:
             The created metadata entry.
         """
-        self.runs.get_by_pk({"id": run__id})
-        self.items.create(run__id, key, value)
+        self.runs.get_by_pk({"id": run_id})
+        self.items.create(run_id, key, value)
         return RunMetaEntry.model_validate(
-            self.items.get({"run__id": run__id, "key": key})
+            self.items.get({"run__id": run_id, "key": key})
         )
 
     @create.auth_check()
@@ -73,23 +74,24 @@ class RunMetaEntryService(Service):
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        run__id: int,
+        run_id: int,
         key: str,
         value: MetaValueType,
     ) -> None:
-        run = self.runs.get_by_pk({"id": run__id})
+        run = self.runs.get_by_pk({"id": run_id})
         auth_ctx.has_edit_permission(
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
     @procedure(Http(methods=("POST",)))
-    def get(self, run__id: int, key: str) -> RunMetaEntry:
+    def get(self, run_id: int, key: str) -> RunMetaEntry:
         """Retrieves a metadata entry by the run id and key.
 
         Parameters
         ----------
-        run__id : int
-            The unique id of the run.
+        run_id : int
+            The id of the :class:`ixmp4.data.run.dto.Run` for which this entry is
+            defined.
         key : str
             The key (unique to this run) for which `value` is to be retrieved.
 
@@ -104,7 +106,7 @@ class RunMetaEntryService(Service):
             The retrieved metadata entry.
         """
         return RunMetaEntry.model_validate(
-            self.items.get({"run__id": run__id, "key": key})
+            self.items.get({"run__id": run_id, "key": key})
         )
 
     @get.auth_check()
@@ -112,10 +114,10 @@ class RunMetaEntryService(Service):
         self,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-        run__id: int,
+        run_id: int,
         key: str,
     ) -> None:
-        run = self.runs.get_by_pk({"id": run__id})
+        run = self.runs.get_by_pk({"id": run_id})
         auth_ctx.has_view_permission(
             platform, models=[run.model.name], raise_exc=Forbidden
         )

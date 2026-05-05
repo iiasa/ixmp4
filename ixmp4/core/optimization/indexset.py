@@ -58,7 +58,16 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
     def add_data(
         self, data: float | int | str | list[float] | list[int] | list[str]
     ) -> None:
-        """Adds data to the IndexSet."""
+        """Adds data to the IndexSet.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.add_data(id=self._dto.id, data=data)
         self._refresh()
@@ -68,14 +77,32 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
     ) -> None:
         """Removes data from the IndexSet.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         self._service.remove_data(self._dto.id, data)
         self._refresh()
 
     def delete(self) -> None:
+        """Delete this IndexSet.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.delete_by_id(self._dto.id)
 
@@ -113,11 +140,18 @@ class IndexSetServiceFacade(
     def create(self, name: str) -> IndexSet:
         """Create a new index set for this run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.indexsets.create("Years")
             #> <IndexSet 1 name='Years'>
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         dto = self._service.create(self._run.id, name)
@@ -126,10 +160,17 @@ class IndexSetServiceFacade(
     def delete(self, x: IndexSet | int | str) -> None:
         """Delete an index set for the run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.indexsets.delete("Years")
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         id = self._get_item_id(x)

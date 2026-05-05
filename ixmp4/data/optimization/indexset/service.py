@@ -74,7 +74,7 @@ class IndexSetService(DocsService, GetByIdService):
         Parameters
         ----------
         run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this IndexSet is
+            The id of the :class:`ixmp4.data.run.dto.Run` for which this IndexSet is
             defined.
         name : str
             The name of the IndexSet.

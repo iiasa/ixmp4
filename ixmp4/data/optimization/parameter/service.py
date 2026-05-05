@@ -72,7 +72,7 @@ class ParameterService(DocsService, IndexSetAssociatedService):
         Parameters
         ----------
         run_id : int
-            The id of the :class:`ixmp4.data.abstract.Run` for which this Parameter is
+            The id of the :class:`ixmp4.data.run.dto.Run` for which this Parameter is
             defined.
         name : str
             The unique name of the Parameter.

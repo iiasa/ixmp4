@@ -67,7 +67,16 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
         return self._dto.created_by
 
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to the Table."""
+        """Adds data to the Table.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.add_data(id=self._dto.id, data=data)
         self._refresh()
@@ -75,14 +84,32 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
         """Removes data from the Table.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         self._service.remove_data(id=self._dto.id, data=data)
         self._refresh()
 
     def delete(self) -> None:
+        """Delete this Table.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.delete_by_id(self._dto.id)
 
@@ -125,11 +152,18 @@ class TableServiceFacade(
     ) -> Table:
         """Create a new table for this run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.tables.create("CostTable", ["region", "year"])
             #> <Table 1 name='CostTable'>
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         dto = self._service.create(
@@ -140,10 +174,17 @@ class TableServiceFacade(
     def delete(self, x: Table | int | str) -> None:
         """Delete a table for the run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.tables.delete("CostTable")
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         id = self._get_item_id(x)

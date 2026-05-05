@@ -77,7 +77,16 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
         return self._dto.created_by
 
     def add_data(self, data: dict[str, Any] | pd.DataFrame) -> None:
-        """Adds data to the variable."""
+        """Adds data to the Variable.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.add_data(id=self._dto.id, data=data)
         self._refresh()
@@ -85,20 +94,35 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
     def remove_data(self, data: dict[str, Any] | pd.DataFrame | None = None) -> None:
         """Removes data from the Variable.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         If `data` is `None` (the default), remove all data. Otherwise, data must specify
         all indexed columns. All other keys/columns are ignored.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         self._service.remove_data(id=self._dto.id, data=data)
         self._refresh()
 
     def delete(self) -> None:
-        """Delete this variable from the run.
+        """Delete this Variable from the run.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
 
         .. code:: python
 
             run.optimization.variables.delete("Production")
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         self._service.delete_by_id(self._dto.id)
@@ -142,11 +166,18 @@ class VariableServiceFacade(
     ) -> Variable:
         """Create a new optimization variable for the run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.variables.create("Production")
             #> <Variable 1 name='Production'>
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         dto = self._service.create(
@@ -157,10 +188,17 @@ class VariableServiceFacade(
     def delete(self, x: Variable | int | str) -> None:
         """Delete a variable from the run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.variables.delete("Production")
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         id = self._get_item_id(x)

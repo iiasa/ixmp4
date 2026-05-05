@@ -61,6 +61,15 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
 
     @value.setter
     def value(self, value: float) -> None:
+        """Set the scalar value.
+
+        Requires an active run lock — use ``with run.transact("message"):``.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.update_by_id(self._dto.id, value=value)
         self._dto.value = value
@@ -72,6 +81,15 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
 
     @unit.setter
     def unit(self, value: str | UnitDto) -> None:
+        """Set the scalar unit.
+
+        Requires an active run lock — use ``with run.transact("message"):``.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         if isinstance(value, str):
             unit = self.units.get_by_name(value)
@@ -90,12 +108,31 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     def update(
         self, value: int | float | None = None, unit_name: str | None = None
     ) -> None:
-        """Updates data on the Scalar."""
+        """Updates data on the Scalar.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.update_by_id(self._dto.id, value=value, unit_name=unit_name)
         self._refresh()
 
     def delete(self) -> None:
+        """Delete this Scalar.
+
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
+        """
         self._run.require_lock()
         self._service.delete_by_id(self._dto.id)
 
@@ -139,11 +176,18 @@ class ScalarServiceFacade(
     def create(self, name: str, value: float, unit: str | Unit | None = None) -> Scalar:
         """Create a scalar for the run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.scalars.create("discount", 0.05, unit="")
             #> <Scalar 1 name='discount'>
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         if isinstance(unit, Unit):
@@ -172,10 +216,17 @@ class ScalarServiceFacade(
     def delete(self, x: Scalar | int | str) -> None:
         """Delete a scalar for the run.
 
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
+
         .. code:: python
 
             run.optimization.scalars.delete("discount")
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
         self._run.require_lock()
         id = self._get_item_id(x)

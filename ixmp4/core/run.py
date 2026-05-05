@@ -290,10 +290,21 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             If the run is already locked and no timeout is provided
             or the provided timeout is exceeded.
         """
-        if timeout is None:
-            self._lock()
-        else:
-            self._lock_with_timeout(timeout)
+        try:
+            if timeout is None:
+                self._lock()
+            else:
+                self._lock_with_timeout(timeout)
+        except RunIsLocked as e:
+            if self.owns_lock:
+                raise RunIsLocked(
+                    message=(
+                        "Nested ``run.transact()`` calls are not supported. "
+                        "This run is already locked by the enclosing "
+                        "``transact()`` context manager on the same object."
+                    )
+                ) from e
+            raise
 
         try:
             yield
@@ -521,6 +532,7 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
     def tabulate(
         self,
         include_audit_info: bool = False,
+        include_internal_columns: bool = False,
         audit_info: bool | None = None,
         **kwargs: Unpack[RunFilter],
     ) -> pd.DataFrame:
@@ -537,6 +549,10 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
         include_audit_info: bool
             Whether or not to include audit info columns in the data frame.
             Default: False
+        include_internal_columns: bool
+            Whether or not to include internal database columns
+            (``model__id``, ``scenario__id``, ``lock_transaction``).
+            Default: False
         \*\*kwargs: any
             Any filter parameters as specified in
             `RunFilter`.
@@ -548,11 +564,12 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
                 - id
                 - model
                 - scenario
+                - version
+                - is_default
+            and if ``include_internal_columns`` is ``True``:
                 - model__id
                 - scenario__id
-                - version
                 - lock_transaction
-                - is_default
             and if ``include_audit_info`` is ``True``:
                 - created_by
                 - created_at
@@ -563,4 +580,8 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
         if audit_info is not None:
             include_audit_info = audit_info
 
-        return self._service.tabulate(include_audit_info=include_audit_info, **kwargs)
+        return self._service.tabulate(
+            include_audit_info=include_audit_info,
+            include_internal_columns=include_internal_columns,
+            **kwargs,
+        )

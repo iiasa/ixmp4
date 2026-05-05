@@ -75,12 +75,16 @@ class RunIamcData(BaseBackendFacade):
             }
         ).drop(columns=["id", "time_series__id"])
 
-    def add(self, df: pd.DataFrame, type: Type | None = None) -> None:
+    def add(self, df: pd.DataFrame, type: Type | str | None = None) -> None:
         """Adds IAMC data from a data frame to a run.
+
+        Requires an active run lock — use ``with run.transact("message"):`` to
+        acquire one before calling this method.
 
         .. code:: python
 
             import pandas as pd
+            from ixmp4.data.iamc.datapoint.type import Type
 
             input_df = pd.DataFrame({
                 "region": ["World"],
@@ -90,7 +94,10 @@ class RunIamcData(BaseBackendFacade):
                 "value": [36.5],
             })
 
-            run.iamc.add(input_df)
+            with run.transact("add emissions data"):
+                run.iamc.add(input_df, type=Type.ANNUAL)
+                # or equivalently:
+                run.iamc.add(input_df, type="ANNUAL")
 
         Parameters
         ----------
@@ -109,9 +116,16 @@ class RunIamcData(BaseBackendFacade):
             You may optionally supply the type column for mixed data points:
                 - type
 
-        type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
+        type: :class:`ixmp4.data.iamc.datapoint.type.Type` or str, optional
             Will be set as the type for all provided data points.
+            Accepted string values: ``"ANNUAL"``, ``"CATEGORICAL"``,
+            ``"DATETIME"`` (case-insensitive).
 
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.  Acquire one with
+            ``with run.transact("message"):``.
         """
 
         self._run.require_lock()
@@ -120,12 +134,17 @@ class RunIamcData(BaseBackendFacade):
         df = self._get_or_create_ts(df)
 
         if type is not None:
+            if isinstance(type, str):
+                type = Type[type.upper()]
             df["type"] = type
 
         self._backend.iamc.datapoints.bulk_upsert(df)
 
-    def remove(self, df: pd.DataFrame, type: Type | None = None) -> None:
-        """Removes IAMC data matchin a data frame from a run.
+    def remove(self, df: pd.DataFrame, type: Type | str | None = None) -> None:
+        """Removes IAMC data matching a data frame from a run.
+
+        Requires an active run lock — use ``with run.transact("message"):`` to
+        acquire one before calling this method.
 
         .. code:: python
 
@@ -138,7 +157,8 @@ class RunIamcData(BaseBackendFacade):
                 "year": [2020],
             })
 
-            run.iamc.remove(remove_df)
+            with run.transact("remove emissions data"):
+                run.iamc.remove(remove_df, type="ANNUAL")
 
         Parameters
         ----------
@@ -156,8 +176,16 @@ class RunIamcData(BaseBackendFacade):
             You may optionally supply the type column for mixed data points:
                 - type
 
-        type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
+        type: :class:`ixmp4.data.iamc.datapoint.type.Type` or str, optional
             Will be set as the type for all provided data points.
+            Accepted string values: ``"ANNUAL"``, ``"CATEGORICAL"``,
+            ``"DATETIME"`` (case-insensitive).
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.  Acquire one with
+            ``with run.transact("message"):``.
         """
         self._run.require_lock()
         df = self._rename_arg_cols(df)
@@ -165,6 +193,8 @@ class RunIamcData(BaseBackendFacade):
         # NOTE: This creates ts and deletes them right after
         df = self._get_or_create_ts(df)
         if type is not None:
+            if isinstance(type, str):
+                type = Type[type.upper()]
             df["type"] = type
 
         df = df.drop(columns=["unit", "variable", "region"])
