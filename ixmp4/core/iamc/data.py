@@ -115,7 +115,6 @@ class RunIamcData(BaseBackendFacade):
         """
 
         self._run.require_lock()
-        # df = AddDataPointFrameSchema.validate(df) TODO
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         df = self._get_or_create_ts(df)
@@ -160,12 +159,10 @@ class RunIamcData(BaseBackendFacade):
         type: :class:`ixmp4.data.iamc.datapoint.type.Type`, optional
             Will be set as the type for all provided data points.
         """
-
         self._run.require_lock()
-        # df = RemoveDataPointFrameSchema.validate(df) TODO
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
-        # TODO: This creates ts and deletes them right after
+        # NOTE: This creates ts and deletes them right after
         df = self._get_or_create_ts(df)
         if type is not None:
             df["type"] = type
