@@ -4,7 +4,7 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-from ixmp4.base_exceptions import InvalidDataFrame
+from ixmp4.base_exceptions import Forbidden, InvalidDataFrame
 from ixmp4.data.meta.dto import MetaValueType, RunMetaEntry
 from ixmp4.data.meta.exceptions import RunMetaEntryNotFound
 from ixmp4.data.meta.service import RunMetaEntryService
@@ -12,7 +12,7 @@ from ixmp4.data.meta.type import Type
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.transport import Transport
-from tests import backends
+from tests import auth, backends
 from tests.data.base import ServiceTest
 
 transport = backends.get_transport_fixture(scope="class")
@@ -284,3 +284,374 @@ class TestRunMetaEntryBulkOperations(RunMetaEntryServiceTest):
 
         with pytest.raises(InvalidDataFrame):
             service.bulk_delete(invalid_remove_data)
+
+
+class RunMetaEntryAuthTest(RunMetaEntryServiceTest):
+    @pytest.fixture(scope="class")
+    def runs(self, transport: Transport) -> RunService:
+        direct = self.get_unauthorized_direct_or_skip(transport)
+        return RunService(direct)
+
+    @pytest.fixture(scope="class")
+    def run(self, runs: RunService) -> Run:
+        run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run1(self, runs: RunService) -> Run:
+        run = runs.create("Model 1", "Scenario")
+        runs.set_as_default_version(run.id)
+        return run
+
+    @pytest.fixture(scope="class")
+    def run2(self, runs: RunService) -> Run:
+        run = runs.create("Model 2", "Scenario")
+        runs.set_as_default_version(run.id)
+        return run
+
+    @pytest.fixture(scope="class")
+    def test_df(self, run: Run) -> pd.DataFrame:
+        return pd.DataFrame(
+            [[run.id, "Meta", 1.0]], columns=["run__id", "key", "value"]
+        )
+
+    @pytest.fixture(scope="class")
+    def test_df1(self, run1: Run) -> pd.DataFrame:
+        return pd.DataFrame(
+            [[run1.id, "Meta 1", 2.0]], columns=["run__id", "key", "value"]
+        )
+
+    @pytest.fixture(scope="class")
+    def test_df2(self, run2: Run) -> pd.DataFrame:
+        return pd.DataFrame(
+            [[run2.id, "Meta 2", 3.0]], columns=["run__id", "key", "value"]
+        )
+
+
+class TestRunMetaEntryAuthSarahPrivate(
+    auth.SarahTest, auth.PrivatePlatformTest, RunMetaEntryAuthTest
+):
+    def test_meta_create(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.create(run.id, "Meta", 1.0)
+        assert meta.id == 1
+
+    def test_meta_get(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.get(run.id, "Meta")
+        assert meta.id == 1
+
+    def test_meta_list(self, service: RunMetaEntryService) -> None:
+        metas = service.list()
+        assert len(metas) == 1
+
+    def test_meta_tabulate(self, service: RunMetaEntryService) -> None:
+        metas = service.tabulate()
+        assert len(metas) == 1
+
+    def test_meta_bulk_upsert(
+        self, service: RunMetaEntryService, test_df: pd.DataFrame
+    ) -> None:
+        service.bulk_upsert(test_df)
+
+    def test_meta_bulk_delete(
+        self, service: RunMetaEntryService, test_df: pd.DataFrame
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        service.bulk_delete(delete_df)
+
+    def test_meta_delete_by_id(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.create(run.id, "Delete Meta", 4.0)
+        service.delete_by_id(meta.id)
+
+
+class TestRunMetaEntryAuthAlicePrivate(
+    auth.AliceTest, auth.PrivatePlatformTest, RunMetaEntryAuthTest
+):
+    def test_meta_create(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        run: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(run.id, "Meta", 1.0)
+
+        meta = unauthorized_service.create(run.id, "Meta", 1.0)
+        assert meta.id == 1
+
+    def test_meta_get(self, service: RunMetaEntryService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Meta")
+
+    def test_meta_list(self, service: RunMetaEntryService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_meta_tabulate(self, service: RunMetaEntryService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_meta_bulk_upsert(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df)
+
+        unauthorized_service.bulk_upsert(test_df)
+
+    def test_meta_bulk_delete(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df)
+
+        unauthorized_service.bulk_upsert(test_df)
+
+    def test_meta_delete_by_id(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        run: Run,
+    ) -> None:
+        meta = unauthorized_service.create(run.id, "Delete Meta", 4.0)
+        with pytest.raises(RunMetaEntryNotFound):
+            service.delete_by_id(meta.id)
+
+
+class TestRunMetaEntryAuthBobPrivate(
+    auth.BobTest, auth.PrivatePlatformTest, RunMetaEntryAuthTest
+):
+    def test_meta_create(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.create(run.id, "Meta", 1.0)
+        assert meta.id == 1
+
+    def test_meta_get(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.get(run.id, "Meta")
+        assert meta.id == 1
+
+    def test_meta_list(self, service: RunMetaEntryService) -> None:
+        metas = service.list()
+        assert len(metas) == 1
+
+    def test_meta_tabulate(self, service: RunMetaEntryService) -> None:
+        metas = service.tabulate()
+        assert len(metas) == 1
+
+    def test_meta_bulk_upsert(
+        self, service: RunMetaEntryService, test_df: pd.DataFrame
+    ) -> None:
+        service.bulk_upsert(test_df)
+
+    def test_meta_bulk_delete(
+        self, service: RunMetaEntryService, test_df: pd.DataFrame
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        service.bulk_delete(delete_df)
+
+    def test_meta_delete_by_id(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.create(run.id, "Delete Meta", 4.0)
+        service.delete_by_id(meta.id)
+
+
+class TestRunMetaEntryAuthCarinaPrivate(
+    auth.CarinaTest, auth.PrivatePlatformTest, RunMetaEntryAuthTest
+):
+    def test_meta_create(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(run.id, "Meta", 1.0)
+        meta = unauthorized_service.create(run.id, "Meta", 1.0)
+        assert meta.id == 1
+
+        meta1 = service.create(run1.id, "Meta 1", 2.0)
+        assert meta1.id == 2
+
+        with pytest.raises(Forbidden):
+            service.create(run2.id, "Meta 2", 3.0)
+        meta2 = unauthorized_service.create(run2.id, "Meta 2", 3.0)
+        assert meta2.id == 3
+
+    def test_meta_get(
+        self, service: RunMetaEntryService, run: Run, run1: Run, run2: Run
+    ) -> None:
+        meta = service.get(run.id, "Meta")
+        assert meta.id == 1
+
+        meta1 = service.get(run1.id, "Meta 1")
+        assert meta1.id == 2
+
+        with pytest.raises(RunMetaEntryNotFound):
+            service.get(run2.id, "Meta 2")
+
+    def test_meta_list(self, service: RunMetaEntryService) -> None:
+        metas = service.list(run={"default_only": False})
+        assert len(metas) == 2
+
+    def test_meta_tabulate(self, service: RunMetaEntryService) -> None:
+        metas = service.tabulate(run={"default_only": False})
+        assert len(metas) == 2
+
+    def test_meta_bulk_upsert(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        test_df: pd.DataFrame,
+        test_df1: pd.DataFrame,
+        test_df2: pd.DataFrame,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df)
+        unauthorized_service.bulk_upsert(test_df)
+
+        service.bulk_upsert(test_df1)
+
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df2)
+        unauthorized_service.bulk_upsert(test_df2)
+
+    def test_meta_bulk_delete(
+        self,
+        service: RunMetaEntryService,
+        test_df: pd.DataFrame,
+        test_df1: pd.DataFrame,
+        test_df2: pd.DataFrame,
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df)
+
+        delete_df1 = test_df1.drop(columns=["value"])
+        service.bulk_delete(delete_df1)
+
+        delete_df2 = test_df2.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df2)
+
+    def test_meta_delete_by_id(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        run: Run,
+        run1: Run,
+        run2: Run,
+    ) -> None:
+        meta = unauthorized_service.create(run.id, "Delete Meta", 4.0)
+        meta1 = service.create(run1.id, "Delete Meta 1", 5.0)
+        meta2 = unauthorized_service.create(run2.id, "Delete Meta 2", 6.0)
+
+        with pytest.raises(Forbidden):
+            service.delete_by_id(meta.id)
+
+        service.delete_by_id(meta1.id)
+
+        with pytest.raises(RunMetaEntryNotFound):
+            service.delete_by_id(meta2.id)
+
+
+class TestRunMetaEntryAuthNonePrivate(
+    auth.NoneTest, auth.PrivatePlatformTest, RunMetaEntryAuthTest
+):
+    def test_meta_create(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        run: Run,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.create(run.id, "Meta", 1.0)
+
+        meta = unauthorized_service.create(run.id, "Meta", 1.0)
+        assert meta.id == 1
+
+    def test_meta_get(self, service: RunMetaEntryService, run: Run) -> None:
+        with pytest.raises(Forbidden):
+            service.get(run.id, "Meta")
+
+    def test_meta_list(self, service: RunMetaEntryService) -> None:
+        with pytest.raises(Forbidden):
+            service.list()
+
+    def test_meta_tabulate(self, service: RunMetaEntryService) -> None:
+        with pytest.raises(Forbidden):
+            service.tabulate()
+
+    def test_meta_bulk_upsert(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        with pytest.raises(Forbidden):
+            service.bulk_upsert(test_df)
+
+        unauthorized_service.bulk_upsert(test_df)
+
+    def test_meta_bulk_delete(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        test_df: pd.DataFrame,
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        with pytest.raises(Forbidden):
+            service.bulk_delete(delete_df)
+
+        unauthorized_service.bulk_upsert(test_df)
+
+    def test_meta_delete_by_id(
+        self,
+        service: RunMetaEntryService,
+        unauthorized_service: RunMetaEntryService,
+        run: Run,
+    ) -> None:
+        meta = unauthorized_service.create(run.id, "Delete Meta", 4.0)
+        with pytest.raises(RunMetaEntryNotFound):
+            service.delete_by_id(meta.id)
+
+
+class TestRunMetaEntryAuthDaveGated(
+    auth.DaveTest, auth.GatedPlatformTest, RunMetaEntryAuthTest
+):
+    def test_meta_create(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.create(run.id, "Meta", 1.0)
+        assert meta.id == 1
+
+    def test_meta_get(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.get(run.id, "Meta")
+        assert meta.id == 1
+
+    def test_meta_list(self, service: RunMetaEntryService) -> None:
+        metas = service.list()
+        assert len(metas) == 1
+
+    def test_meta_tabulate(self, service: RunMetaEntryService) -> None:
+        metas = service.tabulate()
+        assert len(metas) == 1
+
+    def test_meta_bulk_upsert(
+        self, service: RunMetaEntryService, test_df: pd.DataFrame
+    ) -> None:
+        service.bulk_upsert(test_df)
+
+    def test_meta_bulk_delete(
+        self, service: RunMetaEntryService, test_df: pd.DataFrame
+    ) -> None:
+        delete_df = test_df.drop(columns=["value"])
+        service.bulk_delete(delete_df)
+
+    def test_meta_delete_by_id(self, service: RunMetaEntryService, run: Run) -> None:
+        meta = service.create(run.id, "Delete Meta", 4.0)
+        service.delete_by_id(meta.id)
