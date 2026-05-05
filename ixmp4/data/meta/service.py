@@ -44,7 +44,12 @@ class RunMetaEntryService(Service):
 
         Parameters
         ----------
-        TODO
+        run__id : int
+            The unique id of the run.
+        key : str
+            The key (unique to this run) for which `value` is associated.
+        value: MetaValueType
+            The value for this entry.
 
         Raises
         ------
@@ -83,7 +88,10 @@ class RunMetaEntryService(Service):
 
         Parameters
         ----------
-        TODO
+        run__id : int
+            The unique id of the run.
+        key : str
+            The key (unique to this run) for which `value` is to be retrieved.
 
         Raises
         ------

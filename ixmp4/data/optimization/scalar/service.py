@@ -110,7 +110,6 @@ class ScalarService(DocsService, GetByIdService):
         ----------
         run_id : int
             The unique name of the scalar.
-
         name : str
             The unique name of the scalar.
 
