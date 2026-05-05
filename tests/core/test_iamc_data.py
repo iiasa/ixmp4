@@ -350,3 +350,53 @@ class TestIamcDataRunLock(IamcDataAnnual, IamcTest):
 
         with pytest.raises(ixmp4.Run.LockRequired):
             run.iamc.remove(test_data_remove)
+
+
+class TestIamcDataStringType(IamcDataAnnual, IamcTest):
+    """Tests that ``type`` accepts plain strings (case-insensitive) in add/remove."""
+
+    def test_add_with_uppercase_string_type(
+        self,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        with run.transact("add uppercase"):
+            run.iamc.add(test_data_add, type="ANNUAL")
+        assert not run.iamc.tabulate().empty
+
+    def test_add_with_lowercase_string_type(
+        self,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        # Clear data from previous test first
+        with run.transact("clear"):
+            run.iamc.remove(test_data_add, type="ANNUAL")
+
+        with run.transact("add lowercase"):
+            run.iamc.add(test_data_add, type="annual")
+        assert not run.iamc.tabulate().empty
+
+    def test_remove_with_mixed_case_string_type(
+        self,
+        run: ixmp4.Run,
+        test_data_remove: pd.DataFrame,
+        test_data_remaining: pd.DataFrame,
+    ) -> None:
+        with run.transact("remove partial"):
+            run.iamc.remove(test_data_remove, type="Annual")
+        ret = run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(test_data_remaining),
+            self.canonical_sort(ret),
+            check_like=True,
+        )
+
+    def test_invalid_string_type_raises(
+        self,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        with pytest.raises(KeyError):
+            with run.transact("bad type"):
+                run.iamc.add(test_data_add, type="NOT_A_TYPE")

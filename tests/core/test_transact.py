@@ -82,3 +82,11 @@ class TestRunTransact:
 
         thread.join()
         sync_lock.release()
+
+    def test_transact_nested_raises(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Model", "Scenario")
+
+        with pytest.raises(ixmp4.Run.IsLocked, match="[Nn]ested"):
+            with run.transact("outer"):
+                with run.transact("inner"):
+                    pass

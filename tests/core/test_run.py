@@ -46,6 +46,24 @@ class TestRun:
         assert "scenario" in ret_df.columns
         assert "version" in ret_df.columns
 
+    def test_tabulate_run_hides_internal_columns_by_default(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        ret_df = platform.runs.tabulate(default_only=False)
+        assert "model__id" not in ret_df.columns
+        assert "scenario__id" not in ret_df.columns
+        assert "lock_transaction" not in ret_df.columns
+
+    def test_tabulate_run_shows_internal_columns_when_requested(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        ret_df = platform.runs.tabulate(
+            default_only=False, include_internal_columns=True
+        )
+        assert "model__id" in ret_df.columns
+        assert "scenario__id" in ret_df.columns
+        assert "lock_transaction" in ret_df.columns
+
     def test_list_run(self, platform: ixmp4.Platform) -> None:
         assert len(platform.runs.list(default_only=False)) == 4
 
