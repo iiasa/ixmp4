@@ -1,4 +1,4 @@
-from typing import List
+from typing import Any, List
 
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.executor import SessionExecutor
@@ -27,7 +27,7 @@ class ModelService(DocsService, GetByIdService):
     pandas: PandasRepository
     versions: VersionRepository
 
-    def __init_direct__(self, transport: DirectTransport) -> None:
+    def __init_direct__(self, transport: DirectTransport, **kwargs: Any) -> None:
         self.executor = SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
