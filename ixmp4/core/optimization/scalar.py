@@ -92,13 +92,6 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     ) -> None:
         """Updates data on the Scalar."""
         self._run.require_lock()
-        if unit_name is None:
-            logger.info(
-                "Received `None` as unit name, using dimensionless "
-                "scalar unit with blank name: ''."
-            )
-            dimensionless_unit = self.units.get_or_create(name="")
-            unit_name = dimensionless_unit.name
         self._service.update_by_id(self._dto.id, value=value, unit_name=unit_name)
         self._refresh()
 
