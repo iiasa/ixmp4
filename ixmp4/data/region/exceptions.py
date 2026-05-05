@@ -13,4 +13,4 @@ class RegionNotUnique(NotUnique):
 
 @registry.register()
 class RegionDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete region: it is used in timeseries data."

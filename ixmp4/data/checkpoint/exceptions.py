@@ -13,4 +13,4 @@ class CheckpointNotUnique(NotUnique):
 
 @registry.register()
 class CheckpointDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete checkpoint: it is referenced."

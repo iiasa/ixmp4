@@ -19,7 +19,7 @@ class IndexSetNotUnique(NotUnique):
 
 @registry.register()
 class IndexSetDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete index set: it has dependencies."
 
 
 @registry.register()

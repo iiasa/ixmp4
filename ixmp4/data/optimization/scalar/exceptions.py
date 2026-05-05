@@ -18,4 +18,4 @@ class ScalarNotUnique(NotUnique):
 
 @registry.register()
 class ScalarDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete scalar: it has dependencies."

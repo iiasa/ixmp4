@@ -19,7 +19,7 @@ class TableNotUnique(NotUnique):
 
 @registry.register()
 class TableDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete table: it has dependencies."
 
 
 @registry.register()

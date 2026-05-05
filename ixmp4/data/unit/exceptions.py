@@ -13,4 +13,4 @@ class UnitNotUnique(NotUnique):
 
 @registry.register()
 class UnitDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete unit: it is used in parameters, variables, or scalars."

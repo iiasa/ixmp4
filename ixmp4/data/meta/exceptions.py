@@ -19,7 +19,7 @@ class RunMetaEntryNotUnique(NotUnique):
 
 @registry.register()
 class RunMetaEntryDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete metadata entry: it has dependencies."
 
 
 @registry.register()

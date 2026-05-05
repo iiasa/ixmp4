@@ -19,7 +19,7 @@ class EquationNotUnique(NotUnique):
 
 @registry.register()
 class EquationDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete equation: it has dependencies."
 
 
 @registry.register()

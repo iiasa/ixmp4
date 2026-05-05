@@ -19,7 +19,7 @@ class ParameterNotUnique(NotUnique):
 
 @registry.register()
 class ParameterDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete parameter: it has dependencies."
 
 
 @registry.register()

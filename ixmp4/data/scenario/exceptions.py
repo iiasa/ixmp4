@@ -13,4 +13,4 @@ class ScenarioNotUnique(NotUnique):
 
 @registry.register()
 class ScenarioDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete scenario: it is referenced by runs."

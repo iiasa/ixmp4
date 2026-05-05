@@ -13,4 +13,4 @@ class ModelNotUnique(NotUnique):
 
 @registry.register()
 class ModelDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete model: it is referenced by runs."

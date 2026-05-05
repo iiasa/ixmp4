@@ -13,4 +13,4 @@ class DataPointNotUnique(NotUnique):
 
 @registry.register()
 class DataPointDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete datapoint: it has dependencies."

@@ -13,4 +13,4 @@ class VariableNotUnique(NotUnique):
 
 @registry.register(name="IamcVariableDeletionPrevented")
 class VariableDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete variable: it is used in datapoints."

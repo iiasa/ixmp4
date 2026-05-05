@@ -13,4 +13,4 @@ class TimeSeriesNotUnique(NotUnique):
 
 @registry.register()
 class TimeSeriesDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete timeseries: it has dependencies."

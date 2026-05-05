@@ -13,4 +13,4 @@ class MeasurandNotUnique(NotUnique):
 
 @registry.register()
 class MeasurandDeletionPrevented(DeletionPrevented):
-    pass
+    message = "Cannot delete measurand: it has dependencies."
