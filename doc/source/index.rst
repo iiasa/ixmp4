@@ -11,9 +11,9 @@ Copyright © 2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)
 .. |ruff| image:: https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json
    :target: https://github.com/astral-sh/ruff
 
-.. |python| image:: https://img.shields.io/badge/python-3.10_|_3.11_|_3.12-blue?logo=python&logoColor=white
+.. |python| image:: https://img.shields.io/badge/python-3.10_|_3.11_|_3.12|_3.13_|_3.14-blue?logo=python&logoColor=white
    :target: https://github.com/iiasa/ixmp4
-
+\
 Overview
 --------
 
@@ -42,7 +42,7 @@ in the domain of integrated assessment of climate change and energy systems mode
    core/unit
    core/model
    core/scenario
-   
+
    core/meta
    core/docs
 
@@ -55,13 +55,13 @@ in the domain of integrated assessment of climate change and energy systems mode
 .. toctree::
    :caption: Development
    :maxdepth: 1
-   
+
    development/architecture
    development/services
 
    data/modules
    server/modules
-   
+
    development/database
    development/tests
    development/docker
