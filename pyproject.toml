@@ -101,7 +101,7 @@ exclude = ['^ixmp4\/db\/migrations\/']
 disable_error_code = ['override']
 show_error_codes = true
 plugins = ['pandera.mypy', 'pydantic.mypy']
-# The following are equivalent to --strict mypy as seen in 
+# The following are equivalent to --strict mypy as seen in
 # https://mypy.readthedocs.io/en/stable/existing_code.html#introduce-stricter-options
 warn_unused_configs = true
 warn_redundant_casts = true
@@ -177,3 +177,7 @@ exclude_also = [
 enable = true
 style = "pep440"
 vcs = "git"
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "--benchmark-skip --backend sqlite,rest-sqlite"

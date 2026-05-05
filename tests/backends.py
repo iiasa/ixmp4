@@ -1,5 +1,5 @@
 import contextlib
-from typing import Callable, Generator, Iterator, Literal, Sequence, cast
+from typing import Awaitable, Callable, Generator, Literal, Sequence, cast
 
 import pytest
 import sqlalchemy as sa
@@ -17,6 +17,49 @@ from ixmp4.transport import (
     HttpxTransport,
     Transport,
 )
+
+
+class _TransportRef:
+    """Mutable transport holder.  The getter function returned by
+    :meth:`make_getter` is passed to :class:`~ixmp4.server.Ixmp4Server` as
+    ``override_transport``.  Swapping :attr:`current` between test classes
+    changes which underlying database the server uses without rebuilding the
+    Litestar app.
+    """
+
+    current: DirectTransport | None = None
+
+    def make_getter(self) -> "Callable[[], Awaitable[DirectTransport]]":
+        """Return a plain async function that Litestar can use as
+        ``override_transport``.  The function closes over this
+        :class:`_TransportRef` instance so updating :attr:`current` is
+        reflected at request time.
+        """
+        ref = self
+
+        async def _get_transport() -> DirectTransport:
+            if ref.current is None:
+                raise RuntimeError(
+                    "_TransportRef has no transport set; "
+                    "ensure a test transport is active."
+                )
+            return ref.current
+
+        return _get_transport
+
+
+def build_rest_server(settings: Settings) -> tuple[Ixmp4Server, _TransportRef]:
+    """Build a single shared :class:`Ixmp4Server` together with its
+    :class:`_TransportRef`.  Call this once per session and reuse across all
+    test classes.
+    """
+    ref = _TransportRef()
+    server = Ixmp4Server(
+        settings.server, override_transport=ref.make_getter(), debug=True
+    )
+    server.simulate_startup()
+    return server, ref
+
 
 backend_choices = ("sqlite", "postgres", "rest-sqlite", "rest-postgres")
 BackendTypeStr = Literal["sqlite", "postgres", "rest-sqlite", "rest-postgres"]
@@ -39,7 +82,9 @@ def get_requested_backends(
     req_or_meta: pytest.FixtureRequest | pytest.Metafunc,
 ) -> list[BackendTypeStr]:
     be_args = req_or_meta.config.option.backend.split(",")
-    backend_types = [validate_backend_type(t.strip()) for t in be_args]
+    backend_types: list[BackendTypeStr] = [
+        validate_backend_type(t.strip()) for t in be_args
+    ]
     return backend_types
 
 
@@ -133,6 +178,8 @@ def httpx_sqlite_transport(
     settings: Settings,
     auth_ctx: AuthorizationContext | None,
     platform_info: PlatformProtocol | None,
+    server: Ixmp4Server,
+    transport_ref: _TransportRef,
     create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
     with sqlite_transport(
@@ -141,10 +188,13 @@ def httpx_sqlite_transport(
         platform_info=platform_info,
         create_tables=create_tables,
     ) as direct:
-        with test_server(direct, settings) as server:
+        transport_ref.current = direct
+        try:
             httpx_sqlite = HttpxTransport.from_asgi(server.asgi_app, settings.client)
             httpx_sqlite.direct = direct
             yield httpx_sqlite
+        finally:
+            transport_ref.current = None
 
 
 @contextlib.contextmanager
@@ -154,6 +204,8 @@ def httpx_postgresql_transport(
     settings: Settings,
     auth_ctx: AuthorizationContext | None,
     platform_info: PlatformProtocol | None,
+    server: Ixmp4Server,
+    transport_ref: _TransportRef,
     create_tables: bool = True,
 ) -> Generator[HttpxTransport, None, None]:
     with postgresql_transport(
@@ -163,23 +215,13 @@ def httpx_postgresql_transport(
         platform_info=platform_info,
         create_tables=create_tables,
     ) as direct:
-        with test_server(direct, settings) as server:
+        transport_ref.current = direct
+        try:
             httpx_pgsql = HttpxTransport.from_asgi(server.asgi_app, settings.client)
             httpx_pgsql.direct = direct
             yield httpx_pgsql
-
-
-@contextlib.contextmanager
-def test_server(direct: DirectTransport, settings: Settings) -> Iterator[Ixmp4Server]:
-    # NOTE: This currently re-builds the api for every test setup
-    # TODO: upstream litestar adjustment to make this better?
-
-    async def get_direct() -> DirectTransport:
-        return direct
-
-    server = Ixmp4Server(settings.server, override_transport=get_direct, debug=True)
-    server.simulate_startup()
-    yield server
+        finally:
+            transport_ref.current = None
 
 
 def transport(
@@ -197,18 +239,24 @@ def transport(
         pytest.skip("Transport backend is not active. ")
 
     if type == "rest-sqlite":
+        server, transport_ref = request.getfixturevalue("rest_sqlite_server")
         return httpx_sqlite_transport(
             settings=settings,
             auth_ctx=auth_ctx,
             platform_info=platform_info,
+            server=server,
+            transport_ref=transport_ref,
             create_tables=create_tables,
         )
     elif type == "rest-postgres":
+        server, transport_ref = request.getfixturevalue("rest_postgres_server")
         return httpx_postgresql_transport(
             postgres_dsn,
             settings=settings,
             auth_ctx=auth_ctx,
             platform_info=platform_info,
+            server=server,
+            transport_ref=transport_ref,
             create_tables=create_tables,
         )
     elif type == "sqlite":

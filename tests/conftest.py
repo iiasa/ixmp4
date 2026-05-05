@@ -1,12 +1,19 @@
 import pathlib
-from collections.abc import Generator
+from collections.abc import Generator, Iterator
 from datetime import datetime, timezone
 from unittest import mock
 
 import pytest
 
 from ixmp4.conf.settings import Settings
-from tests.backends import clean_postgres_database as clean_postgres_database
+from ixmp4.server import Ixmp4Server
+from tests.backends import (
+    _TransportRef,
+    build_rest_server,
+)
+from tests.backends import (
+    clean_postgres_database as clean_postgres_database,
+)
 from tests.profiling import profiled as profiled
 
 from .auth import mock_manager_client as mock_manager_client
@@ -44,6 +51,32 @@ def pytest_addoption(parser: pytest.Parser) -> None:
 @pytest.fixture(scope="session")
 def settings() -> Settings:
     return Settings()
+
+
+@pytest.fixture(scope="session")
+def rest_sqlite_server(
+    settings: Settings,
+) -> Iterator[tuple[Ixmp4Server, _TransportRef]]:
+    """Single shared Ixmp4Server for all REST-over-SQLite test classes.
+
+    The :class:`_TransportRef` inside is swapped per test class so every class
+    gets an isolated in-memory database while the (expensive) Litestar app is
+    only built once per session.
+    """
+    server, ref = build_rest_server(settings)
+    yield server, ref
+
+
+@pytest.fixture(scope="session")
+def rest_postgres_server(
+    settings: Settings,
+) -> Iterator[tuple[Ixmp4Server, _TransportRef]]:
+    """Single shared Ixmp4Server for all REST-over-PostgreSQL test classes.
+
+    Same pattern as :func:`rest_sqlite_server`.
+    """
+    server, ref = build_rest_server(settings)
+    yield server, ref
 
 
 @pytest.fixture(scope="session", autouse=True)
