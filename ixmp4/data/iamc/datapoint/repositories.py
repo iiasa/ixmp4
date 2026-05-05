@@ -55,7 +55,10 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
                 (DataPoint.timeseries, TimeSeries.measurand, Measurand.variable),
                 Variable.name,
             ),
-            "unit": ((DataPoint.timeseries, TimeSeries.measurand, Measurand.unit), Unit.name),
+            "unit": (
+                (DataPoint.timeseries, TimeSeries.measurand, Measurand.unit),
+                Unit.name,
+            ),
             "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
