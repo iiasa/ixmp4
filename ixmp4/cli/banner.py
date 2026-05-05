@@ -8,7 +8,7 @@ from rich.text import Text
 from ixmp4 import __version__
 from ixmp4.conf.settings import Settings
 
-IXMP4_FIGLET = """
+IXMP4_FIGLET = """\
  _____  ____  __ ___ _ _
 |_ _\\ \\/ /  \\/  | _ \\ | |
  | | >  <| |\\/| |  _/_  _|
