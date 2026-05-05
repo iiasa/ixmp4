@@ -1,3 +1,4 @@
+import logging
 from datetime import datetime
 from typing import TYPE_CHECKING
 
@@ -22,6 +23,8 @@ from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 if TYPE_CHECKING:
     from ixmp4.core.run import Run
+
+logger = logging.getLogger(__name__)
 
 
 class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
@@ -89,6 +92,13 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
     ) -> None:
         """Updates data on the Scalar."""
         self._run.require_lock()
+        if unit_name is None:
+            logger.info(
+                "Received `None` as unit name, using dimensionless "
+                "scalar unit with blank name: ''."
+            )
+            dimensionless_unit = self.units.get_or_create(name="")
+            unit_name = dimensionless_unit.name
         self._service.update_by_id(self._dto.id, value=value, unit_name=unit_name)
         self._refresh()
 
@@ -120,13 +130,13 @@ class ScalarServiceFacade(
     def _get_service(self, backend: Backend) -> ScalarService:
         return backend.optimization.scalars
 
-    def _get_item_id(self, key: Scalar | int | str) -> int:
-        if isinstance(key, Scalar):
-            id = key.id
-        elif isinstance(key, int):
-            id = key
-        elif isinstance(key, str):
-            dto = self._service.get(self._run.id, key)
+    def _get_item_id(self, ref: Scalar | int | str) -> int:
+        if isinstance(ref, Scalar):
+            id = ref.id
+        elif isinstance(ref, int):
+            id = ref
+        elif isinstance(ref, str):
+            dto = self._service.get(self._run.id, ref)
             id = dto.id
         else:
             raise TypeError("Invalid argument: Must be `Scalar`, `int` or `str`.")
@@ -148,8 +158,10 @@ class ScalarServiceFacade(
         elif isinstance(unit, str):
             unit_name = unit
         else:
-            # TODO: provide logging information about None-units being converted
-            # if unit is None, assume that this is a dimensionless scalar (unit = "")
+            logger.info(
+                "Received `None` as unit, using dimensionless "
+                "scalar unit with blank name: ''."
+            )
             dimensionless_unit = self.units.get_or_create(name="")
             unit_name = dimensionless_unit.name
 
