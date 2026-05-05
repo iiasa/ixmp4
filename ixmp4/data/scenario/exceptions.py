@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class ScenarioNotFound(NotFound):
-    pass
+    message = "Scenario not found."
 
 
 @registry.register()
 class ScenarioNotUnique(NotUnique):
-    pass
+    message = "Scenario is not unique."
 
 
 @registry.register()

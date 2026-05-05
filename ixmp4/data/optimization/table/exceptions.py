@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class TableNotFound(NotFound):
-    pass
+    message = "Table not found."
 
 
 @registry.register()
 class TableNotUnique(NotUnique):
-    pass
+    message = "Table is not unique."
 
 
 @registry.register()
@@ -24,4 +24,4 @@ class TableDeletionPrevented(DeletionPrevented):
 
 @registry.register()
 class TableDataInvalid(OptimizationDataValidationError):
-    pass
+    message = "Invalid data for Table."

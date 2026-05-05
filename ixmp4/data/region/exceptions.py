@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class RegionNotFound(NotFound):
-    pass
+    message = "Region not found."
 
 
 @registry.register()
 class RegionNotUnique(NotUnique):
-    pass
+    message = "Region is not unique."
 
 
 @registry.register()

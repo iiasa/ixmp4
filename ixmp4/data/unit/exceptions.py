@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class UnitNotFound(NotFound):
-    pass
+    message = "Unit not found."
 
 
 @registry.register()
 class UnitNotUnique(NotUnique):
-    pass
+    message = "Unit is not unique."
 
 
 @registry.register()

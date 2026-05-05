@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class ParameterNotFound(NotFound):
-    pass
+    message = "Parameter not found."
 
 
 @registry.register()
 class ParameterNotUnique(NotUnique):
-    pass
+    message = "Parameter is not unique."
 
 
 @registry.register()
@@ -24,4 +24,4 @@ class ParameterDeletionPrevented(DeletionPrevented):
 
 @registry.register()
 class ParameterDataInvalid(OptimizationDataValidationError):
-    pass
+    message = "Invalid data for Parameter."

@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class IndexSetNotFound(NotFound):
-    pass
+    message = "Index set not found."
 
 
 @registry.register()
 class IndexSetNotUnique(NotUnique):
-    pass
+    message = "Index set is not unique."
 
 
 @registry.register()

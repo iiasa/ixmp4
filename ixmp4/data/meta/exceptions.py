@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class RunMetaEntryNotFound(NotFound):
-    pass
+    message = "Meta entry not found."
 
 
 @registry.register()
 class RunMetaEntryNotUnique(NotUnique):
-    pass
+    message = "Meta entry is not unique."
 
 
 @registry.register()

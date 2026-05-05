@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class ModelNotFound(NotFound):
-    pass
+    message = "Model not found."
 
 
 @registry.register()
 class ModelNotUnique(NotUnique):
-    pass
+    message = "Model is not unique."
 
 
 @registry.register()

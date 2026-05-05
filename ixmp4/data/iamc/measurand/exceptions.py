@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class MeasurandNotFound(NotFound):
-    pass
+    message = "Measurand not found."
 
 
 @registry.register()
 class MeasurandNotUnique(NotUnique):
-    pass
+    message = "Measurand is not unique."
 
 
 @registry.register()

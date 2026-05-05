@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register(name="OptimizationVariableNotFound")
 class VariableNotFound(NotFound):
-    pass
+    message = "Variable not found."
 
 
 @registry.register(name="OptimizationVariableNotUnique")
 class VariableNotUnique(NotUnique):
-    pass
+    message = "Variable is not unique."
 
 
 @registry.register(name="OptimizationVariableDeletionPrevented")
@@ -24,4 +24,4 @@ class VariableDeletionPrevented(DeletionPrevented):
 
 @registry.register(name="OptimizationVariableDataInvalid")
 class VariableDataInvalid(OptimizationDataValidationError):
-    pass
+    message = "Invalid data for Variable."

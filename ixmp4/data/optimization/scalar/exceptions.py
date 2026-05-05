@@ -8,12 +8,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class ScalarNotFound(NotFound):
-    pass
+    message = "Scalar not found."
 
 
 @registry.register()
 class ScalarNotUnique(NotUnique):
-    pass
+    message = "Scalar is not unique."
 
 
 @registry.register()

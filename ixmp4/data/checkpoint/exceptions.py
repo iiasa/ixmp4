@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class CheckpointNotFound(NotFound):
-    pass
+    message = "Checkpoint not found."
 
 
 @registry.register()
 class CheckpointNotUnique(NotUnique):
-    pass
+    message = "Checkpoint is not unique."
 
 
 @registry.register()

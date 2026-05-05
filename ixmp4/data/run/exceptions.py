@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class RunNotFound(NotFound):
-    pass
+    message = "Run not found."
 
 
 @registry.register()
 class RunNotUnique(NotUnique):
-    pass
+    message = "Run is not unique."
 
 
 @registry.register()

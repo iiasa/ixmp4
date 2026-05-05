@@ -9,12 +9,12 @@ from ixmp4.base_exceptions import (
 
 @registry.register()
 class EquationNotFound(NotFound):
-    pass
+    message = "Equation not found."
 
 
 @registry.register()
 class EquationNotUnique(NotUnique):
-    pass
+    message = "Equation is not unique."
 
 
 @registry.register()
@@ -24,4 +24,4 @@ class EquationDeletionPrevented(DeletionPrevented):
 
 @registry.register()
 class EquationDataInvalid(OptimizationDataValidationError):
-    pass
+    message = "Invalid data for Equation."

@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class TimeSeriesNotFound(NotFound):
-    pass
+    message = "Timeseries not found."
 
 
 @registry.register()
 class TimeSeriesNotUnique(NotUnique):
-    pass
+    message = "Timeseries is not unique."
 
 
 @registry.register()

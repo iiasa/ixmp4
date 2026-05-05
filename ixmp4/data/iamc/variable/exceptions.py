@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register(name="IamcVariableNotFound")
 class VariableNotFound(NotFound):
-    pass
+    message = "Variable not found."
 
 
 @registry.register(name="IamcVariableNotUnique")
 class VariableNotUnique(NotUnique):
-    pass
+    message = "Variable is not unique."
 
 
 @registry.register(name="IamcVariableDeletionPrevented")

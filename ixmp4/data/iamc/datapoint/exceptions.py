@@ -3,12 +3,12 @@ from ixmp4.base_exceptions import DeletionPrevented, NotFound, NotUnique, regist
 
 @registry.register()
 class DataPointNotFound(NotFound):
-    pass
+    message = "Datapoint not found."
 
 
 @registry.register()
 class DataPointNotUnique(NotUnique):
-    pass
+    message = "Datapoint is not unique."
 
 
 @registry.register()
