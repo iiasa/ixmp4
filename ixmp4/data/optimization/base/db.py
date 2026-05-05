@@ -61,10 +61,8 @@ class IndexedModel(BaseModel, Generic[AssocT]):
             "Run", foreign_keys=[cls.run__id], lazy="select", viewonly=True
         )
 
-    data: Mapped[dict[str, list[float] | list[int] | list[str]]] = (
-        orm.mapped_column(  # TODO: get rid of this sensibly
-            sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False, default={}
-        )
+    data: Mapped[dict[str, list[float] | list[int] | list[str]]] = orm.mapped_column(
+        sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False, default={}
     )
 
     indexset_associations: orm.Relationship[list["AssocT"]]
@@ -89,8 +87,6 @@ class IndexedVersionModel(BaseVersionModel):
     name: String = orm.mapped_column(sa.String(255), nullable=False)
     run__id: Integer = orm.mapped_column(sa.Integer, nullable=False, index=True)
 
-    data: Mapped[dict[str, list[float] | list[int] | list[str]]] = (
-        orm.mapped_column(  # TODO: get rid of this sensibly
-            sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False, default={}
-        )
+    data: Mapped[dict[str, list[float] | list[int] | list[str]]] = orm.mapped_column(
+        sa.JSON().with_variant(JSONB(), "postgresql"), nullable=False, default={}
     )
