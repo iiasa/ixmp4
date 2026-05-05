@@ -2,11 +2,13 @@ from typing import Any, Collection, Mapping, Sequence, cast
 
 import pandas as pd
 import sqlalchemy as sa
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.filter import Filter
 from toolkit.db.repositories import ItemRepository as BaseItemRepository
 from toolkit.db.repositories import PandasRepository as BasePandasRepository
 from toolkit.db.target import ExtendedTarget, ModelTarget
 
+from ixmp4.data.base.repository import AuthRepository
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.model.db import Model
 from ixmp4.data.run.db import Run
@@ -21,7 +23,20 @@ from .type import Type
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 
 
-class ItemRepository(BaseItemRepository[RunMetaEntry | RunMetaEntryVersion]):
+class RunMetaAuthRepository(AuthRepository[RunMetaEntry | RunMetaEntryVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_id_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_id_exc is None:
+            return exc
+        return exc.where(RunMetaEntry.run__id.in_(run_id_exc))
+
+
+class ItemRepository(RunMetaAuthRepository, BaseItemRepository[RunMetaEntry]):
     NotFound = RunMetaEntryNotFound
     NotUnique = RunMetaEntryNotUnique
     target = ModelTarget(RunMetaEntry)
@@ -43,7 +58,7 @@ class ItemRepository(BaseItemRepository[RunMetaEntry | RunMetaEntryVersion]):
         return super().create(values)
 
 
-class PandasRepository(BasePandasRepository):
+class PandasRepository(RunMetaAuthRepository, BasePandasRepository):
     NotFound = RunMetaEntryNotFound
     NotUnique = RunMetaEntryNotUnique
     target: ModelTarget[RunMetaEntry | RunMetaEntryVersion] = ExtendedTarget(

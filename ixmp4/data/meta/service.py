@@ -4,11 +4,12 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
-from ixmp4.base_exceptions import Forbidden
+from ixmp4.base_exceptions import BadRequest, Forbidden
 from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.data.run.repositories import ItemRepository as RunRepository
+from ixmp4.data.run.repositories import ItemRepository as RunItemRepository
+from ixmp4.data.run.repositories import PandasRepository as RunPandasRepository
 from ixmp4.data.services import DirectTransport, Http, Service, procedure
 
 from .df_schemas import DeleteRunMetaFrameSchema, UpsertRunMetaFrameSchema
@@ -25,15 +26,17 @@ class RunMetaEntryService(Service):
     executor: SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
-    runs: RunRepository
+    runs: RunItemRepository
+    runs_pandas: RunPandasRepository
 
     default_filter: RunMetaEntryFilter = {"run": {"default_only": True}}
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = SessionExecutor(transport.session)
-        self.items = ItemRepository(self.executor)
-        self.pandas = PandasRepository(self.executor)
-        self.runs = RunRepository(self.executor)
+        self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.runs = RunItemRepository(self.executor)
+        self.runs_pandas = RunPandasRepository(self.executor)
 
     @procedure(Http(path="/", methods=("POST",)))
     def create(self, run__id: int, key: str, value: MetaValueType) -> RunMetaEntry:
@@ -290,10 +293,22 @@ class RunMetaEntryService(Service):
 
     @bulk_upsert.auth_check()
     def bulk_upsert_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        df: SerializableDataFrame,
     ) -> None:
-        # TODO check run__ids
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        if "run__id" not in df.columns:
+            raise BadRequest("Column 'run__id' is required for bulk upsert auth check.")
+
+        run_models = (
+            self.runs_pandas.tabulate(
+                {"id__in": df["run__id"].tolist()}, columns=["id", "model"]
+            )["model"]
+            .unique()
+            .tolist()
+        )
+        auth_ctx.has_edit_permission(platform, models=run_models, raise_exc=Forbidden)
 
     @procedure(Http(methods=("DELETE",)))
     def bulk_delete(self, df: SerializableDataFrame) -> None:
@@ -314,7 +329,19 @@ class RunMetaEntryService(Service):
 
     @bulk_delete.auth_check()
     def bulk_delete_auth_check(
-        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+        self,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+        df: SerializableDataFrame,
     ) -> None:
-        # TODO check run__ids
-        auth_ctx.has_edit_permission(platform, raise_exc=Forbidden)
+        if "run__id" not in df.columns:
+            raise BadRequest("Column 'run__id' is required for bulk delete auth check.")
+
+        run_models = (
+            self.runs_pandas.tabulate(
+                {"id__in": df["run__id"].tolist()}, columns=["id", "model"]
+            )["model"]
+            .unique()
+            .tolist()
+        )
+        auth_ctx.has_edit_permission(platform, models=run_models, raise_exc=Forbidden)
