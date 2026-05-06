@@ -58,14 +58,14 @@ class ReverterItemVersion(ReverterVersionModel):
     mismatch: orm.Mapped[str | None] = orm.mapped_column(sa.String(255), nullable=True)
 
 
-class DemoReverterRepository(ReverterRepository[[]]):
+class TestReverterRepository(ReverterRepository[[]]):
     # ReverterRepository expects models that inherit from ixmp4's BaseModel
     target = ModelTarget(ReverterItem)  # type: ignore[arg-type]
     version_target = ModelTarget(ReverterItemVersion)  # type: ignore[arg-type]
 
 
 @pytest.fixture()
-def demo_session() -> Iterator[orm.Session]:
+def test_session() -> Iterator[orm.Session]:
     engine = sa.create_engine("sqlite:///:memory:")
     core_tables = [cast(sa.Table, Transaction.__table__)]
     reverter_tables = [
@@ -85,7 +85,7 @@ def demo_session() -> Iterator[orm.Session]:
         engine.dispose()
 
 
-def seed_demo_state(session: orm.Session) -> None:
+def seed_reverter_state(session: orm.Session) -> None:
     session.add_all(
         [
             Transaction(id=1, issued_at=datetime(2024, 1, 1, 0, 0, 0)),
@@ -143,32 +143,32 @@ def seed_demo_state(session: orm.Session) -> None:
     session.commit()
 
 
-def test_reverter_repository_requires_version_target(demo_session: orm.Session) -> None:
+def test_reverter_repository_requires_version_target(test_session: orm.Session) -> None:
     class MissingVersionRepository(ReverterRepository[[]]):
         target = ModelTarget(ReverterItem)  # type: ignore[arg-type]
 
     with pytest.raises(ProgrammingError, match="requires a `version_target`"):
-        MissingVersionRepository(SessionExecutor(demo_session))
+        MissingVersionRepository(SessionExecutor(test_session))
 
 
 def test_reverter_repository_tracks_versioned_columns_and_valid_rows(
-    demo_session: orm.Session,
+    test_session: orm.Session,
 ) -> None:
-    seed_demo_state(demo_session)
-    repository = DemoReverterRepository(SessionExecutor(demo_session))
+    seed_reverter_state(test_session)
+    repository = TestReverterRepository(SessionExecutor(test_session))
 
     assert set(repository.versioned_columns.keys()) == {"id", "name", "value"}
 
-    all_ids = demo_session.execute(
+    all_ids = test_session.execute(
         repository.select_versions().with_only_columns(ReverterItemVersion.id)
     ).scalars()
     assert sorted(all_ids) == [1, 1, 2, 2, 3]
 
     base_query = repository.select_versions().with_only_columns(ReverterItemVersion.id)
-    origin_ids = demo_session.execute(
+    origin_ids = test_session.execute(
         repository.where_valid_at_tx(base_query, 3)
     ).scalars()
-    compare_ids = demo_session.execute(
+    compare_ids = test_session.execute(
         repository.where_valid_at_tx(base_query, 1)
     ).scalars()
 
@@ -180,10 +180,10 @@ def test_reverter_repository_tracks_versioned_columns_and_valid_rows(
 
 
 def test_reverter_repository_tabulates_revert_operations(
-    demo_session: orm.Session,
+    test_session: orm.Session,
 ) -> None:
-    seed_demo_state(demo_session)
-    repository = DemoReverterRepository(SessionExecutor(demo_session))
+    seed_reverter_state(test_session)
+    repository = TestReverterRepository(SessionExecutor(test_session))
 
     operations = repository.tabulate_revert_ops(3, 1).sort_values("id").set_index("id")
 
@@ -201,15 +201,15 @@ def test_reverter_repository_tabulates_revert_operations(
 
 
 def test_reverter_repository_reverts_destructive_and_constructive_changes(
-    demo_session: orm.Session,
+    test_session: orm.Session,
 ) -> None:
-    seed_demo_state(demo_session)
-    repository = DemoReverterRepository(SessionExecutor(demo_session))
+    seed_reverter_state(test_session)
+    repository = TestReverterRepository(SessionExecutor(test_session))
 
     deleted = repository.revert_destructive(3, 1)
     assert deleted == 1
 
-    after_delete = demo_session.execute(
+    after_delete = test_session.execute(
         sa.select(ReverterItem).order_by(ReverterItem.id)
     ).scalars()
     assert [(item.id, item.name, item.value) for item in after_delete] == [
@@ -217,7 +217,7 @@ def test_reverter_repository_reverts_destructive_and_constructive_changes(
     ]
 
     repository.revert_constructive(3, 1)
-    reverted = demo_session.execute(
+    reverted = test_session.execute(
         sa.select(ReverterItem).order_by(ReverterItem.id)
     ).scalars()
     assert [(item.id, item.name, item.value, item.mismatch) for item in reverted] == [
@@ -227,14 +227,14 @@ def test_reverter_repository_reverts_destructive_and_constructive_changes(
 
 
 def test_reverter_repository_revert_uses_latest_transaction(
-    demo_session: orm.Session,
+    test_session: orm.Session,
 ) -> None:
-    seed_demo_state(demo_session)
-    repository = DemoReverterRepository(SessionExecutor(demo_session))
+    seed_reverter_state(test_session)
+    repository = TestReverterRepository(SessionExecutor(test_session))
 
     repository.revert(1)
 
-    reverted = demo_session.execute(
+    reverted = test_session.execute(
         sa.select(ReverterItem).order_by(ReverterItem.id)
     ).scalars()
     assert [(item.id, item.name, item.value, item.mismatch) for item in reverted] == [
