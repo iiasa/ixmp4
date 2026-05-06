@@ -43,9 +43,7 @@ class ApiServiceTest(TransportTest, Generic[ServiceT]):
         params: dict[str, Any] | None = None,
         expected_status: int = 200,
     ) -> httpx.Response:
-        response = client.request(
-            method, path.lstrip("/"), json=json, params=params
-        )
+        response = client.request(method, path.lstrip("/"), json=json, params=params)
         assert response.status_code == expected_status, response.text
         return response
 

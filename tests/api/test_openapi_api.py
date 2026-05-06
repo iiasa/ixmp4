@@ -36,6 +36,7 @@ class CollectedEndpoint:
     operation_id: str | None
     signature: inspect.Signature | None
 
+
 def _normalize_openapi_path(path: str) -> str:
     normalized = re.sub(r":[^}/]+", "", path).rstrip("/")
     return normalized or "/"
@@ -146,6 +147,7 @@ def openapi_schema() -> OpenAPISchema:
             result = runner.invoke(app, ["server", "dump-schema"])
         assert result.exit_code == 0, result.stdout
         return cast(OpenAPISchema, json.loads(result.stdout))
+
 
 def test_openapi_schema_contains_all_service_endpoints(
     openapi_schema: OpenAPISchema,
