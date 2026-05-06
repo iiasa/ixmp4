@@ -1,9 +1,11 @@
 import inspect
+from collections.abc import Generator
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, Callable, cast
 from unittest import mock
 
 import pytest
+from litestar.handlers import HTTPRouteHandler
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.base_exceptions import InvalidArguments, ProgrammingError
@@ -15,7 +17,12 @@ from ixmp4.data.services.procedure.endpoint import (
     ProcedureRouteHandler,
     generate_arguments_model,
 )
-from ixmp4.transport import AuthorizedTransport, DirectTransport, HttpxTransport
+from ixmp4.transport import (
+    AuthorizedTransport,
+    DirectTransport,
+    HttpxTransport,
+    Transport,
+)
 
 
 class DemoService(Service):
@@ -31,10 +38,10 @@ class DemoService(Service):
         """Renames item {id}."""
         return f"{id}:{name}"
 
-    def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+    def __init_direct__(self, transport: DirectTransport) -> None:
         pass
 
-    def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+    def __init_httpx__(self, transport: HttpxTransport) -> None:
         pass
 
 
@@ -51,17 +58,17 @@ class PaginatedDemoService(Service):
     ) -> PaginatedResult[list[str]]:
         return PaginatedResult(results=["a"], total=1, pagination=pagination)
 
-    def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+    def __init_direct__(self, transport: DirectTransport) -> None:
         pass
 
-    def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+    def __init_httpx__(self, transport: HttpxTransport) -> None:
         pass
 
 
 class FakeHttpxTransport(HttpxTransport):
     """HttpxTransport subclass that skips the real __init__ for isolation."""
 
-    def __init__(self) -> None:  # type: ignore[override]
+    def __init__(self) -> None:
         pass
 
 
@@ -81,7 +88,7 @@ class TestProcedureInit:
         config = ProcedureHttpConfig(methods=("POST",))
 
         def proc_without_annotation(self: Any, x) -> int:  # type: ignore[no-untyped-def]
-            return x
+            return 0
 
         with pytest.raises(ProgrammingError, match="type annotation"):
             Procedure(proc_without_annotation, config)
@@ -91,8 +98,8 @@ class TestProcedureCallArgValidation:
     def test_validate_direct_call_args_raises_invalid_arguments_on_wrong_arity(
         self,
     ) -> None:
-        """TypeError from bind (wrong number of args) → InvalidArguments."""
-        proc = DemoService.compute.procedure  # type: ignore[attr-defined]
+        """TypeError from bind (wrong number of args) -> InvalidArguments."""
+        proc = DemoService.compute.procedure
 
         with pytest.raises(InvalidArguments):
             proc.validate_direct_call_args(args=(), kwargs={})  # missing `value`
@@ -100,8 +107,8 @@ class TestProcedureCallArgValidation:
     def test_validate_direct_call_args_raises_invalid_arguments_on_type_mismatch(
         self,
     ) -> None:
-        """Pydantic ValidationError (wrong type) → InvalidArguments."""
-        proc = DemoService.compute.procedure  # type: ignore[attr-defined]
+        """Pydantic ValidationError (wrong type) -> InvalidArguments."""
+        proc = DemoService.compute.procedure
 
         with pytest.raises(InvalidArguments):
             proc.validate_direct_call_args(args=(), kwargs={"value": "not-an-int"})
@@ -123,13 +130,13 @@ class TestProcedureCallArgValidation:
             def add(self, *values: int) -> int:
                 return sum(values)
 
-            def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, transport: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
                 pass
 
-        proc = VarArgService.add.procedure  # type: ignore[attr-defined]
+        proc = VarArgService.add.procedure
         # Line 92 executes; pydantic v2 then rejects __varargs__ as an extra field.
         with pytest.raises(InvalidArguments):
             proc.validate_direct_call_args(args=(1, 2, 3), kwargs={})
@@ -142,16 +149,16 @@ class TestProcedureCallArgValidation:
             router_prefix = "/varkwarg"
 
             @procedure(config)
-            def store(self, **kwargs: int) -> dict[str, int]:
+            def store(self, /, **kwargs: int) -> dict[str, int]:
                 return dict(kwargs)
 
-            def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, transport: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
                 pass
 
-        proc = VarKwargService.store.procedure  # type: ignore[attr-defined]
+        proc = VarKwargService.store.procedure
         args_out, kwargs_out = proc.validate_direct_call_args(
             args=(), kwargs={"x": 1, "y": 2}
         )
@@ -169,15 +176,19 @@ class TestAuthCheckArgValidation:
             def act(self, x: int) -> int:
                 return x
 
-            def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, transport: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
                 pass
 
         with pytest.raises(ProgrammingError, match="superfluous"):
+            auth_check = cast(
+                Callable[[Callable[..., None]], Callable[..., None]],
+                SuperfluousAuthService.act.auth_check(),
+            )
 
-            @SuperfluousAuthService.act.auth_check()
+            @auth_check
             def act_auth(
                 self: Any,
                 auth_ctx: AuthorizationContext,
@@ -199,15 +210,19 @@ class TestAuthCheckArgValidation:
             def act(self, x: int) -> int:
                 return x
 
-            def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, transport: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
                 pass
 
         with pytest.raises(ProgrammingError, match="does not match"):
+            auth_check = cast(
+                Callable[[Callable[..., None]], Callable[..., None]],
+                AnnotMismatchService.act.auth_check(),
+            )
 
-            @AnnotMismatchService.act.auth_check()
+            @auth_check
             def act_auth(
                 self: Any,
                 auth_ctx: AuthorizationContext,
@@ -226,10 +241,10 @@ class TestAuthCheckArgValidation:
             def act(self, x: int = 0) -> int:
                 return x
 
-            def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, transport: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
                 pass
 
         with pytest.raises(ProgrammingError, match="Default"):
@@ -254,8 +269,12 @@ class TestAuthCheckArgValidation:
         with pytest.raises(
             ProgrammingError, match="expected argument of type.*AuthorizationContext"
         ):
+            auth_check = cast(
+                Callable[[Callable[..., None]], Callable[..., None]],
+                WrongCtxService.compute.auth_check(),
+            )
 
-            @WrongCtxService.compute.auth_check()
+            @auth_check
             def bad_auth(
                 self: "WrongCtxService",
                 wrong: int,  # index 1: should be AuthorizationContext
@@ -274,8 +293,12 @@ class TestAuthCheckArgValidation:
         with pytest.raises(
             ProgrammingError, match="expected argument of type.*PlatformProtocol"
         ):
+            auth_check = cast(
+                Callable[[Callable[..., None]], Callable[..., None]],
+                WrongPlatService.compute.auth_check(),
+            )
 
-            @WrongPlatService.compute.auth_check()
+            @auth_check
             def bad_auth(
                 self: "WrongPlatService",
                 auth_ctx: AuthorizationContext,
@@ -287,9 +310,9 @@ class TestAuthCheckArgValidation:
 class TestProcedureCallableWrappers:
     def test_set_route_handler_is_a_noop(self) -> None:
         """set_route_handler does nothing (interface hook)."""
-        proc = DemoService.compute.procedure  # type: ignore[attr-defined]
+        proc = DemoService.compute.procedure
         sentinel = mock.sentinel.handler
-        proc.set_route_handler(sentinel)  # type: ignore[arg-type]
+        proc.set_route_handler(cast(HTTPRouteHandler, sentinel))
 
     def test_get_authorized_callable_wraps_with_auth_check_for_authorized_transport(
         self,
@@ -307,10 +330,10 @@ class TestProcedureCallableWrappers:
             def compute(self, value: int) -> int:
                 return value * 2
 
-            def __init_direct__(self, t: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, t: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, t: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, t: HttpxTransport) -> None:
                 pass
 
         @AuthDemoService.compute.auth_check()
@@ -323,13 +346,13 @@ class TestProcedureCallableWrappers:
 
         auth_transport = AuthorizedTransport(
             session=session,
-            auth_ctx=SimpleNamespace(user="alice"),  # type: ignore[arg-type]
-            platform=SimpleNamespace(id="demo"),  # type: ignore[arg-type]
+            auth_ctx=cast(AuthorizationContext, SimpleNamespace(user="alice")),
+            platform=cast(PlatformProtocol, SimpleNamespace(id="demo")),
         )
         svc = AuthDemoService(auth_transport)
         bound_func = mock.Mock(return_value=42)
 
-        proc = AuthDemoService.compute.procedure  # type: ignore[attr-defined]
+        proc = AuthDemoService.compute.procedure
         callable_ = proc.get_authorized_callable(svc, bound_func)
         callable_(5)
 
@@ -342,9 +365,9 @@ class TestProcedureCallableWrappers:
         from ixmp4.data.services.procedure.client import ProcedureClient
 
         svc = object.__new__(DemoService)
-        svc.transport = FakeHttpxTransport()  # type: ignore[attr-defined]
+        svc.transport = FakeHttpxTransport()
 
-        proc = DemoService.compute.procedure  # type: ignore[attr-defined]
+        proc = DemoService.compute.procedure
         client = proc.get_httpx_callable(svc)
         assert isinstance(client, ProcedureClient)
 
@@ -358,10 +381,10 @@ class TestProcedureCallableWrappers:
             def do_thing(self, value: int) -> int:
                 return value
 
-            def __init_direct__(self, transport: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, transport: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, transport: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
                 pass
 
         called_with: list[tuple[Any, ...]] = []
@@ -374,12 +397,11 @@ class TestProcedureCallableWrappers:
         ) -> None:
             called_with.append((self, auth_ctx, platform))
 
-        proc = NpAuthService.do_thing.procedure  # type: ignore[attr-defined]
+        proc = NpAuthService.do_thing.procedure
         svc = mock.Mock()
         ctx = mock.Mock()
         plat = mock.Mock()
 
-        # The wrapper must forward only (svc, ctx, plat) even when extra args are present.
         proc.auth_check.check_func(svc, ctx, plat, "extra-arg", extra_kwarg=True)
         assert len(called_with) == 1
         assert called_with[0] == (svc, ctx, plat)
@@ -394,10 +416,10 @@ class TestProcedureCallableWrappers:
             def act(self, x: int) -> int:
                 return x
 
-            def __init_direct__(self, t: DirectTransport) -> None:  # type: ignore[override]
+            def __init_direct__(self, t: DirectTransport) -> None:
                 pass
 
-            def __init_httpx__(self, t: HttpxTransport) -> None:  # type: ignore[override]
+            def __init_httpx__(self, t: HttpxTransport) -> None:
                 pass
 
         call_log: list[str] = []
@@ -410,7 +432,7 @@ class TestProcedureCallableWrappers:
         ) -> None:
             call_log.append("auth")
 
-        proc = AuthOrderService.act.procedure  # type: ignore[attr-defined]
+        proc = AuthOrderService.act.procedure
 
         def fake_proc(*args: Any, **kwargs: Any) -> int:
             call_log.append("proc")
@@ -421,7 +443,7 @@ class TestProcedureCallableWrappers:
         plat = mock.Mock()
 
         wrapped = proc.auth_check.prepend_auth_check(svc, ctx, plat, fake_proc)
-        result = wrapped()
+        result = wrapped(1)
         assert call_log == ["auth", "proc"]
         assert result == 99
 
@@ -454,13 +476,13 @@ class TestProcedureDescriptor:
         svc = object.__new__(DemoService)
         svc.transport = FakeHttpxTransport()
 
-        client = DemoService.compute.__get__(svc, DemoService)  # type: ignore[attr-defined]
+        client = DemoService.compute.__get__(svc, DemoService)
         assert isinstance(client, ProcedureClient)
 
     def test_descriptor_get_raises_for_unknown_transport(self) -> None:
         """Unsupported transport class raises ProgrammingError."""
 
-        class AliensTransport:
+        class AliensTransport(Transport):
             pass
 
         svc = object.__new__(DemoService)
@@ -540,8 +562,12 @@ class TestProcedurePagination:
         with pytest.raises(
             ProgrammingError, match="expected argument of type.*AuthorizationContext"
         ):
+            paginated = cast(
+                Callable[[Callable[..., PaginatedResult[int]]], Callable[..., object]],
+                PagErrService.compute.paginated(),
+            )
 
-            @PagErrService.compute.paginated()
+            @paginated
             def paginated_compute(
                 svc: "PagErrService",
                 wrong: int,  # should be Pagination
@@ -551,7 +577,7 @@ class TestProcedurePagination:
 
 class TestProcedureRouteHandler:
     @pytest.fixture(scope="module")
-    def demo_transport(self) -> DirectTransport:  # type: ignore[return]
+    def demo_transport(self) -> Generator[DirectTransport, None, None]:
         t = DirectTransport.from_dsn("sqlite:///:memory:")
         yield t
         t.close()
@@ -567,20 +593,29 @@ class TestProcedureRouteHandler:
         return PaginatedDemoService(demo_transport)
 
     @pytest.fixture(scope="module")
-    def compute_handler(self) -> ProcedureRouteHandler:  # type: ignore[type-arg]
-        return DemoService.compute.procedure.handlers[DemoService]  # type: ignore[attr-defined]
+    def compute_handler(self) -> ProcedureRouteHandler[Any, Any, Any]:
+        return cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.compute.procedure.handlers[DemoService],
+        )
 
     @pytest.fixture(scope="module")
-    def rename_handler(self) -> ProcedureRouteHandler:  # type: ignore[type-arg]
-        return DemoService.rename.procedure.handlers[DemoService]  # type: ignore[attr-defined]
+    def rename_handler(self) -> ProcedureRouteHandler[Any, Any, Any]:
+        return cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.rename.procedure.handlers[DemoService],
+        )
 
     @pytest.fixture(scope="module")
-    def list_handler(self) -> ProcedureRouteHandler:  # type: ignore[type-arg]
-        return PaginatedDemoService.list_items.procedure.handlers[PaginatedDemoService]  # type: ignore[attr-defined]
+    def list_handler(self) -> ProcedureRouteHandler[Any, Any, Any]:
+        return cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            PaginatedDemoService.list_items.procedure.handlers[PaginatedDemoService],
+        )
 
     def test_route_handler_path_field_skipped_in_payload_model(
         self,
-        rename_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        rename_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """Path params are excluded from the payload model."""
         # `id` is a path field; it must NOT appear in the payload model
@@ -588,7 +623,7 @@ class TestProcedureRouteHandler:
 
     def test_route_handler_non_path_field_skipped_in_path_model(
         self,
-        rename_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        rename_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """Non-path params are excluded from the path model."""
         # `name` is a payload field; it must NOT appear in the path model
@@ -596,27 +631,27 @@ class TestProcedureRouteHandler:
 
     def test_route_handler_build_call_args_with_body(
         self,
-        compute_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        compute_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """build_call_args parses a JSON body for POST endpoints."""
         args, kwargs = compute_handler.build_call_args(
             path={}, query={}, body=b'{"value": 7}'
         )
-        # `value` is positional in compute(self, value: int) → lands in args
+        # `value` is positional in compute(self, value: int) -> lands in args
         assert args == (7,)
 
     def test_route_handler_build_call_args_with_empty_body(
         self,
-        compute_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        compute_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """Empty body constructs empty payload_model (required fields still validated)."""
-        # `compute` requires `value`, so empty body → InvalidArguments
+        # `compute` requires `value`, so empty body -> InvalidArguments
         with pytest.raises(InvalidArguments):
             compute_handler.build_call_args(path={}, query={}, body=b"")
 
     def test_route_handler_build_call_args_raises_for_invalid_json(
         self,
-        compute_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        compute_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """Malformed body raises InvalidArguments."""
         with pytest.raises(InvalidArguments):
@@ -626,18 +661,18 @@ class TestProcedureRouteHandler:
 
     def test_route_handler_build_call_args_with_path_params(
         self,
-        rename_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        rename_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """Path and body params are merged correctly."""
         args, kwargs = rename_handler.build_call_args(
             path={"id": 3}, query={}, body=b'{"name": "foo"}'
         )
-        # rename(self, id: int, name: str) has positional params → land in args
+        # rename(self, id: int, name: str) has positional params -> land in args
         assert args == (3, "foo")
 
     def test_route_handler_handle_request(
         self,
-        compute_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        compute_handler: ProcedureRouteHandler[Any, Any, Any],
         demo_service: DemoService,
     ) -> None:
         """handle_request calls the procedure and returns a Response."""
@@ -655,7 +690,7 @@ class TestProcedureRouteHandler:
 
     def test_route_handler_get_pagination_params(
         self,
-        list_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        list_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
         """get_pagination_params parses offset/limit from query dict."""
         pagination = list_handler.get_pagination_params({"limit": 10, "offset": 5})
@@ -664,7 +699,7 @@ class TestProcedureRouteHandler:
 
     def test_route_handler_bind_endpoint_func_paginated(
         self,
-        list_handler: ProcedureRouteHandler,  # type: ignore[type-arg]
+        list_handler: ProcedureRouteHandler[Any, Any, Any],
         paginated_service: PaginatedDemoService,
     ) -> None:
         """Paginated procedure gets a pagination-bound callable."""

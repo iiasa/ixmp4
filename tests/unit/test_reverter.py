@@ -1,6 +1,7 @@
 from collections.abc import Iterator
 from datetime import datetime
 from types import SimpleNamespace
+from typing import Any, cast
 from unittest import mock
 
 import pytest
@@ -14,16 +15,12 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.base.db import BaseModel
 from ixmp4.data.meta.db import RunMetaEntry
 from ixmp4.data.run.db import Run
-from ixmp4.data.versions.model import Operation
+from ixmp4.data.versions.model import BaseVersionModel, Operation
 from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 from ixmp4.data.versions.transaction import Transaction
 
 
-class ReverterTestBase(orm.DeclarativeBase):
-    pass
-
-
-class ReverterItem(ReverterTestBase):
+class ReverterItem(BaseModel):
     __tablename__ = "unit_reverter_item"
 
     id: orm.Mapped[int] = orm.mapped_column(sa.Integer(), primary_key=True)
@@ -32,25 +29,14 @@ class ReverterItem(ReverterTestBase):
     mismatch: orm.Mapped[int | None] = orm.mapped_column(sa.Integer(), nullable=True)
 
 
-class ReverterItemVersion(ReverterTestBase):
+class ReverterItemVersion(BaseVersionModel):
     __tablename__ = "unit_reverter_item_version"
-
-    id: orm.Mapped[int] = orm.mapped_column(sa.Integer(), primary_key=True)
-    transaction_id: orm.Mapped[int] = orm.mapped_column(
-        sa.BigInteger(), primary_key=True, nullable=False, index=True
-    )
-    operation_type: orm.Mapped[int] = orm.mapped_column(
-        sa.SmallInteger(), nullable=False, index=True
-    )
-    end_transaction_id: orm.Mapped[int | None] = orm.mapped_column(
-        sa.BigInteger(), nullable=True, index=True
-    )
     name: orm.Mapped[str] = orm.mapped_column(sa.String(255), nullable=False)
     value: orm.Mapped[int] = orm.mapped_column(sa.Integer(), nullable=False)
     mismatch: orm.Mapped[str | None] = orm.mapped_column(sa.String(255), nullable=True)
 
 
-class DemoReverterRepository(ReverterRepository):
+class DemoReverterRepository(ReverterRepository[[]]):
     target = ModelTarget(ReverterItem)
     version_target = ModelTarget(ReverterItemVersion)
 
@@ -58,16 +44,19 @@ class DemoReverterRepository(ReverterRepository):
 @pytest.fixture()
 def demo_session() -> Iterator[orm.Session]:
     engine = sa.create_engine("sqlite:///:memory:")
-    BaseModel.metadata.create_all(bind=engine, tables=[Transaction.__table__])
-    ReverterTestBase.metadata.create_all(bind=engine)
+    tables = [
+        cast(sa.Table, Transaction.__table__),
+        cast(sa.Table, ReverterItem.__table__),
+        cast(sa.Table, ReverterItemVersion.__table__),
+    ]
+    BaseModel.metadata.create_all(bind=engine, tables=tables)
     session = orm.Session(engine)
 
     try:
         yield session
     finally:
         session.close()
-        ReverterTestBase.metadata.drop_all(bind=engine)
-        BaseModel.metadata.drop_all(bind=engine, tables=[Transaction.__table__])
+        BaseModel.metadata.drop_all(bind=engine, tables=tables)
         engine.dispose()
 
 
@@ -130,7 +119,7 @@ def seed_demo_state(session: orm.Session) -> None:
 
 
 def test_reverter_repository_requires_version_target(demo_session: orm.Session) -> None:
-    class MissingVersionRepository(ReverterRepository):
+    class MissingVersionRepository(ReverterRepository[[]]):
         target = ModelTarget(ReverterItem)
 
     with pytest.raises(ProgrammingError, match="requires a `version_target`"):
@@ -276,11 +265,11 @@ def test_reverter_orders_repositories_and_commits_per_phase(
             log.append(("constructive", "child", origin_tx_id, tx_id, args, kwargs))
 
     executor = SimpleNamespace(session=SimpleNamespace(commit=mock.Mock()))
-    reverter = Reverter([ChildRepository, ParentRepository])
+    reverter: Any = Reverter(cast(Any, [ChildRepository, ParentRepository]))
 
     assert reverter.repo_classes == [ParentRepository, ChildRepository]
 
-    reverter(executor, 4, "scope", force=True)
+    reverter(cast(SessionExecutor, executor), 4, "scope", force=True)
 
     assert log == [
         ("destructive", "child", 9, 4, ("scope",), {"force": True}),

@@ -1,11 +1,15 @@
 from types import SimpleNamespace
+from typing import Any, cast
 from unittest import mock
 
+import httpx
 import pytest
 import sqlalchemy as sa
 from pydantic import SecretStr
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 import ixmp4.transport as transport_module
+from ixmp4._version import __version__
 from ixmp4.base_exceptions import ImproperlyConfigured
 from ixmp4.conf.settings import ClientSettings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
@@ -108,8 +112,8 @@ def test_authorized_transport_string_includes_user_and_platform() -> None:
     session = transport_module.Session(bind=sa.create_engine("sqlite:///:memory:"))
     transport = AuthorizedTransport(
         session=session,
-        auth_ctx=SimpleNamespace(user="alice"),
-        platform=SimpleNamespace(id="demo-platform"),
+        auth_ctx=cast(AuthorizationContext, SimpleNamespace(user="alice")),
+        platform=cast(PlatformProtocol, SimpleNamespace(id="demo-platform")),
     )
 
     assert transport.unauthorized_transport.session is session
@@ -132,7 +136,7 @@ def test_httpx_transport_check_root_rejects_manager_url_mismatch(
     response.json.return_value = {
         "slug": "demo",
         "name": "Demo",
-        "version": transport_module.__version__,
+        "version": __version__,
         "is_managed": True,
         "manager_url": "https://manager.server.test/api",
         "utcnow": "2024-01-01T00:00:00Z",
@@ -144,7 +148,7 @@ def test_httpx_transport_check_root_rejects_manager_url_mismatch(
     )
 
     with pytest.raises(ImproperlyConfigured, match="mismatching Manager URL"):
-        HttpxTransport(client, ClientSettings())
+        HttpxTransport(cast(Any, client), ClientSettings())
 
 
 def test_httpx_transport_from_url_uses_self_signed_auth_when_configured(
@@ -159,7 +163,7 @@ def test_httpx_transport_from_url_uses_self_signed_auth_when_configured(
         captured.update(kwargs)
         return SimpleNamespace(base_url=kwargs["base_url"], auth=kwargs["auth"])
 
-    monkeypatch.setattr(transport_module.httpx, "Client", fake_client)
+    monkeypatch.setattr(httpx, "Client", fake_client)
 
     settings = ClientSettings(
         concurrency=3,
@@ -209,9 +213,12 @@ def test_httpx_transport_string_uses_manager_user(
     monkeypatch.setattr(transport_module, "ThreadPoolExecutor", fake_executor)
 
     transport = HttpxTransport(
-        client=SimpleNamespace(
-            base_url="https://platform.server.test/api",
-            auth=MockManagerAuth("https://manager.client.test/api", user="alice"),
+        client=cast(
+            Any,
+            SimpleNamespace(
+                base_url="https://platform.server.test/api",
+                auth=MockManagerAuth("https://manager.client.test/api", user="alice"),
+            ),
         ),
         settings=ClientSettings(),
         check_root=False,
