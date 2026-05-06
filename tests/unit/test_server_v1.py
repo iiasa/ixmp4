@@ -1,20 +1,18 @@
 """Unit tests for ixmp4.server.v1 – get_platform, on_startup,
 yield_session, get_transport, and the service_exception_handler."""
 
-import pytest
 import asyncio
-
 from types import SimpleNamespace
 from unittest import mock
 
+import pytest
 import sqlalchemy as sa
 from pydantic import SecretStr
 
 import ixmp4.server.v1 as v1_module
-from ixmp4.server.v1 import V1HttpApi
 from ixmp4.conf.settings import ServerSettings
-
 from ixmp4.core.exceptions import Forbidden, PlatformNotFound
+from ixmp4.server.v1 import V1HttpApi
 from ixmp4.transport import AuthorizedTransport, DirectTransport
 
 
@@ -148,7 +146,8 @@ class TestGetPlatform:
     def test_get_platform_falls_back_to_toml_when_manager_raises_not_found(
         self,
     ) -> None:
-        """PlatformNotFound from manager_platforms is suppressed, then toml_platforms is tried."""
+        """PlatformNotFound from manager_platforms is suppressed,
+        then toml_platforms is tried."""
         from ixmp4.server.v1 import get_platform
 
         toml_platform = SimpleNamespace(dsn="sqlite:///:memory:")

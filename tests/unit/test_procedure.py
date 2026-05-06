@@ -644,7 +644,8 @@ class TestProcedureRouteHandler:
         self,
         compute_handler: ProcedureRouteHandler[Any, Any, Any],
     ) -> None:
-        """Empty body constructs empty payload_model (required fields still validated)."""
+        """Empty body constructs empty payload_model
+        (required fields still validated)."""
         # `compute` requires `value`, so empty body -> InvalidArguments
         with pytest.raises(InvalidArguments):
             compute_handler.build_call_args(path={}, query={}, body=b"")
