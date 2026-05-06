@@ -133,7 +133,9 @@ class TestTimeSeriesVersioning(TimeSeriesServiceTest):
         }
         assert (vdf["operation_type"] == 0).all(), "All records must be INSERT (0)"
         assert (vdf["run__id"] == run.id).all()
-        assert vdf["end_transaction_id"].isna().all(), "Newly inserted rows must be open"
+        assert vdf["end_transaction_id"].isna().all(), (
+            "Newly inserted rows must be open"
+        )
 
         # The timeseries ids and region/measurand ids must match the expected values.
         pdt.assert_frame_equal(
