@@ -8,6 +8,6 @@
     "command": "pytest",
     "args": ["-s", "${ZED_FILE}::${ZED_SYMBOL}"],
     "tags": ["python-test", "python-test-class", "python-test-method"],
-    "use_new_terminal": true,
-  },
+    "use_new_terminal": true
+  }
 ]

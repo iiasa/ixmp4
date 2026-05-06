@@ -11,6 +11,6 @@
     "cwd": "$ZED_WORKTREE_ROOT",
     "args": ["${ZED_FILE}::${ZED_SYMBOL}", "-s"],
     "tags": ["python-test", "python-test-class", "python-test-method"],
-    "use_new_terminal": true,
-  },
+    "use_new_terminal": true
+  }
 ]

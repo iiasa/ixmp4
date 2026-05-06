@@ -19,6 +19,9 @@ secrets.env
 # vscode
 .vscode
 
+# zed
+.zed
+
 # idea/Pycharm
 .idea/
 *.iml
