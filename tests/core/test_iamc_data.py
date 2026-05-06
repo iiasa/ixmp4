@@ -3,13 +3,13 @@ import pandas as pd
 import pandas.testing as pdt
 import pytest
 import sqlalchemy as sa
+from sqlalchemy import orm
 from toolkit.db.executor import SessionExecutor
 
 import ixmp4
 from ixmp4.data.iamc.datapoint.type import Type
 from ixmp4.data.iamc.measurand.db import Measurand
 from ixmp4.data.versions.transaction import TransactionRepository
-from ixmp4.transport import HttpxTransport
 from tests import backends
 from tests.base import DataFrameTest
 from tests.custom_exception import CustomException
@@ -173,18 +173,14 @@ class IamcDataTest(IamcTest):
 
 
 class IamcDataRollbackTest(IamcTest):
-    def _get_direct_transport(self, run: ixmp4.Run):  # type: ignore[return]
-        transport = run._backend.transport
-        if isinstance(transport, HttpxTransport) and transport.direct is not None:
-            return transport.direct
-        return transport
-
     def latest_transaction_id(self, run: ixmp4.Run) -> int:
-        executor = SessionExecutor(self._get_direct_transport(run).session)
+        executor = SessionExecutor(
+            self.get_direct_or_skip(run._backend.transport).session
+        )
         return TransactionRepository(executor).latest().id
 
-    def _get_direct_session(self, run: ixmp4.Run):  # type: ignore[return]
-        return self._get_direct_transport(run).session
+    def _get_direct_session(self, run: ixmp4.Run) -> orm.Session:
+        return self.get_direct_or_skip(run._backend.transport).session
 
     def timeseries_df(self, run: ixmp4.Run) -> pd.DataFrame:
         return run._backend.iamc.timeseries.tabulate(
