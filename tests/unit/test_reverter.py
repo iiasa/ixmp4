@@ -8,6 +8,7 @@ import pytest
 import sqlalchemy as sa
 from sqlalchemy import orm
 from toolkit.db.executor import SessionExecutor
+from toolkit.db.models import DeclarativeBase, HasConventionalMetadata
 from toolkit.db.target import ModelTarget
 
 import ixmp4.data.versions.reverter as reverter_module
@@ -15,12 +16,33 @@ from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.base.db import BaseModel
 from ixmp4.data.meta.db import RunMetaEntry
 from ixmp4.data.run.db import Run
-from ixmp4.data.versions.model import BaseVersionModel, Operation
+from ixmp4.data.versions.model import Operation
 from ixmp4.data.versions.reverter import Reverter, ReverterRepository
 from ixmp4.data.versions.transaction import Transaction
 
 
-class ReverterItem(BaseModel):
+class ReverterTestBase(DeclarativeBase, HasConventionalMetadata):
+    id: orm.Mapped[int] = orm.mapped_column(sa.Integer(), primary_key=True)
+
+
+ReverterTestBase.reset_metadata()
+
+
+class ReverterVersionModel(ReverterTestBase):
+    __abstract__ = True
+    id: orm.Mapped[int] = orm.mapped_column(sa.Integer(), primary_key=True)
+    transaction_id: orm.Mapped[int] = orm.mapped_column(
+        sa.BigInteger(), primary_key=True, index=True, nullable=False
+    )
+    operation_type: orm.Mapped[int] = orm.mapped_column(
+        sa.SmallInteger(), index=True, nullable=False
+    )
+    end_transaction_id: orm.Mapped[int | None] = orm.mapped_column(
+        sa.BigInteger(), nullable=True, index=True
+    )
+
+
+class ReverterItem(ReverterTestBase):
     __tablename__ = "unit_reverter_item"
 
     id: orm.Mapped[int] = orm.mapped_column(sa.Integer(), primary_key=True)
@@ -29,7 +51,7 @@ class ReverterItem(BaseModel):
     mismatch: orm.Mapped[int | None] = orm.mapped_column(sa.Integer(), nullable=True)
 
 
-class ReverterItemVersion(BaseVersionModel):
+class ReverterItemVersion(ReverterVersionModel):
     __tablename__ = "unit_reverter_item_version"
     name: orm.Mapped[str] = orm.mapped_column(sa.String(255), nullable=False)
     value: orm.Mapped[int] = orm.mapped_column(sa.Integer(), nullable=False)
@@ -37,26 +59,29 @@ class ReverterItemVersion(BaseVersionModel):
 
 
 class DemoReverterRepository(ReverterRepository[[]]):
-    target = ModelTarget(ReverterItem)
-    version_target = ModelTarget(ReverterItemVersion)
+    # ReverterRepository expects models that inherit from ixmp4's BaseModel
+    target = ModelTarget(ReverterItem)  # type: ignore[arg-type]
+    version_target = ModelTarget(ReverterItemVersion)  # type: ignore[arg-type]
 
 
 @pytest.fixture()
 def demo_session() -> Iterator[orm.Session]:
     engine = sa.create_engine("sqlite:///:memory:")
-    tables = [
-        cast(sa.Table, Transaction.__table__),
+    core_tables = [cast(sa.Table, Transaction.__table__)]
+    reverter_tables = [
         cast(sa.Table, ReverterItem.__table__),
         cast(sa.Table, ReverterItemVersion.__table__),
     ]
-    BaseModel.metadata.create_all(bind=engine, tables=tables)
+    BaseModel.metadata.create_all(bind=engine, tables=core_tables)
+    ReverterTestBase.metadata.create_all(bind=engine, tables=reverter_tables)
     session = orm.Session(engine)
 
     try:
         yield session
     finally:
         session.close()
-        BaseModel.metadata.drop_all(bind=engine, tables=tables)
+        ReverterTestBase.metadata.drop_all(bind=engine, tables=reverter_tables)
+        BaseModel.metadata.drop_all(bind=engine, tables=core_tables)
         engine.dispose()
 
 
@@ -120,7 +145,7 @@ def seed_demo_state(session: orm.Session) -> None:
 
 def test_reverter_repository_requires_version_target(demo_session: orm.Session) -> None:
     class MissingVersionRepository(ReverterRepository[[]]):
-        target = ModelTarget(ReverterItem)
+        target = ModelTarget(ReverterItem)  # type: ignore[arg-type]
 
     with pytest.raises(ProgrammingError, match="requires a `version_target`"):
         MissingVersionRepository(SessionExecutor(demo_session))
