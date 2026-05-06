@@ -1,6 +1,14 @@
 import logging
 from contextlib import asynccontextmanager, suppress
-from typing import TYPE_CHECKING, Any, AsyncIterator, Awaitable, Callable, Sequence
+from typing import (
+    TYPE_CHECKING,
+    Any,
+    AsyncGenerator,
+    AsyncIterator,
+    Awaitable,
+    Callable,
+    Sequence,
+)
 
 from litestar import Litestar, Request, Response, Router
 from litestar.datastructures import State
@@ -109,7 +117,7 @@ async def yield_session(dsn: str) -> AsyncIterator[orm.Session]:
 async def get_transport(
     platform: PlatformConnectionInfo,
     request: Request[User | None, AuthorizationContext | None, Any],
-) -> AsyncIterator[DirectTransport]:
+) -> AsyncGenerator[DirectTransport, None]:
     async with yield_session(platform.dsn) as session:
         if request.auth is not None:
             yield AuthorizedTransport(session, request.auth, platform)
@@ -117,7 +125,7 @@ async def get_transport(
             yield DirectTransport(session)
 
 
-async def get_backend(transport: DirectTransport) -> AsyncIterator[Backend]:
+async def get_backend(transport: DirectTransport) -> AsyncGenerator[Backend, None]:
     yield Backend(transport)
 
 

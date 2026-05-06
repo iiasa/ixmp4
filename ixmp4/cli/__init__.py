@@ -14,7 +14,7 @@ Use the ``--help`` option to find out more about any command:
 
 import typer
 from toolkit.client.auth import ManagerAuth
-from toolkit.exceptions import InvalidCredentials
+from toolkit.exceptions import InvalidCredentials as InvalidCredentials
 
 from ixmp4.cli import alembic, platforms, server
 from ixmp4.cli.banner import print_banner
