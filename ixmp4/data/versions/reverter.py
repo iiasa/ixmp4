@@ -2,10 +2,12 @@ from typing import Any, ClassVar, Generic, ParamSpec
 
 import pandas as pd
 import sqlalchemy as sa
+import sqlalchemy.exc
 from toolkit.db.executor import SessionExecutor
 from toolkit.db.repositories import PandasRepository
 from toolkit.db.target import ModelTarget
 
+from ixmp4.base_exceptions import NotFound
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.data.base.db import BaseModel
 
@@ -258,6 +260,10 @@ class Reverter(Generic[Params]):
             target.revert_destructive(origin_tx_id, tx_id, *args, **kwargs)
             executor.session.commit()
 
-        for target in targets:
-            target.revert_constructive(origin_tx_id, tx_id, *args, **kwargs)
-            executor.session.commit()
+        try:
+            for target in targets:
+                target.revert_constructive(origin_tx_id, tx_id, *args, **kwargs)
+                executor.session.commit()
+        except sqlalchemy.exc.IntegrityError as e:
+            executor.session.rollback()
+            raise NotFound() from e

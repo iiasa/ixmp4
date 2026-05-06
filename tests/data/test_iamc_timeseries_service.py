@@ -89,6 +89,60 @@ class TimeSeriesServiceTest(ServiceTest[TimeSeriesService]):
         variables.create({"name": "Variable 2"})
 
 
+class TestTimeSeriesVersioning(TimeSeriesServiceTest):
+    @pytest.fixture(scope="class")
+    def test_df(
+        self,
+        run: Run,
+        regions: RegionService,
+        units: UnitService,
+        fake_time: datetime.datetime,
+    ) -> pd.DataFrame:
+        self.create_related(regions, units)
+
+        return pd.DataFrame(
+            [
+                [run.id, "Region 1", "Variable 1", "Unit 1"],
+                [run.id, "Region 1", "Variable 2", "Unit 2"],
+                [run.id, "Region 2", "Variable 1", "Unit 1"],
+            ],
+            columns=["run__id", "region", "variable", "unit"],
+        )
+
+    def test_timeseries_bulk_upsert_versioning(
+        self,
+        versioning_service: TimeSeriesService,
+        run: Run,
+        fake_time: datetime.datetime,
+        test_df: pd.DataFrame,
+        test_df_expected: pd.DataFrame,
+    ) -> None:
+        versioning_service.bulk_upsert(test_df)
+        vdf = versioning_service.versions.tabulate()
+
+        # Three timeseries INSERT version records must exist.
+        assert len(vdf) == 3
+        assert set(vdf.columns) >= {
+            "id",
+            "run__id",
+            "region__id",
+            "measurand__id",
+            "transaction_id",
+            "end_transaction_id",
+            "operation_type",
+        }
+        assert (vdf["operation_type"] == 0).all(), "All records must be INSERT (0)"
+        assert (vdf["run__id"] == run.id).all()
+        assert vdf["end_transaction_id"].isna().all(), "Newly inserted rows must be open"
+
+        # The timeseries ids and region/measurand ids must match the expected values.
+        pdt.assert_frame_equal(
+            test_df_expected,
+            vdf[["id", "run__id", "region__id", "measurand__id"]],
+            check_like=True,
+        )
+
+
 class TestTimeSeriesBulkUpsertFullRelated(TimeSeriesServiceTest):
     @pytest.fixture(scope="class")
     def test_df(

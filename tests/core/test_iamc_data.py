@@ -2,9 +2,14 @@ import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
+import sqlalchemy as sa
+from toolkit.db.executor import SessionExecutor
 
 import ixmp4
 from ixmp4.data.iamc.datapoint.type import Type
+from ixmp4.data.iamc.measurand.db import Measurand
+from ixmp4.data.versions.transaction import TransactionRepository
+from ixmp4.transport import HttpxTransport
 from tests import backends
 from tests.base import DataFrameTest
 from tests.custom_exception import CustomException
@@ -168,6 +173,51 @@ class IamcDataTest(IamcTest):
 
 
 class IamcDataRollbackTest(IamcTest):
+    def _get_direct_transport(self, run: ixmp4.Run):  # type: ignore[return]
+        transport = run._backend.transport
+        if isinstance(transport, HttpxTransport) and transport.direct is not None:
+            return transport.direct
+        return transport
+
+    def latest_transaction_id(self, run: ixmp4.Run) -> int:
+        executor = SessionExecutor(self._get_direct_transport(run).session)
+        return TransactionRepository(executor).latest().id
+
+    def _get_direct_session(self, run: ixmp4.Run):  # type: ignore[return]
+        return self._get_direct_transport(run).session
+
+    def timeseries_df(self, run: ixmp4.Run) -> pd.DataFrame:
+        return run._backend.iamc.timeseries.tabulate(
+            join_parameters=True, run={"id": run.id, "default_only": False}
+        ).drop(columns=["id", "run__id"])
+
+    def expected_timeseries_df(self, df: pd.DataFrame) -> pd.DataFrame:
+        return (
+            df[["region", "variable", "unit"]].drop_duplicates().reset_index(drop=True)
+        )
+
+    def clear_iamc_data(self, run: ixmp4.Run, df: pd.DataFrame) -> None:
+        if self.timeseries_df(run).empty:
+            return
+        with run.transact("Clear iamc data for rollback test"):
+            run.iamc.remove(df.drop(columns=["value"]))
+
+    def delete_measurands_for_variable(
+        self, run: ixmp4.Run, variable_name: str
+    ) -> None:
+        session = self._get_direct_session(run)
+        variable = run._backend.iamc.variables.get_by_name(variable_name)
+        session.execute(
+            sa.delete(Measurand).where(Measurand.variable__id == variable.id)
+        )
+        session.commit()
+
+    def delete_measurands_for_unit(self, run: ixmp4.Run, unit_name: str) -> None:
+        session = self._get_direct_session(run)
+        unit = run._backend.units.get_by_name(unit_name)
+        session.execute(sa.delete(Measurand).where(Measurand.unit__id == unit.id))
+        session.commit()
+
     def test_iamc_data_removal_failure(
         self,
         run: ixmp4.Run,
@@ -249,6 +299,160 @@ class IamcDataRollbackTest(IamcTest):
             check_like=True,
         )
 
+    def test_iamc_data_new_timeseries_failure(
+        self,
+        run: ixmp4.Run,
+        test_data_new_timeseries: pd.DataFrame,
+    ) -> None:
+        try:
+            with run.transact("Add new iamc timeseries failure"):
+                run.iamc.add(test_data_new_timeseries)
+                raise CustomException
+        except CustomException:
+            pass
+
+    def test_iamc_data_versioning_after_new_timeseries_failure(
+        self,
+        versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        ret = run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(test_data_add),
+            self.canonical_sort(ret),
+            check_like=True,
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(self.expected_timeseries_df(test_data_add)),
+            self.canonical_sort(self.timeseries_df(run)),
+            check_like=True,
+        )
+
+    def test_iamc_data_non_versioning_after_new_timeseries_failure(
+        self,
+        non_versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_upsert: pd.DataFrame,
+        test_data_new_timeseries: pd.DataFrame,
+    ) -> None:
+        expected = pd.concat(
+            [test_data_upsert, test_data_new_timeseries], ignore_index=True
+        )
+        ret = run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(expected),
+            self.canonical_sort(ret),
+            check_like=True,
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(self.expected_timeseries_df(expected)),
+            self.canonical_sort(self.timeseries_df(run)),
+            check_like=True,
+        )
+
+    def test_iamc_data_full_timeseries_removal_failure(
+        self,
+        run: ixmp4.Run,
+        test_data_remove_full_timeseries: pd.DataFrame,
+    ) -> None:
+        try:
+            with run.transact("Remove iamc timeseries failure"):
+                run.iamc.remove(test_data_remove_full_timeseries)
+                raise CustomException
+        except CustomException:
+            pass
+
+    def test_iamc_data_versioning_after_full_timeseries_removal_failure(
+        self,
+        versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        ret = run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(test_data_add),
+            self.canonical_sort(ret),
+            check_like=True,
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(self.expected_timeseries_df(test_data_add)),
+            self.canonical_sort(self.timeseries_df(run)),
+            check_like=True,
+        )
+
+    def test_iamc_data_non_versioning_after_full_timeseries_removal_failure(
+        self,
+        non_versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_upsert_after_full_timeseries_removal: pd.DataFrame,
+    ) -> None:
+        ret = run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(test_data_upsert_after_full_timeseries_removal),
+            self.canonical_sort(ret),
+            check_like=True,
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(
+                self.expected_timeseries_df(
+                    test_data_upsert_after_full_timeseries_removal
+                )
+            ),
+            self.canonical_sort(self.timeseries_df(run)),
+            check_like=True,
+        )
+
+    def test_iamc_data_revert_recreates_deleted_variable(
+        self,
+        versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        tx_id = self.latest_transaction_id(run)
+        self.clear_iamc_data(run, test_data_add)
+        self.delete_measurands_for_variable(run, "Variable 1")
+        versioning_platform.iamc.variables.delete("Variable 1")
+
+        run._service.revert(run.id, tx_id)
+
+        assert versioning_platform.iamc.variables.get_by_name("Variable 1").name == (
+            "Variable 1"
+        )
+        ret = run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(test_data_add),
+            self.canonical_sort(ret),
+            check_like=True,
+        )
+
+    def test_iamc_data_revert_with_deleted_region_raises_not_found(
+        self,
+        versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        tx_id = self.latest_transaction_id(run)
+        self.clear_iamc_data(run, test_data_add)
+        versioning_platform.regions.delete("Region 1")
+
+        with pytest.raises(ixmp4.NotFound):
+            run._service.revert(run.id, tx_id)
+
+    def test_iamc_data_revert_with_deleted_unit_raises_not_found(
+        self,
+        versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        tx_id = self.latest_transaction_id(run)
+        self.clear_iamc_data(run, test_data_add)
+        self.delete_measurands_for_unit(run, "Unit 1")
+        versioning_platform.units.delete("Unit 1")
+
+        with pytest.raises(ixmp4.NotFound):
+            run._service.revert(run.id, tx_id)
+
 
 class IamcDataAnnual:
     @pytest.fixture(scope="class")
@@ -317,6 +521,44 @@ class IamcDataAnnual:
         test_data_upsert = test_data_add.copy()
         test_data_upsert["value"] = np.sin(test_data_upsert["value"])
         return test_data_upsert
+
+    @pytest.fixture(scope="class")
+    def test_data_new_timeseries(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [["Region 1", "Unit 2", "Variable 1", 2040, 9.9]],
+            columns=["region", "unit", "variable", "year", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_remove_full_timeseries(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [
+                ["Region 1", "Unit 1", "Variable 1", 2000],
+                ["Region 1", "Unit 1", "Variable 1", 2010],
+            ],
+            columns=["region", "unit", "variable", "year"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert_after_full_timeseries_removal(
+        self,
+        test_data_new_timeseries: pd.DataFrame,
+        test_data_upsert: pd.DataFrame,
+    ) -> pd.DataFrame:
+        expected = pd.concat(
+            [test_data_upsert, test_data_new_timeseries], ignore_index=True
+        )
+        return expected[
+            ~(
+                (expected["region"] == "Region 1")
+                & (expected["unit"] == "Unit 1")
+                & (expected["variable"] == "Variable 1")
+            )
+        ].reset_index(drop=True)
 
 
 class TestIamcDataAnnualInferType(IamcDataAnnual, IamcDataTest):

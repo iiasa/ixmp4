@@ -180,4 +180,4 @@ vcs = "git"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--benchmark-skip --backend sqlite,rest-sqlite"
+#addopts = "--benchmark-skip --backend sqlite,rest-sqlite --cov-report term --cov-report xml:.coverage.xml --cov=ixmp4 "

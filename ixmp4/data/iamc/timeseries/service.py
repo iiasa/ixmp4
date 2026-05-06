@@ -26,7 +26,7 @@ from ixmp4.data.unit.repositories import (
 
 from .df_schemas import TabulateTimeSeriesFrameSchema, UpsertTimeSeriesFrameSchema
 from .filter import TimeSeriesFilter
-from .repositories import PandasRepository
+from .repositories import PandasRepository, VersionRepository
 
 
 class TimeSeriesService(Service):
@@ -36,6 +36,7 @@ class TimeSeriesService(Service):
     http_controller = EnumerationCompatibilityController
     executor: SessionExecutor
     pandas: PandasRepository
+    versions: VersionRepository
 
     measurands: MeasurandPandasRepository
     regions: RegionPandasRepository
@@ -48,6 +49,7 @@ class TimeSeriesService(Service):
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.versions = VersionRepository(self.executor)
 
         self.measurands = MeasurandPandasRepository(self.executor)
         self.regions = RegionPandasRepository(self.executor)
