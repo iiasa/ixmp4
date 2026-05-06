@@ -6,6 +6,7 @@ from typing import (
     Generic,
     ParamSpec,
     TypeVar,
+    overload,
 )
 
 from ixmp4.base_exceptions import ProgrammingError
@@ -52,9 +53,19 @@ class ProcedureDescriptor(Generic[ServiceT, Params, ReturnT]):
     def __call__(self, *args: Params.args, **kwds: Params.kwargs) -> ReturnT:
         raise ProgrammingError("`ServiceProcedure` cannot be called directly.")
 
+    @overload
+    def __get__(
+        self, obj: None, cls: type[Any] | None = None
+    ) -> "ProcedureDescriptor[ServiceT, Params, ReturnT]": ...
+
+    @overload
+    def __get__(
+        self, obj: ServiceT, cls: type[Any] | None = None
+    ) -> "Callable[Params, ReturnT]": ...
+
     def __get__(
         self, obj: ServiceT | None, cls: type[Any] | None = None
-    ) -> "Callable[Params, ReturnT]":
+    ) -> "ProcedureDescriptor[ServiceT, Params, ReturnT] | Callable[Params, ReturnT]":
         if obj is None:
             return self
 
