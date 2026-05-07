@@ -9,10 +9,7 @@ from ixmp4.data.filters.facade import (
     FilterValueTransformer,
     convert_facade_filter,
     make_iterable_str_in_transformer,
-<<<<<<< HEAD
     make_mapping_transformer,
-=======
->>>>>>> main
     make_str_like_transformer,
 )
 from ixmp4.data.iamc.timeseries.db import TimeSeries
@@ -90,10 +87,7 @@ FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
     "variable": NAME_FILTER_TRANSFORMERS,
     "model": NAME_FILTER_TRANSFORMERS,
     "scenario": NAME_FILTER_TRANSFORMERS,
-<<<<<<< HEAD
     "run": (make_mapping_transformer(run_facade_to_data_filter),),
-=======
->>>>>>> main
 }
 
 
