@@ -267,7 +267,7 @@ class TestRunClone:
         assert cloned_run.scenario.name == run.scenario.name
         assert dict(cloned_run.meta) == test_data_meta
 
-        cloned_df = cloned_run.iamc.tabulate().drop(columns=["type"])
+        cloned_df = cloned_run.iamc.tabulate()
         pdt.assert_frame_equal(cloned_df, test_data_iamc, check_like=True)
 
         indexset1 = cloned_run.optimization.indexsets.get_by_name("IndexSet 1")

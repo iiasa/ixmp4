@@ -48,7 +48,9 @@ def _convert_to_std_format(
         columns.append("run__id")
     if join_runs:
         columns.extend(["model", "scenario", "version"])
-    columns += ["region", "variable", "unit"] + [time_col]
+    columns += ["region", "variable", "unit"]
+    if time_col in df.columns:
+        columns += [time_col]
     if "subannual" in df.columns:
         columns += ["subannual"]
     return df[columns + ["value"]]

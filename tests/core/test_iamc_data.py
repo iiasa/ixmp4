@@ -74,9 +74,7 @@ class IamcDataTest(IamcTest):
         test_data_type: Type | None,
     ) -> None:
         ret = run.iamc.tabulate()
-        pdt.assert_frame_equal(
-            test_data_add, ret.drop(columns=["type"]), check_like=True
-        )
+        pdt.assert_frame_equal(test_data_add, ret, check_like=True)
 
         test_data_platform = test_data_add.copy()
         test_data_platform["model"] = run.model.name
@@ -84,50 +82,40 @@ class IamcDataTest(IamcTest):
         test_data_platform["version"] = run.version
 
         ret_platform = platform.iamc.tabulate(run={"default_only": False})
-        pdt.assert_frame_equal(
-            test_data_platform, ret_platform.drop(columns=["type"]), check_like=True
-        )
+        pdt.assert_frame_equal(test_data_platform, ret_platform, check_like=True)
 
     def test_iamc_data_facade_name_filter_shorthands(
         self,
         run: ixmp4.Run,
     ) -> None:
-        ret_region = run.iamc.tabulate(region="Region 1").drop(columns=["type"])
-        ret_region_explicit = run.iamc.tabulate(region={"name__like": "Region 1"}).drop(
-            columns=["type"]
-        )
+        ret_region = run.iamc.tabulate(region="Region 1")
+        ret_region_explicit = run.iamc.tabulate(region={"name__like": "Region 1"})
         pdt.assert_frame_equal(
             self.canonical_sort(ret_region),
             self.canonical_sort(ret_region_explicit),
             check_like=True,
         )
 
-        ret_unit = run.iamc.tabulate(unit=["Unit 1", "Unit 2"]).drop(columns=["type"])
-        ret_unit_explicit = run.iamc.tabulate(
-            unit={"name__in": ["Unit 1", "Unit 2"]}
-        ).drop(columns=["type"])
+        ret_unit = run.iamc.tabulate(unit=["Unit 1", "Unit 2"])
+        ret_unit_explicit = run.iamc.tabulate(unit={"name__in": ["Unit 1", "Unit 2"]})
         pdt.assert_frame_equal(
             self.canonical_sort(ret_unit),
             self.canonical_sort(ret_unit_explicit),
             check_like=True,
         )
 
-        ret_variable = run.iamc.tabulate(variable="Variable 1").drop(columns=["type"])
-        ret_variable_explicit = run.iamc.tabulate(
-            variable={"name__like": "Variable 1"}
-        ).drop(columns=["type"])
+        ret_variable = run.iamc.tabulate(variable="Variable 1")
+        ret_variable_explicit = run.iamc.tabulate(variable={"name__like": "Variable 1"})
         pdt.assert_frame_equal(
             self.canonical_sort(ret_variable),
             self.canonical_sort(ret_variable_explicit),
             check_like=True,
         )
 
-        ret_variable_in = run.iamc.tabulate(variable=["Variable 1", "Variable 2"]).drop(
-            columns=["type"]
-        )
+        ret_variable_in = run.iamc.tabulate(variable=["Variable 1", "Variable 2"])
         ret_variable_in_explicit = run.iamc.tabulate(
             variable={"name__in": ["Variable 1", "Variable 2"]}
-        ).drop(columns=["type"])
+        )
         pdt.assert_frame_equal(
             self.canonical_sort(ret_variable_in),
             self.canonical_sort(ret_variable_in_explicit),
@@ -150,9 +138,7 @@ class IamcDataTest(IamcTest):
         test_data_type: Type | None,
     ) -> None:
         ret = run.iamc.tabulate()
-        pdt.assert_frame_equal(
-            test_data_remaining, ret.drop(columns=["type"]), check_like=True
-        )
+        pdt.assert_frame_equal(test_data_remaining, ret, check_like=True)
 
     def test_iamc_data_upsert(
         self,
@@ -170,7 +156,6 @@ class IamcDataTest(IamcTest):
         test_data_upsert: pd.DataFrame,
     ) -> None:
         ret = run.iamc.tabulate()
-        ret = ret.drop(columns=["type"])
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_upsert),
             self.canonical_sort(ret),
@@ -181,9 +166,7 @@ class IamcDataTest(IamcTest):
         test_data_platform["model"] = run.model.name
         test_data_platform["scenario"] = run.scenario.name
         test_data_platform["version"] = run.version
-        ret_platform = platform.iamc.tabulate(run={"default_only": False}).drop(
-            columns=["type"]
-        )
+        ret_platform = platform.iamc.tabulate(run={"default_only": False})
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_platform),
             self.canonical_sort(ret_platform),
@@ -205,13 +188,6 @@ class IamcDataTest(IamcTest):
         run: ixmp4.Run,
     ) -> None:
         ret = run.iamc.tabulate()
-        assert ret.columns.sort_values().to_list() == [
-            "region",
-            "type",
-            "unit",
-            "value",
-            "variable",
-        ]
         assert ret.empty
 
     def test_iamc_data_versioning(self, versioning_platform: ixmp4.Platform) -> None:
@@ -282,7 +258,7 @@ class IamcDataRollbackTest(IamcTest):
         test_data_add: pd.DataFrame,
         test_data_remove: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
             self.canonical_sort(ret),
@@ -296,7 +272,7 @@ class IamcDataRollbackTest(IamcTest):
         test_data_remove: pd.DataFrame,
         test_data_remaining: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_remaining),
             self.canonical_sort(ret),
@@ -321,7 +297,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
             self.canonical_sort(ret),
@@ -334,7 +310,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_upsert: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_upsert),
             self.canonical_sort(ret),
@@ -359,7 +335,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
             self.canonical_sort(ret),
@@ -381,7 +357,7 @@ class IamcDataRollbackTest(IamcTest):
         expected = pd.concat(
             [test_data_upsert, test_data_new_timeseries], ignore_index=True
         )
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(expected),
             self.canonical_sort(ret),
@@ -411,7 +387,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_add: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
             self.canonical_sort(ret),
@@ -429,7 +405,7 @@ class IamcDataRollbackTest(IamcTest):
         run: ixmp4.Run,
         test_data_upsert_after_full_timeseries_removal: pd.DataFrame,
     ) -> None:
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_upsert_after_full_timeseries_removal),
             self.canonical_sort(ret),
@@ -461,7 +437,7 @@ class IamcDataRollbackTest(IamcTest):
         assert versioning_platform.iamc.variables.get_by_name("Variable 1").name == (
             "Variable 1"
         )
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
             self.canonical_sort(ret),
@@ -669,7 +645,7 @@ class TestIamcDataStringType(IamcDataAnnual, IamcTest):
     ) -> None:
         with run.transact("remove partial"):
             run.iamc.remove(test_data_remove, type="Annual")
-        ret = run.iamc.tabulate().drop(columns=["type"])
+        ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_remaining),
             self.canonical_sort(ret),
