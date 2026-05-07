@@ -240,7 +240,11 @@ class TestFilters:
 
     def test_filter_datapoints(self, platform: ixmp4.Platform) -> None:
         def sort_df(df: pd.DataFrame) -> pd.DataFrame:
-            return df.sort_values(df.columns.tolist()).reset_index(drop=True)
+            # Use string keys to handle columns with mixed types (e.g. int years
+            # and Timestamps in the same "time" column after _convert_to_std_format).
+            return df.sort_values(
+                df.columns.tolist(), key=lambda col: col.astype(str)
+            ).reset_index(drop=True)
 
         df = platform.iamc.tabulate(run={"default_only": False})
         assert len(df) == 426
