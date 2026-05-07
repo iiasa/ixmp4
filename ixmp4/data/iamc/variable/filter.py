@@ -1,12 +1,24 @@
-from typing import Annotated, Any
+from collections.abc import Mapping, Sequence
+from typing import Annotated, Any, cast
 
 import sqlalchemy as sa
 from toolkit.db.repositories import BaseRepository
 
 from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
+from ixmp4.data.filters.facade import (
+    FilterValueTransformer,
+    convert_facade_filter,
+    make_mapping_transformer,
+)
 from ixmp4.data.iamc.timeseries.db import TimeSeries
-from ixmp4.data.run.filter import RunFilter
+from ixmp4.data.run.filter import (
+    FacadeRunFilter,
+    RunFilter,
+)
+from ixmp4.data.run.filter import (
+    facade_to_data_filter as run_facade_to_data_filter,
+)
 from ixmp4.data.versions.filter import VersionFilter
 
 from .db import Variable
@@ -40,3 +52,23 @@ class VariableFilter(iamc.VariableFilter, total=False):
 
 class VariableVersionFilter(VersionFilter, iamc.VariableFilter, total=False):
     pass
+
+
+class FacadeVariableFilter(iamc.VariableFilter, total=False):
+    unit: base.UnitFilter
+    region: base.RegionFilter
+    run: FacadeRunFilter | None
+
+
+FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
+    "run": (make_mapping_transformer(run_facade_to_data_filter),),
+}
+
+
+def facade_to_data_filter(filter_values: Mapping[str, Any]) -> VariableFilter:
+    converted = convert_facade_filter(
+        filter_values,
+        key_map={},
+        field_transformers=FACADE_FILTER_TRANSFORMERS,
+    )
+    return cast(VariableFilter, converted)
