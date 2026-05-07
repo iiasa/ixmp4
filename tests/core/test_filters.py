@@ -284,6 +284,11 @@ class TestFilters:
         )
         assert len(df_year_gte) == 46
 
+        df_year_gte_shorthand = platform.iamc.tabulate(
+            year__gte=2000, run={"default_only": False}
+        )
+        assert len(df_year_gte_shorthand) == 46
+
     def test_invalid_filters_raise(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(InvalidArguments):
             platform.iamc.tabulate(**cast(dict[str, Any], {"bogus": 1}))
