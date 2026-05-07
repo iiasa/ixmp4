@@ -10,8 +10,9 @@ on:
 
 jobs:
   test:
-    timeout-minutes: 30
+    timeout-minutes: 150
     strategy:
+      fail-fast: false
       matrix:
         python-version:
           - "3.10" # Earliest version supported by ixmp4
@@ -26,7 +27,8 @@ jobs:
         pandas-version:
           - false
         backend:
-          - "sqlite,rest-sqlite,postgres,rest-postgres"
+          - "sqlite,rest-sqlite"
+          - "postgres,rest-postgres"
         include:
           # with pyarrow
           - python-version: "3.14"
@@ -147,7 +149,7 @@ jobs:
       - name: Run tests
         run: |
           source .venv/bin/activate
-          pytest --backend ${{ matrix.backend }} --postgres-dsn "postgresql://postgres:postgres@localhost:5432/test" --cov-report xml:.coverage.xml --cov=ixmp4 -rsxX --benchmark-skip --color=yes
+          pytest --backend ${{ matrix.backend }} --postgres-dsn "postgresql+psycopg://postgres:postgres@localhost:5432/test" --cov-report xml:.coverage.xml --cov=ixmp4 -rxX --benchmark-skip --color=yes
       #------------------------------
       #  Upload coverage to codecov
       #------------------------------

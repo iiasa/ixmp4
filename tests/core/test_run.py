@@ -1,417 +1,275 @@
+import datetime
+from typing import Any
+
 import pandas as pd
 import pandas.testing as pdt
 import pytest
 
-# Import this from typing when dropping 3.11
-from typing_extensions import Unpack
-
 import ixmp4
-from ixmp4.core import Run
-from ixmp4.core.exceptions import IxmpError, RunIsLocked
+from tests import backends
 
-from ..fixtures import FilterIamcDataset, SmallIamcDataset
-
-
-def _expected_runs_table(*row_default: Unpack[tuple[bool | None, ...]]) -> pd.DataFrame:
-    rows = []
-    for i, default in enumerate(row_default, start=1):
-        if default is not None:
-            rows.append(["Model", "Scenario", i] + [default])
-
-    return pd.DataFrame(rows, columns=["model", "scenario", "version", "is_default"])
+platform = backends.get_platform_fixture(scope="class")
 
 
-def assert_cloned_run(original: Run, clone: Run, kept_solution: bool) -> None:
-    """Asserts that a Run and its clone contain the same data."""
-    # Assert IAMC data are equal
-    pdt.assert_frame_equal(original.iamc.tabulate(), clone.iamc.tabulate())
-
-    # Assert indexset names and data are equal
-    for original_indexset, cloned_indexset in zip(
-        original.optimization.indexsets.list(), clone.optimization.indexsets.list()
-    ):
-        assert original_indexset.name == cloned_indexset.name
-        assert original_indexset.data == cloned_indexset.data
-
-    # Assert scalar names and data are equal
-    for original_scalar, cloned_scalar in zip(
-        original.optimization.scalars.list(), clone.optimization.scalars.list()
-    ):
-        assert original_scalar.name == cloned_scalar.name
-        assert original_scalar.value == cloned_scalar.value
-        assert original_scalar.unit.name == cloned_scalar.unit.name
-
-    # Assert table names and data are equal
-    for original_table, cloned_table in zip(
-        original.optimization.tables.list(), clone.optimization.tables.list()
-    ):
-        assert original_table.name == cloned_table.name
-        assert original_table.data == cloned_table.data
-
-    # Assert parameter names and data are equal
-    for original_parameter, cloned_parameter in zip(
-        original.optimization.parameters.list(), clone.optimization.parameters.list()
-    ):
-        assert original_parameter.name == cloned_parameter.name
-        assert original_parameter.data == cloned_parameter.data
-
-    # Assert equation names are equal and the solution is either equal or empty
-    for original_equation, cloned_equation in zip(
-        original.optimization.equations.list(), clone.optimization.equations.list()
-    ):
-        assert original_equation.name == cloned_equation.name
-        assert cloned_equation.data == (original_equation.data if kept_solution else {})
-
-    # Assert variable names are equal and the solution is either equal or empty
-    for original_variable, cloned_variable in zip(
-        original.optimization.variables.list(), clone.optimization.variables.list()
-    ):
-        assert original_variable.name == cloned_variable.name
-        assert cloned_variable.data == (original_variable.data if kept_solution else {})
-
-
-class TestCoreRun:
-    filter = FilterIamcDataset()
-    small = SmallIamcDataset()
-
-    def test_run_notfound(self, platform: ixmp4.Platform) -> None:
-        # no Run with that model and scenario name exists
-        with pytest.raises(Run.NotFound):
-            _ = platform.runs.get("Unknown Model", "Unknown Scenario", version=1)
-
-    def test_run_versions(self, platform: ixmp4.Platform) -> None:
+class TestRun:
+    def test_create_run(
+        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+    ) -> None:
         run1 = platform.runs.create("Model", "Scenario")
-        run2 = platform.runs.create("Model", "Scenario")
-
-        assert run1.id != run2.id
-
-        # no default version is assigned, so list & tabulate are empty
-        with pytest.raises(Run.NoDefaultVersion):
-            _ = platform.runs.get("Model", "Scenario")
-        assert platform.runs.list() == []
-        assert platform.runs.tabulate().empty
-
-        # getting a specific version works even if no default version is assigned
-        assert run1.id == platform.runs.get("Model", "Scenario", version=1).id
-
-        # getting the table and list for all runs works
-        run_list = platform.runs.list(default_only=False)
-        assert len(run_list) == 2
-        assert run_list[0].id == run1.id
-        pdt.assert_frame_equal(
-            platform.runs.tabulate(default_only=False),
-            pd.DataFrame(_expected_runs_table(False, False)),
-        )
-
-        # set default, so list & tabulate show default version only
         run1.set_as_default()
-        run_list = platform.runs.list()
-        assert len(run_list) == 1
-        assert run_list[0].id == run1.id
-        pdt.assert_frame_equal(
-            platform.runs.tabulate(),
-            pd.DataFrame(_expected_runs_table(True)),
+
+        run2 = platform.runs.create("Model", "Scenario")
+        run3 = platform.runs.create("Other Model", "Scenario")
+        run4 = platform.runs.create("Other Model", "Other Scenario")
+
+        assert run1.id == 1
+        assert run1.model.name == "Model"
+        assert run1.scenario.name == "Scenario"
+        assert run1.version == 1
+
+        assert run1.created_at == fake_time.replace(tzinfo=None)
+        assert run1.created_by == "@unknown"
+
+        assert str(run1) == "<Run 1 model='Model' scenario='Scenario' version=1>"
+
+        assert run2.id == 2
+        assert run2.version == 2
+
+        assert run3.id == 3
+        assert run4.id == 4
+
+    def test_tabulate_run(self, platform: ixmp4.Platform) -> None:
+        ret_df = platform.runs.tabulate(default_only=False)
+        assert len(ret_df) == 4
+        assert "id" in ret_df.columns
+        assert "model" in ret_df.columns
+        assert "scenario" in ret_df.columns
+        assert "version" in ret_df.columns
+
+    def test_tabulate_run_hides_internal_columns_by_default(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        ret_df = platform.runs.tabulate(default_only=False)
+        assert "model__id" not in ret_df.columns
+        assert "scenario__id" not in ret_df.columns
+        assert "lock_transaction" not in ret_df.columns
+
+    def test_tabulate_run_shows_internal_columns_when_requested(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        ret_df = platform.runs.tabulate(
+            default_only=False, include_internal_columns=True
         )
+        assert "model__id" in ret_df.columns
+        assert "scenario__id" in ret_df.columns
+        assert "lock_transaction" in ret_df.columns
 
-        # using default_only=False shows both versions
-        pdt.assert_frame_equal(
-            platform.runs.tabulate(default_only=False),
-            pd.DataFrame(_expected_runs_table(True, False)),
+    def test_list_run(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.runs.list(default_only=False)) == 4
+
+    def test_delete_run_via_func_obj(self, platform: ixmp4.Platform) -> None:
+        run1 = platform.runs.get("Model", "Scenario")
+        platform.runs.delete(run1)
+        run2 = platform.runs.get("Model", "Scenario", version=2)
+        platform.runs.delete(run2)
+
+    def test_delete_run_via_func_id(self, platform: ixmp4.Platform) -> None:
+        platform.runs.delete(3)
+
+    def test_delete_run_via_obj(self, platform: ixmp4.Platform) -> None:
+        run4 = platform.runs.get("Other Model", "Other Scenario", version=1)
+        run4.delete()
+
+    def test_runs_empty(self, platform: ixmp4.Platform) -> None:
+        assert platform.runs.tabulate().empty
+        assert len(platform.runs.list()) == 0
+
+
+class TestRunClone:
+    @pytest.fixture(scope="class")
+    def units(
+        self,
+        platform: ixmp4.Platform,
+    ) -> list[ixmp4.Unit]:
+        return [platform.units.create("Unit 1"), platform.units.create("Unit 2")]
+
+    @pytest.fixture(scope="class")
+    def regions(
+        self,
+        platform: ixmp4.Platform,
+    ) -> list[ixmp4.Region]:
+        return [
+            platform.regions.create("Region 1", "default"),
+            platform.regions.create("Region 2", "default"),
+        ]
+
+    @pytest.fixture(scope="class")
+    def test_data_iamc(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [
+                ["Region 1", "Unit 1", "Variable 1", 2000, 1.1],
+                ["Region 1", "Unit 1", "Variable 1", 2010, 1.3],
+                ["Region 1", "Unit 2", "Variable 2", 2020, 1.5],
+                ["Region 1", "Unit 2", "Variable 2", 2030, 1.7],
+                ["Region 2", "Unit 1", "Variable 1", 2000, 2.1],
+                ["Region 2", "Unit 1", "Variable 1", 2010, 2.3],
+                ["Region 2", "Unit 2", "Variable 2", 2020, 2.5],
+                ["Region 2", "Unit 2", "Variable 2", 2030, 2.7],
+            ],
+            columns=["region", "unit", "variable", "year", "value"],
         )
+        df["year"] = df["year"].astype("Int64")
+        return df
 
-        # using audit_info=True shows additional columns
-        audit_info = platform.runs.tabulate(default_only=False, audit_info=True)
-        for column in ["updated_at", "updated_by", "created_at", "created_by", "id"]:
-            assert column in audit_info.columns
-        pdt.assert_series_equal(audit_info.id, pd.Series([run1.id, run2.id], name="id"))
-
-        # default version can be retrieved directly
-        run = platform.runs.get("Model", "Scenario")
-        assert run1.id == run.id
-
-        # default version can be changed
-        run2.set_as_default()
-        run = platform.runs.get("Model", "Scenario")
-        assert run2.id == run.id
-
-        # list shows changed default version only
-        run_list = platform.runs.list()
-        assert len(run_list) == 1
-        assert run_list[0].id == run2.id
-        pdt.assert_frame_equal(
-            platform.runs.tabulate(),
-            pd.DataFrame(_expected_runs_table(None, True)),
-        )
-
-        # unsetting default means run cannot be retrieved directly
-        run2.unset_as_default()
-        with pytest.raises(Run.NoDefaultVersion):
-            platform.runs.get("Model", "Scenario")
-
-        # non-default version cannot be again set as un-default
-        with pytest.raises(IxmpError):
-            run2.unset_as_default()
-
-        self.filter.load_dataset(platform)
-
-        res = platform.runs.tabulate(
-            iamc={
-                "region": {"name": "Region 1"},
-            },
-        )
-        assert sorted(res["model"].tolist()) == ["Model 1"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 1"]
-
-        res = platform.runs.tabulate(
-            default_only=False,
-            iamc={
-                "region": {"name": "Region 2"},
-            },
-        )
-        assert sorted(res["model"].tolist()) == ["Model 2"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 2"]
-
-        res = platform.runs.tabulate(
-            default_only=True,
-            iamc={
-                "variable": {"name__like": "Variable *"},
-                "unit": {"name__in": ["Unit 2", "Unit 4"]},
-            },
-        )
-        assert sorted(res["model"].tolist()) == ["Model 1"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 1"]
-
-        res = platform.runs.tabulate(
-            default_only=False,
-            scenario={"name__in": ["Scenario 1", "Scenario 2"]},
-            iamc=None,
-        )
-
-        assert sorted(res["model"].tolist()) == ["Model 1", "Model 2"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario 1", "Scenario 2"]
-
-        res = platform.runs.tabulate(
-            default_only=False,
-            iamc=False,
-        )
-        assert sorted(res["model"].tolist()) == ["Model", "Model"]
-        assert sorted(res["scenario"].tolist()) == ["Scenario", "Scenario"]
-
-        for run in platform.runs.list(
-            default_only=False,
-            model={"name": "Model 1"},
-            scenario={"name": "Scenario 1"},
-        ):
-            self.delete_all_datapoints(run)
-        res = platform.runs.tabulate(
-            default_only=False,
-            iamc={
-                "region": {"name": "Region 3"},
-            },
-        )
-        assert sorted(res["model"].tolist()) == []
-        assert sorted(res["scenario"].tolist()) == []
-
-    def delete_all_datapoints(self, run: ixmp4.Run) -> None:
-        remove_data = run.iamc.tabulate(raw=True)
-        annual = remove_data[remove_data["type"] == "ANNUAL"].dropna(
-            how="all", axis="columns"
-        )
-        cat = remove_data[remove_data["type"] == "CATEGORICAL"].dropna(
-            how="all", axis="columns"
-        )
-
-        datetime = remove_data[remove_data["type"] == "DATETIME"].dropna(
-            how="all", axis="columns"
-        )
-        with run.transact("Remove iamc data"):
-            if not annual.empty:
-                run.iamc.remove(annual, type=ixmp4.DataPoint.Type.ANNUAL)
-            if not cat.empty:
-                run.iamc.remove(cat, type=ixmp4.DataPoint.Type.CATEGORICAL)
-            if not datetime.empty:
-                run.iamc.remove(datetime, type=ixmp4.DataPoint.Type.DATETIME)
-
-    def test_run_remove_solution(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        test_data = {
-            "Indexset": ["bar", "foo"],
-            "levels": [2.5, 1],
-            "marginals": [0, 6.9],
+    @pytest.fixture(scope="class")
+    def test_data_meta(self) -> dict[str, Any]:
+        return {
+            "test_bool": False,
+            "test_str": "test",
+            "test_int": 13,
+            "test_float": 3.14,
         }
-        with run.transact("Test Run.opt.remove_solution()"):
-            indexset = run.optimization.indexsets.create("Indexset")
-            indexset.add(["foo", "bar"])
-            run.optimization.equations.create(
-                "Equation",
-                constrained_to_indexsets=[indexset.name],
-            ).add(test_data)
-            run.optimization.variables.create(
-                "Variable",
-                constrained_to_indexsets=[indexset.name],
-            ).add(test_data)
 
-            run.optimization.remove_solution()
+    @pytest.fixture(scope="class")
+    def test_data_idxset1(
+        self,
+    ) -> list[str]:
+        return ["do", "re", "mi", "fa", "so", "la", "ti"]
 
-        # Need to fetch them here even if fetched before because API layer might not
-        # forward changes automatically
-        equation = run.optimization.equations.get("Equation")
-        variable = run.optimization.variables.get("Variable")
-        assert equation.data == {}
-        assert variable.data == {}
+    @pytest.fixture(scope="class")
+    def test_data_idxset2(
+        self,
+    ) -> list[float]:
+        return [3, 1, 4]
 
-    def test_run_delete_locked_run(self, platform: ixmp4.Platform) -> None:
-        self.small.load_dataset(platform)
-        run1_1 = platform.runs.get("Model 1", "Scenario 1")
-        run1_2 = platform.runs.get("Model 1", "Scenario 1")
+    @pytest.fixture(scope="class")
+    def test_data_equation1(self) -> dict[str, list[Any]]:
+        return {
+            "marginals": [-2, 1, 1],
+            "levels": [2, 1, 3],
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
 
-        with run1_1.transact("Erroneously lock run for deletion"):
-            with pytest.raises(RunIsLocked):
-                run1_1.delete()
-            with pytest.raises(RunIsLocked):
-                run1_2.delete()
+    @pytest.fixture(scope="class")
+    def test_data_parameter1(self) -> dict[str, list[Any]]:
+        return {
+            "units": ["Unit 1", "Unit 1", "Unit 2"],
+            "values": [1.2, 1.5, -3],
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
 
-    def test_run_delete_via_object_method(self, platform: ixmp4.Platform) -> None:
-        self.small.load_dataset(platform)
-        run1 = platform.runs.get("Model 1", "Scenario 1")
-        run2 = platform.runs.get("Model 2", "Scenario 2")
+    @pytest.fixture(scope="class")
+    def test_data_table1(self) -> dict[str, list[Any]]:
+        return {
+            "IndexSet 1": ["do", "re", "mi"],
+            "IndexSet 2": [3, 3, 1],
+        }
 
-        for run in [run1, run2]:
-            run.delete()
-            self.assert_run_data_deleted(platform, run)
+    @pytest.fixture(scope="class")
+    def test_data_variable1(self) -> dict[str, list[Any]]:
+        return {
+            "marginals": [-2, 1, 1],
+            "levels": [2, 1, 3],
+            "IndexSet 1": ["so", "la", "ti"],
+            "IndexSet 2": [4, 1, 1],
+        }
 
-    def test_run_delete_via_repository_id(self, platform: ixmp4.Platform) -> None:
-        self.small.load_dataset(platform)
-        run1 = platform.runs.get("Model 1", "Scenario 1")
-        run2 = platform.runs.get("Model 2", "Scenario 2")
-
-        for run in [run1, run2]:
-            platform.runs.delete(run.id)
-            self.assert_run_data_deleted(platform, run)
-
-    def test_run_delete_via_repository_object(self, platform: ixmp4.Platform) -> None:
-        self.small.load_dataset(platform)
-        run1 = platform.runs.get("Model 1", "Scenario 1")
-        run2 = platform.runs.get("Model 2", "Scenario 2")
-
-        for run in [run1, run2]:
-            platform.runs.delete(run)
-            self.assert_run_data_deleted(platform, run)
-
-    def test_run_invalid_argument(self, platform: ixmp4.Platform) -> None:
-        with pytest.raises(TypeError):
-            platform.runs.delete("Model|Scenario")  # type: ignore[arg-type]
-
-    def assert_run_data_deleted(self, platform: ixmp4.Platform, run: Run) -> None:
-        ret_meta = platform.backend.meta.tabulate(
-            run={"id": run.id, "default_only": False}
-        )
-        assert ret_meta.empty
-
-        ret_iamc_dps = platform.backend.iamc.datapoints.tabulate(
-            run={"id": run.id, "default_only": True}
-        )
-        assert ret_iamc_dps.empty
-
-        # TODO: check if optimization data is deleted. @glatterf42
-
-    def test_run_clone(self, platform: ixmp4.Platform) -> None:
-        # Prepare test data and platform
-        test_data_annual = self.small.annual.copy()
-        # Define required regions and units in the database
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
-        unit = platform.units.list()[0]  # Test data currently only has one
-        test_data = {"Indexset": ["foo"], "values": [3.14], "units": [unit.name]}
-        test_solution = {"Indexset": ["foo"], "levels": [4], "marginals": [0.2]}
-
-        # Prepare original run
+    @pytest.fixture(scope="class")
+    def run(
+        self,
+        platform: ixmp4.Platform,
+        test_data_iamc: pd.DataFrame,
+        test_data_meta: dict[str, Any],
+        test_data_idxset1: list[str],
+        test_data_idxset2: list[float],
+        test_data_equation1: dict[str, list[Any]],
+        test_data_parameter1: dict[str, list[Any]],
+        test_data_table1: dict[str, list[Any]],
+        test_data_variable1: dict[str, list[Any]],
+    ) -> ixmp4.Run:
         run = platform.runs.create("Model", "Scenario")
-        # Add IAMC data
-        with run.transact("Add data"):
-            run.iamc.add(test_data_annual, type=ixmp4.DataPoint.Type.ANNUAL)
+        assert run.id == 1
 
-            # Create optimization items and add some data
-            indexset = run.optimization.indexsets.create("Indexset")
-            indexset.add(["foo", "bar"])
+        with run.transact("Add meta indicators"):
+            run.meta = test_data_meta
 
-            run.optimization.scalars.create("Scalar", value=10, unit=unit.name)
+        with run.transact("Add IAMC data"):
+            run.iamc.add(test_data_iamc)
 
-            run.optimization.tables.create(
-                "Table", constrained_to_indexsets=[indexset.name]
-            ).add({"Indexset": ["bar"]})
+        with run.transact("Add Optimization data"):
+            indexset1 = run.optimization.indexsets.create("IndexSet 1")
+            indexset2 = run.optimization.indexsets.create("IndexSet 2")
+            indexset1.add_data(test_data_idxset1)
+            indexset2.add_data(test_data_idxset2)
 
-            run.optimization.parameters.create(
-                "Parameter", constrained_to_indexsets=[indexset.name]
-            ).add(test_data)
+            run.optimization.scalars.create("Scalar 1", 1.23, "Unit 1")
 
-            run.optimization.variables.create(
-                "Variable", constrained_to_indexsets=[indexset.name]
-            ).add(test_solution)
-
-            run.optimization.equations.create(
-                "Equation", constrained_to_indexsets=[indexset.name]
-            ).add(test_solution)
-
-        # Test cloning while keeping the solution
-        clone_with_solution = run.clone()
-        assert_cloned_run(run, clone_with_solution, kept_solution=True)
-
-        # Test cloning without keeping the solution
-        clone_without_solution = run.clone(
-            model="new model", scenario="new scenario", keep_solution=False
-        )
-        assert_cloned_run(run, clone_without_solution, kept_solution=False)
-
-        # Test working with cloned run
-        cloned_indexset = clone_with_solution.optimization.indexsets.get(indexset.name)
-        with clone_with_solution.transact("Test Run.clone() working with clone"):
-            cloned_indexset.add("baz")
-        expected = indexset.data
-        # TODO If possible, it would be great to type hint data according to what it is
-        # so that something like this works (not just a generic union of lists):
-        expected.append("baz")  # type: ignore[arg-type]
-        assert cloned_indexset.data == expected
-
-        # Test cloning Run without iamc data
-        run = platform.runs.create("Model", "Scenario")
-        clone_without_iamc = run.clone()
-        assert clone_without_iamc.iamc.tabulate().empty
-
-    def test_run_is_default(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-        assert run.is_default is False
-
-        run.set_as_default()
-        assert run.is_default
-
-        # Mypy doesn't know that set_as_default() reloads the underlying run._model
-        run.unset_as_default()  # type: ignore[unreachable]
-        assert not run.is_default
-
-    def test_run_has_solution(self, platform: ixmp4.Platform) -> None:
-        run = platform.runs.create("Model", "Scenario")
-
-        with run.transact("Test Run.opt.has_solution()"):
-            # Set up an equation and a variable
-            indexset = run.optimization.indexsets.create("Indexset")
-            indexset.add(["foo"])
-            equation = run.optimization.equations.create(
-                name="Equation",
-                constrained_to_indexsets=[indexset.name],
+            equation1 = run.optimization.equations.create(
+                "Equation 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
             )
-            variable = run.optimization.variables.create("Variable")
+            equation1.add_data(test_data_equation1)
 
-        # Without data in them, the run has no solution
-        assert not run.optimization.has_solution()
+            parameter1 = run.optimization.parameters.create(
+                "Parameter 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
+            )
+            parameter1.add_data(test_data_parameter1)
 
-        # Add data to equation to simulate having a solution
-        with run.transact("Test Run.opt.has_solution() with equ data"):
-            equation.add({indexset.name: ["foo"], "levels": [1], "marginals": [0]})
-        assert run.optimization.has_solution()
+            table1 = run.optimization.tables.create(
+                "Table 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
+            )
+            table1.add_data(test_data_table1)
 
-        # Check this also works for having data just in the variable
-        with run.transact("Test Run.opt.has_solution() with var data"):
-            equation.remove_data()
-            variable.add({"levels": [2025], "marginals": [1.5]})
-        assert run.optimization.has_solution()
+            variable1 = run.optimization.variables.create(
+                "Variable 1", constrained_to_indexsets=["IndexSet 1", "IndexSet 2"]
+            )
+            variable1.add_data(test_data_variable1)
+
+        return run
+
+    def test_clone_run(
+        self,
+        run: ixmp4.Run,
+        test_data_iamc: pd.DataFrame,
+        test_data_meta: dict[str, Any],
+        test_data_idxset1: list[str],
+        test_data_idxset2: list[float],
+        test_data_equation1: dict[str, list[Any]],
+        test_data_parameter1: dict[str, list[Any]],
+        test_data_table1: dict[str, list[Any]],
+        test_data_variable1: dict[str, list[Any]],
+    ) -> None:
+        cloned_run = run.clone()
+
+        assert cloned_run.model.name == run.model.name
+        assert cloned_run.scenario.name == run.scenario.name
+        assert dict(cloned_run.meta) == test_data_meta
+
+        cloned_df = cloned_run.iamc.tabulate().drop(columns=["type"])
+        pdt.assert_frame_equal(cloned_df, test_data_iamc, check_like=True)
+
+        indexset1 = cloned_run.optimization.indexsets.get_by_name("IndexSet 1")
+        indexset2 = cloned_run.optimization.indexsets.get_by_name("IndexSet 2")
+        assert indexset1.data == test_data_idxset1
+        assert indexset2.data == test_data_idxset2
+
+        scalar1 = cloned_run.optimization.scalars.get_by_name("Scalar 1")
+        assert scalar1.unit.name == "Unit 1"
+        assert scalar1.value == 1.23
+
+        equation1 = cloned_run.optimization.equations.get_by_name("Equation 1")
+        assert equation1.data == test_data_equation1
+
+        parameter1 = cloned_run.optimization.parameters.get_by_name("Parameter 1")
+        assert parameter1.data == test_data_parameter1
+
+        table1 = cloned_run.optimization.tables.get_by_name("Table 1")
+        assert table1.data == test_data_table1
+
+        variable1 = cloned_run.optimization.variables.get_by_name("Variable 1")
+        assert variable1.data == test_data_variable1

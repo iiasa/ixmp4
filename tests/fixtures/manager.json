@@ -1,0 +1,773 @@
+[
+  {
+    "model": "authentication.group",
+    "pk": 1,
+    "fields": {
+      "name": "Default Managers",
+      "description": null
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 2,
+    "fields": {
+      "name": "Default Accessors",
+      "description": null
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 3,
+    "fields": {
+      "name": "Private Accessors",
+      "description": ""
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 4,
+    "fields": {
+      "name": "General Editors",
+      "description": ""
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 5,
+    "fields": {
+      "name": "Gated Editors",
+      "description": ""
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 6,
+    "fields": {
+      "name": "Public Managers",
+      "description": ""
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 7,
+    "fields": {
+      "name": "Gated Managers",
+      "description": ""
+    }
+  },
+  {
+    "model": "authentication.group",
+    "pk": 8,
+    "fields": {
+      "name": "Private Managers",
+      "description": ""
+    }
+  },
+  {
+    "model": "authentication.user",
+    "pk": 1,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": true,
+      "username": "superuser_sarah",
+      "first_name": "",
+      "last_name": "",
+      "email": "sarah@nomail.ece.iiasa.ac.at",
+      "is_staff": true,
+      "is_active": true,
+      "is_verified": true,
+      "date_joined": "2023-05-31T14:23:14.582Z",
+      "user_permissions": [],
+      "groups": []
+    }
+  },
+  {
+    "model": "authentication.user",
+    "pk": 2,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "staffuser_alice",
+      "first_name": "",
+      "last_name": "",
+      "email": "alice@nomail.ece.iiasa.ac.at",
+      "is_staff": true,
+      "is_active": true,
+      "is_verified": true,
+      "date_joined": "2023-05-31T14:23:51.186Z",
+      "user_permissions": [],
+      "groups": [6, 7]
+    }
+  },
+  {
+    "model": "authentication.user",
+    "pk": 3,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "staffuser_bob",
+      "first_name": "",
+      "last_name": "",
+      "email": "bob@nomail.ece.iiasa.ac.at",
+      "is_staff": true,
+      "is_active": true,
+      "is_verified": true,
+      "date_joined": "2023-05-31T14:24:30.737Z",
+      "user_permissions": [],
+      "groups": [7, 8]
+    }
+  },
+  {
+    "model": "authentication.user",
+    "pk": 4,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "user_carina",
+      "first_name": "",
+      "last_name": "",
+      "email": "carina@nomail.ece.iiasa.ac.at",
+      "is_staff": false,
+      "is_active": true,
+      "is_verified": true,
+      "date_joined": "2023-05-31T14:35:08.758Z",
+      "user_permissions": [],
+      "groups": [3, 4]
+    }
+  },
+  {
+    "model": "authentication.user",
+    "pk": 5,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "user_dave",
+      "first_name": "",
+      "last_name": "",
+      "email": "dave@nomail.ece.iiasa.ac.at",
+      "is_staff": false,
+      "is_active": true,
+      "is_verified": true,
+      "date_joined": "2023-05-31T14:35:44.133Z",
+      "user_permissions": [],
+      "groups": [5]
+    }
+  },
+  {
+    "model": "authentication.user",
+    "pk": 6,
+    "fields": {
+      "password": "!",
+      "last_login": null,
+      "is_superuser": false,
+      "username": "user_eve",
+      "first_name": "",
+      "last_name": "",
+      "email": "eve@nomail.ece.iiasa.ac.at",
+      "is_staff": false,
+      "is_active": true,
+      "is_verified": true,
+      "date_joined": "2023-05-31T14:35:44.133Z",
+      "user_permissions": [],
+      "groups": []
+    }
+  },
+  {
+    "model": "authentication.profile",
+    "pk": 2,
+    "fields": {
+      "user": ["superuser_sarah"],
+      "full_name": "Superuser Sarah",
+      "country": "",
+      "address": "",
+      "organization": null
+    }
+  },
+  {
+    "model": "authentication.profile",
+    "pk": 3,
+    "fields": {
+      "user": ["staffuser_alice"],
+      "full_name": "Staffuser Alice",
+      "country": "",
+      "address": "",
+      "organization": null
+    }
+  },
+  {
+    "model": "authentication.profile",
+    "pk": 4,
+    "fields": {
+      "user": ["staffuser_bob"],
+      "full_name": "Staffuser Bob",
+      "country": "",
+      "address": "",
+      "organization": null
+    }
+  },
+  {
+    "model": "authentication.profile",
+    "pk": 5,
+    "fields": {
+      "user": ["user_carina"],
+      "full_name": "User Carina",
+      "country": "",
+      "address": "",
+      "organization": null
+    }
+  },
+  {
+    "model": "authentication.profile",
+    "pk": 6,
+    "fields": {
+      "user": ["user_dave"],
+      "full_name": "User Dave",
+      "country": "",
+      "address": "",
+      "organization": null
+    }
+  },
+  {
+    "model": "authentication.profile",
+    "pk": 7,
+    "fields": {
+      "user": ["user_eve"],
+      "full_name": "User Eve",
+      "country": null,
+      "address": null,
+      "organization": null
+    }
+  },
+  {
+    "model": "services.serviceinstance",
+    "pk": 1,
+    "fields": {
+      "polymorphic_ctype": ["services", "legacyinstance"],
+      "name": "IXSE Dev Public",
+      "slug": "IXSE_PUBLIC",
+      "management_group": 6,
+      "access_group": 2,
+      "accessibility": "PUBLIC"
+    }
+  },
+  {
+    "model": "services.serviceinstance",
+    "pk": 2,
+    "fields": {
+      "polymorphic_ctype": ["services", "legacyinstance"],
+      "name": "IXSE Dev Private",
+      "slug": "IXSE_PRIVATE",
+      "management_group": 8,
+      "access_group": 3,
+      "accessibility": "PRIVATE"
+    }
+  },
+  {
+    "model": "services.serviceinstance",
+    "pk": 3,
+    "fields": {
+      "polymorphic_ctype": ["services", "ixmp4instance"],
+      "name": "IXMP4 Dev Public",
+      "slug": "dev-public",
+      "management_group": 6,
+      "access_group": 2,
+      "accessibility": "PUBLIC"
+    }
+  },
+  {
+    "model": "services.serviceinstance",
+    "pk": 4,
+    "fields": {
+      "polymorphic_ctype": ["services", "ixmp4instance"],
+      "name": "IXMP4 Dev Gated",
+      "slug": "dev-gated",
+      "management_group": 7,
+      "access_group": 2,
+      "accessibility": "GATED"
+    }
+  },
+  {
+    "model": "services.serviceinstance",
+    "pk": 5,
+    "fields": {
+      "polymorphic_ctype": ["services", "ixmp4instance"],
+      "name": "IXMP4 Dev Private",
+      "slug": "dev-private",
+      "management_group": 8,
+      "access_group": 3,
+      "accessibility": "PRIVATE"
+    }
+  },
+  {
+    "model": "services.legacypermission",
+    "pk": 1,
+    "fields": {
+      "group": 2,
+      "instance": 1,
+      "access_type": "VIEW",
+      "model": "*"
+    }
+  },
+  {
+    "model": "services.legacypermission",
+    "pk": 2,
+    "fields": {
+      "group": 4,
+      "instance": 1,
+      "access_type": "EDIT",
+      "model": "*"
+    }
+  },
+  {
+    "model": "services.legacypermission",
+    "pk": 3,
+    "fields": {
+      "group": 3,
+      "instance": 2,
+      "access_type": "VIEW",
+      "model": "Model"
+    }
+  },
+  {
+    "model": "services.legacypermission",
+    "pk": 4,
+    "fields": {
+      "group": 4,
+      "instance": 2,
+      "access_type": "EDIT",
+      "model": "Model 1*"
+    }
+  },
+  {
+    "model": "services.legacyinstance",
+    "pk": 1,
+    "fields": {
+      "serviceinstance_ptr": 1,
+      "url": "https://dev.ixse.ece.iiasa.ac.at/ixse-public",
+      "description": "Fake public test IXSE instance from a test fixture.",
+      "json_config": {
+        "env": "ixse_public",
+        "logo": {
+          "url": "/static/logo-iiasa.png",
+          "title": "Fake Public Test Scenario Explorer"
+        },
+        "login": {
+          "guest": false,
+          "reset": {
+            "url": "https://dev.manager.ece.iiasa.ac.at/password/reset/"
+          },
+          "register": {
+            "url": "https://dev.manager.ece.iiasa.ac.at/register/",
+            "self": true,
+            "message": "You will be redirected to authentication server for registration"
+          }
+        },
+        "uiUrl": "https://data.ece.iiasa.ac.at/committed-internal",
+        "readme": "Fake Public Test Scenario Explorer hosted by IIASA",
+        "authUrl": "https://dev.api.manager.ece.iiasa.ac.at/legacy",
+        "baseUrl": "https://db1.ene.iiasa.ac.at/committed-internal-api/rest/v2.1",
+        "uploads": {
+          "types": [
+            {
+              "type": "TS",
+              "title": "Timeseries data (IAMC format)",
+              "createJob": true,
+              "fileFilter": ".xlsx"
+            },
+            {
+              "type": "PNG",
+              "title": "Images (to reference from text panels)",
+              "createJob": false,
+              "fileFilter": ".png"
+            }
+          ],
+          "enabled": true
+        },
+        "version": "pre-release",
+        "database": "IXSE_PUBLIC",
+        "copyright": "© Fake Public Test Scenario Explorer https://data.ece.iiasa.ac.at/ixse-test",
+        "profileUrl": "https://dev.manager.ece.iiasa.ac.at/account/profile/",
+        "userAccess": "OPEN",
+        "productName": "Fake Public Test Scenario Explorer",
+        "configVersion": "2.3",
+        "welcomeMessage": "Welcome to the Fake Public Test Scenario Explorer",
+        "timeseriesPanel": {
+          "tabs": [
+            {
+              "key": "scenarioSelection",
+              "runs": {
+                "advancedMode": true,
+                "advancedModeColumns": [
+                  "actions",
+                  "version",
+                  "isDefault",
+                  "uploadUser",
+                  "uploadTimestamp",
+                  "updateUser",
+                  "updateTimestamp",
+                  "annotation"
+                ]
+              },
+              "title": "Select Scenario",
+              "metadata": {
+                "fixed": ["category"]
+              },
+              "component": "scenario-selection"
+            },
+            {
+              "key": "characteristics",
+              "title": "Data Selection",
+              "types": {
+                "variables": false,
+                "parameters": false,
+                "timeseries": true
+              },
+              "minMax": {
+                "enabled": false
+              },
+              "component": "characteristic-selection",
+              "timeseries": {
+                "disableUnavailableVariables": false
+              }
+            },
+            {
+              "key": "regions",
+              "sort": ["World"],
+              "title": "Regions",
+              "useMap": false,
+              "component": "region-selection",
+              "preselected": ["World"]
+            },
+            {
+              "key": "timeslices",
+              "title": "Subannual timeslices",
+              "component": "timeslices-selection",
+              "preselected": ["Year"]
+            },
+            {
+              "key": "ranges",
+              "title": "Ranges",
+              "years": {
+                "max": 2100,
+                "min": 1950
+              },
+              "component": "ranges-selection"
+            },
+            {
+              "key": "options",
+              "title": "Options",
+              "component": "panel-options",
+              "showCrossPanelLinking": false,
+              "showSelectedOnlyEnabled": false
+            }
+          ],
+          "badges": ["runs", "characteristics", "regions", "options"],
+          "downloads": {
+            "asImage": true,
+            "enabled": true,
+            "asRawCsv": false,
+            "asRawXlsx": false,
+            "asPivotedCsv": true,
+            "asPivotedXlsx": true
+          },
+          "maxTooltipItems": 8
+        }
+      }
+    }
+  },
+  {
+    "model": "services.legacyinstance",
+    "pk": 2,
+    "fields": {
+      "serviceinstance_ptr": 2,
+      "url": "https://dev.ixse.ece.iiasa.ac.at/ixse-private",
+      "description": "Fake private test IXSE instance from a test fixture.",
+      "json_config": {
+        "env": "ixse_private",
+        "logo": {
+          "url": "/static/logo-iiasa.png",
+          "title": "Fake Private Test Scenario Explorer"
+        },
+        "login": {
+          "guest": false,
+          "reset": {
+            "url": "https://dev.manager.ece.iiasa.ac.at/password/reset/"
+          },
+          "register": {
+            "url": "https://dev.manager.ece.iiasa.ac.at/register/",
+            "self": true,
+            "message": "You will be redirected to authentication server for registration"
+          }
+        },
+        "uiUrl": "https://data.ece.iiasa.ac.at/committed-internal",
+        "readme": "Fake Private Test Scenario Explorer hosted by IIASA",
+        "authUrl": "https://dev.api.manager.ece.iiasa.ac.at/legacy",
+        "baseUrl": "https://db1.ene.iiasa.ac.at/committed-internal-api/rest/v2.1",
+        "uploads": {
+          "types": [
+            {
+              "type": "TS",
+              "title": "Timeseries data (IAMC format)",
+              "createJob": true,
+              "fileFilter": ".xlsx"
+            },
+            {
+              "type": "PNG",
+              "title": "Images (to reference from text panels)",
+              "createJob": false,
+              "fileFilter": ".png"
+            }
+          ],
+          "enabled": true
+        },
+        "version": "pre-release",
+        "database": "IXSE_PRIVATE",
+        "copyright": "© Fake Private Test Scenario Explorer https://data.ece.iiasa.ac.at/ixse-test",
+        "profileUrl": "https://dev.manager.ece.iiasa.ac.at/account/profile/",
+        "userAccess": "CLOSED",
+        "productName": "Fake Private Test Scenario Explorer",
+        "configVersion": "2.3",
+        "welcomeMessage": "Welcome to the Fake Private Test Scenario Explorer",
+        "timeseriesPanel": {
+          "tabs": [
+            {
+              "key": "scenarioSelection",
+              "runs": {
+                "advancedMode": true,
+                "advancedModeColumns": [
+                  "actions",
+                  "version",
+                  "isDefault",
+                  "uploadUser",
+                  "uploadTimestamp",
+                  "updateUser",
+                  "updateTimestamp",
+                  "annotation"
+                ]
+              },
+              "title": "Select Scenario",
+              "metadata": {
+                "fixed": ["category"]
+              },
+              "component": "scenario-selection"
+            },
+            {
+              "key": "characteristics",
+              "title": "Data Selection",
+              "types": {
+                "variables": false,
+                "parameters": false,
+                "timeseries": true
+              },
+              "minMax": {
+                "enabled": false
+              },
+              "component": "characteristic-selection",
+              "timeseries": {
+                "disableUnavailableVariables": false
+              }
+            },
+            {
+              "key": "regions",
+              "sort": ["World"],
+              "title": "Regions",
+              "useMap": false,
+              "component": "region-selection",
+              "preselected": ["World"]
+            },
+            {
+              "key": "timeslices",
+              "title": "Subannual timeslices",
+              "component": "timeslices-selection",
+              "preselected": ["Year"]
+            },
+            {
+              "key": "ranges",
+              "title": "Ranges",
+              "years": {
+                "max": 2100,
+                "min": 1950
+              },
+              "component": "ranges-selection"
+            },
+            {
+              "key": "options",
+              "title": "Options",
+              "component": "panel-options",
+              "showCrossPanelLinking": false,
+              "showSelectedOnlyEnabled": false
+            }
+          ],
+          "badges": ["runs", "characteristics", "regions", "options"],
+          "downloads": {
+            "asImage": true,
+            "enabled": true,
+            "asRawCsv": false,
+            "asRawXlsx": false,
+            "asPivotedCsv": true,
+            "asPivotedXlsx": true
+          },
+          "maxTooltipItems": 8
+        }
+      }
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 1,
+    "fields": {
+      "group": 2,
+      "instance": 3,
+      "access_type": "VIEW",
+      "model": "*"
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 2,
+    "fields": {
+      "group": 2,
+      "instance": 4,
+      "access_type": "VIEW",
+      "model": "Model"
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 3,
+    "fields": {
+      "group": 4,
+      "instance": 3,
+      "access_type": "EDIT",
+      "model": "*"
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 4,
+    "fields": {
+      "group": 4,
+      "instance": 4,
+      "access_type": "EDIT",
+      "model": "Model"
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 5,
+    "fields": {
+      "group": 3,
+      "instance": 5,
+      "access_type": "VIEW",
+      "model": "Model"
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 6,
+    "fields": {
+      "group": 4,
+      "instance": 5,
+      "access_type": "EDIT",
+      "model": "Model 1*"
+    }
+  },
+  {
+    "model": "services.modelpermission",
+    "pk": 7,
+    "fields": {
+      "group": 5,
+      "instance": 4,
+      "access_type": "EDIT",
+      "model": "*"
+    }
+  },
+  {
+    "model": "services.ixmp4instance",
+    "pk": 3,
+    "fields": {
+      "serviceinstance_ptr": 3,
+      "url": "https://dev.ixmp.ece.iiasa.ac.at/v1/dev-public",
+      "dsn": "sqlite:///{env:IXMP4_DIR}/databases/dev-public.sqlite3",
+      "description": null,
+      "workflow_repository": "git@github.com:iiasa/scse-processing-test-workflow"
+    }
+  },
+  {
+    "model": "services.ixmp4instance",
+    "pk": 4,
+    "fields": {
+      "serviceinstance_ptr": 4,
+      "url": "https://dev.ixmp.ece.iiasa.ac.at/v1/dev-gated",
+      "dsn": "sqlite:///{env:IXMP4_DIR}/databases/dev-gated.sqlite3",
+      "description": null,
+      "workflow_repository": "git@github.com:iiasa/scse-processing-test-workflow"
+    }
+  },
+  {
+    "model": "services.ixmp4instance",
+    "pk": 5,
+    "fields": {
+      "serviceinstance_ptr": 5,
+      "url": "https://dev.ixmp.ece.iiasa.ac.at/v1/dev-private",
+      "dsn": "sqlite:///{env:IXMP4_DIR}/databases/dev-private.sqlite3",
+      "description": null,
+      "workflow_repository": "git@github.com:iiasa/scse-processing-test-workflow"
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 2,
+    "fields": {
+      "user": ["superuser_sarah"],
+      "email": "sarah@nomail.ece.iiasa.ac.at",
+      "verified": true,
+      "primary": true
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 3,
+    "fields": {
+      "user": ["staffuser_alice"],
+      "email": "alice@nomail.ece.iiasa.ac.at",
+      "verified": true,
+      "primary": true
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 4,
+    "fields": {
+      "user": ["staffuser_bob"],
+      "email": "bob@nomail.ece.iiasa.ac.at",
+      "verified": true,
+      "primary": true
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 5,
+    "fields": {
+      "user": ["user_carina"],
+      "email": "carina@nomail.ece.iiasa.ac.at",
+      "verified": true,
+      "primary": true
+    }
+  },
+  {
+    "model": "account.emailaddress",
+    "pk": 6,
+    "fields": {
+      "user": ["user_dave"],
+      "email": "dave@nomail.ece.iiasa.ac.at",
+      "verified": true,
+      "primary": true
+    }
+  }
+]

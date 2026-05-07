@@ -75,3 +75,11 @@ IIASA secondary colours + two-stage gradient to white
   background: #6a4c93;
   color: #ffffff;
 }
+
+/* Fixing theme bug where properties dont 
+each get their own line: 
+https://github.com/readthedocs/sphinx_rtd_theme/issues/1301 */
+
+.py.property {
+  display: unset !important; 
+}

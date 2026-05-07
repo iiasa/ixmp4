@@ -1,125 +1,197 @@
-from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
+from typing import List
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Scenario as ScenarioModel
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
+from ixmp4.core.docs import DocsDescriptor
+from ixmp4.data.backend import Backend
+from ixmp4.data.scenario.dto import Scenario as ScenarioDto
+from ixmp4.data.scenario.exceptions import (
+    ScenarioDeletionPrevented,
+    ScenarioNotFound,
+    ScenarioNotUnique,
+)
+from ixmp4.data.scenario.filter import ScenarioFilter
+from ixmp4.data.scenario.service import ScenarioService
 
 
-class Scenario(BaseModelFacade):
-    _model: ScenarioModel
-    NotFound: ClassVar = ScenarioModel.NotFound
-    NotUnique: ClassVar = ScenarioModel.NotUnique
+class Scenario(BaseFacadeObject[ScenarioService, ScenarioDto]):
+    NotFound = ScenarioNotFound
+    NotUnique = ScenarioNotUnique
+    DeletionPrevented = ScenarioDeletionPrevented
+
+    docs: DocsDescriptor[ScenarioService, ScenarioDto] = DocsDescriptor()
+    """Scenario docs."""
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self._dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self._dto.created_by
 
-    @property
-    def docs(self) -> str | None:
-        try:
-            return self.backend.scenarios.docs.get(self.id).description
-        except DocsModel.NotFound:
-            return None
+    def delete(self) -> None:
+        """Deletes this scenario."""
 
-    @docs.setter
-    def docs(self, description: str | None) -> None:
-        if description is None:
-            self.backend.scenarios.docs.delete(self.id)
-        else:
-            self.backend.scenarios.docs.set(self.id, description)
+        self._service.delete_by_id(self._dto.id)
 
-    @docs.deleter
-    def docs(self) -> None:
-        try:
-            self.backend.scenarios.docs.delete(self.id)
-        # TODO: silently failing
-        except DocsModel.NotFound:
-            return None
+    def _get_service(self, backend: Backend) -> ScenarioService:
+        return backend.scenarios
 
     def __str__(self) -> str:
-        return f"<Scenario {self.id} name={self.name}>"
+        return f"<Scenario {self.id} name='{self.name}'>"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
-class ScenarioRepository(BaseFacade):
-    def create(
-        self,
-        name: str,
-    ) -> Scenario:
-        model = self.backend.scenarios.create(name)
-        return Scenario(_backend=self.backend, _model=model)
+class ScenarioServiceFacade(
+    BaseDocsServiceFacade[Scenario | int | str, Scenario, ScenarioService]
+):
+    def _get_service(self, backend: Backend) -> ScenarioService:
+        return backend.scenarios
 
-    def get(self, name: str) -> Scenario:
-        model = self.backend.scenarios.get(name)
-        return Scenario(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> list[Scenario]:
-        scenarios = self.backend.scenarios.list(name=name)
-        return [Scenario(_backend=self.backend, _model=s) for s in scenarios]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.scenarios.tabulate(name=name)
-
-    def _get_scenario_id(self, scenario: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(scenario, str):
-            obj = self.backend.scenarios.get(scenario)
-            return obj.id
+    def _get_item_id(self, ref: Scenario | int | str) -> int:
+        if isinstance(ref, Scenario):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self._service.get_by_name(ref)
+            return dto.id
         else:
-            raise ValueError(f"Invalid reference to scenario: {scenario}")
+            raise ValueError(f"Invalid reference to scenario: {ref}")
 
-    def get_docs(self, name: str) -> str | None:
-        scenario_id = self._get_scenario_id(name)
-        if scenario_id is None:
-            return None
-        try:
-            return self.backend.scenarios.docs.get(dimension_id=scenario_id).description
-        except DocsModel.NotFound:
-            return None
+    def create(self, name: str) -> Scenario:
+        """Creates a scenario.
 
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        scenario_id = self._get_scenario_id(name)
-        if scenario_id is None:
-            return None
-        return self.backend.scenarios.docs.set(
-            dimension_id=scenario_id, description=description
-        ).description
+        .. code:: python
 
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        scenario_id = self._get_scenario_id(name)
-        if scenario_id is None:
-            return None
-        try:
-            self.backend.scenarios.docs.delete(dimension_id=scenario_id)
-            return None
-        except DocsModel.NotFound:
-            return None
+            platform.scenarios.create("Scenario")
+            #> <Scenario 1 name='Scenario'>
 
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.backend.scenarios.docs.list(
-                dimension_id=id, dimension_id__in=id__in
-            )
-        ]
+        Parameters
+        ----------
+        name : str
+            The name of the scenario.
+
+        Raises
+        ------
+        :class:`ScenarioNotUnique`:
+            If the scenario with `name` is not unique.
+
+        Returns
+        -------
+        :class:`ixmp4.core.scenario.Scenario`:
+            The created scenario.
+        """
+
+        scen = self._service.create(name)
+        return Scenario(backend=self._backend, dto=scen)
+
+    def delete(self, ref: Scenario | int | str) -> None:
+        """Deletes a scenario.
+
+        .. code:: python
+
+            platform.scenarios.delete("Scenario")
+
+        Parameters
+        ----------
+        ref : :class:`ixmp4.core.scenario.Scenario` | int | str
+            Unit object, unit id or unit name.
+
+        Raises
+        ------
+        :class:`ScenarioNotFound`:
+            If no scenario matching ``ref`` exists.
+        :class:`ScenarioDeletionPrevented`:
+            If the scenario matching ``ref`` is used in the database,
+            preventing it deletion.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+        """
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> Scenario:
+        """Retrieves a scenario by its name.
+
+        .. code:: python
+
+            platform.scenarios.get_by_name("Scenario")
+            #> <Scenario 1 name='Scenario'>
+
+        Parameters
+        ----------
+        name : str
+            The unique name of the scenario.
+
+        Raises
+        ------
+        :class:`ScenarioNotFound`:
+            If the scenario with `name` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.core.scenario.Scenario`:
+            The retrieved scenario.
+        """
+
+        scen = self._service.get_by_name(name)
+        return Scenario(self._backend, scen)
+
+    def list(self, **kwargs: Unpack[ScenarioFilter]) -> List[Scenario]:
+        r"""Lists scenarios by specified criteria.
+
+        .. code:: python
+
+            platform.scenarios.list()
+            #> [<Scenario 1 name='Scenario'>]
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`ScenarioFilter`.
+
+        Returns
+        -------
+        list[:class:`ixmp4.core.scenario.Scenario`]:
+            List of scenarios.
+        """
+        scenarios = self._service.list(**kwargs)
+        return [Scenario(self._backend, dto) for dto in scenarios]
+
+    def tabulate(self, **kwargs: Unpack[ScenarioFilter]) -> pd.DataFrame:
+        r"""Tabulates scenarios by specified criteria.
+
+        .. code:: python
+
+            platform.scenarios.tabulate()
+            #>     name  id
+            # 0  Scenario   1
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`ScenarioFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - id
+                - name
+        """
+        return self._service.tabulate(**kwargs)

@@ -1,70 +1,76 @@
-from collections.abc import Iterable
+import datetime
 
-import pandas as pd
 import pytest
 
 import ixmp4
-from ixmp4.core import Unit
+from ixmp4 import Unit
+from tests import backends
 
-from ..fixtures import SmallIamcDataset
-from ..utils import assert_unordered_equality
-
-
-def create_testcase_units(platform: ixmp4.Platform) -> tuple[Unit, Unit]:
-    unit = platform.units.create("Test")
-    unit2 = platform.units.create("Test 2")
-    return unit, unit2
+platform = backends.get_platform_fixture(scope="class")
 
 
-def df_from_list(units: Iterable[Unit]) -> pd.DataFrame:
-    return pd.DataFrame(
-        [[u.id, u.name, u.created_at, u.created_by] for u in units],
-        columns=["id", "name", "created_at", "created_by"],
-    )
+class TestUnit:
+    def test_create_unit(
+        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+    ) -> None:
+        unit1 = platform.units.create("Unit 1")
+        unit2 = platform.units.create("Unit 2")
+        unit3 = platform.units.create("Unit 3")
+        unit4 = platform.units.create("Unit 4")
 
+        assert unit1.id == 1
+        assert unit1.name == "Unit 1"
+        assert unit1.created_at == fake_time.replace(tzinfo=None)
+        assert unit1.created_by == "@unknown"
+        assert unit1.docs is None
+        assert str(unit1) == "<Unit 1 name=Unit 1>"
 
-class TestCoreUnit:
-    small = SmallIamcDataset()
+        assert unit2.id == 2
+        assert unit3.id == 3
+        assert unit4.id == 4
 
-    def test_delete_unit(self, platform: ixmp4.Platform) -> None:
-        unit1 = platform.units.create("Test 1")
-        unit2 = platform.units.create("Test 2")
-        unit3 = platform.units.create("Test 3")
-        platform.units.create("Test 4")
+    def test_tabulate_unit(self, platform: ixmp4.Platform) -> None:
+        ret_df = platform.units.tabulate()
+        assert len(ret_df) == 4
+        assert "id" in ret_df.columns
+        assert "name" in ret_df.columns
+        assert "created_at" in ret_df.columns
+        assert "created_by" in ret_df.columns
 
-        assert unit1.id != unit2.id != unit3.id
+    def test_list_unit(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.units.list()) == 4
+
+    def test_delete_unit_via_func_obj(self, platform: ixmp4.Platform) -> None:
+        unit1 = platform.units.get_by_name("Unit 1")
         platform.units.delete(unit1)
-        platform.units.delete(unit2.id)
-        unit3.delete()
-        platform.units.delete("Test 4")
 
+    def test_delete_unit_via_func_id(self, platform: ixmp4.Platform) -> None:
+        platform.units.delete(2)
+
+    def test_delete_unit_via_func_name(self, platform: ixmp4.Platform) -> None:
+        platform.units.delete("Unit 3")
+
+    def test_delete_unit_via_obj(self, platform: ixmp4.Platform) -> None:
+        unit4 = platform.units.get_by_name("Unit 4")
+        unit4.delete()
+
+    def test_units_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.units.tabulate().empty
+        assert len(platform.units.list()) == 0
 
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
 
-        run = platform.runs.create("Model", "Scenario")
-        with run.transact("Add iamc data"):
-            run.iamc.add(self.small.annual, type=ixmp4.DataPoint.Type.ANNUAL)
-
-        with pytest.raises(Unit.DeletionPrevented):
-            platform.units.delete("Unit 1")
-
-    def test_retrieve_unit(self, platform: ixmp4.Platform) -> None:
-        unit1 = platform.units.create("Test")
-        unit2 = platform.units.get("Test")
-
-        assert unit1.id == unit2.id
-
+class TestUnitUnique:
     def test_unit_unqiue(self, platform: ixmp4.Platform) -> None:
-        platform.units.create("Test")
+        platform.units.create("Unit")
 
         with pytest.raises(Unit.NotUnique):
-            platform.units.create("Test")
+            platform.units.create("Unit")
 
+
+class TestUnitNames:
     def test_unit_dimensionless(self, platform: ixmp4.Platform) -> None:
         unit1 = platform.units.create("")
-        unit2 = platform.units.get("")
+        unit2 = platform.units.get_by_name("")
 
         assert unit1.id == unit2.id
 
@@ -80,88 +86,57 @@ class TestCoreUnit:
         ):
             platform.units.create("   ")
 
-    def test_unit_unknown(self, platform: ixmp4.Platform) -> None:
-        self.small.load_regions(platform)
-        self.small.load_units(platform)
 
-        invalid_data = self.small.annual.copy()
-        invalid_data["unit"] = "foo"
+class TestUnitDocs:
+    def test_create_docs_via_func(self, platform: ixmp4.Platform) -> None:
+        unit1 = platform.units.create("Unit 1")
 
-        run = platform.runs.create("Model", "Scenario")
-        with pytest.raises(Unit.NotFound):
-            with run.transact("Add invalid data"):
-                run.iamc.add(invalid_data, type=ixmp4.DataPoint.Type.ANNUAL)
+        unit1_docs1 = platform.units.set_docs("Unit 1", "Description of Unit 1")
+        unit1_docs2 = platform.units.get_docs("Unit 1")
 
-    def test_list_unit(self, platform: ixmp4.Platform) -> None:
-        units = create_testcase_units(platform)
-        unit, _ = units
+        assert unit1_docs1 == unit1_docs2
+        assert unit1.docs == unit1_docs1
 
-        a = [u.id for u in units]
-        b = [u.id for u in platform.units.list()]
-        assert not (set(a) ^ set(b))
+    def test_create_docs_via_object(self, platform: ixmp4.Platform) -> None:
+        unit2 = platform.units.create("Unit 2")
+        unit2.docs = "Description of Unit 2"
 
-        a = [unit.id]
-        b = [u.id for u in platform.units.list(name="Test")]
-        assert not (set(a) ^ set(b))
+        assert platform.units.get_docs("Unit 2") == unit2.docs
 
-    def test_tabulate_unit(self, platform: ixmp4.Platform) -> None:
-        units = create_testcase_units(platform)
-        unit, _ = units
+    def test_create_docs_via_setattr(self, platform: ixmp4.Platform) -> None:
+        unit3 = platform.units.create("Unit 3")
+        setattr(unit3, "docs", "Description of Unit 3")
 
-        a = df_from_list(units)
-        b = platform.units.tabulate()
-        assert_unordered_equality(a, b, check_dtype=False)
-
-        a = df_from_list([unit])
-        b = platform.units.tabulate(name="Test")
-        assert_unordered_equality(a, b, check_dtype=False)
-
-    def test_retrieve_docs(self, platform: ixmp4.Platform) -> None:
-        platform.units.create("Unit")
-        docs_unit1 = platform.units.set_docs("Unit", "Description of test Unit")
-        docs_unit2 = platform.units.get_docs("Unit")
-
-        assert docs_unit1 == docs_unit2
-
-        unit2 = platform.units.create("Unit2")
-
-        assert unit2.docs is None
-
-        unit2.docs = "Description of test Unit2"
-
-        assert platform.units.get_docs("Unit2") == unit2.docs
-
-    def test_delete_docs(self, platform: ixmp4.Platform) -> None:
-        unit = platform.units.create("Unit")
-        unit.docs = "Description of test Unit"
-        unit.docs = None
-
-        assert unit.docs is None
-
-        unit.docs = "Second description of test Unit"
-        del unit.docs
-
-        assert unit.docs is None
-
-        # Mypy doesn't recognize del properly, it seems
-        unit.docs = "Third description of test Unit"  # type: ignore[unreachable]
-        platform.units.delete_docs("Unit")
-
-        assert unit.docs is None
+        assert platform.units.get_docs("Unit 3") == unit3.docs
 
     def test_list_docs(self, platform: ixmp4.Platform) -> None:
-        unit_1 = platform.units.create("Unit 1")
-        unit_1.docs = "Description of Unit 1"
-        unit_2 = platform.units.create("Unit 2")
-        unit_2.docs = "Description of Unit 2"
-        unit_3 = platform.units.create("Unit 3")
-        unit_3.docs = "Description of Unit 3"
-
-        assert platform.units.list_docs() == [unit_1.docs, unit_2.docs, unit_3.docs]
-
-        assert platform.units.list_docs(id=unit_2.id) == [unit_2.docs]
-
-        assert platform.units.list_docs(id__in=[unit_1.id, unit_3.id]) == [
-            unit_1.docs,
-            unit_3.docs,
+        assert platform.units.list_docs() == [
+            "Description of Unit 1",
+            "Description of Unit 2",
+            "Description of Unit 3",
         ]
+
+        assert platform.units.list_docs(id=3) == ["Description of Unit 3"]
+
+        assert platform.units.list_docs(id__in=[1]) == ["Description of Unit 1"]
+
+    def test_delete_docs_via_func(self, platform: ixmp4.Platform) -> None:
+        unit1 = platform.units.get_by_name("Unit 1")
+        platform.units.delete_docs("Unit 1")
+        unit1 = platform.units.get_by_name("Unit 1")
+        assert unit1.docs is None
+
+    def test_delete_docs_set_none(self, platform: ixmp4.Platform) -> None:
+        unit2 = platform.units.get_by_name("Unit 2")
+        unit2.docs = None
+        unit2 = platform.units.get_by_name("Unit 2")
+        assert unit2.docs is None
+
+    def test_delete_docs_del(self, platform: ixmp4.Platform) -> None:
+        unit3 = platform.units.get_by_name("Unit 3")
+        del unit3.docs
+        unit3 = platform.units.get_by_name("Unit 3")
+        assert unit3.docs is None
+
+    def test_docs_empty(self, platform: ixmp4.Platform) -> None:
+        assert len(platform.units.list_docs()) == 0

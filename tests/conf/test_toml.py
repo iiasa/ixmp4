@@ -1,3 +1,4 @@
+import inspect
 import tempfile
 from pathlib import Path
 from typing import Protocol
@@ -5,16 +6,19 @@ from typing import Protocol
 import pytest
 
 from ixmp4.conf.credentials import Credentials
-from ixmp4.conf.toml import TomlConfig
-from ixmp4.conf.user import local_user
-from ixmp4.core.exceptions import PlatformNotFound, PlatformNotUnique
+from ixmp4.conf.platforms import TomlPlatforms
+from ixmp4.core.exceptions import (
+    ImproperlyConfigured,
+    PlatformNotFound,
+    PlatformNotUnique,
+)
 
 
 @pytest.fixture(scope="class")
-def toml_config() -> TomlConfig:
+def toml_platforms() -> TomlPlatforms:
     tmp = tempfile.NamedTemporaryFile()
     with tmp:
-        config = TomlConfig(Path(tmp.name), local_user)
+        config = TomlPlatforms(Path(tmp.name))
         return config
 
 
@@ -23,45 +27,84 @@ class HasPath(Protocol):
 
 
 class TomlTest:
-    def assert_toml_file(self, toml_config: HasPath, expected_toml: str) -> None:
-        with toml_config.path.open() as f:
-            assert f.read() == expected_toml
+    def assert_toml_file(self, toml_platforms: HasPath, expected_toml: str) -> None:
+        with toml_platforms.path.open() as f:
+            assert inspect.cleandoc(f.read()) == inspect.cleandoc(expected_toml)
 
 
 class TestTomlPlatforms(TomlTest):
-    def test_add_platform(self, toml_config: TomlConfig) -> None:
-        toml_config.add_platform("test", "test://test/")
+    def test_add_platform(self, toml_platforms: TomlPlatforms) -> None:
+        toml_platforms.add_platform("test", "test://test/")
 
-        expected_toml = '[test]\ndsn = "test://test/"\n'
-        self.assert_toml_file(toml_config, expected_toml)
+        expected_toml = """
+        [test]
+        dsn = "test://test/"
+        """
+        self.assert_toml_file(toml_platforms, expected_toml)
 
-        toml_config.add_platform("test2", "test2://test2/")
+        toml_platforms.add_platform("test2", "test2://test2/")
+        expected_toml = """
+        [test]
+        dsn = "test://test/"
 
-        expected_toml = (
-            '[test]\ndsn = "test://test/"\n\n[test2]\ndsn = "test2://test2/"\n'
-        )
-        self.assert_toml_file(toml_config, expected_toml)
+        [test2]
+        dsn = "test2://test2/"
+        """
+        self.assert_toml_file(toml_platforms, expected_toml)
 
-    def test_platform_unique(self, toml_config: TomlConfig) -> None:
+    def test_platform_unique(self, toml_platforms: TomlPlatforms) -> None:
         with pytest.raises(PlatformNotUnique):
-            toml_config.add_platform("test", "test://test/")
+            toml_platforms.add_platform("test", "test://test/")
 
-    def test_remove_platform(self, toml_config: TomlConfig) -> None:
-        toml_config.remove_platform("test")
-        expected_toml = '[test2]\ndsn = "test2://test2/"\n'
+    def test_remove_platform(self, toml_platforms: TomlPlatforms) -> None:
+        toml_platforms.remove_platform("test")
+        expected_toml = """
+        [test2]
+        dsn = "test2://test2/"
+        """
+        self.assert_toml_file(toml_platforms, expected_toml)
 
-        with toml_config.path.open() as f:
-            assert f.read() == expected_toml
-
-        toml_config.remove_platform("test2")
+        toml_platforms.remove_platform("test2")
         expected_toml = ""
 
-        with toml_config.path.open() as f:
-            assert f.read() == expected_toml
+        self.assert_toml_file(toml_platforms, expected_toml)
 
-    def test_remove_missing_platform(self, toml_config: TomlConfig) -> None:
+    def test_remove_missing_platform(self, toml_platforms: TomlPlatforms) -> None:
         with pytest.raises(PlatformNotFound):
-            toml_config.remove_platform("test")
+            toml_platforms.remove_platform("test")
+
+    def test_get_platform_substitutes_dsn_env_tokens(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        platforms_toml = tmp_path / "platforms.toml"
+        platforms_toml.write_text(
+            '[test]\ndsn = "postgresql://user:{env:IXMP4_TEST_PASSWORD}@foo.bar/db"\n'
+        )
+        monkeypatch.setenv("IXMP4_TEST_PASSWORD", "s3cr3t")
+
+        platforms = TomlPlatforms(platforms_toml)
+        assert (
+            platforms.get_platform("test").dsn == "postgresql://user:s3cr3t@foo.bar/db"
+        )
+
+        # Placeholder syntax must remain on disk and never be persisted with secrets.
+        assert "{env:IXMP4_TEST_PASSWORD}" in platforms_toml.read_text()
+
+    def test_get_platform_raises_for_missing_dsn_env_tokens(
+        self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
+    ) -> None:
+        platforms_toml = tmp_path / "platforms.toml"
+        platforms_toml.write_text(
+            '[test]\ndsn = "postgresql://user:{env:IXMP4_MISSING_PASSWORD}@foo.bar/db"\n'
+        )
+        monkeypatch.delenv("IXMP4_MISSING_PASSWORD", raising=False)
+
+        platforms = TomlPlatforms(platforms_toml)
+        with pytest.raises(
+            ImproperlyConfigured,
+            match=r"Cannot resolve DSN environment variable placeholder\(s\).",
+        ):
+            platforms.get_platform("test")
 
 
 @pytest.fixture(scope="class")
@@ -80,7 +123,7 @@ class TestTomlCredentials(TomlTest):
 
     def test_get_credentials(self, credentials: Credentials) -> None:
         ret = credentials.get("test")
-        assert ret == ("user", "password")
+        assert ret == {"username": "user", "password": "password"}
 
     def test_clear_credentials(self, credentials: Credentials) -> None:
         credentials.clear("test")

@@ -1,125 +1,198 @@
-from collections.abc import Iterable
 from datetime import datetime
-from typing import ClassVar
+from typing import List
 
 import pandas as pd
+from typing_extensions import Unpack
 
-from ixmp4.core.base import BaseFacade, BaseModelFacade
-from ixmp4.data.abstract import Docs as DocsModel
-from ixmp4.data.abstract import Model as ModelModel
+from ixmp4.core.base import BaseDocsServiceFacade, BaseFacadeObject
+from ixmp4.core.docs import DocsDescriptor
+from ixmp4.data.backend import Backend
+from ixmp4.data.model.dto import Model as ModelDto
+from ixmp4.data.model.exceptions import (
+    ModelDeletionPrevented,
+    ModelNotFound,
+    ModelNotUnique,
+)
+from ixmp4.data.model.filter import ModelFilter
+from ixmp4.data.model.service import ModelService
 
 
-class Model(BaseModelFacade):
-    _model: ModelModel  # smh
-    NotFound: ClassVar = ModelModel.NotFound
-    NotUnique: ClassVar = ModelModel.NotUnique
+class Model(BaseFacadeObject[ModelService, ModelDto]):
+    NotFound = ModelNotFound
+    NotUnique = ModelNotUnique
+    DeletionPrevented = ModelDeletionPrevented
+
+    docs: DocsDescriptor[ModelService, ModelDto] = DocsDescriptor()
+    """Model docs."""
 
     @property
     def id(self) -> int:
-        return self._model.id
+        return self._dto.id
 
     @property
     def name(self) -> str:
-        return self._model.name
+        return self._dto.name
 
     @property
     def created_at(self) -> datetime | None:
-        return self._model.created_at
+        return self._dto.created_at
 
     @property
     def created_by(self) -> str | None:
-        return self._model.created_by
+        return self._dto.created_by
 
-    @property
-    def docs(self) -> str | None:
-        try:
-            return self.backend.models.docs.get(self.id).description
-        except DocsModel.NotFound:
-            return None
+    def delete(self) -> None:
+        self._service.delete_by_id(self._dto.id)
 
-    @docs.setter
-    def docs(self, description: str | None) -> None:
-        if description is None:
-            self.backend.models.docs.delete(self.id)
-        else:
-            self.backend.models.docs.set(self.id, description)
-
-    @docs.deleter
-    def docs(self) -> None:
-        try:
-            self.backend.models.docs.delete(self.id)
-        # TODO: silently failing
-        except DocsModel.NotFound:
-            return None
+    def _get_service(self, backend: Backend) -> ModelService:
+        return backend.models
 
     def __str__(self) -> str:
-        return f"<Model {self.id} name={self.name}>"
+        return f"<Model {self.id} name='{self.name}'>"
+
+    def __repr__(self) -> str:
+        return str(self)
 
 
-class ModelRepository(BaseFacade):
-    def create(
-        self,
-        name: str,
-    ) -> Model:
-        model = self.backend.models.create(name)
-        return Model(_backend=self.backend, _model=model)
+class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelService]):
+    def _get_service(self, backend: Backend) -> ModelService:
+        return backend.models
 
-    def get(self, name: str) -> Model:
-        model = self.backend.models.get(name)
-        return Model(_backend=self.backend, _model=model)
-
-    def list(self, name: str | None = None) -> list[Model]:
-        models = self.backend.models.list(name=name)
-        return [Model(_backend=self.backend, _model=m) for m in models]
-
-    def tabulate(self, name: str | None = None) -> pd.DataFrame:
-        return self.backend.models.tabulate(name=name)
-
-    def _get_model_id(self, model: str) -> int | None:
-        # NOTE leaving this check for users without mypy
-        if isinstance(model, str):
-            obj = self.backend.models.get(model)
-            return obj.id
+    def _get_item_id(self, ref: Model | int | str) -> int:
+        if isinstance(ref, Model):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        elif isinstance(ref, str):
+            dto = self._service.get_by_name(ref)
+            return dto.id
         else:
-            raise ValueError(f"Invalid reference to model: {model}")
+            raise ValueError(f"Invalid reference to model: {ref}")
 
-    def get_docs(self, name: str) -> str | None:
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        try:
-            return self.backend.models.docs.get(dimension_id=model_id).description
-        except DocsModel.NotFound:
-            return None
+    def create(self, name: str) -> Model:
+        """Creates a model.
 
-    def set_docs(self, name: str, description: str | None) -> str | None:
-        if description is None:
-            self.delete_docs(name=name)
-            return None
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        return self.backend.models.docs.set(
-            dimension_id=model_id, description=description
-        ).description
+        .. code:: python
 
-    def delete_docs(self, name: str) -> None:
-        # TODO: this function is failing silently, which we should avoid
-        model_id = self._get_model_id(name)
-        if model_id is None:
-            return None
-        try:
-            self.backend.models.docs.delete(dimension_id=model_id)
-            return None
-        except DocsModel.NotFound:
-            return None
+            platform.models.create("Model")
+            #> <Model 1 name='Model'>
 
-    def list_docs(
-        self, id: int | None = None, id__in: Iterable[int] | None = None
-    ) -> Iterable[str]:
-        return [
-            item.description
-            for item in self.backend.models.docs.list(
-                dimension_id=id, dimension_id__in=id__in
-            )
-        ]
+        Parameters
+        ----------
+        name : str
+            The name of the model.
+
+        Raises
+        ------
+        :class:`ModelNotUnique`:
+            If the model with `name` is not unique.
+
+
+        Returns
+        -------
+        :class:`ixmp4.core.model.Model`:
+            The created model.
+        """
+
+        dto = self._service.create(name)
+        return Model(self._backend, dto)
+
+    def delete(self, ref: Model | int | str) -> None:
+        """Deletes a model.
+
+        .. code:: python
+
+            platform.models.delete("Model")
+
+        Parameters
+        ----------
+        ref : :class:`ixmp4.core.model.Model` | int | str
+            Model object, model id or model name.
+
+        Raises
+        ------
+        :class:`ModelNotFound`:
+            If no model matching ``ref`` exists.
+        :class:`ModelDeletionPrevented`:
+            If the model matching ``ref`` is used in the database,
+            preventing its deletion.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        """
+
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
+
+    def get_by_name(self, name: str) -> Model:
+        """Retrieves a model by its name.
+
+        .. code:: python
+
+            platform.models.get_by_name("Model")
+            #> <Model 1 name='Model'>
+
+        Parameters
+        ----------
+        name : str
+            The unique name of the model.
+
+        Raises
+        ------
+        :class:`ModelNotFound`:
+            If the model with `name` does not exist.
+
+        Returns
+        -------
+        :class:`ixmp4.core.model.Model`:
+            The retrieved model.
+        """
+
+        dto = self._service.get_by_name(name)
+        return Model(self._backend, dto)
+
+    def list(self, **kwargs: Unpack[ModelFilter]) -> List[Model]:
+        r"""Lists models by specified criteria.
+
+        .. code:: python
+
+            platform.models.list()
+            #> [<Model 1 name='Model'>]
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`ModelFilter`.
+
+        Returns
+        -------
+        list[:class:`ixmp4.core.model.Model`]:
+            List of models.
+        """
+
+        models = self._service.list(**kwargs)
+        return [Model(self._backend, dto) for dto in models]
+
+    def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
+        r"""Tabulates models by specified criteria.
+
+        .. code:: python
+
+            platform.models.tabulate()
+            #>     name  id
+            # 0  Model   1
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`ModelFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the columns:
+                - id
+                - name
+        """
+
+        return self._service.tabulate(**kwargs)

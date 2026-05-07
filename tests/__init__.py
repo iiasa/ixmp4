@@ -1,0 +1,96 @@
+"""
+Run tests with the CLI for a default configuration:
+
+.. code:: bash
+
+   ixmp4 test [--with-backend] [--with-benchmarks]
+
+Unfortunately, since you are using ixmp4 to execute the tests, global statements are not
+included in the coverage calculations. To circumvent this, use the ``--dry`` parameter.
+
+.. code:: bash
+
+   ixmp4 test --with-backend --dry
+   # -> pytest --cov-report xml:.coverage.xml --cov-report term
+   # --cov=ixmp4 -rsx --benchmark-skip
+
+   eval $(ixmp4 test --with-backend --dry)
+   # -> executes pytest
+
+Alternatively, use ``pytest`` directly:
+
+.. code:: bash
+
+   py.test
+
+Running tests with PostgreSQL
+-----------------------------
+
+In order to run the local tests with PostgreSQL you'll need to have
+a local instance of it running. The easiest way to do this is using
+the provided ``docker-compose.yml`` file in the ``tests/`` directory.
+
+.. code:: bash
+
+   cd tests/
+   docker-compose up
+
+The docker container of the database needs to be started first and then the tests can be
+run normally using pytest. If everything is working correctly, the tests for PostgreSQL
+should not be skipped.
+
+Using ``docker`` directly
+^^^^^^^^^^^^^^^^^^^^^^^^^
+
+You can also start a custom PostgreSQL database using ``docker``.
+For PostgreSQL using the official `postgres <https://hub.docker.com/_/postgres>`_ image
+is recommended. Get the latest version on your local machine using (having docker
+installed):
+
+.. code:: bash
+
+   docker pull postgres
+
+and run the container with:
+
+.. code:: bash
+
+   docker run -e POSTGRES_PASSWORD=postgres -e POSTGRES_DB=test -p 5432:5432 -d postgres
+
+In case there are any error messages during the start up of the container
+along those lines:
+
+.. code:: bash
+
+   ... Error response from daemon: driver failed programming external connectivity on
+   endpoint ...
+   Error starting userland proxy: listen tcp4 0.0.0.0:5432: bind: address already in
+   use.
+
+you have to find the process running on the port in question (in the above case 5432)
+and kill it:
+
+.. code:: bash
+
+   sudo ss -lptn 'sport = :5432'
+   sudo kill <pid>
+
+Benchmarks
+----------
+
+Some tests measure ixmp4's performance using ``pytest-benchmark``.
+To activate performance benchmarking use ``ixmp4 test --with-backend``.
+Memory benchmarks are always active and use ``pytest-memray``.
+
+Profiling
+---------
+
+Some tests will output profiler information to the ``.profiles/``
+directory (using the ``profiled`` fixture). You can analyze these using
+``snakeviz``. For example:
+
+.. code:: bash
+
+   snakeviz .profiles/test_add_datapoints_full_benchmark.prof
+
+"""

@@ -8,7 +8,7 @@
 # -- Project information -----------------------------------------------------
 
 project = "ixmp4"
-copyright = "2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)"
+copyright = "2023-2026 IIASA - Energy, Climate, and Environment Program (ECE)"
 author = "Scenario Services team"
 
 
@@ -21,6 +21,8 @@ extensions = [
     "sphinx.ext.intersphinx",
     "sphinxcontrib.bibtex",
     "sphinx.ext.autodoc",
+    "sphinx.ext.napoleon",
+    "sphinxcontrib.typer",
     "sphinxcontrib.openapi",
     "sphinx_multiversion",
 ]
@@ -61,6 +63,7 @@ html_css_files = [
 intersphinx_mapping = {
     "python": ("https://docs.python.org/3", None),
     "pyam": ("https://pyam-iamc.readthedocs.io/en/stable/", None),
+    "pandas": ("https://pandas.pydata.org/docs/", None),
 }
 
 # -- Prolog for all rst files ------------------------------------------------
@@ -72,3 +75,5 @@ rst_prolog = """
     <br>
 
 """
+
+autodoc_member_order = "bysource"

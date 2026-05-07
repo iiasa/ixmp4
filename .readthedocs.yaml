@@ -26,8 +26,6 @@ build:
       # VIRTUAL_ENV needs to be set manually for now.
       # See https://github.com/readthedocs/readthedocs.org/pull/11152/
       - VIRTUAL_ENV=$READTHEDOCS_VIRTUALENV_PATH poetry install --with docs,server
-    pre_build:
-      - ixmp4 server dump-schema -o doc/source/openapi-v1.json
 
 # Build documentation in ? directory with Sphinx
 sphinx:
