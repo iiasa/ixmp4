@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, TypeVar
 
 import pandas as pd
 
@@ -17,6 +17,41 @@ from .variable import VariableServiceFacade
 
 if TYPE_CHECKING:
     from ixmp4.core import run
+
+MAP_STEP_COLUMN = {
+    "ANNUAL": "step_year",
+    "CATEGORICAL": "step_year",
+    "DATETIME": "step_datetime",
+}
+
+
+def _convert_to_std_format(
+    df: pd.DataFrame, join_runs: bool, join_run_id: bool
+) -> pd.DataFrame:
+    df.rename(columns={"step_category": "subannual"}, inplace=True)
+
+    if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
+        df.rename(columns={"step_year": "year"}, inplace=True)
+        time_col = "year"
+    else:
+        T = TypeVar("T", bool, float, int, str)
+
+        def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
+            df["time"] = df[MAP_STEP_COLUMN[str(df.type)]]
+            return df
+
+        df = df.apply(map_step_column, axis=1)
+        time_col = "time"
+
+    columns = []
+    if join_run_id and "run__id" in df.columns:
+        columns.append("run__id")
+    if join_runs:
+        columns.extend(["model", "scenario", "version"])
+    columns += ["region", "variable", "unit"] + [time_col]
+    if "subannual" in df.columns:
+        columns += ["subannual"]
+    return df[columns + ["value"]]
 
 
 class RunIamcData(BaseBackendFacade):
@@ -62,7 +97,9 @@ class RunIamcData(BaseBackendFacade):
             columns={
                 "year": "step_year",
                 "category": "step_category",
+                "subannual": "step_category",
                 "datetime": "step_datetime",
+                "time": "step_datetime",
             }
         )
 
@@ -70,8 +107,8 @@ class RunIamcData(BaseBackendFacade):
         return df.rename(
             columns={
                 "step_year": "year",
-                "step_category": "category",
-                "step_datetime": "datetime",
+                "step_category": "subannual",
+                "step_datetime": "time",
             }
         ).drop(columns=["id", "time_series__id"])
 
@@ -237,7 +274,7 @@ class RunIamcData(BaseBackendFacade):
             join_runs=False,
             **facade_to_data_filter(kwargs),
         )
-        return self._rename_ret_cols(df)
+        return _convert_to_std_format(df, join_runs=False, join_run_id=False)
 
 
 class PlatformIamcData(BaseBackendFacade):
@@ -302,4 +339,4 @@ class PlatformIamcData(BaseBackendFacade):
             **facade_to_data_filter(kwargs),
         )
 
-        return self._rename_ret_cols(df)
+        return _convert_to_std_format(df, join_runs=join_runs, join_run_id=join_run_id)
