@@ -46,6 +46,23 @@ class TestRun:
         assert "scenario" in ret_df.columns
         assert "version" in ret_df.columns
 
+    def test_tabulate_run_facade_model_scenario_filters(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        shorthand = platform.runs.tabulate(
+            model="Model", scenario="Scenario", default_only=False
+        )
+        explicit = platform.runs.tabulate(
+            model={"name__like": "Model"},
+            scenario={"name__like": "Scenario"},
+            default_only=False,
+        )
+        pdt.assert_frame_equal(
+            shorthand.sort_values(["id"]).reset_index(drop=True),
+            explicit.sort_values(["id"]).reset_index(drop=True),
+            check_like=True,
+        )
+
     def test_tabulate_run_hides_internal_columns_by_default(
         self, platform: ixmp4.Platform
     ) -> None:

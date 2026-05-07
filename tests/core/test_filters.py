@@ -124,6 +124,13 @@ class TestFilters:
         assert region9.name == "Region 9"
         assert region10.name == "Region 10"
 
+        [region8_s, region9_s, region10_s] = platform.regions.list(
+            iamc={"run": {"model": "Model 2", "default_only": False}}
+        )
+        assert region8_s.name == "Region 8"
+        assert region9_s.name == "Region 9"
+        assert region10_s.name == "Region 10"
+
     def test_filter_units(self, platform: ixmp4.Platform) -> None:
         [unit_no_data] = platform.units.list(iamc=False)
         assert unit_no_data.name == "Unit Without Data"
@@ -172,6 +179,13 @@ class TestFilters:
         assert unit9.name == "Unit 9"
         assert unit10.name == "Unit 10"
 
+        [unit8_s, unit9_s, unit10_s] = platform.units.list(
+            iamc={"run": {"model": "Model 2", "default_only": False}}
+        )
+        assert unit8_s.name == "Unit 8"
+        assert unit9_s.name == "Unit 9"
+        assert unit10_s.name == "Unit 10"
+
     def test_filter_iamc_variables(self, platform: ixmp4.Platform) -> None:
         [var1, var10] = platform.iamc.variables.list(name__like="Variable 1*", run=None)
         assert var1.name == "Variable 1"
@@ -216,6 +230,13 @@ class TestFilters:
         assert var8.name == "Variable 8"
         assert var9.name == "Variable 9"
         assert var10.name == "Variable 10"
+
+        [var8_s, var9_s, var10_s] = platform.iamc.variables.list(
+            run={"model": "Model 2", "default_only": False}
+        )
+        assert var8_s.name == "Variable 8"
+        assert var9_s.name == "Variable 9"
+        assert var10_s.name == "Variable 10"
 
     def test_filter_datapoints(self, platform: ixmp4.Platform) -> None:
         def sort_df(df: pd.DataFrame) -> pd.DataFrame:
