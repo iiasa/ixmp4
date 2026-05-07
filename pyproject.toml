@@ -180,4 +180,4 @@ vcs = "git"
 
 [tool.pytest.ini_options]
 testpaths = ["tests"]
-addopts = "--benchmark-skip --cov-report term --cov=ixmp4 "
+addopts = "--benchmark-skip"
