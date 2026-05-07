@@ -88,6 +88,30 @@ class IamcDataTest(IamcTest):
             test_data_platform, ret_platform.drop(columns=["type"]), check_like=True
         )
 
+    def test_iamc_data_facade_name_filter_shorthands(
+        self,
+        run: ixmp4.Run,
+    ) -> None:
+        ret_region = run.iamc.tabulate(region="Region 1").drop(columns=["type"])
+        ret_region_explicit = run.iamc.tabulate(region={"name__like": "Region 1"}).drop(
+            columns=["type"]
+        )
+        pdt.assert_frame_equal(
+            self.canonical_sort(ret_region),
+            self.canonical_sort(ret_region_explicit),
+            check_like=True,
+        )
+
+        ret_unit = run.iamc.tabulate(unit=["Unit 1", "Unit 2"]).drop(columns=["type"])
+        ret_unit_explicit = run.iamc.tabulate(
+            unit={"name__in": ["Unit 1", "Unit 2"]}
+        ).drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(ret_unit),
+            self.canonical_sort(ret_unit_explicit),
+            check_like=True,
+        )
+
     def test_iamc_data_remove_partial(
         self,
         run: ixmp4.Run,

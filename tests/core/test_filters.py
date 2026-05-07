@@ -4,6 +4,7 @@ results."""
 from typing import Any, cast
 
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 
 import ixmp4
@@ -217,6 +218,9 @@ class TestFilters:
         assert var10.name == "Variable 10"
 
     def test_filter_datapoints(self, platform: ixmp4.Platform) -> None:
+        def sort_df(df: pd.DataFrame) -> pd.DataFrame:
+            return df.sort_values(df.columns.tolist()).reset_index(drop=True)
+
         df = platform.iamc.tabulate(run={"default_only": False})
         assert len(df) == 426
 
@@ -241,10 +245,23 @@ class TestFilters:
         )
         assert len(df_region7) == 40
 
+        df_region7_shorthand = platform.iamc.tabulate(
+            region="Region 7", run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_region7), sort_df(df_region7_shorthand))
+
         df_unit1x = platform.iamc.tabulate(
             unit={"name__like": "Unit 1*"}, run={"default_only": False}
         )
         assert len(df_unit1x) == 154
+
+        df_unit_1_2_shorthand = platform.iamc.tabulate(
+            unit=["Unit 1", "Unit 2"], run={"default_only": False}
+        )
+        df_unit_1_2 = platform.iamc.tabulate(
+            unit={"name__in": ["Unit 1", "Unit 2"]}, run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_unit_1_2), sort_df(df_unit_1_2_shorthand))
 
         df_iamc_vars = platform.iamc.tabulate(
             variable={"name__in": ["Variable 2", "Variable 8"]},
@@ -266,6 +283,11 @@ class TestFilters:
             step_year__gte=2000, run={"default_only": False}
         )
         assert len(df_year_gte) == 46
+
+        df_year_gte_shorthand = platform.iamc.tabulate(
+            year__gte=2000, run={"default_only": False}
+        )
+        assert len(df_year_gte_shorthand) == 46
 
     def test_invalid_filters_raise(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(InvalidArguments):

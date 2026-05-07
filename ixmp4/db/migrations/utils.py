@@ -26,7 +26,7 @@ def pause_foreign_key_checks() -> Generator[None, None, None]:
             )
         ]
         for table in tables:
-            op.execute(f'ALTER TABLE "{table}" DISABLE TRIGGER ALL;')
+            op.execute(f'ALTER TABLE "{table}" DISABLE TRIGGER USER;')
     else:
         raise NotImplementedError(
             "Foreign key checks cannot be paused for dialect "
@@ -46,4 +46,4 @@ def pause_foreign_key_checks() -> Generator[None, None, None]:
                 )
             ]
             for table in tables:
-                op.execute(f'ALTER TABLE "{table}" ENABLE TRIGGER ALL;')
+                op.execute(f'ALTER TABLE "{table}" ENABLE TRIGGER USER;')

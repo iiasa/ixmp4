@@ -1,9 +1,16 @@
-from typing import Annotated, cast
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Annotated, Any, cast
 
 from typing_extensions import TypedDict
 
 from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
+from ixmp4.data.filters.facade import (
+    FilterValueTransformer,
+    convert_facade_filter,
+    make_iterable_str_in_transformer,
+    make_str_like_transformer,
+)
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.run.db import Run
 from ixmp4.data.versions.filter import VersionFilter
@@ -45,28 +52,47 @@ class FacadeStepCategoryFilter(TypedDict, total=False):
 
 
 class FacadeDataPointFilter(
-    DataPointFilter,
+    iamc.DataPointFilter,
     FacadeStepYearFilter,
     FacadeStepCategoryFilter,
     total=False,
 ):
-    pass
+    region: base.RegionFilter | str | Iterable[str]
+    unit: base.UnitFilter | str | Iterable[str]
+    variable: iamc.VariableFilter | str | Iterable[str]
+    model: base.ModelFilter | str | Iterable[str]
+    scenario: base.ScenarioFilter | str | Iterable[str]
+    run: base.RunFilter
 
 
-facade_to_data_map = {
+FACADE_FILTER_KEY_MAP = {
     "year": "step_year",
     "category": "step_category",
     "datetime": "step_datetime",
 }
 
 
-def facade_to_data_filter(filter: FacadeDataPointFilter) -> DataPointFilter:
-    converted = {}
-    for key in filter.keys():
-        for fname, dname in facade_to_data_map.items():
-            if key.startswith(fname):
-                converted[key.replace(fname, dname)] = filter.get(key)
-                break
-        else:
-            converted[key] = filter.get(key)
+NAME_FILTER_TRANSFORMERS: tuple[FilterValueTransformer, ...] = (
+    make_str_like_transformer("name"),
+    make_iterable_str_in_transformer("name"),
+)
+
+
+FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
+    "region": NAME_FILTER_TRANSFORMERS,
+    "unit": NAME_FILTER_TRANSFORMERS,
+    "variable": NAME_FILTER_TRANSFORMERS,
+    "model": NAME_FILTER_TRANSFORMERS,
+    "scenario": NAME_FILTER_TRANSFORMERS,
+}
+
+
+def facade_to_data_filter(
+    filter_values: Mapping[str, Any],
+) -> DataPointFilter:
+    converted = convert_facade_filter(
+        filter_values,
+        key_map=FACADE_FILTER_KEY_MAP,
+        field_transformers=FACADE_FILTER_TRANSFORMERS,
+    )
     return cast(DataPointFilter, converted)
