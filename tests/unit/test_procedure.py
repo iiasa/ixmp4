@@ -1282,7 +1282,7 @@ class TestProcedureClient:
             return_value=mock_page_response
         )
 
-        response = client.handle_paginated_response(mock_response, "/demo", None, None)
+        client.handle_paginated_response(mock_response, "/demo", None, None)
         # Should have dispatched pagination requests
         assert demo_service_httpx.transport.http_client.request.called  # type: ignore
         demo_service_httpx.transport.executor.shutdown()  # type: ignore
