@@ -112,6 +112,28 @@ class IamcDataTest(IamcTest):
             check_like=True,
         )
 
+        ret_variable = run.iamc.tabulate(variable="Variable 1").drop(columns=["type"])
+        ret_variable_explicit = run.iamc.tabulate(
+            variable={"name__like": "Variable 1"}
+        ).drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(ret_variable),
+            self.canonical_sort(ret_variable_explicit),
+            check_like=True,
+        )
+
+        ret_variable_in = run.iamc.tabulate(variable=["Variable 1", "Variable 2"]).drop(
+            columns=["type"]
+        )
+        ret_variable_in_explicit = run.iamc.tabulate(
+            variable={"name__in": ["Variable 1", "Variable 2"]}
+        ).drop(columns=["type"])
+        pdt.assert_frame_equal(
+            self.canonical_sort(ret_variable_in),
+            self.canonical_sort(ret_variable_in_explicit),
+            check_like=True,
+        )
+
     def test_iamc_data_remove_partial(
         self,
         run: ixmp4.Run,

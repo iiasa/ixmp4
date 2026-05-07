@@ -9,10 +9,13 @@ from ixmp4.data.filters.facade import (
     FilterValueTransformer,
     convert_facade_filter,
     make_iterable_str_in_transformer,
+    make_mapping_transformer,
     make_str_like_transformer,
 )
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 from ixmp4.data.run.db import Run
+from ixmp4.data.run.filter import FacadeRunFilter
+from ixmp4.data.run.filter import facade_to_data_filter as run_facade_to_data_filter
 from ixmp4.data.versions.filter import VersionFilter
 
 from .db import DataPoint, DataPointVersion
@@ -62,7 +65,7 @@ class FacadeDataPointFilter(
     variable: iamc.VariableFilter | str | Iterable[str]
     model: base.ModelFilter | str | Iterable[str]
     scenario: base.ScenarioFilter | str | Iterable[str]
-    run: base.RunFilter
+    run: FacadeRunFilter
 
 
 FACADE_FILTER_KEY_MAP = {
@@ -84,6 +87,7 @@ FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
     "variable": NAME_FILTER_TRANSFORMERS,
     "model": NAME_FILTER_TRANSFORMERS,
     "scenario": NAME_FILTER_TRANSFORMERS,
+    "run": (make_mapping_transformer(run_facade_to_data_filter),),
 }
 
 

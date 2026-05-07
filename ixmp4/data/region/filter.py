@@ -1,12 +1,24 @@
-from typing import Annotated, Any
+from collections.abc import Mapping, Sequence
+from typing import Annotated, Any, cast
 
 import sqlalchemy as sa
 from toolkit.db.repositories import BaseRepository
 
 from ixmp4.data import filters as base
-from ixmp4.data.filters import iamc as iamc
+from ixmp4.data.filters import iamc
+from ixmp4.data.filters.facade import (
+    FilterValueTransformer,
+    convert_facade_filter,
+    make_mapping_transformer,
+)
 from ixmp4.data.iamc.timeseries.db import TimeSeries
-from ixmp4.data.run.filter import RunFilter
+from ixmp4.data.run.filter import (
+    FacadeRunFilter,
+    RunFilter,
+)
+from ixmp4.data.run.filter import (
+    facade_to_data_filter as run_facade_to_data_filter,
+)
 
 from .db import Region
 
@@ -40,3 +52,41 @@ def filter_by_iamc(
 
 class RegionFilter(base.RegionFilter, total=False):
     iamc: Annotated[IamcRegionFilter | bool | None, filter_by_iamc]
+
+
+class FacadeIamcRegionFilter(base.RegionFilter, total=False):
+    variable: iamc.VariableFilter
+    unit: base.UnitFilter
+    run: FacadeRunFilter
+
+
+IAMC_FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
+    "run": (make_mapping_transformer(run_facade_to_data_filter),),
+}
+
+
+def iamc_facade_to_data_filter(filter_values: Mapping[str, Any]) -> IamcRegionFilter:
+    converted = convert_facade_filter(
+        filter_values,
+        key_map={},
+        field_transformers=IAMC_FACADE_FILTER_TRANSFORMERS,
+    )
+    return cast(IamcRegionFilter, converted)
+
+
+class FacadeRegionFilter(base.RegionFilter, total=False):
+    iamc: FacadeIamcRegionFilter | bool | None
+
+
+FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
+    "iamc": (make_mapping_transformer(iamc_facade_to_data_filter),),
+}
+
+
+def facade_to_data_filter(filter_values: Mapping[str, Any]) -> RegionFilter:
+    converted = convert_facade_filter(
+        filter_values,
+        key_map={},
+        field_transformers=FACADE_FILTER_TRANSFORMERS,
+    )
+    return cast(RegionFilter, converted)

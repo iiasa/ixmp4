@@ -1,4 +1,5 @@
-from typing import Annotated, Any
+from collections.abc import Iterable, Mapping, Sequence
+from typing import Annotated, Any, cast
 
 import sqlalchemy as sa
 from toolkit.db.repositories import BaseRepository
@@ -6,6 +7,12 @@ from typing_extensions import TypedDict
 
 from ixmp4.data import filters as base
 from ixmp4.data.filters import iamc as iamc
+from ixmp4.data.filters.facade import (
+    FilterValueTransformer,
+    convert_facade_filter,
+    make_iterable_str_in_transformer,
+    make_str_like_transformer,
+)
 from ixmp4.data.iamc.measurand.db import Measurand
 from ixmp4.data.iamc.timeseries.db import TimeSeries
 
@@ -43,3 +50,30 @@ class RunFilter(base.RunFilter, total=False):
     model: Annotated[base.ModelFilter, Run.model]
     scenario: Annotated[base.ScenarioFilter, Run.scenario]
     iamc: Annotated[IamcRunFilter | bool | None, filter_by_iamc]
+
+
+class FacadeRunFilter(base.RunFilter, total=False):
+    model: base.ModelFilter | str | Iterable[str]
+    scenario: base.ScenarioFilter | str | Iterable[str]
+    iamc: IamcRunFilter | bool | None
+
+
+NAME_FILTER_TRANSFORMERS: tuple[FilterValueTransformer, ...] = (
+    make_str_like_transformer("name"),
+    make_iterable_str_in_transformer("name"),
+)
+
+
+FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
+    "model": NAME_FILTER_TRANSFORMERS,
+    "scenario": NAME_FILTER_TRANSFORMERS,
+}
+
+
+def facade_to_data_filter(filter_values: Mapping[str, Any]) -> RunFilter:
+    converted = convert_facade_filter(
+        filter_values,
+        key_map={},
+        field_transformers=FACADE_FILTER_TRANSFORMERS,
+    )
+    return cast(RunFilter, converted)

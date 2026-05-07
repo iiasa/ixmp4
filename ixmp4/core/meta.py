@@ -8,7 +8,10 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.data.meta.dto import MetaValueType
-from ixmp4.data.meta.filter import RunMetaEntryFilter
+from ixmp4.data.meta.filter import (
+    FacadeRunMetaEntryFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.meta.service import RunMetaEntryService
 
 from .base import BaseServiceFacade
@@ -25,7 +28,7 @@ class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
     def _get_service(self, backend: "Backend") -> RunMetaEntryService:
         return backend.meta
 
-    def tabulate(self, **kwargs: Unpack[RunMetaEntryFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeRunMetaEntryFilter]) -> pd.DataFrame:
         r"""Tabulates metadata entries by specified criteria.
 
         .. code:: python
@@ -55,9 +58,9 @@ class PlatformRunMetaFacade(BaseServiceFacade[RunMetaEntryService]):
                 - scenario
                 - version
         """
-        return self._service.tabulate(include_run_index=True, **kwargs).drop(
-            columns=["id", "dtype"]
-        )
+        return self._service.tabulate(
+            include_run_index=True, **facade_to_data_filter(kwargs)
+        ).drop(columns=["id", "dtype"])
 
 
 class RunMetaDictFacade(

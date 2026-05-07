@@ -124,6 +124,13 @@ class TestFilters:
         assert region9.name == "Region 9"
         assert region10.name == "Region 10"
 
+        [region8_s, region9_s, region10_s] = platform.regions.list(
+            iamc={"run": {"model": "Model 2", "default_only": False}}
+        )
+        assert region8_s.name == "Region 8"
+        assert region9_s.name == "Region 9"
+        assert region10_s.name == "Region 10"
+
     def test_filter_units(self, platform: ixmp4.Platform) -> None:
         [unit_no_data] = platform.units.list(iamc=False)
         assert unit_no_data.name == "Unit Without Data"
@@ -172,6 +179,13 @@ class TestFilters:
         assert unit9.name == "Unit 9"
         assert unit10.name == "Unit 10"
 
+        [unit8_s, unit9_s, unit10_s] = platform.units.list(
+            iamc={"run": {"model": "Model 2", "default_only": False}}
+        )
+        assert unit8_s.name == "Unit 8"
+        assert unit9_s.name == "Unit 9"
+        assert unit10_s.name == "Unit 10"
+
     def test_filter_iamc_variables(self, platform: ixmp4.Platform) -> None:
         [var1, var10] = platform.iamc.variables.list(name__like="Variable 1*", run=None)
         assert var1.name == "Variable 1"
@@ -217,6 +231,13 @@ class TestFilters:
         assert var9.name == "Variable 9"
         assert var10.name == "Variable 10"
 
+        [var8_s, var9_s, var10_s] = platform.iamc.variables.list(
+            run={"model": "Model 2", "default_only": False}
+        )
+        assert var8_s.name == "Variable 8"
+        assert var9_s.name == "Variable 9"
+        assert var10_s.name == "Variable 10"
+
     def test_filter_datapoints(self, platform: ixmp4.Platform) -> None:
         def sort_df(df: pd.DataFrame) -> pd.DataFrame:
             return df.sort_values(df.columns.tolist()).reset_index(drop=True)
@@ -239,6 +260,38 @@ class TestFilters:
             model={"name__like": "Model 1*"}, run={"default_only": False}
         )
         assert len(df_model1x) == 244
+
+        df_model2 = platform.iamc.tabulate(
+            model={"name__like": "Model 2"}, run={"default_only": False}
+        )
+        df_model2_shorthand = platform.iamc.tabulate(
+            model="Model 2", run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_model2), sort_df(df_model2_shorthand))
+
+        df_model_1_2 = platform.iamc.tabulate(
+            model={"name__in": ["Model 1", "Model 2"]}, run={"default_only": False}
+        )
+        df_model_1_2_shorthand = platform.iamc.tabulate(
+            model=["Model 1", "Model 2"], run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_model_1_2), sort_df(df_model_1_2_shorthand))
+
+        df_scenario2_shorthand = platform.iamc.tabulate(
+            scenario="Scenario 2", run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_scenario2), sort_df(df_scenario2_shorthand))
+
+        df_scenario_1_2 = platform.iamc.tabulate(
+            scenario={"name__in": ["Scenario 1", "Scenario 2"]},
+            run={"default_only": False},
+        )
+        df_scenario_1_2_shorthand = platform.iamc.tabulate(
+            scenario=["Scenario 1", "Scenario 2"], run={"default_only": False}
+        )
+        pdt.assert_frame_equal(
+            sort_df(df_scenario_1_2), sort_df(df_scenario_1_2_shorthand)
+        )
 
         df_region7 = platform.iamc.tabulate(
             region={"name": "Region 7"}, run={"default_only": False}
@@ -269,6 +322,14 @@ class TestFilters:
         )
         assert len(df_iamc_vars) == 91
 
+        df_var2 = platform.iamc.tabulate(
+            variable={"name__like": "Variable 2"}, run={"default_only": False}
+        )
+        df_var2_shorthand = platform.iamc.tabulate(
+            variable="Variable 2", run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_var2), sort_df(df_var2_shorthand))
+
         df_categorical = platform.iamc.tabulate(
             type="CATEGORICAL", run={"default_only": False}
         )
@@ -288,6 +349,22 @@ class TestFilters:
             year__gte=2000, run={"default_only": False}
         )
         assert len(df_year_gte_shorthand) == 46
+
+        df_year_2000 = platform.iamc.tabulate(
+            step_year=2000, run={"default_only": False}
+        )
+        df_year_2000_shorthand = platform.iamc.tabulate(
+            year=2000, run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_year_2000), sort_df(df_year_2000_shorthand))
+
+        df_year_in = platform.iamc.tabulate(
+            step_year__in=[2000, 2010], run={"default_only": False}
+        )
+        df_year_in_shorthand = platform.iamc.tabulate(
+            year__in=[2000, 2010], run={"default_only": False}
+        )
+        pdt.assert_frame_equal(sort_df(df_year_in), sort_df(df_year_in_shorthand))
 
     def test_invalid_filters_raise(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(InvalidArguments):

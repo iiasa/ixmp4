@@ -2,6 +2,7 @@ from collections.abc import Iterable, Mapping, Sequence
 from typing import Any, Callable
 
 FilterValueTransformer = Callable[[Any], dict[str, Any] | None]
+MappingFilterConverter = Callable[[Mapping[str, Any]], Mapping[str, Any]]
 
 
 def make_str_like_transformer(field: str = "name") -> FilterValueTransformer:
@@ -28,6 +29,17 @@ def make_iterable_str_in_transformer(field: str = "name") -> FilterValueTransfor
     return transform
 
 
+def make_mapping_transformer(
+    converter: MappingFilterConverter,
+) -> FilterValueTransformer:
+    def transform(value: Any) -> dict[str, Any] | None:
+        if not isinstance(value, Mapping):
+            return None
+        return dict(converter(value))
+
+    return transform
+
+
 def rename_facade_filter_key(key: str, *, key_map: Mapping[str, str]) -> str:
     for facade_name, data_name in key_map.items():
         if key.startswith(facade_name):
@@ -44,14 +56,13 @@ def convert_facade_filter(
     converted: dict[str, Any] = {}
     for key, value in filter_values.items():
         transformed = value
-        if not isinstance(value, Mapping):
-            transformers = field_transformers.get(key)
-            if transformers is not None:
-                for transformer in transformers:
-                    transformed_value = transformer(value)
-                    if transformed_value is not None:
-                        transformed = transformed_value
-                        break
+        transformers = field_transformers.get(key)
+        if transformers is not None:
+            for transformer in transformers:
+                transformed_value = transformer(value)
+                if transformed_value is not None:
+                    transformed = transformed_value
+                    break
 
         converted[rename_facade_filter_key(key, key_map=key_map)] = transformed
 

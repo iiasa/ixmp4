@@ -13,7 +13,10 @@ from ixmp4.data.iamc.variable.exceptions import (
     VariableNotFound,
     VariableNotUnique,
 )
-from ixmp4.data.iamc.variable.filter import VariableFilter
+from ixmp4.data.iamc.variable.filter import (
+    FacadeVariableFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.iamc.variable.service import VariableService
 
 
@@ -148,7 +151,7 @@ class VariableServiceFacade(
         dto = self._service.get_by_name(name)
         return Variable(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[VariableFilter]) -> List[Variable]:
+    def list(self, **kwargs: Unpack[FacadeVariableFilter]) -> List[Variable]:
         r"""Lists variables by specified criteria.
 
         .. code:: python
@@ -167,10 +170,10 @@ class VariableServiceFacade(
             List of variables.
         """
 
-        variables = self._service.list(**kwargs)
+        variables = self._service.list(**facade_to_data_filter(kwargs))
         return [Variable(self._backend, dto) for dto in variables]
 
-    def tabulate(self, **kwargs: Unpack[VariableFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeVariableFilter]) -> pd.DataFrame:
         r"""Tabulates variables by specified criteria.
 
         .. code:: python
@@ -192,4 +195,4 @@ class VariableServiceFacade(
                 - name
         """
 
-        return self._service.tabulate(**kwargs)
+        return self._service.tabulate(**facade_to_data_filter(kwargs))

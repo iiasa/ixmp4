@@ -145,6 +145,62 @@ class TestMetaData(MetaTest):
         )
         pdt.assert_frame_equal(exp_non_default, ret_non_default, check_like=True)
 
+    def test_tabulate_platform_meta_run_model_scenario_shorthands(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        ret_model_explicit = platform.meta.tabulate(
+            run={"default_only": False, "model": {"name__like": "Model 2"}}
+        )
+        ret_model_shorthand = platform.meta.tabulate(
+            run={"default_only": False, "model": "Model 2"}
+        )
+        pdt.assert_frame_equal(ret_model_explicit, ret_model_shorthand, check_like=True)
+
+        ret_scenario_explicit = platform.meta.tabulate(
+            run={"default_only": False, "scenario": {"name__like": "Scenario 2"}}
+        )
+        ret_scenario_shorthand = platform.meta.tabulate(
+            run={"default_only": False, "scenario": "Scenario 2"}
+        )
+        pdt.assert_frame_equal(
+            ret_scenario_explicit,
+            ret_scenario_shorthand,
+            check_like=True,
+        )
+
+        ret_model_in_explicit = platform.meta.tabulate(
+            run={"default_only": False, "model": {"name__in": ["Model", "Model 2"]}}
+        )
+        ret_model_in_shorthand = platform.meta.tabulate(
+            run={
+                "default_only": False,
+                "model": ["Model", "Model 2"],
+            }
+        )
+        pdt.assert_frame_equal(
+            ret_model_in_explicit,
+            ret_model_in_shorthand,
+            check_like=True,
+        )
+
+        ret_scenario_in_explicit = platform.meta.tabulate(
+            run={
+                "default_only": False,
+                "scenario": {"name__in": ["Scenario", "Scenario 2"]},
+            }
+        )
+        ret_scenario_in_shorthand = platform.meta.tabulate(
+            run={
+                "default_only": False,
+                "scenario": ["Scenario", "Scenario 2"],
+            }
+        )
+        pdt.assert_frame_equal(
+            ret_scenario_in_explicit,
+            ret_scenario_in_shorthand,
+            check_like=True,
+        )
+
 
 class TestMetaRunLock(MetaTest):
     def test_meta_requires_lock(self, run: ixmp4.Run) -> None:

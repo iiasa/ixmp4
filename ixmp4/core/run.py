@@ -22,7 +22,10 @@ from ixmp4.data.run.exceptions import (
     RunNotFound,
     RunNotUnique,
 )
-from ixmp4.data.run.filter import RunFilter
+from ixmp4.data.run.filter import (
+    FacadeRunFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.dto import Scenario as ScenarioDto
 
@@ -507,7 +510,7 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
         )
         return Run(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[RunFilter]) -> List[Run]:
+    def list(self, **kwargs: Unpack[FacadeRunFilter]) -> List[Run]:
         r"""Lists runs by specified criteria.
 
         .. code:: python
@@ -527,14 +530,17 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
             List of runs.
         """
 
-        return [Run(self._backend, dto) for dto in self._service.list(**kwargs)]
+        return [
+            Run(self._backend, dto)
+            for dto in self._service.list(**facade_to_data_filter(kwargs))
+        ]
 
     def tabulate(
         self,
         include_audit_info: bool = False,
         include_internal_columns: bool = False,
         audit_info: bool | None = None,
-        **kwargs: Unpack[RunFilter],
+        **kwargs: Unpack[FacadeRunFilter],
     ) -> pd.DataFrame:
         r"""Tabulate runs by specified criteria.
 
@@ -583,5 +589,5 @@ class RunServiceFacade(BaseServiceFacade[RunService]):
         return self._service.tabulate(
             include_audit_info=include_audit_info,
             include_internal_columns=include_internal_columns,
-            **kwargs,
+            **facade_to_data_filter(kwargs),
         )
