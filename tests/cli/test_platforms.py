@@ -1,13 +1,18 @@
 import os
+import re
+from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
+from types import SimpleNamespace
 from typing import Generator
 from unittest import mock
 
 import pytest
+from rich.console import Console
 from typer.testing import CliRunner
 
 from ixmp4.cli import app
+from ixmp4.cli.platforms import tabulate_manager_platforms
 from ixmp4.conf.settings import Settings
 
 
@@ -257,3 +262,42 @@ class TestPlatformGenerateCLI:
 
         # We simply test whether the generate command errors
         assert result.exit_code > 0
+
+
+def test_tabulate_manager_platforms(monkeypatch: pytest.MonkeyPatch) -> None:
+    output_buffer = StringIO()
+    console = Console(
+        file=output_buffer, force_terminal=False, color_system=None, width=120
+    )
+    monkeypatch.setattr("ixmp4.cli.platforms.console", console)
+    monkeypatch.setattr(
+        "ixmp4.cli.platforms.Settings",
+        lambda: SimpleNamespace(manager_url="https://manager.example"),
+    )
+
+    tabulate_manager_platforms(
+        [
+            SimpleNamespace(
+                name="alpha",
+                accessibility="PUBLIC",
+                notice="Primary platform",
+            ),
+            SimpleNamespace(
+                name="beta",
+                accessibility="PRIVATE",
+                notice="Restricted",
+            ),
+        ]
+    )
+
+    output = output_buffer.getvalue()
+    normalized_output = " ".join(re.sub(r"\x1b\[[0-9;]*m", "", output).split())
+
+    assert "via manager api https://manager.example" in normalized_output
+    assert "Total: 2" in normalized_output
+    assert "alpha" in normalized_output
+    assert "public" in normalized_output
+    assert "Primary platform" in normalized_output
+    assert "beta" in normalized_output
+    assert "private" in normalized_output
+    assert "Restricted" in normalized_output
