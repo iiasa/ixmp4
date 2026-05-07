@@ -12,7 +12,10 @@ from ixmp4.data.region.exceptions import (
     RegionNotFound,
     RegionNotUnique,
 )
-from ixmp4.data.region.filter import RegionFilter
+from ixmp4.data.region.filter import (
+    FacadeRegionFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.region.service import RegionService
 
 from .base import BaseDocsServiceFacade, BaseFacadeObject
@@ -169,7 +172,7 @@ class RegionServiceFacade(
         id = self._get_item_id(ref)
         self._service.delete_by_id(id)
 
-    def list(self, **kwargs: Unpack[RegionFilter]) -> List[Region]:
+    def list(self, **kwargs: Unpack[FacadeRegionFilter]) -> List[Region]:
         r"""Lists regions by specified criteria.
 
         .. code:: python
@@ -193,10 +196,10 @@ class RegionServiceFacade(
             List of regions.
         """
 
-        regions = self._service.list(**kwargs)
+        regions = self._service.list(**facade_to_data_filter(kwargs))
         return [Region(self._backend, dto) for dto in regions]
 
-    def tabulate(self, **kwargs: Unpack[RegionFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeRegionFilter]) -> pd.DataFrame:
         r"""Tabulates regions by specified criteria.
 
         .. code:: python
@@ -219,4 +222,4 @@ class RegionServiceFacade(
                 - hierarchy
         """
 
-        return self._service.tabulate(**kwargs)
+        return self._service.tabulate(**facade_to_data_filter(kwargs))

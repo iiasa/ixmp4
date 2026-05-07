@@ -13,7 +13,10 @@ from ixmp4.data.scenario.exceptions import (
     ScenarioNotFound,
     ScenarioNotUnique,
 )
-from ixmp4.data.scenario.filter import ScenarioFilter
+from ixmp4.data.scenario.filter import (
+    FacadeScenarioFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.scenario.service import ScenarioService
 
 
@@ -152,7 +155,7 @@ class ScenarioServiceFacade(
         scen = self._service.get_by_name(name)
         return Scenario(self._backend, scen)
 
-    def list(self, **kwargs: Unpack[ScenarioFilter]) -> List[Scenario]:
+    def list(self, **kwargs: Unpack[FacadeScenarioFilter]) -> List[Scenario]:
         r"""Lists scenarios by specified criteria.
 
         .. code:: python
@@ -170,10 +173,10 @@ class ScenarioServiceFacade(
         list[:class:`ixmp4.core.scenario.Scenario`]:
             List of scenarios.
         """
-        scenarios = self._service.list(**kwargs)
+        scenarios = self._service.list(**facade_to_data_filter(kwargs))
         return [Scenario(self._backend, dto) for dto in scenarios]
 
-    def tabulate(self, **kwargs: Unpack[ScenarioFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeScenarioFilter]) -> pd.DataFrame:
         r"""Tabulates scenarios by specified criteria.
 
         .. code:: python
@@ -194,4 +197,4 @@ class ScenarioServiceFacade(
                 - id
                 - name
         """
-        return self._service.tabulate(**kwargs)
+        return self._service.tabulate(**facade_to_data_filter(kwargs))

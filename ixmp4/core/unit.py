@@ -12,7 +12,10 @@ from ixmp4.data.unit.exceptions import (
     UnitNotFound,
     UnitNotUnique,
 )
-from ixmp4.data.unit.filter import UnitFilter
+from ixmp4.data.unit.filter import (
+    FacadeUnitFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.unit.service import UnitService
 
 
@@ -156,7 +159,7 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
         dto = self._service.get_by_name(name)
         return Unit(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[UnitFilter]) -> list[Unit]:
+    def list(self, **kwargs: Unpack[FacadeUnitFilter]) -> list[Unit]:
         r"""Lists units by specified criteria.
 
         .. code:: python
@@ -175,10 +178,10 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
             List of units.
         """
 
-        units = self._service.list(**kwargs)
+        units = self._service.list(**facade_to_data_filter(kwargs))
         return [Unit(self._backend, dto) for dto in units]
 
-    def tabulate(self, **kwargs: Unpack[UnitFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeUnitFilter]) -> pd.DataFrame:
         r"""Tabulates units by specified criteria.
 
         .. code:: python
@@ -200,4 +203,4 @@ class UnitServiceFacade(BaseDocsServiceFacade[Unit | int | str, Unit, UnitServic
                 - name
         """
 
-        return self._service.tabulate(**kwargs)
+        return self._service.tabulate(**facade_to_data_filter(kwargs))

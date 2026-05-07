@@ -13,7 +13,10 @@ from ixmp4.data.model.exceptions import (
     ModelNotFound,
     ModelNotUnique,
 )
-from ixmp4.data.model.filter import ModelFilter
+from ixmp4.data.model.filter import (
+    FacadeModelFilter,
+    facade_to_data_filter,
+)
 from ixmp4.data.model.service import ModelService
 
 
@@ -151,7 +154,7 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
         dto = self._service.get_by_name(name)
         return Model(self._backend, dto)
 
-    def list(self, **kwargs: Unpack[ModelFilter]) -> List[Model]:
+    def list(self, **kwargs: Unpack[FacadeModelFilter]) -> List[Model]:
         r"""Lists models by specified criteria.
 
         .. code:: python
@@ -170,10 +173,10 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
             List of models.
         """
 
-        models = self._service.list(**kwargs)
+        models = self._service.list(**facade_to_data_filter(kwargs))
         return [Model(self._backend, dto) for dto in models]
 
-    def tabulate(self, **kwargs: Unpack[ModelFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeModelFilter]) -> pd.DataFrame:
         r"""Tabulates models by specified criteria.
 
         .. code:: python
@@ -195,4 +198,4 @@ class ModelServiceFacade(BaseDocsServiceFacade[Model | int | str, Model, ModelSe
                 - name
         """
 
-        return self._service.tabulate(**kwargs)
+        return self._service.tabulate(**facade_to_data_filter(kwargs))
