@@ -119,9 +119,9 @@ def test_direct_transport_check_alembic_version_succeeds_when_matching(
         list_revisions=lambda: [SimpleNamespace(revision="rev1")],
     )
     monkeypatch.setattr(
-        transport_module,
+        transport_module.DirectTransport,
         "get_alembic_controller",
-        lambda dsn: fake_controller,
+        lambda self, dsn: fake_controller,
     )
 
     engine = sa.create_engine("sqlite:///:memory:")
@@ -148,9 +148,9 @@ def test_direct_transport_check_alembic_version_raises_on_mismatch(
         ],
     )
     monkeypatch.setattr(
-        transport_module,
+        transport_module.DirectTransport,
         "get_alembic_controller",
-        lambda dsn: fake_controller,
+        lambda self, dsn: fake_controller,
     )
 
     engine = sa.create_engine("sqlite:///:memory:")
@@ -174,9 +174,9 @@ def test_direct_transport_check_alembic_version_can_be_skipped(
         list_revisions=lambda: [SimpleNamespace(revision="expected")],
     )
     monkeypatch.setattr(
-        transport_module,
+        transport_module.DirectTransport,
         "get_alembic_controller",
-        lambda dsn: fake_controller,
+        lambda self, dsn: fake_controller,
     )
 
     engine = sa.create_engine("sqlite:///:memory:")
@@ -213,9 +213,9 @@ def test_direct_transport_check_alembic_version_older_db_revision_guidance(
         ],
     )
     monkeypatch.setattr(
-        transport_module,
+        transport_module.DirectTransport,
         "get_alembic_controller",
-        lambda dsn: fake_controller,
+        lambda self, dsn: fake_controller,
     )
 
     engine = sa.create_engine("sqlite:///:memory:")
