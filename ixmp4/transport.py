@@ -1,6 +1,9 @@
 import abc
+import datetime as dt
 import logging
+import time
 from concurrent.futures import ThreadPoolExecutor
+from email.utils import parsedate_to_datetime
 from functools import lru_cache
 from typing import Any
 
@@ -152,6 +155,10 @@ class HttpxTransport(Transport, ServiceClient):
     exception_registry = exception_registry
     direct: DirectTransport | None = None
 
+    backoff_maximum = 16.0
+    backoff_factor = 0.5
+    backoff_exp_base = 2.0
+
     def __init__(
         self,
         client: httpx.Client | TestClient[Litestar],
@@ -172,7 +179,7 @@ class HttpxTransport(Transport, ServiceClient):
         """Requests root api endpoint and logs messages."""
         from ixmp4.server.v1.platform import PlatformInfo
 
-        res = self.http_client.get("/")
+        res = self.request("GET", "/")
         self.raise_service_exception(res)
         root = PlatformInfo(**res.json())
 
@@ -249,3 +256,50 @@ class HttpxTransport(Transport, ServiceClient):
         else:
             user = None
         return f"<HttpxTransport base_url={self.http_client.base_url} user={user}>"
+
+    def request(self, method: str, path: str, **kwargs: Any) -> httpx.Response:
+        """Issue a request and retry when the server returns HTTP 429."""
+        max_retries = self.settings.retries
+        for attempt in range(max_retries + 1):
+            response = self.http_client.request(method, path, **kwargs)
+            if response.status_code != 429 or attempt >= max_retries:
+                return response
+
+            delay = self.get_retry_delay_seconds(response, attempt)
+            logger.warning(
+                f"Rate limited (429) for {method} {path}. "
+                f"Retrying in {delay:.2f}s ({attempt + 1}/{max_retries})."
+            )
+            time.sleep(delay)
+
+        raise AssertionError("Unreachable retry loop termination")
+
+    def get_retry_delay_seconds(self, response: httpx.Response, attempt: int) -> float:
+        """Return retry delay based on Retry-After or exponential backoff."""
+        retry_after = response.headers.get("retry-after")
+        if retry_after:
+            retry_after = retry_after.strip()
+
+            try:
+                return max(0.0, float(retry_after))
+            except ValueError:
+                pass
+
+            try:
+                # parses a http data which is in-spec for Retry-After
+                retry_dt = parsedate_to_datetime(retry_after)
+                if retry_dt is not None:
+                    if retry_dt.tzinfo is None:
+                        retry_dt = retry_dt.replace(tzinfo=dt.timezone.utc)
+
+                    now = dt.datetime.now(tz=dt.timezone.utc)
+                    return max(0.0, (retry_dt - now).total_seconds())
+            except (TypeError, ValueError, OverflowError):
+                pass
+
+        return float(
+            min(
+                self.backoff_maximum,
+                self.backoff_factor * (self.backoff_exp_base**attempt),
+            )
+        )

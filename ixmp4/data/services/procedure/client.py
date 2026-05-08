@@ -64,9 +64,7 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
             json = None
             params = payload
 
-        res = self.transport.http_client.request(
-            self.method, path, json=json, params=params
-        )
+        res = self.transport.request(self.method, path, json=json, params=params)
         self.transport.raise_service_exception(res)
         if self.handler.procedure.pagination.has_pagination:
             return self.handle_paginated_response(res, path, params=params, json=json)
@@ -163,7 +161,7 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
 
             req_params.update({"limit": limit, "offset": req_offset})
             future: futures.Future[httpx.Response] = self.transport.executor.submit(
-                self.transport.http_client.request,
+                self.transport.request,
                 self.method,
                 path,
                 params=req_params,
