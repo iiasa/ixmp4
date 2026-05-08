@@ -5,6 +5,7 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from email.utils import parsedate_to_datetime
 from functools import lru_cache
+from pathlib import Path
 from typing import Any
 
 import httpx
@@ -15,11 +16,14 @@ from sqlalchemy import orm
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.client.base import ServiceClient
+from toolkit.db.alembic import AlembicController
 
 from ixmp4.base_exceptions import ImproperlyConfigured
 from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
+from ixmp4.db import __file__ as db_module_dir
+from ixmp4.db.models import get_metadata
 
 from ._version import __version__
 
@@ -49,8 +53,15 @@ Session = orm.sessionmaker(autocommit=False, autoflush=False)
 class DirectTransport(Transport):
     session: orm.Session
 
-    def __init__(self, session: orm.Session):
+    def __init__(
+        self,
+        session: orm.Session,
+        check_alembic_version: bool = False,
+    ):
         self.session = session
+
+        if check_alembic_version:
+            self.check_alembic_version()
 
         if (url := self.get_database_url()) is not None:
             logger.debug(f"Connected to IXMP4 database at '{url.render_as_string()}'.")
@@ -112,6 +123,81 @@ class DirectTransport(Transport):
         assert self.session.bind is not None
         self.session.bind.engine.dispose()
 
+    def get_alembic_controller(self, dsn: str) -> AlembicController:
+        migration_script_directory = (
+            Path(db_module_dir).parent / "migrations"
+        ).absolute()
+
+        return AlembicController(
+            dsn,
+            str(migration_script_directory),
+            f"{get_metadata.__module__}:{get_metadata.__name__}",
+        )
+
+    def check_alembic_version(self) -> None:
+        assert self.session.bind is not None
+        engine = self.session.bind.engine
+        inspector = sa.inspect(engine)
+        controller = self.get_alembic_controller(engine.url.render_as_string())
+
+        if not inspector.has_table("alembic_version"):
+            raise ImproperlyConfigured(
+                "Database schema version check failed because the table "
+                "'alembic_version' does not exist. Run migrations or disable the "
+                "check via check_alembic_version=False/"
+                "IXMP4_CHECK_ALEMBIC_VERSION=false."
+            )
+
+        current_revision = controller.get_database_revision()
+        head_revision = controller.get_head_revision()
+        if head_revision is None:
+            raise ImproperlyConfigured(
+                "Could not determine the expected alembic "
+                "revision from migration scripts."
+            )
+
+        if isinstance(head_revision, tuple):
+            if len(head_revision) == 1:
+                head_revision = head_revision[0]
+            raise ImproperlyConfigured(
+                "Could not determine a unique expected alembic revision because "
+                f"multiple heads were found: {head_revision}."
+            )
+
+        if current_revision is None:
+            raise ImproperlyConfigured(
+                "Database schema version check failed because no alembic revision "
+                "entry was found in 'alembic_version'. Run migrations or disable "
+                "the check via check_alembic_version=False/"
+                "IXMP4_CHECK_ALEMBIC_VERSION=false."
+            )
+
+        if current_revision != head_revision:
+            revision_order = [script.revision for script in controller.list_revisions()]
+            is_previous_migration = (
+                current_revision in revision_order
+                and head_revision in revision_order
+                and revision_order.index(current_revision)
+                > revision_order.index(head_revision)
+            )
+
+            if is_previous_migration:
+                raise ImproperlyConfigured(
+                    "Database schema version mismatch. "
+                    f"Expected revision '{head_revision}' but found older "
+                    f"revision '{current_revision}'. Upgrade the database to the "
+                    "current ixmp4 migration head, or downgrade ixmp4 to a version "
+                    "compatible with this database revision."
+                )
+
+            raise ImproperlyConfigured(
+                "Database schema version mismatch. "
+                f"Expected revision '{head_revision}' but found "
+                f"'{current_revision}'. Upgrade your ixmp4 installation or disable the "
+                "check via check_alembic_version=False/"
+                "IXMP4_CHECK_ALEMBIC_VERSION=false."
+            )
+
     def check_versioning_compatiblity(self) -> None:
         assert self.session.bind is not None
         if self.session.bind.engine.dialect.name != "postgresql":
@@ -133,9 +219,11 @@ class AuthorizedTransport(DirectTransport):
         session: orm.Session,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
+        check_alembic_version: bool = False,
     ):
         super().__init__(
             session,
+            check_alembic_version=check_alembic_version,
         )
         self.auth_ctx = auth_ctx
         self.platform = platform
