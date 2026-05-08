@@ -81,6 +81,9 @@ from ixmp4.base_exceptions import (
     ServerError as ServerError,
 )
 from ixmp4.base_exceptions import (
+    ServiceException as ServiceException,
+)
+from ixmp4.base_exceptions import (
     ServiceUnavailable as ServiceUnavailable,
 )
 from ixmp4.base_exceptions import (

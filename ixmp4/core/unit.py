@@ -20,6 +20,7 @@ from ixmp4.data.unit.service import UnitService
 
 
 class Unit(BaseFacadeObject[UnitService, UnitDto]):
+    Filter = FacadeUnitFilter
     NotUnique = UnitNotUnique
     NotFound = UnitNotFound
     DeletionPrevented = UnitDeletionPrevented

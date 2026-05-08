@@ -19,6 +19,7 @@ from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
 class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
+    Filter = IndexSetFilter
     NotUnique = IndexSetNotUnique
     NotFound = IndexSetNotFound
     DeletionPrevented = IndexSetDeletionPrevented

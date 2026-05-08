@@ -28,6 +28,7 @@ logger = logging.getLogger(__name__)
 
 
 class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
+    Filter = ScalarFilter
     NotUnique = ScalarNotUnique
     NotFound = ScalarNotFound
     DeletionPrevented = ScalarDeletionPrevented

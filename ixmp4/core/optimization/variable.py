@@ -20,6 +20,7 @@ from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
 class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
+    Filter = VariableFilter
     NotUnique = VariableNotUnique
     NotFound = VariableNotFound
     DeletionPrevented = VariableDeletionPrevented

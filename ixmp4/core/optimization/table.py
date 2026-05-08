@@ -20,6 +20,7 @@ from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
 class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
+    Filter = TableFilter
     NotUnique = TableNotUnique
     NotFound = TableNotFound
     DeletionPrevented = TableDeletionPrevented

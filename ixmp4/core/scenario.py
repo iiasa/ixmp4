@@ -21,6 +21,7 @@ from ixmp4.data.scenario.service import ScenarioService
 
 
 class Scenario(BaseFacadeObject[ScenarioService, ScenarioDto]):
+    Filter = FacadeScenarioFilter
     NotFound = ScenarioNotFound
     NotUnique = ScenarioNotUnique
     DeletionPrevented = ScenarioDeletionPrevented

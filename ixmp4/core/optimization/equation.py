@@ -20,6 +20,7 @@ from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
 class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
+    Filter = EquationFilter
     NotUnique = EquationNotUnique
     NotFound = EquationNotFound
     DeletionPrevented = EquationDeletionPrevented
