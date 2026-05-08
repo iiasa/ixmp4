@@ -1,8 +1,10 @@
 import httpx
 import pytest
 
+from ixmp4.data.meta.service import RunMetaEntryService
 from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
+from ixmp4.transport import DirectTransport
 from tests.api.base import (
     ApiServiceTest,
     api_transport,
@@ -133,3 +135,32 @@ class TestRunState(RunApiTest):
         ).json()
         assert unlocked["id"] == run.id
         assert unlocked["lock_transaction"] is None
+
+
+class TestRunQueryByMeta(RunApiTest):
+    @pytest.fixture(scope="class")
+    def runs(self, direct_transport: DirectTransport) -> tuple[Run, Run]:
+        runs = RunService(direct_transport)
+        meta = RunMetaEntryService(direct_transport)
+
+        run_with_meta = runs.create("Model A", "Scenario A")
+        run_without_meta = runs.create("Model B", "Scenario B")
+
+        meta.create(run_with_meta.id, "indicator", "keep")
+        return run_with_meta, run_without_meta
+
+    def test_run_list_by_meta(
+        self, client: httpx.Client, runs: tuple[Run, Run]
+    ) -> None:
+        run_with_meta, run_without_meta = runs
+
+        listed = self.request(
+            client,
+            "PATCH",
+            "/runs/list",
+            json={"default_only": False, "meta": {"key": "indicator"}},
+        ).json()
+
+        assert_paginated_list(listed, expected_count=1)
+        assert listed["results"][0]["id"] == run_with_meta.id
+        assert listed["results"][0]["id"] != run_without_meta.id
