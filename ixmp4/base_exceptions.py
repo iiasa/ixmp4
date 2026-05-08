@@ -13,12 +13,16 @@ from toolkit.exceptions import ServerError as BaseServerError
 from toolkit.exceptions import ServiceException as ServiceException
 from toolkit.exceptions import ServiceUnavailable as BaseServiceUnavailable
 from toolkit.exceptions import Unauthorized as BaseUnauthorized
+from toolkit.exceptions import InvalidToken as InvalidToken
+from toolkit.exceptions import InvalidCredentials as InvalidCredentials
 from toolkit.exceptions.registry import ServiceExceptionRegistry
 from toolkit.exceptions.serviceexception import DataItemType
 
 registry = ServiceExceptionRegistry()
 
 registry.register()(ServiceException)
+registry.register()(InvalidToken)
+registry.register()(InvalidCredentials)
 
 
 @registry.register()
@@ -72,19 +76,6 @@ class NotUnique(BaseNotUnique, Ixmp4Error):
 class ConstraintViolated(BaseConstraintViolated, Ixmp4Error):
     message = "Database constraint violated."
     http_status_code = 400
-
-
-@registry.register()
-class InvalidToken(Unauthorized):
-    message = "The supplied token is invalid."
-    http_status_code = 401
-
-
-@registry.register()
-class InvalidCredentials(Unauthorized):
-    message = "Authentication credentials rejected."
-    http_status_code = 401
-
 
 @registry.register()
 class InconsistentIamcType(Ixmp4Error):
