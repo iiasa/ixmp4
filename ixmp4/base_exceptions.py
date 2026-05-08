@@ -5,6 +5,8 @@ from toolkit.exceptions import BadGateway as BaseBadGateway
 from toolkit.exceptions import BadRequest as BaseBadRequest
 from toolkit.exceptions import ConstraintViolated as BaseConstraintViolated
 from toolkit.exceptions import Forbidden as BaseForbidden
+from toolkit.exceptions import InvalidCredentials as InvalidCredentials
+from toolkit.exceptions import InvalidToken as InvalidToken
 from toolkit.exceptions import NotFound as BaseNotFound
 from toolkit.exceptions import NotUnique as BaseNotUnique
 from toolkit.exceptions import PlatformNotFound as BasePlatformNotFound
@@ -13,8 +15,6 @@ from toolkit.exceptions import ServerError as BaseServerError
 from toolkit.exceptions import ServiceException as ServiceException
 from toolkit.exceptions import ServiceUnavailable as BaseServiceUnavailable
 from toolkit.exceptions import Unauthorized as BaseUnauthorized
-from toolkit.exceptions import InvalidToken as InvalidToken
-from toolkit.exceptions import InvalidCredentials as InvalidCredentials
 from toolkit.exceptions.registry import ServiceExceptionRegistry
 from toolkit.exceptions.serviceexception import DataItemType
 
@@ -76,6 +76,7 @@ class NotUnique(BaseNotUnique, Ixmp4Error):
 class ConstraintViolated(BaseConstraintViolated, Ixmp4Error):
     message = "Database constraint violated."
     http_status_code = 400
+
 
 @registry.register()
 class InconsistentIamcType(Ixmp4Error):
