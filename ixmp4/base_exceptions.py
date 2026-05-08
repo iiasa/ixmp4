@@ -94,9 +94,10 @@ class UnknownApiError(Ixmp4Error):
     http_error_name = "unknown_api_error"
 
 
-@registry.register()
-class ApiEncumbered(Ixmp4Error):
-    http_error_name = "api_encumbered"
+@registry.register(default_for_status_code=429)
+class TooManyRequests(Ixmp4Error):
+    http_status_code = 429
+    http_error_name = "too_many_requests"
 
 
 @registry.register()

@@ -9,9 +9,6 @@ attributes on the corresponding facades or the parent exception class.
 """
 
 from ixmp4.base_exceptions import (
-    ApiEncumbered as ApiEncumbered,
-)
-from ixmp4.base_exceptions import (
     BadFilterArguments as BadFilterArguments,
 )
 from ixmp4.base_exceptions import (
@@ -85,6 +82,9 @@ from ixmp4.base_exceptions import (
 )
 from ixmp4.base_exceptions import (
     ServiceUnavailable as ServiceUnavailable,
+)
+from ixmp4.base_exceptions import (
+    TooManyRequests as TooManyRequests,
 )
 from ixmp4.base_exceptions import (
     Unauthorized as Unauthorized,
