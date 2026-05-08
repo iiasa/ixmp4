@@ -73,6 +73,7 @@ class Settings(BaseSettings):
     )
     storage_directory: Path = Path("~/.local/share/ixmp4/")
     manager_url: HttpUrl = HttpUrl("https://api.manager.ece.iiasa.ac.at/v1")
+    check_alembic_version: bool = True
 
     server: ServerSettings = ServerSettings()
     client: ClientSettings = ClientSettings()
