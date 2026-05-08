@@ -233,6 +233,90 @@ def test_direct_transport_check_alembic_version_older_db_revision_guidance(
         DirectTransport(session, check_alembic_version=True)
 
 
+def test_direct_transport_check_alembic_version_requires_head_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "rev1",
+        get_head_revision=lambda: None,
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module.DirectTransport,
+        "get_alembic_controller",
+        lambda self, dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('rev1')")
+        )
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="Could not determine the expected alembic revision",
+    ):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_rejects_non_unique_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "rev1",
+        get_head_revision=lambda: ("head-1",),
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module.DirectTransport,
+        "get_alembic_controller",
+        lambda self, dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('rev1')")
+        )
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="Could not determine a unique expected alembic revision",
+    ):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_requires_current_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: None,
+        get_head_revision=lambda: "rev1",
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module.DirectTransport,
+        "get_alembic_controller",
+        lambda self, dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="no alembic revision entry was found in 'alembic_version'",
+    ):
+        DirectTransport(session, check_alembic_version=True)
+
+
 def test_authorized_transport_string_includes_user_and_platform() -> None:
     session = transport_module.Session(bind=sa.create_engine("sqlite:///:memory:"))
     transport = AuthorizedTransport(
