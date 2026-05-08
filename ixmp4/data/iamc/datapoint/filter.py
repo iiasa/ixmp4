@@ -69,7 +69,7 @@ class FacadeDataPointFilter(
     variable: iamc.VariableFilter | str | Iterable[str]
     model: base.ModelFilter | str | Iterable[str]
     scenario: base.ScenarioFilter | str | Iterable[str]
-    meta: base.RunMetaEntryFilter
+    meta: base.RunMetaEntryFilter | str | Iterable[str]
     run: FacadeRunFilter
 
 
@@ -92,6 +92,10 @@ FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
     "variable": NAME_FILTER_TRANSFORMERS,
     "model": NAME_FILTER_TRANSFORMERS,
     "scenario": NAME_FILTER_TRANSFORMERS,
+    "meta": (
+        make_str_like_transformer("key"),
+        make_iterable_str_in_transformer("key"),
+    ),
     "run": (make_mapping_transformer(run_facade_to_data_filter),),
 }
 
