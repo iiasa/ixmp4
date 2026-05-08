@@ -392,6 +392,22 @@ class TestFilters:
         assert not by_meta_like.empty
         assert by_meta_like["model"].eq("Model 1").all()
 
+        by_meta_shorthand = platform.runs.tabulate(
+            default_only=False,
+            meta="indicator_model_2",
+        )
+
+        assert not by_meta_shorthand.empty
+        assert by_meta_shorthand["model"].eq("Model 2").all()
+
+        by_meta_in_shorthand = platform.runs.tabulate(
+            default_only=False,
+            meta=["indicator_model_1"],
+        )
+
+        assert not by_meta_in_shorthand.empty
+        assert by_meta_in_shorthand["model"].eq("Model 1").all()
+
     def test_filter_datapoints_by_meta(self, platform: ixmp4.Platform) -> None:
         by_meta = platform.iamc.tabulate(
             run={"default_only": False},
@@ -407,6 +423,22 @@ class TestFilters:
 
         assert not by_meta_like.empty
         assert by_meta_like["model"].eq("Model 1").all()
+
+        by_meta_shorthand = platform.iamc.tabulate(
+            run={"default_only": False},
+            meta="indicator_model_2",
+        )
+
+        assert not by_meta_shorthand.empty
+        assert by_meta_shorthand["model"].eq("Model 2").all()
+
+        by_meta_in_shorthand = platform.iamc.tabulate(
+            run={"default_only": False},
+            meta=["indicator_model_1"],
+        )
+
+        assert not by_meta_in_shorthand.empty
+        assert by_meta_in_shorthand["model"].eq("Model 1").all()
 
     def test_invalid_filters_raise(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(InvalidArguments):
