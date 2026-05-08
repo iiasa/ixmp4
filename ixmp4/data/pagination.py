@@ -20,10 +20,16 @@ class Pagination(pyd.BaseModel):
     offset: int = pyd.Field(default=0, ge=0)
 
 
+class PaginationResult(pyd.BaseModel):
+    limit: int = pyd.Field(ge=0)
+    offset: int = pyd.Field(default=0, ge=0)
+    model_config = pyd.ConfigDict(from_attributes=True)
+
+
 class PaginatedResult(pyd.BaseModel, Generic[ResultsT]):
     results: ResultsT
     total: int
-    pagination: Pagination
+    pagination: PaginationResult | Pagination
     model_config = pyd.ConfigDict(from_attributes=True, arbitrary_types_allowed=True)
 
 

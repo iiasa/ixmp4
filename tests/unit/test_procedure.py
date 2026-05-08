@@ -4,11 +4,13 @@ from types import SimpleNamespace
 from typing import Any, Callable, cast
 from unittest import mock
 
+import pydantic as pyd
 import pytest
 from litestar.handlers import HTTPRouteHandler
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.base_exceptions import InvalidArguments, ProgrammingError
+from ixmp4.conf.settings import Settings
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.services import Http, Service, procedure
 from ixmp4.data.services.procedure import Procedure
@@ -698,6 +700,17 @@ class TestProcedureRouteHandler:
         assert pagination.limit == 10
         assert pagination.offset == 5
 
+    def test_route_handler_get_pagination_params_rejects_limit_above_max(
+        self,
+        list_handler: ProcedureRouteHandler[Any, Any, Any],
+    ) -> None:
+        """Request pagination still enforces configured max_page_size."""
+        settings = Settings()
+        with pytest.raises(pyd.ValidationError):
+            list_handler.get_pagination_params(
+                {"limit": settings.server.max_page_size + 1, "offset": 0}
+            )
+
     def test_route_handler_bind_endpoint_func_paginated(
         self,
         list_handler: ProcedureRouteHandler[Any, Any, Any],
@@ -1286,6 +1299,42 @@ class TestProcedureClient:
         # Should have dispatched pagination requests
         assert demo_service_httpx.transport.http_client.request.called  # type: ignore
         demo_service_httpx.transport.executor.shutdown()  # type: ignore
+
+    def test_procedure_client_handle_paginated_response_accepts_large_server_limit(
+        self, demo_service_httpx: DemoService
+    ) -> None:
+        """Response parsing accepts server limits above local max_page_size."""
+        from ixmp4.data.services.procedure.client import ProcedureClient
+
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.compute.procedure.handlers[DemoService],
+        )
+        client: ProcedureClient[DemoService, Any, list[int]] = ProcedureClient(
+            demo_service_httpx, handler
+        )
+
+        mock_response = mock.Mock()
+        mock_response.text = json_dumps(
+            {
+                "results": [1],
+                "total": 1,
+                "pagination": {
+                    "offset": 0,
+                    "limit": Settings().server.max_page_size + 1,
+                },
+            }
+        )
+
+        original_adapter = handler.return_type_adapter
+        try:
+            handler.return_type_adapter = pyd.TypeAdapter(PaginatedResult[list[int]])
+            response = client.handle_paginated_response(
+                mock_response, "/demo", None, None
+            )
+            assert response == [1]
+        finally:
+            handler.return_type_adapter = original_adapter
 
 
 def json_dumps(obj: Any) -> str:
