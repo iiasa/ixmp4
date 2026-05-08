@@ -27,6 +27,10 @@ class DataPointFilter(iamc.DataPointFilter, total=False):
         iamc.VariableFilter, (DataPoint.timeseries, TimeSeries.variable)
     ]
     unit: Annotated[base.UnitFilter, (DataPoint.timeseries, TimeSeries.unit)]
+    meta: Annotated[
+        base.RunMetaEntryFilter,
+        (DataPoint.timeseries, TimeSeries.run, Run.meta),
+    ]
     run: Annotated[base.RunFilter, (DataPoint.timeseries, TimeSeries.run)]
     model: Annotated[
         base.ModelFilter, (DataPoint.timeseries, TimeSeries.run, Run.model)
@@ -65,6 +69,7 @@ class FacadeDataPointFilter(
     variable: iamc.VariableFilter | str | Iterable[str]
     model: base.ModelFilter | str | Iterable[str]
     scenario: base.ScenarioFilter | str | Iterable[str]
+    meta: base.RunMetaEntryFilter
     run: FacadeRunFilter
 
 
