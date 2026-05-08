@@ -1,4 +1,5 @@
 import inspect
+import json
 from collections.abc import Generator
 from types import SimpleNamespace
 from typing import Any, Callable, cast
@@ -9,7 +10,7 @@ import pytest
 from litestar.handlers import HTTPRouteHandler
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
-from ixmp4.base_exceptions import InvalidArguments, ProgrammingError
+from ixmp4.base_exceptions import InvalidArguments, ProgrammingError, TooManyRequests
 from ixmp4.conf.settings import Settings
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.services import Http, Service, procedure
@@ -906,11 +907,10 @@ class TestProcedureClient:
             DemoService.compute.procedure.handlers[DemoService],
         )
 
-        # Mock the http_client.request method
+        # Mock the transport request wrapper
         mock_response = mock.Mock()
         mock_response.text = "8"
-        demo_service_httpx.transport.http_client = mock.Mock()  # type: ignore
-        demo_service_httpx.transport.http_client.request = mock.Mock(  # type: ignore
+        demo_service_httpx.transport.request = mock.Mock(  # type: ignore
             return_value=mock_response
         )
         demo_service_httpx.transport.raise_service_exception = mock.Mock()  # type: ignore
@@ -928,8 +928,8 @@ class TestProcedureClient:
         result = client(4)
 
         assert result == 8
-        demo_service_httpx.transport.http_client.request.assert_called_once()  # type: ignore
-        call_args = demo_service_httpx.transport.http_client.request.call_args  # type: ignore
+        demo_service_httpx.transport.request.assert_called_once()  # type: ignore
+        call_args = demo_service_httpx.transport.request.call_args  # type: ignore
         assert call_args[0][0] == "POST"
         assert call_args[1]["json"] == {"value": 4}
         assert call_args[1]["params"] is None
@@ -948,11 +948,10 @@ class TestProcedureClient:
         # Ensure pagination is disabled
         handler.procedure.pagination.has_pagination = False
 
-        # Mock the http_client.request method
+        # Mock the transport request wrapper
         mock_response = mock.Mock()
         mock_response.text = "42"
-        demo_service_httpx.transport.http_client = mock.Mock()  # type: ignore
-        demo_service_httpx.transport.http_client.request = mock.Mock(  # type: ignore
+        demo_service_httpx.transport.request = mock.Mock(  # type: ignore
             return_value=mock_response
         )
         demo_service_httpx.transport.raise_service_exception = mock.Mock()  # type: ignore
@@ -983,13 +982,12 @@ class TestProcedureClient:
         # Enable pagination
         handler.procedure.pagination.has_pagination = True
 
-        # Mock the http_client.request method
+        # Mock the transport request wrapper
         mock_response = mock.Mock()
         mock_response.text = (
             '{"results": [1, 2], "total": 2, "pagination": {"offset": 0, "limit": 10}}'
         )
-        demo_service_httpx.transport.http_client = mock.Mock()  # type: ignore
-        demo_service_httpx.transport.http_client.request = mock.Mock(  # type: ignore
+        demo_service_httpx.transport.request = mock.Mock(  # type: ignore
             return_value=mock_response
         )
         demo_service_httpx.transport.raise_service_exception = mock.Mock()  # type: ignore
@@ -1029,8 +1027,7 @@ class TestProcedureClient:
 
         mock_response = mock.Mock()
         mock_response.text = "8"
-        demo_service_httpx.transport.http_client = mock.Mock()  # type: ignore
-        demo_service_httpx.transport.http_client.request = mock.Mock(  # type: ignore
+        demo_service_httpx.transport.request = mock.Mock(  # type: ignore
             return_value=mock_response
         )
         demo_service_httpx.transport.raise_service_exception = mock.Mock()  # type: ignore
@@ -1046,7 +1043,7 @@ class TestProcedureClient:
         result = client(4)
 
         assert result == 8
-        call_args = demo_service_httpx.transport.http_client.request.call_args  # type: ignore
+        call_args = demo_service_httpx.transport.request.call_args  # type: ignore
         assert call_args[1]["json"] is None
         assert call_args[1]["params"] == {"value": 4}
 
@@ -1160,11 +1157,10 @@ class TestProcedureClient:
             DemoService.compute.procedure.handlers[DemoService],
         )
 
-        # Mock the executor and http_client
+        # Mock the executor and transport request wrapper
         mock_response = mock.Mock()
         mock_response.text = "[1, 2]"
-        demo_service_httpx.transport.http_client = mock.Mock()  # type: ignore
-        demo_service_httpx.transport.http_client.request = mock.Mock(  # type: ignore
+        demo_service_httpx.transport.request = mock.Mock(  # type: ignore
             return_value=mock_response
         )
         demo_service_httpx.transport.raise_service_exception = mock.Mock()  # type: ignore
@@ -1208,7 +1204,7 @@ class TestProcedureClient:
 
         # Create a paginated result that fits in one page
         mock_response = mock.Mock()
-        mock_response.text = json_dumps(
+        mock_response.text = json.dumps(
             {
                 "results": [1, 2],
                 "total": 2,
@@ -1248,7 +1244,7 @@ class TestProcedureClient:
 
         # Create a response indicating more pages exist
         mock_response = mock.Mock()
-        mock_response.text = json_dumps(
+        mock_response.text = json.dumps(
             {
                 "results": [1, 2],
                 "total": 25,
@@ -1256,7 +1252,6 @@ class TestProcedureClient:
             }
         )
 
-        demo_service_httpx.transport.http_client = mock.Mock()  # type: ignore
         demo_service_httpx.transport.raise_service_exception = mock.Mock()  # type: ignore
         demo_service_httpx.transport.executor = futures.ThreadPoolExecutor(  # type: ignore
             max_workers=2
@@ -1288,16 +1283,16 @@ class TestProcedureClient:
         result_adapter.validate_json = mock.Mock(side_effect=adapter_side_effect)
         handler.return_type_adapter = result_adapter
 
-        # Mock http_client.request for pagination
+        # Mock transport request wrapper for pagination
         mock_page_response = mock.Mock()
-        mock_page_response.text = json_dumps({"results": [3, 4]})
-        demo_service_httpx.transport.http_client.request = mock.Mock(  # type: ignore
+        mock_page_response.text = json.dumps({"results": [3, 4]})
+        demo_service_httpx.transport.request = mock.Mock(  # type: ignore
             return_value=mock_page_response
         )
 
         client.handle_paginated_response(mock_response, "/demo", None, None)
         # Should have dispatched pagination requests
-        assert demo_service_httpx.transport.http_client.request.called  # type: ignore
+        assert demo_service_httpx.transport.request.called  # type: ignore
         demo_service_httpx.transport.executor.shutdown()  # type: ignore
 
     def test_procedure_client_handle_paginated_response_accepts_large_server_limit(
@@ -1315,7 +1310,7 @@ class TestProcedureClient:
         )
 
         mock_response = mock.Mock()
-        mock_response.text = json_dumps(
+        mock_response.text = json.dumps(
             {
                 "results": [1],
                 "total": 1,
@@ -1336,9 +1331,29 @@ class TestProcedureClient:
         finally:
             handler.return_type_adapter = original_adapter
 
+    def test_procedure_client_raises_too_many_requests(
+        self,
+        demo_service_httpx: DemoService,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        """Client raises if transport stops retrying."""
+        import httpx
 
-def json_dumps(obj: Any) -> str:
-    """Helper to convert object to JSON string."""
-    import json
+        from ixmp4.data.services.procedure.client import ProcedureClient
 
-    return json.dumps(obj)
+        mock_response = httpx.Response(429, text="Too many requests.")
+
+        monkeypatch.setattr(
+            demo_service_httpx.transport, "request", lambda *a, **kw: mock_response
+        )
+
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.compute.procedure.handlers[DemoService],
+        )
+        client: ProcedureClient[DemoService, Any, list[int]] = ProcedureClient(
+            demo_service_httpx, handler
+        )
+
+        with pytest.raises(TooManyRequests, match="Too many requests."):
+            client(42)

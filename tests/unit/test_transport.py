@@ -1,3 +1,5 @@
+import datetime
+from email.utils import format_datetime
 from types import SimpleNamespace
 from typing import Any, cast
 from unittest import mock
@@ -144,7 +146,7 @@ def test_httpx_transport_check_root_rejects_manager_url_mismatch(
     client = SimpleNamespace(
         base_url="https://platform.server.test/api",
         auth=MockManagerAuth("https://manager.client.test/api"),
-        get=mock.Mock(return_value=response),
+        request=mock.Mock(return_value=response),
     )
 
     with pytest.raises(ImproperlyConfigured, match="mismatching Manager URL"):
@@ -225,3 +227,88 @@ def test_httpx_transport_string_uses_manager_user(
     )
 
     assert "user=alice" in str(transport)
+
+
+def test_httpx_transport_request_retries_429_with_retry_after(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+    monkeypatch.setattr(
+        transport_module, "time", SimpleNamespace(sleep=sleep_calls.append)
+    )
+    monkeypatch.setattr(transport_module, "ThreadPoolExecutor", fake_executor)
+
+    responses = [
+        SimpleNamespace(status_code=429, headers={"retry-after": "2"}),
+        SimpleNamespace(status_code=200, headers={}),
+    ]
+    client = SimpleNamespace(
+        base_url="https://platform.server.test/api",
+        auth=None,
+        request=mock.Mock(side_effect=responses),
+    )
+    transport = HttpxTransport(
+        client=cast(Any, client),
+        settings=ClientSettings(retries=3),
+        check_root=False,
+    )
+
+    response = transport.request("GET", "/demo")
+
+    assert response.status_code == 200
+    assert client.request.call_count == 2
+    assert sleep_calls == [2.0]
+
+
+def test_httpx_transport_request_returns_last_429_after_retry_limit(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    sleep_calls: list[float] = []
+    monkeypatch.setattr(
+        transport_module, "time", SimpleNamespace(sleep=sleep_calls.append)
+    )
+    monkeypatch.setattr(transport_module, "ThreadPoolExecutor", fake_executor)
+
+    responses = [
+        SimpleNamespace(status_code=429, headers={}),
+        SimpleNamespace(status_code=429, headers={}),
+        SimpleNamespace(status_code=429, headers={}),
+    ]
+    client = SimpleNamespace(
+        base_url="https://platform.server.test/api",
+        auth=None,
+        request=mock.Mock(side_effect=responses),
+    )
+    transport = HttpxTransport(
+        client=cast(Any, client),
+        settings=ClientSettings(retries=2),
+        check_root=False,
+    )
+
+    response = transport.request("GET", "/demo")
+
+    assert response.status_code == 429
+    assert client.request.call_count == 3
+    assert sleep_calls == [0.5, 1.0]
+
+
+def test_get_retry_delay_seconds_parses_http_date() -> None:
+    client = SimpleNamespace(
+        base_url="https://platform.server.test/api",
+        auth=None,
+    )
+    transport = HttpxTransport(
+        client=cast(Any, client),
+        settings=ClientSettings(retries=2),
+        check_root=False,
+    )
+    # Use a date in the past so delay clamps to 0.0 regardless of wall-clock time.
+    http_date = format_datetime(
+        datetime.datetime(2000, 1, 1, tzinfo=datetime.timezone.utc)
+    )
+    mock_response = httpx.Response(
+        status_code=429,
+        text="Too many requests.",
+        headers={"retry-after": http_date},
+    )
+    assert transport.get_retry_delay_seconds(mock_response, 0) == 0.0
