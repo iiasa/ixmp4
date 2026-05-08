@@ -21,6 +21,7 @@ from ixmp4.data.iamc.variable.service import VariableService
 
 
 class Variable(BaseFacadeObject[VariableService, VariableDto]):
+    Filter = FacadeVariableFilter
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     DeletionPrevented = VariableDeletionPrevented

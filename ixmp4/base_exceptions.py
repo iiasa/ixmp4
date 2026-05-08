@@ -5,6 +5,8 @@ from toolkit.exceptions import BadGateway as BaseBadGateway
 from toolkit.exceptions import BadRequest as BaseBadRequest
 from toolkit.exceptions import ConstraintViolated as BaseConstraintViolated
 from toolkit.exceptions import Forbidden as BaseForbidden
+from toolkit.exceptions import InvalidCredentials as InvalidCredentials
+from toolkit.exceptions import InvalidToken as InvalidToken
 from toolkit.exceptions import NotFound as BaseNotFound
 from toolkit.exceptions import NotUnique as BaseNotUnique
 from toolkit.exceptions import PlatformNotFound as BasePlatformNotFound
@@ -19,6 +21,8 @@ from toolkit.exceptions.serviceexception import DataItemType
 registry = ServiceExceptionRegistry()
 
 registry.register()(ServiceException)
+registry.register()(InvalidToken)
+registry.register()(InvalidCredentials)
 
 
 @registry.register()
@@ -72,18 +76,6 @@ class NotUnique(BaseNotUnique, Ixmp4Error):
 class ConstraintViolated(BaseConstraintViolated, Ixmp4Error):
     message = "Database constraint violated."
     http_status_code = 400
-
-
-@registry.register()
-class InvalidToken(Unauthorized):
-    message = "The supplied token is invalid."
-    http_status_code = 401
-
-
-@registry.register()
-class InvalidCredentials(Unauthorized):
-    message = "Authentication credentials rejected."
-    http_status_code = 401
 
 
 @registry.register()

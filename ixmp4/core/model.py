@@ -21,6 +21,7 @@ from ixmp4.data.model.service import ModelService
 
 
 class Model(BaseFacadeObject[ModelService, ModelDto]):
+    Filter = FacadeModelFilter
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
     DeletionPrevented = ModelDeletionPrevented

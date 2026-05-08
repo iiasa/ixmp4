@@ -125,6 +125,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
     """
 
+    Filter = FacadeRunFilter
     NotFound = RunNotFound
     NotUnique = RunNotUnique
     DeletionPrevented = RunDeletionPrevented

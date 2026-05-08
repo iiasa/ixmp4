@@ -20,6 +20,7 @@ from .base import BaseOptimizationFacadeObject, BaseOptimizationServiceFacade
 
 
 class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
+    Filter = ParameterFilter
     NotUnique = ParameterNotUnique
     NotFound = ParameterNotFound
     DeletionPrevented = ParameterDeletionPrevented

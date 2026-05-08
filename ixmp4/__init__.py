@@ -1,4 +1,6 @@
 from ixmp4.core.exceptions import InconsistentIamcType as InconsistentIamcType
+from ixmp4.core.exceptions import InvalidCredentials as InvalidCredentials
+from ixmp4.core.exceptions import InvalidToken as InvalidToken
 from ixmp4.core.exceptions import Ixmp4Error as Ixmp4Error
 from ixmp4.core.exceptions import NotFound as NotFound
 from ixmp4.core.exceptions import NotUnique as NotUnique

@@ -22,6 +22,7 @@ from .base import BaseDocsServiceFacade, BaseFacadeObject
 
 
 class Region(BaseFacadeObject[RegionService, RegionDto]):
+    Filter = FacadeRegionFilter
     NotFound = RegionNotFound
     NotUnique = RegionNotUnique
     DeletionPrevented = RegionDeletionPrevented
