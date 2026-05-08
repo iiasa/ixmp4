@@ -183,7 +183,10 @@ class Platform(object):
                 auth=self.settings.get_client_auth(cred_dict),
             )
         else:
-            return DirectTransport.from_dsn(ci.dsn)
+            return DirectTransport.from_dsn(
+                ci.dsn,
+                check_alembic_version=self.settings.check_alembic_version,
+            )
 
     def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
         toml = self.settings.get_toml_platforms()
