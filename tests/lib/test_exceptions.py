@@ -89,7 +89,7 @@ class TestCoreExceptionsImportable:
         assert hasattr(exc_module, "UnknownApiError")
 
     def test_api_encumbered(self) -> None:
-        assert hasattr(exc_module, "ApiEncumbered")
+        assert hasattr(exc_module, "TooManyRequests")
 
     def test_optimization_data_validation_error(self) -> None:
         assert hasattr(exc_module, "OptimizationDataValidationError")
@@ -202,7 +202,7 @@ class TestExceptionHierarchy:
             "BadFilterArguments",
             "InconsistentIamcType",
             "UnknownApiError",
-            "ApiEncumbered",
+            "TooManyRequests",
             "OptimizationDataValidationError",
             "OptimizationItemUsageError",
         ):
