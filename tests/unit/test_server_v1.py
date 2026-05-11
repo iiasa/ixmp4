@@ -127,7 +127,9 @@ class TestGetPlatform:
         """manager_platforms is checked first when auth is present."""
         from ixmp4.server.v1 import get_platform
 
-        manager_platform = SimpleNamespace(dsn="sqlite:///:memory:")
+        manager_platform = SimpleNamespace(
+            dsn="sqlite:///:memory:", slug="test-platform"
+        )
         manager = SimpleNamespace(get_platform=mock.Mock(return_value=manager_platform))
         toml = SimpleNamespace(get_platform=mock.Mock())
         state = _make_state(manager_platforms=manager, toml_platforms=toml)
