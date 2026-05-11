@@ -142,7 +142,7 @@ async def get_platform(
             request.auth.has_access_permission(
                 platform,
                 raise_exc=Forbidden(
-                    f"Access to platform '{platform}' denied due "
+                    f"Access to platform '{platform.slug}' denied due "
                     "to insufficient permissions."
                 ),
             )
