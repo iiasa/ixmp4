@@ -30,7 +30,7 @@ class TestManagerPlatforms:
         assert "{env:IXMP4_DIR}" in cached_platform.dsn
 
         # Env var substitution happens when creating the engine
-        transport = DirectTransport.from_dsn(platform.dsn)
+        transport = DirectTransport.from_dsn(platform.dsn, ping_database=False)
         assert transport is not None
 
     def test_get_platform_returns_unresolved_dsn_for_missing_env_tokens(

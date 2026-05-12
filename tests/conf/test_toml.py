@@ -94,7 +94,7 @@ class TestTomlPlatforms(TomlTest):
         assert "{env:IXMP4_TEST_PASSWORD}" in platforms_toml.read_text()
 
         # Env var substitution happens when creating the engine
-        transport = DirectTransport.from_dsn(platform.dsn)
+        transport = DirectTransport.from_dsn(platform.dsn, ping_database=False)
         assert transport is not None
 
     def test_get_platform_returns_unresolved_dsn_for_missing_env_tokens(
