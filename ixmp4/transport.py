@@ -17,6 +17,7 @@ from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.client.base import ServiceClient
 
 from ixmp4.base_exceptions import ImproperlyConfigured
+from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
@@ -38,6 +39,7 @@ logger = logging.getLogger(__name__)
 @lru_cache()
 def cached_create_engine(dsn: str, **kwargs: Any) -> sa.Engine:
     # max_identifier_length=63 to avoid exceeding postgres' default maximum
+    dsn = resolve_dsn_env_tokens(dsn)
     return sa.create_engine(
         dsn, poolclass=sa.NullPool, max_identifier_length=63, **kwargs
     )
@@ -66,6 +68,8 @@ class DirectTransport(Transport):
 
     @classmethod
     def from_dsn(cls, dsn: str, *args: Any, **kwargs: Any) -> "DirectTransport":
+        # Resolve environment variable placeholders in DSN
+        dsn = resolve_dsn_env_tokens(dsn)
         dsn = cls.check_dsn(dsn)
         if dsn.startswith("sqlite"):
             engine = cls.create_sqlite_engine(dsn)
