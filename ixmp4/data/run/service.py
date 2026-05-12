@@ -6,7 +6,6 @@ from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import Forbidden
-from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.iamc.reverter import run_reverter as iamc_reverter
 from ixmp4.data.meta.repositories import (
@@ -29,6 +28,7 @@ from ixmp4.data.services import GetByIdService, Http, procedure
 from ixmp4.data.versions.transaction import TransactionRepository
 from ixmp4.transport import DirectTransport
 
+from .compat_controller import RunCompatibilityController
 from .exceptions import (
     NoDefaultRunVersion,
     RunIsLocked,
@@ -46,7 +46,7 @@ class RunService(GetByIdService):
     router_prefix = "/runs"
     router_tags = ["runs"]
 
-    http_controller = EnumerationCompatibilityController
+    http_controller = RunCompatibilityController
     executor: SessionExecutor
     items: ItemRepository
     pandas: PandasRepository

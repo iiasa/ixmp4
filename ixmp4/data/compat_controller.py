@@ -11,7 +11,9 @@ from ixmp4.data.services.controller import ServiceController
 class EnumerationCompatibilityController(ServiceController[Any]):
     path = "/"
 
-    def _get_compat_payload(self, query_params: dict[str, Any], body: bytes) -> bytes:
+    def _get_compat_payload(
+        self, query_params: dict[str, Any], body: bytes
+    ) -> dict[str, Any]:
         """Merge legacy query filters into a PATCH body payload.
 
         The deprecated ``query`` endpoint historically accepted procedure
@@ -33,7 +35,7 @@ class EnumerationCompatibilityController(ServiceController[Any]):
                 continue
             payload.setdefault(key, value)
 
-        return json.dumps(payload).encode("utf-8")
+        return payload
 
     @patch(
         path="/",
@@ -63,10 +65,12 @@ class EnumerationCompatibilityController(ServiceController[Any]):
         query_params = dict(request.query_params)
 
         bound_func = handler.bind_endpoint_func(service, query_params)
+        payload = self._get_compat_payload(query_params, body)
+        payload_str = json.dumps(payload).encode("utf-8")
         args, kwargs = handler.build_call_args(
             request.path_params,
             query_params,
-            self._get_compat_payload(query_params, body),
+            payload_str,
         )
 
         return cast(
