@@ -579,37 +579,37 @@ class TestProcedurePagination:
 
 
 class TestProcedureRouteHandler:
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def demo_transport(self) -> Generator[DirectTransport, None, None]:
         t = DirectTransport.from_dsn("sqlite:///:memory:")
         yield t
         t.close()
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def demo_service(self, demo_transport: DirectTransport) -> DemoService:
         return DemoService(demo_transport)
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def paginated_service(
         self, demo_transport: DirectTransport
     ) -> PaginatedDemoService:
         return PaginatedDemoService(demo_transport)
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def compute_handler(self) -> ProcedureRouteHandler[Any, Any, Any]:
         return cast(
             ProcedureRouteHandler[Any, Any, Any],
             DemoService.compute.procedure.handlers[DemoService],
         )
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def rename_handler(self) -> ProcedureRouteHandler[Any, Any, Any]:
         return cast(
             ProcedureRouteHandler[Any, Any, Any],
             DemoService.rename.procedure.handlers[DemoService],
         )
 
-    @pytest.fixture(scope="module")
+    @pytest.fixture(scope="class")
     def list_handler(self) -> ProcedureRouteHandler[Any, Any, Any]:
         return cast(
             ProcedureRouteHandler[Any, Any, Any],
