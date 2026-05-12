@@ -14,7 +14,7 @@ from tests.backends import build_rest_server
 
 class TestPlatformRootApi:
     @pytest.fixture(scope="session")
-    def settings(self) -> Generator[Settings]:
+    def settings(self) -> Generator[Settings, None, None]:
         with TemporaryDirectory() as temp_dir:
             settings = Settings(storage_directory=Path(temp_dir))
             settings.get_toml_platforms_path().write_text(
