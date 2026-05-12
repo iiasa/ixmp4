@@ -93,11 +93,15 @@ class TestRunQuery(RunApiTest):
         queried = self.request(
             client, "PATCH", "/runs", json={"default_only": False}
         ).json()
-
+        queried_explicit_false = self.request(
+            client, "PATCH", "/runs?table=false", json={"default_only": False}
+        ).json()
         assert_paginated_list(queried, expected_count=1)
         assert queried["results"][0]["id"] == run.id
+        assert queried == queried_explicit_false
+
         tabulated = self.request(
-            client, "PATCH", "/runs?table=True", json={"default_only": False}
+            client, "PATCH", "/runs?table=true", json={"default_only": False}
         ).json()
 
         assert_frame_payload(
