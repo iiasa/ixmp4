@@ -183,7 +183,27 @@ class Platform(object):
                 auth=self.settings.get_client_auth(cred_dict),
             )
         else:
-            return DirectTransport.from_dsn(ci.dsn)
+            # Try direct connection first
+            try:
+                return DirectTransport.from_dsn(ci.dsn)
+            except Exception as e:
+                # If direct connection fails and HTTP URL is available,
+                # fall back to HTTP transport.
+                if ci.url is not None:
+                    logger.warning(
+                        f"Direct connection failed: {e}. "
+                        "Falling back to HTTP connection for platform "
+                        f"'{ci.name}' at {ci.url}"
+                    )
+                    cred_dict = self.settings.get_credentials().get(http_credentials)
+                    return HttpxTransport.from_url(
+                        str(ci.url),
+                        settings=self.settings.client,
+                        auth=self.settings.get_client_auth(cred_dict),
+                    )
+                else:
+                    # No HTTP URL available, re-raise the original error
+                    raise
 
     def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
         toml = self.settings.get_toml_platforms()
