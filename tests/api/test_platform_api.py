@@ -1,23 +1,38 @@
-from typing import cast
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Generator, cast
 
 import httpx
 import pytest
 from litestar.app import Litestar
 
-from ixmp4.transport import HttpxTransport, Transport
-from tests.api.base import api_transport
-
-transport = api_transport
+from ixmp4.conf.settings import Settings
+from ixmp4.server import Ixmp4Server
+from ixmp4.transport import HttpxTransport
+from tests.backends import build_rest_server
 
 
 class TestPlatformRootApi:
-    @pytest.fixture(scope="class")
-    def client(self, transport: Transport) -> httpx.Client:
-        if isinstance(transport, HttpxTransport):
-            return transport.http_client
-        pytest.skip("transport does not provide an httpx client")
+    @pytest.fixture(scope="session")
+    def settings(self) -> Generator[Settings]:
+        with TemporaryDirectory() as temp_dir:
+            settings = Settings(storage_directory=Path(temp_dir))
+            settings.get_toml_platforms_path().write_text(
+                '[test]\ndsn = "sqlite:///:memory:"\n'
+            )
+            yield settings
 
-    @pytest.fixture(scope="class")
+    @pytest.fixture(scope="session")
+    def server(self, settings: Settings) -> Ixmp4Server:
+        server, _ = build_rest_server(settings)
+        return server
+
+    @pytest.fixture(scope="session")
+    def client(self, server: Ixmp4Server, settings: Settings) -> httpx.Client:
+        transport = HttpxTransport.from_asgi(server.asgi_app, settings.client)
+        return transport.http_client
+
+    @pytest.fixture(scope="session")
     def app(self, client: httpx.Client) -> Litestar:
         app = getattr(client, "app", None)
         if app is not None:
