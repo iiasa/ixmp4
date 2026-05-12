@@ -60,6 +60,12 @@ class TestFilters:
                 meta_key = f"indicator_{model.lower().replace(' ', '_')}"
                 with run.transact("Add run meta indicator"):
                     run.meta[meta_key] = True
+                    run.meta["filter_value_bool"] = model == "Model 2"
+                    run.meta["filter_value_int"] = 2 if model == "Model 2" else 1
+                    run.meta["filter_value_float"] = 2.5 if model == "Model 2" else 1.5
+                    run.meta["filter_value_str"] = (
+                        "model_2" if model == "Model 2" else "model_1"
+                    )
 
         for run_tuple, rows in datapoints.groupby(
             ["model", "scenario", "version"], group_keys=False
@@ -408,6 +414,34 @@ class TestFilters:
         assert not by_meta_in_shorthand.empty
         assert by_meta_in_shorthand["model"].eq("Model 1").all()
 
+        by_meta_bool = platform.runs.tabulate(
+            default_only=False,
+            meta={"key": "filter_value_bool", "value_bool": True},
+        )
+        assert not by_meta_bool.empty
+        assert by_meta_bool["model"].eq("Model 2").all()
+
+        by_meta_int = platform.runs.tabulate(
+            default_only=False,
+            meta={"key": "filter_value_int", "value_int": 2},
+        )
+        assert not by_meta_int.empty
+        assert by_meta_int["model"].eq("Model 2").all()
+
+        by_meta_float = platform.runs.tabulate(
+            default_only=False,
+            meta={"key": "filter_value_float", "value_float": 2.5},
+        )
+        assert not by_meta_float.empty
+        assert by_meta_float["model"].eq("Model 2").all()
+
+        by_meta_str = platform.runs.tabulate(
+            default_only=False,
+            meta={"key": "filter_value_str", "value_str": "model_2"},
+        )
+        assert not by_meta_str.empty
+        assert by_meta_str["model"].eq("Model 2").all()
+
     def test_filter_datapoints_by_meta(self, platform: ixmp4.Platform) -> None:
         by_meta = platform.iamc.tabulate(
             run={"default_only": False},
@@ -439,6 +473,34 @@ class TestFilters:
 
         assert not by_meta_in_shorthand.empty
         assert by_meta_in_shorthand["model"].eq("Model 1").all()
+
+        by_meta_bool = platform.iamc.tabulate(
+            run={"default_only": False},
+            meta={"key": "filter_value_bool", "value_bool": True},
+        )
+        assert not by_meta_bool.empty
+        assert by_meta_bool["model"].eq("Model 2").all()
+
+        by_meta_int = platform.iamc.tabulate(
+            run={"default_only": False},
+            meta={"key": "filter_value_int", "value_int": 2},
+        )
+        assert not by_meta_int.empty
+        assert by_meta_int["model"].eq("Model 2").all()
+
+        by_meta_float = platform.iamc.tabulate(
+            run={"default_only": False},
+            meta={"key": "filter_value_float", "value_float": 2.5},
+        )
+        assert not by_meta_float.empty
+        assert by_meta_float["model"].eq("Model 2").all()
+
+        by_meta_str = platform.iamc.tabulate(
+            run={"default_only": False},
+            meta={"key": "filter_value_str", "value_str": "model_2"},
+        )
+        assert not by_meta_str.empty
+        assert by_meta_str["model"].eq("Model 2").all()
 
     def test_invalid_filters_raise(self, platform: ixmp4.Platform) -> None:
         with pytest.raises(InvalidArguments):
