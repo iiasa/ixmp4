@@ -108,17 +108,11 @@ class TomlPlatforms(PlatformConnections):
         toml.dump(obj, f)
 
     def list_platforms(self) -> list[TomlPlatform]:
-        return [
-            platform.model_copy(update={"dsn": resolve_dsn_env_tokens(platform.dsn)})
-            for platform in self.platforms.values()
-        ]
+        return list(self.platforms.values())
 
     def get_platform(self, name: str) -> TomlPlatform:
         try:
-            platform = self.platforms[name]
-            return platform.model_copy(
-                update={"dsn": resolve_dsn_env_tokens(platform.dsn)}
-            )
+            return self.platforms[name]
         except KeyError as e:
             raise PlatformNotFound(f"Platform '{name}' was not found.") from e
 
@@ -146,16 +140,10 @@ class ManagerPlatforms(PlatformConnections):
         self.manager_client = manager_client
 
     def list_platforms(self) -> list[Ixmp4Instance]:
-        return [
-            platform.model_copy(update={"dsn": resolve_dsn_env_tokens(platform.dsn)})
-            for platform in self.manager_client.ixmp4.cached_list()
-        ]
+        return self.manager_client.ixmp4.cached_list()
 
     def get_platform(self, name: str) -> Ixmp4Instance:
         for platform in self.manager_client.ixmp4.cached_list():
             if platform.slug == name:
-                return platform.model_copy(
-                    update={"dsn": resolve_dsn_env_tokens(platform.dsn)}
-                )
-        else:
-            raise PlatformNotFound(f"Platform '{name}' was not found.")
+                return platform
+        raise PlatformNotFound(f"Platform '{name}' was not found.")
