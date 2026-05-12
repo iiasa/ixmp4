@@ -96,6 +96,23 @@ class TestRunQuery(RunApiTest):
 
         assert_paginated_list(queried, expected_count=1)
         assert queried["results"][0]["id"] == run.id
+        tabulated = self.request(
+            client, "PATCH", "/runs?table=True", json={"default_only": False}
+        ).json()
+
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "model",
+                "scenario",
+                "version",
+                "is_default",
+                "model__id",
+                "scenario__id",
+                "lock_transaction",
+            },
+        )
 
 
 class TestRunState(RunApiTest):

@@ -10,5 +10,6 @@ class RunCompatibilityController(EnumerationCompatibilityController):
         self, query_params: dict[str, Any], body: bytes
     ) -> dict[str, Any]:
         payload = super()._get_compat_payload(query_params, body)
-        payload.setdefault("include_internal_columns", True)
+        if query_params.get("table", False):
+            payload.setdefault("include_internal_columns", True)
         return payload
