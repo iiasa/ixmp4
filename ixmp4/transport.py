@@ -143,7 +143,7 @@ class AuthorizedTransport(DirectTransport):
         super().__init__(session, ping_database=ping_database)
         self.auth_ctx = auth_ctx
         self.platform = platform
-        self.unauthorized_transport = DirectTransport(session)
+        self.unauthorized_transport = DirectTransport(session, ping_database=False)
 
     def __str__(self) -> str:
         return (
