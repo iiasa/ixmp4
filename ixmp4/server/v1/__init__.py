@@ -23,6 +23,7 @@ from toolkit.manager.client import ManagerClient
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
     PlatformConnectionInfo,
+    resolve_dsn_env_tokens,
 )
 from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
@@ -118,7 +119,8 @@ async def get_transport(
     platform: PlatformConnectionInfo,
     request: Request[User | None, AuthorizationContext | None, Any],
 ) -> AsyncGenerator[DirectTransport, None]:
-    async with yield_session(platform.dsn) as session:
+    dsn = resolve_dsn_env_tokens(platform.dsn)
+    async with yield_session(dsn) as session:
         if request.auth is not None:
             yield AuthorizedTransport(session, request.auth, platform)
         else:
