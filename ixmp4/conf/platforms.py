@@ -36,7 +36,7 @@ def resolve_dsn_env_tokens(dsn: str) -> str:
 
     resolved = _ENV_TOKEN_PATTERN.sub(replace, dsn)
     if missing:
-        logger.error("Missing DSN environment variable(s): " + str(missing))
+        logger.debug("Missing DSN environment variable(s): " + str(missing))
         raise ImproperlyConfigured(
             "Cannot resolve DSN environment variable placeholder(s)."
         )
