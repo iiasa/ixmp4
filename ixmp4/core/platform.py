@@ -1,6 +1,13 @@
 import logging
 
-from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
+import sqlalchemy as sa
+
+from ixmp4.base_exceptions import (
+    Ixmp4Error,
+    PlatformNotFound,
+    PlatformNotUnique,
+    ServiceException,
+)
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.conf.settings import Settings
 from ixmp4.data.backend import Backend
@@ -183,7 +190,35 @@ class Platform(object):
                 auth=self.settings.get_client_auth(cred_dict),
             )
         else:
-            return DirectTransport.from_dsn(ci.dsn)
+            # Try direct connection first
+            try:
+                return DirectTransport.from_dsn(ci.dsn)
+            except (
+                ServiceException,
+                Ixmp4Error,
+                sa.exc.SQLAlchemyError,
+                ImportError,
+            ) as e:
+                # If direct connection fails and HTTP URL is available,
+                # fall back to HTTP transport.
+                if ci.url is not None:
+                    logger.debug(
+                        f"Error while trying to establish direct connection: \n{e}"
+                    )
+                    logger.warning(
+                        f"Direct connection failed with `{e.__class__.__name__}`. "
+                        "Falling back to HTTP connection for platform "
+                        f"'{ci.name}' at {ci.url}"
+                    )
+                    cred_dict = self.settings.get_credentials().get(http_credentials)
+                    return HttpxTransport.from_url(
+                        str(ci.url),
+                        settings=self.settings.client,
+                        auth=self.settings.get_client_auth(cred_dict),
+                    )
+                else:
+                    # No HTTP URL available, re-raise the original error
+                    raise
 
     def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
         toml = self.settings.get_toml_platforms()

@@ -19,6 +19,7 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.schema import SchemaItem
 
+from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.db.models import BaseModel
 
@@ -33,7 +34,9 @@ if maybe_dsn is None:
         "which is needed to run migrations."
     )
 
-dsn = maybe_dsn.replace("postgresql://", "postgresql+psycopg://")
+dsn = resolve_dsn_env_tokens(maybe_dsn).replace(
+    "postgresql://", "postgresql+psycopg://"
+)
 
 configure_mappers()
 

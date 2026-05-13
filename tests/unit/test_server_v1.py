@@ -42,6 +42,18 @@ class TestYieldSession:
 
         asyncio.run(_run())
 
+    def test_yield_session_resolves_dsn_env_tokens(self) -> None:
+        """Server-side session creation resolves {env:...} placeholders."""
+        from ixmp4.server.v1 import yield_session
+
+        async def _run() -> None:
+            async with yield_session("sqlite:///{env:IXMP4_SERVER_DB}") as session:
+                assert session is not None
+                session.execute(sa.text("SELECT 1"))
+
+        with mock.patch.dict("os.environ", {"IXMP4_SERVER_DB": ":memory:"}):
+            asyncio.run(_run())
+
 
 class TestGetTransport:
     def test_get_transport_yields_direct_transport_when_unauthenticated(self) -> None:

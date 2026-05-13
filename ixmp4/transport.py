@@ -17,6 +17,7 @@ from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.client.base import ServiceClient
 
 from ixmp4.base_exceptions import ImproperlyConfigured
+from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
@@ -49,8 +50,10 @@ Session = orm.sessionmaker(autocommit=False, autoflush=False)
 class DirectTransport(Transport):
     session: orm.Session
 
-    def __init__(self, session: orm.Session):
+    def __init__(self, session: orm.Session, ping_database: bool = True):
         self.session = session
+        if ping_database:
+            self.session.execute(sa.text("SELECT 1"))
 
         if (url := self.get_database_url()) is not None:
             logger.debug(f"Connected to IXMP4 database at '{url.render_as_string()}'.")
@@ -66,6 +69,8 @@ class DirectTransport(Transport):
 
     @classmethod
     def from_dsn(cls, dsn: str, *args: Any, **kwargs: Any) -> "DirectTransport":
+        # Resolve environment variable placeholders in DSN
+        dsn = resolve_dsn_env_tokens(dsn)
         dsn = cls.check_dsn(dsn)
         if dsn.startswith("sqlite"):
             engine = cls.create_sqlite_engine(dsn)
@@ -133,13 +138,12 @@ class AuthorizedTransport(DirectTransport):
         session: orm.Session,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
+        ping_database: bool = True,
     ):
-        super().__init__(
-            session,
-        )
+        super().__init__(session, ping_database=ping_database)
         self.auth_ctx = auth_ctx
         self.platform = platform
-        self.unauthorized_transport = DirectTransport(session)
+        self.unauthorized_transport = DirectTransport(session, ping_database=False)
 
     def __str__(self) -> str:
         return (

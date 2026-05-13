@@ -53,7 +53,7 @@ def test_cached_create_engine_uses_cache() -> None:
 
 
 def test_direct_transport_handles_bound_and_unbound_sessions() -> None:
-    unbound = DirectTransport(transport_module.Session())
+    unbound = DirectTransport(transport_module.Session(), ping_database=False)
     assert unbound.get_database_url() is None
     assert unbound.get_engine_info() == ""
     assert str(unbound) == "<DirectTransport >"
