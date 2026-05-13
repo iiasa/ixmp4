@@ -1,6 +1,13 @@
 import logging
 
-from ixmp4.base_exceptions import PlatformNotFound, PlatformNotUnique
+import sqlalchemy as sa
+
+from ixmp4.base_exceptions import (
+    Ixmp4Error,
+    PlatformNotFound,
+    PlatformNotUnique,
+    ServiceException,
+)
 from ixmp4.conf.platforms import PlatformConnectionInfo
 from ixmp4.conf.settings import Settings
 from ixmp4.data.backend import Backend
@@ -186,7 +193,12 @@ class Platform(object):
             # Try direct connection first
             try:
                 return DirectTransport.from_dsn(ci.dsn)
-            except Exception as e:
+            except (
+                ServiceException,
+                Ixmp4Error,
+                sa.exc.SQLAlchemyError,
+                ImportError,
+            ) as e:
                 # If direct connection fails and HTTP URL is available,
                 # fall back to HTTP transport.
                 if ci.url is not None:
