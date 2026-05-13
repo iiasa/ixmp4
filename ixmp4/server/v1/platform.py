@@ -38,13 +38,13 @@ class PlatformController(Controller):
     @get("/")
     async def info(
         self,
-        platform: PlatformConnectionInfo,
+        unauthorized_platform: PlatformConnectionInfo,
         state: State,
     ) -> Response[PlatformInfo]:
         return Response(
             PlatformInfo(
-                slug=platform.slug,
-                name=platform.name,
+                slug=unauthorized_platform.slug,
+                name=unauthorized_platform.slug,
                 version=__version__,
                 is_managed=state.settings.manager_url is not None,
                 manager_url=state.settings.manager_url,

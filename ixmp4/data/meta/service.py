@@ -5,13 +5,13 @@ from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
 from ixmp4.base_exceptions import BadRequest, Forbidden
-from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunItemRepository
 from ixmp4.data.run.repositories import PandasRepository as RunPandasRepository
 from ixmp4.data.services import DirectTransport, Http, Service, procedure
 
+from .compat_controller import RunMetaEntryCompatibilityController
 from .df_schemas import DeleteRunMetaFrameSchema, UpsertRunMetaFrameSchema
 from .dto import MetaValueType, RunMetaEntry
 from .filter import RunMetaEntryFilter
@@ -22,7 +22,7 @@ class RunMetaEntryService(Service):
     router_prefix = "/meta"
     router_tags = ["meta"]
 
-    http_controller = EnumerationCompatibilityController
+    http_controller = RunMetaEntryCompatibilityController
     executor: SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
