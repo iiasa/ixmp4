@@ -331,7 +331,7 @@ def tabulate_manager_platforms(
         caption_justify="left",
     )
     for mp in platforms:
-        manager_table.add_row(mp.name, str(mp.accessibility).lower(), mp.notice)
+        manager_table.add_row(mp.slug, str(mp.accessibility).lower(), mp.notice)
     console.print()
     console.print(manager_table)
     console.print()
