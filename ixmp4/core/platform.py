@@ -202,8 +202,11 @@ class Platform(object):
                 # If direct connection fails and HTTP URL is available,
                 # fall back to HTTP transport.
                 if ci.url is not None:
+                    logger.debug(
+                        f"Error while trying to establish direct connection: \n{e}"
+                    )
                     logger.warning(
-                        f"Direct connection failed: {e}. "
+                        f"Direct connection failed with `{e.__class__.__name__}`. "
                         "Falling back to HTTP connection for platform "
                         f"'{ci.name}' at {ci.url}"
                     )
