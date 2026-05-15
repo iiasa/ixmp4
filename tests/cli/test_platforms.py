@@ -1,14 +1,10 @@
 import os
-import re
-from io import StringIO
 from pathlib import Path
 from tempfile import TemporaryDirectory
-from types import SimpleNamespace
 from typing import Generator
 from unittest import mock
 
 import pytest
-from rich.console import Console
 from typer.testing import CliRunner
 
 from ixmp4.cli import app
