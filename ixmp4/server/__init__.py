@@ -19,6 +19,7 @@ import pydantic as pyd
 from litestar import Controller, Litestar, get
 from litestar.config.cors import CORSConfig
 from litestar.datastructures import State
+from litestar.logging import LoggingConfig
 from litestar.openapi import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
@@ -85,6 +86,11 @@ class Ixmp4Server(object):
             render_plugins=[ScalarRenderPlugin(path="/")],
             components=Components(security_schemes={"default": bearer_scheme}),
         )
+        logging_config = LoggingConfig(
+            log_exceptions=settings.log_exceptions,
+            # expected client exceptions
+            disable_stack_trace={422, 409, 404, 403, 401, 400},
+        )
 
         if settings.secret_hs256 is None:
             logger.warning(
@@ -101,6 +107,7 @@ class Ixmp4Server(object):
             route_handlers=[ServerContoller, self.v1.router],
             openapi_config=openapi_config,
             on_startup=[self.v1.on_startup],
+            logging_config=logging_config,
         )
 
     def simulate_startup(self) -> None:
