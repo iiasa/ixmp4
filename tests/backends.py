@@ -131,7 +131,7 @@ def get_direct_transport(
                 "Provide the `platform_info` fixture to test authorized transports."
             )
         return AuthorizedTransport.from_dsn(
-            dsn, auth_ctx=auth_ctx, platform=platform_info
+            dsn, auth_ctx=auth_ctx, platform=platform_info, check_alembic_version=False
         )
 
 
