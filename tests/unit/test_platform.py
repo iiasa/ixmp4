@@ -1,6 +1,6 @@
 from pathlib import Path
 from types import SimpleNamespace
-from typing import cast
+from typing import Any, cast
 from unittest import mock
 
 import pytest
@@ -22,6 +22,7 @@ class _PlatformConnectionInfo:
 
 class _SettingsStub:
     client = SimpleNamespace()
+    check_alembic_version = True
 
     def get_credentials(self) -> dict[str, dict[str, str]]:
         return {"default": {"username": "u", "password": "p"}}
@@ -282,7 +283,7 @@ def test_get_transport_falls_back_to_http_on_direct_error(
     platform = Platform.__new__(Platform)
     platform.settings = cast(Settings, _SettingsStub())
 
-    def _raise_direct_error(dsn: str) -> object:
+    def _raise_direct_error(dsn: str, **kw: Any) -> object:
         raise ImproperlyConfigured(
             "Cannot resolve DSN environment variable placeholder(s)."
         )
@@ -310,7 +311,7 @@ def test_get_transport_falls_back_to_http_on_sqlalchemy_error(
     platform = Platform.__new__(Platform)
     platform.settings = cast(Settings, _SettingsStub())
 
-    def _raise_direct_error(dsn: str) -> object:
+    def _raise_direct_error(dsn: str, **kw: Any) -> object:
         raise sa.exc.OperationalError("SELECT 1", {}, Exception("boom"))
 
     expected_transport = object()
@@ -336,7 +337,7 @@ def test_get_transport_does_not_fallback_on_value_error(
     platform = Platform.__new__(Platform)
     platform.settings = cast(Settings, _SettingsStub())
 
-    def _raise_direct_error(dsn: str) -> object:
+    def _raise_direct_error(dsn: str, **kw: Any) -> object:
         raise ValueError("Unrelated incident.")
 
     monkeypatch.setattr(
