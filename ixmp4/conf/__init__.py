@@ -33,6 +33,7 @@ For the convenience, a local `.env` file can be used to configure the settings o
     IXMP4_SERVER__SECRET_HS256=changeme
     IXMP4_SERVER__MAX_PAGE_SIZE=10000
     IXMP4_SERVER__DEFAULT_PAGE_SIZE=5000
+    IXMP4_SERVER__LOG_EXCEPTIONS=always
 
     # Client Settings
     IXMP4_CLIENT__DEFAULT_UPLOAD_CHUNK_SIZE=10000

@@ -23,6 +23,7 @@ from toolkit.manager.client import ManagerClient
 from ixmp4.conf.platforms import (
     ManagerPlatforms,
     PlatformConnectionInfo,
+    resolve_dsn_env_tokens,
 )
 from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
@@ -118,7 +119,8 @@ async def get_transport(
     platform: PlatformConnectionInfo,
     request: Request[User | None, AuthorizationContext | None, Any],
 ) -> AsyncGenerator[DirectTransport, None]:
-    async with yield_session(platform.dsn) as session:
+    dsn = resolve_dsn_env_tokens(platform.dsn)
+    async with yield_session(dsn) as session:
         if request.auth is not None:
             yield AuthorizedTransport(session, request.auth, platform)
         else:
@@ -129,23 +131,15 @@ async def get_backend(transport: DirectTransport) -> AsyncGenerator[Backend, Non
     yield Backend(transport)
 
 
-async def get_platform(
+async def get_unauthorized_platform(
     state: State,
     platform_name: str,
-    request: Request[User | None, AuthorizationContext | None, Any],
 ) -> PlatformConnectionInfo:
     platform: PlatformConnectionInfo | None = None
 
-    if state.manager_platforms is not None and request.auth is not None:
+    if state.manager_platforms is not None:
         with suppress(PlatformNotFound):
             platform = state.manager_platforms.get_platform(platform_name)
-            request.auth.has_access_permission(
-                platform,
-                raise_exc=Forbidden(
-                    f"Access to platform '{platform}' denied due "
-                    "to insufficient permissions."
-                ),
-            )
 
     if platform is None and state.toml_platforms is not None:
         with suppress(PlatformNotFound):
@@ -157,12 +151,35 @@ async def get_platform(
     return platform
 
 
+async def get_platform(
+    state: State,
+    platform_name: str,
+    request: Request[User | None, AuthorizationContext | None, Any],
+) -> PlatformConnectionInfo:
+    if state.manager_platforms is not None and request.auth is not None:
+        with suppress(PlatformNotFound):
+            managed_platform: PlatformConnectionInfo = (
+                state.manager_platforms.get_platform(platform_name)
+            )
+            request.auth.has_access_permission(
+                managed_platform,
+                raise_exc=Forbidden(
+                    f"Access to platform '{managed_platform.slug}' denied due "
+                    "to insufficient permissions."
+                ),
+            )
+            return managed_platform
+
+    return await get_unauthorized_platform(state, platform_name)
+
+
 class V1HttpApi:
     service_classes: Sequence[type["Service"]] | None = None
     settings: ServerSettings
 
     router: Router
     platform_router: Router
+    provide_unauthorized_platform: Provide | None = None
     provide_platform: Provide | None = None
     provide_transport: Provide | None = None
     provide_backend: Provide | None = None
@@ -177,6 +194,7 @@ class V1HttpApi:
             service_classes = v1_services
 
         self.settings = settings
+        self.provide_unauthorized_platform = Provide(get_unauthorized_platform)
         self.provide_transport = Provide(override_transport or get_transport)
         self.provide_platform = Provide(get_platform)
         self.provide_backend = Provide(get_backend)
@@ -185,6 +203,7 @@ class V1HttpApi:
             path="/{platform_name:str}",
             route_handlers=[PlatformController, DocsCompatibilityController],
             dependencies={
+                "unauthorized_platform": self.provide_unauthorized_platform,
                 "platform": self.provide_platform,
                 "transport": self.provide_transport,
                 "backend": self.provide_backend,

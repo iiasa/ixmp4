@@ -19,6 +19,7 @@ from toolkit.client.base import ServiceClient
 from toolkit.db.alembic import AlembicController
 
 from ixmp4.base_exceptions import ImproperlyConfigured
+from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
@@ -56,9 +57,12 @@ class DirectTransport(Transport):
     def __init__(
         self,
         session: orm.Session,
+        ping_database: bool = True,
         check_alembic_version: bool = False,
     ):
         self.session = session
+        if ping_database:
+            self.session.execute(sa.text("SELECT 1"))
 
         if check_alembic_version:
             self.check_alembic_version()
@@ -77,6 +81,8 @@ class DirectTransport(Transport):
 
     @classmethod
     def from_dsn(cls, dsn: str, *args: Any, **kwargs: Any) -> "DirectTransport":
+        # Resolve environment variable placeholders in DSN
+        dsn = resolve_dsn_env_tokens(dsn)
         dsn = cls.check_dsn(dsn)
         if dsn.startswith("sqlite"):
             engine = cls.create_sqlite_engine(dsn)
@@ -219,15 +225,17 @@ class AuthorizedTransport(DirectTransport):
         session: orm.Session,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
+        ping_database: bool = True,
         check_alembic_version: bool = False,
     ):
         super().__init__(
             session,
+            ping_database=ping_database,
             check_alembic_version=check_alembic_version,
         )
         self.auth_ctx = auth_ctx
         self.platform = platform
-        self.unauthorized_transport = DirectTransport(session)
+        self.unauthorized_transport = DirectTransport(session, ping_database=False)
 
     def __str__(self) -> str:
         return (

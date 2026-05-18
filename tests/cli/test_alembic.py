@@ -8,8 +8,9 @@ from toolkit.manager.mock import MockManagerClient
 from typer.testing import CliRunner
 
 from ixmp4.cli import app
-from ixmp4.cli.alembic import collect_platforms
+from ixmp4.cli.alembic import collect_platforms, get_alembic_controller
 from ixmp4.conf.settings import Settings
+from ixmp4.core.exceptions import ImproperlyConfigured
 
 
 @pytest.fixture(scope="function")
@@ -81,3 +82,46 @@ class TestAlembicTargets:
         assert result.exit_code == 0
         assert "databases/test-1.sqlite3" in result.output
         assert "databases/test-2.sqlite3" in result.output
+
+    def test_collect_platforms_manager_does_not_require_env_tokens(
+        self,
+        temporary_settings: Settings,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        monkeypatch.delenv("IXMP4_DIR", raising=False)
+
+        manager_platforms = collect_platforms(
+            temporary_settings, platform=[], toml=False, manager=True
+        )
+        assert len(manager_platforms) == 3
+        assert manager_platforms[0].slug == "dev-public"
+        assert "{env:IXMP4_DIR}" in manager_platforms[0].dsn
+
+
+def test_get_alembic_controller_resolves_dsn_env_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured_dsn: str | None = None
+
+    class FakeAlembicController:
+        def __init__(self, dsn: str, *_args: object, **_kwargs: object) -> None:
+            nonlocal captured_dsn
+            captured_dsn = dsn
+
+    monkeypatch.setattr("ixmp4.cli.alembic.AlembicController", FakeAlembicController)
+    monkeypatch.setenv("IXMP4_DB_PASSWORD", "pw")
+
+    get_alembic_controller("postgresql://u:{env:IXMP4_DB_PASSWORD}@db/test")
+    assert captured_dsn == "postgresql://u:pw@db/test"
+
+
+def test_get_alembic_controller_raises_for_missing_dsn_env_tokens(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.delenv("IXMP4_DB_PASSWORD", raising=False)
+
+    with pytest.raises(
+        ImproperlyConfigured,
+        match=r"Cannot resolve DSN environment variable placeholder\(s\).",
+    ):
+        get_alembic_controller("postgresql://u:{env:IXMP4_DB_PASSWORD}@db/test")

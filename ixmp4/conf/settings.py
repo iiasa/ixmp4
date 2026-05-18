@@ -41,6 +41,7 @@ class ServerSettings(BaseSettings):
 
     max_page_size: int = 10_000
     default_page_size: int = 5_000
+    log_exceptions: Literal["never", "always", "debug"] = "always"
 
     @model_validator(mode="after")
     def setup(self) -> "ServerSettings":

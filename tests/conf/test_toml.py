@@ -12,6 +12,7 @@ from ixmp4.core.exceptions import (
     PlatformNotFound,
     PlatformNotUnique,
 )
+from ixmp4.transport import DirectTransport
 
 
 @pytest.fixture(scope="class")
@@ -73,9 +74,10 @@ class TestTomlPlatforms(TomlTest):
         with pytest.raises(PlatformNotFound):
             toml_platforms.remove_platform("test")
 
-    def test_get_platform_substitutes_dsn_env_tokens(
+    def test_get_platform_returns_dsn_with_placeholders(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # When env var is present, get_platform returns the raw DSN with placeholders
         platforms_toml = tmp_path / "platforms.toml"
         platforms_toml.write_text(
             '[test]\ndsn = "postgresql://user:{env:IXMP4_TEST_PASSWORD}@foo.bar/db"\n'
@@ -83,16 +85,22 @@ class TestTomlPlatforms(TomlTest):
         monkeypatch.setenv("IXMP4_TEST_PASSWORD", "s3cr3t")
 
         platforms = TomlPlatforms(platforms_toml)
-        assert (
-            platforms.get_platform("test").dsn == "postgresql://user:s3cr3t@foo.bar/db"
-        )
+        platform = platforms.get_platform("test")
+
+        # get_platform returns DSN with placeholders (not resolved)
+        assert platform.dsn == "postgresql://user:{env:IXMP4_TEST_PASSWORD}@foo.bar/db"
 
         # Placeholder syntax must remain on disk and never be persisted with secrets.
         assert "{env:IXMP4_TEST_PASSWORD}" in platforms_toml.read_text()
 
-    def test_get_platform_raises_for_missing_dsn_env_tokens(
+        # Env var substitution happens when creating the engine
+        transport = DirectTransport.from_dsn(platform.dsn, ping_database=False)
+        assert transport is not None
+
+    def test_get_platform_returns_unresolved_dsn_for_missing_env_tokens(
         self, tmp_path: Path, monkeypatch: pytest.MonkeyPatch
     ) -> None:
+        # When env var is missing, get_platform still returns the DSN with placeholders
         platforms_toml = tmp_path / "platforms.toml"
         platforms_toml.write_text(
             '[test]\ndsn = "postgresql://user:{env:IXMP4_MISSING_PASSWORD}@foo.bar/db"\n'
@@ -100,11 +108,18 @@ class TestTomlPlatforms(TomlTest):
         monkeypatch.delenv("IXMP4_MISSING_PASSWORD", raising=False)
 
         platforms = TomlPlatforms(platforms_toml)
+        # get_platform should NOT raise - it returns the raw DSN
+        platform = platforms.get_platform("test")
+        assert (
+            platform.dsn == "postgresql://user:{env:IXMP4_MISSING_PASSWORD}@foo.bar/db"
+        )
+
+        # Error is raised when trying to create the engine
         with pytest.raises(
             ImproperlyConfigured,
             match=r"Cannot resolve DSN environment variable placeholder\(s\).",
         ):
-            platforms.get_platform("test")
+            DirectTransport.from_dsn(platform.dsn)
 
 
 @pytest.fixture(scope="class")

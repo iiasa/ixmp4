@@ -278,12 +278,14 @@ def test_tabulate_manager_platforms(monkeypatch: pytest.MonkeyPatch) -> None:
     tabulate_manager_platforms(
         [
             SimpleNamespace(
-                name="alpha",
+                name="Alpha Name",
+                slug="alpha",
                 accessibility="PUBLIC",
                 notice="Primary platform",
             ),
             SimpleNamespace(
-                name="beta",
+                name="Beta Name",
+                slug="beta",
                 accessibility="PRIVATE",
                 notice="Restricted",
             ),

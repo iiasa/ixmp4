@@ -42,6 +42,18 @@ class TestYieldSession:
 
         asyncio.run(_run())
 
+    def test_yield_session_resolves_dsn_env_tokens(self) -> None:
+        """Server-side session creation resolves {env:...} placeholders."""
+        from ixmp4.server.v1 import yield_session
+
+        async def _run() -> None:
+            async with yield_session("sqlite:///{env:IXMP4_SERVER_DB}") as session:
+                assert session is not None
+                session.execute(sa.text("SELECT 1"))
+
+        with mock.patch.dict("os.environ", {"IXMP4_SERVER_DB": ":memory:"}):
+            asyncio.run(_run())
+
 
 class TestGetTransport:
     def test_get_transport_yields_direct_transport_when_unauthenticated(self) -> None:
@@ -76,6 +88,50 @@ class TestGetTransport:
 
 
 class TestGetPlatform:
+    def test_get_unauthorized_platform_returns_platform_from_toml_sources(self) -> None:
+        """unauthorized resolver returns a platform from toml_platforms."""
+        from ixmp4.server.v1 import get_unauthorized_platform
+
+        fake_platform = SimpleNamespace(dsn="sqlite:///:memory:")
+        toml = SimpleNamespace(get_platform=mock.Mock(return_value=fake_platform))
+        state = _make_state(toml_platforms=toml)
+
+        async def _run() -> PlatformNotFound | None:
+            result = await get_unauthorized_platform(state, "myplatform")  # type: ignore[arg-type]
+            assert result is fake_platform
+            return None
+
+        asyncio.run(_run())
+
+    def test_get_unauthorized_platform_raises_when_not_found(self) -> None:
+        """unauthorized resolver raises when platform is not found."""
+        from ixmp4.server.v1 import get_unauthorized_platform
+
+        toml = SimpleNamespace(
+            get_platform=mock.Mock(side_effect=PlatformNotFound("not here"))
+        )
+        state = _make_state(toml_platforms=toml)
+
+        async def _run() -> None:
+            with pytest.raises(PlatformNotFound):
+                await get_unauthorized_platform(state, "ghost")  # type: ignore[arg-type]
+
+        asyncio.run(_run())
+
+    def test_get_unauthorized_platform_raises_when_dsn_is_http_url(self) -> None:
+        """unauthorized resolver treats HTTP DSNs as not-found."""
+        from ixmp4.server.v1 import get_unauthorized_platform
+
+        fake_platform = SimpleNamespace(dsn="https://remote.server/api")
+        toml = SimpleNamespace(get_platform=mock.Mock(return_value=fake_platform))
+        state = _make_state(toml_platforms=toml)
+
+        async def _run() -> None:
+            with pytest.raises(PlatformNotFound):
+                await get_unauthorized_platform(state, "remote")  # type: ignore[arg-type]
+
+        asyncio.run(_run())
+
     def test_get_platform_returns_platform_from_toml_sources(self) -> None:
         """platform found in toml_platforms is returned."""
         from ixmp4.server.v1 import get_platform
@@ -127,7 +183,9 @@ class TestGetPlatform:
         """manager_platforms is checked first when auth is present."""
         from ixmp4.server.v1 import get_platform
 
-        manager_platform = SimpleNamespace(dsn="sqlite:///:memory:")
+        manager_platform = SimpleNamespace(
+            dsn="sqlite:///:memory:", slug="test-platform"
+        )
         manager = SimpleNamespace(get_platform=mock.Mock(return_value=manager_platform))
         toml = SimpleNamespace(get_platform=mock.Mock())
         state = _make_state(manager_platforms=manager, toml_platforms=toml)
@@ -164,6 +222,26 @@ class TestGetPlatform:
         async def _run() -> None:
             result = await get_platform(state, "myplatform", request)  # type: ignore[arg-type]
             assert result is toml_platform
+
+        asyncio.run(_run())
+
+    def test_get_platform_keeps_manager_permission_check(self) -> None:
+        """authorized resolver still checks manager access permissions."""
+        from ixmp4.server.v1 import get_platform
+
+        manager_platform = SimpleNamespace(
+            dsn="sqlite:///:memory:", slug="test-platform"
+        )
+        manager = SimpleNamespace(get_platform=mock.Mock(return_value=manager_platform))
+        state = _make_state(manager_platforms=manager, toml_platforms=None)
+
+        auth = mock.Mock(user=None)
+        auth.has_access_permission = mock.Mock(side_effect=Forbidden("not allowed"))
+        request = SimpleNamespace(auth=auth)
+
+        async def _run() -> None:
+            with pytest.raises(Forbidden):
+                await get_platform(state, "managed", request)  # type: ignore[arg-type]
 
         asyncio.run(_run())
 

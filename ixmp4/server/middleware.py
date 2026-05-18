@@ -14,7 +14,7 @@ from toolkit.auth.context import AuthorizationContext
 from toolkit.manager.client import ManagerClient
 
 from ixmp4.conf.settings import ServerSettings
-from ixmp4.core.exceptions import BadRequest, Unauthorized
+from ixmp4.core.exceptions import BadRequest, ServiceUnavailable, Unauthorized
 
 logger = logging.getLogger(__name__)
 
@@ -51,8 +51,11 @@ class AuthenticationMiddleware(AbstractAuthenticationMiddleware):
         try:
             manager_client = connection.app.state.manager_client
             auth_context = self.get_auth_context(token, manager_client)
-        except ConnectError:
-            pass
+        except ConnectError as exc:
+            logger.error("Could not reach manager service for authentication.")
+            raise ServiceUnavailable(
+                "Could not reach manager service for authentication."
+            ) from exc
 
         return AuthenticationResult(
             user=getattr(token, "user", None), auth=auth_context
