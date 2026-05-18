@@ -8,6 +8,7 @@ from typing import (
     Awaitable,
     Callable,
     Sequence,
+    cast,
 )
 
 from litestar import Litestar, Request, Response, Router
@@ -15,7 +16,7 @@ from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.middleware import DefineMiddleware
 from sqlalchemy import orm
-from toolkit.auth.context import AuthorizationContext
+from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.auth.user import User
 from toolkit.client.auth import SelfSignedAuth
 from toolkit.manager.client import ManagerClient
@@ -122,7 +123,11 @@ async def get_transport(
     dsn = resolve_dsn_env_tokens(platform.dsn)
     async with yield_session(dsn) as session:
         if request.auth is not None:
-            yield AuthorizedTransport(session, request.auth, platform)
+            # TODO: Remove the cast once scse-toolkit's PlatformProtocol
+            # is fixed/read only.
+            yield AuthorizedTransport(
+                session, request.auth, cast(PlatformProtocol, platform)
+            )
         else:
             yield DirectTransport(session)
 
