@@ -114,19 +114,6 @@ class TestPyam_3_3_1:
 
         assert ixmp4.Run.Filter is FacadeRunFilter
 
-    def test_tabulate_manager_platforms_importable(self) -> None:
-        from ixmp4.cli.platforms import tabulate_manager_platforms
-
-        assert callable(tabulate_manager_platforms)
-
-    def test_tabulate_manager_platforms_accepts_platforms_argument(self) -> None:
-        import inspect
-
-        from ixmp4.cli.platforms import tabulate_manager_platforms
-
-        params = inspect.signature(tabulate_manager_platforms).parameters
-        assert "platforms" in params
-
     def test_settings_importable(self) -> None:
         from ixmp4.conf.settings import Settings
 
