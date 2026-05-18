@@ -124,7 +124,7 @@ def get_direct_transport(
     platform_info: PlatformProtocol | None,
 ) -> DirectTransport:
     if auth_ctx is None:
-        return DirectTransport.from_dsn(dsn)
+        return DirectTransport.from_dsn(dsn, check_alembic_version=False)
     else:
         if platform_info is None:
             raise ValueError(
