@@ -321,7 +321,9 @@ class TestProcedureCallableWrappers:
         self,
     ) -> None:
         """AuthorizedTransport triggers auth_check.prepend_auth_check."""
-        transport = DirectTransport.from_dsn("sqlite:///:memory:")
+        transport = DirectTransport.from_dsn(
+            "sqlite:///:memory:", check_alembic_version=False
+        )
         session = transport.session
 
         auth_called: list[bool] = []
@@ -351,6 +353,7 @@ class TestProcedureCallableWrappers:
             session=session,
             auth_ctx=cast(AuthorizationContext, SimpleNamespace(user="alice")),
             platform=cast(PlatformProtocol, SimpleNamespace(id="demo")),
+            check_alembic_version=False,
         )
         svc = AuthDemoService(auth_transport)
         bound_func = mock.Mock(return_value=42)
@@ -581,7 +584,7 @@ class TestProcedurePagination:
 class TestProcedureRouteHandler:
     @pytest.fixture(scope="class")
     def demo_transport(self) -> Generator[DirectTransport, None, None]:
-        t = DirectTransport.from_dsn("sqlite:///:memory:")
+        t = DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=False)
         yield t
         t.close()
 
@@ -745,7 +748,9 @@ class TestProcedureClient:
         from ixmp4.data.services.procedure.client import ProcedureClient
 
         svc = object.__new__(DemoService)
-        svc.transport = DirectTransport.from_dsn("sqlite:///:memory:")
+        svc.transport = DirectTransport.from_dsn(
+            "sqlite:///:memory:", check_alembic_version=False
+        )
 
         handler = cast(
             ProcedureRouteHandler[Any, Any, Any],

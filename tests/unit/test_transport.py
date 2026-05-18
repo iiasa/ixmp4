@@ -53,12 +53,14 @@ def test_cached_create_engine_uses_cache() -> None:
 
 
 def test_direct_transport_handles_bound_and_unbound_sessions() -> None:
-    unbound = DirectTransport(transport_module.Session(), ping_database=False)
+    unbound = DirectTransport(
+        transport_module.Session(), ping_database=False, check_alembic_version=False
+    )
     assert unbound.get_database_url() is None
     assert unbound.get_engine_info() == ""
     assert str(unbound) == "<DirectTransport >"
 
-    bound = DirectTransport.from_dsn("sqlite:///:memory:")
+    bound = DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=False)
     assert str(bound.get_database_url()) == "sqlite:///:memory:"
     assert "dialect=sqlite" in bound.get_engine_info()
     assert str(bound).startswith("<DirectTransport dialect=sqlite")
@@ -73,7 +75,7 @@ def test_direct_transport_check_dsn_and_invalid_dsn() -> None:
     assert DirectTransport.check_dsn("sqlite:///:memory:") == "sqlite:///:memory:"
 
     with pytest.raises(ProgrammingError, match="Unsupported database dialect"):
-        DirectTransport.from_dsn("mysql://example.test/db")
+        DirectTransport.from_dsn("mysql://example.test/db", check_alembic_version=False)
 
 
 def test_direct_transport_from_dsn_uses_postgresql_engine(
@@ -94,7 +96,9 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
         classmethod(fake_create_postgresql_engine),
     )
 
-    transport = DirectTransport.from_dsn("postgresql://user:pass@example.test/db")
+    transport = DirectTransport.from_dsn(
+        "postgresql://user:pass@example.test/db", check_alembic_version=False
+    )
 
     assert calls == ["postgresql+psycopg://user:pass@example.test/db"]
     assert transport.session.bind is fake_engine
@@ -102,7 +106,9 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
 
 
 def test_direct_transport_versioning_requires_postgresql() -> None:
-    transport = DirectTransport.from_dsn("sqlite:///:memory:")
+    transport = DirectTransport.from_dsn(
+        "sqlite:///:memory:", check_alembic_version=False
+    )
 
     with pytest.raises(OperationNotSupported, match="Versioning is only enabled"):
         transport.check_versioning_compatiblity()
@@ -323,6 +329,7 @@ def test_authorized_transport_string_includes_user_and_platform() -> None:
         session=session,
         auth_ctx=cast(AuthorizationContext, SimpleNamespace(user="alice")),
         platform=cast(PlatformProtocol, SimpleNamespace(id="demo-platform")),
+        check_alembic_version=False,
     )
 
     assert transport.unauthorized_transport.session is session
@@ -400,7 +407,7 @@ def test_httpx_transport_from_asgi_sets_direct_transport(
 
     monkeypatch.setattr(transport_module, "TestClient", fake_test_client)
 
-    direct = DirectTransport.from_dsn("sqlite:///:memory:")
+    direct = DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=False)
     transport = HttpxTransport.from_asgi(
         asgi=mock.sentinel.asgi,
         settings=ClientSettings(),

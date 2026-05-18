@@ -122,9 +122,19 @@ async def get_transport(
     dsn = resolve_dsn_env_tokens(platform.dsn)
     async with yield_session(dsn) as session:
         if request.auth is not None:
-            yield AuthorizedTransport(session, request.auth, platform)
+            yield AuthorizedTransport(
+                session,
+                request.auth,
+                platform,
+                check_alembic_version=False,
+                ping_database=False,
+            )
         else:
-            yield DirectTransport(session)
+            yield DirectTransport(
+                session,
+                check_alembic_version=False,
+                ping_database=False,
+            )
 
 
 async def get_backend(transport: DirectTransport) -> AsyncGenerator[Backend, None]:
