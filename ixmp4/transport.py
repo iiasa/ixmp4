@@ -58,7 +58,7 @@ class DirectTransport(Transport):
         self,
         session: orm.Session,
         ping_database: bool = True,
-        check_alembic_version: bool = False,
+        check_alembic_version: bool = True,
     ):
         self.session = session
         if ping_database:
@@ -226,7 +226,7 @@ class AuthorizedTransport(DirectTransport):
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
         ping_database: bool = True,
-        check_alembic_version: bool = False,
+        check_alembic_version: bool = True,
     ):
         super().__init__(
             session,
@@ -235,7 +235,10 @@ class AuthorizedTransport(DirectTransport):
         )
         self.auth_ctx = auth_ctx
         self.platform = platform
-        self.unauthorized_transport = DirectTransport(session, ping_database=False)
+        # turn off extra checks so they are not run twice
+        self.unauthorized_transport = DirectTransport(
+            session, ping_database=False, check_alembic_version=False
+        )
 
     def __str__(self) -> str:
         return (
