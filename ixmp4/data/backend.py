@@ -30,9 +30,7 @@ from ixmp4.data.region.service import RegionService
 from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.service import ScenarioService
 from ixmp4.data.unit.service import UnitService
-from ixmp4.transport import (
-    Transport,
-)
+from ixmp4.transport import Transport
 
 logger = logging.getLogger(__name__)
 

@@ -9,7 +9,8 @@ from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.data.services import DirectTransport, GetByIdService, Http, procedure
+from ixmp4.data.services import GetByIdService, Http, procedure
+from ixmp4.transport import DirectTransport
 
 from .db import ModelDocs
 from .dto import Model

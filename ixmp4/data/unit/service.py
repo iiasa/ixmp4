@@ -10,11 +10,11 @@ from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.services import (
-    DirectTransport,
     GetByIdService,
     Http,
     procedure,
 )
+from ixmp4.transport import DirectTransport
 
 from .db import UnitDocs
 from .dto import Unit

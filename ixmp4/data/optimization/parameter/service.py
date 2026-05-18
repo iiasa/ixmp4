@@ -14,9 +14,10 @@ from ixmp4.data.optimization.indexset.repositories import (
 )
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
-from ixmp4.data.services import DirectTransport, Http, procedure
+from ixmp4.data.services import Http, procedure
 from ixmp4.data.unit.exceptions import UnitNotFound
 from ixmp4.data.unit.repositories import ItemRepository as UnitRepository
+from ixmp4.transport import DirectTransport
 
 from .db import ParameterDocs
 from .dto import Parameter

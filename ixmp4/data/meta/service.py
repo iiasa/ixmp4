@@ -9,7 +9,8 @@ from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunItemRepository
 from ixmp4.data.run.repositories import PandasRepository as RunPandasRepository
-from ixmp4.data.services import DirectTransport, Http, Service, procedure
+from ixmp4.data.services import Http, Service, procedure
+from ixmp4.transport import DirectTransport
 
 from .compat_controller import RunMetaEntryCompatibilityController
 from .df_schemas import DeleteRunMetaFrameSchema, UpsertRunMetaFrameSchema
