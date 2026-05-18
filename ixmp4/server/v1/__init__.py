@@ -10,7 +10,7 @@ from typing import (
     Sequence,
 )
 
-from litestar import Litestar, Request, Response, Router
+from litestar import Litestar, Request, Router
 from litestar.datastructures import State
 from litestar.di import Provide
 from litestar.middleware import DefineMiddleware
@@ -28,9 +28,7 @@ from ixmp4.conf.platforms import (
 from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
     Forbidden,
-    Ixmp4Error,
     PlatformNotFound,
-    registry,
 )
 from ixmp4.data.backend import Backend
 from ixmp4.data.checkpoint.service import CheckpointService
@@ -225,7 +223,6 @@ class V1HttpApi:
             "/v1",
             middleware=[auth_mw],
             route_handlers=[self.platform_router],
-            exception_handlers={Ixmp4Error: self.service_exception_handler},
         )
 
     def on_startup(self, app: Litestar) -> None:
@@ -247,17 +244,3 @@ class V1HttpApi:
 
         app.state.toml_platforms = self.settings.get_toml_platforms()
         app.state.settings = self.settings
-
-    @staticmethod
-    def service_exception_handler(
-        request: Request[Any, Any, Any], exc: Ixmp4Error, /
-    ) -> Response[dict[str, Any]]:
-        exc_dict = registry.exception_to_response_dict(exc)
-        logger.debug(
-            f"Received `{exc.__class__.__name__}` exception, "
-            "returning appropriate error response."
-        )
-        return Response(
-            exc_dict,
-            status_code=exc.http_status_code,
-        )
