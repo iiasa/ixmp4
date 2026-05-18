@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
 import pydantic as pyd
-from litestar import Controller, Litestar, Request, Response, Router, get
+from litestar import Controller, Litestar, Request, Response, get
 from litestar.config.cors import CORSConfig
 from litestar.datastructures import State
 from litestar.logging import LoggingConfig
@@ -24,14 +24,10 @@ from litestar.openapi import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
 from litestar.openapi.spec.security_scheme import SecurityScheme
-from litestar.response import Response
 
 from ixmp4._version import __version__ as __version__
 from ixmp4.conf.settings import ServerSettings
 from ixmp4.core.exceptions import (
-    Forbidden,
-    Ixmp4Error,
-    PlatformNotFound,
     ServiceException,
     registry,
 )
