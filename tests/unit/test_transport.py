@@ -115,12 +115,12 @@ def test_authorized_transport_string_includes_user_and_platform() -> None:
     transport = AuthorizedTransport(
         session=session,
         auth_ctx=cast(AuthorizationContext, SimpleNamespace(user="alice")),
-        platform=cast(PlatformProtocol, SimpleNamespace(id="demo-platform")),
+        platform=cast(PlatformProtocol, SimpleNamespace(slug="demo-platform")),
     )
 
     assert transport.unauthorized_transport.session is session
     assert "user=alice" in str(transport)
-    assert "platform=demo-platform" in str(transport)
+    assert "platform='demo-platform'" in str(transport)
 
     transport.close()
 
