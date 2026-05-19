@@ -1,12 +1,17 @@
 from collections.abc import Iterable, Mapping
-from typing import Any, Generic, TypeVar
+from pathlib import Path
+from tempfile import TemporaryDirectory
+from typing import Any, Generator, Generic, TypeVar
 
 import httpx
 import pytest
 
+from ixmp4.conf.settings import Settings
 from ixmp4.data.services import Service
+from ixmp4.server import Ixmp4Server
 from ixmp4.transport import DirectTransport, HttpxTransport, Transport
 from tests import backends
+from tests.backends import build_ixmp4_server
 from tests.base import TransportTest
 
 ServiceT = TypeVar("ServiceT", bound=Service)
@@ -14,6 +19,27 @@ ServiceT = TypeVar("ServiceT", bound=Service)
 api_transport = backends.get_transport_fixture(
     backends=["rest-sqlite", "rest-postgres"], scope="class"
 )
+
+
+class ServerTest(TransportTest):
+    @pytest.fixture(scope="session")
+    def settings(self) -> Generator[Settings, None, None]:
+        with TemporaryDirectory() as temp_dir:
+            settings = Settings(storage_directory=Path(temp_dir))
+            settings.get_toml_platforms_path().write_text(
+                '[test]\ndsn = "sqlite:///:memory:"\n'
+            )
+            yield settings
+
+    @pytest.fixture(scope="session")
+    def server(self, settings: Settings) -> Ixmp4Server:
+        server, _ = build_ixmp4_server(settings)
+        return server
+
+    @pytest.fixture(scope="session")
+    def client(self, server: Ixmp4Server, settings: Settings) -> httpx.Client:
+        transport = HttpxTransport.from_asgi(server.asgi_app, settings.client)
+        return transport.http_client
 
 
 class ApiServiceTest(TransportTest, Generic[ServiceT]):
