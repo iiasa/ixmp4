@@ -142,6 +142,28 @@ class Platform(object):
         name_or_connection: str | Transport | Backend,
         settings: Settings | None = None,
     ) -> None:
+        """Initialize a Platform instance.
+
+        Parameters
+        ----------
+        name_or_connection : str or Transport or Backend
+            Either the name of a platform (looked up in the local
+            ``platforms.toml`` first, then the ECE Manager API), a
+            :class:`~ixmp4.transport.Transport` instance, or a
+            :class:`~ixmp4.data.backend.Backend` instance.
+        settings : Settings, optional
+            Custom :class:`~ixmp4.conf.settings.Settings` to use. Defaults to
+            a newly initialized ``Settings()`` instance.
+
+        Raises
+        ------
+        TypeError
+            If ``name_or_connection`` is not a ``str``, ``Transport``, or
+            ``Backend``.
+        PlatformNotFound
+            If a name is given but the platform cannot be found in either the
+            local TOML configuration or the manager service.
+        """
         if settings is not None:
             self.settings = settings
         else:
@@ -154,8 +176,11 @@ class Platform(object):
         elif isinstance(name_or_connection, Backend):
             self.backend = name_or_connection
         else:
-            raise TypeError("__init__() is missing required argument 'name'")
-
+            raise TypeError(
+                f"__init__() argument 'name_or_connection' must be a string "
+                f"(platform name), Transport, or Backend, not "
+                f"{type(name_or_connection).__name__}"
+            )
         logger.debug(f"Initializing facade objects for {self.backend}.")
 
         self.runs = RunServiceFacade(self.backend)
@@ -167,6 +192,27 @@ class Platform(object):
         self.meta = PlatformRunMetaFacade(self.backend)
 
     def init_backend(self, name: str) -> Backend:
+        """Resolve a platform name to a :class:`~ixmp4.data.backend.Backend`.
+
+        Looks up the platform connection info first in the local
+        ``platforms.toml`` file, then in the ECE Manager API, and initialises
+        the appropriate :class:`~ixmp4.transport.Transport`.
+
+        Parameters
+        ----------
+        name : str
+            The name of the platform to look up.
+
+        Returns
+        -------
+        Backend
+            A fully initialised backend for the resolved platform.
+
+        Raises
+        ------
+        PlatformNotFound
+            If ``name`` cannot be found in either source.
+        """
         ci = self.get_toml_platform_ci(name)
 
         if ci is None:
@@ -182,6 +228,33 @@ class Platform(object):
     def get_transport(
         self, ci: PlatformConnectionInfo, http_credentials: str = "default"
     ) -> HttpxTransport | DirectTransport:
+        """Instantiate the correct transport for the given connection info.
+
+        For HTTP-based DSNs an :class:`~ixmp4.transport.HttpxTransport` is
+        returned.  For other DSNs (e.g. SQLite) a
+        :class:`~ixmp4.transport.DirectTransport` is attempted first; if that
+        fails and ``ci.url`` is available the method transparently falls back to
+        an :class:`~ixmp4.transport.HttpxTransport`.
+
+        Parameters
+        ----------
+        ci : PlatformConnectionInfo
+            Connection details for the platform.
+        http_credentials : str, optional
+            Key used to look up HTTP credentials from the settings.  Defaults
+            to ``"default"``.
+
+        Returns
+        -------
+        HttpxTransport or DirectTransport
+            The transport instance to use for this platform.
+
+        Raises
+        ------
+        ServiceException, Ixmp4Error, SQLAlchemyError, ImportError
+            Re-raised if the direct connection fails and no HTTP fallback URL
+            is configured.
+        """
         if ci.dsn.startswith("http"):
             cred_dict = self.settings.get_credentials().get(http_credentials)
             return HttpxTransport.from_url(
@@ -221,6 +294,7 @@ class Platform(object):
                     raise
 
     def get_toml_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
+        """Look up platform connection info in the local TOML configuration."""
         toml = self.settings.get_toml_platforms()
 
         try:
@@ -234,6 +308,7 @@ class Platform(object):
             return None
 
     def get_manager_platform_ci(self, name: str) -> PlatformConnectionInfo | None:
+        """Look up platform connection info via the ECE Manager API."""
         manager = self.settings.get_manager_platforms()
 
         try:
