@@ -76,11 +76,3 @@ IXMP4 Server
    :prog: ixmp4 server
    :width: 70
    :preferred: text
-
-Tests
------
-
-.. typer:: ixmp4.cli.app:test
-   :prog: ixmp4 test
-   :width: 70
-   :preferred: text
