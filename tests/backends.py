@@ -48,7 +48,7 @@ class _TransportRef:
         return _get_transport
 
 
-def build_rest_server(settings: Settings) -> tuple[Ixmp4Server, _TransportRef]:
+def build_ixmp4_server(settings: Settings) -> tuple[Ixmp4Server, _TransportRef]:
     """Build a single shared :class:`Ixmp4Server` together with its
     :class:`_TransportRef`.  Call this once per session and reuse across all
     test classes.

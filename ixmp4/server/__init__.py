@@ -16,7 +16,7 @@ from datetime import datetime, timezone
 from typing import TYPE_CHECKING, Any, Awaitable, Callable
 
 import pydantic as pyd
-from litestar import Controller, Litestar, get
+from litestar import Controller, Litestar, Request, Response, get
 from litestar.config.cors import CORSConfig
 from litestar.datastructures import State
 from litestar.logging import LoggingConfig
@@ -24,10 +24,13 @@ from litestar.openapi import OpenAPIConfig
 from litestar.openapi.plugins import ScalarRenderPlugin
 from litestar.openapi.spec.components import Components
 from litestar.openapi.spec.security_scheme import SecurityScheme
-from litestar.response import Response
 
 from ixmp4._version import __version__ as __version__
 from ixmp4.conf.settings import ServerSettings
+from ixmp4.core.exceptions import (
+    ServiceException,
+    registry,
+)
 
 if TYPE_CHECKING:
     from ixmp4.transport import DirectTransport
@@ -108,7 +111,22 @@ class Ixmp4Server(object):
             openapi_config=openapi_config,
             on_startup=[self.v1.on_startup],
             logging_config=logging_config,
+            exception_handlers={ServiceException: self.service_exception_handler},
         )
 
     def simulate_startup(self) -> None:
         self.v1.on_startup(self.asgi_app)
+
+    @staticmethod
+    def service_exception_handler(
+        request: Request[Any, Any, Any], exc: ServiceException, /
+    ) -> Response[dict[str, Any]]:
+        exc_dict = registry.exception_to_response_dict(exc)
+        logger.debug(
+            f"Received `{exc.__class__.__name__}` exception, "
+            "returning appropriate error response."
+        )
+        return Response(
+            exc_dict,
+            status_code=exc.http_status_code,
+        )
