@@ -37,7 +37,7 @@ class ClientSettings(BaseSettings):
         Number of records uploaded per client chunk (currently unused).
         Environment variable: ``IXMP4_CLIENT__DEFAULT_UPLOAD_CHUNK_SIZE``.
     concurrency: int
-        Maximum number of concurrent client upload workers.
+        Maximum number of concurrent client workers.
         Environment variable: ``IXMP4_CLIENT__CONCURRENCY``.
     retries: int
         Number of retry attempts for retryable client requests.
@@ -61,7 +61,7 @@ class ClientSettings(BaseSettings):
         2,
         le=4,
         description=(
-            "Maximum number of concurrent client upload workers. "
+            "Maximum number of concurrent client workers. "
             "Environment variable: IXMP4_CLIENT__CONCURRENCY."
         ),
     )
