@@ -9,7 +9,7 @@ from litestar.app import Litestar
 from ixmp4.conf.settings import Settings
 from ixmp4.server import Ixmp4Server
 from ixmp4.transport import HttpxTransport
-from tests.backends import build_rest_server
+from tests.backends import build_ixmp4_server
 
 
 class TestPlatformRootApi:
@@ -24,7 +24,7 @@ class TestPlatformRootApi:
 
     @pytest.fixture(scope="session")
     def server(self, settings: Settings) -> Ixmp4Server:
-        server, _ = build_rest_server(settings)
+        server, _ = build_ixmp4_server(settings)
         return server
 
     @pytest.fixture(scope="session")

@@ -306,27 +306,3 @@ def generate_data(generator: MockDataGenerator) -> None:
         )
         for df in generator.yield_datapoints(runs, variable_names, units, regions):
             progress.advance(task, len(df))
-
-
-def tabulate_manager_platforms(
-    platforms: list[Any],
-) -> None:
-    """Prints manager platforms to the console. Only used for pyam compatibility.
-    TODO: Remove once no longer needed."""
-    manager_url_str = typer.style(Settings().manager_url, fg=typer.colors.CYAN)
-
-    manager_table = Table(
-        Column("Name", max_width=24, no_wrap=True),
-        "Access",
-        Column("Notice", max_width=48, no_wrap=True),
-        box=box.SIMPLE,
-        title="via manager api " + manager_url_str,
-        title_justify="left",
-        caption="Total: " + typer.style(str(len(platforms)), fg=typer.colors.GREEN),
-        caption_justify="left",
-    )
-    for mp in platforms:
-        manager_table.add_row(mp.slug, str(mp.accessibility).lower(), mp.notice)
-    console.print()
-    console.print(manager_table)
-    console.print()

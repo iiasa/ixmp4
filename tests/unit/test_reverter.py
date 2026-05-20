@@ -58,7 +58,7 @@ class ReverterItemVersion(ReverterVersionModel):
     mismatch: orm.Mapped[str | None] = orm.mapped_column(sa.String(255), nullable=True)
 
 
-class TestReverterRepository(ReverterRepository[[]]):
+class ReverterTestRepository(ReverterRepository[[]]):
     # ReverterRepository expects models that inherit from ixmp4's BaseModel
     target = ModelTarget(ReverterItem)  # type: ignore[arg-type]
     version_target = ModelTarget(ReverterItemVersion)  # type: ignore[arg-type]
@@ -155,7 +155,7 @@ def test_reverter_repository_tracks_versioned_columns_and_valid_rows(
     test_session: orm.Session,
 ) -> None:
     seed_reverter_state(test_session)
-    repository = TestReverterRepository(SessionExecutor(test_session))
+    repository = ReverterTestRepository(SessionExecutor(test_session))
 
     assert set(repository.versioned_columns.keys()) == {"id", "name", "value"}
 
@@ -183,7 +183,7 @@ def test_reverter_repository_tabulates_revert_operations(
     test_session: orm.Session,
 ) -> None:
     seed_reverter_state(test_session)
-    repository = TestReverterRepository(SessionExecutor(test_session))
+    repository = ReverterTestRepository(SessionExecutor(test_session))
 
     operations = repository.tabulate_revert_ops(3, 1).sort_values("id").set_index("id")
 
@@ -204,7 +204,7 @@ def test_reverter_repository_reverts_destructive_and_constructive_changes(
     test_session: orm.Session,
 ) -> None:
     seed_reverter_state(test_session)
-    repository = TestReverterRepository(SessionExecutor(test_session))
+    repository = ReverterTestRepository(SessionExecutor(test_session))
 
     deleted = repository.revert_destructive(3, 1)
     assert deleted == 1
@@ -230,7 +230,7 @@ def test_reverter_repository_revert_uses_latest_transaction(
     test_session: orm.Session,
 ) -> None:
     seed_reverter_state(test_session)
-    repository = TestReverterRepository(SessionExecutor(test_session))
+    repository = ReverterTestRepository(SessionExecutor(test_session))
 
     repository.revert(1)
 

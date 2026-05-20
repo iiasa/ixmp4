@@ -9,7 +9,7 @@ from ixmp4.conf.settings import Settings
 from ixmp4.server import Ixmp4Server
 from tests.backends import (
     _TransportRef,
-    build_rest_server,
+    build_ixmp4_server,
 )
 from tests.backends import (
     clean_postgres_database as clean_postgres_database,
@@ -63,7 +63,7 @@ def rest_sqlite_server(
     gets an isolated in-memory database while the (expensive) Litestar app is
     only built once per session.
     """
-    server, ref = build_rest_server(settings)
+    server, ref = build_ixmp4_server(settings)
     yield server, ref
 
 
@@ -75,7 +75,7 @@ def rest_postgres_server(
 
     Same pattern as :func:`rest_sqlite_server`.
     """
-    server, ref = build_rest_server(settings)
+    server, ref = build_ixmp4_server(settings)
     yield server, ref
 
 
