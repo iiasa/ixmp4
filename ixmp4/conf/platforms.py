@@ -233,7 +233,7 @@ class ManagerPlatforms(PlatformConnections):
         return self.manager_client.ixmp4.cached_list()
 
     def get_platform(self, name: str) -> Ixmp4Instance:
-        """Return one manager platform by slug.
+        """Return one platform from the manager service registry by slug.
 
         Parameters
         ----------
