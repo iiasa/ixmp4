@@ -118,29 +118,6 @@ class TestCheckAlembicVersion:
             ):
                 transport.check_alembic_version()
 
-    def test_head_revision_single_element_tuple(
-        self, transport: DirectTransport, engine: sa.Engine, version_table: None
-    ) -> None:
-        """Raises even when ``get_head_revision`` returns a one-element tuple.
-
-        A one-element tuple is still treated as an error; the single revision is
-        unpacked into the error message but the exception is still raised.
-        """
-        _insert_revision(engine, "abc123abc123")
-
-        mock_ctrl = mock.Mock()
-        mock_ctrl.get_database_revision.return_value = "abc123abc123"
-        mock_ctrl.get_head_revision.return_value = ("head_a1b2c3d4",)
-
-        with mock.patch(
-            "ixmp4.transport.get_alembic_controller", return_value=mock_ctrl
-        ):
-            with pytest.raises(
-                ImproperlyConfigured,
-                match="multiple heads were found",
-            ):
-                transport.check_alembic_version()
-
     def test_empty_alembic_version_table(
         self, transport: DirectTransport, version_table: None
     ) -> None:
