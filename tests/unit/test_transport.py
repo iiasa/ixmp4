@@ -134,9 +134,8 @@ def test_direct_transport_check_alembic_version_succeeds_when_matching(
     with engine.begin() as conn:
         conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
         conn.execute(
-            sa.text("INSERT INTO alembic_version (version_num) VALUES ('rev1')")
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('different')")
         )
-
     session = transport_module.Session(bind=engine)
     transport = DirectTransport(session, check_alembic_version=True)
     transport.close()
@@ -174,6 +173,15 @@ def test_direct_transport_check_alembic_version_raises_on_mismatch(
 def test_direct_transport_check_alembic_version_can_be_skipped(
     monkeypatch: pytest.MonkeyPatch,
 ) -> None:
+    engine = sa.create_engine("sqlite:///:memory:")
+    session = transport_module.Session(bind=engine)
+    transport = DirectTransport(session, check_alembic_version=False)
+    transport.close()
+
+
+def test_direct_transport_check_alembic_version_runs_via_from_dsn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
     fake_controller = SimpleNamespace(
         get_database_revision=lambda: "different",
         get_head_revision=lambda: "expected",
@@ -192,9 +200,16 @@ def test_direct_transport_check_alembic_version_can_be_skipped(
             sa.text("INSERT INTO alembic_version (version_num) VALUES ('different')")
         )
 
-    session = transport_module.Session(bind=engine)
-    transport = DirectTransport(session, check_alembic_version=False)
-    transport.close()
+    def fake_create_engine(cls: type[DirectTransport], dsn: str) -> sa.Engine:
+        return engine
+
+    monkeypatch.setattr(
+        DirectTransport,
+        "create_sqlite_engine",
+        classmethod(fake_create_engine),
+    )
+    with pytest.raises(ImproperlyConfigured, match="Database schema version mismatch"):
+        DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=True)
 
 
 def test_direct_transport_check_alembic_version_requires_table(
