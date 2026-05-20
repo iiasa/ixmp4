@@ -124,14 +124,14 @@ def get_direct_transport(
     platform_info: PlatformProtocol | None,
 ) -> DirectTransport:
     if auth_ctx is None:
-        return DirectTransport.from_dsn(dsn)
+        return DirectTransport.from_dsn(dsn, check_alembic_version=False)
     else:
         if platform_info is None:
             raise ValueError(
                 "Provide the `platform_info` fixture to test authorized transports."
             )
         return AuthorizedTransport.from_dsn(
-            dsn, auth_ctx=auth_ctx, platform=platform_info
+            dsn, auth_ctx=auth_ctx, platform=platform_info, check_alembic_version=False
         )
 
 

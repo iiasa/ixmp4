@@ -1,29 +1,15 @@
-from pathlib import Path
-
 import typer
-from toolkit.db.alembic import AlembicCli, AlembicController
+from toolkit.db.alembic import AlembicCli
 from typing_extensions import Annotated
 
 from ixmp4.base_exceptions import PlatformNotFound, ServiceException
 from ixmp4.conf.platforms import PlatformConnectionInfo, resolve_dsn_env_tokens
 from ixmp4.conf.settings import Settings
-from ixmp4.db import __file__ as db_module_dir
-from ixmp4.db.models import get_metadata
-
-migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
+from ixmp4.db import get_alembic_controller
 
 app = AlembicCli(
     help="Manages alembic migrations on selected platforms via subcommands."
 )
-
-
-def get_alembic_controller(dsn: str) -> AlembicController:
-    dsn = resolve_dsn_env_tokens(dsn)
-    return AlembicController(
-        dsn,
-        str(migration_script_directory),
-        f"{get_metadata.__module__}:{get_metadata.__name__}",
-    )
 
 
 def get_connection_info(settings: Settings, name: str) -> PlatformConnectionInfo:
@@ -123,6 +109,7 @@ def alembic(
             "'--platform/-p', '--toml', '--manager'?"
         )
 
-    controllers = [get_alembic_controller(platform.dsn) for platform in platforms]
+    dsns = [resolve_dsn_env_tokens(platform.dsn) for platform in platforms]
+    controllers = [get_alembic_controller(dsn) for dsn in dsns]
     ctx.ensure_object(dict)
     ctx.obj["controllers"] = controllers

@@ -265,7 +265,10 @@ class Platform(object):
         else:
             # Try direct connection first
             try:
-                return DirectTransport.from_dsn(ci.dsn)
+                return DirectTransport.from_dsn(
+                    ci.dsn,
+                    check_alembic_version=self.settings.check_alembic_version,
+                )
             except (
                 ServiceException,
                 Ixmp4Error,

@@ -53,12 +53,14 @@ def test_cached_create_engine_uses_cache() -> None:
 
 
 def test_direct_transport_handles_bound_and_unbound_sessions() -> None:
-    unbound = DirectTransport(transport_module.Session(), ping_database=False)
+    unbound = DirectTransport(
+        transport_module.Session(), ping_database=False, check_alembic_version=False
+    )
     assert unbound.get_database_url() is None
     assert unbound.get_engine_info() == ""
     assert str(unbound) == "<DirectTransport >"
 
-    bound = DirectTransport.from_dsn("sqlite:///:memory:")
+    bound = DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=False)
     assert str(bound.get_database_url()) == "sqlite:///:memory:"
     assert "dialect=sqlite" in bound.get_engine_info()
     assert str(bound).startswith("<DirectTransport dialect=sqlite")
@@ -73,7 +75,7 @@ def test_direct_transport_check_dsn_and_invalid_dsn() -> None:
     assert DirectTransport.check_dsn("sqlite:///:memory:") == "sqlite:///:memory:"
 
     with pytest.raises(ProgrammingError, match="Unsupported database dialect"):
-        DirectTransport.from_dsn("mysql://example.test/db")
+        DirectTransport.from_dsn("mysql://example.test/db", check_alembic_version=False)
 
 
 def test_direct_transport_from_dsn_uses_postgresql_engine(
@@ -94,7 +96,9 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
         classmethod(fake_create_postgresql_engine),
     )
 
-    transport = DirectTransport.from_dsn("postgresql://user:pass@example.test/db")
+    transport = DirectTransport.from_dsn(
+        "postgresql://user:pass@example.test/db", check_alembic_version=False
+    )
 
     assert calls == ["postgresql+psycopg://user:pass@example.test/db"]
     assert transport.session.bind is fake_engine
@@ -102,12 +106,236 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
 
 
 def test_direct_transport_versioning_requires_postgresql() -> None:
-    transport = DirectTransport.from_dsn("sqlite:///:memory:")
+    transport = DirectTransport.from_dsn(
+        "sqlite:///:memory:", check_alembic_version=False
+    )
 
     with pytest.raises(OperationNotSupported, match="Versioning is only enabled"):
         transport.check_versioning_compatiblity()
 
     transport.close()
+
+
+def test_direct_transport_check_alembic_version_succeeds_when_matching(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "rev1",
+        get_head_revision=lambda: "rev1",
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('different')")
+        )
+    session = transport_module.Session(bind=engine)
+    transport = DirectTransport(session, check_alembic_version=True)
+    transport.close()
+
+
+def test_direct_transport_check_alembic_version_raises_on_mismatch(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "different",
+        get_head_revision=lambda: "expected",
+        list_revisions=lambda: [
+            SimpleNamespace(revision="expected"),
+            SimpleNamespace(revision="base"),
+        ],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('different')")
+        )
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(ImproperlyConfigured, match="Database schema version mismatch"):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_can_be_skipped(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = sa.create_engine("sqlite:///:memory:")
+    session = transport_module.Session(bind=engine)
+    transport = DirectTransport(session, check_alembic_version=False)
+    transport.close()
+
+
+def test_direct_transport_check_alembic_version_runs_via_from_dsn(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "different",
+        get_head_revision=lambda: "expected",
+        list_revisions=lambda: [SimpleNamespace(revision="expected")],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('different')")
+        )
+
+    def fake_create_engine(cls: type[DirectTransport], dsn: str) -> sa.Engine:
+        return engine
+
+    monkeypatch.setattr(
+        DirectTransport,
+        "create_sqlite_engine",
+        classmethod(fake_create_engine),
+    )
+    with pytest.raises(ImproperlyConfigured, match="Database schema version mismatch"):
+        DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_requires_table(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    engine = sa.create_engine("sqlite:///:memory:")
+    session = transport_module.Session(bind=engine)
+
+    with pytest.raises(ImproperlyConfigured, match="alembic_version"):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_older_db_revision_guidance(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "old-rev",
+        get_head_revision=lambda: "new-rev",
+        list_revisions=lambda: [
+            SimpleNamespace(revision="new-rev"),
+            SimpleNamespace(revision="old-rev"),
+        ],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('old-rev')")
+        )
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="Upgrade the database.*or downgrade ixmp4",
+    ):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_requires_head_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "rev1",
+        get_head_revision=lambda: None,
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('rev1')")
+        )
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="Could not determine the expected alembic revision",
+    ):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_rejects_non_unique_head(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "rev1",
+        get_head_revision=lambda: ("head-1",),
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+        conn.execute(
+            sa.text("INSERT INTO alembic_version (version_num) VALUES ('rev1')")
+        )
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="Could not determine a unique expected alembic revision",
+    ):
+        DirectTransport(session, check_alembic_version=True)
+
+
+def test_direct_transport_check_alembic_version_requires_current_revision(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: None,
+        get_head_revision=lambda: "rev1",
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        lambda dsn: fake_controller,
+    )
+
+    engine = sa.create_engine("sqlite:///:memory:")
+    with engine.begin() as conn:
+        conn.execute(sa.text("CREATE TABLE alembic_version (version_num VARCHAR(32))"))
+
+    session = transport_module.Session(bind=engine)
+    with pytest.raises(
+        ImproperlyConfigured,
+        match="no alembic revision entry was found in 'alembic_version'",
+    ):
+        DirectTransport(session, check_alembic_version=True)
 
 
 def test_authorized_transport_string_includes_user_and_platform() -> None:
@@ -116,6 +344,7 @@ def test_authorized_transport_string_includes_user_and_platform() -> None:
         session=session,
         auth_ctx=cast(AuthorizationContext, SimpleNamespace(user="alice")),
         platform=cast(PlatformProtocol, SimpleNamespace(slug="demo-platform")),
+        check_alembic_version=False,
     )
 
     assert transport.unauthorized_transport.session is session
@@ -193,7 +422,7 @@ def test_httpx_transport_from_asgi_sets_direct_transport(
 
     monkeypatch.setattr(transport_module, "TestClient", fake_test_client)
 
-    direct = DirectTransport.from_dsn("sqlite:///:memory:")
+    direct = DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=False)
     transport = HttpxTransport.from_asgi(
         asgi=mock.sentinel.asgi,
         settings=ClientSettings(),
