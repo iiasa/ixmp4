@@ -21,7 +21,7 @@ Architecture
 ------------
 
 ixmp4 provides a Python API, a HTTP API and a compatibility layer for Postgres and SQLite Databases.
-The Python API can interact with databases directly or use the REST API of a compatible ixmp4 server instance.
+The Python API can interact with databases directly or use the HTTP API of a compatible ixmp4 server instance.
 
 ::
 

@@ -55,16 +55,7 @@ Procedure Internals
   to procedures.
 
 
-Transports re-exported here for convenience:
-* ``DirectTransport``: direct (same-process) transport implementation.
-* ``HttpxTransport``: HTTP transport using ``httpx``.
-* ``Transport``: abstract transport base class.
-
 """
-
-from ixmp4.transport import DirectTransport as DirectTransport
-from ixmp4.transport import HttpxTransport as HttpxTransport
-from ixmp4.transport import Transport as Transport
 
 from .base import GetByIdService as GetByIdService
 from .base import Service as Service
@@ -72,9 +63,6 @@ from .procedure import ProcedureHttpConfig as Http
 from .procedure import procedure as procedure
 
 __all__ = [
-    "DirectTransport",
-    "HttpxTransport",
-    "Transport",
     "GetByIdService",
     "Service",
     "Http",
