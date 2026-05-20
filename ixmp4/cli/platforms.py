@@ -17,12 +17,7 @@ from ixmp4.conf.settings import Settings
 from ixmp4.core.exceptions import PlatformNotFound
 from ixmp4.core.platform import Platform
 from ixmp4.data.generator import MockDataGenerator
-from ixmp4.db import __file__ as db_module_dir
-
-from .alembic import get_alembic_controller
-
-migration_script_directory = (Path(db_module_dir).parent / "migrations").absolute()
-
+from ixmp4.db import get_alembic_controller
 
 app = typer.Typer(help="Manages platforms via subcommands.")
 console = Console()

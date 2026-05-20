@@ -5,7 +5,6 @@ import time
 from concurrent.futures import ThreadPoolExecutor
 from email.utils import parsedate_to_datetime
 from functools import lru_cache
-from pathlib import Path
 from typing import Any
 
 import httpx
@@ -16,15 +15,13 @@ from sqlalchemy import orm
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.client.auth import Auth, ManagerAuth, SelfSignedAuth
 from toolkit.client.base import ServiceClient
-from toolkit.db.alembic import AlembicController
 
 from ixmp4.base_exceptions import ImproperlyConfigured
 from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.conf.settings import ClientSettings, Settings
 from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
 from ixmp4.core.exceptions import registry as exception_registry
-from ixmp4.db import __file__ as db_module_dir
-from ixmp4.db.models import get_metadata
+from ixmp4.db import get_alembic_controller
 
 from ._version import __version__
 
@@ -129,22 +126,11 @@ class DirectTransport(Transport):
         assert self.session.bind is not None
         self.session.bind.engine.dispose()
 
-    def get_alembic_controller(self, dsn: str) -> AlembicController:
-        migration_script_directory = (
-            Path(db_module_dir).parent / "migrations"
-        ).absolute()
-
-        return AlembicController(
-            dsn,
-            str(migration_script_directory),
-            f"{get_metadata.__module__}:{get_metadata.__name__}",
-        )
-
     def check_alembic_version(self) -> None:
         assert self.session.bind is not None
         engine = self.session.bind.engine
         inspector = sa.inspect(engine)
-        controller = self.get_alembic_controller(engine.url.render_as_string())
+        controller = get_alembic_controller(engine.url.render_as_string())
 
         if not inspector.has_table("alembic_version"):
             raise ImproperlyConfigured(

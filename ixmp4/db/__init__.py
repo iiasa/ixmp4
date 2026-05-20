@@ -61,3 +61,22 @@ test.sqlite3' to revision 'head'.
 Refer to the :doc:`cli documentation </usage/cli>` for all alembic cli commands.
 
 """
+
+from pathlib import Path
+
+from toolkit.db.alembic import AlembicController
+
+from .models import get_metadata
+
+migration_script_directory = (Path(__file__).parent / "migrations").absolute()
+
+
+def get_alembic_controller(dsn: str) -> AlembicController:
+    """Returns a :class:`~toolkit.db.alembic.AlembicController` configured
+    with ixmp4's script directory and model metadata.
+    """
+    return AlembicController(
+        dsn,
+        str(migration_script_directory),
+        f"{get_metadata.__module__}:{get_metadata.__name__}",
+    )
