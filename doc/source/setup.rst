@@ -8,7 +8,7 @@ After installing **ixmp4**, you have to configure access to any non-public datab
 Connections to a server-based database
 --------------------------------------
 
-To connect to an **ixmp4 database** hosted by IIASA, you have to provide your username
+To connect to a non-public **ixmp4 database** hosted by IIASA, you have to provide your username
 and password for the |ece_management_service|.
     
 .. |ece_management_service| raw:: html
