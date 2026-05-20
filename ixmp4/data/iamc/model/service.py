@@ -10,7 +10,8 @@ from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.model.dto import Model
 from ixmp4.data.model.filter import IamcModelFilter
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.data.services import DirectTransport, Http, Service, procedure
+from ixmp4.data.services import Http, Service, procedure
+from ixmp4.transport import DirectTransport
 
 from .repositories import ItemRepository, PandasRepository
 

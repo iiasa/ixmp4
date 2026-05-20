@@ -47,7 +47,11 @@ IIASA Infrastructure
 --------------------
 
 By default only public IIASA platforms will be available to all users.
-If you want to log in using your ECE Manger account, use the ``ixmp4 login <username>`` command.
+If you want to log in using your |ece_management_service| account, use the ``ixmp4 login <username>`` command.
+    
+.. |ece_management_service| raw:: html
+
+   <a href="https://manager.ece.iiasa.ac.at/" target="_blank">ECE Management Service</a>
 
 .. typer:: ixmp4.cli.app:login
    :prog: ixmp4 login
@@ -74,13 +78,5 @@ IXMP4 Server
 
 .. typer:: ixmp4.cli.app:server
    :prog: ixmp4 server
-   :width: 70
-   :preferred: text
-
-Tests
------
-
-.. typer:: ixmp4.cli.app:test
-   :prog: ixmp4 test
    :width: 70
    :preferred: text

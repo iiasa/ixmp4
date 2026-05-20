@@ -18,11 +18,12 @@ from ixmp4.data.region.repositories import (
     PandasRepository as RegionPandasRepository,
 )
 from ixmp4.data.run.repositories import ItemRepository as RunRepository
-from ixmp4.data.services import DirectTransport, Http, Service, procedure
+from ixmp4.data.services import Http, Service, procedure
 from ixmp4.data.unit.exceptions import UnitNotFound
 from ixmp4.data.unit.repositories import (
     PandasRepository as UnitPandasRepository,
 )
+from ixmp4.transport import DirectTransport
 
 from .df_schemas import TabulateTimeSeriesFrameSchema, UpsertTimeSeriesFrameSchema
 from .filter import TimeSeriesFilter

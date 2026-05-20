@@ -3,32 +3,23 @@ Service Classes
 
 .. automodule:: ixmp4.data.services
    :members:
-   :undoc-members:
    :show-inheritance:
 
-ixmp4.db.services.base module
------------------------------
 
-.. automodule:: ixmp4.data.services.base
-   :members:
-   :undoc-members:
-   :show-inheritance:
-
-ixmp4.db.services.controller module
------------------------------------
+Service HTTP Controller
+-----------------------
 
 .. automodule:: ixmp4.data.services.controller
    :members:
-   :undoc-members:
-   :show-inheritance:
 
-ixmp4.db.services.procedure modules
------------------------------------
+Service Procedures
+------------------
 
 .. automodule:: ixmp4.data.services.procedure
    :members:
    :undoc-members:
    :show-inheritance:
+   :no-index:
 
 .. automodule:: ixmp4.data.services.procedure.descriptor
    :members:

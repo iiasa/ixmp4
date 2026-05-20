@@ -1,8 +1,10 @@
 from types import SimpleNamespace
 from typing import cast
+from unittest import mock
 
 import pytest
 import sqlalchemy as sa
+from pydantic import HttpUrl
 
 from ixmp4.base_exceptions import ImproperlyConfigured
 from ixmp4.conf.platforms import PlatformConnectionInfo
@@ -95,3 +97,21 @@ def test_get_transport_does_not_fallback_on_value_error(
 
     with pytest.raises(ValueError):
         platform.get_transport(cast(PlatformConnectionInfo, _PlatformConnectionInfo()))
+
+
+def test_platform_fails_with_invalid_first_arg() -> None:
+    with pytest.raises(TypeError):
+        Platform(123)  # type: ignore[arg-type]
+
+
+def test_platform_overrides_settings(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setattr(
+        "ixmp4.core.platform.Platform.init_backend",
+        lambda *a, **k: mock.Mock(),
+    )
+
+    ovr_settings = Settings(manager_url=HttpUrl("https://custom.manager.ac.at/v1/"))
+    platform = Platform("fake-platform", settings=ovr_settings)
+
+    assert platform.settings is ovr_settings
+    assert platform.settings.manager_url == ovr_settings.manager_url

@@ -8,9 +8,10 @@ from ixmp4.base_exceptions import Forbidden
 from ixmp4.data.compat_controller import EnumerationCompatibilityController
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
-from ixmp4.data.services import DirectTransport, Http, Service, procedure
+from ixmp4.data.services import Http, Service, procedure
 from ixmp4.data.unit.dto import Unit
 from ixmp4.data.unit.filter import IamcUnitFilter
+from ixmp4.transport import DirectTransport
 
 from .repositories import ItemRepository, PandasRepository
 

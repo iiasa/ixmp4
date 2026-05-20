@@ -28,3 +28,13 @@ http server. This construct and its classes can be referred to as the "data laye
    optimization
 
    pagination
+
+
+Backend
+-------
+
+.. automodule:: ixmp4.data.backend
+   :members:
+   :undoc-members:
+   :show-inheritance:
+

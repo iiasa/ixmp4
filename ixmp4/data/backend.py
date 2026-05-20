@@ -30,14 +30,15 @@ from ixmp4.data.region.service import RegionService
 from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.service import ScenarioService
 from ixmp4.data.unit.service import UnitService
-from ixmp4.transport import (
-    Transport,
-)
+from ixmp4.transport import Transport
 
 logger = logging.getLogger(__name__)
 
 
 class IamcSubobject(object):
+    """Namespace grouping all IAMC-related data services on a
+    :class:`Backend`."""
+
     datapoints: IamcDataPointService
     timeseries: IamcTimeSeriesService
     variables: IamcVariableService
@@ -48,6 +49,9 @@ class IamcSubobject(object):
 
 
 class OptimizationSubobject(object):
+    """Namespace grouping all optimization-related data services on a
+    :class:`Backend`."""
+
     equations: OptEquationService
     indexsets: OptIndexSetService
     parameters: OptParameterService
@@ -57,10 +61,22 @@ class OptimizationSubobject(object):
 
 
 class Backend(object):
+    """Central data-layer object that aggregates all service instances.
+
+    A ``Backend`` is built around a single :class:`~ixmp4.transport.Transport`
+    and exposes every data service as an attribute.  IAMC-related services
+    are grouped under :attr:`iamc` and optimisation-related services under
+    :attr:`optimization`.
+    """
+
     transport: Transport
+    """The transport used by all services attached to this backend."""
 
     iamc: IamcSubobject
+    """Namespace for IAMC data services (datapoints, timeseries, variables, ...)."""
+
     optimization: OptimizationSubobject
+    """Namespace for optimisation services (equations, indexsets, parameters, ...)."""
 
     meta: RunMetaEntryService
     models: ModelService
@@ -71,6 +87,13 @@ class Backend(object):
     checkpoints: CheckpointService
 
     def __init__(self, transport: Transport) -> None:
+        """Initialise a Backend and instantiate all service classes.
+
+        Parameters
+        ----------
+        transport : Transport
+            The transport used by every service.
+        """
         logger.info(f"Creating backend class with transport: {transport}")
         self.transport = transport
         self.optimization = OptimizationSubobject()
