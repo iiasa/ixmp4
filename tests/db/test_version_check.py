@@ -101,7 +101,8 @@ class TestCheckAlembicVersion:
     def test_head_revision_multiple_heads(
         self, transport: DirectTransport, engine: sa.Engine, version_table: None
     ) -> None:
-        """Raises when ``get_head_revision`` returns a tuple with more than one entry."""
+        """Raises when ``get_head_revision`` returns a tuple with more than one
+        entry."""
         _insert_revision(engine, "abc123abc123")
 
         mock_ctrl = mock.Mock()
