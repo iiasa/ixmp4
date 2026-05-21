@@ -31,6 +31,4 @@ class ScenarioVersion(versions.BaseVersionModel):
     created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Scenario.__table__, ScenarioVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Scenario, ScenarioVersion)

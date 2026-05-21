@@ -58,4 +58,4 @@ class RunVersion(versions.BaseVersionModel):
     updated_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(Run.__table__, RunVersion.__table__)
+version_triggers = versions.PostgresVersionTriggers(Run, RunVersion)

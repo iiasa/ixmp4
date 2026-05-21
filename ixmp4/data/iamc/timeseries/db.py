@@ -69,6 +69,4 @@ class TimeSeriesVersion(versions.BaseVersionModel):
     run__id: Integer = orm.mapped_column(nullable=False, index=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    TimeSeries.__table__, TimeSeriesVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(TimeSeries, TimeSeriesVersion)

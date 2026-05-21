@@ -73,6 +73,4 @@ class MeasurandVersion(versions.BaseVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Measurand.__table__, MeasurandVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Measurand, MeasurandVersion)

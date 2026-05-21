@@ -72,6 +72,4 @@ class RunMetaEntryVersion(versions.BaseVersionModel):
     value_bool: Boolean = orm.mapped_column(sa.Boolean, nullable=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    RunMetaEntry.__table__, RunMetaEntryVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(RunMetaEntry, RunMetaEntryVersion)

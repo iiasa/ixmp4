@@ -74,6 +74,4 @@ class DataPointVersion(versions.BaseVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    DataPoint.__table__, DataPointVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(DataPoint, DataPointVersion)
