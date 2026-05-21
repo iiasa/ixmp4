@@ -327,7 +327,7 @@ class TestCompareVersionTriggers:
         upgrade_ops = self._run_comparator(
             registry=registry,
             table_exists=True,
-            proc_source=None,  # both procs missing → two SyncVersionTriggersOps
+            proc_source=None,  # both procs missing -> two SyncVersionTriggersOps
         )
         sync_ops = [o for o in upgrade_ops.ops if isinstance(o, SyncVersionTriggersOp)]
         table_names = {o.table_name for o in sync_ops}
