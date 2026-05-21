@@ -1,8 +1,8 @@
 import logging
-from typing import Any, cast
+from typing import Any, ClassVar, cast
 
-from sqlalchemy import Connection, FromClause, Table, event, schema
-from sqlalchemy.orm import Session
+from sqlalchemy import Connection, FromClause, Table, event, inspect, schema
+from sqlalchemy.orm import DeclarativeBase, Session
 from sqlalchemy.sql import ColumnCollection, ColumnElement
 
 from ixmp4.base_exceptions import ProgrammingError
@@ -27,6 +27,11 @@ class PostgresVersionTriggers(object):
     """
     Represents a set of triggers on a source table that record changes
     to a version table.
+
+    All instances are recorded in :attr:`_registry` (keyed by
+    ``(table_name, version_table_name)``) so that the Alembic autogenerate
+    comparator in :mod:`ixmp4.data.versions.autogenerate` can detect when
+    trigger SQL has changed and needs a migration.
 
     .. code:: python
 
@@ -53,37 +58,9 @@ class PostgresVersionTriggers(object):
     each source table will also emit statements to create the triggers.
     On deletion (f.e. ``.drop_all()``) the triggers will also be dropped.
 
-    Since these triggers don't support alembic autogeneration, a migration
-    has to be added manually to create or update them.
-
-    .. code:: python
-
-        def upgrade():
-            conn = op.get_bind()
-            dialect_name = conn.dialect.name
-            metadata = sa.MetaData()
-
-            if dialect_name == "postgresql":
-                transaction_table = sa.Table(
-                    "transaction", metadata, autoload_with=conn
-                )
-                version_table = sa.Table(
-                    "example", metadata, autoload_with=conn
-                )
-                data_table = sa.Table(
-                    "example_version", metadata, autoload_with=conn
-                )
-                triggers = PostgresVersionTriggers(
-                    data_table, version_table, transaction_table
-                )
-                triggers.create_entities(conn)
-
-        def downgrade():
-            # ...
-            if dialect_name == "postgresql":
-                # ...
-                triggers.drop_entities(conn)
-
+    Since these triggers support alembic autogeneration, a migration
+    will contain the necessary syncronization code after changing something
+    that affects the triggers.
     """
 
     version_procedure: VersionProcedure
@@ -92,28 +69,24 @@ class PostgresVersionTriggers(object):
     delete_trigger: DeleteTrigger
 
     entities: list[DeleteTrigger | InsertTrigger | UpdateTrigger | VersionProcedure]
-    table: Table | FromClause
-    version_table: Table | FromClause
+    table: Table
+    version_table: Table
     versioned_columns: ColumnCollection[str, ColumnElement[Any]]
+
+    # Global registry for the Alembic autogenerate comparator.
+    _registry: ClassVar[dict[tuple[str, str], "PostgresVersionTriggers"]] = {}
 
     def __init__(
         self,
-        table: Table | FromClause,
-        version_table: Table | FromClause,
+        table: Table | type[DeclarativeBase],
+        version_table: Table | type[DeclarativeBase],
         transaction_table: Table = cast(Table, Transaction.__table__),
         transaction_id_column: ColumnElement[int] | None = None,
         end_transaction_id_column: ColumnElement[int] | None = None,
         operation_type_column: ColumnElement[int] | None = None,
     ) -> None:
-        if not isinstance(table, Table):
-            raise ProgrammingError(
-                f"Argument 'table' must be `Table` not {table.__class__.__name__}"
-            )
-        if not isinstance(version_table, Table):
-            raise ProgrammingError(
-                "Argument 'version_table' must be `Table` not "
-                f"`{version_table.__class__.__name__}`"
-            )
+        table = self._extract_arg_table(table, "table")
+        version_table = self._extract_arg_table(version_table, "version_table")
 
         logger.debug(
             "Initializing version triggers for tables "
@@ -166,7 +139,27 @@ class PostgresVersionTriggers(object):
             self.delete_trigger,
         ]
 
+        PostgresVersionTriggers._registry[(table.name, version_table.name)] = self
         self.create_listeners()
+
+    def _extract_arg_table(
+        self, arg: Table | type[DeclarativeBase], argname: str
+    ) -> Table:
+        if isinstance(arg, Table):
+            return arg
+        if issubclass(arg, DeclarativeBase):
+            local_table = inspect(arg).local_table
+            if isinstance(local_table, Table):
+                return local_table
+
+            raise ProgrammingError(
+                f"Argument '{argname}' must be an sqlalchemy model mapped to a table."
+            )
+
+        raise ProgrammingError(
+            f"Argument '{argname}' must be `Table` or sqlalchemy model"
+            f" not {arg.__class__.__name__}"
+        )
 
     def column_or_exception(
         self, arg_name: str, def_col_name: str, table: Table
