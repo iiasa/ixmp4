@@ -222,9 +222,8 @@ class IndexSetAddRemoveDataTest(IndexSetServiceTest):
         fake_time: datetime.datetime,
     ) -> None:
         # compute transaction ids
-        data_transactions = len(test_data) if isinstance(test_data, list) else 1
         is_create_tx = 4
-        first_is_update_tx = is_create_tx + 1 + data_transactions
+        first_is_update_tx = is_create_tx + 2  # 1 tx for insert_many + 1 tx for update
         second_is_update_tx = first_is_update_tx + 2
 
         expected_versions = pd.DataFrame(

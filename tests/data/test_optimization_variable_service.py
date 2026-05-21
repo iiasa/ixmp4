@@ -296,9 +296,7 @@ class VariableDataTest(VariableServiceTest):
             )
 
         # compute transaction ids
-        is_tx = (
-            5 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
-        )
+        is_tx = 5 + 2 * len(test_data_indexsets)
         create_tx = is_tx + 1
         add_data_tx = create_tx + 3
         rm_data_partial_tx = add_data_tx + 1

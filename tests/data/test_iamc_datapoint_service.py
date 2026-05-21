@@ -282,12 +282,12 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         assert ret_df.empty
 
     @pytest.fixture(scope="class")
-    def tx_after_insert(self, test_df: pd.DataFrame) -> int:
-        return 16 + len(test_df)
+    def tx_after_insert(self) -> int:
+        return 13
 
     @pytest.fixture(scope="class")
-    def tx_after_update(self, tx_after_insert: int, test_df: pd.DataFrame) -> int:
-        return tx_after_insert + len(test_df)
+    def tx_after_update(self, tx_after_insert: int) -> int:
+        return tx_after_insert + 1
 
     @pytest.fixture(scope="class")
     def tx_after_delete(self, tx_after_update: int) -> int:
