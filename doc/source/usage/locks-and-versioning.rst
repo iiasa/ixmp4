@@ -56,30 +56,6 @@ these instances may acquire a lock.
     a **method of coordination** for clients that rely on versioning facilities
     and thus **not a reliable security mechanism** in any manner.
 
-Version Tables
---------------
-
-Any table with versioning enabled, has a sibling table with at least three 
-additional columns to which all changes are recorded. 
-
-* **transaction_id**: 
-    The transaction at which the row was created, updated or deleted.
-* **end_transaction_id**: 
-    The transaction at which a newer row in this table represents the current state.
-* **operation_type**: 
-    The :class:`~ixmp4.data.versions.model.Operation` that was performed to result in the row. 
-
-.. autoclass:: ixmp4.data.versions.model.Operation
-    :members:  
-    :undoc-members:  
-
-The two tables are then "linked" via a set of database triggers that record the 
-changes made by emitted statements.
-
-.. autoclass:: ixmp4.data.versions.PostgresVersionTriggers
-    :members:  
-
-
 Checkpoints
 -----------
 
@@ -100,3 +76,33 @@ created at any other point.
 If an exception occurs within a :meth:`~ixmp4.core.run.Run.transact` block,
 data in the run will be rolled back to the latest checkpoint on platforms 
 that support versioning. 
+
+Checkpoint Views
+----------------
+
+Checkpoint views provide read-only access to run data at a specific checkpoint.
+Access them through ``run.checkpoints[checkpoint_id]``.
+
+.. autoclass:: ixmp4.core.checkpoint.CheckpointView
+    :members:
+
+For optimization data, checkpoint-specific views are exposed by
+``CheckpointView.optimization``:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointScalarView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointTableView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointParameterView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointEquationView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointVariableView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointIndexSetView
+    :members:
