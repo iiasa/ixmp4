@@ -21,7 +21,7 @@ from ixmp4.transport import DirectTransport
 from .db import EquationDocs
 from .dto import Equation
 from .exceptions import EquationDataInvalid
-from .filter import EquationFilter
+from .filter import EquationFilter, EquationVersionFilter
 from .repositories import (
     AssociationRepository,
     ItemRepository,
@@ -48,7 +48,9 @@ class EquationService(DocsService, IndexSetAssociatedService):
         self.executor = SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
-        self.versions = VersionRepository(self.executor)
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
 
         self.associations = AssociationRepository(self.executor)
         self.indexsets = IndexSetRepository(self.executor)
@@ -455,5 +457,43 @@ class EquationService(DocsService, IndexSetAssociatedService):
                 offset=pagination.offset,
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[EquationVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates equation versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter equation versions as specified in :class:`EquationVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the equation version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[EquationVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )

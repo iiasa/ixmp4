@@ -26,7 +26,7 @@ from ixmp4.data.unit.repositories import (
 from ixmp4.transport import DirectTransport
 
 from .df_schemas import TabulateTimeSeriesFrameSchema, UpsertTimeSeriesFrameSchema
-from .filter import TimeSeriesFilter
+from .filter import TimeSeriesFilter, TimeSeriesVersionFilter
 from .repositories import PandasRepository, VersionRepository
 
 
@@ -50,7 +50,9 @@ class TimeSeriesService(Service):
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
-        self.versions = VersionRepository(self.executor)
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
 
         self.measurands = MeasurandPandasRepository(self.executor)
         self.regions = RegionPandasRepository(self.executor)
@@ -286,3 +288,42 @@ class TimeSeriesService(Service):
         run_ids = df["run__id"].unique().tolist()
         model_names = self.runs.list_model_names(run_ids)
         auth_ctx.has_edit_permission(platform, models=model_names, raise_exc=Forbidden)
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[TimeSeriesVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates timeseries versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter timeseries versions as specified in
+            :class:`TimeSeriesVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the timeseries version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[TimeSeriesVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
+            pagination=pagination,
+        )

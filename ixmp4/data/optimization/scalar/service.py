@@ -15,7 +15,7 @@ from ixmp4.transport import DirectTransport
 
 from .db import ScalarDocs
 from .dto import Scalar
-from .filter import ScalarFilter
+from .filter import ScalarFilter, ScalarVersionFilter
 from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
@@ -35,7 +35,9 @@ class ScalarService(DocsService, GetByIdService):
         self.executor = SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
-        self.versions = VersionRepository(self.executor)
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
         self.units = UnitRepository(self.executor)
         self.runs = RunRepository(self.executor)
 
@@ -336,5 +338,43 @@ class ScalarService(DocsService, GetByIdService):
                 offset=pagination.offset,
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[ScalarVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates scalar versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter scalar versions as specified in :class:`ScalarVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the scalar version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[ScalarVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )

@@ -13,7 +13,7 @@ from ixmp4.data.services import Http, Service, procedure
 from ixmp4.transport import DirectTransport
 
 from .df_schemas import DeleteDataPointFrameSchema, UpsertDataPointFrameSchema
-from .filter import DataPointFilter
+from .filter import DataPointFilter, DataPointVersionFilter
 from .repositories import PandasRepository, VersionRepository
 
 
@@ -51,7 +51,9 @@ class DataPointService(Service):
         self.executor = SessionExecutor(transport.session)
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.timeseries = TimeSeriesPandasRepository(self.executor)
-        self.versions = VersionRepository(self.executor)
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
 
     def get_columns(
         self, *, join_parameters: bool, join_runs: bool, join_run_id: bool
@@ -150,6 +152,45 @@ class DataPointService(Service):
                 ),
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[DataPointVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates datapoint versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter datapoint versions as specified in
+            :class:`DataPointVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the datapoint version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[DataPointVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )
 
