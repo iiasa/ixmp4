@@ -10,5 +10,7 @@ class IndexSetVersionFilter(VersionFilter, opt.IndexSetFilter, total=False):
     pass
 
 
-class IndexSetDataVersionFilter(VersionFilter, opt.IndexSetFilter, total=False):
+class IndexSetDataVersionFilter(VersionFilter, total=False):
+    indexset__id: int
+    indexset__id__in: list[int]
     value: str
