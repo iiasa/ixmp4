@@ -490,8 +490,6 @@ class TestVariableTabulateVersions(VariableServiceTest):
             versioning_service.versions.tabulate()["transaction_id"].max()
         )
         versioning_service.delete_by_id(1)
-        vdf = versioning_service.tabulate_versions(
-            valid_at_transaction=tx_after_insert
-        )
+        vdf = versioning_service.tabulate_versions(valid_at_transaction=tx_after_insert)
         assert not vdf.empty
         assert vdf.iloc[0]["name"] == "VersionedVariable"

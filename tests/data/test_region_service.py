@@ -451,16 +451,12 @@ class TestRegionAuthNonePublic(
 
 
 class TestRegionTabulateVersions(RegionServiceTest):
-    def test_region_tabulate_versions(
-        self, versioning_service: RegionService
-    ) -> None:
+    def test_region_tabulate_versions(self, versioning_service: RegionService) -> None:
         versioning_service.create("VersionedRegion", "Hierarchy")
         tx_after_insert = int(
             versioning_service.versions.tabulate()["transaction_id"].max()
         )
         versioning_service.delete_by_id(1)
-        vdf = versioning_service.tabulate_versions(
-            valid_at_transaction=tx_after_insert
-        )
+        vdf = versioning_service.tabulate_versions(valid_at_transaction=tx_after_insert)
         assert not vdf.empty
         assert vdf.iloc[0]["name"] == "VersionedRegion"
