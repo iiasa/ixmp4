@@ -66,6 +66,7 @@ class TestSettings:
 
         expected_database_path = expected_database_dir / "test.sqlite3"
         assert settings.get_database_path("test") == expected_database_path
+        assert settings.check_alembic_version is True
 
         manager_platforms = settings.get_manager_platforms()
         assert manager_platforms.manager_client.auth is None

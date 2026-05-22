@@ -124,10 +124,18 @@ async def get_transport(
             # TODO: Remove the cast once scse-toolkit's PlatformProtocol
             # is fixed/read only.
             yield AuthorizedTransport(
-                session, request.auth, cast(PlatformProtocol, platform)
+                session,
+                request.auth,
+                cast(PlatformProtocol, platform),
+                check_alembic_version=False,
+                ping_database=False,
             )
         else:
-            yield DirectTransport(session)
+            yield DirectTransport(
+                session,
+                check_alembic_version=False,
+                ping_database=False,
+            )
 
 
 async def get_backend(transport: DirectTransport) -> AsyncGenerator[Backend, None]:
