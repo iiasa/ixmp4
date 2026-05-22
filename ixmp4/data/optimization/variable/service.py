@@ -432,8 +432,8 @@ class VariableService(DocsService, IndexSetAssociatedService):
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
-    @procedure(Http(path="/versions/tabulate",methods=("PATCH",)))
-    def tabulate_versions
+        )
+
     @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
     def tabulate_versions(
         self, **kwargs: Unpack[VariableVersionFilter]
