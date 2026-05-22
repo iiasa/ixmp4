@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING
+from typing import TYPE_CHECKING, cast
 
 import sqlalchemy as sa
 from sqlalchemy import orm
@@ -120,6 +120,12 @@ class TimeSeriesVersion(versions.BaseVersionModel):
     )
 
     @staticmethod
+    def measurand_version_table() -> sa.Table:
+        from ixmp4.data.iamc.measurand.db import MeasurandVersion
+
+        return cast(sa.Table, MeasurandVersion.__table__)
+
+    @staticmethod
     def join_variable_versions() -> sa.ColumnElement[bool]:
         from ixmp4.data.iamc.measurand.db import MeasurandVersion
         from ixmp4.data.iamc.variable.db import VariableVersion
@@ -132,7 +138,7 @@ class TimeSeriesVersion(versions.BaseVersionModel):
 
     variable: orm.Relationship["VariableVersion"] = orm.relationship(
         "ixmp4.data.iamc.variable.db.VariableVersion",
-        secondary="iamc_measurand_version",
+        secondary=measurand_version_table,
         primaryjoin=join_measurand_versions,
         secondaryjoin=join_variable_versions,
         lazy="select",
@@ -152,7 +158,7 @@ class TimeSeriesVersion(versions.BaseVersionModel):
 
     unit: orm.Relationship["UnitVersion"] = orm.relationship(
         "ixmp4.data.unit.db.UnitVersion",
-        secondary="iamc_measurand_version",
+        secondary=measurand_version_table,
         primaryjoin=join_measurand_versions,
         secondaryjoin=join_unit_versions,
         lazy="select",
