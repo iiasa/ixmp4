@@ -1,6 +1,5 @@
-from ixmp4.data.versions.filter import VersionFilter
-
 from ixmp4.data.filters import optimization as opt
+from ixmp4.data.versions.filter import VersionFilter
 
 
 class EquationFilter(opt.EquationFilter, total=False):
