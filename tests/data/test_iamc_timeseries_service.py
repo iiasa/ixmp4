@@ -726,3 +726,36 @@ class TestTimeSeriesAuthCarinaPrivate(
         assert len(ret_df) == 6
         ret_default_df = service.tabulate()
         assert len(ret_default_df) == 3
+
+
+class TestTimeSeriesTabulateVersions(TimeSeriesServiceTest):
+    @pytest.fixture(scope="class")
+    def test_df(
+        self,
+        run: Run,
+        regions: RegionService,
+        units: UnitService,
+    ) -> pd.DataFrame:
+        self.create_related(regions, units)
+        return pd.DataFrame(
+            [[run.id, "Region 1", "Variable 1", "Unit 1"]],
+            columns=["run__id", "region", "variable", "unit"],
+        )
+
+    def test_timeseries_tabulate_versions(
+        self,
+        versioning_service: TimeSeriesService,
+        run: Run,
+        test_df: pd.DataFrame,
+    ) -> None:
+        versioning_service.bulk_upsert(test_df)
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert len(vdf) == 1
+        assert vdf.iloc[0]["run__id"] == run.id

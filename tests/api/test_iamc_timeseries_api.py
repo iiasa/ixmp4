@@ -86,3 +86,40 @@ class TestTimeSeriesBulkUpsert(TimeSeriesApiTest):
             by_df,
             expected_columns={"id", "run__id", "region", "variable", "unit"},
         )
+
+
+class TestTimeSeriesTabulateVersionsApi(TimeSeriesApiTest):
+    @pytest.fixture(scope="class")
+    def run(self, direct_transport: DirectTransport) -> Run:
+        runs = RunService(direct_transport)
+        run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
+        create_related(direct_transport)
+        return run
+
+    def test_timeseries_tabulate_versions(
+        self, client: httpx.Client, run: Run, direct_transport: DirectTransport
+    ) -> None:
+        upsert_df = pd.DataFrame(
+            [[run.id, "Region 1", "Variable 1", "Unit 1"]],
+            columns=["run__id", "region", "variable", "unit"],
+        )
+        TimeSeriesService(direct_transport).bulk_upsert(upsert_df)
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/iamc/timeseries/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "run__id",
+                "region__id",
+                "measurand__id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

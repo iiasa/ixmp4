@@ -636,6 +636,30 @@ class TestTableTabulate(TableServiceTest):
         pdt.assert_frame_equal(tables, expected_tables, check_like=True)
 
 
+class TestTableTabulateVersions(TableServiceTest):
+    def test_table_tabulate_versions(
+        self,
+        versioning_service: TableService,
+        run: Run,
+        indexset: IndexSet,
+        indexsets: IndexSetService,
+    ) -> None:
+        table = versioning_service.create(
+            run.id, "VersionedTable", constrained_to_indexsets=[indexset.name]
+        )
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(table.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedTable"
+
+
 class TableAuthTest(TableServiceTest):
     @pytest.fixture(scope="class")
     def runs(self, transport: Transport) -> RunService:

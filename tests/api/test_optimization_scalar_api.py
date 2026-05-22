@@ -59,3 +59,47 @@ class TestScalarCreateAndUpdate(ScalarApiTest):
             tabulated["results"],
             expected_columns={"id", "run__id", "name", "value", "unit__id"},
         )
+
+
+class TestScalarTabulateVersionsApi(ScalarApiTest):
+    @pytest.fixture(scope="class")
+    def run(self, direct_transport: DirectTransport) -> Run:
+        return RunService(direct_transport).create("Model", "Scenario")
+
+    @pytest.fixture(scope="class")
+    def unit(self, direct_transport: DirectTransport) -> Unit:
+        return UnitService(direct_transport).create("Unit")
+
+    def test_scalar_tabulate_versions(
+        self, client: httpx.Client, run: Run, unit: Unit
+    ) -> None:
+        self.request(
+            client,
+            "POST",
+            "/optimization/scalars",
+            json={
+                "run_id": run.id,
+                "name": "VersionedScalar",
+                "value": 1.0,
+                "unit_name": unit.name,
+            },
+        )
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/optimization/scalars/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "run__id",
+                "name",
+                "value",
+                "unit__id",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

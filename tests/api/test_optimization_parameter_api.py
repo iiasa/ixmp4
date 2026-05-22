@@ -50,3 +50,44 @@ class TestParameterCreate(ParameterApiTest):
             tabulated["results"],
             expected_columns={"id", "run__id", "name"},
         )
+
+
+class TestParameterTabulateVersionsApi(ParameterApiTest):
+    @pytest.fixture(scope="class")
+    def run(self, direct_transport: DirectTransport) -> Run:
+        return RunService(direct_transport).create("Model", "Scenario")
+
+    @pytest.fixture(scope="class")
+    def indexset(self, direct_transport: DirectTransport, run: Run) -> IndexSet:
+        return IndexSetService(direct_transport).create(run.id, "IndexSet")
+
+    def test_parameter_tabulate_versions(
+        self, client: httpx.Client, run: Run, indexset: IndexSet
+    ) -> None:
+        self.request(
+            client,
+            "POST",
+            "/optimization/parameters",
+            json={
+                "run_id": run.id,
+                "name": "VersionedParameter",
+                "constrained_to_indexsets": [indexset.name],
+            },
+        )
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/optimization/parameters/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "run__id",
+                "name",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

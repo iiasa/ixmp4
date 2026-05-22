@@ -387,3 +387,19 @@ class TestUnitAuthNonePublic(auth.NoneTest, auth.PublicPlatformTest, UnitService
     def test_unit_delete(self, service: UnitService) -> None:
         with pytest.raises(Forbidden):
             service.delete_by_id(1)
+
+
+class TestUnitTabulateVersions(UnitServiceTest):
+    def test_unit_tabulate_versions(
+        self, versioning_service: UnitService
+    ) -> None:
+        versioning_service.create("VersionedUnit")
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(1)
+        vdf = versioning_service.tabulate_versions(
+            valid_at_transaction=tx_after_insert
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedUnit"

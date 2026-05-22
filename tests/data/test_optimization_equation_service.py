@@ -713,6 +713,26 @@ class TestEquationTabulate(EquationServiceTest):
         pdt.assert_frame_equal(equations, expected_equations, check_like=True)
 
 
+class TestEquationTabulateVersions(EquationServiceTest):
+    def test_equation_tabulate_versions(
+        self,
+        versioning_service: EquationService,
+        run: Run,
+    ) -> None:
+        equation = versioning_service.create(run.id, "VersionedEquation")
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(equation.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedEquation"
+
+
 class EquationAuthTest(EquationServiceTest):
     @pytest.fixture(scope="class")
     def runs(self, transport: Transport) -> RunService:

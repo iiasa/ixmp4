@@ -167,3 +167,36 @@ class TestRunMetaDelete(RunMetaApiTest):
         self.request(client, "DELETE", f"/meta/{meta_entry.id}")
 
         assert direct_service.tabulate().empty
+
+
+class TestRunMetaTabulateVersionsApi(RunMetaApiTest):
+    @pytest.fixture(scope="class")
+    def run(self, direct_transport: DirectTransport) -> Run:
+        runs = RunService(direct_transport)
+        run = runs.create("Model", "Scenario")
+        runs.set_as_default_version(run.id)
+        return run
+
+    def test_run_meta_tabulate_versions(self, client: httpx.Client, run: Run) -> None:
+        self.request(
+            client,
+            "POST",
+            "/meta",
+            json={"run_id": run.id, "key": "category", "value": "demo"},
+        )
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/meta/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "run__id",
+                "key",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )
