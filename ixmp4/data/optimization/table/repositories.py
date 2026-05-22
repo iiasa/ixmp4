@@ -16,7 +16,7 @@ from .exceptions import (
     TableNotFound,
     TableNotUnique,
 )
-from .filter import TableFilter
+from .filter import TableFilter, TableVersionFilter
 
 TableTargetT = TypeVar("TableTargetT")
 
@@ -32,6 +32,19 @@ class TableAuthRepository(AuthRepository[TableTargetT], Generic[TableTargetT]):
         if run_exc is None:
             return exc
         return exc.where(Table.run__id.in_(run_exc))
+
+
+class TableVersionAuthRepository(AuthRepository[TableVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(TableVersion.run__id.in_(run_exc))
 
 
 class ItemRepository(
@@ -64,8 +77,8 @@ class PandasRepository(TableAuthRepository[Table], BasePandasRepository):
     filter = Filter(TableFilter, Table)
 
 
-class VersionRepository(TableAuthRepository[TableVersion], BasePandasRepository):
+class VersionRepository(TableVersionAuthRepository, BasePandasRepository):
     NotFound = TableNotFound
     NotUnique = TableNotUnique
     target = ModelTarget(TableVersion)
-    filter = Filter(TableFilter, TableVersion)
+    filter = Filter(TableVersionFilter, TableVersion)

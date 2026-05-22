@@ -14,7 +14,7 @@ from .exceptions import (
     ScalarNotFound,
     ScalarNotUnique,
 )
-from .filter import ScalarFilter
+from .filter import ScalarFilter, ScalarVersionFilter
 
 
 class ParameterAuthRepository(AuthRepository[Scalar | ScalarVersion]):
@@ -28,6 +28,19 @@ class ParameterAuthRepository(AuthRepository[Scalar | ScalarVersion]):
         if run_exc is None:
             return exc
         return exc.where(Scalar.run__id.in_(run_exc))
+
+
+class ScalarVersionAuthRepository(AuthRepository[ScalarVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(ScalarVersion.run__id.in_(run_exc))
 
 
 class ItemRepository(ParameterAuthRepository, BaseItemRepository[Scalar]):
@@ -44,8 +57,8 @@ class PandasRepository(ParameterAuthRepository, BasePandasRepository):
     filter = Filter(ScalarFilter, Scalar)
 
 
-class VersionRepository(PandasRepository):
+class VersionRepository(ScalarVersionAuthRepository, BasePandasRepository):
     NotFound = ScalarNotFound
     NotUnique = ScalarNotUnique
     target = ModelTarget(ScalarVersion)
-    filter = Filter(ScalarFilter, ScalarVersion)
+    filter = Filter(ScalarVersionFilter, ScalarVersion)

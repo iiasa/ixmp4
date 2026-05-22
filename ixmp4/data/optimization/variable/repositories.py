@@ -16,7 +16,7 @@ from .exceptions import (
     VariableNotFound,
     VariableNotUnique,
 )
-from .filter import VariableFilter
+from .filter import VariableFilter, VariableVersionFilter
 
 VariableTargetT = TypeVar("VariableTargetT")
 
@@ -35,6 +35,19 @@ class VariableAuthRepository(
         if run_exc is None:
             return exc
         return exc.where(Variable.run__id.in_(run_exc))
+
+
+class VariableVersionAuthRepository(AuthRepository[VariableVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(VariableVersion.run__id.in_(run_exc))
 
 
 class ItemRepository(
@@ -71,8 +84,8 @@ class PandasRepository(VariableAuthRepository[Variable], BasePandasRepository):
     filter = Filter(VariableFilter, Variable)
 
 
-class VersionRepository(VariableAuthRepository[VariableVersion], BasePandasRepository):
+class VersionRepository(VariableVersionAuthRepository, BasePandasRepository):
     NotFound = VariableNotFound
     NotUnique = VariableNotUnique
     target = ModelTarget(VariableVersion)
-    filter = Filter(VariableFilter, VariableVersion)
+    filter = Filter(VariableVersionFilter, VariableVersion)

@@ -23,6 +23,24 @@ from .exceptions import DataPointNotFound, DataPointNotUnique
 from .filter import DataPointFilter, DataPointVersionFilter
 
 
+class DataPointPandasRepository(BasePandasRepository):
+    step_cols = ["step_year", "step_category", "step_datetime"]
+
+    def tabulate(
+        self,
+        values: Values | None = None,
+        columns: Sequence[str] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+    ) -> pd.DataFrame:
+        df = super().tabulate(values, columns, limit, offset)
+        # drop empty step columns
+        cols_to_drop = [
+            col for col in self.step_cols if col in df.columns and df[col].isna().all()
+        ]
+        return df.drop(columns=cols_to_drop)
+
+
 class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
     def where_authorized(
         self,
@@ -36,7 +54,20 @@ class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
         return exc.where(DataPoint.time_series__id.in_(ts_exc))
 
 
-class PandasRepository(DataPointAuthRepository, BasePandasRepository):
+class DataPointVersionAuthRepository(AuthRepository[DataPointVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        ts_exc = self.select_permitted_ts_ids(auth_ctx, platform)
+        if ts_exc is None:
+            return exc
+        return exc.where(DataPointVersion.time_series__id.in_(ts_exc))
+
+
+class PandasRepository(DataPointAuthRepository, DataPointPandasRepository):
     NotFound = DataPointNotFound
     NotUnique = DataPointNotUnique
     target: ModelTarget[DataPointVersion | DataPoint] = ExtendedTarget(
@@ -65,24 +96,8 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     filter = Filter(DataPointFilter, DataPoint)
     dtypes = {"step_year": "Int64"}
 
-    def tabulate(
-        self,
-        values: Values | None = None,
-        columns: Sequence[str] | None = None,
-        limit: int | None = None,
-        offset: int | None = None,
-    ) -> pd.DataFrame:
-        df = super().tabulate(values, columns, limit, offset)
 
-        # drop empty step columns
-        cols_to_check = ["step_year", "step_category", "step_datetime"]
-        cols_to_drop = [
-            col for col in cols_to_check if col in df.columns and df[col].isna().all()
-        ]
-        return df.drop(columns=cols_to_drop)
-
-
-class VersionRepository(PandasRepository):
+class VersionRepository(DataPointVersionAuthRepository, DataPointPandasRepository):
     target = ModelTarget(DataPointVersion)
     filter = Filter(DataPointVersionFilter, DataPointVersion)
     dtypes = {"step_year": "Int64"}

@@ -48,6 +48,19 @@ class TimeSeriesAuthRepository(AuthRepository[TimeSeries | TimeSeriesVersion]):
             return result.scalars().all()
 
 
+class TimeSeriesVersionAuthRepository(AuthRepository[TimeSeriesVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(TimeSeriesVersion.run__id.in_(run_exc))
+
+
 class ItemRepository(TimeSeriesAuthRepository, BaseItemRepository[TimeSeries]):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
@@ -76,7 +89,7 @@ class PandasRepository(TimeSeriesAuthRepository, BasePandasRepository):
             return rowcount
 
 
-class VersionRepository(PandasRepository):
+class VersionRepository(TimeSeriesVersionAuthRepository, BasePandasRepository):
     NotFound = TimeSeriesNotFound
     NotUnique = TimeSeriesNotUnique
     filter = Filter(TimeSeriesVersionFilter, TimeSeriesVersion)

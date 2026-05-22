@@ -8,7 +8,7 @@ from ixmp4.data import versions
 from ixmp4.data.base.db import BaseModel
 
 if TYPE_CHECKING:
-    from ixmp4.data.iamc.timeseries.db import TimeSeries
+    from ixmp4.data.iamc.timeseries.db import TimeSeries, TimeSeriesVersion
 
 
 class DataPoint(BaseModel):
@@ -66,7 +66,7 @@ class DataPointVersion(versions.BaseVersionModel):
             DataPointVersion.join_valid_versions(TimeSeriesVersion),
         )
 
-    timeseries: orm.Relationship["TimeSeries"] = orm.relationship(
+    timeseries: orm.Relationship["TimeSeriesVersion"] = orm.relationship(
         "ixmp4.data.iamc.timeseries.db.TimeSeriesVersion",
         primaryjoin=join_timeseries_versions,
         lazy="select",

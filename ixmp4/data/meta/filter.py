@@ -10,6 +10,7 @@ from ixmp4.data.filters.facade import (
 from ixmp4.data.run.db import Run
 from ixmp4.data.run.filter import FacadeRunFilter
 from ixmp4.data.run.filter import facade_to_data_filter as run_facade_to_data_filter
+from ixmp4.data.versions.filter import VersionFilter
 
 from .db import RunMetaEntry
 
@@ -21,6 +22,10 @@ class RunFilter(base.RunFilter, total=False):
 
 class RunMetaEntryFilter(base.RunMetaEntryFilter, total=False):
     run: Annotated[RunFilter, RunMetaEntry.run]
+
+
+class RunMetaEntryVersionFilter(VersionFilter, base.RunMetaEntryFilter, total=False):
+    pass
 
 
 class FacadeRunMetaEntryFilter(base.RunMetaEntryFilter, total=False):

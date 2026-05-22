@@ -5,7 +5,7 @@ from toolkit.db.target import ModelTarget
 
 from .db import Region, RegionVersion
 from .exceptions import RegionNotFound, RegionNotUnique
-from .filter import RegionFilter
+from .filter import RegionFilter, RegionVersionFilter
 
 
 class ItemRepository(BaseItemRepository[Region | RegionVersion]):
@@ -26,4 +26,4 @@ class VersionRepository(PandasRepository):
     NotFound = RegionNotFound
     NotUnique = RegionNotUnique
     target = ModelTarget(RegionVersion)
-    filter = Filter(RegionFilter, RegionVersion)
+    filter = Filter(RegionVersionFilter, RegionVersion)

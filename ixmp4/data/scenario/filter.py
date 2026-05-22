@@ -20,6 +20,7 @@ from ixmp4.data.run.filter import (
 from ixmp4.data.run.filter import (
     facade_to_data_filter as run_facade_to_data_filter,
 )
+from ixmp4.data.versions.filter import VersionFilter
 
 from .db import Scenario
 
@@ -60,6 +61,10 @@ def filter_by_iamc(
 
 class ScenarioFilter(base.ScenarioFilter, total=False):
     iamc: Annotated[IamcScenarioFilter | bool | None, filter_by_iamc]
+
+
+class ScenarioVersionFilter(VersionFilter, base.ScenarioFilter, total=False):
+    pass
 
 
 class FacadeIamcScenarioFilter(base.ScenarioFilter, total=False):
