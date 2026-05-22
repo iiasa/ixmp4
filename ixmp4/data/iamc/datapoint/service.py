@@ -44,6 +44,12 @@ class DataPointService(Service):
         "step_datetime",
         "value",
     }
+    version_columns = {
+        "operation_type",
+        "transaction_id",
+        "end_transaction_id",
+    }
+
     ts_columns = {"region", "unit", "variable"}
     run_columns = {"model", "scenario", "version"}
 
@@ -69,6 +75,18 @@ class DataPointService(Service):
         if join_run_id:
             columns |= {"run__id"}
         return tuple(columns)
+
+    def get_version_columns(
+        self, *, join_parameters: bool, join_runs: bool, join_run_id: bool
+    ) -> tuple[str, ...] | None:
+        columns = self.get_columns(
+            join_parameters=join_parameters,
+            join_runs=join_runs,
+            join_run_id=join_run_id,
+        )
+        if columns is None:
+            return None
+        return tuple(set(columns) | self.version_columns)
 
     @procedure(Http(methods=("PATCH",)))
     def tabulate(
@@ -157,7 +175,11 @@ class DataPointService(Service):
 
     @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
     def tabulate_versions(
-        self, **kwargs: Unpack[DataPointVersionFilter]
+        self,
+        join_parameters: bool = False,
+        join_runs: bool = False,
+        join_run_id: bool = False,
+        **kwargs: Unpack[DataPointVersionFilter],
     ) -> SerializableDataFrame:
         r"""Tabulates datapoint versions by specified criteria.
 
@@ -172,7 +194,14 @@ class DataPointService(Service):
         :class:`pandas.DataFrame`:
             A data frame with the datapoint version columns.
         """
-        return self.versions.tabulate(values=kwargs)
+        return self.versions.tabulate(
+            values=kwargs,
+            columns=self.get_version_columns(
+                join_parameters=join_parameters,
+                join_runs=join_runs,
+                join_run_id=join_run_id,
+            ),
+        )
 
     @tabulate_versions.auth_check()
     def tabulate_versions_auth_check(
@@ -182,13 +211,23 @@ class DataPointService(Service):
 
     @tabulate_versions.paginated()
     def paginated_tabulate_versions(
-        self, pagination: Pagination, **kwargs: Unpack[DataPointVersionFilter]
+        self,
+        pagination: Pagination,
+        join_parameters: bool = False,
+        join_runs: bool = False,
+        join_run_id: bool = False,
+        **kwargs: Unpack[DataPointVersionFilter],
     ) -> PaginatedResult[SerializableDataFrame]:
         return PaginatedResult[SerializableDataFrame](
             results=self.versions.tabulate(
                 values=kwargs,
                 limit=pagination.limit,
                 offset=pagination.offset,
+                columns=self.get_version_columns(
+                    join_parameters=join_parameters,
+                    join_runs=join_runs,
+                    join_run_id=join_run_id,
+                ),
             ),
             total=self.versions.count(values=kwargs),
             pagination=pagination,

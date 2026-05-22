@@ -9,14 +9,14 @@ from toolkit.db.repositories.base import Values
 from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
-from ixmp4.data.iamc.measurand.db import Measurand
-from ixmp4.data.iamc.timeseries.db import TimeSeries
-from ixmp4.data.iamc.variable.db import Variable
-from ixmp4.data.model.db import Model
-from ixmp4.data.region.db import Region
-from ixmp4.data.run.db import Run
-from ixmp4.data.scenario.db import Scenario
-from ixmp4.data.unit.db import Unit
+from ixmp4.data.iamc.measurand.db import Measurand, MeasurandVersion
+from ixmp4.data.iamc.timeseries.db import TimeSeries, TimeSeriesVersion
+from ixmp4.data.iamc.variable.db import Variable, VariableVersion
+from ixmp4.data.model.db import Model, ModelVersion
+from ixmp4.data.region.db import Region, RegionVersion
+from ixmp4.data.run.db import Run, RunVersion
+from ixmp4.data.scenario.db import Scenario, ScenarioVersion
+from ixmp4.data.unit.db import Unit, UnitVersion
 
 from .db import DataPoint, DataPointVersion
 from .exceptions import DataPointNotFound, DataPointNotUnique
@@ -32,6 +32,7 @@ class DataPointPandasRepository(BasePandasRepository):
         columns: Sequence[str] | None = None,
         limit: int | None = None,
         offset: int | None = None,
+        drop_empty_step_columns: bool = False,
     ) -> pd.DataFrame:
         df = super().tabulate(values, columns, limit, offset)
         # drop empty step columns
@@ -98,6 +99,49 @@ class PandasRepository(DataPointAuthRepository, DataPointPandasRepository):
 
 
 class VersionRepository(DataPointVersionAuthRepository, DataPointPandasRepository):
-    target = ModelTarget(DataPointVersion)
     filter = Filter(DataPointVersionFilter, DataPointVersion)
     dtypes = {"step_year": "Int64"}
+    target: ModelTarget[DataPointVersion] = ExtendedTarget(
+        DataPointVersion,
+        {
+            "model": (
+                (DataPointVersion.timeseries, TimeSeriesVersion.run, RunVersion.model),
+                ModelVersion.name,
+            ),
+            "scenario": (
+                (
+                    DataPointVersion.timeseries,
+                    TimeSeriesVersion.run,
+                    RunVersion.scenario,
+                ),
+                ScenarioVersion.name,
+            ),
+            "version": (
+                (DataPointVersion.timeseries, TimeSeriesVersion.run),
+                RunVersion.version,
+            ),
+            "region": (
+                (DataPointVersion.timeseries, TimeSeriesVersion.region),
+                RegionVersion.name,
+            ),
+            # Route both variable and unit through TimeSeries.measurand so SQL
+            # uses a single measurand join instead of duplicated aliased joins.
+            "variable": (
+                (
+                    DataPointVersion.timeseries,
+                    TimeSeriesVersion.measurand,
+                    MeasurandVersion.variable,
+                ),
+                VariableVersion.name,
+            ),
+            "unit": (
+                (
+                    DataPointVersion.timeseries,
+                    TimeSeriesVersion.measurand,
+                    MeasurandVersion.unit,
+                ),
+                UnitVersion.name,
+            ),
+            "run__id": ((DataPointVersion.timeseries), TimeSeriesVersion.run__id),
+        },
+    )
