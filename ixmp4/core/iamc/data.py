@@ -16,7 +16,7 @@ from ..base import BaseBackendFacade
 from .variable import VariableServiceFacade
 
 if TYPE_CHECKING:
-    from ixmp4.core import run
+    from ixmp4.core.run import Run
 
 MAP_STEP_COLUMN = {
     "ANNUAL": "step_year",
@@ -28,12 +28,9 @@ MAP_STEP_COLUMN = {
 def _convert_to_std_format(
     df: pd.DataFrame, join_runs: bool, join_run_id: bool
 ) -> pd.DataFrame:
-    df.rename(columns={"step_category": "subannual"}, inplace=True)
+    time_col = "year"
 
-    if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
-        df.rename(columns={"step_year": "year"}, inplace=True)
-        time_col = "year"
-    else:
+    if not set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
         T = TypeVar("T", bool, float, int, str)
 
         def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
@@ -43,6 +40,7 @@ def _convert_to_std_format(
         df = df.apply(map_step_column, axis=1)
         time_col = "time"
 
+    df.rename(columns={"step_category": "subannual", "step_year": "year"}, inplace=True)
     columns = []
     if join_run_id and "run__id" in df.columns:
         columns.append("run__id")
@@ -51,6 +49,7 @@ def _convert_to_std_format(
     columns += ["region", "variable", "unit"]
     if time_col in df.columns:
         columns += [time_col]
+
     if "subannual" in df.columns:
         columns += ["subannual"]
     return df[columns + ["value"]]
@@ -73,9 +72,9 @@ class RunIamcData(BaseBackendFacade):
 
     """
 
-    _run: "run.Run"
+    _run: "Run"
 
-    def __init__(self, backend: Backend, run: "run.Run") -> None:
+    def __init__(self, backend: Backend, run: "Run") -> None:
         super().__init__(backend)
         self._run = run
 
