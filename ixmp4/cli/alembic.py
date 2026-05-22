@@ -7,6 +7,7 @@ from typing_extensions import Annotated
 from ixmp4.base_exceptions import PlatformNotFound, ServiceException
 from ixmp4.conf.platforms import PlatformConnectionInfo, resolve_dsn_env_tokens
 from ixmp4.conf.settings import Settings
+from ixmp4.data.versions.squash import squash_version_records
 from ixmp4.db import __file__ as db_module_dir
 from ixmp4.db.models import get_metadata
 
@@ -126,3 +127,19 @@ def alembic(
     controllers = [get_alembic_controller(platform.dsn) for platform in platforms]
     ctx.ensure_object(dict)
     ctx.obj["controllers"] = controllers
+
+
+@app.command("squash-versions")
+def squash_versions(ctx: typer.Context) -> None:
+    """Squash version records so they only reference checkpoint transactions."""
+
+    controllers: list[AlembicController] = ctx.obj["controllers"]
+    for controller in controllers:
+        typer.echo(
+            f"Squashing version records on '{controller.url.render_as_string()}'..."
+        )
+        engine = controller.get_engine()
+        with engine.connect() as conn:
+            squash_version_records(conn)
+            conn.commit()
+        typer.secho("Done.", fg=typer.colors.GREEN)
