@@ -98,7 +98,9 @@ class VariableService(DocsService, GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=("POST",)))
+    # NOTE: Moving to PATCH or GET for all read-only endpoints
+    # TODO: Remove before 1.0.0
+    @procedure(Http(methods=("PATCH", "POST")))
     def get_by_name(self, name: str) -> Variable:
         """Retrieves a variable by its name.
 
