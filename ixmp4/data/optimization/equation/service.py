@@ -140,7 +140,9 @@ class EquationService(DocsService, IndexSetAssociatedService):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=("POST",)))
+    # NOTE: Moving to PATCH or GET for all read-only endpoints
+    # TODO: Remove before 1.0.0
+    @procedure(Http(methods=("PATCH", "POST")))
     def get(self, run_id: int, name: str) -> Equation:
         """Retrieves a equation by its name and run_id.
 

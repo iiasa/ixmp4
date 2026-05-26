@@ -140,7 +140,9 @@ class RunService(GetByIdService):
     ) -> None:
         auth_ctx.has_management_permission(platform, raise_exc=Forbidden)
 
-    @procedure(Http(methods=("POST",)))
+    # NOTE: Moving to PATCH or GET for all read-only endpoints
+    # TODO: Remove before 1.0.0
+    @procedure(Http(methods=("PATCH", "POST")))
     def get(self, model_name: str, scenario_name: str, version: int) -> Run:
         """Retrieves a run.
 
@@ -205,7 +207,9 @@ class RunService(GetByIdService):
         except NoDefaultRunVersion:
             return self.create(model_name, scenario_name)
 
-    @procedure(Http(methods=("POST",)))
+    # NOTE: Moving to PATCH or GET for all read-only endpoints
+    # TODO: Remove before 1.0.0
+    @procedure(Http(methods=("PATCH", "POST")))
     def get_default_version(self, model_name: str, scenario_name: str) -> Run:
         """Retrieves a run's default version.
 
@@ -423,7 +427,7 @@ class RunService(GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(path="/{id:int}/set-as-default", methods=("POST",)))
     def set_as_default_version(self, id: int) -> None:
         """Sets a run as the default version for a (model, scenario) combination.
 
@@ -449,7 +453,7 @@ class RunService(GetByIdService):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(path="/{id:int}/unset-as-default", methods=("POST",)))
     def unset_as_default_version(self, id: int) -> None:
         """Unsets a run as the default version leaving no
         default version for a (model, scenario) combination.
@@ -476,7 +480,7 @@ class RunService(GetByIdService):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(path="/{id:int}/revert", methods=("POST",)))
     def revert(
         self, id: int, transaction__id: int, revert_platform: bool = False
     ) -> None:
@@ -517,7 +521,7 @@ class RunService(GetByIdService):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(path="/{id:int}/lock", methods=("POST",)))
     def lock(self, id: int) -> Run:
         """Locks a run at the current transaction (via `transaction__id`).
 
@@ -552,7 +556,7 @@ class RunService(GetByIdService):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(path="/{id:int}/unlock", methods=("POST",)))
     def unlock(self, id: int) -> Run:
         """Locks a run at the current transaction (via `transaction__id`).
 
