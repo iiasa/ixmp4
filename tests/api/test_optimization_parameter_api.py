@@ -25,7 +25,7 @@ class TestParameterCreate(ParameterApiTest):
     def indexset(self, direct_transport: DirectTransport, run: Run) -> IndexSet:
         return IndexSetService(direct_transport).create(run.id, "IndexSet")
 
-    def test_parameter_create_and_tabulate(
+    def test_parameter_create_get_and_tabulate(
         self, client: httpx.Client, run: Run, indexset: IndexSet
     ) -> None:
         created = self.request(
@@ -41,6 +41,15 @@ class TestParameterCreate(ParameterApiTest):
 
         assert created["id"] == 1
         assert created["name"] == "Parameter"
+
+        for method in ["POST", "PATCH"]:
+            got = self.request(
+                client,
+                method,
+                "/optimization/parameters/get",
+                json={"run_id": run.id, "name": "Parameter"},
+            ).json()
+            assert got["id"] == created["id"]
 
         tabulated = self.request(
             client, "PATCH", "/optimization/parameters/tabulate", json={}
