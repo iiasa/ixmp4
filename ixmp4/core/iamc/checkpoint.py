@@ -10,6 +10,8 @@ from ixmp4.data.backend import Backend
 from ixmp4.data.checkpoint.dto import Checkpoint
 from ixmp4.data.iamc.datapoint.filter import (
     DataPointVersionFilter,
+    FacadeDataPointFilter,
+    facade_to_data_filter,
 )
 
 from ..base import BaseBackendFacade
@@ -32,7 +34,7 @@ class CheckpointIamcData(BaseBackendFacade):
         self._run = run
         self._checkpoint = checkpoint
 
-    def tabulate(self, **kwargs: Unpack[DataPointVersionFilter]) -> pd.DataFrame:
+    def tabulate(self, **kwargs: Unpack[FacadeDataPointFilter]) -> pd.DataFrame:
         """Tabulate IAMC data at this checkpoint, in standard IAMC format.
 
         Returns a DataFrame with columns: region, variable, unit, year
@@ -53,9 +55,11 @@ class CheckpointIamcData(BaseBackendFacade):
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
 
+        # TODO: facade_to_version_filter
+        filter: DataPointVersionFilter = facade_to_data_filter(kwargs)  # type: ignore[assignment]
+        filter["valid_at_transaction"] = self._checkpoint.transaction__id
+        filter["run"] = {"id": self._run.id}
         df = self._backend.iamc.datapoints.tabulate_versions(
-            join_parameters=True,
-            run={"id": self._run.id},
-            valid_at_transaction=self._checkpoint.transaction__id,
+            join_parameters=True, **filter
         )
         return _convert_to_std_format(df, join_runs=False, join_run_id=False)
