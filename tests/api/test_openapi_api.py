@@ -71,7 +71,6 @@ def collect_service_endpoints() -> list[CollectedEndpoint]:
                 if methods == ["OPTIONS"]:
                     continue
 
-                method = methods[0]
                 route_path = next(iter(handler.paths))
                 relative_path = _normalize_openapi_path(
                     "/" + _join_relative_path(service_class.router_prefix, route_path)
@@ -82,18 +81,30 @@ def collect_service_endpoints() -> list[CollectedEndpoint]:
                 summary = getattr(handler, "summary", "") or ""
                 signature = _get_service_signature(service_class, summary)
                 source = "compatibility" if summary == "query" else "service"
+                operation_id = getattr(handler, "operation_id", None)
 
-                endpoints.append(
-                    CollectedEndpoint(
-                        source=source,
-                        method=method.lower(),
-                        schema_path=schema_path,
-                        relative_path=relative_path,
-                        summary=summary,
-                        operation_id=getattr(handler, "operation_id", None),
-                        signature=signature,
+                for method in methods:
+                    expected_operation_id: str | None
+                    if callable(operation_id):
+                        expected_operation_id = operation_id(
+                            handler, method, route.path_components
+                        )
+                    elif isinstance(operation_id, str):
+                        expected_operation_id = operation_id
+                    else:
+                        expected_operation_id = None
+
+                    endpoints.append(
+                        CollectedEndpoint(
+                            source=source,
+                            method=method.lower(),
+                            schema_path=schema_path,
+                            relative_path=relative_path,
+                            summary=summary,
+                            operation_id=expected_operation_id,
+                            signature=signature,
+                        )
                     )
-                )
 
     return endpoints
 

@@ -96,8 +96,7 @@ class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]
         self.name = ".".join(
             [service_class.__module__, service_class.__name__, procedure.func.__name__]
         )
-        self.operation_id = self.name
-
+        self.operation_id = self.get_operation_id
         self.path_fields = self.get_path_fields(path)
         self.supports_body = not ("GET" in methods or "HEAD" in methods)
 
@@ -119,6 +118,17 @@ class ProcedureRouteHandler(HTTPRouteHandler, Generic[ServiceT, Params, ReturnT]
 
     def get_path_fields(self, path: str) -> list[str]:
         return [name for (_, name, *_) in Formatter().parse(path) if name is not None]
+
+    def get_operation_id(
+        self,
+        _route_handler: HTTPRouteHandler,
+        http_method: Method,
+        _path_components: list[Any],
+    ) -> str:
+        if len(self.http_methods) == 1:
+            return str(self.name)
+        method_name = str(http_method).split(".")[-1].lower()
+        return f"{self.name}:{method_name}"
 
     def build_payload_model(self, path_fields: list[str]) -> type[pyd.BaseModel]:
         def callback(index: int, name: str, param: Any) -> Literal["skip"] | None:
