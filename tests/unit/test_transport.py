@@ -338,6 +338,45 @@ def test_direct_transport_check_alembic_version_requires_current_revision(
         DirectTransport(session, check_alembic_version=True)
 
 
+def test_direct_transport_check_alembic_version_uses_unmasked_url(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    captured: dict[str, str] = {}
+
+    fake_controller = SimpleNamespace(
+        get_database_revision=lambda: "rev1",
+        get_head_revision=lambda: "rev1",
+        list_revisions=lambda: [SimpleNamespace(revision="rev1")],
+    )
+
+    def fake_get_alembic_controller(dsn: str) -> SimpleNamespace:
+        captured["dsn"] = dsn
+        return fake_controller
+
+    monkeypatch.setattr(
+        transport_module,
+        "get_alembic_controller",
+        fake_get_alembic_controller,
+    )
+    monkeypatch.setattr(
+        sa,
+        "inspect",
+        lambda _engine: SimpleNamespace(has_table=lambda _name: True),
+    )
+
+    fake_engine = SimpleNamespace(
+        url=sa.make_url("postgresql+psycopg://user:secret@example.test/db")
+    )
+    fake_bind = SimpleNamespace(engine=fake_engine)
+    fake_session = SimpleNamespace(bind=fake_bind)
+
+    DirectTransport(
+        cast(Any, fake_session), ping_database=False, check_alembic_version=True
+    )
+
+    assert captured["dsn"] == "postgresql+psycopg://user:secret@example.test/db"
+
+
 def test_authorized_transport_string_includes_user_and_platform() -> None:
     session = transport_module.Session(bind=sa.create_engine("sqlite:///:memory:"))
     transport = AuthorizedTransport(
