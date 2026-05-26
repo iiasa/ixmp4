@@ -11,6 +11,8 @@ from ixmp4.data.scenario.db import Scenario
 
 if TYPE_CHECKING:
     from ixmp4.data.iamc.timeseries.db import TimeSeries
+    from ixmp4.data.model.db import ModelVersion
+    from ixmp4.data.scenario.db import ScenarioVersion
 
 
 class Run(BaseModel, HasUpdateInfo):
@@ -57,5 +59,37 @@ class RunVersion(versions.BaseVersionModel):
     updated_at: DateTime = orm.mapped_column(nullable=True)
     updated_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
+    @staticmethod
+    def join_model_versions() -> sa.ColumnElement[bool]:
+        from ixmp4.data.model.db import ModelVersion
 
-version_triggers = versions.PostgresVersionTriggers(Run.__table__, RunVersion.__table__)
+        return sa.and_(
+            orm.foreign(RunVersion.model__id) == orm.remote(ModelVersion.id),
+            RunVersion.join_valid_versions(ModelVersion),
+        )
+
+    model: orm.Relationship["ModelVersion"] = orm.relationship(
+        "ixmp4.data.model.db.ModelVersion",
+        primaryjoin=join_model_versions,
+        lazy="select",
+        viewonly=True,
+    )
+
+    @staticmethod
+    def join_scenario_versions() -> sa.ColumnElement[bool]:
+        from ixmp4.data.scenario.db import ScenarioVersion
+
+        return sa.and_(
+            orm.foreign(RunVersion.scenario__id) == orm.remote(ScenarioVersion.id),
+            RunVersion.join_valid_versions(ScenarioVersion),
+        )
+
+    scenario: orm.Relationship["ScenarioVersion"] = orm.relationship(
+        "ixmp4.data.scenario.db.ScenarioVersion",
+        primaryjoin=join_scenario_versions,
+        lazy="select",
+        viewonly=True,
+    )
+
+
+version_triggers = versions.PostgresVersionTriggers(Run, RunVersion)

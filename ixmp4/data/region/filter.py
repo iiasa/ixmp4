@@ -19,6 +19,7 @@ from ixmp4.data.run.filter import (
 from ixmp4.data.run.filter import (
     facade_to_data_filter as run_facade_to_data_filter,
 )
+from ixmp4.data.versions.filter import VersionFilter
 
 from .db import Region
 
@@ -52,6 +53,10 @@ def filter_by_iamc(
 
 class RegionFilter(base.RegionFilter, total=False):
     iamc: Annotated[IamcRegionFilter | bool | None, filter_by_iamc]
+
+
+class RegionVersionFilter(VersionFilter, base.RegionFilter, total=False):
+    pass
 
 
 class FacadeIamcRegionFilter(base.RegionFilter, total=False):

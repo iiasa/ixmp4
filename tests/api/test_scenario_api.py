@@ -171,3 +171,24 @@ class TestScenarioDelete(ScenarioApiTest):
         self.request(client, "DELETE", f"/scenarios/{scenario.id}")
 
         assert direct_service.tabulate().empty
+
+
+class TestScenarioTabulateVersionsApi(ScenarioApiTest):
+    def test_scenario_tabulate_versions(self, client: httpx.Client) -> None:
+        self.request(client, "POST", "/scenarios", json={"name": "VersionedScenario"})
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/scenarios/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "name",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

@@ -21,7 +21,7 @@ from ixmp4.transport import DirectTransport
 from .db import TableDocs
 from .dto import Table
 from .exceptions import TableDataInvalid
-from .filter import TableFilter
+from .filter import TableFilter, TableVersionFilter
 from .repositories import (
     AssociationRepository,
     ItemRepository,
@@ -49,7 +49,9 @@ class TableService(DocsService, IndexSetAssociatedService):
         self.executor = SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
-        self.versions = VersionRepository(self.executor)
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
         self.associations = AssociationRepository(self.executor)
         self.indexsets = IndexSetRepository(self.executor)
         self.runs = RunRepository(self.executor)
@@ -440,5 +442,43 @@ class TableService(DocsService, IndexSetAssociatedService):
                 offset=pagination.offset,
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[TableVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates table versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter table versions as specified in :class:`TableVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the table version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[TableVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )

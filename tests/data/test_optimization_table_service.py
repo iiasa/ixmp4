@@ -313,9 +313,7 @@ class TableDataTest(TableServiceTest):
             )
 
         # compute transaction ids
-        is_tx = (
-            5 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
-        )
+        is_tx = 5 + 2 * len(test_data_indexsets)
         create_tx = is_tx + 1
         add_data_tx = create_tx + 3
         rm_data_partial_tx = add_data_tx + 1
@@ -636,6 +634,30 @@ class TestTableTabulate(TableServiceTest):
         tables = service.tabulate()
         tables = self.canonicalize_datetimes(tables)
         pdt.assert_frame_equal(tables, expected_tables, check_like=True)
+
+
+class TestTableTabulateVersions(TableServiceTest):
+    def test_table_tabulate_versions(
+        self,
+        versioning_service: TableService,
+        run: Run,
+        indexset: IndexSet,
+        indexsets: IndexSetService,
+    ) -> None:
+        table = versioning_service.create(
+            run.id, "VersionedTable", constrained_to_indexsets=[indexset.name]
+        )
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(table.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedTable"
 
 
 class TableAuthTest(TableServiceTest):

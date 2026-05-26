@@ -40,6 +40,4 @@ class UnitVersion(versions.BaseVersionModel):
     created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Unit.__table__, UnitVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Unit, UnitVersion)

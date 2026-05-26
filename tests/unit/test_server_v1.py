@@ -45,7 +45,7 @@ class TestYieldSession:
 
 class TestGetTransport:
     def test_get_transport_yields_direct_transport_when_unauthenticated(self) -> None:
-        """no auth → DirectTransport is yielded."""
+        """no auth -> DirectTransport is yielded."""
         from ixmp4.server.v1 import get_transport
 
         platform = SimpleNamespace(dsn="sqlite:///:memory:")
@@ -60,7 +60,7 @@ class TestGetTransport:
         asyncio.run(_run())
 
     def test_get_transport_yields_authorized_transport_when_authenticated(self) -> None:
-        """auth present → AuthorizedTransport is yielded."""
+        """auth present -> AuthorizedTransport is yielded."""
         from ixmp4.server.v1 import get_transport
 
         platform = SimpleNamespace(dsn="sqlite:///:memory:")
@@ -137,7 +137,7 @@ class TestGetPlatform:
         asyncio.run(_run())
 
     def test_get_platform_raises_when_not_found(self) -> None:
-        """platform not found in any source → PlatformNotFound."""
+        """platform not found in any source -> PlatformNotFound."""
         from ixmp4.server.v1 import get_platform
 
         toml = SimpleNamespace(

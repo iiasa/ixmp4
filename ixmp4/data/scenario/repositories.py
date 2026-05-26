@@ -12,7 +12,7 @@ from ixmp4.data.run.db import Run
 
 from .db import Scenario, ScenarioVersion
 from .exceptions import ScenarioNotFound, ScenarioNotUnique
-from .filter import ScenarioFilter
+from .filter import ScenarioFilter, ScenarioVersionFilter
 
 
 class ScenarioAuthRepository(AuthRepository[Scenario | ScenarioVersion]):
@@ -48,4 +48,4 @@ class VersionRepository(PandasRepository):
     NotFound = ScenarioNotFound
     NotUnique = ScenarioNotUnique
     target = ModelTarget(ScenarioVersion)
-    filter = Filter(ScenarioFilter, ScenarioVersion)
+    filter = Filter(ScenarioVersionFilter, ScenarioVersion)

@@ -71,12 +71,10 @@ class ParameterIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Parameter.__table__, ParameterVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Parameter, ParameterVersion)
 
 
 association_version_triggers = versions.PostgresVersionTriggers(
-    ParameterIndexsetAssociation.__table__,
-    ParameterIndexsetAssociationVersion.__table__,
+    ParameterIndexsetAssociation,
+    ParameterIndexsetAssociationVersion,
 )

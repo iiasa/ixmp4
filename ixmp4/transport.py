@@ -223,7 +223,10 @@ class DirectTransport(Transport):
         assert self.session.bind is not None
         engine = self.session.bind.engine
         inspector = sa.inspect(engine)
-        controller = get_alembic_controller(engine.url.render_as_string())
+        # Use the real DSN (not SQLAlchemy's masked display form) for alembic.
+        controller = get_alembic_controller(
+            engine.url.render_as_string(hide_password=False)
+        )
 
         if not inspector.has_table("alembic_version"):
             raise ImproperlyConfigured(

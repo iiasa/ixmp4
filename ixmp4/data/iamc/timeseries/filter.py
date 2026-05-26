@@ -16,7 +16,7 @@ from ixmp4.data.run.filter import (
 )
 from ixmp4.data.versions.filter import VersionFilter
 
-from .db import TimeSeries
+from .db import TimeSeries, TimeSeriesVersion
 
 
 class TimeSeriesFilter(iamc.TimeSeriesFilter, total=False):
@@ -27,7 +27,10 @@ class TimeSeriesFilter(iamc.TimeSeriesFilter, total=False):
 
 
 class TimeSeriesVersionFilter(VersionFilter, iamc.TimeSeriesFilter, total=False):
-    pass
+    region: Annotated[base.RegionFilter, TimeSeriesVersion.region]
+    variable: Annotated[iamc.VariableFilter, TimeSeriesVersion.variable]
+    unit: Annotated[base.UnitFilter, TimeSeriesVersion.unit]
+    run: Annotated[base.RunFilter, TimeSeriesVersion.run]
 
 
 class FacadeTimeSeriesFilter(iamc.TimeSeriesFilter, total=False):

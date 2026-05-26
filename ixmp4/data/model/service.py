@@ -14,7 +14,7 @@ from ixmp4.transport import DirectTransport
 
 from .db import ModelDocs
 from .dto import Model
-from .filter import ModelFilter
+from .filter import ModelFilter, ModelVersionFilter
 from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
@@ -225,5 +225,43 @@ class ModelService(DocsService, GetByIdService):
                 offset=pagination.offset,
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[ModelVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates model versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter model versions as specified in :class:`ModelVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the model version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[ModelVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )

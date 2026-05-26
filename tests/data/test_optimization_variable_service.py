@@ -296,9 +296,7 @@ class VariableDataTest(VariableServiceTest):
             )
 
         # compute transaction ids
-        is_tx = (
-            5 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
-        )
+        is_tx = 5 + 2 * len(test_data_indexsets)
         create_tx = is_tx + 1
         add_data_tx = create_tx + 3
         rm_data_partial_tx = add_data_tx + 1
@@ -713,6 +711,26 @@ class TestVariableTabulate(VariableServiceTest):
         variables = service.tabulate()
         variables = self.canonicalize_datetimes(variables)
         pdt.assert_frame_equal(variables, expected_variables, check_like=True)
+
+
+class TestVariableTabulateVersions(VariableServiceTest):
+    def test_variable_tabulate_versions(
+        self,
+        versioning_service: VariableService,
+        run: Run,
+    ) -> None:
+        variable = versioning_service.create(run.id, "VersionedVariable")
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(variable.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedVariable"
 
 
 class VariableAuthTest(VariableServiceTest):

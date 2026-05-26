@@ -51,6 +51,4 @@ class ScalarVersion(versions.BaseVersionModel):
     created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Scalar.__table__, ScalarVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Scalar, ScalarVersion)

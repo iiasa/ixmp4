@@ -12,7 +12,7 @@ from ixmp4.data.optimization.base.repositories import IndexedRepository
 
 from .db import Equation, EquationIndexsetAssociation, EquationVersion
 from .exceptions import EquationDataInvalid, EquationNotFound, EquationNotUnique
-from .filter import EquationFilter
+from .filter import EquationFilter, EquationVersionFilter
 
 EquationTargetT = TypeVar("EquationTargetT")
 
@@ -28,6 +28,19 @@ class EquationAuthRepository(AuthRepository[EquationTargetT], Generic[EquationTa
         if run_exc is None:
             return exc
         return exc.where(Equation.run__id.in_(run_exc))
+
+
+class EquationVersionAuthRepository(AuthRepository[EquationVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(EquationVersion.run__id.in_(run_exc))
 
 
 class ItemRepository(
@@ -62,8 +75,8 @@ class PandasRepository(EquationAuthRepository[Equation], BasePandasRepository):
     filter = Filter(EquationFilter, Equation)
 
 
-class VersionRepository(EquationAuthRepository[EquationVersion], BasePandasRepository):
+class VersionRepository(EquationVersionAuthRepository, BasePandasRepository):
     NotFound = EquationNotFound
     NotUnique = EquationNotUnique
     target = ModelTarget(EquationVersion)
-    filter = Filter(EquationFilter, EquationVersion)
+    filter = Filter(EquationVersionFilter, EquationVersion)

@@ -222,9 +222,8 @@ class IndexSetAddRemoveDataTest(IndexSetServiceTest):
         fake_time: datetime.datetime,
     ) -> None:
         # compute transaction ids
-        data_transactions = len(test_data) if isinstance(test_data, list) else 1
         is_create_tx = 4
-        first_is_update_tx = is_create_tx + 1 + data_transactions
+        first_is_update_tx = is_create_tx + 2  # 1 tx for insert_many + 1 tx for update
         second_is_update_tx = first_is_update_tx + 2
 
         expected_versions = pd.DataFrame(
@@ -658,6 +657,26 @@ class TestIndexSetTabulate(IndexSetServiceTest):
 
         idxsets = service.tabulate()
         pdt.assert_frame_equal(idxsets, expected_idxsets, check_like=True)
+
+
+class TestIndexSetTabulateVersions(IndexSetServiceTest):
+    def test_indexset_tabulate_versions(
+        self,
+        versioning_service: IndexSetService,
+        run: Run,
+    ) -> None:
+        indexset = versioning_service.create(run.id, "VersionedIndexSet")
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(indexset.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedIndexSet"
 
 
 class IndexSetAuthTest(IndexSetServiceTest):

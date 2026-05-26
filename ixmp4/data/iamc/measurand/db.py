@@ -10,8 +10,8 @@ from ixmp4.data.base.db import BaseModel, HasCreationInfo
 
 if TYPE_CHECKING:
     from ixmp4.data.iamc.timeseries.db import TimeSeries
-    from ixmp4.data.iamc.variable.db import Variable
-    from ixmp4.data.unit.db import Unit
+    from ixmp4.data.iamc.variable.db import Variable, VariableVersion
+    from ixmp4.data.unit.db import Unit, UnitVersion
 
 
 class Measurand(BaseModel, HasCreationInfo):
@@ -56,6 +56,41 @@ class MeasurandVersion(versions.BaseVersionModel):
     created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
     @staticmethod
+    def join_variable_versions() -> sa.ColumnElement[bool]:
+        from ixmp4.data.iamc.variable.db import VariableVersion
+
+        return sa.and_(
+            orm.foreign(MeasurandVersion.variable__id)
+            == orm.remote(VariableVersion.id),
+            MeasurandVersion.join_valid_versions(VariableVersion),
+        )
+
+    variable: orm.Relationship["VariableVersion"] = orm.relationship(
+        "ixmp4.data.iamc.variable.db.VariableVersion",
+        primaryjoin=join_variable_versions,
+        lazy="select",
+        viewonly=True,
+        uselist=False,
+    )
+
+    @staticmethod
+    def join_unit_versions() -> sa.ColumnElement[bool]:
+        from ixmp4.data.unit.db import UnitVersion
+
+        return sa.and_(
+            orm.foreign(MeasurandVersion.unit__id) == orm.remote(UnitVersion.id),
+            MeasurandVersion.join_valid_versions(UnitVersion),
+        )
+
+    unit: orm.Relationship["UnitVersion"] = orm.relationship(
+        "ixmp4.data.unit.db.UnitVersion",
+        primaryjoin=join_unit_versions,
+        lazy="select",
+        viewonly=True,
+        uselist=False,
+    )
+
+    @staticmethod
     def join_timeseries_versions() -> sa.ColumnElement[bool]:
         from ixmp4.data.iamc.timeseries.db import TimeSeriesVersion
 
@@ -73,6 +108,4 @@ class MeasurandVersion(versions.BaseVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Measurand.__table__, MeasurandVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Measurand, MeasurandVersion)

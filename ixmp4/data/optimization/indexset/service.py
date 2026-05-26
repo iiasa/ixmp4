@@ -26,8 +26,9 @@ from ixmp4.transport import DirectTransport
 
 from .db import IndexSetDocs
 from .dto import IndexSet
-from .filter import IndexSetFilter
+from .filter import IndexSetDataVersionFilter, IndexSetFilter, IndexSetVersionFilter
 from .repositories import (
+    DataVersionRepository,
     IndexSetDataItemRepository,
     ItemRepository,
     PandasRepository,
@@ -44,6 +45,7 @@ class IndexSetService(DocsService, GetByIdService):
     data: IndexSetDataItemRepository
     pandas: PandasRepository
     versions: VersionRepository
+    data_versions: DataVersionRepository
 
     equations: EquationRepository
     parameters: ParameterRepository
@@ -55,7 +57,12 @@ class IndexSetService(DocsService, GetByIdService):
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
         self.data = IndexSetDataItemRepository(self.executor)
-        self.versions = VersionRepository(self.executor)
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
+        self.data_versions = DataVersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
         self.equations = EquationRepository(self.executor)
         self.parameters = ParameterRepository(self.executor)
         self.tables = TableRepository(self.executor)
@@ -422,5 +429,82 @@ class IndexSetService(DocsService, GetByIdService):
                 offset=pagination.offset,
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[IndexSetVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates indexset versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter indexset versions as specified in :class:`IndexSetVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the indexset version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[IndexSetVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/data/versions/tabulate", methods=("PATCH",)))
+    def tabulate_data_versions(
+        self, **kwargs: Unpack[IndexSetDataVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates indexset-data versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter indexset-data versions as specified in
+            :class:`IndexSetDataVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the indexset-data version columns.
+        """
+        return self.data_versions.tabulate(values=kwargs)
+
+    @tabulate_data_versions.auth_check()
+    def tabulate_data_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_data_versions.paginated()
+    def paginated_tabulate_data_versions(
+        self, pagination: Pagination, **kwargs: Unpack[IndexSetDataVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.data_versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.data_versions.count(values=kwargs),
             pagination=pagination,
         )

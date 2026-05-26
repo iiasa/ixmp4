@@ -12,8 +12,8 @@ from ixmp4.data.filters.facade import (
     make_mapping_transformer,
     make_str_like_transformer,
 )
-from ixmp4.data.iamc.timeseries.db import TimeSeries
-from ixmp4.data.run.db import Run
+from ixmp4.data.iamc.timeseries.db import TimeSeries, TimeSeriesVersion
+from ixmp4.data.run.db import Run, RunVersion
 from ixmp4.data.run.filter import FacadeRunFilter
 from ixmp4.data.run.filter import facade_to_data_filter as run_facade_to_data_filter
 from ixmp4.data.versions.filter import VersionFilter
@@ -37,7 +37,24 @@ class DataPointFilter(iamc.DataPointFilter, total=False):
 
 
 class DataPointVersionFilter(iamc.DataPointFilter, VersionFilter, total=False):
-    timeseries: Annotated[iamc.TimeSeriesFilter, (DataPointVersion.timeseries)]
+    region: Annotated[
+        base.RegionFilter, (DataPointVersion.timeseries, TimeSeriesVersion.region)
+    ]
+    variable: Annotated[
+        iamc.VariableFilter, (DataPointVersion.timeseries, TimeSeriesVersion.variable)
+    ]
+    unit: Annotated[
+        base.UnitFilter, (DataPointVersion.timeseries, TimeSeriesVersion.unit)
+    ]
+    run: Annotated[base.RunFilter, (DataPointVersion.timeseries, TimeSeriesVersion.run)]
+    model: Annotated[
+        base.ModelFilter,
+        (DataPointVersion.timeseries, TimeSeriesVersion.run, RunVersion.model),
+    ]
+    scenario: Annotated[
+        base.ScenarioFilter,
+        (DataPointVersion.timeseries, TimeSeriesVersion.run, RunVersion.scenario),
+    ]
 
 
 class FacadeStepYearFilter(TypedDict, total=False):

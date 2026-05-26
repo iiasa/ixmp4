@@ -35,6 +35,4 @@ class RegionVersion(versions.BaseVersionModel):
     created_by: String = orm.mapped_column(sa.String(255), nullable=True)
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Region.__table__, RegionVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Region, RegionVersion)

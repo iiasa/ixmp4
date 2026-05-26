@@ -203,3 +203,26 @@ class TestIamcVariableDelete(IamcVariableApiTest):
         self.request(client, "DELETE", f"/iamc/variables/{variable.id}")
 
         assert direct_service.tabulate().empty
+
+
+class TestIamcVariableTabulateVersionsApi(IamcVariableApiTest):
+    def test_iamc_variable_tabulate_versions(self, client: httpx.Client) -> None:
+        self.request(
+            client, "POST", "/iamc/variables", json={"name": "VersionedVariable"}
+        )
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/iamc/variables/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "name",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

@@ -6,11 +6,11 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.filter import Filter
 from toolkit.db.repositories import ItemRepository as BaseItemRepository
 from toolkit.db.repositories import PandasRepository as BasePandasRepository
-from toolkit.db.target import ModelTarget
+from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
 
-from .db import IndexSet, IndexSetData, IndexSetVersion
+from .db import IndexSet, IndexSetData, IndexSetDataVersion, IndexSetVersion
 from .exceptions import (
     IndexSetDataInvalid,
     IndexSetDataNotFound,
@@ -18,7 +18,7 @@ from .exceptions import (
     IndexSetNotFound,
     IndexSetNotUnique,
 )
-from .filter import IndexSetFilter
+from .filter import IndexSetDataVersionFilter, IndexSetFilter, IndexSetVersionFilter
 from .type import Type
 
 logger = logging.getLogger(__name__)
@@ -35,6 +35,34 @@ class IndexSetAuthRepository(AuthRepository[IndexSet | IndexSetVersion]):
         if run_exc is None:
             return exc
         return exc.where(IndexSet.run__id.in_(run_exc))
+
+
+class IndexSetVersionAuthRepository(AuthRepository[IndexSetVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(IndexSetVersion.run__id.in_(run_exc))
+
+
+class IndexSetDataVersionAuthRepository(AuthRepository[IndexSetDataVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(
+            IndexSetDataVersion.indexset.has(IndexSetVersion.run__id.in_(run_exc))
+        )
 
 
 class ItemRepository(IndexSetAuthRepository, BaseItemRepository[IndexSet]):
@@ -118,8 +146,21 @@ class IndexSetDataItemRepository(BaseItemRepository[IndexSetData]):
                 return result
 
 
-class VersionRepository(PandasRepository):
+class VersionRepository(IndexSetVersionAuthRepository, BasePandasRepository):
     NotFound = IndexSetNotFound
     NotUnique = IndexSetNotUnique
     target = ModelTarget(IndexSetVersion)
-    filter = Filter(IndexSetFilter, IndexSetVersion)
+    filter = Filter(IndexSetVersionFilter, IndexSetVersion)
+
+
+class DataVersionRepository(IndexSetDataVersionAuthRepository, BasePandasRepository):
+    NotFound = IndexSetDataNotFound
+    NotUnique = IndexSetDataNotUnique
+    target = ExtendedTarget(
+        IndexSetDataVersion,
+        {
+            "name": ((IndexSetDataVersion.indexset,), IndexSetVersion.name),
+            "run__id": ((IndexSetDataVersion.indexset,), IndexSetVersion.run__id),
+        },
+    )
+    filter = Filter(IndexSetDataVersionFilter, IndexSetDataVersion)

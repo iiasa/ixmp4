@@ -17,7 +17,7 @@ from ixmp4.data.scenario.db import Scenario
 from .db import RunMetaEntry, RunMetaEntryVersion
 from .dto import MetaValueType
 from .exceptions import InvalidRunMeta, RunMetaEntryNotFound, RunMetaEntryNotUnique
-from .filter import RunMetaEntryFilter
+from .filter import RunMetaEntryFilter, RunMetaEntryVersionFilter
 from .type import Type
 
 ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
@@ -34,6 +34,19 @@ class RunMetaAuthRepository(AuthRepository[RunMetaEntry | RunMetaEntryVersion]):
         if run_id_exc is None:
             return exc
         return exc.where(RunMetaEntry.run__id.in_(run_id_exc))
+
+
+class RunMetaVersionAuthRepository(AuthRepository[RunMetaEntryVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_id_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_id_exc is None:
+            return exc
+        return exc.where(RunMetaEntryVersion.run__id.in_(run_id_exc))
 
 
 class ItemRepository(RunMetaAuthRepository, BaseItemRepository[RunMetaEntry]):
@@ -135,7 +148,13 @@ class PandasRepository(RunMetaAuthRepository, BasePandasRepository):
             super().upsert(type_df, key)
 
 
-class VersionRepository(PandasRepository):
+class VersionRepository(RunMetaVersionAuthRepository, PandasRepository):
     NotFound = RunMetaEntryNotFound
     NotUnique = RunMetaEntryNotUnique
-    target = ModelTarget(RunMetaEntryVersion)
+    target: ModelTarget[RunMetaEntry | RunMetaEntryVersion] = ModelTarget(
+        RunMetaEntryVersion
+    )
+    filter = Filter(RunMetaEntryVersionFilter, RunMetaEntryVersion)
+
+    def default_order_by(self, exc: sa.Select[Any]) -> sa.Select[Any]:
+        return exc.order_by(RunMetaEntryVersion.run__id, RunMetaEntryVersion.key)
