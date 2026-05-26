@@ -36,9 +36,12 @@ class TestUnitLookup(UnitApiTest):
         assert got["id"] == unit.id
         assert got["name"] == unit.name
 
-    def test_unit_get_by_name(self, client: httpx.Client, unit: Unit) -> None:
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
+    def test_unit_get_by_name(
+        self, client: httpx.Client, unit: Unit, method: str
+    ) -> None:
         got = self.request(
-            client, "POST", "/units/get-by-name", json={"name": unit.name}
+            client, method, "/units/get-by-name", json={"name": unit.name}
         ).json()
 
         assert got["id"] == unit.id
