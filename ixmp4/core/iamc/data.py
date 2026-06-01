@@ -56,7 +56,20 @@ def _convert_to_std_format(
     return df[columns + ["value"]]
 
 
-class RunIamcData(BaseBackendFacade):
+class IamcDataFacade(object):
+    def _rename_arg_cols(self, df: pd.DataFrame) -> pd.DataFrame:
+        return df.rename(
+            columns={
+                "year": "step_year",
+                "category": "step_category",
+                "subannual": "step_category",
+                "datetime": "step_datetime",
+                "time": "step_datetime",
+            }
+        )
+
+
+class RunIamcData(BaseBackendFacade, IamcDataFacade):
     """IAMC data linked to a :class:`ixmp4.core.run.Run`.
 
     .. code:: python
@@ -93,26 +106,6 @@ class RunIamcData(BaseBackendFacade):
         return pd.merge(
             df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")
         )  # tada, df with 'time_series__id' added from the database.
-
-    def _rename_arg_cols(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(
-            columns={
-                "year": "step_year",
-                "category": "step_category",
-                "subannual": "step_category",
-                "datetime": "step_datetime",
-                "time": "step_datetime",
-            }
-        )
-
-    def _rename_ret_cols(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(
-            columns={
-                "step_year": "year",
-                "step_category": "subannual",
-                "step_datetime": "time",
-            }
-        ).drop(columns=["id", "time_series__id"])
 
     def add(self, df: pd.DataFrame, type: Type | str | None = None) -> None:
         """Adds IAMC data from a data frame to a run.
@@ -279,7 +272,7 @@ class RunIamcData(BaseBackendFacade):
         return _convert_to_std_format(df, join_runs=False, join_run_id=False)
 
 
-class PlatformIamcData(BaseBackendFacade):
+class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
     """IAMC data on a platform."""
 
     variables: VariableServiceFacade
@@ -287,15 +280,6 @@ class PlatformIamcData(BaseBackendFacade):
     def __init__(self, backend: Backend) -> None:
         super().__init__(backend)
         self.variables = VariableServiceFacade(backend)
-
-    def _rename_ret_cols(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(
-            columns={
-                "step_year": "year",
-                "step_category": "category",
-                "step_datetime": "datetime",
-            }
-        ).drop(columns=["id", "time_series__id"])
 
     def tabulate(
         self,
