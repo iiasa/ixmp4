@@ -18,46 +18,16 @@ from .variable import VariableServiceFacade
 if TYPE_CHECKING:
     from ixmp4.core import run
 
-MAP_STEP_COLUMN = {
-    "ANNUAL": "step_year",
-    "CATEGORICAL": "step_year",
-    "DATETIME": "step_datetime",
-}
-
-
-def _convert_to_std_format(
-    df: pd.DataFrame, join_runs: bool, join_run_id: bool
-) -> pd.DataFrame:
-    df.rename(columns={"step_category": "subannual"}, inplace=True)
-
-    if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
-        df.rename(columns={"step_year": "year"}, inplace=True)
-        time_col = "year"
-    else:
-        T = TypeVar("T", bool, float, int, str)
-
-        def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
-            df["time"] = df[MAP_STEP_COLUMN[str(df.type)]]
-            return df
-
-        df = df.apply(map_step_column, axis=1)
-        time_col = "time"
-
-    columns = []
-    if join_run_id and "run__id" in df.columns:
-        columns.append("run__id")
-    if join_runs:
-        columns.extend(["model", "scenario", "version"])
-    columns += ["region", "variable", "unit"]
-    if time_col in df.columns:
-        columns += [time_col]
-    if "subannual" in df.columns:
-        columns += ["subannual"]
-    return df[columns + ["value"]]
-
 
 class IamcDataFacade(object):
-    def _rename_arg_cols(self, df: pd.DataFrame) -> pd.DataFrame:
+    _MAP_STEP_COLUMN = {
+        "ANNUAL": "step_year",
+        "CATEGORICAL": "step_year",
+        "DATETIME": "step_datetime",
+    }
+
+    @staticmethod
+    def _rename_arg_cols(df: pd.DataFrame) -> pd.DataFrame:
         return df.rename(
             columns={
                 "year": "step_year",
@@ -67,6 +37,37 @@ class IamcDataFacade(object):
                 "time": "step_datetime",
             }
         )
+
+    @classmethod
+    def _convert_to_std_format(
+        cls, df: pd.DataFrame, join_runs: bool, join_run_id: bool
+    ) -> pd.DataFrame:
+        df.rename(columns={"step_category": "subannual"}, inplace=True)
+
+        if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
+            df.rename(columns={"step_year": "year"}, inplace=True)
+            time_col = "year"
+        else:
+            T = TypeVar("T", bool, float, int, str)
+
+            def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
+                df["time"] = df[cls._MAP_STEP_COLUMN[str(df.type)]]
+                return df
+
+            df = df.apply(map_step_column, axis=1)
+            time_col = "time"
+
+        columns = []
+        if join_run_id and "run__id" in df.columns:
+            columns.append("run__id")
+        if join_runs:
+            columns.extend(["model", "scenario", "version"])
+        columns += ["region", "variable", "unit"]
+        if time_col in df.columns:
+            columns += [time_col]
+        if "subannual" in df.columns:
+            columns += ["subannual"]
+        return df[columns + ["value"]]
 
 
 class RunIamcData(BaseBackendFacade, IamcDataFacade):
@@ -269,7 +270,7 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
             join_runs=False,
             **facade_to_data_filter(kwargs),
         )
-        return _convert_to_std_format(df, join_runs=False, join_run_id=False)
+        return self._convert_to_std_format(df, join_runs=False, join_run_id=False)
 
 
 class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
@@ -325,4 +326,6 @@ class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
             **facade_to_data_filter(kwargs),
         )
 
-        return _convert_to_std_format(df, join_runs=join_runs, join_run_id=join_run_id)
+        return self._convert_to_std_format(
+            df, join_runs=join_runs, join_run_id=join_run_id
+        )
