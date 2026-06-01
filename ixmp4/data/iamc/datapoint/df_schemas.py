@@ -21,7 +21,7 @@ class BaseDataPointFrameSchema(pa.DataFrameModel):
     step_datetime: pat.Series[pa.Timestamp] | None = pa.Field(
         coerce=True, nullable=True
     )
-    step_category: pat.Series[pa.String] | None = pa.Field(nullable=True)
+    step_category: pat.Series[pa.String] | None = pa.Field(nullable=True, coerce=True)
 
     @pa.dataframe_parser
     @classmethod
