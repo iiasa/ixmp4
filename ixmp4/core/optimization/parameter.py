@@ -222,6 +222,7 @@ class ParameterServiceFacade(
             #> [<Parameter 1 name='Cost'>]
 
         """
+        kwargs["run__id"] = self._run.id
         parameters = self._service.list(**kwargs)
         return [Parameter(self._backend, dto, run=self._run) for dto in parameters]
 
