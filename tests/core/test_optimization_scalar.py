@@ -59,6 +59,11 @@ class TestScalar(OptimizationScalarTest):
 
         assert scalar4.id == 4
 
+    def test_other_run_is_empty(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Other Model", "Other Scenario")
+        assert len(run.optimization.scalars.list()) == 0
+        assert run.optimization.scalars.tabulate().empty
+
     def test_tabulate_scalar(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.scalars.tabulate()
         assert len(ret_df) == 4
