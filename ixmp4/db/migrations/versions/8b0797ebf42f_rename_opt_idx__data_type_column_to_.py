@@ -7,14 +7,42 @@ Create Date: 2025-11-25 15:15:58.112128
 
 """
 
+import logging
+
 import sqlalchemy as sa
 from alembic import op
+
+from ixmp4.data.versions import PostgresVersionTriggers
 
 # Revision identifiers, used by Alembic.
 revision = "8b0797ebf42f"
 down_revision = "9596778a8150"
 branch_labels = None
 depends_on = None
+
+logger = logging.getLogger(__name__)
+
+
+def _sync_opt_idx_version_triggers() -> None:
+    conn = op.get_bind()
+    if conn is None:
+        logger.warning("Cannot sync version triggers without database connection.")
+        return
+
+    dialect_name = conn.dialect.name
+    if dialect_name != "postgresql":
+        logger.info(
+            f"Skipping version trigger sync for database dialect '{dialect_name}'."
+        )
+        return
+
+    metadata = sa.MetaData()
+    transaction_table = sa.Table("transaction", metadata, autoload_with=conn)
+    data_table = sa.Table("opt_idx", metadata, autoload_with=conn)
+    version_table = sa.Table("opt_idx_version", metadata, autoload_with=conn)
+    PostgresVersionTriggers(data_table, version_table, transaction_table).sync_entities(
+        conn
+    )
 
 
 def upgrade():
@@ -26,6 +54,8 @@ def upgrade():
     with op.batch_alter_table("opt_idx_version", schema=None) as batch_op:
         batch_op.add_column(sa.Column("data_type", sa.String(length=63), nullable=True))
         batch_op.drop_column("_data_type")
+
+    _sync_opt_idx_version_triggers()
 
     # ### end Alembic commands ###
 
@@ -43,5 +73,7 @@ def downgrade():
             sa.Column("_data_type", sa.VARCHAR(length=5), nullable=True)
         )
         batch_op.drop_column("data_type")
+
+    _sync_opt_idx_version_triggers()
 
     # ### end Alembic commands ###
