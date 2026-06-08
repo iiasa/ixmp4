@@ -681,8 +681,8 @@ class IamcDataInputTest(IamcTest):
         return expected_data.copy()
 
     def _canonical_sort_mixed_safe(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Computes a sort index with categorical and object dtype special case handling.
-        Then uses the index to sort the original df."""
+        """Computes a sort index with categorical and object dtype special
+        case handling. Then uses the index to sort the original df."""
         sorted_cols = df.columns.sort_values().to_list()
         sort_df = df.copy()
 
