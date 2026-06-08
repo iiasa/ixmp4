@@ -61,7 +61,7 @@ class Region(BaseFacadeObject[RegionService, RegionDto]):
         return backend.regions
 
     def __str__(self) -> str:
-        return f"<Region {self.id} name='{self.name}' hierarchy='{self.hierarchy}'>"
+        return f"<Region name='{self.name}' hierarchy='{self.hierarchy}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

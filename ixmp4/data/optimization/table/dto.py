@@ -13,4 +13,4 @@ class Table(BaseModel, HasCreationInfo):
     run__id: int
 
     def __str__(self) -> str:
-        return f"<Table {self.id} name={self.name}>"
+        return f"<Table name='{self.name}' id={self.id}>"

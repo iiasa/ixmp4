@@ -52,7 +52,7 @@ class Model(BaseFacadeObject[ModelService, ModelDto]):
         return backend.models
 
     def __str__(self) -> str:
-        return f"<Model {self.id} name='{self.name}'>"
+        return f"<Model name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

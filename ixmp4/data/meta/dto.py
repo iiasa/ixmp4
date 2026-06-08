@@ -23,5 +23,5 @@ class RunMetaEntry(BaseModel):
     value_bool: bool | None
 
     def __str__(self) -> str:
-        return f"<RunMetaEntry {self.id} run__id={self.run__id} \
+        return f"<RunMetaEntry id={self.id} run__id={self.run__id} \
             key={self.key} value={self.value}"

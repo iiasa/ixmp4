@@ -118,7 +118,7 @@ class Table(BaseOptimizationFacadeObject[TableService, TableDto]):
         return backend.optimization.tables
 
     def __str__(self) -> str:
-        return f"<Table {self.id} name={self.name}>"
+        return f"<Table name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

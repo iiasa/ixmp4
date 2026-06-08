@@ -111,7 +111,7 @@ class IndexSet(BaseOptimizationFacadeObject[IndexSetService, IndexSetDto]):
         return backend.optimization.indexsets
 
     def __str__(self) -> str:
-        return f"<IndexSet {self.id} name={self.name}>"
+        return f"<IndexSet name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

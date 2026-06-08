@@ -141,7 +141,7 @@ class Scalar(BaseOptimizationFacadeObject[ScalarService, ScalarDto]):
         return backend.optimization.scalars
 
     def __str__(self) -> str:
-        return f"<Scalar {self.id} name={self.name}>"
+        return f"<Scalar name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

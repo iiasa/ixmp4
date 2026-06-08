@@ -8,4 +8,4 @@ class Model(BaseModel, HasCreationInfo):
     "Unique name of the model."
 
     def __str__(self) -> str:
-        return f"<Model {self.id} name={self.name}>"
+        return f"<Model name='{self.name}' id={self.id}>"
