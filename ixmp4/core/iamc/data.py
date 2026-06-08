@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, TypeVar
 
+import numpy as np
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -34,9 +35,22 @@ class IamcDataFacade(object):
                 "category": "step_category",
                 "subannual": "step_category",
                 "datetime": "step_datetime",
-                "time": "step_datetime",
             }
         )
+
+    @staticmethod
+    def _split_time_col(df: pd.DataFrame) -> pd.DataFrame:
+        time = df["time"]
+        is_year = time.apply(lambda x: isinstance(x, (int, np.integer)))
+
+        if is_year.any():
+            df["year"] = pd.Series(np.nan, index=df.index, dtype="object")
+            df.loc[is_year, "year"] = time.loc[is_year]
+
+        if not is_year.all():
+            df["datetime"] = pd.to_datetime(time.where(~is_year), errors="coerce")
+
+        return df.drop(columns=["time"])
 
     @classmethod
     def _convert_to_std_format(
@@ -104,8 +118,8 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
         ts_df = ts_df.rename(columns={"id": "time_series__id"})
 
         # merge on the identity columns
-        return pd.merge(
-            df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")
+        return pd.merge(df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")).drop(
+            columns=id_cols
         )  # tada, df with 'time_series__id' added from the database.
 
     def add(self, df: pd.DataFrame, type: Type | str | None = None) -> None:
@@ -142,9 +156,13 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
                 - value
 
             Any combination of:
-                - step_year for ANNUAL data points
-                - step_year and step_category for CATEGORICAL data points
-                - step_datetime for DATETIME data points
+                - (``year`` or ``step_year``) for ANNUAL data points
+                - (``year`` or ``step_year``) and (``category`` or ``step_category``)
+                  for CATEGORICAL data points
+                - (``datetime`` or ``step_datetime``) for DATETIME data points
+                - ``time`` with integer and datetime values and optionally
+                  (``category`` or ``step_category``) for integer (year) rows.
+                  ``time`` will overwrite the ``year`` and ``datetime`` columns.
 
             You may optionally supply the type column for mixed data points:
                 - type
@@ -162,6 +180,8 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
         """
 
         self._run.require_lock()
+        if "time" in df.columns:
+            df = self._split_time_col(df)
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         df = self._get_or_create_ts(df)
@@ -221,6 +241,8 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
             ``with run.transact("message"):``.
         """
         self._run.require_lock()
+        if "time" in df.columns:
+            df = self._split_time_col(df)
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         # NOTE: This creates ts and deletes them right after
@@ -230,7 +252,6 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
                 type = Type[type.upper()]
             df["type"] = type
 
-        df = df.drop(columns=["unit", "variable", "region"])
         self._backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(
