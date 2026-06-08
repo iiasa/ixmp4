@@ -153,11 +153,11 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
             Any combination of:
                 - (``year`` or ``step_year``) for ANNUAL data points
                 - (``year`` or ``step_year``) and (``category`` or ``step_category``)
-                for CATEGORICAL data points
+                  for CATEGORICAL data points
                 - (``datetime`` or ``step_datetime``) for DATETIME data points
                 - ``time`` with integer and datetime values and optionally
-                (``category`` or ``step_category``) for integer (year) rows.
-                ``time`` will overwrite the ``year`` and ``datetime`` columns.
+                  (``category`` or ``step_category``) for integer (year) rows.
+                  ``time`` will overwrite the ``year`` and ``datetime`` columns.
 
             You may optionally supply the type column for mixed data points:
                 - type
