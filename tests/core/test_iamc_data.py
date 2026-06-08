@@ -806,16 +806,39 @@ class TestDatetimeIamcInputData(IamcDataInputTest):
             columns=["region", "variable", "unit", "time", "value"],
         )
 
+
+class TestDatetimeAsStringIamcInputData(TestDatetimeIamcInputData):
     @pytest.fixture
     def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
         input_df = expected_data.copy()
-        input_df["region"] = input_df["region"].astype("category")
-        input_df["unit"] = input_df["unit"].astype("category")
-        input_df["variable"] = input_df["variable"].astype("category")
         input_df["time"] = (
             input_df["time"].dt.strftime("%Y-%m-%d %H:%M:%S").astype("string")
         )
-        input_df["value"] = input_df["value"].astype("float32")
+        return input_df
+
+
+class TestSingleRowDatetimeIamcInputData(IamcDataInputTest):
+    @pytest.fixture
+    def expected_data(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [
+                    "Region 1",
+                    "Variable 1",
+                    "Unit 1",
+                    pd.Timestamp("2000-01-01 00:00:00"),
+                    1.1,
+                ],
+            ],
+            columns=["region", "variable", "unit", "time", "value"],
+        )
+
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        input_df = expected_data.copy()
+        input_df["time"] = (
+            input_df["time"].dt.strftime("%Y-%m-%d %H:%M:%S").astype("string")
+        )
         return input_df
 
 
