@@ -8,7 +8,7 @@ import sqlalchemy as sa
 import ixmp4
 from ixmp4.core.checkpoint import Checkpoint
 from ixmp4.core.platform import Platform
-from ixmp4.data.checkpoint.db import Checkpoint
+from ixmp4.data.checkpoint.db import Checkpoint as CheckpointModel
 from ixmp4.data.versions.model import Operation
 from ixmp4.data.versions.squash import squash_version_records
 from ixmp4.data.versions.transaction import Transaction
@@ -48,8 +48,8 @@ class SquashTest(PlatformTest, DataFrameTest):
     def get_checkpoint_tx_ids(engine: sa.Engine) -> set[int]:
         with engine.connect() as conn:
             rows = conn.execute(
-                sa.select(Checkpoint.transaction__id).where(
-                    Checkpoint.transaction__id.isnot(None)
+                sa.select(CheckpointModel.transaction__id).where(
+                    CheckpointModel.transaction__id.isnot(None)
                 )
             ).fetchall()
         return {r[0] for r in rows}
