@@ -189,4 +189,5 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
             If no run lock is held.
         """
         self.run.require_lock()
-        return self._service.create(run__id=self.run.id, message=message)
+        dto = self._service.create(run__id=self.run.id, message=message)
+        return Checkpoint(self._backend, self.run, dto)
