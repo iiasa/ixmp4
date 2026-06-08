@@ -247,7 +247,6 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
                 type = Type[type.upper()]
             df["type"] = type
 
-        df = df.drop(columns=["unit", "variable", "region"])
         self._backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(
