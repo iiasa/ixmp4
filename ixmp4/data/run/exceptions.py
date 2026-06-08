@@ -31,7 +31,8 @@ class NoDefaultRunVersion(BadRequest):
 class RunIsLocked(BadRequest):
     message = (
         "This run is already locked by another transaction. "
-        "Use the `timeout` parameter on `run.transact()` to wait for the lock."
+        "Use the `timeout` parameter on `run.transact()` (or `run.lock()`) "
+        "to wait for the lock or forcibly unlock it with `run.unlock(force=True)`."
     )
 
 
