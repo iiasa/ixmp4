@@ -1,4 +1,6 @@
 import datetime
+import threading
+import time
 from typing import Any
 
 import pandas as pd
@@ -290,3 +292,90 @@ class TestRunClone:
 
         variable1 = cloned_run.optimization.variables.get_by_name("Variable 1")
         assert variable1.data == test_data_variable1
+
+
+class TestRunTransact:
+    @pytest.fixture(scope="class")
+    def run(self, platform: ixmp4.Platform) -> ixmp4.Run:
+        return platform.runs.create("Model", "Scenario")
+
+    def test_transact_timeout(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            with run1.transact("Background transaction"):
+                sync_lock.release()
+                time.sleep(0.5)
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        with run2.transact("Test transaction", timeout=5):
+            run2.meta["timeout"] = "awaited"
+
+        assert run2.meta["timeout"] == "awaited"
+        thread.join()
+        sync_lock.release()
+
+    def test_transact_timeout_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            with run1.transact("Background transaction"):
+                sync_lock.release()
+                time.sleep(2)
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        with pytest.raises(ixmp4.Run.IsLocked):
+            with run2.transact("Test transaction", timeout=0.5):
+                run2.meta["timeout"] = "failed"
+
+        assert run2.meta == {"timeout": "awaited"}
+        thread.join()
+        sync_lock.release()
+
+    def test_transact_is_locked(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            with run1.transact("Background transaction"):
+                sync_lock.release()
+                time.sleep(2)
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        with pytest.raises(ixmp4.Run.IsLocked):
+            with run2.transact("Test transaction"):
+                run2.meta["locked"] = "already"
+
+        assert run2.meta == {"timeout": "awaited"}
+        thread.join()
+        sync_lock.release()
+
+    def test_transact_nested_raises(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        with pytest.raises(ixmp4.Run.IsLocked, match="[Nn]ested"):
+            with run.transact("outer"):
+                with run.transact("inner"):
+                    pass
