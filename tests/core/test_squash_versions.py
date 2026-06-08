@@ -6,7 +6,7 @@ import pytest
 import sqlalchemy as sa
 
 import ixmp4
-from ixmp4.core.checkpoint import CheckpointView
+from ixmp4.core.checkpoint import Checkpoint
 from ixmp4.core.platform import Platform
 from ixmp4.data.checkpoint.db import Checkpoint
 from ixmp4.data.versions.model import Operation
@@ -481,11 +481,11 @@ class TestSquashOptimizationData(SquashTest):
         cp1_id = self.get_checkpoint_id(run, "checkpoint-1")
         cp2_id = self.get_checkpoint_id(run, "checkpoint-2")
 
-        def scalar_values(cp_view: CheckpointView) -> dict[str, float]:
+        def scalar_values(cp_view: Checkpoint) -> dict[str, float]:
             df = cp_view.optimization.scalars.tabulate()
             return dict(zip(df["name"], df["value"].map(float)))
 
-        def indexset_names(cp_view: CheckpointView) -> set[str]:
+        def indexset_names(cp_view: Checkpoint) -> set[str]:
             return set(cp_view.optimization.indexsets.tabulate()["name"])
 
         assert scalar_values(run.checkpoints[cp1_id]) == pytest.approx(
@@ -961,11 +961,11 @@ class TestSquashCombinedScenario(SquashTest):
         )
 
         # optimization
-        def scalar_values(cp_view: CheckpointView) -> dict[str, float]:
+        def scalar_values(cp_view: Checkpoint) -> dict[str, float]:
             df = cp_view.optimization.scalars.tabulate()
             return dict(zip(df["name"], df["value"].map(float)))
 
-        def indexset_names(cp_view: CheckpointView) -> set[str]:
+        def indexset_names(cp_view: Checkpoint) -> set[str]:
             return set(cp_view.optimization.indexsets.tabulate()["name"])
 
         assert scalar_values(run.checkpoints[cp1_id]) == pytest.approx(

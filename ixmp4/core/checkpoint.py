@@ -4,7 +4,7 @@ import pandas as pd
 
 from ixmp4.base_exceptions import OperationNotSupported
 from ixmp4.data.backend import Backend
-from ixmp4.data.checkpoint.dto import Checkpoint
+from ixmp4.data.checkpoint.dto import Checkpoint as CheckpointDto
 from ixmp4.data.checkpoint.exceptions import (
     CheckpointDeletionPrevented,
     CheckpointNotFound,
@@ -12,7 +12,7 @@ from ixmp4.data.checkpoint.exceptions import (
 )
 from ixmp4.data.checkpoint.service import CheckpointService
 
-from .base import BaseBackendFacade, BaseServiceFacade
+from .base import BaseFacadeObject, BaseServiceFacade
 from .iamc.checkpoint import CheckpointIamcData
 from .optimization.checkpoint import CheckpointOptimizationData
 
@@ -25,7 +25,7 @@ _VERSIONING_NOT_SUPPORTED_MSG = (
 )
 
 
-class CheckpointView(BaseBackendFacade):
+class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
     """Read-only view of a run's state at a specific checkpoint.
 
     Provides access to IAMC data, optimization data, and run metadata
@@ -50,17 +50,26 @@ class CheckpointView(BaseBackendFacade):
     iamc: CheckpointIamcData
     optimization: CheckpointOptimizationData
 
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
+    def __init__(self, backend: Backend, run: "Run", checkpoint: CheckpointDto) -> None:
+        super().__init__(backend, checkpoint)
         self._run = run
-        self._checkpoint = checkpoint
         self.iamc = CheckpointIamcData(backend, run, checkpoint)
         self.optimization = CheckpointOptimizationData(backend, run, checkpoint)
 
+    def _get_service(self, backend: Backend) -> CheckpointService:
+        return backend.checkpoints
+
     @property
-    def checkpoint(self) -> Checkpoint:
-        """The checkpoint this view is associated with."""
-        return self._checkpoint
+    def id(self) -> int:
+        return self._dto.id
+
+    @property
+    def run__id(self) -> int:
+        return self._dto.run__id
+
+    @property
+    def transaction__id(self) -> int | None:
+        return self._dto.transaction__id
 
     @property
     def meta(self) -> dict[str, Any]:
@@ -76,11 +85,11 @@ class CheckpointView(BaseBackendFacade):
         :class:`ixmp4.base_exceptions.OperationNotSupported`
             If versioning is not supported on this backend (e.g. SQLite).
         """
-        if self._checkpoint.transaction__id is None:
+        if self._dto.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
         df = self._backend.meta.tabulate_versions(
             run__id=self._run.id,
-            valid_at_transaction=self._checkpoint.transaction__id,
+            valid_at_transaction=self._dto.transaction__id,
         )
         if df.empty:
             return {}
@@ -97,9 +106,9 @@ class CheckpointView(BaseBackendFacade):
         :class:`ixmp4.base_exceptions.OperationNotSupported`
             If versioning is not supported on this backend (e.g. SQLite).
         """
-        if self._checkpoint.transaction__id is None:
+        if self._dto.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        self._backend.runs.revert(self._run.id, self._checkpoint.transaction__id)
+        self._backend.runs.revert(self._run.id, self._dto.transaction__id)
 
 
 class RunCheckpoints(BaseServiceFacade[CheckpointService]):
@@ -116,7 +125,7 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
     def _get_service(self, backend: Backend) -> CheckpointService:
         return backend.checkpoints
 
-    def __getitem__(self, checkpoint_id: int) -> CheckpointView:
+    def __getitem__(self, checkpoint_id: int) -> Checkpoint:
         """Retrieve a read-only view of the run at a specific checkpoint.
 
         Parameters
@@ -145,7 +154,7 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
             raise CheckpointNotFound(
                 f"Checkpoint {checkpoint_id} not found for run {self.run.id}"
             )
-        return CheckpointView(self._backend, self.run, checkpoint)
+        return Checkpoint(self._backend, self.run, checkpoint)
 
     def tabulate(self) -> pd.DataFrame:
         """Tabulates checkpoints for this run.

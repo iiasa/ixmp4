@@ -11,7 +11,7 @@ from .base import PlatformTest
 platform = backends.get_platform_fixture(scope="class")
 
 
-class CheckpointViewTest(PlatformTest):
+class CheckpointTest(PlatformTest):
     @pytest.fixture(scope="class")
     def run(self, versioning_platform: ixmp4.Platform) -> ixmp4.Run:
         run = versioning_platform.runs.create("Model", "Scenario")
@@ -19,18 +19,18 @@ class CheckpointViewTest(PlatformTest):
         return run
 
 
-class TestCheckpointViewMeta(CheckpointViewTest):
-    def test_checkpoint_view_checkpoint_property(
+class TestCheckpointMeta(CheckpointTest):
+    def test_checkpoint_properties(
         self,
         run: ixmp4.Run,
     ) -> None:
         with run.transact("Create checkpoint for property test"):
             checkpoint = run.checkpoints.create("for checkpoint property")
 
-        view = run.checkpoints[checkpoint.id]
+        cp = run.checkpoints[checkpoint.id]
 
-        assert view.checkpoint.id == checkpoint.id
-        assert view.checkpoint.run__id == run.id
+        assert cp.id == checkpoint.id
+        assert cp.run__id == run.id
 
     def test_checkpoint_view_meta(
         self,
@@ -82,7 +82,7 @@ class TestCheckpointViewMeta(CheckpointViewTest):
         assert run_after.meta["revert_key"] == "original"
 
 
-class TestCheckpointOptimizationViews(CheckpointViewTest):
+class TestCheckpointOptimizationViews(CheckpointTest):
     @pytest.mark.parametrize(
         "view_name",
         ["scalars", "tables", "parameters", "equations", "variables", "indexsets"],
@@ -101,7 +101,7 @@ class TestCheckpointOptimizationViews(CheckpointViewTest):
         assert isinstance(result, pd.DataFrame)
 
 
-class TestCheckpointIamcView(CheckpointViewTest):
+class TestCheckpointIamcView(CheckpointTest):
     def test_checkpoint_iamc_tabulate_empty(
         self,
         run: ixmp4.Run,
@@ -149,7 +149,7 @@ class TestCheckpointIamcView(CheckpointViewTest):
         assert result.loc[0, "value"] == 1.0
 
 
-class TestRunCheckpointsView(CheckpointViewTest):
+class TestRunCheckpointsView(CheckpointTest):
     def test_run_checkpoints_getitem_raises_for_other_run_checkpoint(
         self,
         versioning_platform: ixmp4.Platform,
@@ -176,7 +176,7 @@ class TestRunCheckpointsView(CheckpointViewTest):
         assert {"id", "message", "transaction__id"}.issubset(checkpoints.columns)
 
 
-class TestCheckpointViewNonVersioning(CheckpointViewTest):
+class TestCheckpointNonVersioning(CheckpointTest):
     def test_checkpoint_view_raises_on_non_versioning(
         self,
         non_versioning_platform: ixmp4.Platform,
