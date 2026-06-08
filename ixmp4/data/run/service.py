@@ -554,7 +554,7 @@ class RunService(GetByIdService):
 
     @procedure(Http(methods=("POST",)))
     def unlock(self, id: int) -> Run:
-        """Locks a run at the current transaction (via `transaction__id`).
+        """Unlocks a run (by setting ``lock_transaction`` to ``None``).
 
         Parameters
         ----------
