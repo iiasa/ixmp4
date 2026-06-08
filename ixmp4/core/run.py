@@ -192,6 +192,13 @@ class Run(BaseFacadeObject[RunService, RunDto]):
     def created_by(self) -> str | None:
         return self._dto.created_by
 
+    @property
+    def is_locked(self) -> bool:
+        """``True`` if this run is locked. **Warning**: If a lock was acquired by
+        another user while this run was already fetched, this property might be out
+        of sync."""
+        return self._dto.lock_transaction is not None
+
     def set_as_default(self) -> None:
         """Sets this run as the default version for its `model` + `scenario`
         combination.
@@ -216,38 +223,6 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         """
         self._service.unset_as_default_version(self._dto.id)
         self._refresh()
-
-    def require_lock(self) -> None:
-        if not self.owns_lock:
-            raise RunLockRequired()
-
-    def _lock(self) -> None:
-        self._dto = self._service.lock(self._dto.id)
-        self.owns_lock = True
-        logger.debug(f"Acquired lock on {self}.")
-
-    def _unlock(self) -> None:
-        self._dto = self._service.unlock(self._dto.id)
-        self.owns_lock = False
-        logger.debug(f"Released lock on {self}.")
-
-    def _lock_with_timeout(self, timeout: float) -> None:
-        """Try locking the run until a timeout passes."""
-        start_time = time.time()
-        while True:
-            try:
-                self._lock()
-                break
-            except RunIsLocked as e:
-                elapsed_time = time.time() - start_time
-                if elapsed_time > timeout:
-                    raise e
-                remaining_time = timeout - elapsed_time
-                sleep_time = elapsed_time * 2
-                sleep_time = min(sleep_time, self.maximum_lock_timeout)
-                sleep_time = max(sleep_time, self.minimum_lock_timeout)
-                sleep_time = min(sleep_time, remaining_time)
-                time.sleep(sleep_time)
 
     @contextmanager
     def transact(
@@ -280,7 +255,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
         Parameters
         ----------
-        messsage : str
+        message : str
             The message for the checkpoint created after
             conclusion of the context manager.
         timeout : int, optional
@@ -295,43 +270,23 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             or the provided timeout is exceeded.
         """
         try:
-            if timeout is None:
-                self._lock()
-            else:
-                self._lock_with_timeout(timeout)
-        except RunIsLocked as e:
+            self.lock(timeout=timeout, check=False)
+        except RunIsLocked:
             if self.owns_lock:
                 raise RunIsLocked(
-                    message=(
-                        "Nested ``run.transact()`` calls are not supported. "
-                        "This run is already locked by the enclosing "
-                        "``transact()`` context manager on the same object."
-                    )
-                ) from e
-            raise
+                    "Nested `run.transact()` calls are not supported. "
+                    "This run is already locked by the enclosing "
+                    "`transact()` context manager or `lock()` call "
+                    "on the same object."
+                )
+            else:
+                raise
 
         try:
             yield
         except Exception as e:
-            checkpoint_df = self.checkpoints.tabulate()
-            if checkpoint_df.empty:
-                checkpoint_transaction = -1
-            else:
-                max_tx_id = checkpoint_df["transaction__id"].max()
-                if pd.isnull(max_tx_id):
-                    checkpoint_transaction = -1
-                else:
-                    checkpoint_transaction = int(max_tx_id)
-
-            assert self._dto.lock_transaction is not None
-
-            target_transaction = max(checkpoint_transaction, self._dto.lock_transaction)
             try:
-                self._service.revert(
-                    self._dto.id,
-                    target_transaction,
-                    revert_platform=revert_platform_on_error,
-                )
+                self.revert(revert_platform=revert_platform_on_error)
             except OperationNotSupported as ons_exc:
                 warnings.warn(
                     "An exception occurred but the `Run` "
@@ -339,7 +294,6 @@ class Run(BaseFacadeObject[RunService, RunDto]):
                     "is not supported by this platform: " + str(ons_exc.message)
                 )
 
-            self.meta._refresh()
             self._unlock()
             raise e
 
@@ -360,6 +314,206 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             If the run is already locked by this or another object.
         """
         self._service.delete_by_id(self._dto.id)
+
+    def require_lock(self) -> None:
+        """Raises :class:`~ixmp4.data.run.exceptions.RunLockRequired`
+        if this :class:`~ixmp4.core.run.Run` object does not currently
+        "own" a lock on the run.
+        """
+        if not self.owns_lock:
+            raise RunLockRequired()
+
+    def lock(self, *, timeout: float | None = None, check: bool = True) -> None:
+        """Attempts to lock the run with this :class:`~ixmp4.core.run.Run`
+        object as the lock "owner".
+        **Warning**: Once a run is locked, it must be unlocked with
+        :meth:`~ixmp4.core.run.Run.unlock` once changes have been made.
+        If it remains locked other users will not be able to edit the run
+        without forcibly unlocking it.
+
+        Prefer the :meth:`~ixmp4.core.run.Run.transact` context manager to
+        automatically acquire and release a lock for a code block wherever possible.
+
+        .. code:: python
+            run.lock()
+            # or
+            run.lock(timeout=2.5)
+            # fails:
+            run.lock(check=False)
+
+        Parameters
+        ----------
+        timeout : float, optional
+            If supplied, this function will attempt to lock
+            the run until ``timeout`` seconds have passed.
+        check : boolean, optional
+            If ``True`` (the default), this function will check
+            if the lock is already held by this run object and
+            skip acquiring the lock again.
+
+        Raises
+        ------
+        :class:`~ixmp4.data.run.exceptions.RunIsLocked`
+            If this run is already locked.
+
+        """
+        if check and self.owns_lock:
+            logger.debug(
+                "Skipping lock acquisition because this object already owns it: %s",
+                str(self),
+            )
+            return
+
+        if timeout is not None:
+            return self._lock_with_timeout(timeout)
+        else:
+            return self._lock()
+
+    def _lock(self) -> None:
+        self._dto = self._service.lock(self._dto.id)
+        self.owns_lock = True
+        logger.debug(f"Acquired lock on {self}.")
+
+    def _lock_with_timeout(self, timeout: float) -> None:
+        """Try locking the run until a timeout passes."""
+        start_time = time.time()
+        while True:
+            try:
+                self._lock()
+                break
+            except RunIsLocked as e:
+                elapsed_time = time.time() - start_time
+                if elapsed_time > timeout:
+                    raise e
+                remaining_time = timeout - elapsed_time
+                sleep_time = elapsed_time * 2
+                sleep_time = min(sleep_time, self.maximum_lock_timeout)
+                sleep_time = max(sleep_time, self.minimum_lock_timeout)
+                sleep_time = min(sleep_time, remaining_time)
+                time.sleep(sleep_time)
+
+    def _unlock(self) -> None:
+        self._dto = self._service.unlock(self._dto.id)
+        self.owns_lock = False
+        logger.debug(f"Released lock on {self}.")
+
+    def unlock(self, *, check: bool = True, force: bool = False) -> None:
+        """Attempts to unlock the run, allowing it to be locked again
+        by any run object afterwards.
+
+        .. code:: python
+            run.unlock()
+            # or
+            run.unlock(force=True)
+
+        Parameters
+        ----------
+        check : boolean, optional
+            If ``True`` (the default), this function will check
+            if the run is already unlocked and skip the rest of
+            the function if so.
+        force : boolean, optional
+            If ``True`` the run will be unlocked even if this
+            run object does not own the lock. Default: ``False``.
+            **Warning**: This may interfere with the operations of
+            other users. Use with care!
+
+        Raises
+        ------
+        :class:`~ixmp4.data.run.exceptions.RunLockRequired`
+            If ``force=False`` (the default) and this run object
+            does not own the lock.
+        """
+        if check:
+            self._refresh()
+            if not self.is_locked:
+                return
+
+        if not force and not self.owns_lock:
+            raise RunLockRequired(
+                "Trying to unlock a run that was not locked by this object. "
+                "Use `force=True` if you want to unlock it anyway "
+                "(potentially interfering with other users)."
+            )
+
+        return self._unlock()
+
+    def revert(
+        self, transaction_id: int | None = None, *, revert_platform: bool = False
+    ) -> None:
+        """Reverts the run to the state of a previous transaction.
+        If no ``transaction_id`` is supplied the transcation at which the run's
+        lock was acquired or the last checkpoint created since then will be used.
+
+        .. code:: python
+            with run.transact("Add and Revert"):
+                run.iamc.add(...)
+                run.checkpoints.create("Add IAMC Data")
+                run.iamc.delete(...)
+                run.revert() # Reverts to "Add IAMC Data"
+
+            run.iamc.tabulate()
+            # > IAMC Data from before deletion
+
+        When supplying a ``transaction_id`` runs can be reverted across
+        :meth:`~ixmp4.core.run.Run.transact` blocks:
+
+        .. code:: python
+            with run.transact("Add IAMC Data"):
+                run.iamc.add(...)
+                cp1 = run.checkpoints.create("Add IAMC Data")
+
+            with run.transact("Delete and Revert IAMC Data"):
+                run.iamc.delete(...)
+                run.revert(cp1.transaction__id) # Reverts to "Add IAMC Data"
+
+            run.iamc.tabulate()
+
+            with run.transact("Revert to origin"):
+                run.revert(1) # Initial platform transaction
+
+            run.iamc.tabulate()
+            # > Empty DataFrame
+
+        Parameters
+        ----------
+        transaction_id : int, optional
+            The id of a previous transaction on the platform.
+            The run will be reverted to the state at that transaction.
+        revert_platform : boolean, optional
+            If ``True`` the deleted units and regions will be restored.
+            Default: ``False``.
+
+        Raises
+        ------
+        :class:`~ixmp4.data.run.exceptions.RunLockRequired`
+            If this run does not own the lock.
+        """
+
+        self.require_lock()
+        assert self._dto.lock_transaction is not None
+
+        if transaction_id is not None:
+            target_transaction = transaction_id
+        else:
+            checkpoint_df = self.checkpoints.tabulate()
+            if checkpoint_df.empty:
+                checkpoint_transaction = -1
+            else:
+                max_tx_id = checkpoint_df["transaction__id"].max()
+                if pd.isnull(max_tx_id):
+                    checkpoint_transaction = -1
+                else:
+                    checkpoint_transaction = int(max_tx_id)
+
+            target_transaction = max(checkpoint_transaction, self._dto.lock_transaction)
+
+        self._service.revert(
+            self._dto.id,
+            target_transaction,
+            revert_platform=revert_platform,
+        )
+        self.meta._refresh()
 
     def clone(
         self,
