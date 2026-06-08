@@ -24,7 +24,7 @@ class TestRegion:
         assert region1.created_at == fake_time.replace(tzinfo=None)
         assert region1.created_by == "@unknown"
         assert region1.docs is None
-        assert str(region1) == "<Region 1 name='Region 1' hierarchy='default'>"
+        assert str(region1) == "<Region name='Region 1' hierarchy='default' id=1>"
 
         assert region2.id == 2
         assert region3.id == 3

@@ -23,7 +23,7 @@ class TestVariable:
         assert variable1.created_at == fake_time.replace(tzinfo=None)
         assert variable1.created_by == "@unknown"
         assert variable1.docs is None
-        assert str(variable1) == "<Variable 1 name='Variable 1'>"
+        assert str(variable1) == "<Variable name='Variable 1' id=1>"
 
         assert variable2.id == 2
         assert variable3.id == 3
