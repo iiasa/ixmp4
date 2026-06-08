@@ -680,6 +680,32 @@ class IamcDataInputTest(IamcTest):
     def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
         return expected_data.copy()
 
+    def _canonical_sort_mixed_safe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Computes a sort index with categorical and object dtype special case handling.
+        Then uses the index to sort the original df."""
+        sorted_cols = df.columns.sort_values().to_list()
+        sort_df = df.copy()
+
+        for col in sorted_cols:
+            series = sort_df[col]
+
+            if isinstance(series.dtype, pd.CategoricalDtype):
+                # Avoid unordered categorical sort errors.
+                sort_df[col] = series.astype("string")
+                continue
+
+            if pd.api.types.is_object_dtype(series):
+                try:
+                    series.sort_values()
+                except TypeError:
+                    # Normalize only non-orderable mixed object columns.
+                    sort_df[col] = series.map(
+                        lambda v: "" if pd.isna(v) else f"{type(v).__name__}:{v}"
+                    )
+
+        order = sort_df.sort_values(by=sorted_cols).index
+        return df.loc[order].reset_index(drop=True)
+
     def test_iamc_data_input(
         self,
         run: ixmp4.Run,
@@ -691,8 +717,8 @@ class IamcDataInputTest(IamcTest):
 
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
-            self.canonical_sort(expected_data),
-            self.canonical_sort(ret),
+            self._canonical_sort_mixed_safe(expected_data),
+            self._canonical_sort_mixed_safe(ret),
             check_like=True,
         )
 
@@ -702,10 +728,26 @@ class IamcDataInputTest(IamcTest):
         assert run.iamc.tabulate().empty
 
 
-class TestAnnualIamcInputData(IamcDataAnnual, IamcDataInputTest):
-    @pytest.fixture
-    def expected_data(self, test_data_add: pd.DataFrame) -> pd.DataFrame:
-        return test_data_add.copy()
+class TestAnnualIamcInputData(IamcDataInputTest):
+    @pytest.fixture(scope="class")
+    def expected_data(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["Region 1", "Unit 1", "Variable 1", 2000, 1.1],
+                ["Region 1", "Unit 1", "Variable 1", 2010, 1.3],
+                ["Region 1", "Unit 2", "Variable 2", 2020, 1.5],
+                ["Region 1", "Unit 2", "Variable 2", 2030, 1.7],
+                ["Region 2", "Unit 1", "Variable 1", 2000, 2.1],
+                ["Region 2", "Unit 1", "Variable 1", 2010, 2.3],
+                ["Region 2", "Unit 2", "Variable 2", 2020, 2.5],
+                ["Region 2", "Unit 2", "Variable 2", 2030, 2.7],
+            ],
+            columns=["region", "unit", "variable", "year", "value"],
+        ).astype({"year": "Int64"})
 
     @pytest.fixture
     def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
@@ -722,15 +764,12 @@ class TestCategoricalIamcInputData(IamcDataInputTest):
     @pytest.fixture
     def expected_data(self) -> pd.DataFrame:
         return pd.DataFrame(
-            {
-                "region": ["Region 1", "Region 2"],
-                "variable": ["Variable 1", "Variable 2"],
-                "unit": ["Unit 1", "Unit 2"],
-                "year": pd.Series([2000, 2010], dtype="Int64"),
-                "subannual": ["Summer", "Winter"],
-                "value": [1.1, 2.3],
-            }
-        )
+            [
+                ["Region 1", "Variable 1", "Unit 1", 2000, "Summer", 1.1],
+                ["Region 2", "Variable 2", "Unit 2", 2010, "Winter", 2.3],
+            ],
+            columns=["region", "variable", "unit", "year", "subannual", "value"],
+        ).astype({"year": "Int64"})
 
     @pytest.fixture
     def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
@@ -748,13 +787,23 @@ class TestDatetimeIamcInputData(IamcDataInputTest):
     @pytest.fixture
     def expected_data(self) -> pd.DataFrame:
         return pd.DataFrame(
-            {
-                "region": ["Region 1", "Region 2"],
-                "variable": ["Variable 1", "Variable 2"],
-                "unit": ["Unit 1", "Unit 2"],
-                "time": pd.to_datetime(["2000-01-01 00:00:00", "2010-06-01 12:34:56"]),
-                "value": [1.1, 2.3],
-            }
+            [
+                [
+                    "Region 1",
+                    "Variable 1",
+                    "Unit 1",
+                    pd.Timestamp("2000-01-01 00:00:00"),
+                    1.1,
+                ],
+                [
+                    "Region 2",
+                    "Variable 2",
+                    "Unit 2",
+                    pd.Timestamp("2010-06-01 12:34:56"),
+                    2.3,
+                ],
+            ],
+            columns=["region", "variable", "unit", "time", "value"],
         )
 
     @pytest.fixture
@@ -770,11 +819,40 @@ class TestDatetimeIamcInputData(IamcDataInputTest):
         return input_df
 
 
-class TestObjectStringsIamcInputData(IamcDataAnnual, IamcDataInputTest):
+class TestMixedIamcInputData(IamcDataInputTest):
     @pytest.fixture
-    def expected_data(self, test_data_add: pd.DataFrame) -> pd.DataFrame:
-        return test_data_add.copy()
+    def expected_data(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                # ANNUAL
+                ["Region 1", "Variable 1", "Unit 1", 2000, None, 0.1],
+                ["Region 2", "Variable 2", "Unit 2", 2010, None, 0.23],
+                # CATEGORICAL
+                ["Region 1", "Variable 1", "Unit 1", 2000, "Summer", 1.1],
+                ["Region 2", "Variable 2", "Unit 2", 2010, "Winter", 2.3],
+                # DATETIME
+                [
+                    "Region 1",
+                    "Variable 1",
+                    "Unit 1",
+                    pd.Timestamp("2000-01-01 00:00:00"),
+                    None,
+                    101.0,
+                ],
+                [
+                    "Region 2",
+                    "Variable 2",
+                    "Unit 2",
+                    pd.Timestamp("2010-06-01 12:34:56"),
+                    None,
+                    3.14,
+                ],
+            ],
+            columns=["region", "variable", "unit", "time", "subannual", "value"],
+        )
 
+
+class TestObjectStringsIamcInputData(TestAnnualIamcInputData):
     @pytest.fixture
     def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
         input_df = expected_data.copy()
