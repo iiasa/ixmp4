@@ -54,7 +54,7 @@ class Unit(BaseFacadeObject[UnitService, UnitDto]):
         return backend.units
 
     def __str__(self) -> str:
-        return f"<Unit {self.id} name={self.name}>"
+        return f"<Unit name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

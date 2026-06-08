@@ -408,8 +408,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
     def __str__(self) -> str:
         return (
-            f"<Run {self.id} model='{self.model.name}' "
-            f"scenario='{self.scenario.name}' version={self.version}>"
+            f"<Run model='{self.model.name}' "
+            f"scenario='{self.scenario.name}' version={self.version} id={self.id}>"
         )
 
     def __repr__(self) -> str:

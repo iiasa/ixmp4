@@ -23,7 +23,7 @@ class TestUnit:
         assert unit1.created_at == fake_time.replace(tzinfo=None)
         assert unit1.created_by == "@unknown"
         assert unit1.docs is None
-        assert str(unit1) == "<Unit 1 name=Unit 1>"
+        assert str(unit1) == "<Unit name='Unit 1' id=1>"
 
         assert unit2.id == 2
         assert unit3.id == 3

@@ -55,7 +55,7 @@ class Variable(BaseFacadeObject[VariableService, VariableDto]):
         return backend.iamc.variables
 
     def __str__(self) -> str:
-        return f"<Variable {self.id} name='{self.name}'>"
+        return f"<Variable name='{self.name}' id={self.id}>"
 
 
 class VariableServiceFacade(

@@ -23,7 +23,7 @@ class TestScenario:
         assert scenario1.created_at == fake_time.replace(tzinfo=None)
         assert scenario1.created_by == "@unknown"
         assert scenario1.docs is None
-        assert str(scenario1) == "<Scenario 1 name='Scenario 1'>"
+        assert str(scenario1) == "<Scenario name='Scenario 1' id=1>"
 
         assert scenario2.id == 2
         assert scenario3.id == 3

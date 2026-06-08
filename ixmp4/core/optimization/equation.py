@@ -128,7 +128,7 @@ class Equation(BaseOptimizationFacadeObject[EquationService, EquationDto]):
         return backend.optimization.equations
 
     def __str__(self) -> str:
-        return f"<Equation {self.id} name={self.name}>"
+        return f"<Equation name='{self.name}' id={self.id}>"
 
 
 class EquationServiceFacade(

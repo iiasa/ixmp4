@@ -15,4 +15,4 @@ class Scalar(BaseModel, HasCreationInfo):
     run__id: int
 
     def __str__(self) -> str:
-        return f"<Scalar {self.id} name={self.name}>"
+        return f"<Scalar name='{self.name}' id={self.id}>"
