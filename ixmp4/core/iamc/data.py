@@ -42,9 +42,14 @@ class IamcDataFacade(object):
     def _split_time_col(df: pd.DataFrame) -> pd.DataFrame:
         time = df["time"]
         is_year = time.apply(lambda x: isinstance(x, (int, np.integer)))
-        df["year"] = pd.Series(np.nan, index=df.index, dtype="object")
-        df.loc[is_year, "year"] = time.loc[is_year]
-        df["datetime"] = pd.to_datetime(time.where(~is_year), errors="coerce")
+
+        if is_year.any():
+            df["year"] = pd.Series(np.nan, index=df.index, dtype="object")
+            df.loc[is_year, "year"] = time.loc[is_year]
+
+        if not is_year.all():
+            df["datetime"] = pd.to_datetime(time.where(~is_year), errors="coerce")
+
         return df.drop(columns=["time"])
 
     @classmethod
