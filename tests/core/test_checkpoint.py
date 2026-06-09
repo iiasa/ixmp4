@@ -1,10 +1,13 @@
 import pandas as pd
+import pandas.testing as pdt
 import pytest
 
 import ixmp4
 from ixmp4.base_exceptions import OperationNotSupported
 from ixmp4.data.checkpoint.exceptions import CheckpointNotFound
+from ixmp4.data.versions.model import Operation
 from tests import backends
+from tests.base import DataFrameTest
 
 from .base import PlatformTest
 
@@ -19,19 +22,48 @@ class CheckpointTest(PlatformTest):
         return run
 
 
-class TestCheckpointMeta(CheckpointTest):
+class TestCheckpoint(CheckpointTest):
     def test_checkpoint_properties(
         self,
         run: ixmp4.Run,
     ) -> None:
         with run.transact("Create checkpoint for property test"):
-            checkpoint = run.checkpoints.create("for checkpoint property")
+            checkpoint = run.checkpoints.create("test message")
 
-        cp = run.checkpoints[checkpoint.id]
+        assert isinstance(checkpoint.id, int)
+        assert checkpoint.id == 1
+        assert checkpoint.message == "test message"
+        assert checkpoint.run__id == run.id
+        assert isinstance(checkpoint.run__id, int)
+        assert isinstance(checkpoint.transaction__id, int)
 
-        assert cp.id == checkpoint.id
-        assert cp.run__id == run.id
+        assert str(checkpoint) == (
+            "<Checkpoint message='test message' "
+            f"transaction__id={checkpoint.transaction__id} "
+            f"run__id={checkpoint.run__id} id=1>"
+        )
+        assert str(checkpoint) == repr(checkpoint)
 
+    def test_checkpoint_next_prev(
+        self,
+        run: ixmp4.Run,
+    ) -> None:
+        with run.transact("Create checkpoints for prev/next test"):
+            cp1 = run.checkpoints.create("first")
+            cp2 = run.checkpoints.create("second")
+
+        last_cp = run.checkpoints.list()[-1]
+
+        assert last_cp.next is None
+        assert last_cp.previous is not None
+        assert last_cp.previous.id == cp2.id
+        assert cp2.previous is not None
+        assert cp2.previous.id == cp1.id
+        assert cp1.next is not None
+        assert cp1.next.id == cp2.id
+
+
+class TestCheckpointMeta(CheckpointTest):
     def test_checkpoint_view_meta(
         self,
         versioning_platform: ixmp4.Platform,
@@ -39,12 +71,12 @@ class TestCheckpointMeta(CheckpointTest):
     ) -> None:
         with run.transact("Set initial meta"):
             run.meta = {"key1": 1, "key2": "hello"}
-            checkpoint = run.checkpoints.create("after meta set")
 
         with run.transact("Update meta"):
             run.meta["key1"] = 99
 
-        view = run.checkpoints[checkpoint.id]
+        # "Set initial meta" checkpoint
+        view = run.checkpoints.list()[-2]
         meta = view.meta
 
         assert meta["key1"] == 1
@@ -58,9 +90,7 @@ class TestCheckpointMeta(CheckpointTest):
         with run.transact("Create checkpoint without meta"):
             checkpoint = run.checkpoints.create("empty meta")
 
-        meta = run.checkpoints[checkpoint.id].meta
-
-        assert meta == {}
+        assert checkpoint.meta == {}
 
     def test_checkpoint_view_revert(
         self,
@@ -69,14 +99,14 @@ class TestCheckpointMeta(CheckpointTest):
     ) -> None:
         with run.transact("Set meta for revert test"):
             run.meta = {"revert_key": "original"}
-            checkpoint = run.checkpoints.create("before revert")
+            checkpoint = run.checkpoints.create("before modification")
 
         with run.transact("Modify meta"):
             run.meta["revert_key"] = "modified"
 
         assert run.meta["revert_key"] == "modified"
 
-        run.checkpoints[checkpoint.id].revert()
+        checkpoint.revert()
 
         run_after = versioning_platform.runs.get("Model", "Scenario", version=1)
         assert run_after.meta["revert_key"] == "original"
@@ -95,36 +125,19 @@ class TestCheckpointOptimizationViews(CheckpointTest):
         with run.transact(f"Create checkpoint for {view_name} view"):
             checkpoint = run.checkpoints.create(f"before {view_name} view")
 
-        view = run.checkpoints[checkpoint.id]
-        result = getattr(view.optimization, view_name).tabulate()
+        result = getattr(checkpoint.optimization, view_name).tabulate()
 
         assert isinstance(result, pd.DataFrame)
 
 
-class TestCheckpointIamcView(CheckpointTest):
-    def test_checkpoint_iamc_tabulate_empty(
-        self,
-        run: ixmp4.Run,
-    ) -> None:
-        with run.transact("Create checkpoint before IAMC data"):
-            checkpoint = run.checkpoints.create("before iamc add")
-
-        result = run.checkpoints[checkpoint.id].iamc.tabulate()
-
-        assert result.empty
-        assert list(result.columns) == ["region", "variable", "unit", "value"]
-
-    def test_checkpoint_iamc_tabulate_returns_checkpoint_state(
-        self,
-        versioning_platform: ixmp4.Platform,
-        run: ixmp4.Run,
-        monkeypatch: pytest.MonkeyPatch,
-    ) -> None:
+class IamcCheckpointViewData(DataFrameTest):
+    @pytest.fixture(scope="class")
+    def test_data_add(self, versioning_platform: ixmp4.Platform) -> pd.DataFrame:
         versioning_platform.regions.create("Region A", "default")
         versioning_platform.units.create("Unit A")
         versioning_platform.iamc.variables.create("Variable A")
 
-        base = pd.DataFrame(
+        df = pd.DataFrame(
             {
                 "region": ["Region A"],
                 "variable": ["Variable A"],
@@ -133,20 +146,148 @@ class TestCheckpointIamcView(CheckpointTest):
                 "value": [1.0],
             }
         )
-        updated = base.copy()
-        updated["value"] = 2.0
+        df["year"] = df["year"].astype("Int64")
+        return df
 
+    @pytest.fixture(scope="class")
+    def test_data_update(self, test_data_add: pd.DataFrame) -> pd.DataFrame:
+        df = test_data_add.copy()
+        df["value"] = 2.0
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_remove(self, test_data_add: pd.DataFrame) -> pd.DataFrame:
+        df = test_data_add.copy()
+        df["year"] = pd.Series([2030], dtype="Int64")
+        df["value"] = 3.0
+        return df
+
+
+class TestCheckpointIamcView(IamcCheckpointViewData, CheckpointTest):
+    def test_checkpoint_iamc_tabulate_empty(
+        self,
+        run: ixmp4.Run,
+    ) -> None:
+        with run.transact("Create checkpoint before IAMC data"):
+            checkpoint = run.checkpoints.create("before iamc add")
+
+        result = checkpoint.iamc.tabulate()
+
+        assert result.empty
+        assert list(result.columns) == ["region", "variable", "unit", "value"]
+
+    def test_checkpoint_iamc_tabulate_returns_checkpoint_state(
+        self,
+        versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+        test_data_update: pd.DataFrame,
+    ) -> None:
         with run.transact("Add IAMC data and checkpoint"):
-            run.iamc.add(base)
+            run.iamc.add(test_data_add)
             checkpoint = run.checkpoints.create("after iamc add")
 
         with run.transact("Update IAMC data"):
-            run.iamc.add(updated)
+            run.iamc.add(test_data_update)
 
-        result = run.checkpoints[checkpoint.id].iamc.tabulate()
+        result = checkpoint.iamc.tabulate()
 
-        assert isinstance(result, pd.DataFrame)
-        assert result.loc[0, "value"] == 1.0
+        pdt.assert_frame_equal(
+            self.canonical_sort(result),
+            self.canonical_sort(test_data_add),
+            check_like=True,
+        )
+
+    def test_checkpoint_iamc_difference_since_previous(
+        self,
+        versioning_platform: ixmp4.Platform,
+        test_data_add: pd.DataFrame,
+        test_data_update: pd.DataFrame,
+        test_data_remove: pd.DataFrame,
+    ) -> None:
+        run = versioning_platform.runs.create("ModelDiff", "ScenarioDiff")
+
+        with run.transact("checkpoint 1"):
+            run.iamc.add(test_data_add)
+            cp1 = run.checkpoints.create("cp1")
+        assert cp1.transaction__id is not None
+        prev_tx_id = cp1.transaction__id
+
+        with run.transact("checkpoint 2"):
+            run.iamc.add(test_data_update)
+            run.iamc.add(test_data_remove)
+            cp2 = run.checkpoints.create("cp2")
+        assert cp2.transaction__id is not None
+        tx_id = cp2.transaction__id
+
+        diff = cp2.iamc.difference()
+
+        diff_cmp = diff[
+            [
+                "region",
+                "variable",
+                "unit",
+                "step_year",
+                "value",
+                "type",
+                "operation_type",
+            ]
+        ]
+        expected = pd.concat([test_data_update, test_data_remove], ignore_index=True)
+        expected = expected.rename(columns={"year": "step_year"})
+        expected["step_year"] = expected["step_year"].astype("Int64")
+        expected["type"] = "ANNUAL"
+        expected["operation_type"] = [
+            int(Operation.UPDATE),
+            int(Operation.INSERT),
+        ]
+        pdt.assert_frame_equal(
+            self.canonical_sort(diff_cmp),
+            self.canonical_sort(expected),
+            check_like=True,
+        )
+        assert (diff["transaction_id"] <= tx_id).all()
+        assert (diff["transaction_id"] > prev_tx_id).all()
+
+    def test_checkpoint_iamc_difference_first_checkpoint_includes_initial_versions(
+        self,
+        versioning_platform: ixmp4.Platform,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        run = versioning_platform.runs.create("ModelFirstDiff", "ScenarioFirstDiff")
+
+        with run.transact("first checkpoint"):
+            run.iamc.add(test_data_add)
+            cp1 = run.checkpoints.create("cp1")
+        assert cp1.transaction__id is not None
+        tx_id = cp1.transaction__id
+
+        diff = cp1.iamc.difference()
+
+        diff_cmp = diff[
+            [
+                "region",
+                "variable",
+                "unit",
+                "step_year",
+                "value",
+                "type",
+                "operation_type",
+                "transaction_id",
+                "end_transaction_id",
+            ]
+        ].reset_index(drop=True)
+        expected = test_data_add.rename(columns={"year": "step_year"}).copy()
+        expected["step_year"] = expected["step_year"].astype("Int64")
+        expected["type"] = "ANNUAL"
+        expected["operation_type"] = int(Operation.INSERT)
+        expected["transaction_id"] = tx_id
+        expected["end_transaction_id"] = None
+        pdt.assert_frame_equal(
+            self.canonical_sort(diff_cmp),
+            self.canonical_sort(expected),
+            check_like=True,
+        )
 
 
 class TestRunCheckpointsView(CheckpointTest):
@@ -161,7 +302,7 @@ class TestRunCheckpointsView(CheckpointTest):
             checkpoint = run1.checkpoints.create("run1 checkpoint")
 
         with pytest.raises(CheckpointNotFound):
-            _ = run2.checkpoints[checkpoint.id]
+            run2.checkpoints.delete(checkpoint.id)
 
     def test_run_checkpoints_tabulate(
         self,
@@ -186,9 +327,9 @@ class TestCheckpointNonVersioning(CheckpointTest):
         with run.transact("Set meta"):
             run.meta = {"k": "v"}
             checkpoint = run.checkpoints.create("no-tx")
-        view = run.checkpoints[checkpoint.id]
+
         with pytest.raises(OperationNotSupported):
-            _ = view.meta
+            _ = checkpoint.meta
 
     def test_checkpoint_iamc_view_raises_on_non_versioning(
         self,
@@ -198,9 +339,8 @@ class TestCheckpointNonVersioning(CheckpointTest):
         with run.transact("Create checkpoint without transaction id"):
             checkpoint = run.checkpoints.create("no-tx")
 
-        view = run.checkpoints[checkpoint.id]
         with pytest.raises(OperationNotSupported):
-            view.iamc.tabulate()
+            checkpoint.iamc.tabulate()
 
     def test_checkpoint_view_revert_raises_on_non_versioning(
         self,
@@ -211,7 +351,7 @@ class TestCheckpointNonVersioning(CheckpointTest):
             checkpoint = run.checkpoints.create("no-tx")
 
         with pytest.raises(OperationNotSupported):
-            run.checkpoints[checkpoint.id].revert()
+            checkpoint.revert()
 
     @pytest.mark.parametrize(
         "view_name",
@@ -229,6 +369,5 @@ class TestCheckpointNonVersioning(CheckpointTest):
             run.meta = {"k": "v"}
             checkpoint = run.checkpoints.create("no-tx")
 
-        view = run.checkpoints[checkpoint.id]
         with pytest.raises(OperationNotSupported):
-            getattr(view.optimization, view_name).tabulate()
+            getattr(checkpoint.optimization, view_name).tabulate()
