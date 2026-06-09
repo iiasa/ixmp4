@@ -8,4 +8,4 @@ class Unit(BaseModel, HasCreationInfo):
     "Unique name of the unit."
 
     def __str__(self) -> str:
-        return f"<Unit {self.id} name={self.name}>"
+        return f"<Unit name='{self.name}' id={self.id}>"

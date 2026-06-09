@@ -54,7 +54,7 @@ class Scenario(BaseFacadeObject[ScenarioService, ScenarioDto]):
         return backend.scenarios
 
     def __str__(self) -> str:
-        return f"<Scenario {self.id} name='{self.name}'>"
+        return f"<Scenario name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)

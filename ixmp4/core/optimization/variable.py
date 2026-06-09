@@ -132,7 +132,7 @@ class Variable(BaseOptimizationFacadeObject[VariableService, VariableDto]):
         return backend.optimization.variables
 
     def __str__(self) -> str:
-        return f"<Variable {self.id} name={self.name}>"
+        return f"<Variable name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)
@@ -226,6 +226,7 @@ class VariableServiceFacade(
             #> [<Variable 1 name='Production'>]
 
         """
+        kwargs["run__id"] = self._run.id
         variables = self._service.list(**kwargs)
         return [Variable(self._backend, dto, run=self._run) for dto in variables]
 

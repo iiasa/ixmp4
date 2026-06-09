@@ -1,5 +1,5 @@
 from collections import UserDict
-from typing import TYPE_CHECKING, Any, cast
+from typing import TYPE_CHECKING, Any, Mapping, cast
 
 import numpy as np
 import pandas as pd
@@ -174,7 +174,7 @@ class RunMetaDescriptor(object):
         run._backend.meta.bulk_delete(existing_df[["run__id", "key"]])
 
     def __set__(
-        self, obj: "Run", value: dict[str, MetaValueType | np.generic | None]
+        self, obj: "Run", value: Mapping[str, MetaValueType | np.generic | None]
     ) -> None:
         """Replace all meta indicators for a run.
 

@@ -13,6 +13,6 @@ class Checkpoint(BaseModel):
 
     def __str__(self) -> str:
         return (
-            f"<Checkpoint {self.id} run__id={self.run__id} "
+            f"<Checkpoint id={self.id} run__id={self.run__id}"
             f"transaction__id={self.transaction__id}>"
         )

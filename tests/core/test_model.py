@@ -23,7 +23,7 @@ class TestModel:
         assert model1.created_at == fake_time.replace(tzinfo=None)
         assert model1.created_by == "@unknown"
         assert model1.docs is None
-        assert str(model1) == "<Model 1 name='Model 1'>"
+        assert str(model1) == "<Model name='Model 1' id=1>"
 
         assert model2.id == 2
         assert model3.id == 3

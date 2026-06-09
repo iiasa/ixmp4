@@ -128,7 +128,7 @@ class Parameter(BaseOptimizationFacadeObject[ParameterService, ParameterDto]):
         return backend.optimization.parameters
 
     def __str__(self) -> str:
-        return f"<Parameter {self.id} name={self.name}>"
+        return f"<Parameter name='{self.name}' id={self.id}>"
 
     def __repr__(self) -> str:
         return str(self)
@@ -222,6 +222,7 @@ class ParameterServiceFacade(
             #> [<Parameter 1 name='Cost'>]
 
         """
+        kwargs["run__id"] = self._run.id
         parameters = self._service.list(**kwargs)
         return [Parameter(self._backend, dto, run=self._run) for dto in parameters]
 

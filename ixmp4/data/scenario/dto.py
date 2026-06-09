@@ -8,4 +8,4 @@ class Scenario(BaseModel, HasCreationInfo):
     "Unique name of the scenario."
 
     def __str__(self) -> str:
-        return f"<Scenario {self.id} name={self.name}>"
+        return f"<Scenario name='{self.name}' id={self.id}>"

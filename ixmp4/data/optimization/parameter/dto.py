@@ -16,4 +16,4 @@ class Parameter(BaseModel, HasCreationInfo):
     run__id: int
 
     def __str__(self) -> str:
-        return f"<Parameter {self.id} name={self.name}>"
+        return f"<Parameter name='{self.name}' id={self.id}>"

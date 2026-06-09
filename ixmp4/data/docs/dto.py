@@ -10,4 +10,4 @@ class Docs(BaseModel):
     "Id of the related row."
 
     def __str__(self) -> str:
-        return f"<Docs {self.id} dimension__id={self.dimension__id}>"
+        return f"<Docs id={self.id} dimension__id={self.dimension__id}>"

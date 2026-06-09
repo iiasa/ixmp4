@@ -35,7 +35,7 @@ class TestRun:
         assert run1.created_at == fake_time.replace(tzinfo=None)
         assert run1.created_by == "@unknown"
 
-        assert str(run1) == "<Run 1 model='Model' scenario='Scenario' version=1>"
+        assert str(run1) == "<Run model='Model' scenario='Scenario' version=1 id=1>"
 
         assert run2.id == 2
         assert run2.version == 2

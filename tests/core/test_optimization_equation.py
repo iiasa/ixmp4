@@ -80,6 +80,11 @@ class TestEquation(OptimizationEquationTest):
         assert equation4.indexset_names == ["IndexSet", "IndexSet"]
         assert equation4.column_names == ["Column 1", "Column 2"]
 
+    def test_other_run_is_empty(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Other Model", "Other Scenario")
+        assert len(run.optimization.equations.list()) == 0
+        assert run.optimization.equations.tabulate().empty
+
     def test_tabulate_equation(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.equations.tabulate()
         assert len(ret_df) == 4

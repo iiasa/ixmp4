@@ -1,5 +1,6 @@
 from typing import TYPE_CHECKING, TypeVar
 
+import numpy as np
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
@@ -18,44 +19,72 @@ from .variable import VariableServiceFacade
 if TYPE_CHECKING:
     from ixmp4.core.run import Run
 
-MAP_STEP_COLUMN = {
-    "ANNUAL": "step_year",
-    "CATEGORICAL": "step_year",
-    "DATETIME": "step_datetime",
-}
+
+class IamcDataFacade(object):
+    _MAP_STEP_COLUMN = {
+        "ANNUAL": "step_year",
+        "CATEGORICAL": "step_year",
+        "DATETIME": "step_datetime",
+    }
+
+    @staticmethod
+    def _rename_arg_cols(df: pd.DataFrame) -> pd.DataFrame:
+        return df.rename(
+            columns={
+                "year": "step_year",
+                "category": "step_category",
+                "subannual": "step_category",
+                "datetime": "step_datetime",
+            }
+        )
+
+    @staticmethod
+    def _split_time_col(df: pd.DataFrame) -> pd.DataFrame:
+        time = df["time"]
+        is_year = time.apply(lambda x: isinstance(x, (int, np.integer)))
+
+        if is_year.any():
+            df["year"] = pd.Series(np.nan, index=df.index, dtype="object")
+            df.loc[is_year, "year"] = time.loc[is_year]
+
+        if not is_year.all():
+            df["datetime"] = pd.to_datetime(time.where(~is_year), errors="coerce")
+
+        return df.drop(columns=["time"])
+
+    @classmethod
+    def _convert_to_std_format(
+        cls, df: pd.DataFrame, join_runs: bool, join_run_id: bool
+    ) -> pd.DataFrame:
+        df.rename(columns={"step_category": "subannual"}, inplace=True)
+
+        if set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
+            df.rename(columns={"step_year": "year"}, inplace=True)
+            time_col = "year"
+        else:
+            T = TypeVar("T", bool, float, int, str)
+
+            def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
+                df["time"] = df[cls._MAP_STEP_COLUMN[str(df.type)]]
+                return df
+
+            df = df.apply(map_step_column, axis=1)
+            time_col = "time"
+
+        columns = []
+        if join_run_id and "run__id" in df.columns:
+            columns.append("run__id")
+        if join_runs:
+            columns.extend(["model", "scenario", "version"])
+        columns += ["region", "variable", "unit"]
+        if time_col in df.columns:
+            columns += [time_col]
+        if "subannual" in df.columns:
+            columns += ["subannual"]
+        return df[columns + ["value"]]
 
 
-def _convert_to_std_format(
-    df: pd.DataFrame, join_runs: bool, join_run_id: bool
-) -> pd.DataFrame:
-    time_col = "year"
-
-    if not set(df.type.unique()).issubset(["ANNUAL", "CATEGORICAL"]):
-        T = TypeVar("T", bool, float, int, str)
-
-        def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
-            df["time"] = df[MAP_STEP_COLUMN[str(df.type)]]
-            return df
-
-        df = df.apply(map_step_column, axis=1)
-        time_col = "time"
-
-    df.rename(columns={"step_category": "subannual", "step_year": "year"}, inplace=True)
-    columns = []
-    if join_run_id and "run__id" in df.columns:
-        columns.append("run__id")
-    if join_runs:
-        columns.extend(["model", "scenario", "version"])
-    columns += ["region", "variable", "unit"]
-    if time_col in df.columns:
-        columns += [time_col]
-
-    if "subannual" in df.columns:
-        columns += ["subannual"]
-    return df[columns + ["value"]]
-
-
-class RunIamcData(BaseBackendFacade):
+class RunIamcData(BaseBackendFacade, IamcDataFacade):
     """IAMC data linked to a :class:`ixmp4.core.run.Run`.
 
     .. code:: python
@@ -89,29 +118,9 @@ class RunIamcData(BaseBackendFacade):
         ts_df = ts_df.rename(columns={"id": "time_series__id"})
 
         # merge on the identity columns
-        return pd.merge(
-            df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")
+        return pd.merge(df, ts_df, how="left", on=id_cols, suffixes=(None, "_y")).drop(
+            columns=id_cols
         )  # tada, df with 'time_series__id' added from the database.
-
-    def _rename_arg_cols(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(
-            columns={
-                "year": "step_year",
-                "category": "step_category",
-                "subannual": "step_category",
-                "datetime": "step_datetime",
-                "time": "step_datetime",
-            }
-        )
-
-    def _rename_ret_cols(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(
-            columns={
-                "step_year": "year",
-                "step_category": "subannual",
-                "step_datetime": "time",
-            }
-        ).drop(columns=["id", "time_series__id"])
 
     def add(self, df: pd.DataFrame, type: Type | str | None = None) -> None:
         """Adds IAMC data from a data frame to a run.
@@ -147,9 +156,13 @@ class RunIamcData(BaseBackendFacade):
                 - value
 
             Any combination of:
-                - step_year for ANNUAL data points
-                - step_year and step_category for CATEGORICAL data points
-                - step_datetime for DATETIME data points
+                - (``year`` or ``step_year``) for ANNUAL data points
+                - (``year`` or ``step_year``) and (``category`` or ``step_category``)
+                  for CATEGORICAL data points
+                - (``datetime`` or ``step_datetime``) for DATETIME data points
+                - ``time`` with integer and datetime values and optionally
+                  (``category`` or ``step_category``) for integer (year) rows.
+                  ``time`` will overwrite the ``year`` and ``datetime`` columns.
 
             You may optionally supply the type column for mixed data points:
                 - type
@@ -167,6 +180,8 @@ class RunIamcData(BaseBackendFacade):
         """
 
         self._run.require_lock()
+        if "time" in df.columns:
+            df = self._split_time_col(df)
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         df = self._get_or_create_ts(df)
@@ -226,6 +241,8 @@ class RunIamcData(BaseBackendFacade):
             ``with run.transact("message"):``.
         """
         self._run.require_lock()
+        if "time" in df.columns:
+            df = self._split_time_col(df)
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         # NOTE: This creates ts and deletes them right after
@@ -235,7 +252,6 @@ class RunIamcData(BaseBackendFacade):
                 type = Type[type.upper()]
             df["type"] = type
 
-        df = df.drop(columns=["unit", "variable", "region"])
         self._backend.iamc.datapoints.bulk_delete(df)
 
     def tabulate(
@@ -275,10 +291,10 @@ class RunIamcData(BaseBackendFacade):
             join_runs=False,
             **facade_to_data_filter(kwargs),
         )
-        return _convert_to_std_format(df, join_runs=False, join_run_id=False)
+        return self._convert_to_std_format(df, join_runs=False, join_run_id=False)
 
 
-class PlatformIamcData(BaseBackendFacade):
+class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
     """IAMC data on a platform."""
 
     variables: VariableServiceFacade
@@ -286,15 +302,6 @@ class PlatformIamcData(BaseBackendFacade):
     def __init__(self, backend: Backend) -> None:
         super().__init__(backend)
         self.variables = VariableServiceFacade(backend)
-
-    def _rename_ret_cols(self, df: pd.DataFrame) -> pd.DataFrame:
-        return df.rename(
-            columns={
-                "step_year": "year",
-                "step_category": "category",
-                "step_datetime": "datetime",
-            }
-        ).drop(columns=["id", "time_series__id"])
 
     def tabulate(
         self,
@@ -340,4 +347,6 @@ class PlatformIamcData(BaseBackendFacade):
             **facade_to_data_filter(kwargs),
         )
 
-        return _convert_to_std_format(df, join_runs=join_runs, join_run_id=join_run_id)
+        return self._convert_to_std_format(
+            df, join_runs=join_runs, join_run_id=join_run_id
+        )

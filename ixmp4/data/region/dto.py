@@ -10,4 +10,4 @@ class Region(BaseModel, HasCreationInfo):
     "Region hierarchy."
 
     def __str__(self) -> str:
-        return f"<Region {self.id} name={self.name}>"
+        return f"<Region name='{self.name}' id={self.id}>"

@@ -24,6 +24,6 @@ class Run(BaseModel, HasCreationInfo, HasUpdateInfo):
     lock_transaction: int | None
 
     def __str__(self) -> str:
-        return f"<Run {self.id} model={self.model.name} \
-            scenario={self.scenario.name} version={self.version} \
-            is_default={self.is_default}>"
+        return f"<Run model='{self.model.name}' \
+            scenario='{self.scenario.name}' version={self.version} \
+            is_default={self.is_default}, id={self.id}>"

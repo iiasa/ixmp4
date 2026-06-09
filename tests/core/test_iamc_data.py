@@ -660,3 +660,226 @@ class TestIamcDataStringType(IamcDataAnnual, IamcTest):
         with pytest.raises(KeyError):
             with run.transact("bad type"):
                 run.iamc.add(test_data_add, type="NOT_A_TYPE")
+
+
+class IamcDataInputTest(IamcTest):
+    @pytest.fixture(autouse=True)
+    def _ensure_regions_and_units(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> None:
+        # Ensure referenced region/unit names exist for fixture-provided input rows.
+        _ = (regions, units)
+
+    @pytest.fixture
+    def expected_data(self) -> pd.DataFrame:
+        raise NotImplementedError
+
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        return expected_data.copy()
+
+    def _canonical_sort_mixed_safe(self, df: pd.DataFrame) -> pd.DataFrame:
+        """Computes a sort index with categorical and object dtype special
+        case handling. Then uses the index to sort the original df."""
+        sorted_cols = df.columns.sort_values().to_list()
+        sort_df = df.copy()
+
+        for col in sorted_cols:
+            series = sort_df[col]
+
+            if isinstance(series.dtype, pd.CategoricalDtype):
+                # Avoid unordered categorical sort errors.
+                sort_df[col] = series.astype("string")
+                continue
+
+            if pd.api.types.is_object_dtype(series):
+                try:
+                    series.sort_values()
+                except TypeError:
+                    # Normalize only non-orderable mixed object columns.
+                    sort_df[col] = series.map(
+                        lambda v: "" if pd.isna(v) else f"{type(v).__name__}:{v}"
+                    )
+
+        order = sort_df.sort_values(by=sorted_cols).index
+        return df.loc[order].reset_index(drop=True)
+
+    def test_iamc_data_input(
+        self,
+        run: ixmp4.Run,
+        input_data: pd.DataFrame,
+        expected_data: pd.DataFrame,
+    ) -> None:
+        with run.transact("add iamc input data"):
+            run.iamc.add(input_data)
+
+        ret = run.iamc.tabulate()
+        pdt.assert_frame_equal(
+            self._canonical_sort_mixed_safe(expected_data),
+            self._canonical_sort_mixed_safe(ret),
+            check_like=True,
+        )
+
+        with run.transact("remove iamc input data"):
+            run.iamc.remove(input_data.drop(columns=["value"]))
+
+        assert run.iamc.tabulate().empty
+
+
+class TestAnnualIamcInputData(IamcDataInputTest):
+    @pytest.fixture(scope="class")
+    def expected_data(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["Region 1", "Unit 1", "Variable 1", 2000, 1.1],
+                ["Region 1", "Unit 1", "Variable 1", 2010, 1.3],
+                ["Region 1", "Unit 2", "Variable 2", 2020, 1.5],
+                ["Region 1", "Unit 2", "Variable 2", 2030, 1.7],
+                ["Region 2", "Unit 1", "Variable 1", 2000, 2.1],
+                ["Region 2", "Unit 1", "Variable 1", 2010, 2.3],
+                ["Region 2", "Unit 2", "Variable 2", 2020, 2.5],
+                ["Region 2", "Unit 2", "Variable 2", 2030, 2.7],
+            ],
+            columns=["region", "unit", "variable", "year", "value"],
+        ).astype({"year": "Int64"})
+
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        input_df = expected_data.copy()
+        input_df["region"] = input_df["region"].astype("category")
+        input_df["unit"] = input_df["unit"].astype("category")
+        input_df["variable"] = input_df["variable"].astype("category")
+        input_df["year"] = input_df["year"].astype("int32")
+        input_df["value"] = input_df["value"].astype("float32")
+        return input_df
+
+
+class TestCategoricalIamcInputData(IamcDataInputTest):
+    @pytest.fixture
+    def expected_data(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["Region 1", "Variable 1", "Unit 1", 2000, "Summer", 1.1],
+                ["Region 2", "Variable 2", "Unit 2", 2010, "Winter", 2.3],
+            ],
+            columns=["region", "variable", "unit", "year", "subannual", "value"],
+        ).astype({"year": "Int64"})
+
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        input_df = expected_data.copy()
+        input_df["region"] = input_df["region"].astype("category")
+        input_df["unit"] = input_df["unit"].astype("category")
+        input_df["variable"] = input_df["variable"].astype("category")
+        input_df["year"] = input_df["year"].astype("int32")
+        input_df["subannual"] = input_df["subannual"].astype("category")
+        input_df["value"] = input_df["value"].astype("float32")
+        return input_df
+
+
+class TestDatetimeIamcInputData(IamcDataInputTest):
+    @pytest.fixture
+    def expected_data(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [
+                    "Region 1",
+                    "Variable 1",
+                    "Unit 1",
+                    pd.Timestamp("2000-01-01 00:00:00"),
+                    1.1,
+                ],
+                [
+                    "Region 2",
+                    "Variable 2",
+                    "Unit 2",
+                    pd.Timestamp("2010-06-01 12:34:56"),
+                    2.3,
+                ],
+            ],
+            columns=["region", "variable", "unit", "time", "value"],
+        )
+
+
+class TestDatetimeAsStringIamcInputData(TestDatetimeIamcInputData):
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        input_df = expected_data.copy()
+        input_df["time"] = (
+            input_df["time"].dt.strftime("%Y-%m-%d %H:%M:%S").astype("string")
+        )
+        return input_df
+
+
+class TestSingleRowDatetimeIamcInputData(IamcDataInputTest):
+    @pytest.fixture
+    def expected_data(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [
+                    "Region 1",
+                    "Variable 1",
+                    "Unit 1",
+                    pd.Timestamp("2000-01-01 00:00:00"),
+                    1.1,
+                ],
+            ],
+            columns=["region", "variable", "unit", "time", "value"],
+        )
+
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        input_df = expected_data.copy()
+        input_df["time"] = (
+            input_df["time"].dt.strftime("%Y-%m-%d %H:%M:%S").astype("string")
+        )
+        return input_df
+
+
+class TestMixedIamcInputData(IamcDataInputTest):
+    @pytest.fixture
+    def expected_data(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                # ANNUAL
+                ["Region 1", "Variable 1", "Unit 1", 2000, None, 0.1],
+                ["Region 2", "Variable 2", "Unit 2", 2010, None, 0.23],
+                # CATEGORICAL
+                ["Region 1", "Variable 1", "Unit 1", 2000, "Summer", 1.1],
+                ["Region 2", "Variable 2", "Unit 2", 2010, "Winter", 2.3],
+                # DATETIME
+                [
+                    "Region 1",
+                    "Variable 1",
+                    "Unit 1",
+                    pd.Timestamp("2000-01-01 00:00:00"),
+                    None,
+                    101.0,
+                ],
+                [
+                    "Region 2",
+                    "Variable 2",
+                    "Unit 2",
+                    pd.Timestamp("2010-06-01 12:34:56"),
+                    None,
+                    3.14,
+                ],
+            ],
+            columns=["region", "variable", "unit", "time", "subannual", "value"],
+        )
+
+
+class TestObjectStringsIamcInputData(TestAnnualIamcInputData):
+    @pytest.fixture
+    def input_data(self, expected_data: pd.DataFrame) -> pd.DataFrame:
+        input_df = expected_data.copy()
+        input_df["region"] = input_df["region"].astype("object")
+        input_df["unit"] = input_df["unit"].astype("object")
+        input_df["variable"] = input_df["variable"].astype("object")
+        return input_df
