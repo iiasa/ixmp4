@@ -62,7 +62,7 @@ class CheckpointIamcData(BaseCheckpointView):
         Returns
         -------
         :class:`pandas.DataFrame`
-            IAMC datapoint version records (including version metadata).
+            IAMC datapoint version records (including version columns).
 
         Raises
         ------

@@ -203,13 +203,19 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
         Raises
         ------
         :class:`CheckpointNotFound`:
-            If no region matching ``ref`` exists.
+            If no checkpoint matching ``ref`` exists or it
+            belongs to another run.
         :class:`Unauthorized`:
             If the current user is not authorized to perform this action.
 
         """
 
         id = self._get_item_id(ref)
+        dto = self._service.get_by_id(id)
+
+        if dto.run__id != self._run.id:
+            raise CheckpointNotFound()
+
         self._service.delete_by_id(id)
 
     def list(self) -> List[Checkpoint]:
