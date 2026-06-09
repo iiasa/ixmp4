@@ -198,6 +198,7 @@ class IndexSetServiceFacade(
             #> [<IndexSet 1 name='Years'>]
 
         """
+        kwargs["run__id"] = self._run.id
         indexsets = self._service.list(**kwargs)
         return [IndexSet(self._backend, dto, run=self._run) for dto in indexsets]
 

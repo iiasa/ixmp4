@@ -222,6 +222,7 @@ class EquationServiceFacade(
             #> [<Equation 1 name='Balance'>]
 
         """
+        kwargs["run__id"] = self._run.id
         equations = self._service.list(**kwargs)
         return [Equation(self._backend, dto, run=self._run) for dto in equations]
 

@@ -212,6 +212,7 @@ class TableServiceFacade(
             #> [<Table 1 name='CostTable'>]
 
         """
+        kwargs["run__id"] = self._run.id
         tables = self._service.list(**kwargs)
         return [Table(self._backend, dto, run=self._run) for dto in tables]
 

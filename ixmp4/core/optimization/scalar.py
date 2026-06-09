@@ -254,6 +254,7 @@ class ScalarServiceFacade(
             #> [<Scalar 1 name='discount'>]
 
         """
+        kwargs["run__id"] = self._run.id
         scalars = self._service.list(**kwargs)
         return [Scalar(self._backend, dto, run=self._run) for dto in scalars]
 

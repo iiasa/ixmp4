@@ -226,6 +226,7 @@ class VariableServiceFacade(
             #> [<Variable 1 name='Production'>]
 
         """
+        kwargs["run__id"] = self._run.id
         variables = self._service.list(**kwargs)
         return [Variable(self._backend, dto, run=self._run) for dto in variables]
 

@@ -80,6 +80,11 @@ class TestTable(OptimizationTableTest):
         assert table4.indexset_names == ["IndexSet", "IndexSet"]
         assert table4.column_names == ["Column 1", "Column 2"]
 
+    def test_other_run_is_empty(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Other Model", "Other Scenario")
+        assert len(run.optimization.tables.list()) == 0
+        assert run.optimization.tables.tabulate().empty
+
     def test_tabulate_table(self, run: ixmp4.Run) -> None:
         ret_df = run.optimization.tables.tabulate()
         assert len(ret_df) == 4
