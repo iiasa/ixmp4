@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, List
 
 import pandas as pd
 
@@ -53,8 +53,8 @@ class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
     def __init__(self, backend: Backend, run: "Run", checkpoint: CheckpointDto) -> None:
         super().__init__(backend, checkpoint)
         self._run = run
-        self.iamc = CheckpointIamcData(backend, run, checkpoint)
-        self.optimization = CheckpointOptimizationData(backend, run, checkpoint)
+        self.iamc = CheckpointIamcData(backend, run, self)
+        self.optimization = CheckpointOptimizationData(backend, run, self)
 
     def _get_service(self, backend: Backend) -> CheckpointService:
         return backend.checkpoints
@@ -64,12 +64,32 @@ class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
         return self._dto.id
 
     @property
+    def message(self) -> str:
+        return self._dto.message
+
+    @property
     def run__id(self) -> int:
         return self._dto.run__id
 
     @property
     def transaction__id(self) -> int | None:
         return self._dto.transaction__id
+
+    @property
+    def previous(self) -> "Checkpoint | None":
+        all_prev = self._service.list(id__lt=self.id, run__id=self._run.id)
+        if len(all_prev) == 0:
+            return None
+        else:
+            return Checkpoint(self._backend, self._run, all_prev[-1])
+
+    @property
+    def next(self) -> "Checkpoint | None":
+        all_next = self._service.list(id__gt=self.id, run__id=self._run.id)
+        if len(all_next) == 0:
+            return None
+        else:
+            return Checkpoint(self._backend, self._run, all_next[0])
 
     @property
     def meta(self) -> dict[str, Any]:
@@ -110,9 +130,24 @@ class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
         self._backend.runs.revert(self._run.id, self._dto.transaction__id)
 
+    def delete(self) -> None:
+        """Deletes this checkpoint.
+        **Warning**: Deleted checkpoints cannot be recovered."""
+        self._service.delete_by_id(self._dto.id)
+
+    def __str__(self) -> str:
+        return (
+            f"<Checkpoint message='{self.message}' "
+            f"transaction__id={self.transaction__id} "
+            f"run__id={self.run__id} id={self.id}>"
+        )
+
+    def __repr__(self) -> str:
+        return str(self)
+
 
 class RunCheckpoints(BaseServiceFacade[CheckpointService]):
-    run: "Run"
+    _run: "Run"
 
     NotFound = CheckpointNotFound
     NotUnique = CheckpointNotUnique
@@ -120,41 +155,78 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
 
     def __init__(self, backend: Backend, run: "Run") -> None:
         super().__init__(backend)
-        self.run = run
+        self._run = run
 
     def _get_service(self, backend: Backend) -> CheckpointService:
         return backend.checkpoints
 
-    def __getitem__(self, checkpoint_id: int) -> Checkpoint:
-        """Retrieve a read-only view of the run at a specific checkpoint.
+    def _get_item_id(self, ref: Checkpoint | int) -> int:
+        if isinstance(ref, Checkpoint):
+            return ref.id
+        elif isinstance(ref, int):
+            return ref
+        else:
+            raise ValueError(f"Invalid reference to checkpoint: {ref}")
 
-        Parameters
-        ----------
-        checkpoint_id : int
-            The integer id of the checkpoint.
+    def create(self, message: str) -> Checkpoint:
+        """Creates a checkpoint for this run.
 
-        Returns
-        -------
-        :class:`Checkpoint`
-            A read-only view of the run state at the checkpoint.
-
-        Raises
-        ------
-        :class:`~ixmp4.data.checkpoint.exceptions.CheckpointNotFound`
-            If no checkpoint with the given id exists or it belongs to a
-            different run.
+        Requires an active run lock — use ``with run.transact("message"):``
+        before calling this method.
 
         .. code:: python
 
-            view = run.checkpoints[1]
-            df = view.iamc.tabulate()
+            run.checkpoints.create("My message")
+            #> <Checkpoint message='My message' ... >
+
+        Raises
+        ------
+        :class:`ixmp4.data.run.exceptions.RunLockRequired`
+            If no run lock is held.
         """
-        checkpoint = self._service.get_by_id(checkpoint_id)
-        if checkpoint.run__id != self.run.id:
-            raise CheckpointNotFound(
-                f"Checkpoint {checkpoint_id} not found for run {self.run.id}"
-            )
-        return Checkpoint(self._backend, self.run, checkpoint)
+        self._run.require_lock()
+        dto = self._service.create(run__id=self._run.id, message=message)
+        return Checkpoint(self._backend, self._run, dto)
+
+    def delete(self, ref: Checkpoint | int) -> None:
+        r"""Deletes a checkpoint.
+
+        .. code:: python
+
+            run.checkpoints.delete(42)
+
+        Parameters
+        ----------
+        ref : :class:`ixmp4.core.checkpoint.Checkpoint` | int
+            Checkpoint object or id.
+
+        Raises
+        ------
+        :class:`CheckpointNotFound`:
+            If no region matching ``ref`` exists.
+        :class:`Unauthorized`:
+            If the current user is not authorized to perform this action.
+
+        """
+
+        id = self._get_item_id(ref)
+        self._service.delete_by_id(id)
+
+    def list(self) -> List[Checkpoint]:
+        """Lists checkpoints for this run.
+
+        .. code:: python
+
+            run.checkpoints.tabulate()
+            #> [<Checkpoint message='My message' ... >, ...]
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            Data frame with checkpoint information.
+        """
+        checkpoints = self._service.list(run__id=self._run.id)
+        return [Checkpoint(self._backend, self._run, dto) for dto in checkpoints]
 
     def tabulate(self) -> pd.DataFrame:
         """Tabulates checkpoints for this run.
@@ -170,24 +242,4 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
         :class:`pandas.DataFrame`:
             Data frame with checkpoint information.
         """
-        return self._service.tabulate(run__id=self.run.id)
-
-    def create(self, message: str) -> Checkpoint:
-        """Creates a checkpoint for this run.
-
-        Requires an active run lock — use ``with run.transact("message"):``
-        before calling this method.
-
-        .. code:: python
-
-            run.checkpoints.create("My message")
-            #> <Checkpoint 1 message='My message'>
-
-        Raises
-        ------
-        :class:`ixmp4.data.run.exceptions.RunLockRequired`
-            If no run lock is held.
-        """
-        self.run.require_lock()
-        dto = self._service.create(run__id=self.run.id, message=message)
-        return Checkpoint(self._backend, self.run, dto)
+        return self._service.tabulate(run__id=self._run.id).drop(columns=["run__id"])
