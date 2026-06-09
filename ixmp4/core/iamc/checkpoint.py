@@ -50,9 +50,7 @@ class CheckpointIamcData(BaseCheckpointView, IamcDataFacade):
         df = self._backend.iamc.datapoints.tabulate_versions(
             join_parameters=True, **filter
         )
-        return self._convert_to_std_format(
-            df, join_runs=False, join_run_id=False, extra_columns=self._version_columns
-        )
+        return self._convert_to_std_format(df, join_runs=False, join_run_id=False)
 
     def difference(self) -> pd.DataFrame:
         """Tabulate the changes made to IAMC data in this checkpoint.
