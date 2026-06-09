@@ -30,7 +30,11 @@ class BaseBackendFacade(object):
 class BaseCheckpointView(BaseBackendFacade):
     _run: "Run"
     _checkpoint: "Checkpoint"
-    _version_columns = ["transaction_id", "end_transaction_id", "operation_type"]
+    _version_columns = {
+        "operation_type": "operation",
+        "transaction_id": "tx_id",
+        "end_transaction_id": "end_tx_id",
+    }
 
     def __init__(self, backend: Backend, run: "Run", checkpoint: "Checkpoint") -> None:
         super().__init__(backend)
@@ -42,9 +46,9 @@ class BaseCheckpointView(BaseBackendFacade):
         return df.drop(columns=cls._version_columns)
 
     @classmethod
-    def _map_op_type(cls, df: pd.DataFrame) -> pd.DataFrame:
+    def _convert_version_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
         df["operation_type"] = df["operation_type"].apply(lambda i: Operation(i).name)
-        return df
+        return df.rename(columns=cls._version_columns)
 
 
 KeyT = TypeVar("KeyT")
