@@ -71,7 +71,8 @@ class VersionProcedure(object):
         version_tablename = version_table.name
         transaction_tablename = transaction_table.name
 
-        versioned_column_names = ", ".join(versioned_columns.keys())
+        # always sort columns so order in the model class doesnt matter
+        versioned_column_names = ", ".join(sorted(versioned_columns.keys()))
 
         transaction_id_column = getattr(
             transaction_id_column, "description", transaction_id_column
