@@ -30,7 +30,8 @@ class ModelFilter(IdFilter, NameFilter, total=False):
 
 
 class CheckpointFilter(IdFilter, RunIdFilter, TransactionIdFilter, total=False):
-    pass
+    id__lt: int
+    id__gt: int
 
 
 # Meta
