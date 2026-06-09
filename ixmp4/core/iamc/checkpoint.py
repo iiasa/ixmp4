@@ -91,6 +91,7 @@ class CheckpointIamcData(BaseCheckpointView, IamcDataFacade):
             join_parameters=True,
             **filter,
         )
+        df = self._map_op_type(df)
         return self._convert_to_std_format(
             df, join_runs=False, join_run_id=False, extra_columns=self._version_columns
         )

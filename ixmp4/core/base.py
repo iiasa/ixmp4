@@ -11,6 +11,7 @@ from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.services.base import GetByIdService, Service
+from ixmp4.data.versions.model import Operation
 
 if TYPE_CHECKING:
     from ixmp4.core.checkpoint import Checkpoint
@@ -39,6 +40,11 @@ class BaseCheckpointView(BaseBackendFacade):
     @classmethod
     def _drop_version_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
         return df.drop(columns=cls._version_columns)
+
+    @classmethod
+    def _map_op_type(cls, df: pd.DataFrame) -> pd.DataFrame:
+        df["operation_type"] = df["operation_type"].apply(lambda i: Operation(i).name)
+        return df
 
 
 KeyT = TypeVar("KeyT")
