@@ -4,11 +4,11 @@ import pandas as pd
 
 from ixmp4.base_exceptions import OperationNotSupported
 from ixmp4.data.backend import Backend
-from ixmp4.data.checkpoint.dto import Checkpoint
 
-from ..base import BaseBackendFacade
+from ..base import BaseBackendFacade, BaseCheckpointView
 
 if TYPE_CHECKING:
+    from ..checkpoint import Checkpoint
     from ..run import Run
 
 _VERSIONING_NOT_SUPPORTED_MSG = (
@@ -17,13 +17,8 @@ _VERSIONING_NOT_SUPPORTED_MSG = (
 )
 
 
-class CheckpointScalarView(BaseBackendFacade):
+class CheckpointScalarView(BaseCheckpointView):
     """Read-only view of optimization scalars at a checkpoint."""
-
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
-        self._run = run
-        self._checkpoint = checkpoint
 
     def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         """Tabulate scalar versions at this checkpoint.
@@ -35,20 +30,16 @@ class CheckpointScalarView(BaseBackendFacade):
         """
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        return self._backend.optimization.scalars.tabulate_versions(
+        df = self._backend.optimization.scalars.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
             **kwargs,
         )
+        return self._drop_version_columns(df)
 
 
-class CheckpointTableView(BaseBackendFacade):
+class CheckpointTableView(BaseCheckpointView):
     """Read-only view of optimization tables at a checkpoint."""
-
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
-        self._run = run
-        self._checkpoint = checkpoint
 
     def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         """Tabulate table versions at this checkpoint.
@@ -60,20 +51,16 @@ class CheckpointTableView(BaseBackendFacade):
         """
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        return self._backend.optimization.tables.tabulate_versions(
+        df = self._backend.optimization.tables.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
             **kwargs,
         )
+        return self._drop_version_columns(df)
 
 
-class CheckpointParameterView(BaseBackendFacade):
+class CheckpointParameterView(BaseCheckpointView):
     """Read-only view of optimization parameters at a checkpoint."""
-
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
-        self._run = run
-        self._checkpoint = checkpoint
 
     def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         """Tabulate parameter versions at this checkpoint.
@@ -85,20 +72,16 @@ class CheckpointParameterView(BaseBackendFacade):
         """
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        return self._backend.optimization.parameters.tabulate_versions(
+        df = self._backend.optimization.parameters.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
             **kwargs,
         )
+        return self._drop_version_columns(df)
 
 
-class CheckpointEquationView(BaseBackendFacade):
+class CheckpointEquationView(BaseCheckpointView):
     """Read-only view of optimization equations at a checkpoint."""
-
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
-        self._run = run
-        self._checkpoint = checkpoint
 
     def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         """Tabulate equation versions at this checkpoint.
@@ -110,20 +93,16 @@ class CheckpointEquationView(BaseBackendFacade):
         """
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        return self._backend.optimization.equations.tabulate_versions(
+        df = self._backend.optimization.equations.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
             **kwargs,
         )
+        return self._drop_version_columns(df)
 
 
-class CheckpointVariableView(BaseBackendFacade):
+class CheckpointVariableView(BaseCheckpointView):
     """Read-only view of optimization variables at a checkpoint."""
-
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
-        self._run = run
-        self._checkpoint = checkpoint
 
     def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         """Tabulate variable versions at this checkpoint.
@@ -135,20 +114,16 @@ class CheckpointVariableView(BaseBackendFacade):
         """
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        return self._backend.optimization.variables.tabulate_versions(
+        df = self._backend.optimization.variables.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
             **kwargs,
         )
+        return self._drop_version_columns(df)
 
 
-class CheckpointIndexSetView(BaseBackendFacade):
+class CheckpointIndexSetView(BaseCheckpointView):
     """Read-only view of optimization indexsets at a checkpoint."""
-
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
-        super().__init__(backend)
-        self._run = run
-        self._checkpoint = checkpoint
 
     def tabulate(self, **kwargs: Any) -> pd.DataFrame:
         """Tabulate indexset versions at this checkpoint.
@@ -160,11 +135,12 @@ class CheckpointIndexSetView(BaseBackendFacade):
         """
         if self._checkpoint.transaction__id is None:
             raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
-        return self._backend.optimization.indexsets.tabulate_versions(
+        df = self._backend.optimization.indexsets.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
             **kwargs,
         )
+        return self._drop_version_columns(df)
 
 
 class CheckpointOptimizationData(BaseBackendFacade):
@@ -177,7 +153,7 @@ class CheckpointOptimizationData(BaseBackendFacade):
     variables: CheckpointVariableView
     indexsets: CheckpointIndexSetView
 
-    def __init__(self, backend: Backend, run: "Run", checkpoint: Checkpoint) -> None:
+    def __init__(self, backend: Backend, run: "Run", checkpoint: "Checkpoint") -> None:
         super().__init__(backend)
         self.scalars = CheckpointScalarView(backend, run, checkpoint)
         self.tables = CheckpointTableView(backend, run, checkpoint)
