@@ -29,17 +29,16 @@ class BaseBackendFacade(object):
 class BaseCheckpointView(BaseBackendFacade):
     _run: "Run"
     _checkpoint: "Checkpoint"
+    _version_columns = ["transaction_id", "end_transaction_id", "operation_type"]
 
     def __init__(self, backend: Backend, run: "Run", checkpoint: "Checkpoint") -> None:
         super().__init__(backend)
         self._run = run
         self._checkpoint = checkpoint
 
-    @staticmethod
-    def _drop_version_columns(df: pd.DataFrame) -> pd.DataFrame:
-        return df.drop(
-            columns=["transaction_id", "end_transaction_id", "operation_type"]
-        )
+    @classmethod
+    def _drop_version_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+        return df.drop(columns=cls._version_columns)
 
 
 KeyT = TypeVar("KeyT")

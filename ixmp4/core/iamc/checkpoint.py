@@ -3,7 +3,7 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.base_exceptions import VersioningNotSupported
 from ixmp4.data.iamc.datapoint.filter import (
     DataPointVersionFilter,
     FacadeDataPointFilter,
@@ -11,7 +11,7 @@ from ixmp4.data.iamc.datapoint.filter import (
 )
 
 from ..base import BaseCheckpointView
-from .data import _convert_to_std_format
+from .data import IamcDataFacade
 
 _VERSIONING_NOT_SUPPORTED_MSG = (
     "Checkpoint data views require PostgreSQL versioning support. "
@@ -19,7 +19,7 @@ _VERSIONING_NOT_SUPPORTED_MSG = (
 )
 
 
-class CheckpointIamcData(BaseCheckpointView):
+class CheckpointIamcData(BaseCheckpointView, IamcDataFacade):
     """Read-only view of IAMC data for a run at a checkpoint."""
 
     def tabulate(self, **kwargs: Unpack[FacadeDataPointFilter]) -> pd.DataFrame:
@@ -41,7 +41,7 @@ class CheckpointIamcData(BaseCheckpointView):
         """
 
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
 
         # TODO: facade_to_version_filter
         filter: DataPointVersionFilter = facade_to_data_filter(kwargs)  # type: ignore[assignment]
@@ -50,7 +50,9 @@ class CheckpointIamcData(BaseCheckpointView):
         df = self._backend.iamc.datapoints.tabulate_versions(
             join_parameters=True, **filter
         )
-        return _convert_to_std_format(df, join_runs=False, join_run_id=False)
+        return self._convert_to_std_format(
+            df, join_runs=False, join_run_id=False, extra_columns=self._version_columns
+        )
 
     def difference(self) -> pd.DataFrame:
         """Tabulate the changes made to IAMC data in this checkpoint.
@@ -71,7 +73,7 @@ class CheckpointIamcData(BaseCheckpointView):
         """
 
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
 
         current_tx_id = self._checkpoint.transaction__id
         previous = self._checkpoint.previous
@@ -82,10 +84,13 @@ class CheckpointIamcData(BaseCheckpointView):
 
         if previous is not None:
             if previous.transaction__id is None:
-                raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+                raise VersioningNotSupported()
             filter["transaction_id__gt"] = previous.transaction__id
 
-        return self._backend.iamc.datapoints.tabulate_versions(
+        df = self._backend.iamc.datapoints.tabulate_versions(
             join_parameters=True,
             **filter,
+        )
+        return self._convert_to_std_format(
+            df, join_runs=False, join_run_id=False, extra_columns=self._version_columns
         )

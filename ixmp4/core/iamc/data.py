@@ -54,7 +54,11 @@ class IamcDataFacade(object):
 
     @classmethod
     def _convert_to_std_format(
-        cls, df: pd.DataFrame, join_runs: bool, join_run_id: bool
+        cls,
+        df: pd.DataFrame,
+        join_runs: bool,
+        join_run_id: bool,
+        extra_columns: list[str] | None = None,
     ) -> pd.DataFrame:
         df.rename(columns={"step_category": "subannual"}, inplace=True)
 
@@ -76,12 +80,18 @@ class IamcDataFacade(object):
             columns.append("run__id")
         if join_runs:
             columns.extend(["model", "scenario", "version"])
+
         columns += ["region", "variable", "unit"]
         if time_col in df.columns:
             columns += [time_col]
         if "subannual" in df.columns:
             columns += ["subannual"]
-        return df[columns + ["value"]]
+
+        columns += ["value"]
+        if extra_columns is not None:
+            columns += extra_columns
+
+        return df[columns]
 
 
 class RunIamcData(BaseBackendFacade, IamcDataFacade):
