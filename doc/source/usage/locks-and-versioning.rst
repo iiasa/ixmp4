@@ -83,17 +83,17 @@ Checkpoint Views
 Checkpoint views provide read-only access to run data at a specific checkpoint.
 Access them through ``run.checkpoints[checkpoint_id]``.
 
-.. autoclass:: ixmp4.core.checkpoint.CheckpointView
+.. autoclass:: ixmp4.core.checkpoint.Checkpoint
     :members:
 
 For IAMC data, a checkpoint-specific view is exposed by
-``CheckpointView.iamc``:
+``Checkpoint.iamc``:
 
 .. autoclass:: ixmp4.core.iamc.checkpoint.CheckpointIamcData
     :members:
 
 For optimization data, checkpoint-specific views are exposed by
-``CheckpointView.optimization``:
+``Checkpoint.optimization``:
 
 .. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointScalarView
     :members:

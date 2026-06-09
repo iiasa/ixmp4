@@ -135,7 +135,7 @@ class RunCheckpoints(BaseServiceFacade[CheckpointService]):
 
         Returns
         -------
-        :class:`CheckpointView`
+        :class:`Checkpoint`
             A read-only view of the run state at the checkpoint.
 
         Raises
