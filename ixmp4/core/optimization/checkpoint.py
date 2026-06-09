@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any
 
 import pandas as pd
 
-from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.base_exceptions import VersioningNotSupported
 from ixmp4.data.backend import Backend
 
 from ..base import BaseBackendFacade, BaseCheckpointView
@@ -10,11 +10,6 @@ from ..base import BaseBackendFacade, BaseCheckpointView
 if TYPE_CHECKING:
     from ..checkpoint import Checkpoint
     from ..run import Run
-
-_VERSIONING_NOT_SUPPORTED_MSG = (
-    "Checkpoint data views require PostgreSQL versioning support. "
-    "This feature is not available on the current backend."
-)
 
 
 class CheckpointScalarView(BaseCheckpointView):
@@ -29,7 +24,7 @@ class CheckpointScalarView(BaseCheckpointView):
             DataFrame with the scalar version columns.
         """
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.optimization.scalars.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
@@ -50,7 +45,7 @@ class CheckpointTableView(BaseCheckpointView):
             DataFrame with the table version columns.
         """
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.optimization.tables.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
@@ -71,7 +66,7 @@ class CheckpointParameterView(BaseCheckpointView):
             DataFrame with the parameter version columns.
         """
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.optimization.parameters.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
@@ -92,7 +87,7 @@ class CheckpointEquationView(BaseCheckpointView):
             DataFrame with the equation version columns.
         """
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.optimization.equations.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
@@ -113,7 +108,7 @@ class CheckpointVariableView(BaseCheckpointView):
             DataFrame with the variable version columns.
         """
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.optimization.variables.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,
@@ -134,7 +129,7 @@ class CheckpointIndexSetView(BaseCheckpointView):
             DataFrame with the indexset version columns.
         """
         if self._checkpoint.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.optimization.indexsets.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._checkpoint.transaction__id,

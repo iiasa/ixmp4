@@ -118,6 +118,14 @@ class OperationNotSupported(Ixmp4Error):
 
 
 @registry.register()
+class VersioningNotSupported(OperationNotSupported):
+    message = (
+        "Versioning functionality requires versioning support, "
+        "which is currently only available on PostgreSQL platforms."
+    )
+
+
+@registry.register()
 class SchemaError(Ixmp4Error):
     http_status_code = 422
     http_error_name = "schema_error"

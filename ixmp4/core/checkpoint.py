@@ -2,7 +2,7 @@ from typing import TYPE_CHECKING, Any, List
 
 import pandas as pd
 
-from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.base_exceptions import VersioningNotSupported
 from ixmp4.data.backend import Backend
 from ixmp4.data.checkpoint.dto import Checkpoint as CheckpointDto
 from ixmp4.data.checkpoint.exceptions import (
@@ -18,11 +18,6 @@ from .optimization.checkpoint import CheckpointOptimizationData
 
 if TYPE_CHECKING:
     from .run import Run
-
-_VERSIONING_NOT_SUPPORTED_MSG = (
-    "Checkpoint data views require PostgreSQL versioning support. "
-    "This feature is not available on the current backend."
-)
 
 
 class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
@@ -106,7 +101,7 @@ class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
             If versioning is not supported on this backend (e.g. SQLite).
         """
         if self._dto.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         df = self._backend.meta.tabulate_versions(
             run__id=self._run.id,
             valid_at_transaction=self._dto.transaction__id,
@@ -127,7 +122,7 @@ class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
             If versioning is not supported on this backend (e.g. SQLite).
         """
         if self._dto.transaction__id is None:
-            raise OperationNotSupported(_VERSIONING_NOT_SUPPORTED_MSG)
+            raise VersioningNotSupported()
         self._backend.runs.revert(self._run.id, self._dto.transaction__id)
 
     def delete(self) -> None:

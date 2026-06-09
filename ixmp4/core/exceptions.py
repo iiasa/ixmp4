@@ -93,6 +93,9 @@ from ixmp4.base_exceptions import (
     UnknownApiError as UnknownApiError,
 )
 from ixmp4.base_exceptions import (
+    VersioningNotSupported as VersioningNotSupported,
+)
+from ixmp4.base_exceptions import (
     registry as registry,
 )
 

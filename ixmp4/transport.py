@@ -42,7 +42,7 @@ from toolkit.client.base import ServiceClient
 from ixmp4.base_exceptions import ImproperlyConfigured
 from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.conf.settings import ClientSettings, Settings
-from ixmp4.core.exceptions import OperationNotSupported, ProgrammingError
+from ixmp4.core.exceptions import ProgrammingError, VersioningNotSupported
 from ixmp4.core.exceptions import registry as exception_registry
 from ixmp4.db import get_alembic_controller
 
@@ -294,9 +294,7 @@ class DirectTransport(Transport):
         """
         assert self.session.bind is not None
         if self.session.bind.engine.dialect.name != "postgresql":
-            raise OperationNotSupported(
-                "Versioning is only enabled on 'postgresql' platforms..."
-            )
+            raise VersioningNotSupported()
 
     def __str__(self) -> str:
         return f"<{self.__class__.__name__} {self.get_engine_info()}>"
