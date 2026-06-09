@@ -79,23 +79,6 @@ class SquashTest(PlatformTest, DataFrameTest):
                 )
         return ids
 
-    @staticmethod
-    def get_checkpoint_id(run: ixmp4.Run, message: str) -> int:
-        """Return the id of the checkpoint with the given message."""
-        cp_df = run.checkpoints.tabulate()
-        return int(cp_df[cp_df["message"] == message]["id"].iloc[0])
-
-    @staticmethod
-    def get_run_checkpoint_tx_id(run: ixmp4.Run, message: str) -> int:
-        """Return the transaction id of the checkpoint with the given message."""
-        cp_df = run.checkpoints.tabulate()
-        return int(cp_df[cp_df["message"] == message]["transaction__id"].iloc[0])
-
-    @classmethod
-    def get_run_checkpoint_tx_ids(cls, run: ixmp4.Run, messages: list[str]) -> set[int]:
-        """Return transaction ids for the given checkpoint messages."""
-        return {cls.get_run_checkpoint_tx_id(run, message) for message in messages}
-
     @classmethod
     def assert_no_orphaned_transactions(cls, engine: sa.Engine) -> None:
         all_txs = cls.get_all_tx_ids(engine)
@@ -175,16 +158,16 @@ class TestSquashMetaIndicators(SquashTest):
         expected_cp2_meta: dict[str, Any],
     ) -> None:
         """Checkpoint meta views show the expected state after squashing."""
-        cp1_id = self.get_checkpoint_id(run, "checkpoint-1")
-        cp2_id = self.get_checkpoint_id(run, "checkpoint-2")
-        assert dict(run.checkpoints[cp1_id].meta) == expected_cp1_meta
-        assert dict(run.checkpoints[cp2_id].meta) == expected_cp2_meta
+        cp_list = run.checkpoints.list()
+        assert dict(cp_list[0].meta) == expected_cp1_meta
+        assert dict(cp_list[1].meta) == expected_cp2_meta
 
     @pytest.fixture(scope="class")
     def expected_meta_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
         INS = int(Operation.INSERT)
         DEL = int(Operation.DELETE)
         return pd.DataFrame(
@@ -347,28 +330,31 @@ class TestSquashIamcData(SquashTest):
         expected_cp2_iamc: pd.DataFrame,
     ) -> None:
         """Checkpoint IAMC views show the expected state after squashing."""
-        cp1_id = self.get_checkpoint_id(run, "checkpoint-1")
-        cp2_id = self.get_checkpoint_id(run, "checkpoint-2")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0]
+        cp2 = cp_list[1]
 
         def _sort(df: pd.DataFrame) -> pd.DataFrame:
             return df.sort_values(["variable", "region", "year"]).reset_index(drop=True)
 
         pdt.assert_frame_equal(
-            _sort(run.checkpoints[cp1_id].iamc.tabulate()),
+            _sort(cp1.iamc.tabulate()),
             _sort(expected_cp1_iamc),
             check_like=True,
         )
         pdt.assert_frame_equal(
-            _sort(run.checkpoints[cp2_id].iamc.tabulate()),
+            _sort(cp2.iamc.tabulate()),
             _sort(expected_cp2_iamc),
             check_like=True,
         )
 
     @pytest.fixture(scope="class")
     def expected_datapoint_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
+
         INS = int(Operation.INSERT)
         UPD = int(Operation.UPDATE)
         return pd.DataFrame(
@@ -478,8 +464,9 @@ class TestSquashOptimizationData(SquashTest):
         expected_cp2_indexset_names: set[str],
     ) -> None:
         """Checkpoint optimization views show the expected state after squashing."""
-        cp1_id = self.get_checkpoint_id(run, "checkpoint-1")
-        cp2_id = self.get_checkpoint_id(run, "checkpoint-2")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0]
+        cp2 = cp_list[1]
 
         def scalar_values(cp_view: Checkpoint) -> dict[str, float]:
             df = cp_view.optimization.scalars.tabulate()
@@ -488,19 +475,16 @@ class TestSquashOptimizationData(SquashTest):
         def indexset_names(cp_view: Checkpoint) -> set[str]:
             return set(cp_view.optimization.indexsets.tabulate()["name"])
 
-        assert scalar_values(run.checkpoints[cp1_id]) == pytest.approx(
-            expected_cp1_scalar_values
-        )
-        assert scalar_values(run.checkpoints[cp2_id]) == pytest.approx(
-            expected_cp2_scalar_values
-        )
-        assert indexset_names(run.checkpoints[cp1_id]) == expected_cp1_indexset_names
-        assert indexset_names(run.checkpoints[cp2_id]) == expected_cp2_indexset_names
+        assert scalar_values(cp1) == pytest.approx(expected_cp1_scalar_values)
+        assert scalar_values(cp2) == pytest.approx(expected_cp2_scalar_values)
+        assert indexset_names(cp1) == expected_cp1_indexset_names
+        assert indexset_names(cp2) == expected_cp2_indexset_names
 
     @pytest.fixture(scope="class")
     def expected_scalar_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
         ins = int(Operation.INSERT)
         upd = int(Operation.UPDATE)
         return pd.DataFrame(
@@ -529,9 +513,10 @@ class TestSquashOptimizationData(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_indexset_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
         ins = int(Operation.INSERT)
         upd = int(Operation.UPDATE)
         return pd.DataFrame(
@@ -545,9 +530,10 @@ class TestSquashOptimizationData(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_indexset_data_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
         ins = int(Operation.INSERT)
         return pd.DataFrame(
             [
@@ -653,9 +639,10 @@ class TestSquashRunLockFreeRegionEdges(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_edge_meta_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
         return pd.DataFrame(
             [
                 ["note", cp3, None, int(Operation.INSERT)],
@@ -668,8 +655,9 @@ class TestSquashRunLockFreeRegionEdges(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_edge_scalar_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
         return pd.DataFrame(
             [
                 ["edge_scalar", cp1, cp2, int(Operation.INSERT), 1.0],
@@ -715,12 +703,13 @@ class TestSquashRunLockFreeRegionEdges(SquashTest):
         scalar = run.optimization.scalars.get_by_name("edge_scalar")
         assert scalar.value == pytest.approx(2.0)
 
-        cp1_id = self.get_checkpoint_id(run, "checkpoint-1")
-        cp2_id = self.get_checkpoint_id(run, "checkpoint-2")
-        cp3_id = self.get_checkpoint_id(run, "checkpoint-3")
-        assert dict(run.checkpoints[cp1_id].meta) == {"status": "draft"}
-        assert dict(run.checkpoints[cp2_id].meta) == {"status": "final"}
-        assert dict(run.checkpoints[cp3_id].meta) == {
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0]
+        cp2 = cp_list[1]
+        cp3 = cp_list[2]
+        assert dict(cp1.meta) == {"status": "draft"}
+        assert dict(cp2.meta) == {"status": "final"}
+        assert dict(cp3.meta) == {
             "status": "final",
             "note": "checkpoint-3",
         }
@@ -938,24 +927,25 @@ class TestSquashCombinedScenario(SquashTest):
         expected_cp2_indexset_names: set[str],
     ) -> None:
         """All checkpoint views show the expected state after squashing."""
-        cp1_id = self.get_checkpoint_id(run, "checkpoint-1")
-        cp2_id = self.get_checkpoint_id(run, "checkpoint-2")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0]
+        cp2 = cp_list[1]
 
         # meta
-        assert dict(run.checkpoints[cp1_id].meta) == expected_cp1_meta
-        assert dict(run.checkpoints[cp2_id].meta) == expected_cp2_meta
+        assert dict(cp1.meta) == expected_cp1_meta
+        assert dict(cp2.meta) == expected_cp2_meta
 
         # IAMC
         def _sort_iamc(df: pd.DataFrame) -> pd.DataFrame:
             return df.sort_values(["variable", "region", "year"]).reset_index(drop=True)
 
         pdt.assert_frame_equal(
-            _sort_iamc(run.checkpoints[cp1_id].iamc.tabulate()),
+            _sort_iamc(cp1.iamc.tabulate()),
             _sort_iamc(expected_cp1_iamc),
             check_like=True,
         )
         pdt.assert_frame_equal(
-            _sort_iamc(run.checkpoints[cp2_id].iamc.tabulate()),
+            _sort_iamc(cp2.iamc.tabulate()),
             _sort_iamc(expected_cp2_iamc),
             check_like=True,
         )
@@ -968,20 +958,18 @@ class TestSquashCombinedScenario(SquashTest):
         def indexset_names(cp_view: Checkpoint) -> set[str]:
             return set(cp_view.optimization.indexsets.tabulate()["name"])
 
-        assert scalar_values(run.checkpoints[cp1_id]) == pytest.approx(
-            expected_cp1_scalar_values
-        )
-        assert scalar_values(run.checkpoints[cp2_id]) == pytest.approx(
-            expected_cp2_scalar_values
-        )
-        assert indexset_names(run.checkpoints[cp1_id]) == expected_cp1_indexset_names
-        assert indexset_names(run.checkpoints[cp2_id]) == expected_cp2_indexset_names
+        assert scalar_values(cp1) == pytest.approx(expected_cp1_scalar_values)
+        assert scalar_values(cp2) == pytest.approx(expected_cp2_scalar_values)
+        assert indexset_names(cp1) == expected_cp1_indexset_names
+        assert indexset_names(cp2) == expected_cp2_indexset_names
 
     @pytest.fixture(scope="class")
     def expected_combined_meta_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
+
         return pd.DataFrame(
             [
                 ["model_version", cp1, cp2, int(Operation.INSERT)],
@@ -999,9 +987,11 @@ class TestSquashCombinedScenario(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_combined_datapoint_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
+
         return pd.DataFrame(
             [
                 [40.0, cp3, None, int(Operation.INSERT)],
@@ -1018,8 +1008,9 @@ class TestSquashCombinedScenario(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_combined_scalar_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
         return pd.DataFrame(
             [
                 ["carbon_price", cp1, cp2, int(Operation.INSERT), 25.0],
@@ -1036,9 +1027,10 @@ class TestSquashCombinedScenario(SquashTest):
 
     @pytest.fixture(scope="class")
     def expected_combined_indexset_version_table(self, run: ixmp4.Run) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
         return pd.DataFrame(
             [
                 ["Sectors", cp1, cp2, int(Operation.INSERT)],
@@ -1052,9 +1044,10 @@ class TestSquashCombinedScenario(SquashTest):
     def expected_combined_indexset_data_version_table(
         self, run: ixmp4.Run
     ) -> pd.DataFrame:
-        cp1 = self.get_run_checkpoint_tx_id(run, "checkpoint-1")
-        cp2 = self.get_run_checkpoint_tx_id(run, "checkpoint-2")
-        cp3 = self.get_run_checkpoint_tx_id(run, "checkpoint-3")
+        cp_list = run.checkpoints.list()
+        cp1 = cp_list[0].transaction__id
+        cp2 = cp_list[1].transaction__id
+        cp3 = cp_list[2].transaction__id
         return pd.DataFrame(
             [
                 ["Agriculture", cp2, None, int(Operation.INSERT)],

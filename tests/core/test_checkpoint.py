@@ -16,15 +16,16 @@ platform = backends.get_platform_fixture(scope="class")
 
 class CheckpointTest(PlatformTest):
     @pytest.fixture(scope="class")
-    def run(self, versioning_platform: ixmp4.Platform) -> ixmp4.Run:
-        run = versioning_platform.runs.create("Model", "Scenario")
+    def run(self, platform: ixmp4.Platform) -> ixmp4.Run:
+        run = platform.runs.create("Model", "Scenario")
         run.set_as_default()
         return run
 
 
 class TestCheckpoint(CheckpointTest):
-    def test_checkpoint_properties(
+    def test_checkpoint_create_versioning(
         self,
+        versioning_platform: ixmp4.Platform,
         run: ixmp4.Run,
     ) -> None:
         with run.transact("Create checkpoint for property test"):
@@ -43,6 +44,37 @@ class TestCheckpoint(CheckpointTest):
             f"run__id={checkpoint.run__id} id=1>"
         )
         assert str(checkpoint) == repr(checkpoint)
+
+    def test_checkpoint_create_non_versioning(
+        self,
+        non_versioning_platform: ixmp4.Platform,
+        run: ixmp4.Run,
+    ) -> None:
+        with run.transact("Create checkpoint for property test"):
+            checkpoint = run.checkpoints.create("test message")
+
+        assert isinstance(checkpoint.id, int)
+        assert checkpoint.id == 1
+        assert checkpoint.message == "test message"
+        assert checkpoint.run__id == run.id
+        assert isinstance(checkpoint.run__id, int)
+        assert checkpoint.transaction__id is None
+
+        assert str(checkpoint) == (
+            "<Checkpoint message='test message' transaction__id=None "
+            f"run__id={checkpoint.run__id} id=1>"
+        )
+        assert str(checkpoint) == repr(checkpoint)
+
+    def test_checkpoint_delete(
+        self,
+        run: ixmp4.Run,
+    ) -> None:
+        assert len(run.checkpoints.tabulate()) == 2
+        [cp1, cp2] = run.checkpoints.list()
+        cp1.delete()
+        run.checkpoints.delete(cp2)
+        assert len(run.checkpoints.list()) == 0
 
     def test_checkpoint_next_prev(
         self,
@@ -119,6 +151,7 @@ class TestCheckpointOptimizationViews(CheckpointTest):
     )
     def test_checkpoint_optimization_subview_tabulate(
         self,
+        versioning_platform: ixmp4.Platform,
         run: ixmp4.Run,
         view_name: str,
     ) -> None:
@@ -166,6 +199,7 @@ class IamcCheckpointViewData(DataFrameTest):
 class TestCheckpointIamcView(IamcCheckpointViewData, CheckpointTest):
     def test_checkpoint_iamc_tabulate_empty(
         self,
+        versioning_platform: ixmp4.Platform,
         run: ixmp4.Run,
     ) -> None:
         with run.transact("Create checkpoint before IAMC data"):
@@ -222,32 +256,18 @@ class TestCheckpointIamcView(IamcCheckpointViewData, CheckpointTest):
 
         diff = cp2.iamc.difference()
 
-        diff_cmp = diff[
-            [
-                "region",
-                "variable",
-                "unit",
-                "step_year",
-                "value",
-                "type",
-                "operation_type",
-            ]
-        ]
         expected = pd.concat([test_data_update, test_data_remove], ignore_index=True)
-        expected = expected.rename(columns={"year": "step_year"})
-        expected["step_year"] = expected["step_year"].astype("Int64")
-        expected["type"] = "ANNUAL"
-        expected["operation_type"] = [
-            int(Operation.UPDATE),
-            int(Operation.INSERT),
+        expected["operation"] = [
+            Operation.UPDATE.name,
+            Operation.INSERT.name,
         ]
         pdt.assert_frame_equal(
-            self.canonical_sort(diff_cmp),
+            self.canonical_sort(diff.drop(columns=["tx_id", "end_tx_id"])),
             self.canonical_sort(expected),
             check_like=True,
         )
-        assert (diff["transaction_id"] <= tx_id).all()
-        assert (diff["transaction_id"] > prev_tx_id).all()
+        assert (diff["tx_id"] <= tx_id).all()
+        assert (diff["tx_id"] > prev_tx_id).all()
 
     def test_checkpoint_iamc_difference_first_checkpoint_includes_initial_versions(
         self,
@@ -264,27 +284,12 @@ class TestCheckpointIamcView(IamcCheckpointViewData, CheckpointTest):
 
         diff = cp1.iamc.difference()
 
-        diff_cmp = diff[
-            [
-                "region",
-                "variable",
-                "unit",
-                "step_year",
-                "value",
-                "type",
-                "operation_type",
-                "transaction_id",
-                "end_transaction_id",
-            ]
-        ].reset_index(drop=True)
-        expected = test_data_add.rename(columns={"year": "step_year"}).copy()
-        expected["step_year"] = expected["step_year"].astype("Int64")
-        expected["type"] = "ANNUAL"
-        expected["operation_type"] = int(Operation.INSERT)
-        expected["transaction_id"] = tx_id
-        expected["end_transaction_id"] = None
+        expected = test_data_add.copy()
+        expected["operation"] = Operation.INSERT.name
+        expected["tx_id"] = tx_id
+        expected["end_tx_id"] = None
         pdt.assert_frame_equal(
-            self.canonical_sort(diff_cmp),
+            self.canonical_sort(diff),
             self.canonical_sort(expected),
             check_like=True,
         )
