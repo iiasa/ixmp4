@@ -259,6 +259,7 @@ class TestRunRevert(PlatformTest):
             run.meta["state"] = "mutated"
             run.meta["extra"] = "value"
 
+            run.revert(checkpoint)
             run.revert(checkpoint.transaction__id)
 
             assert dict(run.meta) == {"state": "checkpoint"}

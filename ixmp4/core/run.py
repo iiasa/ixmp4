@@ -10,7 +10,7 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.base_exceptions import OperationNotSupported, VersioningNotSupported
 from ixmp4.data.backend import Backend
 from ixmp4.data.model.dto import Model as ModelDto
 from ixmp4.data.run.dto import Run as RunDto
@@ -30,7 +30,7 @@ from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.dto import Scenario as ScenarioDto
 
 from .base import BaseFacadeObject, BaseServiceFacade
-from .checkpoint import RunCheckpoints
+from .checkpoint import Checkpoint, RunCheckpoints
 from .iamc import RunIamcData
 from .meta import RunMetaDescriptor
 from .optimization.data import RunOptimizationData
@@ -439,7 +439,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         return self._unlock()
 
     def revert(
-        self, transaction_id: int | None = None, *, revert_platform: bool = False
+        self, target: int | Checkpoint | None = None, *, revert_platform: bool = False
     ) -> None:
         """Reverts the run to the state of a previous transaction.
         If no ``transaction_id`` is supplied the transcation at which the run's
@@ -466,7 +466,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
             with run.transact("Delete and Revert IAMC Data"):
                 run.iamc.delete(...)
-                run.revert(cp1.transaction__id) # Reverts to "Add IAMC Data"
+                run.revert(cp1) # Reverts to "Add IAMC Data"
 
             run.iamc.tabulate()
 
@@ -478,8 +478,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
         Parameters
         ----------
-        transaction_id : int, optional
-            The id of a previous transaction on the platform.
+        target : int or :class:`~ixmp4.core.checkpoints.Checkpoint`, optional
+            The id of a previous transaction on the platform or a checkpoint object.
             The run will be reverted to the state at that transaction.
         revert_platform : boolean, optional
             If ``True`` the deleted units and regions will be restored.
@@ -487,6 +487,10 @@ class Run(BaseFacadeObject[RunService, RunDto]):
 
         Raises
         ------
+        :class:`TypeError`
+            If the target argument is invalid or a checkpoint for another run.
+        :class:`~ixmp4.base_exceptions.OperationNotSupported`
+            If versioning is not supported by this platform.
         :class:`~ixmp4.data.run.exceptions.RunLockRequired`
             If this run does not own the lock.
         """
@@ -494,9 +498,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         self.require_lock()
         assert self._dto.lock_transaction is not None
 
-        if transaction_id is not None:
-            target_transaction = transaction_id
-        else:
+        if target is None:
             checkpoint_df = self.checkpoints.tabulate()
             if checkpoint_df.empty:
                 checkpoint_transaction = -1
@@ -508,7 +510,18 @@ class Run(BaseFacadeObject[RunService, RunDto]):
                     checkpoint_transaction = int(max_tx_id)
 
             target_transaction = max(checkpoint_transaction, self._dto.lock_transaction)
-
+        elif isinstance(target, int):
+            target_transaction = target
+        elif isinstance(target, Checkpoint):
+            if target.run__id != self.id:
+                raise TypeError(
+                    "Invalid argument 'target': this `Checkpoint` is for another run."
+                )
+            if target.transaction__id is None:
+                raise VersioningNotSupported()
+            target_transaction = target.transaction__id
+        else:
+            raise TypeError("Invalid argument 'target': Must be `Checkpoint` or `int`.")
         self._service.revert(
             self._dto.id,
             target_transaction,
