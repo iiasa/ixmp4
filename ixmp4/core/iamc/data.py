@@ -7,6 +7,7 @@ import pandas as pd
 from typing_extensions import Unpack
 
 from ixmp4.data.backend import Backend
+from ixmp4.data.iamc.datapoint.dto import DataPointAggregations
 from ixmp4.data.iamc.datapoint.filter import (
     FacadeDataPointFilter,
     facade_to_data_filter,
@@ -181,7 +182,7 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
 
         self._run.require_lock()
         if "time" in df.columns:
-            df = self._split_time_col(df)
+            df = self._split_time_col(df.copy())
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         df = self._get_or_create_ts(df)
@@ -242,7 +243,7 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
         """
         self._run.require_lock()
         if "time" in df.columns:
-            df = self._split_time_col(df)
+            df = self._split_time_col(df.copy())
         df = self._rename_arg_cols(df)
         df["run__id"] = self._run.id
         # NOTE: This creates ts and deletes them right after
@@ -292,6 +293,27 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
             **facade_to_data_filter(kwargs),
         )
         return self._convert_to_std_format(df, join_runs=False, join_run_id=False)
+
+    def describe(
+        self,
+        raw: bool = False,
+        **kwargs: Unpack[FacadeDataPointFilter],
+    ) -> DataPointAggregations:
+        r"""Describes datapoints by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`FacadeDataPointFilter`.
+
+        Returns
+        -------
+        :class:`ixmp4.data.iamc.datapoint.dto.DataPointDescribe`
+            Aggregate statistics for matching datapoints.
+        """
+
+        kwargs["run"] = {"id": self._run.id, "default_only": False}
+        return self._backend.iamc.datapoints.describe(**facade_to_data_filter(kwargs))
 
 
 class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
@@ -350,3 +372,24 @@ class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
         return self._convert_to_std_format(
             df, join_runs=join_runs, join_run_id=join_run_id
         )
+
+    def describe(
+        self,
+        *,
+        raw: bool = False,
+        **kwargs: Unpack[FacadeDataPointFilter],
+    ) -> DataPointAggregations:
+        r"""Describes datapoints by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`FacadeDataPointFilter`.
+
+        Returns
+        -------
+        :class:`ixmp4.data.iamc.datapoint.dto.DataPointDescribe`
+            Aggregate statistics for matching datapoints.
+        """
+
+        return self._backend.iamc.datapoints.describe(**facade_to_data_filter(kwargs))
