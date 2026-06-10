@@ -459,6 +459,7 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         :meth:`~ixmp4.core.run.Run.transact` blocks:
 
         .. code:: python
+
             with run.transact("Add IAMC Data"):
                 run.iamc.add(...)
                 cp1 = run.checkpoints.create("Add IAMC Data")
