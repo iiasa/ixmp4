@@ -13,6 +13,7 @@ from ixmp4.data.services import Http, Service, procedure
 from ixmp4.transport import DirectTransport
 
 from .df_schemas import DeleteDataPointFrameSchema, UpsertDataPointFrameSchema
+from .dto import DataPointAggregations
 from .filter import DataPointFilter
 from .repositories import PandasRepository, VersionRepository
 
@@ -152,6 +153,30 @@ class DataPointService(Service):
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
             pagination=pagination,
         )
+
+    @procedure(Http(methods=("PATCH",)))
+    def describe(self, **kwargs: Unpack[DataPointFilter]) -> DataPointAggregations:
+        r"""Describes datapoints by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter parameters as specified in :class:`DataPointFilter`.
+
+        Returns
+        -------
+        :class:`ixmp4.data.iamc.datapoint.dto.DataPointDescribe`
+            Aggregate statistics for matching datapoints.
+        """
+
+        result = self.pandas.describe(values=self.apply_filter_defaults(kwargs))
+        return DataPointAggregations.model_validate(result)
+
+    @describe.auth_check()
+    def describe_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
 
     @procedure(Http(methods=("POST",)))
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
