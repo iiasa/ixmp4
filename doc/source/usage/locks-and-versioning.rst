@@ -56,8 +56,13 @@ these instances may acquire a lock.
     a **method of coordination** for clients that rely on versioning facilities
     and thus **not a reliable security mechanism** in any manner.
 
-Checkpoints
------------
+For advanced use of the locking mechanism, read about:
+
+ - :meth:`ixmp4.core.run.Run.lock`
+ - :meth:`ixmp4.core.run.Run.unlock`
+
+Checkpoints and Reversion
+-------------------------
 
 Checkpoints are used to label important transactions in the transaction history
 as to provide "anchors" to revert to. They are created automatically at the exit 
@@ -74,14 +79,20 @@ created at any other point.
     #> Checkpoint "Add data" created
 
 If an exception occurs within a :meth:`~ixmp4.core.run.Run.transact` block,
-data in the run will be rolled back to the latest checkpoint on platforms 
+data in the run will be reverted to the latest checkpoint on platforms 
 that support versioning. 
+
+To manually revert to a past state, use the ``revert()`` methods on
+:class:`~ixmp4.core.run.Run` and :class:`~ixmp4.core.checkpoint.Checkpoint`.
+
+ - :meth:`ixmp4.core.run.Run.revert`
+ - :meth:`ixmp4.core.checkpoint.Checkpoint.revert`
 
 Checkpoint Views
 ----------------
 
 Checkpoint views provide read-only access to run data at a specific checkpoint.
-Access them through ``run.checkpoints[checkpoint_id]``.
+Access them through :class:`~ixmp4.core.run.RunCheckpoints` / :attr:`~ixmp4.core.run.Run.checkpoints``.
 
 .. autoclass:: ixmp4.core.checkpoint.Checkpoint
     :members:

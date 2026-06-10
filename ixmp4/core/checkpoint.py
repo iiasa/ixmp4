@@ -31,12 +31,11 @@ class Checkpoint(BaseFacadeObject[CheckpointService, CheckpointDto]):
 
         # Create a checkpoint and access it later
         run.checkpoints.create("after scenario setup")
-        checkpoint = run.checkpoints.tabulate().iloc[0]
+        checkpoint = run.checkpoints.list().pop()
 
-        view = run.checkpoints[checkpoint.id]
-        df = view.iamc.tabulate()
-        meta = view.meta
-        scalars = view.optimization.scalars.tabulate()
+        df = checkpoint.iamc.tabulate()
+        meta = checkpoint.meta
+        scalars_df = checkpoint.optimization.scalars.tabulate()
 
         # Revert run to this checkpoint state
         view.revert()
