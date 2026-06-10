@@ -20,6 +20,7 @@ from ixmp4.data.run.filter import (
 from ixmp4.data.run.filter import (
     facade_to_data_filter as run_facade_to_data_filter,
 )
+from ixmp4.data.versions.filter import VersionFilter
 
 from .db import Model
 
@@ -60,6 +61,10 @@ def filter_by_iamc(
 
 class ModelFilter(base.ModelFilter, total=False):
     iamc: Annotated[IamcModelFilter | bool | None, filter_by_iamc]
+
+
+class ModelVersionFilter(VersionFilter, base.ModelFilter, total=False):
+    pass
 
 
 class FacadeIamcModelFilter(base.ModelFilter, total=False):

@@ -286,6 +286,30 @@ class TestRunMetaEntryBulkOperations(RunMetaEntryServiceTest):
             service.bulk_delete(invalid_remove_data)
 
 
+class TestRunMetaEntryTabulateVersions(RunMetaEntryServiceTest):
+    def test_meta_tabulate_versions(
+        self,
+        versioning_service: RunMetaEntryService,
+        run: Run,
+    ) -> None:
+        # Create a meta entry, then update it; tabulate_versions should return
+        # the version that was valid at the transaction captured before update.
+        entry = versioning_service.create(run.id, "VersionedKey", 1.0)
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+
+        versioning_service.delete_by_id(entry.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        key_row = vdf[vdf["key"] == "VersionedKey"]
+        assert not key_row.empty
+
+
 class RunMetaEntryAuthTest(RunMetaEntryServiceTest):
     @pytest.fixture(scope="class")
     def runs(self, transport: Transport) -> RunService:

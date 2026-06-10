@@ -51,3 +51,34 @@ class TestEquationCreate(EquationApiTest):
             tabulated["results"],
             expected_columns={"id", "run__id", "name"},
         )
+
+
+class TestEquationTabulateVersionsApi(EquationApiTest):
+    @pytest.fixture(scope="class")
+    def run(self, direct_transport: DirectTransport) -> Run:
+        return RunService(direct_transport).create("Model", "Scenario")
+
+    def test_equation_tabulate_versions(self, client: httpx.Client, run: Run) -> None:
+        self.request(
+            client,
+            "POST",
+            "/optimization/equations",
+            json={"run_id": run.id, "name": "VersionedEquation"},
+        )
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/optimization/equations/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "run__id",
+                "name",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

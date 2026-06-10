@@ -30,5 +30,19 @@ def filter_by_valid_at_transaction(
     )
 
 
-class VersionFilter(TypedDict):
+class VersionFilter(TypedDict, total=False):
     valid_at_transaction: Annotated[int, filter_by_valid_at_transaction]
+
+    transaction_id: int
+    transaction_id__gt: int
+    transaction_id__gte: int
+    transaction_id__lt: int
+    transaction_id__lte: int
+
+    end_transaction_id: int
+    end_transaction_id__gt: int
+    end_transaction_id__gte: int
+    end_transaction_id__lt: int
+    end_transaction_id__lte: int
+
+    operation_type: int

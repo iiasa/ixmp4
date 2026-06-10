@@ -19,6 +19,7 @@ from ixmp4.data.run.filter import (
 from ixmp4.data.run.filter import (
     facade_to_data_filter as run_facade_to_data_filter,
 )
+from ixmp4.data.versions.filter import VersionFilter
 
 from .db import Unit
 
@@ -48,6 +49,10 @@ def filter_by_iamc(
 
 class UnitFilter(base.UnitFilter, total=False):
     iamc: Annotated[IamcUnitFilter | bool | None, filter_by_iamc]
+
+
+class UnitVersionFilter(VersionFilter, base.UnitFilter, total=False):
+    pass
 
 
 class FacadeIamcUnitFilter(base.UnitFilter, total=False):

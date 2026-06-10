@@ -12,7 +12,7 @@ from ixmp4.data.optimization.base.repositories import IndexedRepository
 
 from .db import Parameter, ParameterIndexsetAssociation, ParameterVersion
 from .exceptions import ParameterDataInvalid, ParameterNotFound, ParameterNotUnique
-from .filter import ParameterFilter
+from .filter import ParameterFilter, ParameterVersionFilter
 
 ParameterTargetT = TypeVar("ParameterTargetT")
 
@@ -31,6 +31,19 @@ class ParameterAuthRepository(
         if run_exc is None:
             return exc
         return exc.where(Parameter.run__id.in_(run_exc))
+
+
+class ParameterVersionAuthRepository(AuthRepository[ParameterVersion]):
+    def where_authorized(
+        self,
+        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        auth_ctx: AuthorizationContext,
+        platform: PlatformProtocol,
+    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+        run_exc = self.select_permitted_run_ids(auth_ctx, platform)
+        if run_exc is None:
+            return exc
+        return exc.where(ParameterVersion.run__id.in_(run_exc))
 
 
 class ItemRepository(
@@ -68,10 +81,10 @@ class PandasRepository(ParameterAuthRepository[Parameter], BasePandasRepository)
 
 
 class VersionRepository(
-    ParameterAuthRepository[ParameterVersion],
+    ParameterVersionAuthRepository,
     BasePandasRepository,
 ):
     NotFound = ParameterNotFound
     NotUnique = ParameterNotUnique
     target = ModelTarget(ParameterVersion)
-    filter = Filter(ParameterFilter, ParameterVersion)
+    filter = Filter(ParameterVersionFilter, ParameterVersion)

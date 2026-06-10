@@ -296,9 +296,7 @@ class EquationDataTest(EquationServiceTest):
             )
 
         # compute transaction ids
-        is_tx = (
-            5 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
-        )
+        is_tx = 5 + 2 * len(test_data_indexsets)
         create_tx = is_tx + 1
         add_data_tx = create_tx + 3
         rm_data_partial_tx = add_data_tx + 1
@@ -713,6 +711,26 @@ class TestEquationTabulate(EquationServiceTest):
         equations = service.tabulate()
         equations = self.canonicalize_datetimes(equations)
         pdt.assert_frame_equal(equations, expected_equations, check_like=True)
+
+
+class TestEquationTabulateVersions(EquationServiceTest):
+    def test_equation_tabulate_versions(
+        self,
+        versioning_service: EquationService,
+        run: Run,
+    ) -> None:
+        equation = versioning_service.create(run.id, "VersionedEquation")
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(equation.id)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedEquation"
 
 
 class EquationAuthTest(EquationServiceTest):

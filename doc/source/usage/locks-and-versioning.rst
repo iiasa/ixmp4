@@ -56,32 +56,13 @@ these instances may acquire a lock.
     a **method of coordination** for clients that rely on versioning facilities
     and thus **not a reliable security mechanism** in any manner.
 
-Version Tables
---------------
+For advanced use of the locking mechanism, read about:
 
-Any table with versioning enabled, has a sibling table with at least three 
-additional columns to which all changes are recorded. 
+ - :meth:`ixmp4.core.run.Run.lock`
+ - :meth:`ixmp4.core.run.Run.unlock`
 
-* **transaction_id**: 
-    The transaction at which the row was created, updated or deleted.
-* **end_transaction_id**: 
-    The transaction at which a newer row in this table represents the current state.
-* **operation_type**: 
-    The :class:`~ixmp4.data.versions.model.Operation` that was performed to result in the row. 
-
-.. autoclass:: ixmp4.data.versions.model.Operation
-    :members:  
-    :undoc-members:  
-
-The two tables are then "linked" via a set of database triggers that record the 
-changes made by emitted statements.
-
-.. autoclass:: ixmp4.data.versions.PostgresVersionTriggers
-    :members:  
-
-
-Checkpoints
------------
+Checkpoints and Reversion
+-------------------------
 
 Checkpoints are used to label important transactions in the transaction history
 as to provide "anchors" to revert to. They are created automatically at the exit 
@@ -98,5 +79,47 @@ created at any other point.
     #> Checkpoint "Add data" created
 
 If an exception occurs within a :meth:`~ixmp4.core.run.Run.transact` block,
-data in the run will be rolled back to the latest checkpoint on platforms 
+data in the run will be reverted to the latest checkpoint on platforms 
 that support versioning. 
+
+To manually revert to a past state, use the ``revert()`` methods on
+:class:`~ixmp4.core.run.Run` and :class:`~ixmp4.core.checkpoint.Checkpoint`.
+
+ - :meth:`ixmp4.core.run.Run.revert`
+ - :meth:`ixmp4.core.checkpoint.Checkpoint.revert`
+
+Checkpoint Views
+----------------
+
+Checkpoint views provide read-only access to run data at a specific checkpoint.
+Access them through :class:`~ixmp4.core.run.RunCheckpoints` / :attr:`~ixmp4.core.run.Run.checkpoints``.
+
+.. autoclass:: ixmp4.core.checkpoint.Checkpoint
+    :members:
+
+For IAMC data, a checkpoint-specific view is exposed by
+``Checkpoint.iamc``:
+
+.. autoclass:: ixmp4.core.iamc.checkpoint.CheckpointIamcData
+    :members:
+
+For optimization data, checkpoint-specific views are exposed by
+``Checkpoint.optimization``:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointScalarView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointTableView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointParameterView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointEquationView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointVariableView
+    :members:
+
+.. autoclass:: ixmp4.core.optimization.checkpoint.CheckpointIndexSetView
+    :members:

@@ -151,3 +151,24 @@ class TestModelDelete(ModelApiTest):
         self.request(client, "DELETE", f"/models/{model.id}")
 
         assert direct_service.tabulate().empty
+
+
+class TestModelTabulateVersionsApi(ModelApiTest):
+    def test_model_tabulate_versions(self, client: httpx.Client) -> None:
+        self.request(client, "POST", "/models", json={"name": "VersionedModel"})
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/models/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "name",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

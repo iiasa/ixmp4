@@ -2,7 +2,8 @@ import abc
 import logging
 from typing import Generic, TypeVar, cast
 
-from typing_extensions import Unpack
+import pandas as pd
+from typing_extensions import TYPE_CHECKING, Unpack
 
 from ixmp4.data.backend import Backend
 from ixmp4.data.base.dto import BaseModel
@@ -10,6 +11,11 @@ from ixmp4.data.docs.filter import DocsFilter
 from ixmp4.data.docs.repository import DocsNotFound
 from ixmp4.data.docs.service import DocsService
 from ixmp4.data.services.base import GetByIdService, Service
+from ixmp4.data.versions.model import Operation
+
+if TYPE_CHECKING:
+    from ixmp4.core.checkpoint import Checkpoint
+    from ixmp4.core.run import Run
 
 logger = logging.getLogger(__name__)
 
@@ -19,6 +25,30 @@ class BaseBackendFacade(object):
 
     def __init__(self, backend: Backend) -> None:
         self._backend = backend
+
+
+class BaseCheckpointView(BaseBackendFacade):
+    _run: "Run"
+    _checkpoint: "Checkpoint"
+    _version_columns = {
+        "operation_type": "operation",
+        "transaction_id": "tx_id",
+        "end_transaction_id": "end_tx_id",
+    }
+
+    def __init__(self, backend: Backend, run: "Run", checkpoint: "Checkpoint") -> None:
+        super().__init__(backend)
+        self._run = run
+        self._checkpoint = checkpoint
+
+    @classmethod
+    def _drop_version_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+        return df.drop(columns=cls._version_columns)
+
+    @classmethod
+    def _convert_version_columns(cls, df: pd.DataFrame) -> pd.DataFrame:
+        df["operation_type"] = df["operation_type"].apply(lambda i: Operation(i).name)
+        return df.rename(columns=cls._version_columns)
 
 
 KeyT = TypeVar("KeyT")

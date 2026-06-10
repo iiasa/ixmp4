@@ -1,4 +1,6 @@
 import datetime
+import threading
+import time
 from typing import Any
 
 import pandas as pd
@@ -6,7 +8,10 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
+from ixmp4.base_exceptions import OperationNotSupported
 from tests import backends
+
+from .base import PlatformTest
 
 platform = backends.get_platform_fixture(scope="class")
 
@@ -100,6 +105,181 @@ class TestRun:
     def test_runs_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.runs.tabulate().empty
         assert len(platform.runs.list()) == 0
+
+
+class TestRunLocking:
+    def test_lock_sets_is_locked(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Lock Model", "Lock Scenario")
+
+        assert not run.is_locked
+        assert not run.owns_lock
+
+        run.lock()
+
+        assert run.is_locked
+
+    def test_unlock_clears_is_locked(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Unlock Model", "Unlock Scenario")
+
+        run.lock()
+        run.unlock()
+
+        assert not run.is_locked
+        assert not run.owns_lock
+
+        run.unlock()
+
+        assert not run.is_locked
+        assert not run.owns_lock
+
+    def test_lock_check_false_raises_for_same_object(
+        self, platform: ixmp4.Platform
+    ) -> None:
+        run = platform.runs.create("Lock Model", "Check False")
+
+        run.lock()
+        run.lock()  # skips lock due to check=True
+
+        with pytest.raises(ixmp4.Run.IsLocked):
+            run.lock(check=False)
+
+    def test_lock_timeout(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Timeout Model", "Timeout Scenario")
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            run1.lock()
+            sync_lock.release()
+            time.sleep(0.5)
+            run1.unlock()
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        run2.lock(timeout=5)
+
+        assert run2.is_locked
+        assert run2.owns_lock
+
+        run2.unlock()
+        thread.join()
+        sync_lock.release()
+
+    def test_force_unlock_refreshes_stale_state(self, platform: ixmp4.Platform) -> None:
+        run = platform.runs.create("Force Unlock Model", "Force Unlock Scenario")
+        owner = platform.runs.get(
+            run.model.name, run.scenario.name, version=run.version
+        )
+        other = platform.runs.get(
+            run.model.name, run.scenario.name, version=run.version
+        )
+
+        owner.lock()
+
+        assert owner.is_locked
+        assert not other.is_locked
+
+        with pytest.raises(ixmp4.Run.LockRequired, match="Trying to unlock"):
+            other.unlock(check=False)
+
+        other.unlock(force=True)
+
+        assert not other.is_locked
+        assert not platform.runs.get(
+            run.model.name, run.scenario.name, version=run.version
+        ).is_locked
+
+
+class TestRunRevert(PlatformTest):
+    def test_revert_requires_lock(self, versioning_platform: ixmp4.Platform) -> None:
+        run = versioning_platform.runs.create("Revert Model", "Lock Required")
+
+        with pytest.raises(ixmp4.Run.LockRequired):
+            run.revert()
+
+    def test_revert_without_checkpoint_uses_lock_transaction(
+        self, versioning_platform: ixmp4.Platform
+    ) -> None:
+        run = versioning_platform.runs.create("Revert Model", "No Checkpoint")
+
+        with run.transact("Add and revert to origin"):
+            run.meta["state"] = "draft"
+
+            assert dict(run.meta) == {"state": "draft"}
+
+            run.revert()
+
+            assert dict(run.meta) == {}
+
+        reloaded = versioning_platform.runs.get(
+            run.model.name, run.scenario.name, version=run.version
+        )
+        assert dict(reloaded.meta) == {}
+
+    def test_revert_without_transaction_id_uses_latest_checkpoint(
+        self, versioning_platform: ixmp4.Platform
+    ) -> None:
+        run = versioning_platform.runs.create("Revert Model", "Latest Checkpoint")
+
+        with run.transact("Revert to checkpoint"):
+            run.meta["state"] = "checkpoint"
+            checkpoint = run.checkpoints.create("checkpoint state")
+            run.meta["state"] = "mutated"
+            run.meta["extra"] = True
+
+            assert dict(run.meta) == {"state": "mutated", "extra": True}
+
+            run.revert()
+
+            assert checkpoint.transaction__id is not None
+            assert dict(run.meta) == {"state": "checkpoint"}
+
+        reloaded = versioning_platform.runs.get(
+            run.model.name, run.scenario.name, version=run.version
+        )
+        assert dict(reloaded.meta) == {"state": "checkpoint"}
+
+    def test_revert_to_explicit_transaction_across_transactions(
+        self, versioning_platform: ixmp4.Platform
+    ) -> None:
+        run = versioning_platform.runs.create("Revert Model", "Explicit Transaction")
+
+        with run.transact("Create checkpoint"):
+            run.meta["state"] = "checkpoint"
+            checkpoint = run.checkpoints.create("before mutation")
+
+        assert checkpoint.transaction__id is not None
+
+        with run.transact("Mutate and revert"):
+            run.meta["state"] = "mutated"
+            run.meta["extra"] = "value"
+
+            run.revert(checkpoint)
+            run.revert(checkpoint.transaction__id)
+
+            assert dict(run.meta) == {"state": "checkpoint"}
+
+        reloaded = versioning_platform.runs.get(
+            run.model.name, run.scenario.name, version=run.version
+        )
+        assert dict(reloaded.meta) == {"state": "checkpoint"}
+
+    def test_revert_raises_on_non_versioning(
+        self, non_versioning_platform: ixmp4.Platform
+    ) -> None:
+        run = non_versioning_platform.runs.create("Revert Model", "Non Versioning")
+        run.lock()
+
+        try:
+            with pytest.raises(OperationNotSupported):
+                run.revert()
+        finally:
+            run.unlock(force=True)
 
 
 class TestRunClone:
@@ -290,3 +470,90 @@ class TestRunClone:
 
         variable1 = cloned_run.optimization.variables.get_by_name("Variable 1")
         assert variable1.data == test_data_variable1
+
+
+class TestRunTransact:
+    @pytest.fixture(scope="class")
+    def run(self, platform: ixmp4.Platform) -> ixmp4.Run:
+        return platform.runs.create("Model", "Scenario")
+
+    def test_transact_timeout(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            with run1.transact("Background transaction"):
+                sync_lock.release()
+                time.sleep(0.5)
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        with run2.transact("Test transaction", timeout=5):
+            run2.meta["timeout"] = "awaited"
+
+        assert run2.meta["timeout"] == "awaited"
+        thread.join()
+        sync_lock.release()
+
+    def test_transact_timeout_failure(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            with run1.transact("Background transaction"):
+                sync_lock.release()
+                time.sleep(2)
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        with pytest.raises(ixmp4.Run.IsLocked):
+            with run2.transact("Test transaction", timeout=0.5):
+                run2.meta["timeout"] = "failed"
+
+        assert run2.meta == {"timeout": "awaited"}
+        thread.join()
+        sync_lock.release()
+
+    def test_transact_is_locked(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        run1 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        run2 = platform.runs.get(run.model.name, run.scenario.name, version=run.version)
+        sync_lock = threading.Lock()
+        sync_lock.acquire(timeout=1)
+
+        def background_task() -> None:
+            with run1.transact("Background transaction"):
+                sync_lock.release()
+                time.sleep(2)
+
+        thread = threading.Thread(target=background_task)
+        thread.start()
+
+        sync_lock.acquire(timeout=1)
+
+        with pytest.raises(ixmp4.Run.IsLocked):
+            with run2.transact("Test transaction"):
+                run2.meta["locked"] = "already"
+
+        assert run2.meta == {"timeout": "awaited"}
+        thread.join()
+        sync_lock.release()
+
+    def test_transact_nested_raises(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+        with pytest.raises(ixmp4.Run.IsLocked, match="[Nn]ested"):
+            with run.transact("outer"):
+                with run.transact("inner"):
+                    pass

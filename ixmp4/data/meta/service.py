@@ -15,8 +15,8 @@ from ixmp4.transport import DirectTransport
 from .compat_controller import RunMetaEntryCompatibilityController
 from .df_schemas import DeleteRunMetaFrameSchema, UpsertRunMetaFrameSchema
 from .dto import MetaValueType, RunMetaEntry
-from .filter import RunMetaEntryFilter
-from .repositories import ItemRepository, PandasRepository
+from .filter import RunMetaEntryFilter, RunMetaEntryVersionFilter
+from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
 class RunMetaEntryService(Service):
@@ -27,6 +27,7 @@ class RunMetaEntryService(Service):
     executor: SessionExecutor
     items: ItemRepository
     pandas: PandasRepository
+    versions: VersionRepository
     runs: RunItemRepository
     runs_pandas: RunPandasRepository
 
@@ -36,6 +37,9 @@ class RunMetaEntryService(Service):
         self.executor = SessionExecutor(transport.session)
         self.items = ItemRepository(self.executor, **self.get_auth_kwargs(transport))
         self.pandas = PandasRepository(self.executor, **self.get_auth_kwargs(transport))
+        self.versions = VersionRepository(
+            self.executor, **self.get_auth_kwargs(transport)
+        )
         self.runs = RunItemRepository(self.executor)
         self.runs_pandas = RunPandasRepository(self.executor)
 
@@ -284,6 +288,45 @@ class RunMetaEntryService(Service):
                 ),
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[RunMetaEntryVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates run meta entry versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter run meta entry versions as specified in
+            :class:`RunMetaEntryVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the run meta entry version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[RunMetaEntryVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )
 

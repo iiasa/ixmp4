@@ -100,9 +100,7 @@ class IndexSetDataVersion(versions.BaseVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    IndexSet.__table__, IndexSetVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(IndexSet, IndexSetVersion)
 data_version_triggers = versions.PostgresVersionTriggers(
-    IndexSetData.__table__, IndexSetDataVersion.__table__
+    IndexSetData, IndexSetDataVersion
 )

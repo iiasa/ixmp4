@@ -71,11 +71,9 @@ class VariableIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Variable.__table__, VariableVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Variable, VariableVersion)
 
 
 association_version_triggers = versions.PostgresVersionTriggers(
-    VariableIndexsetAssociation.__table__, VariableIndexsetAssociationVersion.__table__
+    VariableIndexsetAssociation, VariableIndexsetAssociationVersion
 )

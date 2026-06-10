@@ -169,3 +169,29 @@ class TestRegionDelete(RegionApiTest):
         self.request(client, "DELETE", f"/regions/{region.id}")
 
         assert direct_service.tabulate().empty
+
+
+class TestRegionTabulateVersionsApi(RegionApiTest):
+    def test_region_tabulate_versions(self, client: httpx.Client) -> None:
+        self.request(
+            client,
+            "POST",
+            "/regions",
+            json={"name": "VersionedRegion", "hierarchy": "Hierarchy"},
+        )
+        tabulated = self.request(
+            client,
+            "PATCH",
+            "/regions/versions/tabulate",
+            json={},
+        ).json()
+        assert_frame_payload(
+            tabulated["results"],
+            expected_columns={
+                "id",
+                "name",
+                "transaction_id",
+                "end_transaction_id",
+                "operation_type",
+            },
+        )

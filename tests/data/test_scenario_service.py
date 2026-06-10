@@ -384,3 +384,21 @@ class TestScenarioAuthNonePublic(
     def test_scenario_delete(self, service: ScenarioService) -> None:
         with pytest.raises(Forbidden):
             service.delete_by_id(1)
+
+
+class TestScenarioTabulateVersions(ScenarioServiceTest):
+    def test_scenario_tabulate_versions(
+        self, versioning_service: ScenarioService
+    ) -> None:
+        versioning_service.create("VersionedScenario")
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        versioning_service.delete_by_id(1)
+        vdf = versioning_service.tabulate_versions()
+        assert len(vdf) == 2
+        assert vdf.iloc[0]["name"] == "VersionedScenario"
+        assert vdf.iloc[0]["transaction_id"] == tx_after_insert
+
+        assert vdf.iloc[1]["name"] == "VersionedScenario"
+        assert vdf.iloc[1]["operation_type"] == 2  # DELETE

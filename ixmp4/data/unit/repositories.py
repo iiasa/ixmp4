@@ -7,7 +7,7 @@ from toolkit.db.target import ModelTarget
 
 from .db import Unit, UnitVersion
 from .exceptions import UnitNotFound, UnitNotUnique
-from .filter import UnitFilter
+from .filter import UnitFilter, UnitVersionFilter
 
 if TYPE_CHECKING:
     pass
@@ -31,4 +31,4 @@ class VersionRepository(PandasRepository):
     NotFound = UnitNotFound
     NotUnique = UnitNotUnique
     target = ModelTarget(UnitVersion)
-    filter = Filter(UnitFilter, UnitVersion)
+    filter = Filter(UnitVersionFilter, UnitVersion)

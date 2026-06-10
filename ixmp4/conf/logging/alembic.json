@@ -15,6 +15,9 @@
     "alembic": {
       "level": "INFO"
     },
+    "ixmp4": {
+      "level": "INFO"
+    },
     "sqlalchemy": {
       "level": "WARNING"
     }

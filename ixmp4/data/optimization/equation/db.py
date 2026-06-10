@@ -74,11 +74,9 @@ class EquationIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Equation.__table__, EquationVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Equation, EquationVersion)
 
 
 association_version_triggers = versions.PostgresVersionTriggers(
-    EquationIndexsetAssociation.__table__, EquationIndexsetAssociationVersion.__table__
+    EquationIndexsetAssociation, EquationIndexsetAssociationVersion
 )

@@ -14,7 +14,7 @@ from .exceptions import (
     ModelNotFound,
     ModelNotUnique,
 )
-from .filter import ModelFilter
+from .filter import ModelFilter, ModelVersionFilter
 
 
 class ModelAuthRepository(AuthRepository[Model | ModelVersion]):
@@ -48,4 +48,4 @@ class VersionRepository(PandasRepository):
     NotFound = ModelNotFound
     NotUnique = ModelNotUnique
     target = ModelTarget(ModelVersion)
-    filter = Filter(ModelFilter, ModelVersion)
+    filter = Filter(ModelVersionFilter, ModelVersion)

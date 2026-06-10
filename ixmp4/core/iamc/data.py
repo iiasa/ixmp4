@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING, Iterable, TypeVar
 
 import numpy as np
 import pandas as pd
@@ -17,7 +17,7 @@ from ..base import BaseBackendFacade
 from .variable import VariableServiceFacade
 
 if TYPE_CHECKING:
-    from ixmp4.core import run
+    from ixmp4.core.run import Run
 
 
 class IamcDataFacade(object):
@@ -54,7 +54,11 @@ class IamcDataFacade(object):
 
     @classmethod
     def _convert_to_std_format(
-        cls, df: pd.DataFrame, join_runs: bool, join_run_id: bool
+        cls,
+        df: pd.DataFrame,
+        join_runs: bool,
+        join_run_id: bool,
+        extra_columns: Iterable[str] | None = None,
     ) -> pd.DataFrame:
         df.rename(columns={"step_category": "subannual"}, inplace=True)
 
@@ -71,17 +75,23 @@ class IamcDataFacade(object):
             df = df.apply(map_step_column, axis=1)
             time_col = "time"
 
-        columns = []
+        columns: list[str] = []
         if join_run_id and "run__id" in df.columns:
             columns.append("run__id")
         if join_runs:
             columns.extend(["model", "scenario", "version"])
+
         columns += ["region", "variable", "unit"]
         if time_col in df.columns:
             columns += [time_col]
         if "subannual" in df.columns:
             columns += ["subannual"]
-        return df[columns + ["value"]]
+
+        columns += ["value"]
+        if extra_columns is not None:
+            columns += extra_columns
+
+        return df[columns]
 
 
 class RunIamcData(BaseBackendFacade, IamcDataFacade):
@@ -101,9 +111,9 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
 
     """
 
-    _run: "run.Run"
+    _run: "Run"
 
-    def __init__(self, backend: Backend, run: "run.Run") -> None:
+    def __init__(self, backend: Backend, run: "Run") -> None:
         super().__init__(backend)
         self._run = run
 

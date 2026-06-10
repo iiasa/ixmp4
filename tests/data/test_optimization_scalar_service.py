@@ -489,6 +489,29 @@ class TestScalarTabulate(ScalarServiceTest):
         pdt.assert_frame_equal(scalars, expected_scalars, check_like=True)
 
 
+class TestScalarTabulateVersions(ScalarServiceTest):
+    def test_scalar_tabulate_versions(
+        self,
+        versioning_service: ScalarService,
+        run: Run,
+        unit: Unit,
+    ) -> None:
+        scalar = versioning_service.create(run.id, "VersionedScalar", 1.0, unit.name)
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+
+        versioning_service.update_by_id(scalar.id, value=2.0)
+
+        vdf = versioning_service.tabulate_versions(
+            run__id=run.id,
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert vdf.iloc[0]["name"] == "VersionedScalar"
+        assert vdf.iloc[0]["value"] == 1.0
+
+
 class ScalarAuthTest(ScalarServiceTest):
     @pytest.fixture(scope="class")
     def runs(self, transport: Transport) -> RunService:

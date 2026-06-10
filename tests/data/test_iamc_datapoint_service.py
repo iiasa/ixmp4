@@ -282,12 +282,12 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         assert ret_df.empty
 
     @pytest.fixture(scope="class")
-    def tx_after_insert(self, test_df: pd.DataFrame) -> int:
-        return 16 + len(test_df)
+    def tx_after_insert(self) -> int:
+        return 13
 
     @pytest.fixture(scope="class")
-    def tx_after_update(self, tx_after_insert: int, test_df: pd.DataFrame) -> int:
-        return tx_after_insert + len(test_df)
+    def tx_after_update(self, tx_after_insert: int) -> int:
+        return tx_after_insert + 1
 
     @pytest.fixture(scope="class")
     def tx_after_delete(self, tx_after_update: int) -> int:
@@ -614,6 +614,33 @@ class TestDataPointBulkOperationsInvalidData(DataPointServiceTest):
 
         with pytest.raises(InconsistentIamcType):
             service.bulk_delete(df_no_step_year)
+
+
+class TestDatapointTabulateVersions(DataPointServiceTest):
+    def test_datapoint_tabulate_versions(
+        self,
+        versioning_service: DataPointService,
+        run: Run,
+        test_ts_df: pd.DataFrame,
+    ) -> None:
+        initial_df = pd.DataFrame(
+            [[1, Type.ANNUAL, 2000, 1.1]],
+            columns=["time_series__id", "type", "step_year", "value"],
+        )
+        versioning_service.bulk_upsert(initial_df)
+        tx_after_insert = int(
+            versioning_service.versions.tabulate()["transaction_id"].max()
+        )
+        updated_df = initial_df.copy()
+        updated_df["value"] = 9.9
+        versioning_service.bulk_upsert(updated_df)
+
+        vdf = versioning_service.tabulate_versions(
+            run={"id": run.id},
+            valid_at_transaction=tx_after_insert,
+        )
+        assert not vdf.empty
+        assert float(vdf.iloc[0]["value"]) == 1.1
 
 
 class DataPointAuthTest(DataPointServiceTest):

@@ -19,12 +19,12 @@ from sqlalchemy import Engine, create_engine
 from sqlalchemy.orm import configure_mappers
 from sqlalchemy.schema import SchemaItem
 
+# alembic autogenerate hooks for versioning triggers
+import ixmp4.data.versions.autogenerate as autogenerate_version_triggers  # noqa: F401, E402
 from ixmp4.conf.platforms import resolve_dsn_env_tokens
 from ixmp4.core.exceptions import ProgrammingError
 from ixmp4.db.models import BaseModel
 
-# this is the Alembic Config object, which provides
-# access to the values within the .ini file in use.
 config = context.config
 maybe_dsn = config.get_main_option("sqlalchemy.url", None)
 
@@ -41,11 +41,6 @@ dsn = resolve_dsn_env_tokens(maybe_dsn).replace(
 configure_mappers()
 
 target_metadata = BaseModel.metadata
-
-# other values from the config, defined by the needs of env.py,
-# can be acquired:
-# my_important_option = config.get_main_option("my_important_option")
-# ... etc.
 
 
 def include_object(

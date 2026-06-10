@@ -14,7 +14,7 @@ from ixmp4.transport import DirectTransport
 
 from .db import ScenarioDocs
 from .dto import Scenario
-from .filter import ScenarioFilter
+from .filter import ScenarioFilter, ScenarioVersionFilter
 from .repositories import ItemRepository, PandasRepository, VersionRepository
 
 
@@ -233,5 +233,44 @@ class ScenarioService(DocsService, GetByIdService):
                 offset=pagination.offset,
             ),
             total=self.pandas.count(values=self.apply_filter_defaults(kwargs)),
+            pagination=pagination,
+        )
+
+    @procedure(Http(path="/versions/tabulate", methods=("PATCH",)))
+    def tabulate_versions(
+        self, **kwargs: Unpack[ScenarioVersionFilter]
+    ) -> SerializableDataFrame:
+        r"""Tabulates scenario versions by specified criteria.
+
+        Parameters
+        ----------
+        \*\*kwargs: any
+            Filter scenario versions as specified in
+            :class:`ScenarioVersionFilter`.
+
+        Returns
+        -------
+        :class:`pandas.DataFrame`:
+            A data frame with the scenario version columns.
+        """
+        return self.versions.tabulate(values=kwargs)
+
+    @tabulate_versions.auth_check()
+    def tabulate_versions_auth_check(
+        self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
+    ) -> None:
+        auth_ctx.has_view_permission(platform, raise_exc=Forbidden)
+
+    @tabulate_versions.paginated()
+    def paginated_tabulate_versions(
+        self, pagination: Pagination, **kwargs: Unpack[ScenarioVersionFilter]
+    ) -> PaginatedResult[SerializableDataFrame]:
+        return PaginatedResult[SerializableDataFrame](
+            results=self.versions.tabulate(
+                values=kwargs,
+                limit=pagination.limit,
+                offset=pagination.offset,
+            ),
+            total=self.versions.count(values=kwargs),
             pagination=pagination,
         )

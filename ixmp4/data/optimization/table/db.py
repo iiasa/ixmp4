@@ -71,11 +71,9 @@ class TableIndexsetAssociationVersion(IndexsetAssociationVersionModel):
     )
 
 
-version_triggers = versions.PostgresVersionTriggers(
-    Table.__table__, TableVersion.__table__
-)
+version_triggers = versions.PostgresVersionTriggers(Table, TableVersion)
 
 
 association_version_triggers = versions.PostgresVersionTriggers(
-    TableIndexsetAssociation.__table__, TableIndexsetAssociationVersion.__table__
+    TableIndexsetAssociation, TableIndexsetAssociationVersion
 )

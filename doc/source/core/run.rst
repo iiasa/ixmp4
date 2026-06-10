@@ -11,3 +11,5 @@ Runs
 .. autoclass:: ixmp4.core.run.Run
    :members:
 
+.. autoclass:: ixmp4.core.run.RunCheckpoints
+   :members:

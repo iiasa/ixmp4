@@ -10,12 +10,20 @@ class VersionProcedure(object):
     signature_template = "%(tablename)s_version_procedure()"
     definition_template = """
     returns trigger as $$
+        declare tx_id_text TEXT;
         declare tx_id INT;
     begin
-        begin
+        -- Reuse the transaction record created by a previous trigger
+        -- invocation within the same database transaction (transaction-local
+        -- setting, automatically reset when the transaction commits/rolls back).
+        tx_id_text := current_setting('ixmp4.current_tx_id', true);
+        if tx_id_text IS NULL or tx_id_text = '' then
             insert into %(transaction_tablename)s (issued_at)
-            values (NOW()) returning id into tx_id;
-        end;
+            values (transaction_timestamp()) returning id into tx_id;
+            perform set_config('ixmp4.current_tx_id', tx_id::text, true);
+        else
+            tx_id := tx_id_text::int;
+        end if;
 
         if (TG_OP='DELETE') then
             update %(version_tablename)s set %(end_transaction_id_column)s = tx_id
@@ -63,7 +71,8 @@ class VersionProcedure(object):
         version_tablename = version_table.name
         transaction_tablename = transaction_table.name
 
-        versioned_column_names = ", ".join(versioned_columns.keys())
+        # always sort columns so order in the model class doesnt matter
+        versioned_column_names = ", ".join(sorted(versioned_columns.keys()))
 
         transaction_id_column = getattr(
             transaction_id_column, "description", transaction_id_column
