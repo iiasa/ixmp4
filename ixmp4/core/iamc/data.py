@@ -308,7 +308,7 @@ class RunIamcData(BaseBackendFacade, IamcDataFacade):
 
         Returns
         -------
-        :class:`ixmp4.data.iamc.datapoint.dto.DataPointDescribe`
+        :class:`ixmp4.data.iamc.datapoint.dto.DataPointAggregations`
             Aggregate statistics for matching datapoints.
         """
 
@@ -388,7 +388,7 @@ class PlatformIamcData(BaseBackendFacade, IamcDataFacade):
 
         Returns
         -------
-        :class:`ixmp4.data.iamc.datapoint.dto.DataPointDescribe`
+        :class:`ixmp4.data.iamc.datapoint.dto.DataPointAggregations`
             Aggregate statistics for matching datapoints.
         """
 
