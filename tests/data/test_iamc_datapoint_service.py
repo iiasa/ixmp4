@@ -779,6 +779,10 @@ class TestDataPointAuthSarahPrivate(
         ret_df = service.tabulate()
         assert len(ret_df) == 4
 
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        aggs = service.describe()
+        assert aggs.count == 4
+
     def test_datapoint_bulk_delete(
         self, service: DataPointService, test_df: pd.DataFrame
     ) -> None:
@@ -802,6 +806,10 @@ class TestDataPointAuthAlicePrivate(
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
         with pytest.raises(Forbidden):
             service.tabulate()
+
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        with pytest.raises(Forbidden):
+            service.describe()
 
     def test_datapoint_bulk_delete(
         self,
@@ -828,6 +836,10 @@ class TestDataPointAuthBobPrivate(
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
         ret_df = service.tabulate()
         assert len(ret_df) == 4
+
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        aggs = service.describe()
+        assert aggs.count == 4
 
     def test_datapoint_bulk_delete(
         self, service: DataPointService, test_df: pd.DataFrame
@@ -929,6 +941,10 @@ class TestDataPointAuthCarinaPrivate(
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
         ret_df = service.tabulate(run={"default_only": False})
         assert len(ret_df) == 8
+
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        aggs = service.describe(run={"default_only": False})
+        assert aggs.count == 8
 
     def test_datapoint_bulk_delete(
         self,
