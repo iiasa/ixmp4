@@ -27,6 +27,13 @@ Filters
     :undoc-members:
     :show-inheritance:
 
+Aggregations DTO
+^^^^^^^^^^^^^^^^
+.. autoclass:: ixmp4.data.iamc.datapoint.dto.DataPointAggregations
+    :members:   
+    :undoc-members:
+    :show-inheritance:
+    
 
 Measurands (ixmp4.data.iamc.measurand)
 --------------------------------------

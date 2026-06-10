@@ -248,6 +248,73 @@ class DataPointBulkOperationsTest(DataPointServiceTest):
         ret_df = service.tabulate(join_run_id=True)
         assert "run__id" in ret_df.columns
 
+    def test_datapoint_describe(
+        self,
+        service: DataPointService,
+        expected_df: pd.DataFrame,
+    ) -> None:
+        description = service.describe()
+
+        values = expected_df["value"].astype(float)
+        assert description.count == len(expected_df)
+        assert description.min == pytest.approx(float(values.min()))
+        assert description.p25 == pytest.approx(float(values.quantile(0.25)))
+        assert description.median == pytest.approx(float(values.quantile(0.5)))
+        assert description.p75 == pytest.approx(float(values.quantile(0.75)))
+        assert description.max == pytest.approx(float(values.max()))
+
+        if "step_year" in expected_df.columns:
+            expected_years = pd.to_numeric(
+                expected_df["step_year"], errors="coerce"
+            ).dropna()
+            if expected_years.empty:
+                assert description.first_year is None
+                assert description.last_year is None
+            else:
+                assert description.first_year == int(expected_years.min())
+                assert description.last_year == int(expected_years.max())
+        else:
+            assert description.first_year is None
+            assert description.last_year is None
+
+        if "step_datetime" in expected_df.columns:
+            expected_datetimes = pd.to_datetime(
+                expected_df["step_datetime"], errors="coerce"
+            ).dropna()
+            if expected_datetimes.empty:
+                assert description.first_datetime is None
+                assert description.last_datetime is None
+            else:
+                assert description.first_datetime == expected_datetimes.min()
+                assert description.last_datetime == expected_datetimes.max()
+        else:
+            assert description.first_datetime is None
+            assert description.last_datetime is None
+
+        expected_categories: list[str] = []
+        if "step_category" in expected_df.columns:
+            expected_categories = sorted(
+                expected_df["step_category"]
+                .dropna()
+                .astype(str)
+                .drop_duplicates()
+                .tolist()
+            )
+        assert description.categories == expected_categories
+
+        expected_types = [
+            type_.value
+            for type_ in Type
+            if type_.value in expected_df["type"].astype(str).unique()
+        ]
+        assert description.types == expected_types
+
+        first_type = str(expected_df["type"].iloc[0])
+        filtered_description = service.describe(type=first_type)
+        assert filtered_description.count == len(
+            expected_df[expected_df["type"].astype(str) == first_type]
+        )
+
     def test_datapoint_bulk_update(
         self,
         service: DataPointService,
@@ -712,6 +779,10 @@ class TestDataPointAuthSarahPrivate(
         ret_df = service.tabulate()
         assert len(ret_df) == 4
 
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        aggs = service.describe()
+        assert aggs.count == 4
+
     def test_datapoint_bulk_delete(
         self, service: DataPointService, test_df: pd.DataFrame
     ) -> None:
@@ -735,6 +806,10 @@ class TestDataPointAuthAlicePrivate(
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
         with pytest.raises(Forbidden):
             service.tabulate()
+
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        with pytest.raises(Forbidden):
+            service.describe()
 
     def test_datapoint_bulk_delete(
         self,
@@ -761,6 +836,10 @@ class TestDataPointAuthBobPrivate(
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
         ret_df = service.tabulate()
         assert len(ret_df) == 4
+
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        aggs = service.describe()
+        assert aggs.count == 4
 
     def test_datapoint_bulk_delete(
         self, service: DataPointService, test_df: pd.DataFrame
@@ -862,6 +941,10 @@ class TestDataPointAuthCarinaPrivate(
     def test_datapoint_tabulate(self, service: DataPointService) -> None:
         ret_df = service.tabulate(run={"default_only": False})
         assert len(ret_df) == 8
+
+    def test_datapoint_describe(self, service: DataPointService) -> None:
+        aggs = service.describe(run={"default_only": False})
+        assert aggs.count == 8
 
     def test_datapoint_bulk_delete(
         self,
