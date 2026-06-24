@@ -161,10 +161,10 @@ class TimeSeriesService(Service):
         )
 
     def merge_regions(self, df: pd.DataFrame) -> pd.DataFrame:
-        region_names = list(df["region"].unique())
-        regions = self.regions.tabulate(
-            values={"name__in": region_names}, columns=["id", "name"]
+        region_names = (
+            df[["region"]].drop_duplicates().rename(columns={"region": "name"})
         )
+        regions = self.regions.tabulate_by_df(region_names, columns=["id", "name"])
         regions = regions.rename(columns={"name": "region", "id": "region__id"})
         merged_df = df.merge(
             regions,
@@ -179,10 +179,8 @@ class TimeSeriesService(Service):
         return merged_df.drop(columns=["region"])
 
     def merge_units(self, df: pd.DataFrame) -> pd.DataFrame:
-        unit_names = list(df["unit"].unique())
-        units = self.units.tabulate(
-            values={"name__in": unit_names}, columns=["id", "name"]
-        )
+        unit_names = df[["unit"]].drop_duplicates().rename(columns={"unit": "name"})
+        units = self.units.tabulate_by_df(unit_names, columns=["id", "name"])
         units = units.rename(columns={"name": "unit", "id": "unit__id"})
         merged_df = df.merge(
             units,
