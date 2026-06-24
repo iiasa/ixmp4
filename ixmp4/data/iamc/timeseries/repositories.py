@@ -41,11 +41,12 @@ class TimeSeriesAuthRepository(AuthRepository[TimeSeries | TimeSeriesVersion]):
             .select_from(TimeSeries)
             .join(TimeSeries.run)
             .join(Run.model)
-            .where(TimeSeries.id.in_(ts_ids))
         )
 
-        with self.executor.select(exc) as result:
-            return result.scalars().all()
+        model_names = []
+        for result in self.executor.select_in_chunks(TimeSeries.id, ts_ids, exc):
+            model_names.append(result.scalars().all())
+        return model_names
 
 
 class ItemRepository(TimeSeriesAuthRepository, BaseItemRepository[TimeSeries]):
