@@ -1,5 +1,10 @@
 from enum import Enum
-from typing import Literal
+from typing import Literal, Any
+import logging
+
+from ixmp4.data.meta.exceptions import InvalidRunMeta
+
+logger = logging.getLogger(__name__)
 
 PdDtype = Literal["Int64", "str", "float64", "boolean"]
 
@@ -28,6 +33,21 @@ class Type(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+def convert_value(value: Any) -> tuple[Type, Any]:
+    value_type = type(value)
+
+    if value_type in _type_map:
+        return _type_map[value_type], value
+
+    logger.warning("Converting value of type '%s' to string.", value_type.__name__)
+    try:
+        return Type.STR, str(value)
+    except Exception as e:
+        raise InvalidRunMeta(
+            f"Failed to convert value of type '{value_type.__name__}' to string: {e}"
+        ) from e
 
 
 _type_map: dict[type, Type] = {
