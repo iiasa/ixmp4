@@ -29,13 +29,21 @@ class TestMetaData(MetaTest):
                 "mstr": "foo",
                 "mnone": None,  # <- should be ignored
                 "mnan": np.nan,  # <-'
+                "mdatetime": pd.to_datetime("2026-6-25"),
             }
             run.meta["mfloat"] = -1.9
 
-        assert dict(run.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
+        exp = {
+            "mint": 13,
+            "mfloat": -1.9,
+            "mdatetime": "2026-06-25T00:00:00",
+            "mstr": "foo",
+        }
+
+        assert dict(run.meta) == exp
 
         run2 = platform.runs.get("Model", "Scenario")
-        assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
+        assert dict(run2.meta) == exp
 
     def test_tabulate_platform_meta_after_add(self, platform: ixmp4.Platform) -> None:
         exp = pd.DataFrame(
