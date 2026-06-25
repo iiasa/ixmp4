@@ -43,9 +43,11 @@ class TimeSeriesAuthRepository(AuthRepository[TimeSeries | TimeSeriesVersion]):
             .join(Run.model)
         )
 
-        model_names = []
-        for result in self.executor.select_in_chunks(TimeSeries.id, ts_ids, exc):
-            model_names.append(result.scalars().all())
+        model_names: list[str] = []
+        for result in self.executor.select_in_chunks(
+            TimeSeries.__table__.c.id, ts_ids, exc
+        ):
+            model_names.extend(result.scalars().all())
         return model_names
 
 
