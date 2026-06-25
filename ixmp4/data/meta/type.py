@@ -12,11 +12,11 @@ class Type(str, Enum):
 
     @classmethod
     def from_pytype(cls, type_: type) -> "Type":
-        return _type_map[type_]
+        return _type_map.get(type_, Type.STR)
 
     @classmethod
     def column_for_type(cls, type_: "Type") -> str:
-        return _column_map[type_]
+        return _column_map.get(type_, "value_str")
 
     @classmethod
     def pd_dtype_for_type(cls, type_: "Type") -> PdDtype:

@@ -36,7 +36,7 @@ class TestMetaData(MetaTest):
         exp = {
             "mint": 13,
             "mfloat": -1.9,
-            "mdatetime": "2026-06-25T00:00:00",
+            "mdatetime": "2026-06-25 00:00:00",
             "mstr": "foo",
         }
 
