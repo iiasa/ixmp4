@@ -1,6 +1,6 @@
-from enum import Enum
-from typing import Literal, Any
 import logging
+from enum import Enum
+from typing import Any, Literal
 
 from ixmp4.data.meta.exceptions import InvalidRunMeta
 

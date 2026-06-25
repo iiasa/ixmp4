@@ -14,8 +14,8 @@ from ixmp4.data.meta.filter import (
 )
 from ixmp4.data.meta.service import RunMetaEntryService
 
-from .base import BaseServiceFacade
 from ..data.meta.type import convert_value
+from .base import BaseServiceFacade
 
 if TYPE_CHECKING:
     from ixmp4.data.backend import Backend
