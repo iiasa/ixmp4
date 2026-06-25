@@ -1,5 +1,7 @@
 from enum import Enum
-from typing import Literal
+from typing import Any, Literal
+from ixmp4.data.meta.exceptions import InvalidRunMeta
+from pandas.core.dtypes.inference import is_list_like
 
 PdDtype = Literal["Int64", "str", "float64", "boolean"]
 
@@ -28,6 +30,18 @@ class Type(str, Enum):
 
     def __str__(self) -> str:
         return self.value
+
+
+def check_meta_type(value: Any) -> Any:
+    if is_list_like(value):
+        for v in value:
+            check_meta_type(v)
+
+    if type(value) not in _type_map:
+        raise InvalidRunMeta(
+            f"Invalid meta indicator '{value}', allowed types: {list(_type_map.keys())}"
+        )
+    return value
 
 
 _type_map: dict[type, Type] = {

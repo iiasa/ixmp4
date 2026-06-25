@@ -14,6 +14,7 @@ from ixmp4.data.meta.filter import (
 )
 from ixmp4.data.meta.service import RunMetaEntryService
 
+from ..data.meta.type import check_meta_type
 from .base import BaseServiceFacade
 
 if TYPE_CHECKING:
@@ -115,7 +116,7 @@ class RunMetaDictFacade(
 
         py_value = numpy_to_pytype(value)
         if py_value is not None:
-            self._service.create(self.run.id, key, py_value)
+            self._service.create(self.run.id, key, check_meta_type(py_value))
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
@@ -191,6 +192,8 @@ class RunMetaDescriptor(object):
         :class:`ixmp4.data.run.exceptions.RunLockRequired`
             If no run lock is held.
         """
+        check_meta_type(value.values())
+
         obj.require_lock()
         self._delete_existing(obj)
 

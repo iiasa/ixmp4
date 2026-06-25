@@ -1,9 +1,12 @@
+import re
+
 import numpy as np
 import pandas as pd
 import pandas.testing as pdt
 import pytest
 
 import ixmp4
+from ixmp4.data.meta.exceptions import InvalidRunMeta
 from tests import backends
 from tests.custom_exception import CustomException
 
@@ -36,6 +39,24 @@ class TestMetaData(MetaTest):
 
         run2 = platform.runs.get("Model", "Scenario")
         assert dict(run2.meta) == {"mint": 13, "mfloat": -1.9, "mstr": "foo"}
+
+    def test_add_meta_invalid_type(self, platform: ixmp4.Platform) -> None:
+
+        run = platform.runs.create("Model", "Scenario")
+
+        match = re.escape(
+            "Invalid meta indicator '2026-06-25 01:00:00', allowed types: "
+            "[<class 'int'>, <class 'str'>, <class 'float'>, <class 'bool'>]"
+        )
+        datetime_value = pd.to_datetime("2026-6-25 01:00")
+
+        with run.transact("Add meta indicator"):
+            with pytest.raises(InvalidRunMeta, match=match):
+                run.meta = {"mstr": "foo",  "mdatetime": datetime_value}
+
+        with run.transact("Add meta indicator"):
+            with pytest.raises(InvalidRunMeta, match=match):
+                run.meta["mdatetime"] = datetime_value
 
     def test_tabulate_platform_meta_after_add(self, platform: ixmp4.Platform) -> None:
         exp = pd.DataFrame(
