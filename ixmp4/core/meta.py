@@ -115,8 +115,9 @@ class RunMetaDictFacade(
             pass
 
         py_value = numpy_to_pytype(value)
+        check_meta_type(py_value)
         if py_value is not None:
-            self._service.create(self.run.id, key, check_meta_type(py_value))
+            self._service.create(self.run.id, key, py_value)
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:

@@ -32,7 +32,7 @@ class Type(str, Enum):
         return self.value
 
 
-def check_meta_type(value: Any) -> Any:
+def check_meta_type(value: Any) -> None:
     if is_list_like(value):
         for v in value:
             check_meta_type(v)
@@ -41,7 +41,6 @@ def check_meta_type(value: Any) -> Any:
         raise InvalidRunMeta(
             f"Invalid meta indicator '{value}', allowed types: {list(_type_map.keys())}"
         )
-    return value
 
 
 _type_map: dict[type, Type] = {
