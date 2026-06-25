@@ -4,6 +4,7 @@ import pandas.testing as pdt
 import pytest
 
 import ixmp4
+from ixmp4.data.meta.exceptions import InvalidRunMeta
 from tests import backends
 from tests.custom_exception import CustomException
 
@@ -29,14 +30,14 @@ class TestMetaData(MetaTest):
                 "mstr": "foo",
                 "mnone": None,  # <- should be ignored
                 "mnan": np.nan,  # <-'
-                "mdatetime": pd.to_datetime("2026-6-25"),
+                "mdatetime": pd.to_datetime("2026-6-25 01:00"),
             }
             run.meta["mfloat"] = -1.9
 
         exp = {
             "mint": 13,
             "mfloat": -1.9,
-            "mdatetime": "2026-06-25 00:00:00",
+            "mdatetime": "2026-06-25 01:00:00",
             "mstr": "foo",
         }
 
@@ -44,6 +45,27 @@ class TestMetaData(MetaTest):
 
         run2 = platform.runs.get("Model", "Scenario")
         assert dict(run2.meta) == exp
+
+    def test_add_meta_invalid_type(
+        self, platform: ixmp4.Platform, run: ixmp4.Run
+    ) -> None:
+
+        class NoStringRepresentationClass:
+            def __str__(self):
+                raise TypeError("String representation is not supported")
+
+        match = (
+            "Failed to convert value of type 'NoStringRepresentationClass' to string: "
+            "String representation is not supported"
+        )
+
+        with run.transact("Add meta data"):
+            with pytest.raises(InvalidRunMeta, match=match):
+                run.meta = {"mstr": "foo", "no-string": NoStringRepresentationClass()}
+
+        with run.transact("Add meta data"):
+            with pytest.raises(InvalidRunMeta, match=match):
+                run.meta["no-string"] = NoStringRepresentationClass()
 
     def test_tabulate_platform_meta_after_add(self, platform: ixmp4.Platform) -> None:
         exp = pd.DataFrame(
