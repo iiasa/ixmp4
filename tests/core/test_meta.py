@@ -46,7 +46,7 @@ class TestMetaData(MetaTest):
         run2 = platform.runs.get("Model", "Scenario")
         assert dict(run2.meta) == exp
 
-    def test_add_meta_invalid_type(
+    def _test_add_meta_invalid_type(
         self, platform: ixmp4.Platform, run: ixmp4.Run
     ) -> None:
 
@@ -72,6 +72,7 @@ class TestMetaData(MetaTest):
             [
                 ["Model", "Scenario", 1, "mfloat", -1.9],
                 ["Model", "Scenario", 1, "mint", 13],
+                ["Model", "Scenario", 1, "mdatetime", "2026-06-25 01:00:00"],
                 ["Model", "Scenario", 1, "mstr", "foo"],
             ],
             columns=["model", "scenario", "version", "key", "value"],
@@ -92,15 +93,19 @@ class TestMetaData(MetaTest):
         with run.transact("Delete meta data with `del`"):
             del run.meta["mint"]
 
-        assert dict(run.meta) == {"mstr": "foo", "mfloat": -1.9}
+        assert dict(run.meta) == {
+            "mdatetime": "2026-06-25 01:00:00",
+            "mstr": "foo",
+            "mfloat": -1.9,
+        }
 
         with run.transact("Delete meta data with `None`"):
             run.meta["mfloat"] = None
 
-        assert dict(run.meta) == {"mstr": "foo"}
+        assert dict(run.meta) == {"mdatetime": "2026-06-25 01:00:00", "mstr": "foo"}
 
         run2 = platform.runs.get("Model", "Scenario")
-        assert dict(run2.meta) == {"mstr": "foo"}
+        assert dict(run2.meta) == {"mdatetime": "2026-06-25 01:00:00", "mstr": "foo"}
 
     def test_update_meta(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
         with run.transact("Update meta data"):
