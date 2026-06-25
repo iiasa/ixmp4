@@ -116,8 +116,7 @@ class RunMetaDictFacade(
 
         py_value = numpy_to_pytype(value)
         if py_value is not None:
-            _, py_value = convert_value(py_value)
-            self._service.create(self.run.id, key, py_value)
+            self._service.create(self.run.id, key, convert_value(py_value))
         self.df, self.data = self._get()
 
     def __delitem__(self, key: str) -> None:
@@ -200,7 +199,7 @@ class RunMetaDescriptor(object):
             {"key": value.keys(), "value": [numpy_to_pytype(v) for v in value.values()]}
         )
         df.dropna(axis=0, inplace=True)
-        df["value"] = df["value"].map(lambda v: convert_value(v)[1])
+        df["value"] = df["value"].map(lambda v: convert_value(v))
         df["run__id"] = obj._dto.id
         obj._backend.meta.bulk_upsert(df)
 

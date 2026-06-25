@@ -38,12 +38,12 @@ class Type(str, Enum):
 def convert_value(value: Any) -> tuple[Type, Any]:
     value_type = type(value)
 
-    if value_type in _type_map:
-        return _type_map[value_type], value
+    if type(value) in _type_map:
+        return value
 
     logger.warning("Converting value of type '%s' to string.", value_type.__name__)
     try:
-        return Type.STR, str(value)
+        return str(value)
     except Exception as e:
         raise InvalidRunMeta(
             f"Failed to convert value of type '{value_type.__name__}' to string: {e}"
