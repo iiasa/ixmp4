@@ -52,7 +52,7 @@ class TestMetaData(MetaTest):
 
         with run.transact("Add meta indicator"):
             with pytest.raises(InvalidRunMeta, match=match):
-                run.meta = {"mstr": "foo",  "mdatetime": datetime_value}
+                run.meta = {"mstr": "foo", "mdatetime": datetime_value}
 
         with run.transact("Add meta indicator"):
             with pytest.raises(InvalidRunMeta, match=match):
