@@ -49,6 +49,7 @@ class TestMetaData(MetaTest):
     def test_add_meta_invalid_type(self, platform: ixmp4.Platform) -> None:
 
         run = platform.runs.create("Model", "Scenario")
+
         class NoStringRepresentationClass:
             def __str__(self):
                 raise TypeError("String representation is not supported")
