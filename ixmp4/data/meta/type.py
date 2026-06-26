@@ -1,7 +1,9 @@
 from enum import Enum
 from typing import Any, Literal
-from ixmp4.data.meta.exceptions import InvalidRunMeta
+
 from pandas.core.dtypes.inference import is_list_like
+
+from ixmp4.data.meta.exceptions import InvalidRunMeta
 
 PdDtype = Literal["Int64", "str", "float64", "boolean"]
 
