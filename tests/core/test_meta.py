@@ -50,13 +50,13 @@ class TestMetaData(MetaTest):
         )
         datetime_value = pd.to_datetime("2026-6-25 01:00")
 
-        with run.transact("Add meta indicator"):
-            with pytest.raises(InvalidRunMeta, match=match):
-                run.meta = {"mstr": "foo", "mdatetime": datetime_value}
+        with pytest.raises(InvalidRunMeta, match=match):
+            with run.transact("Add meta indicator"):
+                run.meta = {"mstr": "foo", "mdatetime": datetime_value}  # type: ignore
 
-        with run.transact("Add meta indicator"):
-            with pytest.raises(InvalidRunMeta, match=match):
-                run.meta["mdatetime"] = datetime_value
+        with pytest.raises(InvalidRunMeta, match=match):
+            with run.transact("Add meta indicator"):
+                run.meta["mdatetime"] = datetime_value  # type: ignore
 
     def test_tabulate_platform_meta_after_add(self, platform: ixmp4.Platform) -> None:
         exp = pd.DataFrame(
