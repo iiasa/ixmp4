@@ -36,8 +36,9 @@ def check_meta_type(value: Any) -> None:
     if is_list_like(value):
         for v in value:
             check_meta_type(v)
+        return
 
-    if type(value) not in _type_map:
+    if type(value) not in _type_map and value is not None:
         raise InvalidRunMeta(
             f"Invalid meta indicator '{value}', allowed types: {list(_type_map.keys())}"
         )
