@@ -193,14 +193,13 @@ class RunMetaDescriptor(object):
         :class:`ixmp4.data.run.exceptions.RunLockRequired`
             If no run lock is held.
         """
-        check_meta_type(value.values())
-
         obj.require_lock()
         self._delete_existing(obj)
 
         df = pd.DataFrame(
             {"key": value.keys(), "value": [numpy_to_pytype(v) for v in value.values()]}
         )
+        check_meta_type(df.value)
         df.dropna(axis=0, inplace=True)
         df["run__id"] = obj._dto.id
         obj._backend.meta.bulk_upsert(df)
