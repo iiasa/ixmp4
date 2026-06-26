@@ -30,7 +30,7 @@ class TestMetaData(MetaTest):
                 "mstr": "foo",
                 "mnone": None,  # <- should be ignored
                 "mnan": np.nan,  # <-'
-                "mdatetime": pd.to_datetime("2026-6-25 01:00"),
+                "mdatetime": pd.to_datetime("2026-6-25 01:00"),  # type: ignore
             }
             run.meta["mfloat"] = -1.9
 
@@ -51,7 +51,7 @@ class TestMetaData(MetaTest):
         run = platform.runs.create("Model", "Scenario")
 
         class NoStringRepresentationClass:
-            def __str__(self):
+            def __str__(self) -> str:
                 raise TypeError("String representation is not supported")
 
         match = (
@@ -61,11 +61,11 @@ class TestMetaData(MetaTest):
 
         with run.transact("Add meta data"):
             with pytest.raises(InvalidRunMeta, match=match):
-                run.meta = {"mstr": "foo", "no-string": NoStringRepresentationClass()}
+                run.meta = {"mstr": "foo", "no-string": NoStringRepresentationClass()}  # type: ignore
 
         with run.transact("Add meta data"):
             with pytest.raises(InvalidRunMeta, match=match):
-                run.meta["no-string"] = NoStringRepresentationClass()
+                run.meta["no-string"] = NoStringRepresentationClass()  # type: ignore
 
     def test_tabulate_platform_meta_after_add(self, platform: ixmp4.Platform) -> None:
         exp = pd.DataFrame(
