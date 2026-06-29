@@ -14,6 +14,7 @@ from ixmp4.data.meta.filter import (
 )
 from ixmp4.data.meta.service import RunMetaEntryService
 
+from ..data.meta.type import check_meta_type
 from .base import BaseServiceFacade
 
 if TYPE_CHECKING:
@@ -114,6 +115,7 @@ class RunMetaDictFacade(
             pass
 
         py_value = numpy_to_pytype(value)
+        check_meta_type(py_value)
         if py_value is not None:
             self._service.create(self.run.id, key, py_value)
         self.df, self.data = self._get()
@@ -197,6 +199,7 @@ class RunMetaDescriptor(object):
         df = pd.DataFrame(
             {"key": value.keys(), "value": [numpy_to_pytype(v) for v in value.values()]}
         )
+        check_meta_type(df.value)
         df.dropna(axis=0, inplace=True)
         df["run__id"] = obj._dto.id
         obj._backend.meta.bulk_upsert(df)
