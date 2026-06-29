@@ -30,16 +30,12 @@ class RunAuthRepository(AuthRepository[Run | RunVersion]):
         return exc.where(Run.model__id.in_(model_exc))
 
     def list_model_names(self, run_ids: Sequence[int]) -> Sequence[str]:
-        exc = (
-            sa.select(Model.name)
-            .distinct()
-            .select_from(Run)
-            .join(Run.model)
-            .where(Run.id.in_(run_ids))
-        )
+        exc = sa.select(Model.name).distinct().select_from(Run).join(Run.model)
 
-        with self.executor.select(exc) as result:
-            return result.scalars().all()
+        model_names: list[str] = []
+        for result in self.executor.select_in_chunks(Run.__table__.c.id, run_ids, exc):
+            model_names.extend(result.scalars().all())
+        return model_names
 
 
 class ItemRepository(RunAuthRepository, BaseItemRepository[Run]):

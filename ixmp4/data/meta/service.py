@@ -4,7 +4,7 @@ from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 from toolkit.db.executor import SessionExecutor
 from typing_extensions import Unpack
 
-from ixmp4.base_exceptions import BadRequest, Forbidden
+from ixmp4.base_exceptions import Forbidden, InvalidDataFrame
 from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.run.repositories import ItemRepository as RunItemRepository
@@ -310,15 +310,11 @@ class RunMetaEntryService(Service):
         df: SerializableDataFrame,
     ) -> None:
         if "run__id" not in df.columns:
-            raise BadRequest("Column 'run__id' is required for bulk upsert auth check.")
+            raise InvalidDataFrame(
+                "Column 'run__id' is required for bulk upsert auth check."
+            )
 
-        run_models = (
-            self.runs_pandas.tabulate(
-                {"id__in": df["run__id"].tolist()}, columns=["id", "model"]
-            )["model"]
-            .unique()
-            .tolist()
-        )
+        run_models = self.runs.list_model_names(df["run__id"].tolist())
         auth_ctx.has_edit_permission(platform, models=run_models, raise_exc=Forbidden)
 
     @procedure(Http(methods=("DELETE",)))
@@ -346,13 +342,9 @@ class RunMetaEntryService(Service):
         df: SerializableDataFrame,
     ) -> None:
         if "run__id" not in df.columns:
-            raise BadRequest("Column 'run__id' is required for bulk delete auth check.")
+            raise InvalidDataFrame(
+                "Column 'run__id' is required for bulk delete auth check."
+            )
 
-        run_models = (
-            self.runs_pandas.tabulate(
-                {"id__in": df["run__id"].tolist()}, columns=["id", "model"]
-            )["model"]
-            .unique()
-            .tolist()
-        )
+        run_models = self.runs.list_model_names(df["run__id"].tolist())
         auth_ctx.has_edit_permission(platform, models=run_models, raise_exc=Forbidden)
