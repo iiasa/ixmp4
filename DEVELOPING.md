@@ -134,19 +134,45 @@ Contributions to the code are always welcome! Please make sure your code follows
 code style so that the style is consistent. Each PR will be checked by a Code Quality
 test that examines compliance with ruff and mypy.
 
-### Running ruff and mypy locally
+### Running pre-commit locally
 
-You can run the code style tools from within the ixmp4 directory:
+We use [pre-commit](https://pre-commit.com/) to check the code style. You can install
+pre-commit locally by installing ixmp4 with the optional `dev` group. Running
 
 ```bash
-poetry run mypy .
-poetry run ruff check .
-poetry run ruff format --check .
-
-# Or to enable ruff's automatic fixes
-poetry run ruff check --fix .
+pre-commit install
 ```
 
-We recommend setting your editor up to run at least
-[ruff](https://docs.astral.sh/ruff/usage/#vs-code) automatically whenever you hit
-`save`. A few minutes of configuration will save you time and nerves later on.
+will set pre-commit up to run on every `git commit`. Per default, pre-commit will run
+on changed files, but if you want to run it on all files, you can run
+
+```bash
+pre-commit run --all-files
+```
+
+If you only want certain hooks to run, choose from `ruff` and `mypy` as
+`hook-ids` and run
+
+```bash
+pre-commit run <hook-ids> --all-files
+```
+
+### Ensuring compliance
+
+Whether you run pre-commit locally or see it on your PR for the first time, the checks
+are the same. You can, of course, run the code style tools manually. From within the
+ixmp4 directory, this would look similar to this:
+
+```bash
+mypy .
+ruff check .
+ruff format .
+
+# Or to enable ruff's automic fixes
+ruff check --fix .
+```
+
+However, it is easy to forget running these commands manually. Therefore, we recommend
+setting your editor up to run at least [ruff](https://docs.astral.sh/ruff/usage/#vs-code)
+automatically whenever you hit `save`. A few minutes of configuration will save you time
+and nerves later on.
