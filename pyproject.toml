@@ -74,7 +74,6 @@ optional = true
 build = ">=1.0.3"
 mypy = ">=1.13.0"
 pandas-stubs = ">=2.0.0.230412"
-pre-commit = ">=3.3.3"
 ptvsd = ">=4.3.2"
 pytest = ">=8.0.0"
 pytest-benchmark = ">=4.0.0"
