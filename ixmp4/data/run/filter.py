@@ -49,12 +49,14 @@ def filter_by_iamc(
 class RunFilter(base.RunFilter, total=False):
     model: Annotated[base.ModelFilter, Run.model]
     scenario: Annotated[base.ScenarioFilter, Run.scenario]
+    meta: Annotated[base.RunMetaEntryFilter, Run.meta]
     iamc: Annotated[IamcRunFilter | bool | None, filter_by_iamc]
 
 
 class FacadeRunFilter(base.RunFilter, total=False):
     model: base.ModelFilter | str | Iterable[str]
     scenario: base.ScenarioFilter | str | Iterable[str]
+    meta: base.RunMetaEntryFilter | str | Iterable[str]
     iamc: IamcRunFilter | bool | None
 
 
@@ -67,6 +69,10 @@ NAME_FILTER_TRANSFORMERS: tuple[FilterValueTransformer, ...] = (
 FACADE_FILTER_TRANSFORMERS: dict[str, Sequence[FilterValueTransformer]] = {
     "model": NAME_FILTER_TRANSFORMERS,
     "scenario": NAME_FILTER_TRANSFORMERS,
+    "meta": (
+        make_str_like_transformer("key"),
+        make_iterable_str_in_transformer("key"),
+    ),
 }
 
 
