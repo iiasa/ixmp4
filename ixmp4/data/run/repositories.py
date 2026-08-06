@@ -9,7 +9,17 @@ from toolkit.db.repositories.base import Values
 from toolkit.db.target import ExtendedTarget, ModelTarget
 
 from ixmp4.data.base.repository import AuthRepository
+from ixmp4.data.checkpoint.db import Checkpoint
+from ixmp4.data.iamc.datapoint.db import DataPoint
+from ixmp4.data.iamc.timeseries.db import TimeSeries
+from ixmp4.data.meta.db import RunMetaEntry
 from ixmp4.data.model.db import Model
+from ixmp4.data.optimization.equation.db import Equation
+from ixmp4.data.optimization.indexset.db import IndexSet
+from ixmp4.data.optimization.parameter.db import Parameter
+from ixmp4.data.optimization.scalar.db import Scalar
+from ixmp4.data.optimization.table.db import Table
+from ixmp4.data.optimization.variable.db import Variable
 from ixmp4.data.scenario.db import Scenario
 
 from .db import Run, RunVersion
@@ -72,6 +82,52 @@ class ItemRepository(RunAuthRepository, BaseItemRepository[Run]):
         with self.wrap_executor_exception():
             with self.executor.insert_one(exc) as result:
                 return cast(int, result.scalar_one())
+
+    def delete_cascade(self, id: int) -> None:
+        """Delete a run and all associated iamc, optimization and meta data.
+
+        Dependent rows are deleted before the run itself to satisfy foreign-key
+        constraints. All statements are executed atomically in a single
+        transaction so that a failure rolls back the entire cascade.
+        """
+        self.get_by_pk({"id": id})
+
+        # iamc: datapoints reference time series, time series reference the run
+        data_point_exc = sa.delete(DataPoint).where(
+            DataPoint.time_series__id.in_(
+                sa.select(TimeSeries.id).where(TimeSeries.run__id == id)
+            )
+        )
+        time_series_exc = sa.delete(TimeSeries).where(TimeSeries.run__id == id)
+        # meta and checkpoints reference the run directly
+        meta_exc = sa.delete(RunMetaEntry).where(RunMetaEntry.run__id == id)
+        checkpoint_exc = sa.delete(Checkpoint).where(Checkpoint.run__id == id)
+        # optimization: indexed items (and their `ondelete="CASCADE"` association
+        # rows) must be removed before index sets, which they reference.
+        var_exc = sa.delete(Variable).where(Variable.run__id == id)
+        equ_exc = sa.delete(Equation).where(Equation.run__id == id)
+        par_exc = sa.delete(Parameter).where(Parameter.run__id == id)
+        tab_exc = sa.delete(Table).where(Table.run__id == id)
+        sca_exc = sa.delete(Scalar).where(Scalar.run__id == id)
+        idx_exc = sa.delete(IndexSet).where(IndexSet.run__id == id)
+
+        statements = [
+            data_point_exc,
+            time_series_exc,
+            meta_exc,
+            checkpoint_exc,
+            var_exc,
+            equ_exc,
+            par_exc,
+            tab_exc,
+            sca_exc,
+            idx_exc,
+            self.target.delete_statement().where(Run.id == id),
+        ]
+
+        with self.wrap_executor_exception():
+            with self.executor.delete_many(statements) as _:
+                return None
 
     def set_as_default_version(self, id: int, values: Values | None = None) -> None:
         run = self.get_by_pk({"id": id})
