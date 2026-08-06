@@ -12,8 +12,30 @@ platform = backends.get_platform_fixture(scope="class")
 
 
 class TestRun:
+    @pytest.fixture(scope="class")
+    def units(self, platform: ixmp4.Platform) -> list[ixmp4.Unit]:
+        return [platform.units.create("Unit 1")]
+
+    @pytest.fixture(scope="class")
+    def regions(self, platform: ixmp4.Platform) -> list[ixmp4.Region]:
+        return [platform.regions.create("Region 1", "default")]
+
+    def _add_simple_data(self, platform: ixmp4.Platform, run: ixmp4.Run) -> None:
+        df = pd.DataFrame(
+            [["Region 1", "Unit 1", "Variable 1", 2000, 1.1]],
+            columns=["region", "unit", "variable", "year", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        with run.transact("Add simple data"):
+            run.meta = {"key": "value"}
+            run.iamc.add(df)
+
     def test_create_run(
-        self, platform: ixmp4.Platform, fake_time: datetime.datetime
+        self,
+        platform: ixmp4.Platform,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+        fake_time: datetime.datetime,
     ) -> None:
         run1 = platform.runs.create("Model", "Scenario")
         run1.set_as_default()
@@ -37,6 +59,9 @@ class TestRun:
 
         assert run3.id == 3
         assert run4.id == 4
+
+        for run in (run1, run2, run3, run4):
+            self._add_simple_data(platform, run)
 
     def test_tabulate_run(self, platform: ixmp4.Platform) -> None:
         ret_df = platform.runs.tabulate(default_only=False)
