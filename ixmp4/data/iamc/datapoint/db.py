@@ -28,7 +28,7 @@ class DataPoint(BaseModel):
     )
     timeseries: Mapped["TimeSeries"] = orm.relationship(viewonly=True)
 
-    value: Float = orm.mapped_column()
+    value: Float = orm.mapped_column(nullable=False)
 
     type: String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 

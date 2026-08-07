@@ -34,7 +34,7 @@ class IamcTest(DataFrameTest, PlatformTest):
         self,
         platform: ixmp4.Platform,
     ) -> list[ixmp4.Unit]:
-        return [platform.units.create("Unit 1"), platform.units.create("Unit 2")]
+        return [platform.units.create("U 1"), platform.units.create("U 2")]
 
     @pytest.fixture(scope="class")
     def regions(
@@ -42,12 +42,31 @@ class IamcTest(DataFrameTest, PlatformTest):
         platform: ixmp4.Platform,
     ) -> list[ixmp4.Region]:
         return [
-            platform.regions.create("Region 1", "default"),
-            platform.regions.create("Region 2", "default"),
+            platform.regions.create("R 1", "default"),
+            platform.regions.create("R 2", "default"),
         ]
 
 
 class IamcDataTest(IamcTest):
+    @classmethod
+    def canonical_sort(cls, df: pd.DataFrame) -> pd.DataFrame:
+        sorted_cols = df.columns.sort_values().to_list()
+        sort_df = df.copy()
+        for col in sorted_cols:
+            series = sort_df[col]
+            if isinstance(series.dtype, pd.CategoricalDtype):
+                sort_df[col] = series.astype("string")
+                continue
+            if pd.api.types.is_object_dtype(series):
+                try:
+                    series.sort_values()
+                except TypeError:
+                    sort_df[col] = series.map(
+                        lambda v: "" if pd.isna(v) else f"{type(v).__name__}:{v}"
+                    )
+        order = sort_df.sort_values(by=sorted_cols).index
+        return df.loc[order].reset_index(drop=True)
+
     @pytest.fixture(scope="class")
     def test_data_upsert(
         self,
@@ -64,7 +83,7 @@ class IamcDataTest(IamcTest):
         test_data_type: Type | None,
     ) -> None:
         with run.transact("Full Addition"):
-            run.iamc.add(test_data_add, type=test_data_type)
+            run.iamc.add(test_data_add.copy(), type=test_data_type)
 
     def test_iamc_data_tabulate_after_add(
         self,
@@ -84,37 +103,98 @@ class IamcDataTest(IamcTest):
         ret_platform = platform.iamc.tabulate(run={"default_only": False})
         pdt.assert_frame_equal(test_data_platform, ret_platform, check_like=True)
 
+    def test_iamc_data_describe_after_add(
+        self,
+        platform: ixmp4.Platform,
+        run: ixmp4.Run,
+        test_data_add: pd.DataFrame,
+    ) -> None:
+        run_description = run.iamc.describe()
+        expected_values = test_data_add["value"].astype(float)
+        assert run_description.count == len(test_data_add)
+        assert run_description.min == pytest.approx(float(expected_values.min()))
+        assert run_description.p25 == pytest.approx(
+            float(expected_values.quantile(0.25))
+        )
+        assert run_description.median == pytest.approx(
+            float(expected_values.quantile(0.5))
+        )
+        assert run_description.p75 == pytest.approx(
+            float(expected_values.quantile(0.75))
+        )
+        assert run_description.max == pytest.approx(float(expected_values.max()))
+
+        expected_categories = (
+            sorted(test_data_add["subannual"].dropna().astype(str).drop_duplicates())
+            if "subannual" in test_data_add.columns
+            else []
+        )
+        assert run_description.categories == expected_categories
+        assert run_description.types
+        if "year" in test_data_add.columns:
+            assert run_description.first_year == test_data_add["year"].min()
+            assert run_description.last_year == test_data_add["year"].max()
+
+        if "datetime" in test_data_add.columns:
+            assert run_description.first_datetime == test_data_add["datetime"].min()
+            assert run_description.last_datetime == test_data_add["datetime"].max()
+        elif "time" in test_data_add.columns:
+            ts = test_data_add["time"].loc[
+                test_data_add["time"].map(lambda v: isinstance(v, pd.Timestamp))
+            ]
+            if not ts.empty:
+                assert run_description.first_datetime == ts.min()
+                assert run_description.last_datetime == ts.max()
+            else:
+                assert run_description.first_datetime is None
+                assert run_description.last_datetime is None
+        else:
+            assert run_description.first_datetime is None
+            assert run_description.last_datetime is None
+
+        run_filtered_tabulate = run.iamc.tabulate(region="R 1")
+        run_filtered_description = run.iamc.describe(region="R 1")
+        assert run_filtered_description.count == len(run_filtered_tabulate)
+
+        platform_description = platform.iamc.describe(
+            run={"id": run.id, "default_only": False}
+        )
+        platform_tabulate = platform.iamc.tabulate(
+            run={"id": run.id, "default_only": False}
+        )
+        assert platform_description.count == len(platform_tabulate)
+
     def test_iamc_data_facade_name_filter_shorthands(
         self,
         run: ixmp4.Run,
     ) -> None:
-        ret_region = run.iamc.tabulate(region="Region 1")
-        ret_region_explicit = run.iamc.tabulate(region={"name__like": "Region 1"})
+        ret_region = run.iamc.tabulate(region="R 1")
+        ret_region_explicit = run.iamc.tabulate(region={"name__like": "R 1"})
         pdt.assert_frame_equal(
             self.canonical_sort(ret_region),
             self.canonical_sort(ret_region_explicit),
             check_like=True,
         )
 
-        ret_unit = run.iamc.tabulate(unit=["Unit 1", "Unit 2"])
-        ret_unit_explicit = run.iamc.tabulate(unit={"name__in": ["Unit 1", "Unit 2"]})
+        ret_unit = run.iamc.tabulate(unit=["U 1", "U 2"])
+        ret_unit_explicit = run.iamc.tabulate(unit={"name__in": ["U 1", "U 2"]})
         pdt.assert_frame_equal(
             self.canonical_sort(ret_unit),
             self.canonical_sort(ret_unit_explicit),
             check_like=True,
         )
 
-        ret_variable = run.iamc.tabulate(variable="Variable 1")
-        ret_variable_explicit = run.iamc.tabulate(variable={"name__like": "Variable 1"})
+        ret_variable = run.iamc.tabulate(variable="V 1")
+        ret_variable_explicit = run.iamc.tabulate(variable={"name__like": "V 1"})
         pdt.assert_frame_equal(
             self.canonical_sort(ret_variable),
             self.canonical_sort(ret_variable_explicit),
             check_like=True,
         )
 
-        ret_variable_in = run.iamc.tabulate(variable=["Variable 1", "Variable 2"])
+        ret_variable_in = run.iamc.tabulate(variable=["V 1", "V 2"])
         ret_variable_in_explicit = run.iamc.tabulate(
-            variable={"name__in": ["Variable 1", "Variable 2"]}
+            variable={"name__in": ["V 1", "V 2"]}
         )
         pdt.assert_frame_equal(
             self.canonical_sort(ret_variable_in),
@@ -129,7 +209,7 @@ class IamcDataTest(IamcTest):
         test_data_type: Type | None,
     ) -> None:
         with run.transact("Partial Removal"):
-            run.iamc.remove(test_data_remove, type=test_data_type)
+            run.iamc.remove(test_data_remove.copy(), type=test_data_type)
 
     def test_iamc_data_remaining_after_remove_partial(
         self,
@@ -138,7 +218,9 @@ class IamcDataTest(IamcTest):
         test_data_type: Type | None,
     ) -> None:
         ret = run.iamc.tabulate()
-        pdt.assert_frame_equal(test_data_remaining, ret, check_like=True)
+        pdt.assert_frame_equal(
+            self.drop_empty_columns(test_data_remaining), ret, check_like=True
+        )
 
     def test_iamc_data_upsert(
         self,
@@ -147,7 +229,7 @@ class IamcDataTest(IamcTest):
         test_data_type: Type | None,
     ) -> None:
         with run.transact("Upsert"):
-            run.iamc.add(test_data_upsert, type=test_data_type)
+            run.iamc.add(test_data_upsert.copy(), type=test_data_type)
 
     def test_iamc_data_tabulate_after_upsert(
         self,
@@ -189,9 +271,6 @@ class IamcDataTest(IamcTest):
     ) -> None:
         ret = run.iamc.tabulate()
         assert ret.empty
-
-    def test_iamc_data_versioning(self, versioning_platform: ixmp4.Platform) -> None:
-        pass  # TODO: Test core versioning api once its implemented
 
 
 class IamcDataRollbackTest(IamcTest):
@@ -429,14 +508,12 @@ class IamcDataRollbackTest(IamcTest):
     ) -> None:
         tx_id = self.latest_transaction_id(run)
         self.clear_iamc_data(run, test_data_add)
-        self.delete_measurands_for_variable(run, "Variable 1")
-        versioning_platform.iamc.variables.delete("Variable 1")
+        self.delete_measurands_for_variable(run, "V 1")
+        versioning_platform.iamc.variables.delete("V 1")
 
         run._service.revert(run.id, tx_id)
 
-        assert versioning_platform.iamc.variables.get_by_name("Variable 1").name == (
-            "Variable 1"
-        )
+        assert versioning_platform.iamc.variables.get_by_name("V 1").name == ("V 1")
         ret = run.iamc.tabulate()
         pdt.assert_frame_equal(
             self.canonical_sort(test_data_add),
@@ -452,7 +529,7 @@ class IamcDataRollbackTest(IamcTest):
     ) -> None:
         tx_id = self.latest_transaction_id(run)
         self.clear_iamc_data(run, test_data_add)
-        versioning_platform.regions.delete("Region 1")
+        versioning_platform.regions.delete("R 1")
 
         with pytest.raises(ixmp4.NotFound):
             run._service.revert(run.id, tx_id)
@@ -465,8 +542,8 @@ class IamcDataRollbackTest(IamcTest):
     ) -> None:
         tx_id = self.latest_transaction_id(run)
         self.clear_iamc_data(run, test_data_add)
-        self.delete_measurands_for_unit(run, "Unit 1")
-        versioning_platform.units.delete("Unit 1")
+        self.delete_measurands_for_unit(run, "U 1")
+        versioning_platform.units.delete("U 1")
 
         with pytest.raises(ixmp4.NotFound):
             run._service.revert(run.id, tx_id)
@@ -481,14 +558,14 @@ class IamcDataAnnual:
     ) -> pd.DataFrame:
         df = pd.DataFrame(
             [
-                ["Region 1", "Unit 1", "Variable 1", 2000, 1.1],
-                ["Region 1", "Unit 1", "Variable 1", 2010, 1.3],
-                ["Region 1", "Unit 2", "Variable 2", 2020, 1.5],
-                ["Region 1", "Unit 2", "Variable 2", 2030, 1.7],
-                ["Region 2", "Unit 1", "Variable 1", 2000, 2.1],
-                ["Region 2", "Unit 1", "Variable 1", 2010, 2.3],
-                ["Region 2", "Unit 2", "Variable 2", 2020, 2.5],
-                ["Region 2", "Unit 2", "Variable 2", 2030, 2.7],
+                ["R 1", "U 1", "V 1", 2000, 1.1],
+                ["R 1", "U 1", "V 1", 2010, 1.3],
+                ["R 1", "U 2", "V 2", 2020, 1.5],
+                ["R 1", "U 2", "V 2", 2030, 1.7],
+                ["R 2", "U 1", "V 1", 2000, 2.1],
+                ["R 2", "U 1", "V 1", 2010, 2.3],
+                ["R 2", "U 2", "V 2", 2020, 2.5],
+                ["R 2", "U 2", "V 2", 2030, 2.7],
             ],
             columns=["region", "unit", "variable", "year", "value"],
         )
@@ -503,10 +580,10 @@ class IamcDataAnnual:
     ) -> pd.DataFrame:
         df = pd.DataFrame(
             [
-                ["Region 1", "Unit 1", "Variable 1", 2000, 1.1],
-                ["Region 1", "Unit 1", "Variable 1", 2010, 1.3],
-                ["Region 1", "Unit 2", "Variable 2", 2020, 1.5],
-                ["Region 1", "Unit 2", "Variable 2", 2030, 1.7],
+                ["R 1", "U 1", "V 1", 2000, 1.1],
+                ["R 1", "U 1", "V 1", 2010, 1.3],
+                ["R 1", "U 2", "V 2", 2020, 1.5],
+                ["R 1", "U 2", "V 2", 2030, 1.7],
             ],
             columns=["region", "unit", "variable", "year", "value"],
         )
@@ -521,10 +598,10 @@ class IamcDataAnnual:
     ) -> pd.DataFrame:
         df = pd.DataFrame(
             [
-                ["Region 2", "Unit 1", "Variable 1", 2000, 2.1],
-                ["Region 2", "Unit 1", "Variable 1", 2010, 2.3],
-                ["Region 2", "Unit 2", "Variable 2", 2020, 2.5],
-                ["Region 2", "Unit 2", "Variable 2", 2030, 2.7],
+                ["R 2", "U 1", "V 1", 2000, 2.1],
+                ["R 2", "U 1", "V 1", 2010, 2.3],
+                ["R 2", "U 2", "V 2", 2020, 2.5],
+                ["R 2", "U 2", "V 2", 2030, 2.7],
             ],
             columns=["region", "unit", "variable", "year", "value"],
         )
@@ -543,7 +620,7 @@ class IamcDataAnnual:
     @pytest.fixture(scope="class")
     def test_data_new_timeseries(self) -> pd.DataFrame:
         df = pd.DataFrame(
-            [["Region 1", "Unit 2", "Variable 1", 2040, 9.9]],
+            [["R 1", "U 2", "V 1", 2040, 9.9]],
             columns=["region", "unit", "variable", "year", "value"],
         )
         df["year"] = df["year"].astype("Int64")
@@ -553,8 +630,8 @@ class IamcDataAnnual:
     def test_data_remove_full_timeseries(self) -> pd.DataFrame:
         df = pd.DataFrame(
             [
-                ["Region 1", "Unit 1", "Variable 1", 2000],
-                ["Region 1", "Unit 1", "Variable 1", 2010],
+                ["R 1", "U 1", "V 1", 2000],
+                ["R 1", "U 1", "V 1", 2010],
             ],
             columns=["region", "unit", "variable", "year"],
         )
@@ -572,9 +649,319 @@ class IamcDataAnnual:
         )
         return expected[
             ~(
-                (expected["region"] == "Region 1")
-                & (expected["unit"] == "Unit 1")
-                & (expected["variable"] == "Variable 1")
+                (expected["region"] == "R 1")
+                & (expected["unit"] == "U 1")
+                & (expected["variable"] == "V 1")
+            )
+        ].reset_index(drop=True)
+
+
+class IamcDataCategorical:
+    @pytest.fixture(scope="class")
+    def test_data_add(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", 2000, "Summer", 1.1],
+                ["R 1", "U 1", "V 1", 2010, "Summer", 1.3],
+                ["R 1", "U 2", "V 2", 2020, "Winter", 1.5],
+                ["R 1", "U 2", "V 2", 2030, "Winter", 1.7],
+                ["R 2", "U 1", "V 1", 2000, "Summer", 2.1],
+                ["R 2", "U 1", "V 1", 2010, "Summer", 2.3],
+                ["R 2", "U 2", "V 2", 2020, "Winter", 2.5],
+                ["R 2", "U 2", "V 2", 2030, "Winter", 2.7],
+            ],
+            columns=["region", "unit", "variable", "year", "subannual", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_remove(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", 2000, "Summer", 1.1],
+                ["R 1", "U 1", "V 1", 2010, "Summer", 1.3],
+                ["R 1", "U 2", "V 2", 2020, "Winter", 1.5],
+                ["R 1", "U 2", "V 2", 2030, "Winter", 1.7],
+            ],
+            columns=["region", "unit", "variable", "year", "subannual", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_remaining(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [
+                ["R 2", "U 1", "V 1", 2000, "Summer", 2.1],
+                ["R 2", "U 1", "V 1", 2010, "Summer", 2.3],
+                ["R 2", "U 2", "V 2", 2020, "Winter", 2.5],
+                ["R 2", "U 2", "V 2", 2030, "Winter", 2.7],
+            ],
+            columns=["region", "unit", "variable", "year", "subannual", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert(
+        self,
+        test_data_add: pd.DataFrame,
+    ) -> pd.DataFrame:
+        test_data_upsert = test_data_add.copy()
+        test_data_upsert["value"] = np.sin(test_data_upsert["value"])
+        return test_data_upsert
+
+    @pytest.fixture(scope="class")
+    def test_data_new_timeseries(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [["R 1", "U 2", "V 1", 2040, "Spring", 9.9]],
+            columns=["region", "unit", "variable", "year", "subannual", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_remove_full_timeseries(self) -> pd.DataFrame:
+        df = pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", 2000, "Summer"],
+                ["R 1", "U 1", "V 1", 2010, "Summer"],
+            ],
+            columns=["region", "unit", "variable", "year", "subannual"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        return df
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert_after_full_timeseries_removal(
+        self,
+        test_data_new_timeseries: pd.DataFrame,
+        test_data_upsert: pd.DataFrame,
+    ) -> pd.DataFrame:
+        expected = pd.concat(
+            [test_data_upsert, test_data_new_timeseries], ignore_index=True
+        )
+        return expected[
+            ~(
+                (expected["region"] == "R 1")
+                & (expected["unit"] == "U 1")
+                & (expected["variable"] == "V 1")
+            )
+        ].reset_index(drop=True)
+
+
+class IamcDataDatetime:
+    @pytest.fixture(scope="class")
+    def test_data_add(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", pd.Timestamp("2000-01-01"), 1.1],
+                ["R 1", "U 1", "V 1", pd.Timestamp("2000-02-01"), 1.3],
+                ["R 1", "U 2", "V 2", pd.Timestamp("2000-03-01"), 1.5],
+                ["R 1", "U 2", "V 2", pd.Timestamp("2000-04-01"), 1.7],
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-01-01"), 2.1],
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-02-01"), 2.3],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-03-01"), 2.5],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-04-01"), 2.7],
+            ],
+            columns=["region", "unit", "variable", "time", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_remove(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", pd.Timestamp("2000-01-01"), 1.1],
+                ["R 1", "U 1", "V 1", pd.Timestamp("2000-02-01"), 1.3],
+                ["R 1", "U 2", "V 2", pd.Timestamp("2000-03-01"), 1.5],
+                ["R 1", "U 2", "V 2", pd.Timestamp("2000-04-01"), 1.7],
+            ],
+            columns=["region", "unit", "variable", "time", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_remaining(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-01-01"), 2.1],
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-02-01"), 2.3],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-03-01"), 2.5],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-04-01"), 2.7],
+            ],
+            columns=["region", "unit", "variable", "time", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert(
+        self,
+        test_data_add: pd.DataFrame,
+    ) -> pd.DataFrame:
+        test_data_upsert = test_data_add.copy()
+        test_data_upsert["value"] = np.sin(test_data_upsert["value"])
+        return test_data_upsert
+
+    @pytest.fixture(scope="class")
+    def test_data_new_timeseries(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [["R 1", "U 2", "V 1", pd.Timestamp("2020-01-01"), 9.9]],
+            columns=["region", "unit", "variable", "time", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_remove_full_timeseries(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", pd.Timestamp("2000-01-01")],
+                ["R 1", "U 1", "V 1", pd.Timestamp("2000-02-01")],
+            ],
+            columns=["region", "unit", "variable", "time"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert_after_full_timeseries_removal(
+        self,
+        test_data_new_timeseries: pd.DataFrame,
+        test_data_upsert: pd.DataFrame,
+    ) -> pd.DataFrame:
+        expected = pd.concat(
+            [test_data_upsert, test_data_new_timeseries], ignore_index=True
+        )
+        return expected[
+            ~(
+                (expected["region"] == "R 1")
+                & (expected["unit"] == "U 1")
+                & (expected["variable"] == "V 1")
+            )
+        ].reset_index(drop=True)
+
+
+class IamcDataMixed:
+    @pytest.fixture(scope="class")
+    def test_data_add(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", 2000, None, 0.1],
+                ["R 1", "U 1", "V 1", 2010, None, 0.2],
+                ["R 1", "U 2", "V 2", 2020, "Summer", 1.5],
+                ["R 1", "U 2", "V 2", 2030, "Winter", 1.7],
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-01-01"), None, 2.1],
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-02-01"), None, 2.3],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-03-01"), None, 2.5],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-04-01"), None, 2.7],
+            ],
+            columns=["region", "unit", "variable", "time", "subannual", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_remove(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", 2000, None, 0.1],
+                ["R 1", "U 1", "V 1", 2010, None, 0.2],
+                ["R 1", "U 2", "V 2", 2020, "Summer", 1.5],
+                ["R 1", "U 2", "V 2", 2030, "Winter", 1.7],
+            ],
+            columns=["region", "unit", "variable", "time", "subannual", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_remaining(
+        self,
+        regions: list[ixmp4.Region],
+        units: list[ixmp4.Unit],
+    ) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-01-01"), None, 2.1],
+                ["R 2", "U 1", "V 1", pd.Timestamp("2010-02-01"), None, 2.3],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-03-01"), None, 2.5],
+                ["R 2", "U 2", "V 2", pd.Timestamp("2010-04-01"), None, 2.7],
+            ],
+            columns=["region", "unit", "variable", "time", "subannual", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert(
+        self,
+        test_data_add: pd.DataFrame,
+    ) -> pd.DataFrame:
+        test_data_upsert = test_data_add.copy()
+        test_data_upsert["value"] = np.sin(test_data_upsert["value"])
+        return test_data_upsert
+
+    @pytest.fixture(scope="class")
+    def test_data_new_timeseries(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                [
+                    "R 1",
+                    "U 2",
+                    "V 1",
+                    pd.Timestamp("2020-01-01"),
+                    None,
+                    9.9,
+                ]
+            ],
+            columns=["region", "unit", "variable", "time", "subannual", "value"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_remove_full_timeseries(self) -> pd.DataFrame:
+        return pd.DataFrame(
+            [
+                ["R 1", "U 1", "V 1", 2000, None],
+                ["R 1", "U 1", "V 1", 2010, None],
+            ],
+            columns=["region", "unit", "variable", "time", "subannual"],
+        )
+
+    @pytest.fixture(scope="class")
+    def test_data_upsert_after_full_timeseries_removal(
+        self,
+        test_data_new_timeseries: pd.DataFrame,
+        test_data_upsert: pd.DataFrame,
+    ) -> pd.DataFrame:
+        expected = pd.concat(
+            [test_data_upsert, test_data_new_timeseries], ignore_index=True
+        )
+        return expected[
+            ~(
+                (expected["region"] == "R 1")
+                & (expected["unit"] == "U 1")
+                & (expected["variable"] == "V 1")
             )
         ].reset_index(drop=True)
 
@@ -589,6 +976,36 @@ class TestIamcDataAnnualWithType(IamcDataAnnual, IamcDataTest):
     @pytest.fixture(scope="class")
     def test_data_type(self) -> Type | None:
         return Type.ANNUAL
+
+
+class TestIamcDataCategoricalInferType(IamcDataCategorical, IamcDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_type(self) -> Type | None:
+        return None
+
+
+class TestIamcDataCategoricalWithType(IamcDataCategorical, IamcDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_type(self) -> Type | None:
+        return Type.CATEGORICAL
+
+
+class TestIamcDataDatetimeInferType(IamcDataDatetime, IamcDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_type(self) -> Type | None:
+        return None
+
+
+class TestIamcDataDatetimeWithType(IamcDataDatetime, IamcDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_type(self) -> Type | None:
+        return Type.DATETIME
+
+
+class TestIamcDataMixedInferType(IamcDataMixed, IamcDataTest):
+    @pytest.fixture(scope="class")
+    def test_data_type(self) -> Type | None:
+        return None
 
 
 class TestIamcDataAnnualRollback(IamcDataAnnual, IamcDataRollbackTest):
@@ -708,6 +1125,7 @@ class IamcDataInputTest(IamcTest):
 
     def test_iamc_data_input(
         self,
+        platform: ixmp4.Platform,
         run: ixmp4.Run,
         input_data: pd.DataFrame,
         expected_data: pd.DataFrame,
@@ -737,14 +1155,14 @@ class TestAnnualIamcInputData(IamcDataInputTest):
     ) -> pd.DataFrame:
         return pd.DataFrame(
             [
-                ["Region 1", "Unit 1", "Variable 1", 2000, 1.1],
-                ["Region 1", "Unit 1", "Variable 1", 2010, 1.3],
-                ["Region 1", "Unit 2", "Variable 2", 2020, 1.5],
-                ["Region 1", "Unit 2", "Variable 2", 2030, 1.7],
-                ["Region 2", "Unit 1", "Variable 1", 2000, 2.1],
-                ["Region 2", "Unit 1", "Variable 1", 2010, 2.3],
-                ["Region 2", "Unit 2", "Variable 2", 2020, 2.5],
-                ["Region 2", "Unit 2", "Variable 2", 2030, 2.7],
+                ["R 1", "U 1", "V 1", 2000, 1.1],
+                ["R 1", "U 1", "V 1", 2010, 1.3],
+                ["R 1", "U 2", "V 2", 2020, 1.5],
+                ["R 1", "U 2", "V 2", 2030, 1.7],
+                ["R 2", "U 1", "V 1", 2000, 2.1],
+                ["R 2", "U 1", "V 1", 2010, 2.3],
+                ["R 2", "U 2", "V 2", 2020, 2.5],
+                ["R 2", "U 2", "V 2", 2030, 2.7],
             ],
             columns=["region", "unit", "variable", "year", "value"],
         ).astype({"year": "Int64"})
@@ -765,8 +1183,8 @@ class TestCategoricalIamcInputData(IamcDataInputTest):
     def expected_data(self) -> pd.DataFrame:
         return pd.DataFrame(
             [
-                ["Region 1", "Variable 1", "Unit 1", 2000, "Summer", 1.1],
-                ["Region 2", "Variable 2", "Unit 2", 2010, "Winter", 2.3],
+                ["R 1", "V 1", "U 1", 2000, "Summer", 1.1],
+                ["R 2", "V 2", "U 2", 2010, "Winter", 2.3],
             ],
             columns=["region", "variable", "unit", "year", "subannual", "value"],
         ).astype({"year": "Int64"})
@@ -788,20 +1206,8 @@ class TestDatetimeIamcInputData(IamcDataInputTest):
     def expected_data(self) -> pd.DataFrame:
         return pd.DataFrame(
             [
-                [
-                    "Region 1",
-                    "Variable 1",
-                    "Unit 1",
-                    pd.Timestamp("2000-01-01 00:00:00"),
-                    1.1,
-                ],
-                [
-                    "Region 2",
-                    "Variable 2",
-                    "Unit 2",
-                    pd.Timestamp("2010-06-01 12:34:56"),
-                    2.3,
-                ],
+                ["R 1", "V 1", "U 1", pd.Timestamp("2000-01-01 00:00:00"), 1.1],
+                ["R 2", "V 2", "U 2", pd.Timestamp("2010-06-01 12:34:56"), 2.3],
             ],
             columns=["region", "variable", "unit", "time", "value"],
         )
@@ -823,9 +1229,9 @@ class TestSingleRowDatetimeIamcInputData(IamcDataInputTest):
         return pd.DataFrame(
             [
                 [
-                    "Region 1",
-                    "Variable 1",
-                    "Unit 1",
+                    "R 1",
+                    "V 1",
+                    "U 1",
                     pd.Timestamp("2000-01-01 00:00:00"),
                     1.1,
                 ],
@@ -848,28 +1254,14 @@ class TestMixedIamcInputData(IamcDataInputTest):
         return pd.DataFrame(
             [
                 # ANNUAL
-                ["Region 1", "Variable 1", "Unit 1", 2000, None, 0.1],
-                ["Region 2", "Variable 2", "Unit 2", 2010, None, 0.23],
+                ["R 1", "V 1", "U 1", 2000, None, 0.1],
+                ["R 2", "V 2", "U 2", 2010, None, 0.23],
                 # CATEGORICAL
-                ["Region 1", "Variable 1", "Unit 1", 2000, "Summer", 1.1],
-                ["Region 2", "Variable 2", "Unit 2", 2010, "Winter", 2.3],
+                ["R 1", "V 1", "U 1", 2000, "Summer", 1.1],
+                ["R 2", "V 2", "U 2", 2010, "Winter", 2.3],
                 # DATETIME
-                [
-                    "Region 1",
-                    "Variable 1",
-                    "Unit 1",
-                    pd.Timestamp("2000-01-01 00:00:00"),
-                    None,
-                    101.0,
-                ],
-                [
-                    "Region 2",
-                    "Variable 2",
-                    "Unit 2",
-                    pd.Timestamp("2010-06-01 12:34:56"),
-                    None,
-                    3.14,
-                ],
+                ["R 1", "V 1", "U 1", pd.Timestamp("2000-01-01 00:00:00"), None, 101.0],
+                ["R 2", "V 2", "U 2", pd.Timestamp("2010-06-01 12:34:56"), None, 3.14],
             ],
             columns=["region", "variable", "unit", "time", "subannual", "value"],
         )
