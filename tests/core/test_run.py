@@ -9,11 +9,12 @@ import sqlalchemy as sa
 import ixmp4
 from ixmp4.data.run.db import Run
 from tests import backends
+from tests.core.base import PlatformTest
 
 platform = backends.get_platform_fixture(scope="class")
 
 
-class TestRun:
+class TestRun(PlatformTest):
     @pytest.fixture(scope="class")
     def units(self, platform: ixmp4.Platform) -> list[ixmp4.Unit]:
         return [platform.units.create("Unit 1")]
@@ -129,8 +130,8 @@ class TestRun:
         assert len(platform.runs.list()) == 0
 
     def test_delete_run_persists_to_database(self, platform: ixmp4.Platform) -> None:
-        transport = platform.backend.transport
-        direct = getattr(transport, "direct", transport)
+        direct = self.get_direct_or_skip(platform.backend.transport)
+        assert direct.session.bind is not None
         bind = direct.session.bind
         if bind.engine.dialect.name == "sqlite":
             pytest.skip(
