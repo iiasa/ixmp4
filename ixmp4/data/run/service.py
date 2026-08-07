@@ -132,7 +132,7 @@ class RunService(GetByIdService):
             If the run with `id` does not exist.
         """
 
-        self.items.delete_by_pk({"id": id})
+        self.items.delete_cascade(id)
 
     @delete_by_id.auth_check()
     def delete_by_id_auth_check(
