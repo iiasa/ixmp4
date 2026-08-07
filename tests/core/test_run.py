@@ -4,8 +4,10 @@ from typing import Any
 import pandas as pd
 import pandas.testing as pdt
 import pytest
+import sqlalchemy as sa
 
 import ixmp4
+from ixmp4.data.run.db import Run
 from tests import backends
 
 platform = backends.get_platform_fixture(scope="class")
@@ -125,6 +127,25 @@ class TestRun:
     def test_runs_empty(self, platform: ixmp4.Platform) -> None:
         assert platform.runs.tabulate().empty
         assert len(platform.runs.list()) == 0
+
+    def test_delete_run_persists_to_database(self, platform: ixmp4.Platform) -> None:
+        transport = platform.backend.transport
+        direct = getattr(transport, "direct", transport)
+        bind = direct.session.bind
+        if bind.engine.dialect.name == "sqlite":
+            pytest.skip(
+                "SQLite in-memory databases cannot be inspected from a "
+                "separate connection."
+            )
+        engine = sa.create_engine(bind.engine.url)
+        try:
+            with engine.connect() as conn:
+                count = conn.execute(
+                    sa.select(sa.func.count()).select_from(Run)
+                ).scalar_one()
+        finally:
+            engine.dispose()
+        assert count == 0
 
 
 class TestRunClone:

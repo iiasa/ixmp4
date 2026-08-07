@@ -2,6 +2,7 @@ from typing import Any, Sequence, cast
 
 import sqlalchemy as sa
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
+from toolkit.db.executor import SessionExecutor
 from toolkit.db.filter import Filter
 from toolkit.db.repositories import ItemRepository as BaseItemRepository
 from toolkit.db.repositories import PandasRepository as BasePandasRepository
@@ -53,6 +54,7 @@ class ItemRepository(RunAuthRepository, BaseItemRepository[Run]):
     NotUnique = RunNotUnique
     target = ModelTarget(Run)
     filter = Filter(RunFilter, Run)
+    executor: SessionExecutor
 
     def create(
         self, model_id: int, scenario_id: int, values: Values | None = None
@@ -126,8 +128,13 @@ class ItemRepository(RunAuthRepository, BaseItemRepository[Run]):
         ]
 
         with self.wrap_executor_exception():
-            with self.executor.delete_many(statements) as _:
-                return None
+            try:
+                with self.executor.delete_many(statements) as _:
+                    pass
+                self.executor.session.commit()
+            except Exception:
+                self.executor.session.rollback()
+                raise
 
     def set_as_default_version(self, id: int, values: Values | None = None) -> None:
         run = self.get_by_pk({"id": id})
