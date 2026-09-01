@@ -3,7 +3,7 @@ import time
 import warnings
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Generator, List
+from typing import TYPE_CHECKING, Generator, List
 
 import pandas as pd
 
@@ -34,6 +34,9 @@ from .checkpoint import RunCheckpoints
 from .iamc import RunIamcData
 from .meta import RunMetaDescriptor
 from .optimization.data import RunOptimizationData
+
+if TYPE_CHECKING:
+    from .platform import Platform
 
 logger = logging.getLogger(__name__)
 
@@ -365,6 +368,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         self,
         model: str | None = None,
         scenario: str | None = None,
+        *,
+        platform: "Platform | Backend | None" = None,
         keep_solution: bool = True,
     ) -> "Run":
         """Create a copy of this run.
@@ -384,6 +389,10 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             Optional model name for the cloned run.
         scenario : str | None
             Optional scenario name for the cloned run.
+        platform : :class:`ixmp4.Platform` or
+            :class:`ixmp4.data.backend.Backend`, optional
+            The platform or backend on which to create the cloned run.
+            Defaults to the platform of the source run.
         keep_solution : bool
             Whether to keep the solution data in the clone.
 
@@ -391,10 +400,24 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         -------
         :class:`ixmp4.core.run.Run`:
             The cloned run.
+
+        Notes
+        -----
+        When cloning to another platform, any dimension entities referenced by
+        the run (e.g. regions, units and optimization scalar units) must
+        already exist on the destination platform. IAMC variables and
+        measurands are created automatically.
         """
+        if isinstance(platform, Backend):
+            backend = platform
+        elif platform is not None:
+            backend = platform.backend
+        else:
+            backend = self._backend
+
         dst_run = Run(
-            backend=self._backend,
-            dto=self._service.create(
+            backend=backend,
+            dto=backend.runs.create(
                 model_name=model or self.model.name,
                 scenario_name=scenario or self.scenario.name,
             ),
