@@ -13,6 +13,7 @@ from typing_extensions import Unpack
 from ixmp4.base_exceptions import Forbidden, OperationNotSupported
 from ixmp4.data.backend import Backend
 from ixmp4.data.model.dto import Model as ModelDto
+from ixmp4.data.region.exceptions import RegionNotFound
 from ixmp4.data.run.dto import Run as RunDto
 from ixmp4.data.run.exceptions import (
     NoDefaultRunVersion,
@@ -28,6 +29,7 @@ from ixmp4.data.run.filter import (
 )
 from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.dto import Scenario as ScenarioDto
+from ixmp4.data.unit.exceptions import UnitNotFound
 
 from .base import BaseFacadeObject, BaseServiceFacade
 from .checkpoint import RunCheckpoints
@@ -101,6 +103,66 @@ class RunCloner:
             )
             if keep_solution:
                 dst_variable.add_data(src_variable.data)
+
+    def _validate_required_entities_exist(
+        self, src_run: "Run", dst_backend: Backend
+    ) -> None:
+        dst_region_names = {r.name for r in dst_backend.regions.list()}
+        dst_unit_names = {u.name for u in dst_backend.units.list()}
+
+        missing_regions: list[str] = []
+        missing_units: list[str] = []
+
+        self._collect_iamc_entities(
+            src_run, dst_region_names, dst_unit_names, missing_regions, missing_units
+        )
+        self._collect_optimization_entities(src_run, dst_unit_names, missing_units)
+
+        if missing_regions:
+            raise RegionNotFound(", ".join(sorted(missing_regions)))
+        if missing_units:
+            raise UnitNotFound(", ".join(sorted(missing_units)))
+
+    @staticmethod
+    def _collect_iamc_entities(
+        src_run: "Run",
+        dst_region_names: set[str],
+        dst_unit_names: set[str],
+        missing_regions: list[str],
+        missing_units: list[str],
+    ) -> None:
+        df = src_run.iamc.tabulate()
+        if df.empty:
+            return
+        for r in df["region"].unique():
+            if r not in dst_region_names:
+                missing_regions.append(r)
+        for u in df["unit"].unique():
+            if u not in dst_unit_names:
+                missing_units.append(u)
+
+    @classmethod
+    def _collect_optimization_entities(
+        cls,
+        src_run: "Run",
+        dst_unit_names: set[str],
+        missing_units: list[str],
+    ) -> None:
+        for src_scalar in src_run.optimization.scalars.list():
+            cls._append_missing_unit(
+                src_scalar.unit.name, dst_unit_names, missing_units
+            )
+
+        for src_parameter in src_run.optimization.parameters.list():
+            for u in src_parameter.data.get("units", []):
+                cls._append_missing_unit(u, dst_unit_names, missing_units)
+
+    @staticmethod
+    def _append_missing_unit(
+        unit_name: str, dst_unit_names: set[str], missing_units: list[str]
+    ) -> None:
+        if unit_name not in dst_unit_names and unit_name not in missing_units:
+            missing_units.append(unit_name)
 
 
 class Run(BaseFacadeObject[RunService, RunDto]):
@@ -416,6 +478,9 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             backend = platform.backend
         else:
             backend = self._backend
+
+        if backend is not self._backend:
+            self._cloner._validate_required_entities_exist(self, backend)
 
         dst_dto = backend.runs.create(
             model_name=model or self.model.name,
