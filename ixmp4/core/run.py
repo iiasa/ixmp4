@@ -10,7 +10,7 @@ import pandas as pd
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.base_exceptions import Forbidden, OperationNotSupported
 from ixmp4.data.backend import Backend
 from ixmp4.data.model.dto import Model as ModelDto
 from ixmp4.data.run.dto import Run as RunDto
@@ -415,15 +415,27 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         else:
             backend = self._backend
 
-        dst_run = Run(
-            backend=backend,
-            dto=backend.runs.create(
-                model_name=model or self.model.name,
-                scenario_name=scenario or self.scenario.name,
-            ),
+        dst_dto = backend.runs.create(
+            model_name=model or self.model.name,
+            scenario_name=scenario or self.scenario.name,
         )
+        try:
+            dst_run = Run(backend=backend, dto=dst_dto)
+            self._cloner.clone(self, dst_run, keep_solution)
+        except Exception as e:
+            logger.debug(
+                f"`Run.clone()` failed with `{e.__class__.__name__}`, "
+                "deleting dirty destination `Run`."
+            )
+            try:
+                backend.runs.delete_by_id(dst_dto.id)
+            except Forbidden:
+                logger.warning(
+                    "`Run.clone()` failed and `RunService.delete_by_id` "
+                    f"is forbidden, leaving a dirty destination run: {dst_dto}"
+                )
+            raise e
 
-        self._cloner.clone(self, dst_run, keep_solution)
         return dst_run
 
     def _get_service(self, backend: Backend) -> RunService:
