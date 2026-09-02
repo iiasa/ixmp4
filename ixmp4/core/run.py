@@ -155,7 +155,7 @@ class RunCloner:
 
         for src_parameter in src_run.optimization.parameters.list():
             for u in src_parameter.data.get("units", []):
-                cls._append_missing_unit(u, dst_unit_names, missing_units)
+                cls._append_missing_unit(str(u), dst_unit_names, missing_units)
 
     @staticmethod
     def _append_missing_unit(
