@@ -1,4 +1,5 @@
 import datetime
+import logging
 from collections.abc import Generator
 from typing import Any
 
@@ -8,6 +9,8 @@ import pytest
 import sqlalchemy as sa
 
 import ixmp4
+from ixmp4.base_exceptions import Forbidden
+from ixmp4.core.run import RunCloner
 from ixmp4.data.backend import Backend
 from ixmp4.data.run.db import Run
 from ixmp4.transport import DirectTransport
@@ -437,3 +440,55 @@ class TestRunClone:
             test_data_table1,
             test_data_variable1,
         )
+
+    def test_clone_failure_deletes_dirty_destination_run(
+        self,
+        run: ixmp4.Run,
+        other_platform: ixmp4.Platform,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def boom_clone(
+            self: RunCloner, src_run: ixmp4.Run, dst_run: ixmp4.Run, keep_solution: bool
+        ) -> None:
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(RunCloner, "clone", boom_clone)
+
+        before = len(other_platform.runs.list(default_only=False))
+
+        with pytest.raises(RuntimeError, match="boom"):
+            run.clone(platform=other_platform)
+
+        assert len(other_platform.runs.list(default_only=False)) == before
+
+    def test_clone_failure_warns_when_dirty_run_cannot_be_deleted(
+        self,
+        run: ixmp4.Run,
+        other_platform: ixmp4.Platform,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def boom_clone(
+            self: RunCloner, src_run: ixmp4.Run, dst_run: ixmp4.Run, keep_solution: bool
+        ) -> None:
+            raise RuntimeError("boom")
+
+        def forbidden_delete(id: int) -> None:
+            raise Forbidden()
+
+        monkeypatch.setattr(RunCloner, "clone", boom_clone)
+        monkeypatch.setattr(
+            other_platform.backend.runs, "delete_by_id", forbidden_delete
+        )
+
+        before = len(other_platform.runs.list(default_only=False))
+
+        with caplog.at_level(logging.WARNING, logger="ixmp4.core.run"):
+            with pytest.raises(RuntimeError, match="boom"):
+                run.clone(platform=other_platform)
+
+        assert any(
+            "leaving a dirty destination run" in record.message
+            for record in caplog.records
+        )
+        assert len(other_platform.runs.list(default_only=False)) == before + 1
