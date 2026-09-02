@@ -407,6 +407,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         the run (e.g. regions, units and optimization scalar units) must
         already exist on the destination platform. IAMC variables and
         measurands are created automatically.
+        If the entities do not exist or the clone fails for another
+        reason, an attempt is made to delete the dirty destination run.
         """
         if isinstance(platform, Backend):
             backend = platform
