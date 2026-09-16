@@ -1,6 +1,7 @@
 # python
 .venv/
 __pycache__/
+.dmypy*
 .pytest_cache/
 .mypy_cache/
 
