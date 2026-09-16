@@ -163,8 +163,8 @@ class IndexedRepository(
         indexsets: list["IndexSet"],
         column_names: list[str] | None = None,
     ) -> None:
-        # Can't validate ("values","units") or ("levels", "marginals")
-        # when they are present
+        # Can't validate ("values","units") or ("levels", "marginals") when they are
+        # present
         number_columns = len(data.columns) - len(self.extra_data_columns)
         columns = (
             column_names if column_names else [indexset.name for indexset in indexsets]
@@ -197,20 +197,23 @@ class IndexedRepository(
             columns[i]: indexsets[i].data for i in range(len(indexsets))
         }
 
-        # We can make this more specific e.g. highlighting all duplicate rows via
-        # pd.DataFrame.duplicated(keep="False")
-        if data[limited_to_indexsets.keys()].value_counts().max() > 1:
+        # Two conditions:
+        # 1. 1 or more index sets and duplicate rows.
+        #    We could make this more specific e.g. highlighting all duplicate rows via
+        #    pd.DataFrame.duplicated(keep="False")
+        # 2. Scalar data (0 index sets) and more than 1 rows.
+        if (indexsets and data[columns].value_counts().max() > 1) or (
+            not indexsets and len(data) > 1
+        ):
             raise self.DataInvalid(
                 f"While handling {str(item)}: \nThe data contains duplicate rows!"
             )
 
         # Can we make this more specific? Iterating over columns; if any is False,
         # return its name or something?
-        if (
-            not data[limited_to_indexsets.keys()]
-            .isin(limited_to_indexsets)
-            .all(axis=None)
-        ):
+        if indexsets and not data[limited_to_indexsets.keys()].isin(
+            limited_to_indexsets
+        ).all(axis=None):
             raise self.DataInvalid(
                 f"While handling {str(item)}: \n"
                 "The data contains values that are not allowed as per the IndexSets "
