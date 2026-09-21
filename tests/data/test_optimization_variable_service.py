@@ -1,4 +1,5 @@
 import datetime
+from abc import ABC, abstractmethod
 from typing import Any, cast
 
 import pandas as pd
@@ -230,7 +231,34 @@ class TestVariableNotFound(VariableServiceTest):
             service.get_by_id(1)
 
 
-class VariableDataTest(VariableServiceTest):
+class VariableDataTest(VariableServiceTest, ABC):
+    """Abstract base class for tests of Variable data handling.
+
+    Concrete subclasses MUST implement the five abstract fixture methods.
+    """
+
+    @abstractmethod
+    def column_names(self) -> list[str] | None:
+        """Fixture: names (if any) of columns indexed by :meth:`test_data_indexsets`."""
+
+    @abstractmethod
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame | None:
+        """Fixture: indices only of a subset of :meth:`test_data` to be removed."""
+
+    @abstractmethod
+    def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        """Fixture: data remaining after removal of :meth:`partial_test_data`."""
+
+    @abstractmethod
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        """Fixture: variable data to be used in tests."""
+
+    @abstractmethod
+    def test_data_indexsets(
+        self, run: Run, indexsets: IndexSetService
+    ) -> list[IndexSet]:
+        """Fixture: a list of 0 or more index sets used by :meth:`test_data`."""
+
     def test_variable_add_data(
         self,
         service: VariableService,
@@ -240,6 +268,7 @@ class VariableDataTest(VariableServiceTest):
         test_data: dict[str, list[Any]] | pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
+        """Data can be added to a variable indexed by 2 sets."""
         variable = service.create(
             run.id,
             "Variable",
@@ -350,7 +379,35 @@ class VariableDataTest(VariableServiceTest):
         pdt.assert_frame_equal(expected_versions, vdf, check_like=True)
 
 
-class TestVariableData(VariableDataTest):
+class TestVariableData0D(VariableDataTest):
+    """Tests of Variable data with 0 index sets (scalar)."""
+
+    @pytest.fixture(scope="class")
+    def column_names(self) -> list[str] | None:
+        return None
+
+    @pytest.fixture(scope="class")
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame | None:
+        return None
+
+    @pytest.fixture(scope="class")
+    def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {}
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {"marginals": [-2], "levels": [2]}
+
+    @pytest.fixture(scope="class")
+    def test_data_indexsets(
+        self, run: Run, indexsets: IndexSetService
+    ) -> list[IndexSet]:
+        return []
+
+
+class TestVariableData2D(VariableDataTest):
+    """Tests of Variable data with 2 index sets."""
+
     @pytest.fixture(scope="class")
     def test_data_indexsets(
         self, run: Run, indexsets: IndexSetService
