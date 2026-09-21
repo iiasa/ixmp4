@@ -178,6 +178,7 @@ class TestVariableCreateInvalidArguments(OptimizationVariableTest):
 class VariableDataTest(OptimizationVariableTest):
     @pytest.fixture(scope="class")
     def test_data_indexsets(self, run: ixmp4.Run) -> list[ixmp4.optimization.IndexSet]:
+        """Fixture: two index sets."""
         with run.transact("Create indexsets"):
             indexset1 = run.optimization.indexsets.create("IndexSet 1")
             indexset2 = run.optimization.indexsets.create("IndexSet 2")
@@ -186,7 +187,17 @@ class VariableDataTest(OptimizationVariableTest):
 
         return [indexset1, indexset2]
 
-    def test_variable_add_data(
+    def test_variable_add_data_0d(self, run: ixmp4.Run) -> None:
+        """Data can be added to and retrieved from a variable with no index sets."""
+        test_data = {"marginals": [1.0], "levels": [1.0]}
+
+        with run.transact("Create variable and add data"):
+            variable = run.optimization.variables.create("Variable 0D")
+            variable.add_data(test_data)
+
+        assert test_data == variable.data
+
+    def test_variable_add_data_2d(
         self,
         run: ixmp4.Run,
         test_data_indexsets: list[ixmp4.optimization.IndexSet],
@@ -194,6 +205,7 @@ class VariableDataTest(OptimizationVariableTest):
         test_data: dict[str, list[Any]] | pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
+        """Data can be added to a variable indexed by 2 sets."""
         with run.transact("Create variable and add data"):
             variable = run.optimization.variables.create(
                 "Variable",
