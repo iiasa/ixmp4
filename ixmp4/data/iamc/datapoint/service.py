@@ -153,7 +153,7 @@ class DataPointService(Service):
             pagination=pagination,
         )
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(methods=("POST",)), chunked=True)
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         """Bulk inserts or updates datapoints from a supplied dataframe.
 
@@ -194,7 +194,7 @@ class DataPointService(Service):
         model_names = self.timeseries.list_model_names(timeseries_ids)
         auth_ctx.has_edit_permission(platform, models=model_names, raise_exc=Forbidden)
 
-    @procedure(Http(methods=("DELETE",)))
+    @procedure(Http(methods=("DELETE",)), chunked=True)
     def bulk_delete(self, df: SerializableDataFrame) -> None:
         """Bulk deletes datapoints from a supplied dataframe.
 
