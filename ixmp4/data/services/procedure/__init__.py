@@ -18,6 +18,7 @@ from ixmp4.transport import AuthorizedTransport
 
 from ..base import Service
 from .auth import ProcedureAuthCheck
+from .chunking import ProcedureChunking
 from .client import ProcedureClient
 from .descriptor import ProcedureDescriptor
 from .endpoint import ProcedureHttpConfig as ProcedureHttpConfig
@@ -37,13 +38,15 @@ class Procedure(Generic[ServiceT, Params, ReturnT]):
     A :class:`Procedure` wraps a service method, validates its signature,
     and provides adapters for direct invocation, http client calls, and
     registration of HTTP route handlers. It also manages authorization
-    checks and pagination metadata attached to the procedure.
+    checks, pagination metadata and client-side chunking metadata attached
+    to the procedure.
     """
 
     func: ProcedureFunc[ServiceT, Params, ReturnT]
     signature: inspect.Signature
     auth_check: ProcedureAuthCheck[ServiceT, Params]
     pagination: ProcedurePagination[ServiceT, Params, ReturnT]
+    chunking: ProcedureChunking
     handlers: dict[type[Service], ProcedureRouteHandler[ServiceT, Params, ReturnT]]
     http_config: ProcedureHttpConfig
     direct_payload_model: type[pyd.BaseModel]
@@ -52,11 +55,14 @@ class Procedure(Generic[ServiceT, Params, ReturnT]):
         self,
         func: ProcedureFunc[ServiceT, Params, ReturnT],
         http_config: ProcedureHttpConfig,
+        *,
+        chunked: bool | str = False,
     ):
         self.func = func
         self.signature = self.validate_signature(func)
         self.auth_check = ProcedureAuthCheck(self)
         self.pagination = ProcedurePagination(self)
+        self.chunking = ProcedureChunking(self, chunked=chunked)
         self.http_config = http_config
         self.handlers = {}
         self.direct_payload_model = self.build_direct_payload_model()
@@ -215,6 +221,8 @@ class Procedure(Generic[ServiceT, Params, ReturnT]):
 
 def procedure(
     http_config: ProcedureHttpConfig,
+    *,
+    chunked: bool | str = False,
 ) -> Callable[
     [Callable[Concatenate[ServiceT, Params], ReturnT]],
     ProcedureDescriptor[ServiceT, Params, ReturnT],
@@ -222,6 +230,17 @@ def procedure(
     """Makes a service method callable directly or via http.
     Constructs an internal :class:`~ixmp4.data.services.procedure.Procedure`
     instance and
+
+    Parameters
+    ----------
+    http_config:
+        The :class:`~ixmp4.data.services.procedure.endpoint.ProcedureHttpConfig`
+        describing the HTTP endpoint.
+    chunked:
+        Whether the procedure supports client-side upload chunking. Use
+        ``True`` to auto-detect the single ``SerializableDataFrame`` or
+        ``list`` argument, or pass the argument name as a string to select
+        it explicitly. Pass ``False`` (the default) to disable chunking.
 
     Returns
     =======
@@ -233,6 +252,6 @@ def procedure(
     def decorator(
         func: Callable[Concatenate[ServiceT, Params], ReturnT],
     ) -> ProcedureDescriptor[ServiceT, Params, ReturnT]:
-        return Procedure(func, http_config).get_descriptor()
+        return Procedure(func, http_config, chunked=chunked).get_descriptor()
 
     return decorator
