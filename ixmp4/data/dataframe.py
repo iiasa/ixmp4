@@ -66,7 +66,7 @@ def serialize_df(df: pd.DataFrame) -> dict[str, Any]:
         dtypes=dtypes,
         data=df.replace({pd.NA: None}).values.tolist(),
     )
-    return adapter.model_dump()
+    return adapter.model_dump(mode="json")
 
 
 def parse_df(val: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
