@@ -34,7 +34,8 @@ class ClientSettings(BaseSettings):
     ----------
 
     default_upload_chunk_size: int
-        Number of records uploaded per client chunk (currently unused).
+        Number of records uploaded per client chunk for chunked write
+        procedures.
         Environment variable: ``IXMP4_CLIENT__DEFAULT_UPLOAD_CHUNK_SIZE``.
     concurrency: int
         Maximum number of concurrent client workers.
@@ -53,7 +54,8 @@ class ClientSettings(BaseSettings):
     default_upload_chunk_size: int = Field(
         10_000,
         description=(
-            "Number of records uploaded per client chunk (currently unused). "
+            "Number of records uploaded per client chunk for chunked write "
+            "procedures. "
             "Environment variable: IXMP4_CLIENT__DEFAULT_UPLOAD_CHUNK_SIZE."
         ),
     )
