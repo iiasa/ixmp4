@@ -5,13 +5,15 @@ from types import SimpleNamespace
 from typing import Any, Callable, cast
 from unittest import mock
 
+import pandas as pd
 import pydantic as pyd
 import pytest
 from litestar.handlers import HTTPRouteHandler
 from toolkit.auth.context import AuthorizationContext, PlatformProtocol
 
 from ixmp4.base_exceptions import InvalidArguments, ProgrammingError, TooManyRequests
-from ixmp4.conf.settings import Settings
+from ixmp4.conf.settings import ClientSettings, Settings
+from ixmp4.data.dataframe import SerializableDataFrame
 from ixmp4.data.pagination import PaginatedResult, Pagination
 from ixmp4.data.services import Http, Service, procedure
 from ixmp4.data.services.procedure import Procedure
@@ -60,6 +62,34 @@ class PaginatedDemoService(Service):
         self, pagination: Pagination, filter: str = ""
     ) -> PaginatedResult[list[str]]:
         return PaginatedResult(results=["a"], total=1, pagination=pagination)
+
+    def __init_direct__(self, transport: DirectTransport) -> None:
+        pass
+
+    def __init_httpx__(self, transport: HttpxTransport) -> None:
+        pass
+
+
+class ChunkedDemoService(Service):
+    router_prefix = "/chunked-demo"
+
+    @procedure(Http(methods=("POST",)), chunked=True)
+    def bulk_upsert(self, df: SerializableDataFrame) -> None:
+        return None
+
+    def __init_direct__(self, transport: DirectTransport) -> None:
+        pass
+
+    def __init_httpx__(self, transport: HttpxTransport) -> None:
+        pass
+
+
+class ListChunkedDemoService(Service):
+    router_prefix = "/list-chunked-demo"
+
+    @procedure(Http(methods=("POST",)), chunked="items")
+    def store(self, items: list[int]) -> None:
+        return None
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         pass
@@ -579,6 +609,99 @@ class TestProcedurePagination:
                 wrong: int,  # should be Pagination
             ) -> PaginatedResult[int]:
                 return PaginatedResult(results=0, total=0, pagination=Pagination())
+
+
+class TestProcedureChunking:
+    def test_chunking_has_false_by_default(self) -> None:
+        """Procedures are not chunked unless explicitly marked."""
+        chunking = DemoService.compute.procedure.chunking
+        assert chunking.has_chunking is False
+        assert chunking.chunk_arg_name is None
+
+    def test_chunking_auto_detects_dataframe_arg(self) -> None:
+        """`chunked=True` records the single dataframe argument."""
+        chunking = ChunkedDemoService.bulk_upsert.procedure.chunking
+        assert chunking.has_chunking is True
+        assert chunking.chunk_arg_name == "df"
+
+    def test_chunking_explicit_arg(self) -> None:
+        """An explicit argument name overrides auto-detection."""
+        chunking = ListChunkedDemoService.store.procedure.chunking
+        assert chunking.has_chunking is True
+        assert chunking.chunk_arg_name == "items"
+
+    def test_chunking_auto_detects_list_arg(self) -> None:
+        """`chunked=True` also auto-detects a single list argument."""
+
+        class ListAutoChunkedService(Service):
+            router_prefix = "/list-auto-chunked"
+
+            @procedure(Http(methods=("POST",)), chunked=True)
+            def store(self, items: list[int]) -> None:
+                return None
+
+            def __init_direct__(self, transport: DirectTransport) -> None:
+                pass
+
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
+                pass
+
+        chunking = ListAutoChunkedService.store.procedure.chunking
+        assert chunking.has_chunking is True
+        assert chunking.chunk_arg_name == "items"
+
+    def test_chunking_raises_for_missing_explicit_arg(self) -> None:
+        """Naming an argument that does not exist raises ProgrammingError."""
+        with pytest.raises(ProgrammingError, match="does not exist"):
+
+            class MissingArgService(Service):
+                router_prefix = "/missing-arg"
+
+                @procedure(Http(methods=("POST",)), chunked="missing")
+                def store(self, items: list[int]) -> None:
+                    return None
+
+                def __init_direct__(self, transport: DirectTransport) -> None:
+                    pass
+
+                def __init_httpx__(self, transport: HttpxTransport) -> None:
+                    pass
+
+    def test_chunking_auto_detect_raises_without_frame(self) -> None:
+        """Auto-detection fails when no DataFrame argument exists."""
+        with pytest.raises(ProgrammingError, match="Could not determine"):
+
+            class NoFrameService(Service):
+                router_prefix = "/no-frame"
+
+                @procedure(Http(methods=("POST",)), chunked=True)
+                def store(self, value: int) -> None:
+                    return None
+
+                def __init_direct__(self, transport: DirectTransport) -> None:
+                    pass
+
+                def __init_httpx__(self, transport: HttpxTransport) -> None:
+                    pass
+
+    def test_chunking_auto_detect_raises_for_multiple_frames(self) -> None:
+        """Auto-detection fails when more than one DataFrame argument exists."""
+        with pytest.raises(ProgrammingError, match="Could not determine"):
+
+            class MultiFrameService(Service):
+                router_prefix = "/multi-frame"
+
+                @procedure(Http(methods=("POST",)), chunked=True)
+                def store(
+                    self, first: SerializableDataFrame, second: SerializableDataFrame
+                ) -> None:
+                    return None
+
+                def __init_direct__(self, transport: DirectTransport) -> None:
+                    pass
+
+                def __init_httpx__(self, transport: HttpxTransport) -> None:
+                    pass
 
 
 class TestProcedureRouteHandler:
@@ -1362,3 +1485,155 @@ class TestProcedureClient:
 
         with pytest.raises(TooManyRequests, match="Too many requests."):
             client(42)
+
+
+class TestProcedureClientChunking:
+    """Test suite for client-side chunked procedure calls."""
+
+    def _make_client(
+        self,
+        service_class: type[Any],
+        procedure_name: str,
+        chunk_size: int = 2,
+    ) -> tuple[Any, FakeHttpxTransport, ProcedureRouteHandler[Any, Any, Any]]:
+        from concurrent import futures
+
+        from ixmp4.data.services.procedure.client import ProcedureClient
+
+        transport = FakeHttpxTransport()
+        transport.settings = ClientSettings(
+            default_upload_chunk_size=chunk_size, concurrency=2
+        )
+        transport.executor = futures.ThreadPoolExecutor(max_workers=2)
+
+        svc = object.__new__(service_class)
+        svc.transport = transport
+
+        procedure = getattr(service_class, procedure_name).procedure
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            procedure.handlers[service_class],
+        )
+        client: ProcedureClient[Any, Any, Any] = ProcedureClient(svc, handler)
+        return client, transport, handler
+
+    def test_chunked_call_splits_dataframe(self) -> None:
+        """A dataframe payload is split into chunks of the configured size."""
+        client, transport, handler = self._make_client(
+            ChunkedDemoService, "bulk_upsert"
+        )
+        transport.request = mock.Mock(return_value=mock.Mock(text="null"))  # type: ignore
+        transport.raise_service_exception = mock.Mock()  # type: ignore
+        original_adapter = handler.return_type_adapter
+        handler.return_type_adapter = mock.Mock(
+            validate_json=mock.Mock(return_value=None)
+        )
+
+        try:
+            df = pd.DataFrame({"value": list(range(5))})
+            result = client(df)
+
+            assert result is None
+            # 5 rows with a chunk size of 2 -> 3 requests, no initial full send
+            assert transport.request.call_count == 3
+            sizes = [
+                len(call.kwargs["json"]["df"]["data"])
+                for call in transport.request.call_args_list
+            ]
+            assert sum(sizes) == 5
+            assert max(sizes) <= 2
+        finally:
+            handler.return_type_adapter = original_adapter
+            transport.executor.shutdown()
+
+    def test_chunked_call_empty_dataframe_makes_no_request(self) -> None:
+        """An empty payload does not dispatch any request."""
+        client, transport, handler = self._make_client(
+            ChunkedDemoService, "bulk_upsert"
+        )
+        transport.request = mock.Mock()  # type: ignore
+        transport.raise_service_exception = mock.Mock()  # type: ignore
+        original_adapter = handler.return_type_adapter
+        handler.return_type_adapter = mock.Mock(
+            validate_json=mock.Mock(return_value=None)
+        )
+
+        try:
+            result = client(pd.DataFrame({"value": []}))
+
+            assert result is None
+            transport.request.assert_not_called()
+        finally:
+            handler.return_type_adapter = original_adapter
+            transport.executor.shutdown()
+
+    def test_chunked_call_splits_list(self) -> None:
+        """A list payload is split into chunks of the configured size."""
+        client, transport, handler = self._make_client(ListChunkedDemoService, "store")
+        transport.request = mock.Mock(return_value=mock.Mock(text="null"))  # type: ignore
+        transport.raise_service_exception = mock.Mock()  # type: ignore
+        original_adapter = handler.return_type_adapter
+        handler.return_type_adapter = mock.Mock(
+            validate_json=mock.Mock(return_value=None)
+        )
+
+        try:
+            result = client([1, 2, 3, 4, 5])
+
+            assert result is None
+            assert transport.request.call_count == 3
+            sizes = [
+                len(call.kwargs["json"]["items"])
+                for call in transport.request.call_args_list
+            ]
+            assert sum(sizes) == 5
+            assert max(sizes) <= 2
+        finally:
+            handler.return_type_adapter = original_adapter
+            transport.executor.shutdown()
+
+    def test_chunk_payload_value_rejects_unsupported_type(self) -> None:
+        """Non-collection payloads cannot be chunked."""
+        from ixmp4.data.services.procedure.client import ProcedureClient
+
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.compute.procedure.handlers[DemoService],
+        )
+        svc = object.__new__(DemoService)
+        svc.transport = FakeHttpxTransport()
+        client: ProcedureClient[DemoService, Any, int] = ProcedureClient(svc, handler)
+
+        with pytest.raises(ProgrammingError, match="Unable to chunk"):
+            client.chunk_payload_value({"not": "chunkable"}, 2)
+
+    def test_merge_chunked_results_returns_none(self) -> None:
+        """Merging all-None (write) results returns None."""
+        from ixmp4.data.services.procedure.client import ProcedureClient
+
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.compute.procedure.handlers[DemoService],
+        )
+        svc = object.__new__(DemoService)
+        svc.transport = FakeHttpxTransport()
+        client: ProcedureClient[DemoService, Any, Any] = ProcedureClient(svc, handler)
+
+        assert client.merge_chunked_results([]) is None
+        assert client.merge_chunked_results([None, None]) is None
+
+    def test_merge_chunked_results_merges_lists(self) -> None:
+        """Non-None chunked results are merged like paginated results."""
+        from ixmp4.data.services.procedure.client import ProcedureClient
+
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            DemoService.compute.procedure.handlers[DemoService],
+        )
+        svc = object.__new__(DemoService)
+        svc.transport = FakeHttpxTransport()
+        client: ProcedureClient[DemoService, Any, list[int]] = ProcedureClient(
+            svc, handler
+        )
+
+        assert client.merge_chunked_results([[1, 2], [3]]) == [1, 2, 3]
