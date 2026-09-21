@@ -1,4 +1,5 @@
 import json
+import os
 
 import typer
 
@@ -30,16 +31,18 @@ if _server_is_installed:
         debug: bool = typer.Option(default=False, help="Use debug mode."),
     ) -> None:
         """Starts the ixmp4 http server."""
+        if debug:
+            os.environ["IXMP4_MODE"] = "debug"
+
         settings = Settings()
         print_banner(settings=settings)
         log_config = settings.load_logging_config("server")
         if debug:
             log_config["root"]["level"] = "DEBUG"
 
-        server = Ixmp4Server(settings.server, debug=debug)
-
         uvicorn.run(
-            server.asgi_app,
+            "ixmp4.server.factory:create_app",
+            factory=True,
             host=host,
             port=port,
             reload=reload,

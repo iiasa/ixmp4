@@ -17,7 +17,7 @@ def temporary_settings() -> Generator[Settings, None, None]:
     and mocking the `Settings` constructor."""
     with TemporaryDirectory() as temp_dir:
         settings = Settings(storage_directory=Path(temp_dir))
-        with mock.patch("ixmp4.conf.settings.Settings", new=settings):
+        with mock.patch("ixmp4.conf.settings.Settings", return_value=settings):
             yield settings
 
 
@@ -37,6 +37,28 @@ class TestServerCLI:
         ):
             result = runner.invoke(app, ["server", "start"])
         assert "Started server process" in result.output
+
+    def test_server_start_forwards_workers_as_import_string(
+        self,
+        runner: CliRunner,
+        temporary_settings: Settings,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        fake_uvicorn = mock.Mock()
+        monkeypatch.setattr("ixmp4.cli.server.uvicorn", fake_uvicorn)
+
+        result = runner.invoke(app, ["server", "start", "--workers", "2"])
+
+        assert result.exit_code == 0
+        fake_uvicorn.run.assert_called_once_with(
+            "ixmp4.server.factory:create_app",
+            factory=True,
+            host="127.0.0.1",
+            port=9000,
+            reload=False,
+            workers=2,
+            log_config=mock.ANY,
+        )
 
     def test_server_dump_schema(
         self, runner: CliRunner, temporary_settings: Settings
