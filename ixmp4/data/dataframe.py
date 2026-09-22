@@ -92,6 +92,16 @@ def parse_df(val: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
     raise ValueError(f"Cannot create `DataFrame` from `{str(type(val))}`.")
 
 
+def is_serialized_dataframe(value: Any) -> bool:
+    """Checks if a provided value resembles the (serialized) dict
+    representation of a dataframe."""
+    return (
+        isinstance(value, dict)
+        and "data" in value
+        and ("columns" in value or "dtypes" in value or "index" in value)
+    )
+
+
 SerializableDataFrame: TypeAlias = Annotated[
     pd.DataFrame,
     PlainValidator(parse_df),

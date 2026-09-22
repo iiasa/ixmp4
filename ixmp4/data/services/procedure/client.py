@@ -9,7 +9,7 @@ from litestar.utils.path import join_paths
 
 from ixmp4.base_exceptions import ProgrammingError
 from ixmp4.core.exceptions import InvalidArguments
-from ixmp4.data.dataframe import parse_df, serialize_df
+from ixmp4.data.dataframe import is_serialized_dataframe, parse_df, serialize_df
 from ixmp4.transport import HttpxTransport
 
 from .endpoint import ProcedureRouteHandler
@@ -232,11 +232,11 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
         Supports :class:`pandas.DataFrame` (and its serialized dict form)
         as well as plain lists. Other payload types cannot be chunked.
         """
-        if isinstance(value, pd.DataFrame):
-            df = value
-        elif isinstance(value, list):
+        if isinstance(value, list):
             return [value[i : i + chunk_size] for i in range(0, len(value), chunk_size)]
-        elif self.is_serialized_dataframe(value):
+        elif isinstance(value, pd.DataFrame):
+            df = value
+        elif is_serialized_dataframe(value):
             df = parse_df(dict(value))
         else:
             raise ProgrammingError(
@@ -248,14 +248,6 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
             serialize_df(df.iloc[i : i + chunk_size])
             for i in range(0, len(df), chunk_size)
         ]
-
-    @staticmethod
-    def is_serialized_dataframe(value: Any) -> bool:
-        return (
-            isinstance(value, dict)
-            and "data" in value
-            and ("columns" in value or "dtypes" in value or "index" in value)
-        )
 
     def dispatch_chunked_requests(
         self,
