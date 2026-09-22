@@ -2,7 +2,7 @@ import inspect
 import json
 from collections.abc import Generator
 from types import SimpleNamespace
-from typing import Any, Callable, cast
+from typing import Annotated, Any, Callable, cast
 from unittest import mock
 
 import pandas as pd
@@ -90,6 +90,20 @@ class ListChunkedDemoService(Service):
     @procedure(Http(methods=("POST",)), chunked="items")
     def store(self, items: list[int]) -> None:
         return None
+
+    def __init_direct__(self, transport: DirectTransport) -> None:
+        pass
+
+    def __init_httpx__(self, transport: HttpxTransport) -> None:
+        pass
+
+
+class QueryChunkedDemoService(Service):
+    router_prefix = "/query-chunked-demo"
+
+    @procedure(Http(methods=("GET",)), chunked="items")
+    def collect(self, items: list[int]) -> list[int]:
+        return items
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         pass
@@ -647,6 +661,29 @@ class TestProcedureChunking:
                 pass
 
         chunking = ListAutoChunkedService.store.procedure.chunking
+        assert chunking.has_chunking is True
+        assert chunking.chunk_arg_name == "items"
+
+    def test_chunking_auto_detects_annotated_list_arg(self) -> None:
+        """`chunked=True` unwraps custom `Annotated[...]` chunkable arguments."""
+
+        class AnnotatedChunkedService(Service):
+            router_prefix = "/annotated-chunked"
+
+            @procedure(Http(methods=("POST",)), chunked=True)
+            def store(
+                self,
+                items: Annotated[list[int], pyd.Field(description="items to store")],
+            ) -> None:
+                return None
+
+            def __init_direct__(self, transport: DirectTransport) -> None:
+                pass
+
+            def __init_httpx__(self, transport: HttpxTransport) -> None:
+                pass
+
+        chunking = AnnotatedChunkedService.store.procedure.chunking
         assert chunking.has_chunking is True
         assert chunking.chunk_arg_name == "items"
 
@@ -1637,3 +1674,96 @@ class TestProcedureClientChunking:
         )
 
         assert client.merge_chunked_results([[1, 2], [3]]) == [1, 2, 3]
+
+    def test_chunked_call_raises_when_chunk_arg_missing(self) -> None:
+        """A chunked handler without a chunkable argument raises ProgrammingError."""
+        client, transport, handler = self._make_client(
+            ChunkedDemoService, "bulk_upsert"
+        )
+        chunking = handler.procedure.chunking
+        original_chunk_arg = chunking.chunk_arg_name
+        chunking.chunk_arg_name = None
+
+        try:
+            with pytest.raises(
+                ProgrammingError, match="does not declare a chunkable argument"
+            ):
+                client(pd.DataFrame({"value": [1, 2]}))
+        finally:
+            chunking.chunk_arg_name = original_chunk_arg
+            transport.executor.shutdown()
+
+    def test_handle_chunked_request_raises_without_body_or_params(self) -> None:
+        """Chunked requests with neither a body nor query params are rejected."""
+        client, transport, _ = self._make_client(ChunkedDemoService, "bulk_upsert")
+
+        try:
+            with pytest.raises(
+                ProgrammingError, match="require either a request body"
+            ):
+                client.handle_chunked_request(
+                    "/chunked-demo/bulk-upsert", params=None, json=None
+                )
+        finally:
+            transport.executor.shutdown()
+
+    def test_dispatch_chunked_requests_raises_without_body_or_params(self) -> None:
+        """Dispatching chunks with neither a body nor query params is rejected."""
+        client, transport, _ = self._make_client(ChunkedDemoService, "bulk_upsert")
+
+        try:
+            with pytest.raises(
+                ProgrammingError, match="require either a request body"
+            ):
+                client.dispatch_chunked_requests(
+                    "/chunked-demo/bulk-upsert",
+                    "df",
+                    chunks=[{"data": [], "columns": [], "index": []}],
+                    params=None,
+                    json=None,
+                )
+        finally:
+            transport.executor.shutdown()
+
+    def test_chunked_call_without_body_splits_query_params(self) -> None:
+        """A body-less chunked procedure chunks and dispatches query params."""
+        client, transport, handler = self._make_client(
+            QueryChunkedDemoService, "collect"
+        )
+        transport.request = mock.Mock(return_value=mock.Mock(text="[1, 2]"))  # type: ignore
+        transport.raise_service_exception = mock.Mock()  # type: ignore
+        original_adapter = handler.return_type_adapter
+        handler.return_type_adapter = mock.Mock(
+            validate_json=mock.Mock(return_value=[1, 2])
+        )
+
+        try:
+            result = client([1, 2, 3, 4, 5])
+
+            assert result == [1, 2, 1, 2, 1, 2]
+            assert transport.request.call_count == 3  # type: ignore
+            for call in transport.request.call_args_list:  # type: ignore
+                assert call.kwargs["json"] is None
+                assert len(call.kwargs["params"]["items"]) <= 2
+        finally:
+            handler.return_type_adapter = original_adapter
+            transport.executor.shutdown()
+
+    def test_chunk_payload_value_splits_dataframe(self) -> None:
+        """A DataFrame passed directly is split into serialized chunks."""
+        from ixmp4.data.services.procedure.client import ProcedureClient
+
+        handler = cast(
+            ProcedureRouteHandler[Any, Any, Any],
+            ChunkedDemoService.bulk_upsert.procedure.handlers[ChunkedDemoService],
+        )
+        svc = object.__new__(ChunkedDemoService)
+        svc.transport = FakeHttpxTransport()
+        client: ProcedureClient[ChunkedDemoService, Any, Any] = ProcedureClient(
+            svc, handler
+        )
+
+        chunks = client.chunk_payload_value(pd.DataFrame({"value": [1, 2, 3]}), 2)
+
+        assert len(chunks) == 2
+        assert [len(chunk["data"]) for chunk in chunks] == [2, 1]
