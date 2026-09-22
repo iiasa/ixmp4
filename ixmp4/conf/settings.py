@@ -53,7 +53,7 @@ class ClientSettings(BaseSettings):
 
     default_upload_chunk_size: int = Field(
         10_000,
-        ge=1
+        ge=1,
         description=(
             "Number of records uploaded per client chunk for chunked write "
             "procedures. "
