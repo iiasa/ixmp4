@@ -1698,9 +1698,7 @@ class TestProcedureClientChunking:
         client, transport, _ = self._make_client(ChunkedDemoService, "bulk_upsert")
 
         try:
-            with pytest.raises(
-                ProgrammingError, match="require either a request body"
-            ):
+            with pytest.raises(ProgrammingError, match="require either a request body"):
                 client.handle_chunked_request(
                     "/chunked-demo/bulk-upsert", params=None, json=None
                 )
@@ -1712,9 +1710,7 @@ class TestProcedureClientChunking:
         client, transport, _ = self._make_client(ChunkedDemoService, "bulk_upsert")
 
         try:
-            with pytest.raises(
-                ProgrammingError, match="require either a request body"
-            ):
+            with pytest.raises(ProgrammingError, match="require either a request body"):
                 client.dispatch_chunked_requests(
                     "/chunked-demo/bulk-upsert",
                     "df",
@@ -1741,8 +1737,8 @@ class TestProcedureClientChunking:
             result = client([1, 2, 3, 4, 5])
 
             assert result == [1, 2, 1, 2, 1, 2]
-            assert transport.request.call_count == 3  # type: ignore
-            for call in transport.request.call_args_list:  # type: ignore
+            assert transport.request.call_count == 3
+            for call in transport.request.call_args_list:
                 assert call.kwargs["json"] is None
                 assert len(call.kwargs["params"]["items"]) <= 2
         finally:
