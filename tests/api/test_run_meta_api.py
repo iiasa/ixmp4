@@ -56,12 +56,17 @@ class TestRunMetaLookupAndQuery(RunMetaApiTest):
     def meta_entry(self, direct_service: RunMetaEntryService, run: Run) -> RunMetaEntry:
         return direct_service.create(run.id, "category", "demo")
 
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
     def test_run_meta_get(
-        self, client: httpx.Client, meta_entry: RunMetaEntry, run: Run
+        self,
+        client: httpx.Client,
+        meta_entry: RunMetaEntry,
+        run: Run,
+        method: str,
     ) -> None:
         got = self.request(
             client,
-            "POST",
+            method,
             "/meta/get",
             json={"run_id": run.id, "key": meta_entry.key},
         ).json()

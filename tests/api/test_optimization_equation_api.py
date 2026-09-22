@@ -25,7 +25,7 @@ class TestEquationCreate(EquationApiTest):
     def indexset(self, direct_transport: DirectTransport, run: Run) -> IndexSet:
         return IndexSetService(direct_transport).create(run.id, "IndexSet")
 
-    def test_equation_create_and_tabulate(
+    def test_equation_create_get_and_tabulate(
         self, client: httpx.Client, run: Run, indexset: IndexSet
     ) -> None:
         created = self.request(
@@ -42,6 +42,15 @@ class TestEquationCreate(EquationApiTest):
 
         assert created["id"] == 1
         assert created["name"] == "Equation"
+
+        for method in ["POST", "PATCH"]:
+            got = self.request(
+                client,
+                method,
+                "/optimization/equations/get",
+                json={"run_id": run.id, "name": "Equation"},
+            ).json()
+            assert got["id"] == created["id"]
 
         tabulated = self.request(
             client, "PATCH", "/optimization/equations/tabulate", json={}

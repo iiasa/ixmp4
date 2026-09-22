@@ -37,10 +37,11 @@ class TestRunLookup(RunApiTest):
     def run(self, direct_service: RunService) -> Run:
         return direct_service.create("Model", "Scenario")
 
-    def test_run_get(self, client: httpx.Client, run: Run) -> None:
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
+    def test_run_get(self, client: httpx.Client, run: Run, method: str) -> None:
         got = self.request(
             client,
-            "POST",
+            method,
             "/runs/get",
             json={"model_name": "Model", "scenario_name": "Scenario", "version": 1},
         ).json()
@@ -125,32 +126,27 @@ class TestRunState(RunApiTest):
         return direct_service.create("Model", "Scenario")
 
     def test_run_default_version(self, client: httpx.Client, run: Run) -> None:
-        self.request(
-            client, "POST", "/runs/set-as-default-version", json={"id": run.id}
-        )
-        default_run = self.request(
-            client,
-            "POST",
-            "/runs/get-default-version",
-            json={"model_name": "Model", "scenario_name": "Scenario"},
-        ).json()
+        self.request(client, "POST", f"/runs/{run.id}/set-as-default")
+        for method in ["POST", "PATCH"]:
+            default_run = self.request(
+                client,
+                method,
+                "/runs/get-default-version",
+                json={"model_name": "Model", "scenario_name": "Scenario"},
+            ).json()
 
-        assert default_run["id"] == run.id
-        assert default_run["is_default"] is True
+            assert default_run["id"] == run.id
+            assert default_run["is_default"] is True
 
-        self.request(
-            client, "POST", "/runs/unset-as-default-version", json={"id": run.id}
-        )
+        self.request(client, "POST", f"/runs/{run.id}/unset-as-default")
         unset = self.request(client, "GET", f"/runs/{run.id}").json()
         assert unset["is_default"] is False
 
     def test_run_lock_and_unlock(self, client: httpx.Client, run: Run) -> None:
-        locked = self.request(client, "POST", "/runs/lock", json={"id": run.id}).json()
+        locked = self.request(client, "POST", f"/runs/{run.id}/lock").json()
         assert locked["id"] == run.id
         assert locked["lock_transaction"] is not None
 
-        unlocked = self.request(
-            client, "POST", "/runs/unlock", json={"id": run.id}
-        ).json()
+        unlocked = self.request(client, "POST", f"/runs/{run.id}/unlock").json()
         assert unlocked["id"] == run.id
         assert unlocked["lock_transaction"] is None

@@ -36,9 +36,12 @@ class TestModelLookup(ModelApiTest):
         assert got["id"] == model.id
         assert got["name"] == model.name
 
-    def test_model_get_by_name(self, client: httpx.Client, model: Model) -> None:
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
+    def test_model_get_by_name(
+        self, client: httpx.Client, model: Model, method: str
+    ) -> None:
         got = self.request(
-            client, "POST", "/models/get-by-name", json={"name": model.name}
+            client, method, "/models/get-by-name", json={"name": model.name}
         ).json()
 
         assert got["id"] == model.id

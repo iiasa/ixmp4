@@ -38,11 +38,15 @@ class TestScenarioLookup(ScenarioApiTest):
         assert got["id"] == scenario.id
         assert got["name"] == scenario.name
 
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
     def test_scenario_get_by_name(
-        self, client: httpx.Client, scenario: Scenario
+        self, client: httpx.Client, scenario: Scenario, method: str
     ) -> None:
         got = self.request(
-            client, "POST", "/scenarios/get-by-name", json={"name": scenario.name}
+            client,
+            method,
+            "/scenarios/get-by-name",
+            json={"name": scenario.name},
         ).json()
 
         assert got["id"] == scenario.id
