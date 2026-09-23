@@ -40,7 +40,7 @@ class RunMetaEntry(BaseModel):
     )
     run: Mapped["Run"] = orm.relationship(
         "Run",
-        backref="meta",
+        back_populates="meta",
         foreign_keys=[run__id],
     )
 
