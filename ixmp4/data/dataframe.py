@@ -66,7 +66,7 @@ def serialize_df(df: pd.DataFrame) -> dict[str, Any]:
         dtypes=dtypes,
         data=df.replace({pd.NA: None}).values.tolist(),
     )
-    return adapter.model_dump()
+    return adapter.model_dump(mode="json")
 
 
 def parse_df(val: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
@@ -90,6 +90,16 @@ def parse_df(val: Any, *args: Any, **kwargs: Any) -> pd.DataFrame:
 
         return df
     raise ValueError(f"Cannot create `DataFrame` from `{str(type(val))}`.")
+
+
+def is_serialized_dataframe(value: Any) -> bool:
+    """Checks if a provided value resembles the (serialized) dict
+    representation of a dataframe."""
+    return (
+        isinstance(value, dict)
+        and "data" in value
+        and ("columns" in value or "dtypes" in value or "index" in value)
+    )
 
 
 SerializableDataFrame: TypeAlias = Annotated[

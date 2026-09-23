@@ -1,3 +1,5 @@
+from collections.abc import Generator
+from concurrent import futures
 from datetime import datetime
 
 import pandas as pd
@@ -14,7 +16,7 @@ from ixmp4.data.run.dto import Run
 from ixmp4.data.run.service import RunService
 from ixmp4.data.unit.service import UnitService
 from ixmp4.data.versions.model import Operation
-from ixmp4.transport import Transport
+from ixmp4.transport import HttpxTransport, Transport
 from tests import auth, backends
 from tests.data.base import ServiceTest
 
@@ -614,6 +616,55 @@ class TestDataPointBulkOperationsInvalidData(DataPointServiceTest):
 
         with pytest.raises(InconsistentIamcType):
             service.bulk_delete(df_no_step_year)
+
+
+class TestDatapointChunkedUpload(DataPointServiceTest):
+    """Client-side chunked writes over HTTP."""
+
+    @pytest.fixture(scope="class", autouse=True)
+    def chunked_transport(
+        self, transport: Transport
+    ) -> Generator[Transport, None, None]:
+        if not isinstance(transport, HttpxTransport):
+            pytest.skip("Chunking is a client-side HTTP-only feature.")
+
+        original_settings = transport.settings
+        original_executor = transport.executor
+        transport.settings = original_settings.model_copy(
+            update={"default_upload_chunk_size": 2}
+        )
+        # A single worker serializes the chunk requests so the shared server
+        # session is not used concurrently.
+        transport.executor = futures.ThreadPoolExecutor(max_workers=1)
+        try:
+            yield transport
+        finally:
+            transport.executor.shutdown()
+            transport.executor = original_executor
+            transport.settings = original_settings
+
+    def test_chunked_datapoint_upsert_and_delete(
+        self,
+        transport: Transport,
+        service: DataPointService,
+        test_ts_df: pd.DataFrame,
+    ) -> None:
+        direct = self.get_direct_or_skip(transport)
+
+        upsert_df = pd.DataFrame(
+            [
+                [ts_id, Type.ANNUAL, 2000, float(i)]
+                for i, ts_id in enumerate(test_ts_df["id"])
+            ],
+            columns=["time_series__id", "type", "step_year", "value"],
+        )
+        assert len(upsert_df) == 3  # > chunk size of 2 -> multiple chunks
+
+        service.bulk_upsert(upsert_df)
+        assert len(DataPointService(direct).tabulate()) == 3
+
+        service.bulk_delete(upsert_df[["time_series__id", "type", "step_year"]])
+        assert DataPointService(direct).tabulate().empty
 
 
 class DataPointAuthTest(DataPointServiceTest):

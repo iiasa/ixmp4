@@ -226,7 +226,7 @@ class TimeSeriesService(Service):
         )
         return merged_df.drop(columns=["variable__id", "unit__id"])
 
-    @procedure(Http(methods=("POST",)))
+    @procedure(Http(methods=("POST",)), chunked=True)
     def bulk_upsert(self, df: SerializableDataFrame) -> None:
         r"""Bulk inserts or updates timeseries from a supplied dataframe.
 

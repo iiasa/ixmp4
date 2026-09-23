@@ -9,6 +9,7 @@ from litestar.utils.path import join_paths
 
 from ixmp4.base_exceptions import ProgrammingError
 from ixmp4.core.exceptions import InvalidArguments
+from ixmp4.data.dataframe import is_serialized_dataframe, parse_df, serialize_df
 from ixmp4.transport import HttpxTransport
 
 from .endpoint import ProcedureRouteHandler
@@ -27,8 +28,9 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
     When a procedure is accessed on a service backed by an
     :class:`ixmp4.transport.HttpxTransport`, the descriptor returns an
     instance of :class:`ProcedureClient` which performs HTTP requests to
-    the service endpoint, validates arguments, and handles paginated
-    responses by dispatching concurrent requests when needed.
+    the service endpoint, validates arguments, handles paginated
+    responses by dispatching concurrent requests when needed, and splits
+    chunked write payloads into client-side chunks.
     """
 
     transport: HttpxTransport
@@ -63,6 +65,9 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
         else:
             json = None
             params = payload
+
+        if self.handler.procedure.chunking.has_chunking:
+            return self.handle_chunked_request(path, params=params, json=json)
 
         res = self.transport.request(self.method, path, json=json, params=params)
         self.transport.raise_service_exception(res)
@@ -179,6 +184,119 @@ class ProcedureClient(Generic[ServiceT, Params, ReturnT]):
             pagination_results.append(result.results)
 
         return pagination_results
+
+    def handle_chunked_request(
+        self,
+        path: str,
+        params: dict[str, Any] | None,
+        json: dict[str, Any] | None,
+    ) -> ReturnT:
+        """Splits a write payload into client-side chunks and dispatches them.
+
+        The payload argument recorded by the procedure's chunking
+        descriptor is split into chunks of ``default_upload_chunk_size``
+        rows. Each chunk is sent as an independent request to the same
+        endpoint and the responses are merged.
+        """
+        chunking = self.handler.procedure.chunking
+        chunk_arg = chunking.chunk_arg_name
+        if chunk_arg is None:
+            raise ProgrammingError(
+                f"Procedure `{self.handler.procedure.func.__name__}` is marked as "
+                "chunked but does not declare a chunkable argument."
+            )
+
+        chunk_size = self.transport.settings.default_upload_chunk_size
+
+        if json is not None:
+            chunks = self.chunk_payload_value(json[chunk_arg], chunk_size)
+        else:
+            if params is None:
+                raise ProgrammingError(
+                    "Chunked procedures require either a request body or "
+                    "query parameters."
+                )
+            chunks = self.chunk_payload_value(params[chunk_arg], chunk_size)
+
+        if len(chunks) == 0:
+            return cast(ReturnT, None)
+
+        results = self.dispatch_chunked_requests(
+            path, chunk_arg, chunks, params=params, json=json
+        )
+        return self.merge_chunked_results(results)
+
+    def chunk_payload_value(self, value: Any, chunk_size: int) -> list[Any]:
+        """Splits *value* into a list of serialized chunks.
+
+        Supports :class:`pandas.DataFrame` (and its serialized dict form)
+        as well as plain lists. Other payload types cannot be chunked.
+        """
+        if isinstance(value, list):
+            return [value[i : i + chunk_size] for i in range(0, len(value), chunk_size)]
+        elif isinstance(value, pd.DataFrame):
+            df = value
+        elif is_serialized_dataframe(value):
+            df = parse_df(dict(value))
+        else:
+            raise ProgrammingError(
+                f"Unable to chunk payload of type `{type(value)}`; expected a "
+                "`pandas.DataFrame` or `list`."
+            )
+
+        return [
+            serialize_df(df.iloc[i : i + chunk_size])
+            for i in range(0, len(df), chunk_size)
+        ]
+
+    def dispatch_chunked_requests(
+        self,
+        path: str,
+        chunk_arg: str,
+        chunks: list[Any],
+        params: dict[str, Any] | None = None,
+        json: dict[str, Any] | None = None,
+    ) -> list[Any]:
+        requests: list[futures.Future[httpx.Response]] = []
+
+        for chunk in chunks:
+            req_params = params.copy() if params is not None else None
+            req_json = json.copy() if json is not None else None
+
+            if req_json is not None:
+                req_json[chunk_arg] = chunk
+            else:
+                if req_params is None:
+                    raise ProgrammingError(
+                        "Chunked procedures require either a request body or "
+                        "query parameters."
+                    )
+                req_params[chunk_arg] = chunk
+
+            future: futures.Future[httpx.Response] = self.transport.executor.submit(
+                self.transport.request,
+                self.method,
+                path,
+                params=req_params,
+                json=req_json,
+            )
+            requests.append(future)
+
+        executor_results = futures.wait(requests)
+        responses = [f.result() for f in executor_results.done]
+        results = []
+
+        for res in responses:
+            self.transport.raise_service_exception(res)
+            results.append(self.handler.return_type_adapter.validate_json(res.text))
+
+        return results
+
+    def merge_chunked_results(self, results: list[Any]) -> ReturnT:
+        if len(results) == 0 or all(result is None for result in results):
+            return cast(ReturnT, None)
+
+        return self.merge_results(cast(list[ReturnT], results))
 
     def merge_results(self, results: list[ReturnT]) -> ReturnT:
         result_type = type(results[0])
