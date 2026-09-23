@@ -231,10 +231,12 @@ class TimeSeriesService(Service):
         r"""Bulk inserts or updates timeseries from a supplied dataframe.
 
         This method accepts a dataframe containing timeseries data and
-        automatically resolves region, unit, and variable references,
-        upserting them as needed. Measurands (variable/unit pairs) are also
-        created automatically. The method performs validation and merging
-        operations before inserting or updating the timeseries records.
+        automatically resolves region, unit, and variable references.
+        Variables and Measurands (variable/unit pairs) are
+        created automatically. Regions and Units aren't created and might
+        raise an exception if missing. The method performs validation
+        and merging operations before inserting or updating the timeseries
+        records (not atomic).
 
         Parameters
         ----------

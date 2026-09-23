@@ -3,16 +3,17 @@ import time
 import warnings
 from contextlib import contextmanager
 from datetime import datetime
-from typing import Generator, List
+from typing import TYPE_CHECKING, Generator, List
 
 import pandas as pd
 
 # TODO Import this from typing when dropping Python 3.11
 from typing_extensions import Unpack
 
-from ixmp4.base_exceptions import OperationNotSupported
+from ixmp4.base_exceptions import Forbidden, OperationNotSupported
 from ixmp4.data.backend import Backend
 from ixmp4.data.model.dto import Model as ModelDto
+from ixmp4.data.region.exceptions import RegionNotFound
 from ixmp4.data.run.dto import Run as RunDto
 from ixmp4.data.run.exceptions import (
     NoDefaultRunVersion,
@@ -28,12 +29,16 @@ from ixmp4.data.run.filter import (
 )
 from ixmp4.data.run.service import RunService
 from ixmp4.data.scenario.dto import Scenario as ScenarioDto
+from ixmp4.data.unit.exceptions import UnitNotFound
 
 from .base import BaseFacadeObject, BaseServiceFacade
 from .checkpoint import RunCheckpoints
 from .iamc import RunIamcData
 from .meta import RunMetaDescriptor
 from .optimization.data import RunOptimizationData
+
+if TYPE_CHECKING:
+    from .platform import Platform
 
 logger = logging.getLogger(__name__)
 
@@ -98,6 +103,66 @@ class RunCloner:
             )
             if keep_solution:
                 dst_variable.add_data(src_variable.data)
+
+    def _validate_required_entities_exist(
+        self, src_run: "Run", dst_backend: Backend
+    ) -> None:
+        dst_region_names = {r.name for r in dst_backend.regions.list()}
+        dst_unit_names = {u.name for u in dst_backend.units.list()}
+
+        missing_regions: list[str] = []
+        missing_units: list[str] = []
+
+        self._collect_iamc_entities(
+            src_run, dst_region_names, dst_unit_names, missing_regions, missing_units
+        )
+        self._collect_optimization_entities(src_run, dst_unit_names, missing_units)
+
+        if missing_regions:
+            raise RegionNotFound(", ".join(sorted(missing_regions)))
+        if missing_units:
+            raise UnitNotFound(", ".join(sorted(missing_units)))
+
+    @staticmethod
+    def _collect_iamc_entities(
+        src_run: "Run",
+        dst_region_names: set[str],
+        dst_unit_names: set[str],
+        missing_regions: list[str],
+        missing_units: list[str],
+    ) -> None:
+        df = src_run.iamc.tabulate()
+        if df.empty:
+            return
+        for r in df["region"].unique():
+            if r not in dst_region_names:
+                missing_regions.append(r)
+        for u in df["unit"].unique():
+            if u not in dst_unit_names:
+                missing_units.append(u)
+
+    @classmethod
+    def _collect_optimization_entities(
+        cls,
+        src_run: "Run",
+        dst_unit_names: set[str],
+        missing_units: list[str],
+    ) -> None:
+        for src_scalar in src_run.optimization.scalars.list():
+            cls._append_missing_unit(
+                src_scalar.unit.name, dst_unit_names, missing_units
+            )
+
+        for src_parameter in src_run.optimization.parameters.list():
+            for u in src_parameter.data.get("units", []):
+                cls._append_missing_unit(str(u), dst_unit_names, missing_units)
+
+    @staticmethod
+    def _append_missing_unit(
+        unit_name: str, dst_unit_names: set[str], missing_units: list[str]
+    ) -> None:
+        if unit_name not in dst_unit_names and unit_name not in missing_units:
+            missing_units.append(unit_name)
 
 
 class Run(BaseFacadeObject[RunService, RunDto]):
@@ -365,6 +430,8 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         self,
         model: str | None = None,
         scenario: str | None = None,
+        *,
+        platform: "Platform | Backend | None" = None,
         keep_solution: bool = True,
     ) -> "Run":
         """Create a copy of this run.
@@ -384,6 +451,10 @@ class Run(BaseFacadeObject[RunService, RunDto]):
             Optional model name for the cloned run.
         scenario : str | None
             Optional scenario name for the cloned run.
+        platform : :class:`ixmp4.Platform` or
+            :class:`ixmp4.data.backend.Backend`, optional
+            The platform or backend on which to create the cloned run.
+            Defaults to the platform of the source run.
         keep_solution : bool
             Whether to keep the solution data in the clone.
 
@@ -391,16 +462,47 @@ class Run(BaseFacadeObject[RunService, RunDto]):
         -------
         :class:`ixmp4.core.run.Run`:
             The cloned run.
-        """
-        dst_run = Run(
-            backend=self._backend,
-            dto=self._service.create(
-                model_name=model or self.model.name,
-                scenario_name=scenario or self.scenario.name,
-            ),
-        )
 
-        self._cloner.clone(self, dst_run, keep_solution)
+        Notes
+        -----
+        When cloning to another platform, any dimension entities referenced by
+        the run (e.g. regions, units and optimization scalar units) must
+        already exist on the destination platform. IAMC variables and
+        measurands are created automatically.
+        If the entities do not exist or the clone fails for another
+        reason, an attempt is made to delete the dirty destination run.
+        """
+        if isinstance(platform, Backend):
+            backend = platform
+        elif platform is not None:
+            backend = platform.backend
+        else:
+            backend = self._backend
+
+        if backend is not self._backend:
+            self._cloner._validate_required_entities_exist(self, backend)
+
+        dst_dto = backend.runs.create(
+            model_name=model or self.model.name,
+            scenario_name=scenario or self.scenario.name,
+        )
+        try:
+            dst_run = Run(backend=backend, dto=dst_dto)
+            self._cloner.clone(self, dst_run, keep_solution)
+        except Exception as e:
+            logger.debug(
+                f"`Run.clone()` failed with `{e.__class__.__name__}`, "
+                "deleting dirty destination `Run`."
+            )
+            try:
+                backend.runs.delete_by_id(dst_dto.id)
+            except Forbidden:
+                logger.warning(
+                    "`Run.clone()` failed and `RunService.delete_by_id` "
+                    f"is forbidden, leaving a dirty destination run: {dst_dto}"
+                )
+            raise e
+
         return dst_run
 
     def _get_service(self, backend: Backend) -> RunService:

@@ -1,4 +1,6 @@
 import datetime
+import logging
+from collections.abc import Generator
 from typing import Any
 
 import pandas as pd
@@ -7,7 +9,13 @@ import pytest
 import sqlalchemy as sa
 
 import ixmp4
+from ixmp4.base_exceptions import Forbidden
+from ixmp4.core.run import RunCloner
+from ixmp4.data.backend import Backend
+from ixmp4.data.region.exceptions import RegionNotFound
 from ixmp4.data.run.db import Run
+from ixmp4.data.unit.exceptions import UnitNotFound
+from ixmp4.transport import DirectTransport
 from tests import backends
 from tests.core.base import PlatformTest
 
@@ -245,6 +253,29 @@ class TestRunClone:
         }
 
     @pytest.fixture(scope="class")
+    def other_platform(self) -> Generator[ixmp4.Platform, None, None]:
+        # Build an independent in-memory SQLite database.
+        # The engine must be created seperately here to avoid caching it.
+        engine = sa.create_engine(
+            "sqlite:///:memory:",
+            poolclass=sa.StaticPool,
+            max_identifier_length=63,
+            connect_args={"check_same_thread": False},
+        )
+        backends.create_model_tables(engine)
+        session = sa.orm.Session(bind=engine)
+        transport = DirectTransport(session, check_alembic_version=False)
+        platform = ixmp4.Platform(Backend(transport))
+        # IAMC data requires regions and units to already exist on the
+        # destination platform, so create the ones used by the `run` fixture.
+        platform.regions.create("Region 1", "default")
+        platform.regions.create("Region 2", "default")
+        platform.units.create("Unit 1")
+        platform.units.create("Unit 2")
+        yield platform
+        transport.close()
+
+    @pytest.fixture(scope="class")
     def run(
         self,
         platform: ixmp4.Platform,
@@ -296,8 +327,9 @@ class TestRunClone:
 
         return run
 
-    def test_clone_run(
+    def _assert_cloned_run(
         self,
+        cloned_run: ixmp4.Run,
         run: ixmp4.Run,
         test_data_iamc: pd.DataFrame,
         test_data_meta: dict[str, Any],
@@ -308,8 +340,6 @@ class TestRunClone:
         test_data_table1: dict[str, list[Any]],
         test_data_variable1: dict[str, list[Any]],
     ) -> None:
-        cloned_run = run.clone()
-
         assert cloned_run.model.name == run.model.name
         assert cloned_run.scenario.name == run.scenario.name
         assert dict(cloned_run.meta) == test_data_meta
@@ -337,3 +367,213 @@ class TestRunClone:
 
         variable1 = cloned_run.optimization.variables.get_by_name("Variable 1")
         assert variable1.data == test_data_variable1
+
+    def test_clone_run(
+        self,
+        run: ixmp4.Run,
+        test_data_iamc: pd.DataFrame,
+        test_data_meta: dict[str, Any],
+        test_data_idxset1: list[str],
+        test_data_idxset2: list[float],
+        test_data_equation1: dict[str, list[Any]],
+        test_data_parameter1: dict[str, list[Any]],
+        test_data_table1: dict[str, list[Any]],
+        test_data_variable1: dict[str, list[Any]],
+    ) -> None:
+        cloned_run = run.clone()
+
+        self._assert_cloned_run(
+            cloned_run,
+            run,
+            test_data_iamc,
+            test_data_meta,
+            test_data_idxset1,
+            test_data_idxset2,
+            test_data_equation1,
+            test_data_parameter1,
+            test_data_table1,
+            test_data_variable1,
+        )
+
+    def test_clone_run_other_platform(
+        self,
+        run: ixmp4.Run,
+        other_platform: ixmp4.Platform,
+        test_data_iamc: pd.DataFrame,
+        test_data_meta: dict[str, Any],
+        test_data_idxset1: list[str],
+        test_data_idxset2: list[float],
+        test_data_equation1: dict[str, list[Any]],
+        test_data_parameter1: dict[str, list[Any]],
+        test_data_table1: dict[str, list[Any]],
+        test_data_variable1: dict[str, list[Any]],
+    ) -> None:
+        cloned_run = run.clone(platform=other_platform)
+        assert cloned_run._backend is other_platform.backend
+        assert cloned_run.id in [
+            other_run.id for other_run in other_platform.runs.list(default_only=False)
+        ]
+
+        self._assert_cloned_run(
+            cloned_run,
+            run,
+            test_data_iamc,
+            test_data_meta,
+            test_data_idxset1,
+            test_data_idxset2,
+            test_data_equation1,
+            test_data_parameter1,
+            test_data_table1,
+            test_data_variable1,
+        )
+
+        backend_clone = run.clone(platform=other_platform.backend)
+        assert backend_clone._backend is other_platform.backend
+
+        self._assert_cloned_run(
+            backend_clone,
+            run,
+            test_data_iamc,
+            test_data_meta,
+            test_data_idxset1,
+            test_data_idxset2,
+            test_data_equation1,
+            test_data_parameter1,
+            test_data_table1,
+            test_data_variable1,
+        )
+
+    def test_clone_failure_deletes_dirty_destination_run(
+        self,
+        run: ixmp4.Run,
+        other_platform: ixmp4.Platform,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def boom_clone(
+            self: RunCloner, src_run: ixmp4.Run, dst_run: ixmp4.Run, keep_solution: bool
+        ) -> None:
+            raise RuntimeError("boom")
+
+        monkeypatch.setattr(RunCloner, "clone", boom_clone)
+
+        before = len(other_platform.runs.list(default_only=False))
+
+        with pytest.raises(RuntimeError, match="boom"):
+            run.clone(platform=other_platform)
+
+        assert len(other_platform.runs.list(default_only=False)) == before
+
+    def test_clone_failure_warns_when_dirty_run_cannot_be_deleted(
+        self,
+        run: ixmp4.Run,
+        other_platform: ixmp4.Platform,
+        caplog: pytest.LogCaptureFixture,
+        monkeypatch: pytest.MonkeyPatch,
+    ) -> None:
+        def boom_clone(
+            self: RunCloner, src_run: ixmp4.Run, dst_run: ixmp4.Run, keep_solution: bool
+        ) -> None:
+            raise RuntimeError("boom")
+
+        def forbidden_delete(id: int) -> None:
+            raise Forbidden()
+
+        monkeypatch.setattr(RunCloner, "clone", boom_clone)
+        monkeypatch.setattr(
+            other_platform.backend.runs, "delete_by_id", forbidden_delete
+        )
+
+        before = len(other_platform.runs.list(default_only=False))
+
+        with caplog.at_level(logging.WARNING, logger="ixmp4.core.run"):
+            with pytest.raises(RuntimeError, match="boom"):
+                run.clone(platform=other_platform)
+
+        assert any(
+            "leaving a dirty destination run" in record.message
+            for record in caplog.records
+        )
+        assert len(other_platform.runs.list(default_only=False)) == before + 1
+
+    @pytest.fixture()
+    def empty_platform(self) -> Generator[ixmp4.Platform, None, None]:
+        engine = sa.create_engine(
+            "sqlite:///:memory:",
+            poolclass=sa.StaticPool,
+            max_identifier_length=63,
+            connect_args={"check_same_thread": False},
+        )
+        backends.create_model_tables(engine)
+        session = sa.orm.Session(bind=engine)
+        transport = DirectTransport(session, check_alembic_version=False)
+        platform = ixmp4.Platform(Backend(transport))
+        yield platform
+        transport.close()
+
+    def test_clone_missing_region_raises(
+        self,
+        run: ixmp4.Run,
+        empty_platform: ixmp4.Platform,
+    ) -> None:
+        with pytest.raises(RegionNotFound):
+            run.clone(platform=empty_platform)
+
+    def test_clone_missing_unit_from_iamc_raises(
+        self,
+        platform: ixmp4.Platform,
+        empty_platform: ixmp4.Platform,
+    ) -> None:
+        platform.units.create("Unit X")
+        run = platform.runs.create("Model", "UnitTest")
+        df = pd.DataFrame(
+            [["Region 1", "Unit X", "Variable 1", 2000, 1.1]],
+            columns=["region", "unit", "variable", "year", "value"],
+        )
+        df["year"] = df["year"].astype("Int64")
+        with run.transact("Add IAMC data"):
+            run.iamc.add(df)
+        empty_platform.regions.create("Region 1", "default")
+        with pytest.raises(UnitNotFound):
+            run.clone(platform=empty_platform)
+
+    def test_clone_missing_unit_from_optimization_scalar_raises(
+        self,
+        platform: ixmp4.Platform,
+        empty_platform: ixmp4.Platform,
+    ) -> None:
+        platform.units.create("Unit Y")
+        run = platform.runs.create("Model", "ScalarUnitTest")
+        with run.transact("Add scalar"):
+            run.optimization.scalars.create("Scalar X", 42.0, "Unit Y")
+        with pytest.raises(UnitNotFound):
+            run.clone(platform=empty_platform)
+
+    def test_clone_missing_unit_from_optimization_parameter_raises(
+        self,
+        platform: ixmp4.Platform,
+        empty_platform: ixmp4.Platform,
+    ) -> None:
+        platform.units.create("Unit Z")
+        run = platform.runs.create("Model", "ParamUnitTest")
+        with run.transact("Add parameter data"):
+            idxset = run.optimization.indexsets.create("IndexSet 1")
+            idxset.add_data(["a", "b"])
+            parameter = run.optimization.parameters.create(
+                "Parameter X", constrained_to_indexsets=["IndexSet 1"]
+            )
+            parameter.add_data(
+                {
+                    "units": ["Unit Z", "Unit Z"],
+                    "values": [1.0, 2.0],
+                    "IndexSet 1": ["a", "b"],
+                }
+            )
+        with pytest.raises(UnitNotFound):
+            run.clone(platform=empty_platform)
+
+    def test_clone_no_validation_when_same_platform(
+        self,
+        run: ixmp4.Run,
+    ) -> None:
+        cloned_run = run.clone()
+        assert cloned_run.model.name == run.model.name
