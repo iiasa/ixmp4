@@ -427,7 +427,7 @@ class RunService(GetByIdService):
             pagination=pagination,
         )
 
-    @procedure(Http(path="/{id:int}/set-as-default", methods=("POST",)))
+    @procedure(Http(path="/{id:int}/set-as-default-version", methods=("POST",)))
     def set_as_default_version(self, id: int) -> None:
         """Sets a run as the default version for a (model, scenario) combination.
 
@@ -453,7 +453,10 @@ class RunService(GetByIdService):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(path="/{id:int}/unset-as-default", methods=("POST",)))
+    # NOTE: Legacy routes without the id in the path are kept for backwards
+    # compatibility, see `RunCompatibilityController`
+    # TODO: Remove before 1.0.0
+    @procedure(Http(path="/{id:int}/unset-as-default-version", methods=("POST",)))
     def unset_as_default_version(self, id: int) -> None:
         """Unsets a run as the default version leaving no
         default version for a (model, scenario) combination.
