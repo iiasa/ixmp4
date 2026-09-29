@@ -121,12 +121,35 @@ class TestRunQuery(RunApiTest):
 
 
 class TestRunState(RunApiTest):
+    # the run id is taken from the URL path
+    ID_IN_PATH = "id-in-path"
+    # ixmp4 <=0.14.0 used a trailing slash for these routes
+    ID_IN_PATH_LEGACY = "id-in-path-legacy"
+    # ixmp4 <=0.16.0 took the run id from the request body
+    ID_IN_BODY = "id-in-body"
+
+    ROUTE_STYLES = [ID_IN_PATH, ID_IN_PATH_LEGACY, ID_IN_BODY]
+
     @pytest.fixture(scope="class")
     def run(self, direct_service: RunService) -> Run:
         return direct_service.create("Model", "Scenario")
 
-    def test_run_default_version(self, client: httpx.Client, run: Run) -> None:
-        self.request(client, "POST", f"/runs/{run.id}/set-as-default")
+    def post_run_action(
+        self, client: httpx.Client, run: Run, action: str, style: str
+    ) -> httpx.Response:
+        if style == self.ID_IN_PATH:
+            return self.request(client, "POST", f"/runs/{run.id}/{action}")
+        elif style == self.ID_IN_PATH_LEGACY:
+            return self.request(client, "POST", f"/runs/{run.id}/{action}/")
+        else:
+            return self.request(client, "POST", f"/runs/{action}", json={"id": run.id})
+
+    @pytest.mark.parametrize("style", ROUTE_STYLES)
+    def test_run_default_version(
+        self, client: httpx.Client, run: Run, style: str
+    ) -> None:
+        self.post_run_action(client, run, "set-as-default-version", style)
+
         for method in ["POST", "PATCH"]:
             default_run = self.request(
                 client,
@@ -138,15 +161,68 @@ class TestRunState(RunApiTest):
             assert default_run["id"] == run.id
             assert default_run["is_default"] is True
 
-        self.request(client, "POST", f"/runs/{run.id}/unset-as-default")
+        self.post_run_action(client, run, "unset-as-default-version", style)
         unset = self.request(client, "GET", f"/runs/{run.id}").json()
         assert unset["is_default"] is False
 
-    def test_run_lock_and_unlock(self, client: httpx.Client, run: Run) -> None:
-        locked = self.request(client, "POST", f"/runs/{run.id}/lock").json()
+    @pytest.mark.parametrize("style", ROUTE_STYLES)
+    def test_run_lock_and_unlock(
+        self, client: httpx.Client, run: Run, style: str
+    ) -> None:
+        locked = self.post_run_action(client, run, "lock", style).json()
         assert locked["id"] == run.id
         assert locked["lock_transaction"] is not None
 
-        unlocked = self.request(client, "POST", f"/runs/{run.id}/unlock").json()
+        unlocked = self.post_run_action(client, run, "unlock", style).json()
         assert unlocked["id"] == run.id
         assert unlocked["lock_transaction"] is None
+
+    def test_run_lock_response_matches_canonical_route(
+        self, client: httpx.Client, run: Run
+    ) -> None:
+        legacy = self.post_run_action(client, run, "lock", self.ID_IN_BODY).json()
+        self.post_run_action(client, run, "unlock", self.ID_IN_PATH)
+        canonical = self.post_run_action(client, run, "lock", self.ID_IN_PATH).json()
+        self.post_run_action(client, run, "unlock", self.ID_IN_PATH)
+
+        assert set(legacy) == set(canonical)
+        assert legacy["lock_transaction"] is not None
+        assert canonical["lock_transaction"] is not None
+
+    @pytest.mark.parametrize(
+        "action", ["lock", "unlock", "revert", "set-as-default-version"]
+    )
+    def test_run_compat_route_matches_canonical_error(
+        self, client: httpx.Client, action: str
+    ) -> None:
+        """The body-id routes must run the very same procedure, auth checks included."""
+        body: dict[str, object] = {"id": 9999}
+        if action == "revert":
+            body["transaction__id"] = 1
+
+        canonical = client.post(
+            f"runs/9999/{action}",
+            json={k: v for k, v in body.items() if k != "id"},
+        )
+        legacy = client.post(f"runs/{action}", json=body)
+
+        assert legacy.status_code == canonical.status_code
+        assert legacy.json() == canonical.json()
+
+    @pytest.mark.parametrize(
+        "path,body",
+        [
+            ("/runs/lock", {}),
+            ("/runs/unlock", {"other": 1}),
+            ("/runs/revert", {"transaction__id": 1}),
+            ("/runs/set-as-default-version", {}),
+            ("/runs/unset-as-default-version", None),
+        ],
+    )
+    def test_run_compat_route_requires_id(
+        self, client: httpx.Client, path: str, body: dict[str, object] | None
+    ) -> None:
+        response = client.request("POST", path.lstrip("/"), json=body)
+
+        assert response.status_code == 400
+        assert response.json()["name"] == "BadRequest"
