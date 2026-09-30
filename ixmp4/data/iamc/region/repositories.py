@@ -18,7 +18,7 @@ from ixmp4.data.region.filter import IamcRegionFilter
 class IamcRegionTarget(ModelTarget[Region]):
     def select_statement(
         self, columns: Sequence[str] | None = None
-    ) -> sa.Select[tuple[Any, ...]]:
+    ) -> sa.Select[*tuple[Any, ...]]:
         return super().select_statement(columns=columns).where(Region.timeseries.any())
 
 

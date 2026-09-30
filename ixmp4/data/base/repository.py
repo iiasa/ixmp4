@@ -81,7 +81,7 @@ class AuthRepository(BaseRepository[TargetT]):
 
     def select_permitted_model_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]] | None:
+    ) -> sa.Select[*tuple[Any, ...]] | None:
         """Return a subquery of allowed model IDs, or ``None`` when access is
         unrestricted (caller should omit the filter entirely)."""
         clause = self._model_permission_clause(auth_ctx, platform)
@@ -91,7 +91,7 @@ class AuthRepository(BaseRepository[TargetT]):
 
     def select_permitted_run_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]] | None:
+    ) -> sa.Select[*tuple[Any, ...]] | None:
         """Return a flat subquery ``SELECT run.id FROM run JOIN model WHERE …``,
         or ``None`` when access is unrestricted (caller should omit the filter)."""
         clause = self._model_permission_clause(auth_ctx, platform)
@@ -101,7 +101,7 @@ class AuthRepository(BaseRepository[TargetT]):
 
     def select_permitted_ts_ids(
         self, auth_ctx: AuthorizationContext, platform: PlatformProtocol
-    ) -> sa.Select[tuple[int]] | None:
+    ) -> sa.Select[*tuple[Any, ...]] | None:
         """Return a subquery of allowed time-series IDs, or ``None`` when access
         is unrestricted (caller should omit the filter)."""
         clause = self._model_permission_clause(auth_ctx, platform)
@@ -134,24 +134,24 @@ class AuthRepository(BaseRepository[TargetT]):
     @overload
     def where_authorized(
         self,
-        exc: sa.Select[Any],
+        exc: sa.Select[*tuple[Any, ...]],
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-    ) -> sa.Select[Any]: ...
+    ) -> sa.Select[*tuple[Any, ...]]: ...
 
     def where_authorized(
         self,
-        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+    ) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
         """
         Add WHERE clauses to the given SQLAlchemy statement to filter
         rows by permission criteria.
 
         Parameters
         ----------
-        exc : sa.Select[SelectR] | sa.Update | sa.Delete
+        exc : sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete
             The SQLAlchemy statement.
         auth_ctx : AuthorizationContext
             The `AuthorizationContext` object to use to assertain permissions.
@@ -160,7 +160,7 @@ class AuthRepository(BaseRepository[TargetT]):
 
         Returns
         -------
-        sa.Select[SelectR] | sa.Update | sa.Delete
+        sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete
             The statement with permission WHERE clauses added.
         """
         raise NotImplementedError(
@@ -192,7 +192,7 @@ class AuthModelTargetWrapper(ModelTarget[DefaultModelT]):
 
     def select_statement(
         self, columns: Sequence[str] | None = None
-    ) -> sa.Select[tuple[Any, ...]]:
+    ) -> sa.Select[*tuple[Any, ...]]:
         exc = self.wrapped_target.select_statement(columns=columns)
         return self.auth_repo.where_authorized(exc, self.auth_ctx, self.platform)
 
@@ -213,10 +213,8 @@ class AuthModelTargetWrapper(ModelTarget[DefaultModelT]):
     def pk_columns(self) -> sa.ColumnCollection[str, sa.ColumnElement[Any]]:
         return self.wrapped_target.pk_columns()
 
-    def get_single_item(self, result: sa.Result[tuple[DefaultModelT]]) -> DefaultModelT:
+    def get_single_item(self, result: sa.Result[DefaultModelT]) -> DefaultModelT:
         return self.wrapped_target.get_single_item(result)
 
-    def get_item_list(
-        self, result: sa.Result[tuple[DefaultModelT]]
-    ) -> list[DefaultModelT]:
+    def get_item_list(self, result: sa.Result[DefaultModelT]) -> list[DefaultModelT]:
         return self.wrapped_target.get_item_list(result)

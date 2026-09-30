@@ -3,7 +3,7 @@ from typing import Any, cast
 
 from sqlalchemy import Connection, FromClause, Table, event, schema
 from sqlalchemy.orm import Session
-from sqlalchemy.sql import ColumnCollection, ColumnElement
+from sqlalchemy.sql import ColumnElement
 
 from ixmp4.base_exceptions import ProgrammingError
 
@@ -94,7 +94,7 @@ class PostgresVersionTriggers(object):
     entities: list[DeleteTrigger | InsertTrigger | UpdateTrigger | VersionProcedure]
     table: Table | FromClause
     version_table: Table | FromClause
-    versioned_columns: ColumnCollection[str, ColumnElement[Any]]
+    versioned_columns: dict[str, ColumnElement[Any]]
 
     def __init__(
         self,
@@ -138,15 +138,13 @@ class PostgresVersionTriggers(object):
 
         self.check_primary_key(table, version_table, transaction_id_column)
 
-        self.versioned_columns: ColumnCollection[str, ColumnElement[Any]] = (
-            ColumnCollection()
-        )
+        self.versioned_columns = {}
         for column in table.columns:
             version_column = version_table.columns.get(column.key)
             if version_column is not None and self.column_corresponds(
                 column, version_column
             ):
-                self.versioned_columns.add(column)
+                self.versioned_columns[column.key] = column
 
         self.version_procedure = VersionProcedure(
             table,
@@ -190,18 +188,21 @@ class PostgresVersionTriggers(object):
         version_table: Table,
         transaction_id_column: ColumnElement[int],
     ) -> None:
-        expected_version_pk = ColumnCollection(table.primary_key.columns.items())
-        expected_version_pk.add(transaction_id_column)
+        expected_version_pk: dict[str, ColumnElement[Any]] = dict(
+            table.primary_key.columns.items()
+        )
+        transaction_id_key = cast(str, transaction_id_column.key)
+        expected_version_pk[transaction_id_key] = transaction_id_column
         current_pk = version_table.primary_key.columns
 
-        for expected_col in expected_version_pk:
-            current_col = current_pk.get(expected_col.key)
+        for expected_col in expected_version_pk.values():
+            current_col = current_pk.get(cast(str, expected_col.key))
             if current_col is None or not self.column_corresponds(
                 expected_col, current_col
             ):
                 raise ProgrammingError(
                     "Version table primary key must consist of "
-                    f"original primary key and '{transaction_id_column.key}'.\n"
+                    f"original primary key and '{transaction_id_key}'.\n"
                     f"Expected: {expected_version_pk}\n"
                     f"Current: {current_pk}"
                 )

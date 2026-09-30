@@ -19,7 +19,7 @@ from ixmp4.data.scenario.repositories import ScenarioAuthRepository
 class IamcScenarioTarget(ModelTarget[Scenario | ScenarioVersion]):
     def select_statement(
         self, columns: Sequence[str] | None = None
-    ) -> sa.Select[tuple[Any, ...]]:
+    ) -> sa.Select[*tuple[Any, ...]]:
         return (
             super()
             .select_statement(columns=columns)

@@ -12,7 +12,7 @@ description = "a data warehouse for scenario analysis"
 dynamic = ["version"]
 license = "MIT"
 readme = "README.md"
-requires-python = ">=3.10, <3.15"
+requires-python = ">=3.11, <3.15"
 dependencies = [
     "alembic>=1.12.0",
     "httpx[http2]>=0.25.0",
@@ -26,7 +26,7 @@ dependencies = [
     "PyJWT>=2.4.0",
     "python-dotenv>=1.0.1",
     "rich>=13.5.2",
-    "SQLAlchemy[mypy]>=2.0.22",
+    "SQLAlchemy[mypy]>=2.1.0",
     "SQLAlchemy-Utils>=0.41.0",
     "toml>=0.10.2",
     "typer>=0.19.0",
@@ -134,6 +134,7 @@ init_typed = true
 warn_required_dynamic_aliases = true
 
 [tool.ruff]
+target-version = "py311"
 exclude = [
     ".git",
     "__pycache__",
