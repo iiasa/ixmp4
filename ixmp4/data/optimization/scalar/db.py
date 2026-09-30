@@ -19,7 +19,7 @@ class Scalar(BaseModel, HasCreationInfo):
 
     name: String = orm.mapped_column(sa.String(255), nullable=False)
 
-    value: Float = orm.mapped_column(nullable=True)
+    value: Float = orm.mapped_column(sa.Float, nullable=True)
 
     unit__id: Integer = orm.mapped_column(
         sa.Integer, sa.ForeignKey("unit.id"), nullable=False, index=True
@@ -43,7 +43,7 @@ class ScalarVersion(versions.BaseVersionModel):
     __tablename__ = "opt_sca_version"
 
     name: String = orm.mapped_column(sa.String(255), nullable=False)
-    value: Float = orm.mapped_column(nullable=True)
+    value: Float = orm.mapped_column(sa.Float, nullable=True)
     unit__id: Integer = orm.mapped_column(nullable=False, index=True)
     run__id: Integer = orm.mapped_column(nullable=False, index=True)
 
