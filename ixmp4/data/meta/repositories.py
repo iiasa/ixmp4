@@ -26,10 +26,10 @@ ILLEGAL_META_KEYS = {"model", "scenario", "id", "version", "is_default"}
 class RunMetaAuthRepository(AuthRepository[RunMetaEntry | RunMetaEntryVersion]):
     def where_authorized(
         self,
-        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+    ) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
         run_id_exc = self.select_permitted_run_ids(auth_ctx, platform)
         if run_id_exc is None:
             return exc
@@ -71,7 +71,9 @@ class PandasRepository(RunMetaAuthRepository, BasePandasRepository):
     )
     filter = Filter(RunMetaEntryFilter, RunMetaEntry)
 
-    def default_order_by(self, exc: sa.Select[Any]) -> sa.Select[Any]:
+    def default_order_by(
+        self, exc: sa.Select[*tuple[Any, ...]]
+    ) -> sa.Select[*tuple[Any, ...]]:
         return exc.order_by(RunMetaEntry.run__id, RunMetaEntry.key)
 
     def merge_value_columns(self, df: pd.DataFrame) -> pd.DataFrame:

@@ -20,10 +20,10 @@ from .filter import ModelFilter
 class ModelAuthRepository(AuthRepository[Model | ModelVersion]):
     def where_authorized(
         self,
-        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+    ) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
         model_exc = self.select_permitted_model_ids(auth_ctx, platform)
         if model_exc is None:
             return exc

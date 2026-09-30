@@ -15,7 +15,7 @@ class MetaReverterRepository(ReverterRepository[[int]]):
     target = ModelTarget(RunMetaEntry)
     version_target = ModelTarget(RunMetaEntryVersion)
 
-    def select_versions(self, run__id: int) -> sa.Select[Any]:
+    def select_versions(self, run__id: int) -> sa.Select[*tuple[Any, ...]]:
         return sa.select(RunMetaEntryVersion).where(
             RunMetaEntryVersion.run__id == run__id
         )

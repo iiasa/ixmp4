@@ -25,12 +25,12 @@ from .db import Variable
 
 
 def filter_by_run(
-    exc: sa.Select[Any],
+    exc: sa.Select[*tuple[Any, ...]],
     value: dict[str, Any] | None,
     *,
     schema: type[Any],
     repo: BaseRepository[Any],
-) -> sa.Select[Any]:
+) -> sa.Select[*tuple[Any, ...]]:
     if value is None:
         return exc
     else:
