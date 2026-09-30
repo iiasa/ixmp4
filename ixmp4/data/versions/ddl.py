@@ -1,7 +1,7 @@
 from typing import Any
 
 from sqlalchemy import Table
-from sqlalchemy.sql import ColumnCollection, ColumnElement
+from sqlalchemy.sql import ColumnElement
 
 from .model import Operation
 
@@ -55,7 +55,7 @@ class VersionProcedure(object):
         table: Table,
         version_table: Table,
         transaction_table: Table,
-        versioned_columns: ColumnCollection[str, ColumnElement[Any]],
+        versioned_columns: dict[str, ColumnElement[Any]],
         transaction_id_column: ColumnElement[int],
         end_transaction_id_column: ColumnElement[int],
     ):
