@@ -25,7 +25,7 @@ class TestScalarCreateAndUpdate(ScalarApiTest):
     def unit(self, direct_transport: DirectTransport) -> Unit:
         return UnitService(direct_transport).create("Unit")
 
-    def test_scalar_create_update_and_tabulate(
+    def test_scalar_create_get_update_and_tabulate(
         self, client: httpx.Client, run: Run, unit: Unit
     ) -> None:
         created = self.request(
@@ -42,6 +42,15 @@ class TestScalarCreateAndUpdate(ScalarApiTest):
 
         assert created["id"] == 1
         assert created["name"] == "Scalar"
+
+        for method in ["POST", "PATCH"]:
+            got = self.request(
+                client,
+                method,
+                "/optimization/scalars/get",
+                json={"run_id": run.id, "name": "Scalar"},
+            ).json()
+            assert got["id"] == created["id"]
 
         updated = self.request(
             client,
