@@ -48,7 +48,34 @@ class DtypeFilter(TypedDict, total=False):
     dtype__in: list[str]
 
 
-class RunMetaEntryFilter(IdFilter, KeyFilter, RunIdFilter, DtypeFilter, total=False):
+class ValueFilter(TypedDict, total=False):
+    value_float: float
+    value_float__lte: float
+    value_float__lt: float
+    value_float__gte: float
+    value_float__gt: float
+    value_float__in: list[float]
+
+    value_int: int
+    value_int__lte: int
+    value_int__lt: int
+    value_int__gte: int
+    value_int__gt: int
+    value_int__in: list[int]
+
+    value_str: str
+    value_str__in: list[str]
+    value_str__like: str
+    value_str__ilike: str
+    value_str__notlike: str
+    value_str__notilike: str
+
+    value_bool: bool
+
+
+class RunMetaEntryFilter(
+    IdFilter, KeyFilter, RunIdFilter, DtypeFilter, ValueFilter, total=False
+):
     pass
 
 

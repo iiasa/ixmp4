@@ -11,6 +11,7 @@ from ixmp4.data.scenario.db import Scenario
 
 if TYPE_CHECKING:
     from ixmp4.data.iamc.timeseries.db import TimeSeries
+    from ixmp4.data.meta.db import RunMetaEntry
 
 
 class Run(BaseModel, HasUpdateInfo):
@@ -31,6 +32,12 @@ class Run(BaseModel, HasUpdateInfo):
         "Scenario", backref="run", foreign_keys=[scenario__id], lazy="joined"
     )
     timeseries: Mapped[list["TimeSeries"]] = orm.relationship(viewonly=True)
+    meta: Mapped[list["RunMetaEntry"]] = orm.relationship(
+        "RunMetaEntry",
+        back_populates="run",
+        foreign_keys="RunMetaEntry.run__id",
+        viewonly=True,
+    )
 
     # equations: Mapped[list["Equation"]] = orm.relationship()
     # indexsets: Mapped[list["IndexSet"]] = orm.relationship()
