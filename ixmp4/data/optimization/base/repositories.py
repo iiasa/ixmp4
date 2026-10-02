@@ -193,6 +193,10 @@ class IndexedRepository(
                 "does not contain None or NaN, either!"
             )
 
+        if not indexsets:
+            # The following checks are only applicable if there are ≥1 indexsets
+            return
+
         limited_to_indexsets = {
             columns[i]: indexsets[i].data for i in range(len(indexsets))
         }

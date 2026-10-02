@@ -231,7 +231,23 @@ class TestVariableNotFound(VariableServiceTest):
 
 
 class VariableDataTest(VariableServiceTest):
-    def test_variable_add_data(
+    def test_variable_add_data_0d(self, service: VariableService, run: Run) -> None:
+        """Data can be added to and retrieved from a variable with no index sets."""
+        test_data = {"marginals": [1.0], "levels": [1.0]}
+
+        # Create the variable
+        variable = service.create(run.id, "Variable 0D")
+
+        # Add data to the variable
+        service.add_data(variable.id, test_data)
+
+        # Retrieve a new reference to the variable from the service
+        variable = service.get_by_id(variable.id)
+
+        # Data is as added
+        assert test_data == variable.data
+
+    def test_variable_add_data_2d(
         self,
         service: VariableService,
         run: Run,
@@ -240,6 +256,7 @@ class VariableDataTest(VariableServiceTest):
         test_data: dict[str, list[Any]] | pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
+        """Data can be added to a variable indexed by 2 sets."""
         variable = service.create(
             run.id,
             "Variable",
