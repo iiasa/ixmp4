@@ -176,6 +176,17 @@ class TestVariableCreateInvalidArguments(OptimizationVariableTest):
                 )
 
 
+class TestVariable0DDataInvalid(OptimizationVariableTest):
+    """Adding data with length >1 to a 0D variable raises DataInvalid."""
+
+    def test_add_data(self, run: ixmp4.Run) -> None:
+        with run.transact("Create variable and add data"):
+            variable = run.optimization.variables.create("Variable")
+
+            with pytest.raises(ixmp4.optimization.Variable.DataInvalid):
+                variable.add_data({"levels": [-2, 1], "marginals": [2, 1]})
+
+
 class VariableDataTest(OptimizationVariableTest, ABC):
     """Abstract base class for tests of Variable data handling.
 
