@@ -316,6 +316,20 @@ class VariableDataTest(VariableServiceTest, ABC):
         remaining_test_data: dict[str, list[Any]] | pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
+        """Test versioning of variable data.
+
+        If all tests in this class are run in order, this test runs last, after:
+
+        1. :meth:`test_data_indexsets` fixture, which is requested as an input to (2)
+        2. :meth:`test_variable_add_data`
+        3. :meth:`test_variable_remove_data_partial`
+        4. :meth:`test_variable_remove_data_all`
+
+        Each of these steps results in a new version. This test prepares
+        `expected_versions` with the resulting versions and transaction IDs, and
+        compares to the observed versions. NB this means the test will fail unless all
+        tests in the class are run in order.
+        """
         if isinstance(test_data, pd.DataFrame):
             test_data = cast(dict[str, list[Any]], test_data.to_dict(orient="list"))
 
@@ -324,55 +338,44 @@ class VariableDataTest(VariableServiceTest, ABC):
                 dict[str, list[Any]], remaining_test_data.to_dict(orient="list")
             )
 
-        # compute transaction ids
-        is_tx = (
-            5 + len(test_data_indexsets) + sum(len(i.data) for i in test_data_indexsets)
-        )
+        # Compute numbers of transactions and resulting transaction IDs
+
+        # Transaction ID after setup of test_data_indexsets fixture
+        if len(test_data_indexsets):
+            is_tx = (
+                5
+                + len(test_data_indexsets)
+                + sum(len(i.data) for i in test_data_indexsets)
+            )
+        else:
+            # Scalar data; fewer transactions
+            is_tx = 3
+
+        # …after setup of the test_data fixture
         create_tx = is_tx + 1
-        add_data_tx = create_tx + 3
+        # …after test_variable_add_data()
+        add_data_tx = create_tx + (3 if len(test_data_indexsets) else 1)
+        # …after test_variable_remove_data_partial()
         rm_data_partial_tx = add_data_tx + 1
+        # …after test_variable_remove_data_all()
         rm_data_full_tx = rm_data_partial_tx + 1
 
+        # Expected data frame of versions and transaction IDs
         expected_versions = pd.DataFrame(
             [
-                [
-                    {},
-                    create_tx,
-                    add_data_tx,
-                    0,
-                ],
-                [
-                    test_data,
-                    add_data_tx,
-                    rm_data_partial_tx,
-                    1,
-                ],
-                [
-                    remaining_test_data,
-                    rm_data_partial_tx,
-                    rm_data_full_tx,
-                    1,
-                ],
-                [
-                    {},
-                    rm_data_full_tx,
-                    None,
-                    1,
-                ],
+                [{}, create_tx, add_data_tx, 0],
+                [test_data, add_data_tx, rm_data_partial_tx, 1],
+                [remaining_test_data, rm_data_partial_tx, rm_data_full_tx, 1],
+                [{}, rm_data_full_tx, None, 1],
             ],
-            columns=[
-                "data",
-                "transaction_id",
-                "end_transaction_id",
-                "operation_type",
-            ],
+            columns=["data", "transaction_id", "end_transaction_id", "operation_type"],
+        ).assign(
+            id=1,
+            run__id=run.id,
+            name="Variable",
+            created_at=pd.Timestamp(fake_time.replace(tzinfo=None)),
+            created_by="@unknown",
         )
-
-        expected_versions["id"] = 1
-        expected_versions["run__id"] = run.id
-        expected_versions["name"] = "Variable"
-        expected_versions["created_at"] = pd.Timestamp(fake_time.replace(tzinfo=None))
-        expected_versions["created_by"] = "@unknown"
 
         vdf = versioning_service.versions.tabulate()
         vdf = self.canonicalize_datetimes(vdf)
