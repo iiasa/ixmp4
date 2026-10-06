@@ -1,4 +1,5 @@
 import datetime
+from abc import ABC, abstractmethod
 from typing import Any, cast
 
 import pandas as pd
@@ -175,16 +176,42 @@ class TestVariableCreateInvalidArguments(OptimizationVariableTest):
                 )
 
 
-class VariableDataTest(OptimizationVariableTest):
-    @pytest.fixture(scope="class")
-    def test_data_indexsets(self, run: ixmp4.Run) -> list[ixmp4.optimization.IndexSet]:
-        with run.transact("Create indexsets"):
-            indexset1 = run.optimization.indexsets.create("IndexSet 1")
-            indexset2 = run.optimization.indexsets.create("IndexSet 2")
-            indexset1.add_data(["do", "re", "mi", "fa", "so", "la", "ti"])
-            indexset2.add_data([3, 1, 4])
+class TestVariable0DDataInvalid(OptimizationVariableTest):
+    """Adding data with length >1 to a 0D variable raises DataInvalid."""
 
-        return [indexset1, indexset2]
+    def test_add_data(self, run: ixmp4.Run) -> None:
+        with run.transact("Create variable and add data"):
+            variable = run.optimization.variables.create("Variable")
+
+            with pytest.raises(ixmp4.optimization.Variable.DataInvalid):
+                variable.add_data({"levels": [-2, 1], "marginals": [2, 1]})
+
+
+class VariableDataTest(OptimizationVariableTest, ABC):
+    """Abstract base class for tests of Variable data handling.
+
+    Concrete subclasses MUST implement the five abstract fixture methods.
+    """
+
+    @abstractmethod
+    def column_names(self) -> list[str] | None:
+        """Fixture: names (if any) of columns indexed by :meth:`test_data_indexsets`."""
+
+    @abstractmethod
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame | None:
+        """Fixture: indices only of a subset of test data to be removed."""
+
+    @abstractmethod
+    def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        """Fixture: data remaining after removal of :meth:`partial_test_data`."""
+
+    @abstractmethod
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        """Fixture: variable data to be used in tests."""
+
+    @abstractmethod
+    def test_data_indexsets(self, run: ixmp4.Run) -> list[ixmp4.optimization.IndexSet]:
+        """Fixture: a list of 0 or more index sets used by :meth:`test_data`."""
 
     def test_variable_add_data(
         self,
@@ -194,6 +221,7 @@ class VariableDataTest(OptimizationVariableTest):
         test_data: dict[str, list[Any]] | pd.DataFrame,
         fake_time: datetime.datetime,
     ) -> None:
+        """Data can be added to a variable indexed by 2 sets."""
         with run.transact("Create variable and add data"):
             variable = run.optimization.variables.create(
                 "Variable",
@@ -232,7 +260,33 @@ class VariableDataTest(OptimizationVariableTest):
         assert variable.data == {}
 
 
-class TestVariableData(VariableDataTest):
+class TestVariableData0D(VariableDataTest):
+    """Tests of Variable data with 0 index sets (scalar)."""
+
+    @pytest.fixture(scope="class")
+    def column_names(self) -> list[str] | None:
+        return None
+
+    @pytest.fixture(scope="class")
+    def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame | None:
+        return None
+
+    @pytest.fixture(scope="class")
+    def remaining_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {}
+
+    @pytest.fixture(scope="class")
+    def test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
+        return {"marginals": [-2], "levels": [2]}
+
+    @pytest.fixture(scope="class")
+    def test_data_indexsets(self) -> list[ixmp4.optimization.IndexSet]:
+        return []
+
+
+class TestVariableData2D(VariableDataTest):
+    """Tests of Variable data with 2 index sets."""
+
     @pytest.fixture(scope="class")
     def column_names(
         self,
@@ -247,6 +301,17 @@ class TestVariableData(VariableDataTest):
             "IndexSet 1": ["do", "re", "mi"],
             "IndexSet 2": [3, 3, 1],
         }
+
+    @pytest.fixture(scope="class")
+    def test_data_indexsets(self, run: ixmp4.Run) -> list[ixmp4.optimization.IndexSet]:
+        """Fixture: two index sets."""
+        with run.transact("Create indexsets"):
+            indexset1 = run.optimization.indexsets.create("IndexSet 1")
+            indexset2 = run.optimization.indexsets.create("IndexSet 2")
+            indexset1.add_data(["do", "re", "mi", "fa", "so", "la", "ti"])
+            indexset2.add_data([3, 1, 4])
+
+        return [indexset1, indexset2]
 
     @pytest.fixture(scope="class")
     def partial_test_data(self) -> dict[str, list[Any]] | pd.DataFrame:
