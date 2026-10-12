@@ -104,8 +104,12 @@ v1_services: list[type["Service"]] = [
 
 
 @asynccontextmanager
-async def yield_session(dsn: str) -> AsyncIterator[orm.Session]:
-    engine = cached_create_engine(dsn)
+async def yield_session(
+    dsn: str, *, pg_planner_collapse_limit: int | None = None
+) -> AsyncIterator[orm.Session]:
+    engine = cached_create_engine(
+        dsn, pg_planner_collapse_limit=pg_planner_collapse_limit
+    )
     try:
         session = Session(bind=engine)
         yield session
@@ -119,7 +123,12 @@ async def get_transport(
     request: Request[User | None, AuthorizationContext | None, Any],
 ) -> AsyncGenerator[DirectTransport, None]:
     dsn = resolve_dsn_env_tokens(platform.dsn)
-    async with yield_session(dsn) as session:
+    pg_planner_collapse_limit = getattr(
+        request.app.state, "pg_planner_collapse_limit", None
+    )
+    async with yield_session(
+        dsn, pg_planner_collapse_limit=pg_planner_collapse_limit
+    ) as session:
         if request.auth is not None:
             # TODO: Remove the cast once scse-toolkit's PlatformProtocol
             # is fixed/read only.
@@ -200,11 +209,13 @@ class V1HttpApi:
         settings: ServerSettings,
         override_transport: "Callable[..., Awaitable[DirectTransport]] | None" = None,
         service_classes: Sequence[type["Service"]] | None = None,
+        pg_planner_collapse_limit: int | None = None,
     ):
         if service_classes is None:
             service_classes = v1_services
 
         self.settings = settings
+        self.pg_planner_collapse_limit = pg_planner_collapse_limit
         self.provide_unauthorized_platform = Provide(get_unauthorized_platform)
         self.provide_transport = Provide(override_transport or get_transport)
         self.provide_platform = Provide(get_platform)
@@ -257,3 +268,4 @@ class V1HttpApi:
 
         app.state.toml_platforms = self.settings.get_toml_platforms()
         app.state.settings = self.settings
+        app.state.pg_planner_collapse_limit = self.pg_planner_collapse_limit
