@@ -13,6 +13,7 @@ from sqlalchemy.orm import Session
 
 import ixmp4
 from ixmp4.data.backend import Backend
+from ixmp4.data.pagination import Pagination
 from ixmp4.transport import Transport
 from tests import auth, backends
 from tests.base import TransportTest
@@ -257,7 +258,7 @@ class BenchmarkDataMixin:
             )
 
 
-class TestBenchmarks(BenchmarkDataMixin):
+class TestBenchmarks(BenchmarkDataMixin, TransportTest):
     @pytest.mark.benchmark(group="create_regions")
     def test_create_regions_benchmark(
         self,
@@ -402,6 +403,31 @@ class TestBenchmarks(BenchmarkDataMixin):
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result) == 100
+
+    @pytest.mark.benchmark(group="paginated_datapoints")
+    def test_paginated_datapoints_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated datapoint tabulate (``ORDER BY id LIMIT`` endpoint query)."""
+
+        self.get_direct_or_skip(platform.backend.transport)
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                ).results
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
 
     @pytest.mark.benchmark(group="filter_year_range_type")
     def test_filter_year_range_type_benchmark(
@@ -573,7 +599,7 @@ class TestBenchmarks(BenchmarkDataMixin):
         assert len(result) == 4110
 
     @pytest.mark.benchmark(group="test_filter_all_dimension_ids")
-    def test_filter_all_dimension_ids(
+    def test_filter_all_dimension_ids_benchmark(
         self,
         platform: ixmp4.Platform,
         profiled: ProfiledContextManager,
@@ -594,6 +620,152 @@ class TestBenchmarks(BenchmarkDataMixin):
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result)
+
+    @pytest.mark.benchmark(group="paginated_region_variable")
+    def test_paginated_region_variable_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape: region + variable."""
+
+        self.get_direct_or_skip(platform.backend.transport)
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                    run={"default_only": False},
+                ).results
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_model_scenario")
+    def test_paginated_model_scenario_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape: model + scenario."""
+
+        self.get_direct_or_skip(platform.backend.transport)
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    model={"name": "Model 0"},
+                    scenario={"name": "Scenario 0"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                    run={"default_only": False},
+                ).results
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_region_variable")
+    def test_filter_region_variable_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """The scenariocompass selector: region + variable + year window."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": False},
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_model_scenario")
+    def test_filter_model_scenario_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """A single-run (model + scenario) tabulate with no dimension filters."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": False},
+                    model={"name": "Model 0"},
+                    scenario={"name": "Scenario 0"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_region_variable_service")
+    def test_filter_region_variable_service_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Query-level (no pandas reformatting): region + variable tabulate."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.tabulate(
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_model_scenario_service")
+    def test_filter_model_scenario_service_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Query-level (no pandas reformatting): model + scenario tabulate."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.tabulate(
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    model={"name": "Model 0"},
+                    scenario={"name": "Scenario 0"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
 
 
 class TestRestAuthBenchmarks(
