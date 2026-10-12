@@ -79,12 +79,6 @@ def rest_postgres_server(
     yield server, ref
 
 
-@pytest.fixture(scope="session", autouse=True)
-def debug_logging(settings: Settings) -> None:
-    if settings.mode == "debug":
-        settings.configure_logging("debug")
-
-
 @pytest.fixture(scope="class")
 def fake_time() -> Generator[datetime, None, None]:
     frozen_time = datetime.now(tz=timezone.utc)
