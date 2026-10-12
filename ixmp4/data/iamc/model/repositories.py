@@ -18,11 +18,14 @@ from ixmp4.data.run.db import Run
 
 class IamcModelTarget(ModelTarget[Model | ModelVersion]):
     def select_statement(
-        self, columns: Sequence[str] | None = None
+        self,
+        columns: Sequence[str] | None = None,
+        *,
+        join_order: Sequence[str] | None = None,
     ) -> sa.Select[*tuple[Any, ...]]:
         return (
             super()
-            .select_statement(columns=columns)
+            .select_statement(columns=columns, join_order=join_order)
             .where(Model.runs.any(Run.timeseries.any()))
         )
 
