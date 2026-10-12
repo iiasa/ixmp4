@@ -69,7 +69,9 @@ logger = logging.getLogger(__name__)
 
 
 @lru_cache()
-def cached_create_engine(dsn: str, **kwargs: Any) -> sa.Engine:
+def cached_create_engine(
+    dsn: str, *, pg_planner_collapse_limit: int | None = None, **kwargs: Any
+) -> sa.Engine:
     """Create and cache a SQLAlchemy engine for *dsn*.
 
     The result is memoized so that repeated calls with the same DSN reuse the
@@ -79,10 +81,21 @@ def cached_create_engine(dsn: str, **kwargs: Any) -> sa.Engine:
     ----------
     dsn:
         Database connection string (SQLAlchemy DSN format).
+    pg_planner_collapse_limit:
+        Postgres ``join_collapse_limit``/``from_collapse_limit`` applied to new
+        connections. ``None`` (the default) leaves the Postgres defaults in place.
     **kwargs:
         Additional keyword arguments forwarded to :func:`sqlalchemy.create_engine`.
     """
     # max_identifier_length=63 to avoid exceeding postgres' default maximum
+    if dsn.startswith("postgresql") and pg_planner_collapse_limit is not None:
+        kwargs["connect_args"] = {
+            "options": (
+                f"-c join_collapse_limit={pg_planner_collapse_limit} "
+                f"-c from_collapse_limit={pg_planner_collapse_limit}"
+            ),
+            **(kwargs.get("connect_args") or {}),
+        }
     return sa.create_engine(
         dsn, poolclass=sa.NullPool, max_identifier_length=63, **kwargs
     )
@@ -172,10 +185,14 @@ class DirectTransport(Transport):
         # Resolve environment variable placeholders in DSN
         dsn = resolve_dsn_env_tokens(dsn)
         dsn = cls.check_dsn(dsn)
+        # Engine-level setting; not part of the transport constructor.
+        pg_planner_collapse_limit = kwargs.pop("pg_planner_collapse_limit", None)
         if dsn.startswith("sqlite"):
             engine = cls.create_sqlite_engine(dsn)
         elif dsn.startswith("postgresql"):
-            engine = cls.create_postgresql_engine(dsn)
+            engine = cls.create_postgresql_engine(
+                dsn, pg_planner_collapse_limit=pg_planner_collapse_limit
+            )
         else:
             raise ProgrammingError("Unsupported database dialect for DSN: " + dsn)
         session = Session(bind=engine)
@@ -183,8 +200,25 @@ class DirectTransport(Transport):
 
     @classmethod
     @lru_cache()
-    def create_postgresql_engine(cls, dsn: str) -> sa.Engine:
-        return sa.create_engine(dsn, poolclass=sa.StaticPool, max_identifier_length=63)
+    def create_postgresql_engine(
+        cls, dsn: str, *, pg_planner_collapse_limit: int | None = None
+    ) -> sa.Engine:
+        connect_args = (
+            {
+                "options": (
+                    f"-c join_collapse_limit={pg_planner_collapse_limit} "
+                    f"-c from_collapse_limit={pg_planner_collapse_limit}"
+                )
+            }
+            if pg_planner_collapse_limit is not None
+            else {}
+        )
+        return sa.create_engine(
+            dsn,
+            poolclass=sa.StaticPool,
+            max_identifier_length=63,
+            connect_args=connect_args,
+        )
 
     @classmethod
     @lru_cache()
