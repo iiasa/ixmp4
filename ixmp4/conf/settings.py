@@ -210,12 +210,13 @@ class Settings(BaseSettings):
     check_alembic_version: Whether to verify the local Alembic migration
         version before using the database.
         Environment variable: ``IXMP4_CHECK_ALEMBIC_VERSION``.
-    pg_planner_collapse_limit: int
+    pg_planner_collapse_limit: int | None
         Postgres planner ``join_collapse_limit``/``from_collapse_limit`` set on
         all application connections (server and Python API). The datapoint
         tabulate joins 9 relations, more than the Postgres default (8) allows
         the planner to reorder, so raising this lets it pick the join order from
-        each query's filters.
+        each query's filters. ``None`` omits the settings and leaves the Postgres
+        defaults in place.
         Environment variable: ``IXMP4_PG_PLANNER_COLLAPSE_LIMIT``.
     server: Nested server configuration namespace.
         Environment variables: ``IXMP4_SERVER__*``.
@@ -253,7 +254,7 @@ class Settings(BaseSettings):
         ),
     )
 
-    pg_planner_collapse_limit: int = Field(
+    pg_planner_collapse_limit: int | None = Field(
         16,
         ge=8,
         description=(
@@ -261,7 +262,8 @@ class Settings(BaseSettings):
             "all application connections (server and Python API). The datapoint "
             "tabulate joins 9 relations, more than the Postgres default (8) "
             "allows the planner to reorder, so raising this lets it pick the "
-            "join order from each query's filters. Environment variable: "
+            "join order from each query's filters. None omits the settings and "
+            "leaves the Postgres defaults in place. Environment variable: "
             "IXMP4_PG_PLANNER_COLLAPSE_LIMIT."
         ),
     )
