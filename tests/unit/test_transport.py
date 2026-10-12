@@ -87,7 +87,10 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
     fake_engine = sa.create_engine("sqlite:///:memory:")
 
     def fake_create_postgresql_engine(
-        cls: type[DirectTransport], dsn: str
+        cls: type[DirectTransport],
+        dsn: str,
+        *,
+        pg_planner_collapse_limit: int | None = None,
     ) -> sa.Engine:
         calls.append(dsn)
         return fake_engine
