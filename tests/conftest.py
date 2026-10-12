@@ -81,7 +81,8 @@ def rest_postgres_server(
 
 @pytest.fixture(scope="session", autouse=True)
 def debug_logging(settings: Settings) -> None:
-    settings.configure_logging("debug")
+    if settings.mode == "debug":
+        settings.configure_logging("debug")
 
 
 @pytest.fixture(scope="class")
