@@ -35,7 +35,7 @@ class DataPointService(Service):
         "step_category",
         "step_datetime",
     }
-    base_columns = {
+    base_columns = (
         "id",
         "time_series__id",
         "type",
@@ -43,9 +43,9 @@ class DataPointService(Service):
         "step_category",
         "step_datetime",
         "value",
-    }
-    ts_columns = {"region", "unit", "variable"}
-    run_columns = {"model", "scenario", "version"}
+    )
+    ts_columns = ("region", "variable", "unit")
+    run_columns = ("model", "scenario", "version")
 
     def __init_direct__(self, transport: DirectTransport) -> None:
         self.executor = SessionExecutor(transport.session)
@@ -59,13 +59,15 @@ class DataPointService(Service):
         if not any([join_run_id, join_parameters, join_runs]):
             return None
 
-        columns = set(self.base_columns)
+        # Deterministic order so the emitted SELECT list (and the resulting
+        # data frame) is stable regardless of how the caller passed the flags.
+        columns = list(self.base_columns)
         if join_parameters:
-            columns |= self.ts_columns
+            columns += list(self.ts_columns)
         if join_runs:
-            columns |= self.run_columns
+            columns += list(self.run_columns)
         if join_run_id:
-            columns |= {"run__id"}
+            columns += ["run__id"]
         return tuple(columns)
 
     @procedure(Http(methods=("PATCH",)))
