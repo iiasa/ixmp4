@@ -39,15 +39,12 @@ class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
 class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     NotFound = DataPointNotFound
     NotUnique = DataPointNotUnique
+
+    # Declaration order controls the emitted JOIN order (more relations than
+    # Postgres reorders by default); dimensions come before the run chain.
     target: ModelTarget[DataPointVersion | DataPoint] = ExtendedTarget(
         DataPoint,
         {
-            "model": ((DataPoint.timeseries, TimeSeries.run, Run.model), Model.name),
-            "scenario": (
-                (DataPoint.timeseries, TimeSeries.run, Run.scenario),
-                Scenario.name,
-            ),
-            "version": ((DataPoint.timeseries, TimeSeries.run), Run.version),
             "region": ((DataPoint.timeseries, TimeSeries.region), Region.name),
             # Route both variable and unit through TimeSeries.measurand so SQL
             # uses a single measurand join instead of duplicated aliased joins.
@@ -59,11 +56,50 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
                 (DataPoint.timeseries, TimeSeries.measurand, Measurand.unit),
                 Unit.name,
             ),
+            "model": ((DataPoint.timeseries, TimeSeries.run, Run.model), Model.name),
+            "scenario": (
+                (DataPoint.timeseries, TimeSeries.run, Run.scenario),
+                Scenario.name,
+            ),
+            "version": ((DataPoint.timeseries, TimeSeries.run), Run.version),
             "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
     filter = Filter(DataPointFilter, DataPoint)
     dtypes = {"step_year": "Int64"}
+
+    def _join_order_for(self, values: Values | None) -> Sequence[str] | None:
+        """Infer optimal JOIN order for the active filters."""
+        if values is None:
+            return None
+        dims_active = any(key in values for key in ("region", "variable", "unit"))
+        run = values.get("run")
+        runchain_active = any(key in values for key in ("model", "scenario")) or (
+            isinstance(run, dict) and "id" in run
+        )
+        if dims_active or not runchain_active:
+            # Declaration order already puts the dimensions first.
+            return None
+        return ("model", "scenario")
+
+    def select_for_values(
+        self,
+        values: Values | None = None,
+        columns: Sequence[str] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        *,
+        join_order: Sequence[str] | None = None,
+    ) -> sa.Select[Any]:
+        return super().select_for_values(
+            values,
+            columns,
+            limit,
+            offset,
+            join_order=(
+                join_order if join_order is not None else self._join_order_for(values)
+            ),
+        )
 
     def tabulate(
         self,
