@@ -381,11 +381,7 @@ class AuthorizedTransport(DirectTransport):
         check_alembic_version:
             Forwarded to :meth:`DirectTransport.__init__`.
         """
-        super().__init__(
-            session,
-            ping_database=ping_database,
-            check_alembic_version=check_alembic_version,
-        )
+        super().__init__(session, ping_database=ping_database)
         self.auth_ctx = auth_ctx
         self.platform = platform
         # turn off extra checks so they are not run twice
