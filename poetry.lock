@@ -3847,14 +3847,14 @@ scipy = ["scipy (>=1.18.0rc2,<1.19)"]
 
 [[package]]
 name = "scse-toolkit"
-version = "2.0.0"
+version = "3.0.0"
 description = ""
 optional = false
-python-versions = "<4.0,>=3.10"
+python-versions = "<4.0,>=3.11"
 groups = ["main"]
 files = [
-    {file = "scse_toolkit-2.0.0-py3-none-any.whl", hash = "sha256:ae576b2050cc76d3c6b223d817843ec2a079cbd86b53164dc9e96ee669b74c44"},
-    {file = "scse_toolkit-2.0.0.tar.gz", hash = "sha256:6ac301a6287fbd0f079857fa27476f0fff2ef7ac130505386800b0f08e378fb0"},
+    {file = "scse_toolkit-3.0.0-py3-none-any.whl", hash = "sha256:796d2473b1f5b4c463f811ec8f4bfab69a31d279deb488f6f8961120bb3472d4"},
+    {file = "scse_toolkit-3.0.0.tar.gz", hash = "sha256:eb0a35a54a94c6f9cd51ab12cd88ee3a7ab61caa090a5eaeb95a80c861a6ca4d"},
 ]
 
 [package.dependencies]
@@ -3867,7 +3867,7 @@ pydantic = ">=2.8.2,<3.0.0"
 pydantic-settings = ">=2.4.0,<3.0.0"
 pyjwt = ">=2.9.0,<3.0.0"
 rich = ">=13.8.0,<15"
-sqlalchemy = ">=2.0.32,<3.0.0"
+sqlalchemy = {version = ">=2.1.0,<3.0.0", extras = ["mypy"]}
 typer = ">=0.0.0,<1.0.0"
 typing-extensions = ">=4.15.0,<5.0.0"
 
@@ -4981,4 +4981,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.15"
-content-hash = "51caef380ced1e17ee768b7245a614744365f708b14e99015d462975f5f2c2a1"
+content-hash = "d5e10ab21ae5d8572384a2d5b5e526fff508d7d9232dd28d135c4d2bda186d51"
