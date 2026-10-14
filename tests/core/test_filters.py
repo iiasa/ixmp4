@@ -1,6 +1,7 @@
 """This module only contains benchmarks, no assertions are made to validate the
 results."""
 
+from datetime import datetime
 from typing import Any, cast
 
 import pandas as pd
@@ -343,6 +344,25 @@ class TestFilters:
             step_category="Category 1", run={"default_only": False}
         )
         assert len(df_category1) == 35
+
+        df_datetime = platform.iamc.tabulate(
+            step_datetime=datetime(1994, 2, 8, 3, 20), run={"default_only": False}
+        )
+        assert len(df_datetime) == 1
+
+        df_datetime_gte = platform.iamc.tabulate(
+            step_datetime__gte=datetime(1950, 1, 1),
+            step_datetime__lte=datetime(1970, 1, 1),
+            run={"default_only": False},
+        )
+        assert len(df_datetime_gte) == 200
+
+        df_datetime_gte_shorthand = platform.iamc.tabulate(
+            datetime__gte=datetime(1950, 1, 1),
+            datetime__lte=datetime(1970, 1, 1),
+            run={"default_only": False},
+        )
+        assert len(df_datetime_gte_shorthand) == 200
 
         df_year_gte = platform.iamc.tabulate(
             step_year__gte=2000, run={"default_only": False}
