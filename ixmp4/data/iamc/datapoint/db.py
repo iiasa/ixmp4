@@ -61,8 +61,8 @@ class DataPoint(BaseModel):
             "step_category",
             "time_series__id",
         ),
-        # could theorethically enable this for extra robustness
-        # but it slows writes down and isnt strictly necessary
+        # could theoretically enable this for extra robustness
+        # but it slows writes down and isn't strictly necessary
         # sa.CheckConstraint("(step_datetime IS NOT NULL) OR (step_year IS NOT NULL)"),
     )
 
