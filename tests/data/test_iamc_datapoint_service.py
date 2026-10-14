@@ -96,6 +96,11 @@ class TestDataPointProjectionJoinOrder(DataPointServiceTest):
     (model/scenario) is filtered, the run chain should be joined first.
     """
 
+    @pytest.fixture(scope="class")
+    def direct_service(self, transport: Transport) -> DataPointService:
+        direct = self.get_direct_or_skip(transport)
+        return self.service_class(direct)
+
     def _join_order(
         self,
         service: DataPointService,
@@ -103,8 +108,6 @@ class TestDataPointProjectionJoinOrder(DataPointServiceTest):
         *,
         join_order: Sequence[str] | None = None,
     ) -> tuple[int, int, int]:
-        import sqlalchemy as sa
-
         exc = service.pandas.select_for_values(
             values=values,
             columns=service.get_columns(
@@ -112,7 +115,7 @@ class TestDataPointProjectionJoinOrder(DataPointServiceTest):
             ),
             join_order=join_order,
         )
-        sql = str(exc.compile(dialect=sa.dialects.postgresql.dialect()))
+        sql = str(exc)
         from_clause = sql[sql.index("FROM ") :].lower()
         return (
             from_clause.index("join region"),
@@ -120,24 +123,32 @@ class TestDataPointProjectionJoinOrder(DataPointServiceTest):
             from_clause.index("join model"),
         )
 
-    def test_dimension_filters_join_first(self, service: DataPointService) -> None:
+    def test_dimension_filters_join_first(
+        self, direct_service: DataPointService
+    ) -> None:
         region, run, model = self._join_order(
-            service, {"region": {"name": "World"}, "variable": {"name": "X"}}
+            direct_service,
+            {"region": {"name": "World"}, "variable": {"name": "X"}},
         )
         assert region < run
         assert region < model
 
-    def test_run_chain_filters_join_first(self, service: DataPointService) -> None:
+    def test_run_chain_filters_join_first(
+        self, direct_service: DataPointService
+    ) -> None:
         region, run, model = self._join_order(
-            service, {"model": {"name": "M"}, "scenario": {"name": "S"}}
+            direct_service,
+            {"model": {"name": "M"}, "scenario": {"name": "S"}},
         )
         assert run < region
         assert model < region
         assert run < model
 
-    def test_explicit_join_order_is_used(self, service: DataPointService) -> None:
+    def test_explicit_join_order_is_used(
+        self, direct_service: DataPointService
+    ) -> None:
         region, run, model = self._join_order(
-            service,
+            direct_service,
             {"region": {"name": "World"}},
             join_order=("model", "scenario"),
         )
