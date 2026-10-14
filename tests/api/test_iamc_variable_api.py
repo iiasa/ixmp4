@@ -60,12 +60,13 @@ class TestIamcVariableLookup(IamcVariableApiTest):
         assert got["id"] == variable.id
         assert got["name"] == variable.name
 
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
     def test_iamc_variable_get_by_name(
-        self, client: httpx.Client, variable: Variable
+        self, client: httpx.Client, variable: Variable, method: str
     ) -> None:
         got = self.request(
             client,
-            "POST",
+            method,
             "/iamc/variables/get-by-name",
             json={"name": variable.name},
         ).json()

@@ -14,12 +14,21 @@ from typer.testing import CliRunner
 from ixmp4.cli import app
 from ixmp4.conf.settings import Settings
 from ixmp4.data.docs.controller import DocsCompatibilityController
+from ixmp4.data.run.compat_controller import RunCompatibilityController
+from ixmp4.data.run.service import RunService
 from ixmp4.data.services import Service
 from ixmp4.server.v1 import v1_services
 
 OpenAPIOperation = dict[str, Any]
 OpenAPIPathItem = dict[str, OpenAPIOperation]
 OpenAPIPaths = dict[str, OpenAPIPathItem]
+
+# controllers exposing backwards-compatible routes, with the path they are
+# mounted on
+COMPATIBILITY_CONTROLLERS: list[tuple[type[Any], str]] = [
+    (DocsCompatibilityController, ""),
+    (RunCompatibilityController, RunService.router_prefix),
+]
 
 
 class OpenAPISchema(TypedDict):
@@ -43,8 +52,7 @@ def _normalize_openapi_path(path: str) -> str:
 
 
 def _join_relative_path(*parts: str) -> str:
-    joined = "/".join(part.strip("/") for part in parts if part)
-    return joined
+    return "/".join(stripped for part in parts if (stripped := part.strip("/")))
 
 
 def _get_service_signature(
@@ -71,7 +79,6 @@ def collect_service_endpoints() -> list[CollectedEndpoint]:
                 if methods == ["OPTIONS"]:
                     continue
 
-                method = methods[0]
                 route_path = next(iter(handler.paths))
                 relative_path = _normalize_openapi_path(
                     "/" + _join_relative_path(service_class.router_prefix, route_path)
@@ -82,52 +89,63 @@ def collect_service_endpoints() -> list[CollectedEndpoint]:
                 summary = getattr(handler, "summary", "") or ""
                 signature = _get_service_signature(service_class, summary)
                 source = "compatibility" if summary == "query" else "service"
+                operation_id = getattr(handler, "operation_id", None)
 
-                endpoints.append(
-                    CollectedEndpoint(
-                        source=source,
-                        method=method.lower(),
-                        schema_path=schema_path,
-                        relative_path=relative_path,
-                        summary=summary,
-                        operation_id=getattr(handler, "operation_id", None),
-                        signature=signature,
+                for method in methods:
+                    expected_operation_id: str | None
+                    if callable(operation_id):
+                        expected_operation_id = operation_id(
+                            handler, method, route.path_components
+                        )
+                    elif isinstance(operation_id, str):
+                        expected_operation_id = operation_id
+                    else:
+                        expected_operation_id = None
+
+                    endpoints.append(
+                        CollectedEndpoint(
+                            source=source,
+                            method=method.lower(),
+                            schema_path=schema_path,
+                            relative_path=relative_path,
+                            summary=summary,
+                            operation_id=expected_operation_id,
+                            signature=signature,
+                        )
                     )
-                )
 
     return endpoints
 
 
 def collect_controller_endpoints() -> list[CollectedEndpoint]:
     endpoints: list[CollectedEndpoint] = []
-    for name, handler in DocsCompatibilityController.__dict__.items():
-        if not hasattr(handler, "paths"):
-            continue
+    for controller, mount in COMPATIBILITY_CONTROLLERS:
+        for name, handler in controller.__dict__.items():
+            if not hasattr(handler, "paths"):
+                continue
 
-        methods = sorted(str(method) for method in handler.http_methods)
-        if methods == ["OPTIONS"]:
-            continue
+            methods = sorted(str(method) for method in handler.http_methods)
+            if methods == ["OPTIONS"]:
+                continue
 
-        method = methods[0]
-        relative_path = _normalize_openapi_path(
-            "/"
-            + _join_relative_path(
-                DocsCompatibilityController.path, next(iter(handler.paths))
+            method = methods[0]
+            relative_path = _normalize_openapi_path(
+                "/"
+                + _join_relative_path(mount, controller.path, next(iter(handler.paths)))
             )
-        )
-        schema_path = _normalize_openapi_path("/v1/{platform_name}" + relative_path)
-        target = handler.fn if hasattr(handler, "fn") else handler
-        endpoints.append(
-            CollectedEndpoint(
-                source="docs-controller",
-                method=method.lower(),
-                schema_path=schema_path,
-                relative_path=relative_path,
-                summary=name,
-                operation_id=None,
-                signature=inspect.signature(target),
+            schema_path = _normalize_openapi_path("/v1/{platform_name}" + relative_path)
+            target = handler.fn if hasattr(handler, "fn") else handler
+            endpoints.append(
+                CollectedEndpoint(
+                    source=controller.__name__,
+                    method=method.lower(),
+                    schema_path=schema_path,
+                    relative_path=relative_path,
+                    summary=name,
+                    operation_id=None,
+                    signature=inspect.signature(target),
+                )
             )
-        )
 
     return endpoints
 

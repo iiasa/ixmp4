@@ -47,9 +47,18 @@ class TestIndexSetDataAndDocs(IndexSetApiTest):
         run = RunService(direct_transport).create("Model", "Scenario")
         return direct_service.create(run.id, "IndexSet")
 
-    def test_indexset_add_and_get_data(
+    def test_indexset_add_get_and_get_data(
         self, client: httpx.Client, indexset: IndexSet
     ) -> None:
+        for method in ["POST", "PATCH"]:
+            got = self.request(
+                client,
+                method,
+                "/optimization/indexsets/get",
+                json={"run_id": indexset.run__id, "name": indexset.name},
+            ).json()
+            assert got["id"] == indexset.id
+
         self.request(
             client,
             "POST",

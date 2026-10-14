@@ -84,7 +84,9 @@ class RunMetaEntryService(Service):
             platform, models=[run.model.name], raise_exc=Forbidden
         )
 
-    @procedure(Http(methods=("POST",)))
+    # NOTE: Moving to PATCH or GET for all read-only endpoints
+    # TODO: Remove before 1.0.0
+    @procedure(Http(methods=("PATCH", "POST")))
     def get(self, run_id: int, key: str) -> RunMetaEntry:
         """Retrieves a metadata entry by the run id and key.
 

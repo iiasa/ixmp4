@@ -43,9 +43,12 @@ class TestRegionLookup(RegionApiTest):
         assert got["name"] == region.name
         assert got["hierarchy"] == region.hierarchy
 
-    def test_region_get_by_name(self, client: httpx.Client, region: Region) -> None:
+    @pytest.mark.parametrize("method", ["POST", "PATCH"])
+    def test_region_get_by_name(
+        self, client: httpx.Client, region: Region, method: str
+    ) -> None:
         got = self.request(
-            client, "POST", "/regions/get-by-name", json={"name": region.name}
+            client, method, "/regions/get-by-name", json={"name": region.name}
         ).json()
 
         assert got["id"] == region.id

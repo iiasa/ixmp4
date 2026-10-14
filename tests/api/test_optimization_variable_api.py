@@ -25,7 +25,7 @@ class TestOptimizationVariableCreate(OptimizationVariableApiTest):
     def indexset(self, direct_transport: DirectTransport, run: Run) -> IndexSet:
         return IndexSetService(direct_transport).create(run.id, "IndexSet")
 
-    def test_optimization_variable_create_and_tabulate(
+    def test_optimization_variable_create_get_and_tabulate(
         self, client: httpx.Client, run: Run, indexset: IndexSet
     ) -> None:
         created = self.request(
@@ -42,6 +42,15 @@ class TestOptimizationVariableCreate(OptimizationVariableApiTest):
 
         assert created["id"] == 1
         assert created["name"] == "Variable"
+
+        for method in ["POST", "PATCH"]:
+            got = self.request(
+                client,
+                method,
+                "/optimization/variables/get",
+                json={"run_id": run.id, "name": "Variable"},
+            ).json()
+            assert got["id"] == created["id"]
 
         tabulated = self.request(
             client, "PATCH", "/optimization/variables/tabulate", json={}
