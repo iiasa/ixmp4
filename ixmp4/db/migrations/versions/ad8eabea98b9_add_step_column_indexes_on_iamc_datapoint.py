@@ -27,6 +27,11 @@ def upgrade():
             unique=False,
         )
         batch_op.create_index(
+            "ix_iamc_datapoint_universal_step_year_step_category_ts__id",
+            ["step_year", "step_category", "time_series__id"],
+            unique=False,
+        )
+        batch_op.create_index(
             "ix_iamc_datapoint_universal_step_category_time_series__id",
             ["step_category", "time_series__id"],
             unique=False,
@@ -51,13 +56,20 @@ def upgrade():
             ["step_year", "step_category", "id"],
             unique=False,
         )
+        batch_op.create_index(
+            "ix_iamc_datapoint_universal_step_category_id",
+            ["step_category", "id"],
+            unique=False,
+        )
 
 
 def downgrade():
     with op.batch_alter_table("iamc_datapoint_universal", schema=None) as batch_op:
+        batch_op.drop_index("ix_iamc_datapoint_universal_step_category_id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_year_step_category_id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_year_id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_datetime_time_series__id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_datetime_id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_category_time_series__id")
+        batch_op.drop_index("ix_iamc_datapoint_universal_step_year_step_category_ts__id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_year_time_series__id")

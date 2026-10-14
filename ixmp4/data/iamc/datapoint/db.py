@@ -17,13 +17,7 @@ class DataPoint(BaseModel):
     __table_args__ = (
         sa.UniqueConstraint("time_series__id", "step_year", "step_category"),
         sa.UniqueConstraint("time_series__id", "step_datetime"),
-        # indexes for step columns and id/timeseries__id
-        # -> speeds up sorting and step+timeseries queries
-        sa.Index(
-            "ix_iamc_datapoint_universal_step_year_time_series__id",
-            "step_year",
-            "time_series__id",
-        ),
+        # (step, ..., id): sort-free `ORDER BY id` pages and faster step counts
         sa.Index(
             "ix_iamc_datapoint_universal_step_year_id",
             "step_year",
@@ -36,14 +30,31 @@ class DataPoint(BaseModel):
             "id",
         ),
         sa.Index(
-            "ix_iamc_datapoint_universal_step_datetime_time_series__id",
-            "step_datetime",
-            "time_series__id",
-        ),
-        sa.Index(
             "ix_iamc_datapoint_universal_step_datetime_id",
             "step_datetime",
             "id",
+        ),
+        sa.Index(
+            "ix_iamc_datapoint_universal_step_category_id",
+            "step_category",
+            "id",
+        ),
+        # (step, ..., time_series__id): complex counts / dp->ts join
+        sa.Index(
+            "ix_iamc_datapoint_universal_step_year_time_series__id",
+            "step_year",
+            "time_series__id",
+        ),
+        sa.Index(
+            "ix_iamc_datapoint_universal_step_year_step_category_ts__id",
+            "step_year",
+            "step_category",
+            "time_series__id",
+        ),
+        sa.Index(
+            "ix_iamc_datapoint_universal_step_datetime_time_series__id",
+            "step_datetime",
+            "time_series__id",
         ),
         sa.Index(
             "ix_iamc_datapoint_universal_step_category_time_series__id",
