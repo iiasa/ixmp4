@@ -1,4 +1,4 @@
-from typing import TYPE_CHECKING, TypeVar
+from typing import TYPE_CHECKING
 
 import numpy as np
 import pandas as pd
@@ -62,13 +62,13 @@ class IamcDataFacade(object):
             df.rename(columns={"step_year": "year"}, inplace=True)
             time_col = "year"
         else:
-            T = TypeVar("T", bool, float, int, str)
-
-            def map_step_column(df: "pd.Series[T]") -> "pd.Series[T]":
-                df["time"] = df[cls._MAP_STEP_COLUMN[str(df.type)]]
-                return df
-
-            df = df.apply(map_step_column, axis=1)
+            # masks are faster than calling a python function
+            # for each row via .apply
+            time = pd.Series(pd.NA, index=df.index, dtype="object")
+            for type_name, column in cls._MAP_STEP_COLUMN.items():
+                if column in df.columns:
+                    time = time.mask(df["type"] == type_name, df[column])
+            df["time"] = time.infer_objects()
             time_col = "time"
 
         columns = []
