@@ -1,4 +1,4 @@
-from typing import Any, Sequence
+from typing import Any, Sequence, cast
 
 import pandas as pd
 import sqlalchemy as sa
@@ -42,7 +42,10 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
 
     # Declaration order controls the emitted JOIN order (more relations than
     # Postgres reorders by default); dimensions come before the run chain.
-    target: ModelTarget[DataPointVersion | DataPoint] = ExtendedTarget(
+    target: (
+        ModelTarget[DataPointVersion | DataPoint]
+        | ExtendedTarget[DataPointVersion | DataPoint]
+    ) = ExtendedTarget(
         DataPoint,
         {
             "region": ((DataPoint.timeseries, TimeSeries.region), Region.name),
@@ -68,19 +71,24 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     filter = Filter(DataPointFilter, DataPoint)
     dtypes = {"step_year": "Int64"}
 
-    def _join_order_for(self, values: Values | None) -> Sequence[str] | None:
-        """Infer optimal JOIN order for the active filters."""
-        if values is None:
-            return None
-        dims_active = any(key in values for key in ("region", "variable", "unit"))
+    def _active_dimension_columns(self, values: Values | None) -> list[str]:
+        """Extra columns for the active filters, ordered most-selective first."""
+        if not values:
+            return []
+        dims = [key for key in ("region", "variable", "unit") if key in values]
+        runchain = [key for key in ("model", "scenario") if key in values]
         run = values.get("run")
-        runchain_active = any(key in values for key in ("model", "scenario")) or (
-            isinstance(run, dict) and "id" in run
+        run_filtered = isinstance(run, dict) and (
+            run.get("default_only") is True
+            or any(
+                key in run
+                for key in ("id", "id__in", "version", "version__in", "is_default")
+            )
         )
-        if dims_active or not runchain_active:
-            # Declaration order already puts the dimensions first.
-            return None
-        return ("model", "scenario")
+        columns = dims + runchain if dims else runchain
+        if run_filtered:
+            columns.append("version")
+        return columns
 
     def select_for_values(
         self,
@@ -93,13 +101,31 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     ) -> sa.Select[Any]:
         return super().select_for_values(
             values,
-            columns,
-            limit,
-            offset,
+            columns=columns,
+            limit=limit,
+            offset=offset,
             join_order=(
-                join_order if join_order is not None else self._join_order_for(values)
+                join_order
+                if join_order is not None
+                else self._active_dimension_columns(values) or None
             ),
         )
+
+    def count(self, values: Values | None = None) -> int:
+        # Use the same join structure and order as the
+        # tabulation.
+        columns = self._active_dimension_columns(values)
+        if not columns:
+            columns = self.target.pk_columns().keys()
+        exc = self.select_for_values(
+            values,
+            columns=columns,
+            join_order=columns,  # pass to avoid re-computing
+        )
+        count_exc = sa.select(sa.func.count()).select_from(exc.subquery())
+
+        with self.executor.select(count_exc) as result, self.expect_one_result():
+            return cast(int, result.scalar_one())
 
     def tabulate(
         self,
