@@ -42,16 +42,13 @@ def filter_by_iamc(
     schema: type[Any],
     repo: BaseRepository[Any],
 ) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
-    scen_ids_with_timeseries = (
-        sa.select(Run.scenario__id)
-        .where(Run.id.in_(sa.select(TimeSeries.run__id).distinct()))
-        .distinct()
-    )
+    has_timeseries = sa.exists().where(TimeSeries.run__id == Run.id)
+    scenario_ids_with_timeseries = sa.select(Run.scenario__id).where(has_timeseries)
 
     if value is True or value == {}:
-        return exc.where(Scenario.id.in_(scen_ids_with_timeseries))
+        return exc.where(Scenario.id.in_(scenario_ids_with_timeseries))
     elif value is False:
-        return exc.where(~Scenario.id.in_(scen_ids_with_timeseries))
+        return exc.where(~Scenario.id.in_(scenario_ids_with_timeseries))
     elif value is None:
         return exc
     else:
