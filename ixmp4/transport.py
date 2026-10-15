@@ -155,7 +155,13 @@ class DirectTransport(Transport):
         return dsn
 
     @classmethod
-    def from_dsn(cls, dsn: str, *args: Any, **kwargs: Any) -> "DirectTransport":
+    def from_dsn(
+        cls,
+        dsn: str,
+        *args: Any,
+        pg_planner_collapse_limit: int | None = None,
+        **kwargs: Any,
+    ) -> "DirectTransport":
         """Create a :class:`DirectTransport` from a connection-string DSN.
 
         The DSN is first passed through
@@ -185,8 +191,6 @@ class DirectTransport(Transport):
         # Resolve environment variable placeholders in DSN
         dsn = resolve_dsn_env_tokens(dsn)
         dsn = cls.check_dsn(dsn)
-        # Engine-level setting; not part of the transport constructor.
-        pg_planner_collapse_limit = kwargs.pop("pg_planner_collapse_limit", None)
         if dsn.startswith("sqlite"):
             engine = cls.create_sqlite_engine(dsn)
         elif dsn.startswith("postgresql"):

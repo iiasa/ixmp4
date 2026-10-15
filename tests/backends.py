@@ -122,16 +122,26 @@ def get_direct_transport(
     dsn: str,
     auth_ctx: AuthorizationContext | None,
     platform_info: PlatformProtocol | None,
+    *,
+    pg_planner_collapse_limit: int | None = None,
 ) -> DirectTransport:
     if auth_ctx is None:
-        return DirectTransport.from_dsn(dsn, check_alembic_version=False)
+        return DirectTransport.from_dsn(
+            dsn,
+            check_alembic_version=False,
+            pg_planner_collapse_limit=pg_planner_collapse_limit,
+        )
     else:
         if platform_info is None:
             raise ValueError(
                 "Provide the `platform_info` fixture to test authorized transports."
             )
         return AuthorizedTransport.from_dsn(
-            dsn, auth_ctx=auth_ctx, platform=platform_info, check_alembic_version=False
+            dsn,
+            auth_ctx=auth_ctx,
+            platform=platform_info,
+            check_alembic_version=False,
+            pg_planner_collapse_limit=pg_planner_collapse_limit,
         )
 
 
@@ -144,7 +154,12 @@ def postgresql_transport(
     platform_info: PlatformProtocol | None,
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
-    pgsql = get_direct_transport(dsn, auth_ctx, platform_info)
+    pgsql = get_direct_transport(
+        dsn,
+        auth_ctx,
+        platform_info,
+        pg_planner_collapse_limit=settings.pg_planner_collapse_limit,
+    )
     assert pgsql.session.bind is not None
     if create_tables:
         create_model_tables(pgsql.session.bind.engine)
@@ -161,7 +176,12 @@ def sqlite_transport(
     platform_info: PlatformProtocol | None,
     create_tables: bool = True,
 ) -> Generator[DirectTransport, None, None]:
-    sqlite = get_direct_transport("sqlite:///:memory:", auth_ctx, platform_info)
+    sqlite = get_direct_transport(
+        "sqlite:///:memory:",
+        auth_ctx,
+        platform_info,
+        pg_planner_collapse_limit=settings.pg_planner_collapse_limit,
+    )
     assert sqlite.session.bind is not None
     if create_tables:
         create_model_tables(sqlite.session.bind.engine)
