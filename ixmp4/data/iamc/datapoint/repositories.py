@@ -72,23 +72,15 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     dtypes = {"step_year": "Int64"}
 
     def _active_dimension_columns(self, values: Values | None) -> list[str]:
-        """Extra columns for the active filters, ordered most-selective first."""
+        """Extra columns for the active filters, ordered most-selective first.
+        This is used to join in a particular order as a performance optimization
+        for queries across large datapoints tables.
+        """
         if not values:
             return []
         dims = [key for key in ("region", "variable", "unit") if key in values]
         runchain = [key for key in ("model", "scenario") if key in values]
-        run = values.get("run")
-        run_filtered = isinstance(run, dict) and (
-            run.get("default_only") is True
-            or any(
-                key in run
-                for key in ("id", "id__in", "version", "version__in", "is_default")
-            )
-        )
-        columns = dims + runchain if dims else runchain
-        if run_filtered:
-            columns.append("version")
-        return columns
+        return dims + runchain if dims else runchain
 
     def select_for_values(
         self,
