@@ -30,12 +30,12 @@ class IamcUnitFilter(base.UnitFilter, total=False):
 
 
 def filter_by_iamc(
-    exc: sa.Select[Any] | sa.Update | sa.Delete,
+    exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
     value: dict[str, Any] | bool | None,
     *,
     schema: type[Any],
     repo: BaseRepository[Any],
-) -> sa.Select[Any] | sa.Update | sa.Delete:
+) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
     if value is True or value == {}:
         return exc.where(Unit.timeseries.any())
     elif value is False:

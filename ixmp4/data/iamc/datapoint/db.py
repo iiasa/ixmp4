@@ -28,7 +28,7 @@ class DataPoint(BaseModel):
     )
     timeseries: Mapped["TimeSeries"] = orm.relationship(viewonly=True)
 
-    value: Float = orm.mapped_column()
+    value: Float = orm.mapped_column(sa.Float)
 
     type: String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
@@ -42,7 +42,7 @@ class DataPoint(BaseModel):
 class DataPointVersion(versions.BaseVersionModel):
     __tablename__ = "iamc_datapoint_universal_version"
 
-    value: Float = orm.mapped_column(nullable=True)
+    value: Float = orm.mapped_column(sa.Float, nullable=True)
     type: String = orm.mapped_column(sa.String(255), nullable=False, index=True)
 
     time_series__id: Integer = orm.mapped_column(

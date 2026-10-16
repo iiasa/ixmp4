@@ -56,8 +56,8 @@ class RunMetaEntryFilter(IdFilter, KeyFilter, RunIdFilter, DtypeFilter, total=Fa
 
 
 def filter_by_default_only(
-    exc: sa.Select[Any] | sa.Update | sa.Delete, value: bool, **kwargs: Any
-) -> sa.Select[Any] | sa.Update | sa.Delete:
+    exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete, value: bool, **kwargs: Any
+) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
     return exc.where(Run.is_default) if value else exc
 
 

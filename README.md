@@ -3,7 +3,7 @@
 Copyright (c) 2023-2024 IIASA - Energy, Climate, and Environment Program (ECE)
 
 [![license: MIT](https://img.shields.io/badge/license-MIT-brightgreen.svg)](https://github.com/iiasa/ixmp4/blob/main/LICENSE)
-[![python](https://img.shields.io/badge/python-3.10_|_3.11_|_3.12_|_3.13_|_3.14-blue?logo=python&logoColor=white)](https://github.com/iiasa/ixmp4)
+[![python](https://img.shields.io/badge/python-3.11_|_3.12_|_3.13_|_3.14-blue?logo=python&logoColor=white)](https://github.com/iiasa/ixmp4)
 [![Code style: ruff](https://img.shields.io/endpoint?url=https://raw.githubusercontent.com/charliermarsh/ruff/main/assets/badge/v2.json)](https://github.com/astral-sh/ruff)
 [![Checked with mypy](https://www.mypy-lang.org/static/mypy_badge.svg)](https://mypy-lang.org/)
 
@@ -31,7 +31,7 @@ For installing the latest version directly from GitHub do the following.
 
 ### Requirements
 
-This project requires Python 3.10 (or higher) and poetry (>= 1.2).
+This project requires Python 3.11 (or higher) and poetry (>= 1.2).
 
 ### Setup
 
@@ -90,8 +90,6 @@ a Pull Request, add your name to the "authors" section in the `pyproject.toml` f
 This project mainly targets postgres version 16 but we test version 15 continously also. Tests with pyarrow installed alongside are also run due to its effect on pandas etc.
 | python | postgres | with pyarrow |
 |--------|----------|--------------|
-| 3.10 | 16 | true |
-| 3.10 | 16 | false |
 | 3.11 | 16 | true |
 | 3.11 | 16 | false |
 | 3.12 | 16 | true |

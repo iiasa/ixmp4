@@ -18,10 +18,10 @@ from .filter import ScenarioFilter
 class ScenarioAuthRepository(AuthRepository[Scenario | ScenarioVersion]):
     def where_authorized(
         self,
-        exc: sa.Select[Any] | sa.Update | sa.Delete,
+        exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
         auth_ctx: AuthorizationContext,
         platform: PlatformProtocol,
-    ) -> sa.Select[Any] | sa.Update | sa.Delete:
+    ) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
         run_exc = self.select_permitted_run_ids(auth_ctx, platform)
         if run_exc is None:
             return exc

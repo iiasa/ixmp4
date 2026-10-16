@@ -25,7 +25,6 @@ from ixmp4.transport import (
 if TYPE_CHECKING:
     pass
 
-TransportT = TypeVar("TransportT", bound=Transport)
 ReturnT = TypeVar("ReturnT")
 Params = ParamSpec("Params")
 

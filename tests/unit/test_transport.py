@@ -61,7 +61,9 @@ def test_direct_transport_handles_bound_and_unbound_sessions() -> None:
     assert str(unbound) == "<DirectTransport >"
 
     bound = DirectTransport.from_dsn("sqlite:///:memory:", check_alembic_version=False)
-    assert str(bound.get_database_url()) == "sqlite:///:memory:"
+    # sqlalchemy >= 2.1 percent-encodes the ':memory:' database name, so compare
+    # the parsed url instead of its rendered form
+    assert sa.make_url(str(bound.get_database_url())).database == ":memory:"
     assert "dialect=sqlite" in bound.get_engine_info()
     assert str(bound).startswith("<DirectTransport dialect=sqlite")
     bound.close()

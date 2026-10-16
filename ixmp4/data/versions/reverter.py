@@ -22,7 +22,7 @@ class ReverterRepository(PandasRepository, Generic[Params]):
     version_target: ClassVar[ModelTarget[BaseVersionModel]]
 
     transactions: TransactionRepository
-    versioned_columns: sa.ColumnCollection[str, sa.ColumnElement[Any]]
+    versioned_columns: dict[str, sa.ColumnElement[Any]]
     revert_op_label = "revert_operation_type"
 
     def __init__(self, executor: SessionExecutor):
@@ -35,23 +35,25 @@ class ReverterRepository(PandasRepository, Generic[Params]):
 
         self.transactions = TransactionRepository(self.executor)
 
-        self.versioned_columns = sa.ColumnCollection()
+        self.versioned_columns = {}
 
         for column in self.target.table.columns:
             version_column = self.version_target.table.columns.get(column.key)
             if version_column is not None and (
                 str(column.type) == str(version_column.type)
             ):
-                self.versioned_columns.add(column)
+                self.versioned_columns[column.key] = column
 
     def select_versions(
         self,
         *args: Params.args,
         **kwargs: Params.kwargs,
-    ) -> sa.Select[Any]:
+    ) -> sa.Select[*tuple[Any, ...]]:
         return self.version_target.select_statement()
 
-    def where_valid_at_tx(self, exc: sa.Select[Any], tx_id: int) -> sa.Select[Any]:
+    def where_valid_at_tx(
+        self, exc: sa.Select[*tuple[Any, ...]], tx_id: int
+    ) -> sa.Select[*tuple[Any, ...]]:
         model_class = self.version_target.model_class
 
         return exc.where(
@@ -72,9 +74,9 @@ class ReverterRepository(PandasRepository, Generic[Params]):
     def select_deleted_versions(
         self,
         compare_tx_id: int,
-        origin_exc: sa.Select[Any],
-        compare_exc: sa.Select[Any],
-    ) -> sa.Select[Any]:
+        origin_exc: sa.Select[*tuple[Any, ...]],
+        compare_exc: sa.Select[*tuple[Any, ...]],
+    ) -> sa.Select[*tuple[Any, ...]]:
         deleted_exc = self.version_target.select_statement()
         deleted_exc = deleted_exc.where(
             self.version_target.model_class.id.in_(compare_exc)
@@ -88,9 +90,9 @@ class ReverterRepository(PandasRepository, Generic[Params]):
     def select_updated_versions(
         self,
         compare_tx_id: int,
-        origin_exc: sa.Select[Any],
-        compare_exc: sa.Select[Any],
-    ) -> sa.Select[Any]:
+        origin_exc: sa.Select[*tuple[Any, ...]],
+        compare_exc: sa.Select[*tuple[Any, ...]],
+    ) -> sa.Select[*tuple[Any, ...]]:
         updated_subq = self.version_target.select_statement()
         updated_subq = updated_subq.where(
             self.version_target.model_class.id.in_(compare_exc)
@@ -102,8 +104,11 @@ class ReverterRepository(PandasRepository, Generic[Params]):
         return updated_subq
 
     def select_inserted_versions(
-        self, origin_tx_id: int, origin_exc: sa.Select[Any], compare_exc: sa.Select[Any]
-    ) -> sa.Select[Any]:
+        self,
+        origin_tx_id: int,
+        origin_exc: sa.Select[*tuple[Any, ...]],
+        compare_exc: sa.Select[*tuple[Any, ...]],
+    ) -> sa.Select[*tuple[Any, ...]]:
         inserted_subq = self.version_target.select_statement()
         inserted_subq = inserted_subq.where(
             self.version_target.model_class.id.not_in(compare_exc)
@@ -176,7 +181,7 @@ class ReverterRepository(PandasRepository, Generic[Params]):
 
         deleted_subq_columns = (deleted_cte.c[k] for k in self.versioned_columns.keys())
         insert_exc = self.target.insert_statement().from_select(
-            self.versioned_columns.keys(),
+            list(self.versioned_columns),
             sa.select(*deleted_subq_columns),
         )
         self.executor.session.execute(insert_exc)

@@ -36,12 +36,12 @@ class IamcScenarioFilter(base.ScenarioFilter, total=False):
 
 
 def filter_by_iamc(
-    exc: sa.Select[Any] | sa.Update | sa.Delete,
+    exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
     value: dict[str, Any] | bool | None,
     *,
     schema: type[Any],
     repo: BaseRepository[Any],
-) -> sa.Select[Any] | sa.Update | sa.Delete:
+) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
     scen_ids_with_timeseries = (
         sa.select(Run.scenario__id)
         .where(Run.id.in_(sa.select(TimeSeries.run__id).distinct()))

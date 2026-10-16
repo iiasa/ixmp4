@@ -24,7 +24,7 @@ class DataPointReverterRepository(ReverterRepository[[int]]):
     version_target = ModelTarget(DataPointVersion)
     dtypes = {"step_year": "Int64"}
 
-    def select_versions(self, run__id: int) -> sa.Select[Any]:
+    def select_versions(self, run__id: int) -> sa.Select[*tuple[Any, ...]]:
         return sa.select(DataPointVersion).where(
             DataPointVersion.timeseries.has(TimeSeriesVersion.run__id == run__id)
         )
@@ -34,7 +34,7 @@ class IamcVariableReverterRepository(ReverterRepository[[int]]):
     target = ModelTarget(Variable)
     version_target = ModelTarget(VariableVersion)
 
-    def select_versions(self, run__id: int) -> sa.Select[Any]:
+    def select_versions(self, run__id: int) -> sa.Select[*tuple[Any, ...]]:
         return sa.select(VariableVersion).where(
             sa.exists(
                 sa.select(sa.literal(1))
@@ -55,7 +55,7 @@ class MeasurandReverterRepository(ReverterRepository[[int]]):
     target = ModelTarget(Measurand)
     version_target = ModelTarget(MeasurandVersion)
 
-    def select_versions(self, run__id: int) -> sa.Select[Any]:
+    def select_versions(self, run__id: int) -> sa.Select[*tuple[Any, ...]]:
         # Use a direct EXISTS join (no join_valid_versions) so that measurands whose
         # timeseries have been deleted are still found and can be re-inserted by the
         # constructive revert phase.
@@ -73,7 +73,7 @@ class TimeSeriesReverterRepository(ReverterRepository[[int]]):
     target = ModelTarget(TimeSeries)
     version_target = ModelTarget(TimeSeriesVersion)
 
-    def select_versions(self, run__id: int) -> sa.Select[Any]:
+    def select_versions(self, run__id: int) -> sa.Select[*tuple[Any, ...]]:
         return sa.select(TimeSeriesVersion).where(TimeSeriesVersion.run__id == run__id)
 
 

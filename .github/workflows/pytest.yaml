@@ -15,8 +15,7 @@ jobs:
       fail-fast: false
       matrix:
         python-version:
-          - "3.10" # Earliest version supported by ixmp4
-          - "3.11"
+          - "3.11" # Earliest version supported by ixmp4
           - "3.12" 
           - "3.13" 
           - "3.14" # Latest version supported by ixmp4
@@ -60,7 +59,7 @@ jobs:
             backend: "sqlite,rest-sqlite"
             pandas-version: "2.1.3"
           # pandas 2.1.1, oldest supported
-          - python-version: "3.10"
+          - python-version: "3.11"
             with-pyarrow: true
             postgres-version: "16"
             backend: "sqlite,rest-sqlite"

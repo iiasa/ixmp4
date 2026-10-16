@@ -29,12 +29,12 @@ class IamcRunFilter(TypedDict, total=False):
 
 
 def filter_by_iamc(
-    exc: sa.Select[Any] | sa.Update | sa.Delete,
+    exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
     value: dict[str, Any] | bool | None,
     *,
     schema: type[Any],
     repo: BaseRepository[Any],
-) -> sa.Select[Any] | sa.Update | sa.Delete:
+) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
     run_ids_with_timeseries = sa.select(sa.distinct(TimeSeries.run__id))
     if value is True or value == {}:
         return exc.where(Run.id.in_(run_ids_with_timeseries))

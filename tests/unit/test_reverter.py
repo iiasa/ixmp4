@@ -165,10 +165,10 @@ def test_reverter_repository_tracks_versioned_columns_and_valid_rows(
     assert sorted(all_ids) == [1, 1, 2, 2, 3]
 
     base_query = repository.select_versions().with_only_columns(ReverterItemVersion.id)
-    origin_ids = test_session.execute(
+    origin_ids: sa.ScalarResult[Any] = test_session.execute(
         repository.where_valid_at_tx(base_query, 3)
     ).scalars()
-    compare_ids = test_session.execute(
+    compare_ids: sa.ScalarResult[Any] = test_session.execute(
         repository.where_valid_at_tx(base_query, 1)
     ).scalars()
 

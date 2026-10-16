@@ -8,12 +8,12 @@ from .model import Operation
 
 
 def filter_by_valid_at_transaction(
-    exc: sa.Select[Any] | sa.Update | sa.Delete,
+    exc: sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete,
     value: int,
     *,
     repo: BaseRepository[Any],
     **kwargs: Any,
-) -> sa.Select[Any] | sa.Update | sa.Delete:
+) -> sa.Select[*tuple[Any, ...]] | sa.Update | sa.Delete:
     tx_id_col = repo.target.table.c["transaction_id"]
     end_tx_id_col = repo.target.table.c["end_transaction_id"]
     op_type_col = repo.target.table.c["operation_type"]
