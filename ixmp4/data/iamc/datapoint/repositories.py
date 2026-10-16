@@ -1,4 +1,4 @@
-from typing import Any, Sequence, cast
+from typing import Any, Sequence
 
 import pandas as pd
 import sqlalchemy as sa
@@ -117,7 +117,7 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
         count_exc = sa.select(sa.func.count()).select_from(exc.subquery())
 
         with self.executor.select(count_exc) as result, self.expect_one_result():
-            return cast(int, result.scalar_one())
+            return int(result.scalar_one())
 
     def tabulate(
         self,
