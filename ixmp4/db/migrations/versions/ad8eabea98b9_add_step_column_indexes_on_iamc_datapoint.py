@@ -71,5 +71,7 @@ def downgrade():
         batch_op.drop_index("ix_iamc_datapoint_universal_step_datetime_time_series__id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_datetime_id")
         batch_op.drop_index("ix_iamc_datapoint_universal_step_category_time_series__id")
-        batch_op.drop_index("ix_iamc_datapoint_universal_step_year_step_category_ts__id")
+        batch_op.drop_index(
+            "ix_iamc_datapoint_universal_step_year_step_category_ts__id"
+        )
         batch_op.drop_index("ix_iamc_datapoint_universal_step_year_time_series__id")
