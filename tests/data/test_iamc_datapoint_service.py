@@ -1,6 +1,7 @@
 from collections.abc import Generator
 from concurrent import futures
 from datetime import datetime
+from typing import Any, Sequence
 
 import pandas as pd
 import pandas.testing as pdt
@@ -84,6 +85,75 @@ class DataPointServiceTest(ServiceTest[DataPointService]):
         )
         timeseries.bulk_upsert(df)
         return timeseries.tabulate()
+
+
+class TestDataPointProjectionJoinOrder(DataPointServiceTest):
+    """The projection join order follows the active restrictive filters.
+
+    The datapoint tabulate joins more relations than Postgres reorders by
+    default, so the emitted order decides the plan. Dimension filters
+    (region/variable/unit) should be joined first; when only the run chain
+    (model/scenario) is filtered, the run chain should be joined first.
+    """
+
+    @pytest.fixture(scope="class")
+    def direct_service(self, transport: Transport) -> DataPointService:
+        direct = self.get_direct_or_skip(transport)
+        return self.service_class(direct)
+
+    def _join_order(
+        self,
+        service: DataPointService,
+        values: dict[str, Any],
+        *,
+        join_order: Sequence[str] | None = None,
+    ) -> tuple[int, int, int]:
+        exc = service.pandas.select_for_values(
+            values=values,
+            columns=service.get_columns(
+                join_parameters=True, join_runs=True, join_run_id=True
+            ),
+            join_order=join_order,
+        )
+        sql = str(exc)
+        from_clause = sql[sql.index("FROM ") :].lower()
+        return (
+            from_clause.index("join region"),
+            from_clause.index("join run"),
+            from_clause.index("join model"),
+        )
+
+    def test_dimension_filters_join_first(
+        self, direct_service: DataPointService
+    ) -> None:
+        region, run, model = self._join_order(
+            direct_service,
+            {"region": {"name": "World"}, "variable": {"name": "X"}},
+        )
+        assert region < run
+        assert region < model
+
+    def test_run_chain_filters_join_first(
+        self, direct_service: DataPointService
+    ) -> None:
+        region, run, model = self._join_order(
+            direct_service,
+            {"model": {"name": "M"}, "scenario": {"name": "S"}},
+        )
+        assert run < region
+        assert model < region
+        assert run < model
+
+    def test_explicit_join_order_is_used(
+        self, direct_service: DataPointService
+    ) -> None:
+        region, run, model = self._join_order(
+            direct_service,
+            {"region": {"name": "World"}},
+            join_order=("model", "scenario"),
+        )
+        assert run < region
+        assert model < region
 
 
 class DataPointBulkOperationsTest(DataPointServiceTest):

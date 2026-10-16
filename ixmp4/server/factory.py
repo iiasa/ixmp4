@@ -12,4 +12,8 @@ def create_app() -> Litestar:
     Creates its own `Settings` object, so configuration is read from the environment.
     """
     settings = Settings()
-    return Ixmp4Server(settings.server, debug=settings.mode == "debug").asgi_app
+    return Ixmp4Server(
+        settings.server,
+        debug=settings.mode == "debug",
+        pg_planner_collapse_limit=settings.pg_planner_collapse_limit,
+    ).asgi_app

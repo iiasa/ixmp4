@@ -1,6 +1,7 @@
 """This module only contains benchmarks, no assertions are made to validate the
 results."""
 
+from datetime import datetime
 from typing import Any, cast
 
 import numpy as np
@@ -13,6 +14,7 @@ from sqlalchemy.orm import Session
 
 import ixmp4
 from ixmp4.data.backend import Backend
+from ixmp4.data.pagination import Pagination
 from ixmp4.transport import Transport
 from tests import auth, backends
 from tests.base import TransportTest
@@ -20,6 +22,9 @@ from tests.fixtures import get_csv_data
 from tests.profiling import ProfiledContextManager
 
 platform = backends.get_platform_fixture(scope="class")
+direct_platform = backends.get_platform_fixture(
+    scope="class", backends=["sqlite", "postgres"]
+)
 
 
 @pytest.fixture(scope="session")
@@ -57,6 +62,32 @@ def datapoints_half_insert_half_update() -> pd.DataFrame:
 
 class BenchmarkDataMixin:
     AUTH_BENCHMARK_TARGET_DATAPOINTS = 1_000_000
+    META_KEYS = [f"Key {i}" for i in range(15)]
+
+    def add_run_meta(self, platform: ixmp4.Platform) -> None:
+        """Bulk-upsert the run-meta (key/value) columns for the default runs."""
+        runs = platform.backend.runs.list(default_only=True)
+        df = pd.DataFrame(
+            [
+                {"run__id": run.id, "key": key, "value": float(i + 1)}
+                for run in runs
+                for i, key in enumerate(self.META_KEYS)
+            ]
+        )
+        if not df.empty:
+            platform.backend.meta.bulk_upsert(df)
+
+    def _refresh_planner_statistics(self, platform: ixmp4.Platform) -> None:
+        """ANALYZE the churned tables so read benchmarks plan from realistic
+        statistics: the write benchmarks insert/remove/update tens of thousands
+        of rows on the shared database without refreshing them, and stale row
+        estimates make the read benchmarks emit wildly different plans.
+        """
+        direct = cast(TransportTest, self).get_direct_or_skip(
+            platform.backend.transport
+        )
+        direct.session.execute(sa.text("ANALYZE"))
+        direct.session.commit()
 
     def add_datapoints(
         self, platform: ixmp4.Platform, datapoints: pd.DataFrame
@@ -188,6 +219,76 @@ class BenchmarkDataMixin:
             },
         )
 
+    @staticmethod
+    def _insert_year_partition(
+        session: Session,
+        *,
+        years: tuple[int, ...],
+        categories_per_year: int,
+    ) -> None:
+        """Concentrate a large annual partition into a few ``step_year`` values.
+
+        Every existing time series receives ``categories_per_year`` synthetic
+        ``step_category`` values per year, so rows-per-year grows without
+        creating more time series. Used by the step-column index benchmarks,
+        which need a partition big enough for a sort (index-free) vs. index
+        seek (``(step_year, id)``) to diverge.
+        """
+        if categories_per_year > 100:
+            raise ValueError(
+                "SQLite category fast path supports at most 100 categories."
+            )
+
+        year_subquery = " UNION ALL ".join(f"SELECT {y} AS year" for y in years)
+        dialect = session.get_bind().dialect.name
+
+        if dialect == "postgresql":
+            session.execute(
+                sa.text(
+                    f"""
+                    INSERT INTO iamc_datapoint_universal (
+                        time_series__id, value, type, step_year, step_category
+                    )
+                    SELECT
+                        ts.id,
+                        ((g.i % 1000)::float / 10.0),
+                        'ANNUAL',
+                        y.year,
+                        'cat_' || (g.i % :n_cats)
+                    FROM iamc_timeseries AS ts
+                    CROSS JOIN ({year_subquery}) AS y
+                    CROSS JOIN generate_series(0, :n_cats - 1) AS g(i)
+                    """
+                ),
+                {"n_cats": categories_per_year},
+            )
+            return
+
+        session.execute(
+            sa.text(
+                f"""
+                WITH digits(d) AS (VALUES (0),(1),(2),(3),(4),(5),(6),(7),(8),(9))
+                INSERT INTO iamc_datapoint_universal (
+                    time_series__id, value, type, step_year, step_category
+                )
+                SELECT
+                    ts.id,
+                    ((g.n % 1000) / 10.0),
+                    'ANNUAL',
+                    y.year,
+                    'cat_' || (g.n % :n_cats)
+                FROM iamc_timeseries AS ts
+                CROSS JOIN ({year_subquery}) AS y
+                CROSS JOIN (
+                    SELECT d0.d + d1.d * 10 AS n
+                    FROM digits AS d0 CROSS JOIN digits AS d1
+                    WHERE d0.d + d1.d * 10 < :n_cats
+                ) AS g
+                """
+            ),
+            {"n_cats": categories_per_year},
+        )
+
     def seed_auth_benchmark_data(
         self,
         platform: ixmp4.Platform,
@@ -257,7 +358,7 @@ class BenchmarkDataMixin:
             )
 
 
-class TestBenchmarks(BenchmarkDataMixin):
+class TestBenchmarks(BenchmarkDataMixin, TransportTest):
     @pytest.mark.benchmark(group="create_regions")
     def test_create_regions_benchmark(
         self,
@@ -325,6 +426,21 @@ class TestBenchmarks(BenchmarkDataMixin):
 
         benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
 
+    @pytest.mark.benchmark(group="add_run_meta")
+    def test_add_run_meta_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Seeds the run-meta (key/value) columns on the default runs."""
+
+        def run(mp: ixmp4.Platform) -> None:
+            with profiled():
+                self.add_run_meta(mp)
+
+        benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+
     @pytest.mark.benchmark(group="remove_datapoints")
     def test_remove_datapoints_benchmark(
         self,
@@ -376,6 +492,10 @@ class TestBenchmarks(BenchmarkDataMixin):
             with profiled():
                 return mp.iamc.tabulate(run={"default_only": False})
 
+        # First read after the write benchmarks churned the shared table;
+        # refresh planner statistics so this and the following read benchmarks
+        # plan from realistic row estimates instead of the pre-churn ones.
+        self._refresh_planner_statistics(platform)
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result) == len(datapoints_half_insert_half_update)
 
@@ -423,6 +543,48 @@ class TestBenchmarks(BenchmarkDataMixin):
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result) == 4600
+
+    @pytest.mark.benchmark(group="filter_datetime_range")
+    def test_filter_datetime_range_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Benchmarks filtering by DATETIME type and a datetime range."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": False},
+                    type="DATETIME",
+                    datetime__gte=datetime(1980, 1, 1),
+                    datetime__lte=datetime(2000, 1, 1),
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) == 15007
+
+    @pytest.mark.benchmark(group="filter_step_datetime_service")
+    def test_filter_step_datetime_service_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Query-level tabulate filtered by an exact step datetime."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.tabulate(
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    step_datetime=datetime(2001, 5, 28, 9, 0),
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) == 1
 
     @pytest.mark.benchmark(group="filter_model_scenario_cross")
     def test_filter_model_scenario_cross_benchmark(
@@ -573,7 +735,7 @@ class TestBenchmarks(BenchmarkDataMixin):
         assert len(result) == 4110
 
     @pytest.mark.benchmark(group="test_filter_all_dimension_ids")
-    def test_filter_all_dimension_ids(
+    def test_filter_all_dimension_ids_benchmark(
         self,
         platform: ixmp4.Platform,
         profiled: ProfiledContextManager,
@@ -594,6 +756,423 @@ class TestBenchmarks(BenchmarkDataMixin):
 
         result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
         assert len(result)
+
+    @pytest.mark.benchmark(group="filter_variable_year")
+    def test_filter_variable_year_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Facade tabulate: a single variable at an exact step year."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": True},
+                    variable={"name__like": "Variable 1*"},
+                    step_year=2010,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_variable_year_service")
+    def test_filter_variable_year_service_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Query-level (no pandas reformatting): single variable at an exact year."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.tabulate(
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": True},
+                    variable={"name__like": "Variable 1*"},
+                    step_year=2010,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="meta_key_like_facade")
+    def test_meta_key_like_facade_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Facade run-meta tabulate with ``key__like "*Key 1*"`` (no pagination)."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.meta.tabulate(key__like="*Key 1*")
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_region_variable")
+    def test_filter_region_variable_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """The scenariocompass selector: region + variable + year window."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": False},
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_model_scenario")
+    def test_filter_model_scenario_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """A single-run (model + scenario) tabulate with no dimension filters."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.iamc.tabulate(
+                    run={"default_only": False},
+                    model={"name": "Model 0"},
+                    scenario={"name": "Scenario 0"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_region_variable_service")
+    def test_filter_region_variable_service_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Query-level (no pandas reformatting): region + variable tabulate."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.tabulate(
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="filter_model_scenario_service")
+    def test_filter_model_scenario_service_benchmark(
+        self,
+        platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Query-level (no pandas reformatting): model + scenario tabulate."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.tabulate(
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    model={"name": "Model 0"},
+                    scenario={"name": "Scenario 0"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                )
+
+        result = benchmark.pedantic(run, args=(platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+
+class TestPaginatedBenchmarks(BenchmarkDataMixin, TransportTest):
+    """Paginated/meta tabulates that need a direct (SQL) backend.
+
+    These simulate common requests to the application server, which
+    will always be paginated and might select different plans than
+    the benchmarks above.
+    """
+
+    @pytest.fixture(scope="class", autouse=True)
+    def _seed(
+        self,
+        direct_platform: ixmp4.Platform,
+        regions: pd.DataFrame,
+        units: pd.DataFrame,
+        runs: pd.DataFrame,
+        datapoints_full_insert: pd.DataFrame,
+    ) -> None:
+        if direct_platform.regions.list():
+            return
+        for name, hierarchy in regions.itertuples(index=False):
+            direct_platform.regions.create(name, hierarchy)
+        for name, *_ in units.itertuples(index=False):
+            direct_platform.units.create(name)
+        for model, scenario, version, is_default in runs.itertuples(index=False):
+            run = direct_platform.runs.create(model, scenario)
+            if is_default:
+                run.set_as_default()
+        self.add_datapoints(direct_platform, datapoints_full_insert)
+        self.add_run_meta(direct_platform)
+        self._refresh_planner_statistics(direct_platform)
+
+    @pytest.mark.benchmark(group="paginated_datapoints")
+    def test_paginated_datapoints_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated datapoint tabulate (``ORDER BY id LIMIT`` endpoint query)."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    run={"default_only": False},
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_region_variable")
+    def test_paginated_region_variable_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape: region + variable."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    region={"name__like": "Region 1*"},
+                    variable={"name__like": "Variable 1*"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                    run={"default_only": False},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_model_scenario")
+    def test_paginated_model_scenario_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape: model + scenario."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    model={"name": "Model 0"},
+                    scenario={"name": "Scenario 0"},
+                    step_year__gte=1956,
+                    step_year__lte=2100,
+                    run={"default_only": False},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_variable_year")
+    def test_paginated_variable_year_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape: a single variable at an exact step year.
+
+        Mirrors the scenariocompass ``variable=<exact> + step_year=<exact>``
+        tabulate (e.g. ``Land Cover|Forest`` at 2020/2050).
+        """
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    variable={"name__like": "Variable 1*"},
+                    step_year=2010,
+                    run={"default_only": True},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_variable_in_year")
+    def test_paginated_variable_in_year_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape: region + variable ``name__in`` at an exact year.
+
+        Mirrors the scenariocompass energy-mix selector
+        (``region`` + ``variable name__in [...]`` + ``step_year=<exact>``).
+        """
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    region={"name__like": "Region 1*"},
+                    variable={
+                        "name__in": ["Variable " + str(i) for i in range(10, 20)]
+                    },
+                    step_year=2000,
+                    run={"default_only": True},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_category")
+    def test_paginated_category_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape filtered by a single step category."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    step_category="Category 1",
+                    run={"default_only": True},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="paginated_step_datetime")
+    def test_paginated_step_datetime_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated endpoint shape filtered by a datetime range."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.iamc.datapoints.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_parameters=True,
+                    join_runs=True,
+                    step_datetime__gte=datetime(1980, 1, 1),
+                    step_datetime__lte=datetime(2000, 1, 1),
+                    run={"default_only": False},
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="meta_key_in")
+    def test_meta_key_in_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated run-meta tabulate filtered by ``key__in`` (dashboard)."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.meta.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_run_index=False,
+                    key__in=self.META_KEYS,
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="meta_key_like")
+    def test_meta_key_like_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated run-meta tabulate with ``key__like "*Key 1*"``."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.meta.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_run_index=False,
+                    key__like="*Key 1*",
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
+
+    @pytest.mark.benchmark(group="meta_key_like_concern")
+    def test_meta_key_like_concern_benchmark(
+        self,
+        direct_platform: ixmp4.Platform,
+        profiled: ProfiledContextManager,
+        benchmark: BenchmarkFixture,
+    ) -> None:
+        """Paginated run-meta tabulate with ``key__like "*Key 2*"``."""
+
+        def run(mp: ixmp4.Platform) -> pd.DataFrame:
+            with profiled():
+                return mp.backend.meta.paginated_tabulate(
+                    Pagination(limit=10_000, offset=0),
+                    join_run_index=False,
+                    key__like="*Key 2*",
+                ).results
+
+        result = benchmark.pedantic(run, args=(direct_platform,))  # type: ignore[no-untyped-call]
+        assert len(result) > 0
 
 
 class TestRestAuthBenchmarks(

@@ -74,9 +74,11 @@ class Ixmp4Server(object):
         settings: ServerSettings,
         debug: bool = False,
         override_transport: "Callable[..., Awaitable[DirectTransport]] | None" = None,
+        pg_planner_collapse_limit: int | None = None,
         **kwargs: Any,
     ) -> None:
         self.settings = settings
+        self.pg_planner_collapse_limit = pg_planner_collapse_limit
 
         bearer_scheme = SecurityScheme(
             "http", scheme="bearer", bearer_format="Bearer <token>"
@@ -93,6 +95,25 @@ class Ixmp4Server(object):
             log_exceptions=settings.log_exceptions,
             # expected client exceptions
             disable_stack_trace={422, 409, 404, 403, 401, 400},
+            # Bind logging to the stable process stderr. Litestar's default
+            # StreamHandler binds the redirectable sys.stderr, which pytest
+            # capture closes, causing "I/O operation on closed file".
+            handlers={
+                "console": {
+                    "class": "logging.StreamHandler",
+                    "level": "DEBUG",
+                    "formatter": "standard",
+                    "stream": "ext://sys.__stderr__",
+                }
+            },
+            loggers={
+                "litestar": {
+                    "level": "INFO",
+                    "handlers": ["console"],
+                    "propagate": False,
+                }
+            },
+            root={"handlers": ["console"], "level": "INFO"},
         )
 
         if settings.secret_hs256 is None:
@@ -103,6 +124,7 @@ class Ixmp4Server(object):
         self.v1 = V1HttpApi(
             settings,
             override_transport=override_transport,
+            pg_planner_collapse_limit=self.pg_planner_collapse_limit,
         )
         self.asgi_app = Litestar(
             debug=debug,

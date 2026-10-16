@@ -1,9 +1,10 @@
 import abc
 import logging
-from typing import Any, ClassVar, Collection, Generic, TypeVar
+from typing import Any, ClassVar, Collection, Generic, TypeVar, cast
 
 import pandas as pd
 import sqlalchemy as sa
+from sqlalchemy.engine import ScalarResult
 from toolkit.db.executor import SessionExecutor
 from toolkit.db.repositories import ItemRepository
 from toolkit.db.target import ModelTarget
@@ -104,7 +105,7 @@ class IndexedRepository(
         exc = exc.where(IndexSet.id == id)
 
         with self.executor.select(exc) as result, self.expect_one_result():
-            return self.idxset_target.get_single_item(result)
+            return self.idxset_target.get_single_item(result)  # type: ignore[arg-type]
 
     def remove_invalid_linked_data(
         self,
@@ -118,7 +119,9 @@ class IndexedRepository(
             )
         )
         with self.executor.select(exc) as result:
-            items: list[IndexedModel[AssocT]] = list(result.scalars().all())
+            items: list[IndexedModel[AssocT]] = list(
+                cast(ScalarResult[IndexedModel[AssocT]], result.scalars()).all()
+            )
 
         for item in items:
             # Convert existing data for manipulation

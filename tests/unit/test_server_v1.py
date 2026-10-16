@@ -49,7 +49,10 @@ class TestGetTransport:
         from ixmp4.server.v1 import get_transport
 
         platform = SimpleNamespace(dsn="sqlite:///:memory:")
-        request = SimpleNamespace(auth=None)
+        request = SimpleNamespace(
+            auth=None,
+            app=SimpleNamespace(state=SimpleNamespace(pg_planner_collapse_limit=16)),
+        )
 
         async def _run() -> None:
             gen = get_transport(platform, request)  # type: ignore[arg-type]
@@ -64,7 +67,10 @@ class TestGetTransport:
         from ixmp4.server.v1 import get_transport
 
         platform = SimpleNamespace(dsn="sqlite:///:memory:")
-        request = SimpleNamespace(auth=SimpleNamespace(user="alice"))
+        request = SimpleNamespace(
+            auth=SimpleNamespace(user="alice"),
+            app=SimpleNamespace(state=SimpleNamespace(pg_planner_collapse_limit=16)),
+        )
 
         async def _run() -> None:
             gen = get_transport(platform, request)  # type: ignore[arg-type]

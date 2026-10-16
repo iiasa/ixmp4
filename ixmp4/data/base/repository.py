@@ -191,9 +191,14 @@ class AuthModelTargetWrapper(ModelTarget[DefaultModelT]):
         self.platform = platform
 
     def select_statement(
-        self, columns: Sequence[str] | None = None
+        self,
+        columns: Sequence[str] | None = None,
+        *,
+        join_order: Sequence[str] | None = None,
     ) -> sa.Select[*tuple[Any, ...]]:
-        exc = self.wrapped_target.select_statement(columns=columns)
+        exc = self.wrapped_target.select_statement(
+            columns=columns, join_order=join_order
+        )
         return self.auth_repo.where_authorized(exc, self.auth_ctx, self.platform)
 
     def insert_statement(self) -> sa.Insert:

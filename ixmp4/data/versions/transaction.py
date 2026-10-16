@@ -38,7 +38,7 @@ class TransactionRepository(ItemRepository[Transaction]):
 
         try:
             with self.executor.select(exc) as result, self.expect_one_result():
-                return self.target.get_single_item(result)
+                return self.target.get_single_item(result)  # type: ignore[arg-type]
         except self.NotFound:
             result = self.create({"id": 1, "issued_at": datetime.now(tz=timezone.utc)})
             assert result.inserted_primary_key is not None

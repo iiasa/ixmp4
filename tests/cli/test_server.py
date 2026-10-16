@@ -30,13 +30,17 @@ def runner(temporary_settings: Settings) -> CliRunner:
 
 class TestServerCLI:
     def test_server_start(
-        self, runner: CliRunner, temporary_settings: Settings
+        self,
+        runner: CliRunner,
+        temporary_settings: Settings,
+        capfd: pytest.CaptureFixture[str],
     ) -> None:
         with mock.patch(
             "ixmp4.server.v1.V1HttpApi.on_startup", side_effect=KeyboardInterrupt
         ):
-            result = runner.invoke(app, ["server", "start"])
-        assert "Started server process" in result.output
+            runner.invoke(app, ["server", "start"])
+        # Logging is bound to the process stderr, so capture at the fd level.
+        assert "Started server process" in capfd.readouterr().err
 
     def test_server_start_forwards_workers_as_import_string(
         self,

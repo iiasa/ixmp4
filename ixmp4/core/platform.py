@@ -268,6 +268,7 @@ class Platform(object):
                 return DirectTransport.from_dsn(
                     ci.dsn,
                     check_alembic_version=self.settings.check_alembic_version,
+                    pg_planner_collapse_limit=self.settings.pg_planner_collapse_limit,
                 )
             except (
                 ServiceException,

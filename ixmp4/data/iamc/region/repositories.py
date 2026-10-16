@@ -17,9 +17,16 @@ from ixmp4.data.region.filter import IamcRegionFilter
 
 class IamcRegionTarget(ModelTarget[Region]):
     def select_statement(
-        self, columns: Sequence[str] | None = None
+        self,
+        columns: Sequence[str] | None = None,
+        *,
+        join_order: Sequence[str] | None = None,
     ) -> sa.Select[*tuple[Any, ...]]:
-        return super().select_statement(columns=columns).where(Region.timeseries.any())
+        return (
+            super()
+            .select_statement(columns=columns, join_order=join_order)
+            .where(Region.timeseries.any())
+        )
 
 
 class ItemRepository(AuthRepository[Region], BaseItemRepository[Region]):

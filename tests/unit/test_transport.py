@@ -87,7 +87,10 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
     fake_engine = sa.create_engine("sqlite:///:memory:")
 
     def fake_create_postgresql_engine(
-        cls: type[DirectTransport], dsn: str
+        cls: type[DirectTransport],
+        dsn: str,
+        *,
+        pg_planner_collapse_limit: int | None = None,
     ) -> sa.Engine:
         calls.append(dsn)
         return fake_engine
@@ -105,6 +108,47 @@ def test_direct_transport_from_dsn_uses_postgresql_engine(
     assert calls == ["postgresql+psycopg://user:pass@example.test/db"]
     assert transport.session.bind is fake_engine
     transport.close()
+
+
+def test_pg_planner_collapse_limit_options_emission(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    """The planner collapse limit must be emitted but omittable, and if omitted
+    its options dropped."""
+
+    captured: list[dict[str, Any]] = []
+    real_create_engine = sa.create_engine
+
+    def fake_create_engine(dsn: str, *args: Any, **kwargs: Any) -> sa.Engine:
+        captured.append(kwargs)
+        return real_create_engine(dsn, *args, **kwargs)
+
+    monkeypatch.setattr(sa, "create_engine", fake_create_engine)
+
+    DSN = "postgresql+psycopg://user:pass@example.test/db"
+
+    DirectTransport.create_postgresql_engine.cache_clear()
+    DirectTransport.create_postgresql_engine(DSN, pg_planner_collapse_limit=16)
+    assert captured[-1]["connect_args"] == {
+        "options": "-c join_collapse_limit=16 -c from_collapse_limit=16"
+    }
+
+    DirectTransport.create_postgresql_engine.cache_clear()
+    DirectTransport.create_postgresql_engine(DSN, pg_planner_collapse_limit=None)
+    assert captured[-1]["connect_args"] == {}
+
+    transport_module.cached_create_engine.cache_clear()
+    transport_module.cached_create_engine(DSN, pg_planner_collapse_limit=16)
+    assert captured[-1]["connect_args"] == {
+        "options": "-c join_collapse_limit=16 -c from_collapse_limit=16"
+    }
+
+    transport_module.cached_create_engine.cache_clear()
+    transport_module.cached_create_engine(DSN, pg_planner_collapse_limit=None)
+    assert "connect_args" not in captured[-1]
+
+    DirectTransport.create_postgresql_engine.cache_clear()
+    transport_module.cached_create_engine.cache_clear()
 
 
 def test_direct_transport_versioning_requires_postgresql() -> None:

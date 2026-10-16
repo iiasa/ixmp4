@@ -3847,14 +3847,14 @@ scipy = ["scipy (>=1.18.0rc2,<1.19)"]
 
 [[package]]
 name = "scse-toolkit"
-version = "3.0.0"
+version = "3.1.1"
 description = ""
 optional = false
 python-versions = "<4.0,>=3.11"
 groups = ["main"]
 files = [
-    {file = "scse_toolkit-3.0.0-py3-none-any.whl", hash = "sha256:796d2473b1f5b4c463f811ec8f4bfab69a31d279deb488f6f8961120bb3472d4"},
-    {file = "scse_toolkit-3.0.0.tar.gz", hash = "sha256:eb0a35a54a94c6f9cd51ab12cd88ee3a7ab61caa090a5eaeb95a80c861a6ca4d"},
+    {file = "scse_toolkit-3.1.1-py3-none-any.whl", hash = "sha256:d711130f17f4f963a94e2c44b21e43b5d03df9b343eb1b3a4fbd4d84a96d8f06"},
+    {file = "scse_toolkit-3.1.1.tar.gz", hash = "sha256:14a3119d80c5938849e2ed89d6903019ef5bf9e163914f793adf6ddf1ccb0aac"},
 ]
 
 [package.dependencies]
@@ -4981,4 +4981,4 @@ files = [
 [metadata]
 lock-version = "2.1"
 python-versions = ">=3.11, <3.15"
-content-hash = "7cf779f1fe65339356d7e94ea7625b642649974399964f4b1ab30e10fd31b9fb"
+content-hash = "36f5f908fd5e7e8c0ad761a387fa44955fdd1bb985dfdca9d73cde51ffeb338e"

@@ -1,3 +1,5 @@
+from datetime import datetime
+
 from typing_extensions import TypedDict
 
 from .base import (
@@ -32,6 +34,15 @@ class StepYearFilter(TypedDict, total=False):
 class StepCategoryFilter(TypedDict, total=False):
     step_category: str
     step_category__in: list[str]
+
+
+class StepDatetimeFilter(TypedDict, total=False):
+    step_datetime: datetime
+    step_datetime__lte: datetime
+    step_datetime__lt: datetime
+    step_datetime__gte: datetime
+    step_datetime__gt: datetime
+    step_datetime__in: list[datetime]
 
 
 class UnitIdFilter(TypedDict, total=False):
@@ -69,6 +80,7 @@ class DataPointFilter(
     DataPointTypeFilter,
     StepYearFilter,
     StepCategoryFilter,
+    StepDatetimeFilter,
     TimeSeriesIdFilter,
     ValueFilter,
     total=False,

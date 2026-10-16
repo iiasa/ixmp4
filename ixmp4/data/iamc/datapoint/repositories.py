@@ -39,15 +39,15 @@ class DataPointAuthRepository(AuthRepository[DataPointVersion | DataPoint]):
 class PandasRepository(DataPointAuthRepository, BasePandasRepository):
     NotFound = DataPointNotFound
     NotUnique = DataPointNotUnique
-    target: ModelTarget[DataPointVersion | DataPoint] = ExtendedTarget(
+
+    # Declaration order controls the emitted JOIN order (more relations than
+    # Postgres reorders by default); dimensions come before the run chain.
+    target: (
+        ModelTarget[DataPointVersion | DataPoint]
+        | ExtendedTarget[DataPointVersion | DataPoint]
+    ) = ExtendedTarget(
         DataPoint,
         {
-            "model": ((DataPoint.timeseries, TimeSeries.run, Run.model), Model.name),
-            "scenario": (
-                (DataPoint.timeseries, TimeSeries.run, Run.scenario),
-                Scenario.name,
-            ),
-            "version": ((DataPoint.timeseries, TimeSeries.run), Run.version),
             "region": ((DataPoint.timeseries, TimeSeries.region), Region.name),
             # Route both variable and unit through TimeSeries.measurand so SQL
             # uses a single measurand join instead of duplicated aliased joins.
@@ -59,11 +59,65 @@ class PandasRepository(DataPointAuthRepository, BasePandasRepository):
                 (DataPoint.timeseries, TimeSeries.measurand, Measurand.unit),
                 Unit.name,
             ),
+            "model": ((DataPoint.timeseries, TimeSeries.run, Run.model), Model.name),
+            "scenario": (
+                (DataPoint.timeseries, TimeSeries.run, Run.scenario),
+                Scenario.name,
+            ),
+            "version": ((DataPoint.timeseries, TimeSeries.run), Run.version),
             "run__id": ((DataPoint.timeseries), TimeSeries.run__id),
         },
     )
     filter = Filter(DataPointFilter, DataPoint)
     dtypes = {"step_year": "Int64"}
+
+    def _active_dimension_columns(self, values: Values | None) -> list[str]:
+        """Extra columns for the active filters, ordered most-selective first.
+        This is used to join in a particular order as a performance optimization
+        for queries across large datapoints tables.
+        """
+        if not values:
+            return []
+        dims = [key for key in ("region", "variable", "unit") if key in values]
+        runchain = [key for key in ("model", "scenario") if key in values]
+        return dims + runchain if dims else runchain
+
+    def select_for_values(
+        self,
+        values: Values | None = None,
+        columns: Sequence[str] | None = None,
+        limit: int | None = None,
+        offset: int | None = None,
+        *,
+        join_order: Sequence[str] | None = None,
+    ) -> sa.Select[Any]:
+        return super().select_for_values(
+            values,
+            columns=columns,
+            limit=limit,
+            offset=offset,
+            join_order=(
+                join_order
+                if join_order is not None
+                else self._active_dimension_columns(values) or None
+            ),
+        )
+
+    def count(self, values: Values | None = None) -> int:
+        # Use the same join structure and order as the
+        # tabulation.
+        columns = self._active_dimension_columns(values)
+        if not columns:
+            columns = self.target.pk_columns().keys()
+        exc = self.select_for_values(
+            values,
+            columns=columns,
+            join_order=columns,  # pass to avoid re-computing
+        )
+        count_exc = sa.select(sa.func.count()).select_from(exc.subquery())
+
+        with self.executor.select(count_exc) as result, self.expect_one_result():
+            return int(result.scalar_one())
 
     def tabulate(
         self,

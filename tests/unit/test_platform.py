@@ -24,6 +24,7 @@ class _PlatformConnectionInfo:
 class _SettingsStub:
     client = SimpleNamespace()
     check_alembic_version = True
+    pg_planner_collapse_limit = 16
 
     def get_credentials(self) -> dict[str, dict[str, str]]:
         return {"default": {"username": "u", "password": "p"}}
@@ -250,6 +251,7 @@ def test_platform_get_transport_uses_direct_transport_for_database_dsn(
         Settings,
         SimpleNamespace(
             check_alembic_version=True,
+            pg_planner_collapse_limit=16,
         ),
     )
 
@@ -276,7 +278,10 @@ def test_platform_get_transport_uses_direct_transport_for_database_dsn(
     assert calls == [
         {
             "dsn": "sqlite:///:memory:",
-            "kwargs": {"check_alembic_version": True},
+            "kwargs": {
+                "check_alembic_version": True,
+                "pg_planner_collapse_limit": 16,
+            },
         }
     ]
 

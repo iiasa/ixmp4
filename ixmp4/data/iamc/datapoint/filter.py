@@ -1,4 +1,5 @@
 from collections.abc import Iterable, Mapping, Sequence
+from datetime import datetime as datetime_type
 from typing import Annotated, Any, cast
 
 from typing_extensions import TypedDict
@@ -54,10 +55,20 @@ class FacadeStepCategoryFilter(TypedDict, total=False):
     category__in: list[str]
 
 
+class FacadeStepDatetimeFilter(TypedDict, total=False):
+    datetime: datetime_type
+    datetime__lte: datetime_type
+    datetime__lt: datetime_type
+    datetime__gte: datetime_type
+    datetime__gt: datetime_type
+    datetime__in: list[datetime_type]
+
+
 class FacadeDataPointFilter(
     iamc.DataPointFilter,
     FacadeStepYearFilter,
     FacadeStepCategoryFilter,
+    FacadeStepDatetimeFilter,
     total=False,
 ):
     region: base.RegionFilter | str | Iterable[str]

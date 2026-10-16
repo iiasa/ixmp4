@@ -18,11 +18,14 @@ from ixmp4.data.scenario.repositories import ScenarioAuthRepository
 
 class IamcScenarioTarget(ModelTarget[Scenario | ScenarioVersion]):
     def select_statement(
-        self, columns: Sequence[str] | None = None
+        self,
+        columns: Sequence[str] | None = None,
+        *,
+        join_order: Sequence[str] | None = None,
     ) -> sa.Select[*tuple[Any, ...]]:
         return (
             super()
-            .select_statement(columns=columns)
+            .select_statement(columns=columns, join_order=join_order)
             .where(Scenario.runs.any(Run.timeseries.any()))
         )
 
